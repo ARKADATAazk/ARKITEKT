@@ -1,236 +1,289 @@
 -- @noindex
 -- ARKITEKT/scripts/Sandbox/sandbox_1.lua
--- Music Flow Node System Demo
+-- Hatched Fill Effects Demo
 
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
-local root_path = script_path:match("(.*)[\\/][^\\/]+[\\/]?$") or script_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
-
-local arkitekt_path = root_path .. "ARKITEKT/"
-package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. package.path
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-
-local Shell = require('arkitekt.app.shell')
-local Arkit = require('arkitekt.arkit')
-
-local Canvas = require('arkitekt.gui.widgets.editors.nodal.canvas')
-local Node = require('arkitekt.gui.widgets.editors.nodal.core.node')
-local Connection = require('arkitekt.gui.widgets.editors.nodal.core.connection')
-local Config = require('arkitekt.gui.widgets.editors.nodal.defaults')
-
-local ImGui = Arkit.ImGui
-local hexrgb = Arkit.hexrgb
-
-local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui')
-local function create_mock_music_flow()
-  local config = Config.get()
-  
-  local nodes = {}
-  
-  local intro = Node.new({
-    guid = "node-intro",
-    id = "intro",
-    name = "Intro (Calm)",
-    mirror_mode = "linked",
-    template_ref = "template-intro",
-    properties = {
-      wwise_state = "Combat_Intro_Calm",
-      loop_count = 1,
-      transition_type = "crossfade",
-      transition_duration = 2.0,
-    },
-    next_section = "node-build",
-    triggers = {
-      { event = "OnEnemySpotted", target_section = "node-peak", mode = "INCREMENTAL" },
-    },
-  })
-  nodes[#nodes + 1] = intro
-  
-  local build = Node.new({
-    guid = "node-build",
-    id = "build",
-    name = "Build Up",
-    mirror_mode = "linked",
-    template_ref = "template-build",
-    properties = {
-      wwise_state = "Combat_Build",
-      loop_count = 2,
-      transition_type = "crossfade",
-      transition_duration = 1.5,
-    },
-    next_section = "node-peak",
-    triggers = {
-      { event = "OnPlayerDeath", target_section = "node-gameover", mode = "IMMEDIATE" },
-    },
-  })
-  nodes[#nodes + 1] = build
-  
-  local peak = Node.new({
-    guid = "node-peak",
-    id = "peak",
-    name = "Peak (Intense)",
-    mirror_mode = "detached",
-    template_ref = "template-peak",
-    properties = {
-      wwise_state = "Combat_Peak_Intense",
-      loop_count = 3,
-      transition_type = "cut",
-      transition_duration = 0.5,
-    },
-    next_section = "node-boss",
-    triggers = {
-      { event = "OnBossAppears", target_section = "node-boss", mode = "END_OF_SEGMENT" },
-      { event = "OnAllEnemiesDefeated", target_section = "node-victory", mode = "INCREMENTAL" },
-    },
-  })
-  nodes[#nodes + 1] = peak
-  
-  local boss = Node.new({
-    guid = "node-boss",
-    id = "boss",
-    name = "Boss Fight",
-    mirror_mode = "frozen",
-    template_ref = "template-boss",
-    properties = {
-      wwise_state = "Combat_Boss",
-      loop_count = 0,
-      transition_type = "crossfade",
-      transition_duration = 3.0,
-    },
-    next_section = nil,
-    triggers = {
-      { event = "OnBossDefeated", target_section = "node-victory", mode = "IMMEDIATE" },
-      { event = "OnPlayerDeath", target_section = "node-gameover", mode = "IMMEDIATE" },
-    },
-  })
-  nodes[#nodes + 1] = boss
-  
-  local victory = Node.new({
-    guid = "node-victory",
-    id = "victory",
-    name = "Victory",
-    mirror_mode = "linked",
-    template_ref = "template-victory",
-    properties = {
-      wwise_state = "Victory_Theme",
-      loop_count = 1,
-      transition_type = "crossfade",
-      transition_duration = 2.0,
-    },
-    next_section = nil,
-    triggers = {},
-  })
-  nodes[#nodes + 1] = victory
-  
-  local gameover = Node.new({
-    guid = "node-gameover",
-    id = "gameover",
-    name = "Game Over",
-    mirror_mode = "linked",
-    template_ref = "template-gameover",
-    properties = {
-      wwise_state = "GameOver_Theme",
-      loop_count = 1,
-      transition_type = "cut",
-      transition_duration = 0.0,
-    },
-    next_section = nil,
-    triggers = {},
-  })
-  nodes[#nodes + 1] = gameover
-  
-  local connections = {}
-  
-  table.insert(connections, Connection.new_trigger("node-intro", "node-peak", "OnEnemySpotted", "INCREMENTAL", config.colors.connection_types.trigger))
-  table.insert(connections, Connection.new_trigger("node-build", "node-gameover", "OnPlayerDeath", "IMMEDIATE", config.colors.connection_types.trigger))
-  table.insert(connections, Connection.new_trigger("node-peak", "node-boss", "OnBossAppears", "END_OF_SEGMENT", config.colors.connection_types.trigger))
-  table.insert(connections, Connection.new_trigger("node-peak", "node-victory", "OnAllEnemiesDefeated", "INCREMENTAL", config.colors.connection_types.trigger))
-  table.insert(connections, Connection.new_trigger("node-boss", "node-victory", "OnBossDefeated", "IMMEDIATE", config.colors.connection_types.trigger))
-  table.insert(connections, Connection.new_trigger("node-boss", "node-gameover", "OnPlayerDeath", "IMMEDIATE", config.colors.connection_types.trigger))
-  
-  return nodes, connections
+-- ============================================================================
+-- BOOTSTRAP ARKITEKT FRAMEWORK
+-- ============================================================================
+local ark
+do
+  local sep = package.config:sub(1,1)
+  local src = debug.getinfo(1, "S").source:sub(2)
+  local path = src:match("(.*"..sep..")")
+  while path and #path > 3 do
+    local bootstrap = path .. "arkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
+    local f = io.open(bootstrap, "r")
+    if f then
+      f:close()
+      package.path = path .. "?.lua;" .. path .. "?" .. sep .. "init.lua;" .. package.path
+      package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
+      ark = require('arkitekt')
+      break
+    end
+    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
+  end
+  if not ark then
+    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
+    return
+  end
 end
 
-local nodes, connections = create_mock_music_flow()
-local canvas = Canvas.new({
-  nodes = nodes,
-  connections = connections,
-  container_x = 100,
-  container_width = 320,
-})
+local Shell = require('arkitekt.app.shell')
+local HatchedFill = require('arkitekt.gui.widgets.effects.hatched_fill')
+
+local ImGui = ark.ImGui
+local hexrgb = ark.Colors.hexrgb
+
+-- Demo state
+local demo_state = {
+  active_tab = 1,
+  spacing = 6,
+  thickness = 1,
+  intensity = 1.5,
+  layers = 4,
+  corner = "bottom_right",
+}
+
+-- Tab definitions
+local TABS = {
+  { name = "Corner Radial", id = 1 },
+  { name = "Basic Patterns", id = 2 },
+  { name = "Glitch Effects", id = 3 },
+}
 
 Shell.run({
-  title = "Music Flow Node System",
+  title = "Hatched Fill Effects Demo",
   version = "v0.1.0",
   version_color = hexrgb("#888888FF"),
-  style = StyleOK and Style or nil,
   initial_pos = { x = 100, y = 100 },
-  initial_size = { w = 1200, h = 800 },
-  min_size = { w = 800, h = 600 },
-  
+  initial_size = { w = 900, h = 700 },
+  min_size = { w = 600, h = 400 },
+
   draw = function(ctx, shell_state)
-    if ImGui.Button(ctx, "Center View") then
-      Canvas.center_on_content(canvas)
-    end
-    
-    ImGui.SameLine(ctx)
-    
-    if ImGui.Button(ctx, "Reset Zoom") then
-      Canvas.reset_viewport(canvas)
-    end
-    
-    ImGui.SameLine(ctx)
-    ImGui.Text(ctx, "|")
-    ImGui.SameLine(ctx)
-    
-    local hovered_name = "None"
-    if canvas.hovered_node and canvas.hovered_node.name then
-      hovered_name = canvas.hovered_node.name
-    end
-    
-    ImGui.Text(ctx, string.format("Nodes: %d | Connections: %d | Hovered: %s | Zoom: %.2f", 
-      #canvas.nodes, #canvas.connections, hovered_name, canvas.viewport.scale))
-    
-    ImGui.SameLine(ctx)
-    ImGui.Text(ctx, string.format("| VP: %.0f,%.0f %.0fx%.0f", 
-      canvas.viewport.bounds_x or 0, canvas.viewport.bounds_y or 0, 
-      canvas.viewport.bounds_w or 0, canvas.viewport.bounds_h or 0))
-    
-    ImGui.Separator(ctx)
-    
-    -- Get content region available
     local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
-    
-    -- Style the child window
-    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#0A0A0A"))
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#404040"))
-    
-    -- Create child window that fills available space with no scrollbars
-    -- Using WindowFlags_NoScrollbar and WindowFlags_NoScrollWithMouse to prevent scroll interference
-    local child_flags = 0  -- or ImGui.ChildFlags_None if available
-    local window_flags = ImGui.WindowFlags_NoScrollbar
-    if ImGui.WindowFlags_NoScrollWithMouse then
-      window_flags = window_flags | ImGui.WindowFlags_NoScrollWithMouse
-    end
-    
-    if ImGui.BeginChild(ctx, "##canvas_area", avail_w, avail_h, child_flags, window_flags) then
-      -- Get the actual child window position and size
-      local win_x, win_y = ImGui.GetWindowPos(ctx)
-      local win_w, win_h = ImGui.GetWindowSize(ctx)
-      
-      -- Ensure we have valid dimensions
-      if win_w > 0 and win_h > 0 then
-        -- Pass the window position and size to Canvas.render
-        Canvas.render(canvas, ctx, win_x, win_y, win_w, win_h)
+    local dl = ImGui.GetWindowDrawList(ctx)
+
+    -- Tab bar
+    if ImGui.BeginTabBar(ctx, "##effects_tabs") then
+      for _, tab in ipairs(TABS) do
+        if ImGui.BeginTabItem(ctx, tab.name) then
+          demo_state.active_tab = tab.id
+          ImGui.EndTabItem(ctx)
+        end
       end
-      
-      ImGui.EndChild(ctx)
+      ImGui.EndTabBar(ctx)
     end
-    
-    ImGui.PopStyleColor(ctx, 2)
-    ImGui.PopStyleVar(ctx)
+
+    ImGui.Dummy(ctx, 0, 5)
+
+    -- ========================================================================
+    -- TAB 1: Corner Radial (the original WALTER bug effect)
+    -- ========================================================================
+    if demo_state.active_tab == 1 then
+      -- Controls
+      ImGui.Text(ctx, "Corner:")
+      ImGui.SameLine(ctx)
+      if ImGui.RadioButton(ctx, "Bottom-Right", demo_state.corner == "bottom_right") then
+        demo_state.corner = "bottom_right"
+      end
+      ImGui.SameLine(ctx)
+      if ImGui.RadioButton(ctx, "Bottom-Left", demo_state.corner == "bottom_left") then
+        demo_state.corner = "bottom_left"
+      end
+      ImGui.SameLine(ctx)
+      if ImGui.RadioButton(ctx, "Top-Right", demo_state.corner == "top_right") then
+        demo_state.corner = "top_right"
+      end
+      ImGui.SameLine(ctx)
+      if ImGui.RadioButton(ctx, "Top-Left", demo_state.corner == "top_left") then
+        demo_state.corner = "top_left"
+      end
+
+      local _, spacing = ImGui.SliderInt(ctx, "Spacing##corner", demo_state.spacing, 2, 20)
+      demo_state.spacing = spacing
+
+      ImGui.SameLine(ctx, 250)
+      local _, intensity = ImGui.SliderDouble(ctx, "Intensity##corner", demo_state.intensity, 0.5, 3.0)
+      demo_state.intensity = intensity
+
+      ImGui.SameLine(ctx, 500)
+      local _, layers = ImGui.SliderInt(ctx, "Layers##corner", demo_state.layers, 1, 8)
+      demo_state.layers = layers
+
+      ImGui.Separator(ctx)
+      ImGui.Dummy(ctx, 0, 10)
+
+      -- Large panel with corner radial effect
+      local panel_w = avail_w - 20
+      local panel_h = avail_h - 120
+      local panel_x, panel_y = ImGui.GetCursorScreenPos(ctx)
+
+      -- Panel background
+      ImGui.DrawList_AddRectFilled(dl, panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, hexrgb("#1a1a2aFF"), 8)
+
+      -- Draw the corner radial effect
+      HatchedFill.draw_corner_radial(ctx, {
+        x = panel_x, y = panel_y, w = panel_w, h = panel_h,
+        color = hexrgb("#8844FFCC"),
+        spacing = demo_state.spacing,
+        thickness = demo_state.thickness,
+        corner = demo_state.corner,
+        layers = demo_state.layers,
+        intensity = demo_state.intensity,
+        draw_list = dl,
+      })
+
+      -- Panel border
+      ImGui.DrawList_AddRect(dl, panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, hexrgb("#8844FF80"), 8, 0, 2)
+
+      -- Label
+      ImGui.DrawList_AddText(dl, panel_x + 15, panel_y + 15, hexrgb("#FFFFFFCC"), "Corner Radial Effect (like WALTER Builder)")
+      ImGui.DrawList_AddText(dl, panel_x + 15, panel_y + 35, hexrgb("#FFFFFF88"),
+        string.format("Corner: %s | Spacing: %d | Layers: %d | Intensity: %.1f",
+          demo_state.corner, demo_state.spacing, demo_state.layers, demo_state.intensity))
+
+      ImGui.Dummy(ctx, panel_w, panel_h)
+
+    -- ========================================================================
+    -- TAB 2: Basic Patterns
+    -- ========================================================================
+    elseif demo_state.active_tab == 2 then
+      local _, spacing = ImGui.SliderInt(ctx, "Spacing##basic", demo_state.spacing, 2, 20)
+      demo_state.spacing = spacing
+
+      ImGui.SameLine(ctx, 250)
+      local _, thickness = ImGui.SliderDouble(ctx, "Thickness##basic", demo_state.thickness, 0.5, 4)
+      demo_state.thickness = thickness
+
+      ImGui.Separator(ctx)
+      ImGui.Dummy(ctx, 0, 10)
+
+      local win_x, win_y = ImGui.GetCursorScreenPos(ctx)
+      local box_w, box_h = 150, 100
+      local gap = 20
+
+      -- Row of basic directions
+      local patterns = {
+        { dir = HatchedFill.DIRECTION.FORWARD, color = "#4488FFAA", label = "FORWARD" },
+        { dir = HatchedFill.DIRECTION.BACKWARD, color = "#FF8844AA", label = "BACKWARD" },
+        { dir = HatchedFill.DIRECTION.BOTH, color = "#44FF88AA", label = "BOTH" },
+        { dir = HatchedFill.DIRECTION.HORIZONTAL, color = "#FF44AAAA", label = "HORIZONTAL" },
+        { dir = HatchedFill.DIRECTION.VERTICAL, color = "#AAFF44AA", label = "VERTICAL" },
+      }
+
+      for i, pat in ipairs(patterns) do
+        local px = win_x + (i - 1) * (box_w + gap)
+        ImGui.DrawList_AddRectFilled(dl, px, win_y, px + box_w, win_y + box_h, hexrgb("#1a1a1aFF"), 4)
+        HatchedFill.draw(ctx, {
+          x = px, y = win_y, w = box_w, h = box_h,
+          direction = pat.dir,
+          color = hexrgb(pat.color),
+          spacing = demo_state.spacing,
+          thickness = demo_state.thickness,
+          draw_list = dl,
+        })
+        ImGui.DrawList_AddRect(dl, px, win_y, px + box_w, win_y + box_h, hexrgb(pat.color:gsub("AA$", "FF")), 4)
+        ImGui.DrawList_AddText(dl, px + 5, win_y + box_h - 18, hexrgb("#FFFFFFCC"), pat.label)
+      end
+
+      ImGui.Dummy(ctx, 0, box_h + 30)
+
+      -- Marching ants row
+      ImGui.Text(ctx, "Marching Ants (animated borders):")
+      ImGui.Dummy(ctx, 0, 5)
+      local row2_x, row2_y = ImGui.GetCursorScreenPos(ctx)
+
+      ImGui.DrawList_AddRectFilled(dl, row2_x, row2_y, row2_x + 300, row2_y + 80, hexrgb("#1a1a2aFF"), 4)
+      HatchedFill.draw_marching_ants(ctx, {
+        x = row2_x, y = row2_y, w = 300, h = 80,
+        color = hexrgb("#FFFFFFCC"),
+        dash_length = 6,
+        gap_length = 4,
+        thickness = 2,
+        speed = 40,
+        draw_list = dl,
+      })
+      ImGui.DrawList_AddText(dl, row2_x + 10, row2_y + 30, hexrgb("#FFFFFFAA"), "Selection indicator style")
+
+      ImGui.DrawList_AddRectFilled(dl, row2_x + 320, row2_y, row2_x + 620, row2_y + 80, hexrgb("#2a1a1aFF"), 4)
+      HatchedFill.draw_marching_ants(ctx, {
+        x = row2_x + 320, y = row2_y, w = 300, h = 80,
+        color = hexrgb("#FF6644FF"),
+        dash_length = 10,
+        gap_length = 6,
+        thickness = 1,
+        speed = 20,
+        draw_list = dl,
+      })
+      ImGui.DrawList_AddText(dl, row2_x + 330, row2_y + 30, hexrgb("#FF8866AA"), "Slower variant")
+
+      ImGui.Dummy(ctx, 0, 100)
+
+    -- ========================================================================
+    -- TAB 3: Glitch Effects
+    -- ========================================================================
+    elseif demo_state.active_tab == 3 then
+      local _, spacing = ImGui.SliderInt(ctx, "Spacing##glitch", demo_state.spacing, 2, 20)
+      demo_state.spacing = spacing
+
+      ImGui.SameLine(ctx, 250)
+      local _, intensity = ImGui.SliderDouble(ctx, "Intensity##glitch", demo_state.intensity, 0.5, 3.0)
+      demo_state.intensity = intensity
+
+      ImGui.SameLine(ctx, 500)
+      local _, layers = ImGui.SliderInt(ctx, "Layers##glitch", demo_state.layers, 1, 8)
+      demo_state.layers = layers
+
+      ImGui.Separator(ctx)
+      ImGui.Dummy(ctx, 0, 10)
+
+      local win_x, win_y = ImGui.GetCursorScreenPos(ctx)
+      local glitch_w, glitch_h = 250, 180
+
+      -- Glitch effect (original bug)
+      HatchedFill.draw_glitch(ctx, {
+        x = win_x, y = win_y, w = glitch_w, h = glitch_h,
+        color = hexrgb("#FF5555CC"),
+        spacing = demo_state.spacing,
+        thickness = demo_state.thickness,
+        intensity = demo_state.intensity,
+        layers = demo_state.layers,
+        show_box = true,
+        draw_list = dl,
+      })
+      ImGui.DrawList_AddText(dl, win_x + 5, win_y + glitch_h + 5, hexrgb("#FFFFFFAA"), "GLITCH (original bug math)")
+
+      -- Curved effect
+      local x2 = win_x + glitch_w + 40
+      HatchedFill.draw_curved(ctx, {
+        x = x2, y = win_y, w = glitch_w, h = glitch_h,
+        color = hexrgb("#55FF55CC"),
+        spacing = demo_state.spacing,
+        thickness = demo_state.thickness,
+        curve_factor = demo_state.intensity,
+        layers = demo_state.layers,
+        direction = "both",
+        draw_list = dl,
+      })
+      ImGui.DrawList_AddRect(dl, x2, win_y, x2 + glitch_w, win_y + glitch_h, hexrgb("#55FF5560"), 0, 0, 1)
+      ImGui.DrawList_AddText(dl, x2 + 5, win_y + glitch_h + 5, hexrgb("#FFFFFFAA"), "CURVED (exponential)")
+
+      -- Corner radial preview
+      local x3 = x2 + glitch_w + 40
+      HatchedFill.draw_corner_radial(ctx, {
+        x = x3, y = win_y, w = glitch_w, h = glitch_h,
+        color = hexrgb("#5555FFCC"),
+        spacing = demo_state.spacing,
+        thickness = demo_state.thickness,
+        corner = "bottom_right",
+        layers = demo_state.layers,
+        intensity = demo_state.intensity,
+        draw_list = dl,
+      })
+      ImGui.DrawList_AddRect(dl, x3, win_y, x3 + glitch_w, win_y + glitch_h, hexrgb("#5555FF60"), 0, 0, 1)
+      ImGui.DrawList_AddText(dl, x3 + 5, win_y + glitch_h + 5, hexrgb("#FFFFFFAA"), "CORNER RADIAL")
+
+      ImGui.Dummy(ctx, 0, glitch_h + 40)
+    end
   end,
 })

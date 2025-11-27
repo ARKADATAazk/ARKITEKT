@@ -6,23 +6,25 @@
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK
+local ark
 do
   local sep = package.config:sub(1,1)
   local src = debug.getinfo(1, "S").source:sub(2)
   local path = src:match("(.*"..sep..")")
   while path and #path > 3 do
-    local init = path .. "arkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
-    local f = io.open(init, "r")
+    local bootstrap = path .. "arkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
+    local f = io.open(bootstrap, "r")
     if f then
       f:close()
-      local Init = dofile(init)
-      ARK = Init.bootstrap()
+      -- Set up package path first
+      package.path = path .. "?.lua;" .. path .. "?" .. sep .. "init.lua;" .. package.path
+      package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
+      ark = require('arkitekt')
       break
     end
     path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
   end
-  if not ARK then
+  if not ark then
     reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
     return
   end
