@@ -10,11 +10,26 @@
 A Lua 5.3 framework for building ReaImGui applications in REAPER (audio workstation). It provides reusable widgets, window management, theming, and application scaffolding.
 
 **Critical Rules:**
-1. **Namespace**: Always `arkitekt` (lowercase). NEVER `Arkitekt`.
+1. **Namespace**: `arkitekt.*` for requires, `ark.*` for lazy-loaded widgets/utilities.
 2. **Bootstrap**: Use `dofile()`, not `require()` for entry points.
 3. **Layer purity**: `core/*` and `storage/*` must NOT use `reaper.*` or `ImGui.*` at import time.
 4. **No globals**: Everything returns a module table `M`.
 5. **Read before writing**: ALWAYS read existing code before proposing changes.
+
+**Using the ark.* namespace:**
+```lua
+-- Entry point loads ark namespace
+local ark = dofile(path .. "loader.lua")
+
+-- Lazy-loaded widgets and utilities
+ark.Button.draw(ctx, {label = "Click"})
+ark.Panel.draw(ctx, opts)
+ark.ImGui.Text(ctx, "Hello")  -- ImGui is pre-loaded
+
+-- Direct requires also work
+local Theme = require('arkitekt.core.theme')
+local Shell = require('arkitekt.app.shell')
+```
 
 ---
 
@@ -57,7 +72,6 @@ tests/      # Unit tests
 
 | Don't | Do Instead |
 |-------|------------|
-| Use `require("arkitekt.")` | Use `require("arkitekt.")` |
 | Add `reaper.*` in `core/*` | Keep core pure, move runtime code to `app/` |
 | Create globals | Return module table `M` |
 | Hardcode magic numbers | Use constants from `arkitekt/defs/` |
@@ -378,4 +392,4 @@ When you need more detail:
 2. **Minimal changes** - Do exactly what's asked, nothing more
 3. **Respect layers** - Pure stays pure, runtime stays runtime
 4. **Follow patterns** - Look at similar code in the codebase
-5. **Check namespace** - `arkitekt`, never `arkitekt`
+5. **Use ark.* namespace** - Prefer `ark.Button`, `ark.ImGui` over scattered requires
