@@ -31,7 +31,7 @@ A Lua 5.3 framework for building ReaImGui applications in REAPER (audio workstat
 | Change **font loading** | `arkitekt/app/chrome/fonts.lua` |
 | Edit a **specific app** | `scripts/[AppName]/` |
 | Add **pure utilities** | `arkitekt/core/` (no reaper/ImGui!) |
-| Check **architecture docs** | `Documentation/architecture/` |
+| Check **cookbook** | `cookbook/` |
 | Find **actionable tasks** | `TODO/` |
 
 ### Layer Structure (per app/module)
@@ -124,7 +124,7 @@ tests/      # Unit tests
    - Business logic → `domain/` or `core/`
    - State management → `app/`
 3. **Check existing patterns** in that layer
-4. **Follow conventions** from `Documentation/architecture/CONVENTIONS.md`
+4. **Follow conventions** from `cookbook/CONVENTIONS.md`
 5. **Update constants** in `defs/` if adding magic numbers
 
 ### Task: Performance Optimization
@@ -136,11 +136,11 @@ tests/      # Unit tests
    - Cache function lookups at module top: `local floor = math.floor`
    - Avoid string concatenation in hot loops
    - Pre-allocate tables when size is known
-4. **Reference**: `Documentation/LUA_PERFORMANCE_GUIDE.md`
+4. **Reference**: `cookbook/LUA_PERFORMANCE_GUIDE.md`
 
 ### Task: Refactor/Migrate Code
 
-1. **Check if migration plan exists**: `Documentation/architecture/MIGRATION_PLANS.md`
+1. **Check if migration plan exists**: `cookbook/MIGRATION_PLANS.md`
 2. **Follow the phased approach**:
    - Phase 1: Add shims (preserve old API)
    - Phase 2: Wire up new code
@@ -330,9 +330,9 @@ scripts/MyApp/
 When you need more detail:
 
 1. **This file** (CLAUDE.md) - Quick reference, task cookbook
-2. **Documentation/architecture/CONVENTIONS.md** - Detailed coding standards
-3. **Documentation/architecture/PROJECT_STRUCTURE.md** - Full architecture guide
-4. **arkitekt/app/README.md** - Framework app layer details
+2. **cookbook/CONVENTIONS.md** - Detailed coding standards
+3. **cookbook/PROJECT_STRUCTURE.md** - Full architecture guide
+4. **cookbook/LUA_PERFORMANCE_GUIDE.md** - Performance optimization
 5. **TODO/** - Actionable improvements to work on
 6. **ARKITEKT_Codex_Playbook_v5.md** - Batch operations, pipelines, JSON task format
 
