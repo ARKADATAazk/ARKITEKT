@@ -9,6 +9,10 @@ local RegionState = require("RegionPlaylist.storage.persistence")
 local SequenceExpander = require("RegionPlaylist.core.sequence_expander")
 local Logger = require("arkitekt.debug.logger")
 local Callbacks = require("arkitekt.core.callbacks")
+local Constants = require("RegionPlaylist.defs.constants")
+
+-- Localize constants
+local PLAYBACK = Constants.PLAYBACK
 
 -- Set to true for verbose sequence building debug logs
 local DEBUG_BRIDGE = false
@@ -287,8 +291,8 @@ function M.create(opts)
     -- This must happen AFTER _ensure_sequence() so it overrides sequence restoration
     local is_resuming = self.engine.transport.is_paused
     if not is_resuming and
-       self.engine.state.current_idx == -1 and
-       self.engine.state.next_idx == -1 then
+       self.engine.state.current_idx == PLAYBACK.INDEX_UNINITIALIZED and
+       self.engine.state.next_idx == PLAYBACK.INDEX_UNINITIALIZED then
       self.engine.state.playlist_pointer = 1
     end
 
@@ -480,9 +484,9 @@ function M.create(opts)
 
   function bridge:get_current_playlist_key()
     if not self.engine:get_is_playing() then return nil end
-    
+
     self:_ensure_sequence()
-    local current_idx = self.engine.state and self.engine.state.current_idx or -1
+    local current_idx = self.engine.state and self.engine.state.current_idx or PLAYBACK.INDEX_UNINITIALIZED
     if current_idx < 1 then return nil end
 
     -- Find the most specific (smallest range) playlist containing current_idx
@@ -508,9 +512,9 @@ function M.create(opts)
   function bridge:is_playlist_active(playlist_key)
     if not self.engine:get_is_playing() then return false end
     if not playlist_key then return false end
-    
+
     self:_ensure_sequence()
-    local current_idx = self.engine.state and self.engine.state.current_idx or -1
+    local current_idx = self.engine.state and self.engine.state.current_idx or PLAYBACK.INDEX_UNINITIALIZED
     if current_idx < 1 then return false end
     
     local range_info = self.playlist_ranges[playlist_key]

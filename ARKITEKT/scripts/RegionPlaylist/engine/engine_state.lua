@@ -6,6 +6,10 @@
 local Regions = require('arkitekt.reaper.regions')
 local Transport = require('arkitekt.reaper.transport')
 local Logger = require('arkitekt.debug.logger')
+local Constants = require("RegionPlaylist.defs.constants")
+
+-- Localize constants
+local PLAYBACK = Constants.PLAYBACK
 
 -- Performance: Localize math and table functions for hot loops (region lookup, shuffling)
 local max = math.max
@@ -40,11 +44,11 @@ function M.new(opts)
   self.playlist_metadata = {}
   self.playlist_pointer = 1
   
-  self.current_idx = -1
-  self.next_idx = -1
-  self.current_bounds = {start_pos = 0, end_pos = -1}
-  self.next_bounds = {start_pos = 0, end_pos = -1}
-  self.last_play_pos = -1
+  self.current_idx = PLAYBACK.INDEX_UNINITIALIZED
+  self.next_idx = PLAYBACK.INDEX_UNINITIALIZED
+  self.current_bounds = {start_pos = 0, end_pos = PLAYBACK.INDEX_UNINITIALIZED}
+  self.next_bounds = {start_pos = 0, end_pos = PLAYBACK.INDEX_UNINITIALIZED}
+  self.last_play_pos = PLAYBACK.INDEX_UNINITIALIZED
 
   self.boundary_epsilon = 0.01
 
@@ -230,26 +234,26 @@ function State:set_sequence(sequence)
   if resolved_current then
     self.current_idx = resolved_current
   elseif #self.sequence == 0 then
-    self.current_idx = -1
+    self.current_idx = PLAYBACK.INDEX_UNINITIALIZED
   else
-    self.current_idx = min(self.current_idx or -1, #self.sequence)
+    self.current_idx = min(self.current_idx or PLAYBACK.INDEX_UNINITIALIZED, #self.sequence)
   end
 
   local resolved_next = resolve_index_by_entry(previous_next)
   if resolved_next then
     self.next_idx = resolved_next
   elseif #self.sequence == 0 then
-    self.next_idx = -1
+    self.next_idx = PLAYBACK.INDEX_UNINITIALIZED
   else
-    self.next_idx = min(self.next_idx or -1, #self.sequence)
+    self.next_idx = min(self.next_idx or PLAYBACK.INDEX_UNINITIALIZED, #self.sequence)
     if self.next_idx < 1 then
-      self.next_idx = (#self.sequence >= 1) and 1 or -1
+      self.next_idx = (#self.sequence >= 1) and 1 or PLAYBACK.INDEX_UNINITIALIZED
     end
   end
 
   if #self.sequence == 0 then
-    self.current_idx = -1
-    self.next_idx = -1
+    self.current_idx = PLAYBACK.INDEX_UNINITIALIZED
+    self.next_idx = PLAYBACK.INDEX_UNINITIALIZED
   end
 
   self.goto_region_queued = false
@@ -280,9 +284,9 @@ function State:update_bounds()
     end
   else
     self.current_bounds.start_pos = 0
-    self.current_bounds.end_pos = -1
+    self.current_bounds.end_pos = PLAYBACK.INDEX_UNINITIALIZED
   end
-  
+
   if self.next_idx >= 1 and self.next_idx <= #self.playlist_order then
     local rid = self.playlist_order[self.next_idx]
     local region = self:get_region_by_rid(rid)
@@ -292,7 +296,7 @@ function State:update_bounds()
     end
   else
     self.next_bounds.start_pos = 0
-    self.next_bounds.end_pos = -1
+    self.next_bounds.end_pos = PLAYBACK.INDEX_UNINITIALIZED
   end
 end
 
@@ -313,8 +317,8 @@ function State:find_index_at_position(pos)
       end
     end
   end
-  if DEBUG_SEQUENCE then Logger.debug("STATE", "No index found, returning -1") end
-  return -1
+  if DEBUG_SEQUENCE then Logger.debug("STATE", "No index found, returning INDEX_UNINITIALIZED") end
+  return PLAYBACK.INDEX_UNINITIALIZED
 end
 
 function State:get_sequence_entry(index)

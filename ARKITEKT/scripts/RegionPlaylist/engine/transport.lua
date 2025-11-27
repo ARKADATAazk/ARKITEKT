@@ -190,7 +190,7 @@ function Transport:play()
       Logger.info("TRANSPORT", "PLAY '%s' (RID %d) from %.2fs", region.name or "?", region.rid, region.start)
       reaper.SetEditCurPos2(self.proj, region.start, false, false)
       reaper.OnPlayButton()
-      self.state.current_idx = -1
+      self.state.current_idx = PLAYBACK.INDEX_UNINITIALIZED
       self.state.next_idx = self.state.playlist_pointer
     end
   end
@@ -218,8 +218,8 @@ function Transport:stop()
   self.is_playing = false
   self.is_paused = false
 
-  self.state.current_idx = -1
-  self.state.next_idx = -1
+  self.state.current_idx = PLAYBACK.INDEX_UNINITIALIZED
+  self.state.next_idx = PLAYBACK.INDEX_UNINITIALIZED
   self.state.playlist_pointer = 1  -- Reset to beginning for next play
 
   self:_leave_playlist_mode_if_needed()
@@ -330,7 +330,7 @@ function Transport:poll_transport_sync()
           elseif self.loop_playlist and #self.state.playlist_order > 0 then
             self.state.next_idx = 1
           else
-            self.state.next_idx = -1
+            self.state.next_idx = PLAYBACK.INDEX_UNINITIALIZED
           end
         end
 
@@ -433,8 +433,8 @@ function Transport:check_stopped()
       -- Legacy sync (remove in 1.7)
       self.is_playing = false
 
-      self.state.current_idx = -1
-      self.state.next_idx = -1
+      self.state.current_idx = PLAYBACK.INDEX_UNINITIALIZED
+      self.state.next_idx = PLAYBACK.INDEX_UNINITIALIZED
       self:_leave_playlist_mode_if_needed()
       return true
     end
