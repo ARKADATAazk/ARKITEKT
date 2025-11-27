@@ -298,24 +298,34 @@ function M.filter_templates(state)
     tag_filter_count = tag_filter_count + 1
   end
 
+  -- Pre-compute selected folders list ONCE before template loop (optimization)
+  local selected_folders = {}
+  local escaped_folder_paths = {}  -- Pre-escaped paths for regex matching
+  local sep = package.config:sub(1,1)
+
+  if state.selected_folder and state.selected_folder ~= "" then
+    -- Check if we have multi-selection
+    if state.selected_folders and next(state.selected_folders) then
+      -- Multi-select: use all selected folders
+      for folder_path, _ in pairs(state.selected_folders) do
+        selected_folders[#selected_folders + 1] = folder_path
+        -- Pre-escape special regex characters for path matching
+        escaped_folder_paths[folder_path] = folder_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1")
+      end
+    else
+      -- Single select: use state.selected_folder
+      selected_folders[#selected_folders + 1] = state.selected_folder
+      escaped_folder_paths[state.selected_folder] = state.selected_folder:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1")
+    end
+  end
+
+  local has_folder_filter = #selected_folders > 0
+
   for _, tmpl in ipairs(state.templates) do
     local matches = true
 
     -- Filter by folder (supports multi-select and includes subfolders)
-    if state.selected_folder and state.selected_folder ~= "" then
-      -- Build list of selected folders (support both single and multi-select)
-      local selected_folders = {}
-
-      -- Check if we have multi-selection
-      if state.selected_folders and next(state.selected_folders) then
-        -- Multi-select: use all selected folders
-        for folder_path, _ in pairs(state.selected_folders) do
-          selected_folders[#selected_folders + 1] = folder_path
-        end
-      else
-        -- Single select: use state.selected_folder
-        selected_folders[#selected_folders + 1] = state.selected_folder
-      end
+    if has_folder_filter then
 
       -- Check if template matches any of the selected folders (including subfolders)
       local found_in_folder = false
@@ -382,14 +392,13 @@ function M.filter_templates(state)
 
           -- Check exact match OR if template path starts with folder path + separator
           local tmpl_path = tmpl.relative_path or ""
-          local sep = package.config:sub(1,1)
 
           if tmpl_path == folder_path then
             -- Exact match: template is directly in this folder
             found_in_folder = true
             break
-          elseif tmpl_path:find("^" .. folder_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1") .. sep) then
-            -- Template is in a subfolder
+          elseif tmpl_path:find("^" .. escaped_folder_paths[folder_path] .. sep) then
+            -- Template is in a subfolder (using pre-escaped path for performance)
             found_in_folder = true
             break
           end

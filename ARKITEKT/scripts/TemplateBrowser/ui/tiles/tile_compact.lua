@@ -5,8 +5,9 @@
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
-local Chip = require('arkitekt.gui.widgets.data.chip')
 local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
+local TileHelpers = require('TemplateBrowser.ui.tiles.helpers')
+
 local M = {}
 local hexrgb = ark.Colors.hexrgb
 
@@ -24,46 +25,9 @@ M.CONFIG = {
   chip_height = 14,
 }
 
--- Truncate text to fit width
-local function truncate_text(ctx, text, max_width)
-  if not text or max_width <= 0 then return "" end
-
-  local text_width = ImGui.CalcTextSize(ctx, text)
-  if text_width <= max_width then return text end
-
-  local ellipsis = "..."
-  local ellipsis_width = ImGui.CalcTextSize(ctx, ellipsis)
-  local available_width = max_width - ellipsis_width
-
-  for i = #text, 1, -1 do
-    local truncated = text:sub(1, i)
-    if ImGui.CalcTextSize(ctx, truncated) <= available_width then
-      return truncated .. ellipsis
-    end
-  end
-
-  return ellipsis
-end
-
--- Check if template is favorited
-local function is_favorited(template_uuid, metadata)
-  if not metadata or not metadata.virtual_folders then
-    return false
-  end
-
-  local favorites = metadata.virtual_folders["__FAVORITES__"]
-  if not favorites or not favorites.template_refs then
-    return false
-  end
-
-  for _, ref_uuid in ipairs(favorites.template_refs) do
-    if ref_uuid == template_uuid then
-      return true
-    end
-  end
-
-  return false
-end
+-- Local aliases for frequently used helpers
+local truncate_text = TileHelpers.truncate_text
+local is_favorited = TileHelpers.is_favorited
 
 -- Render compact template tile (horizontal list style)
 function M.render(ctx, rect, template, state, metadata, animator)
