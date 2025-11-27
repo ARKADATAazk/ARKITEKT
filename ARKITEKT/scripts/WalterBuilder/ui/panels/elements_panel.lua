@@ -167,6 +167,73 @@ function Panel:draw_element_item(ctx, def)
   return nil
 end
 
+-- Draw a custom element item (element from rtconfig that has no definition)
+function Panel:draw_custom_element_item(ctx, elem)
+  local is_hidden = not elem.visible
+
+  -- Custom elements get a distinct color
+  local cat_color = hexrgb("#9966CC")  -- Purple for custom
+  if is_hidden then
+    cat_color = hexrgb("#555555")
+  end
+
+  -- Display name with status
+  local label = elem.name or elem.id
+  if is_hidden then
+    label = label .. " [hidden]"
+  else
+    label = label .. " +"
+  end
+
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
+
+  -- Draw as DOT style chip
+  local clicked, chip_w, chip_h = Chip.draw(ctx, {
+    id = "custom_" .. elem.id,
+    style = Chip.STYLE.DOT,
+    label = label,
+    color = cat_color,
+    height = 26,
+    explicit_width = avail_w - 8,
+    is_selected = false,
+    interactive = true,
+    rounding = 4,
+    dot_shape = Chip.SHAPE.SQUARE,
+    dot_rounding = 2,
+  })
+
+  -- Right-click toggles visibility
+  if ImGui.IsItemClicked(ctx, 1) then
+    return "toggle", elem
+  end
+
+  -- Tooltip
+  if ImGui.IsItemHovered(ctx) then
+    ImGui.BeginTooltip(ctx)
+    ImGui.Text(ctx, elem.id)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#9966CC"))
+    ImGui.Text(ctx, "(custom element from rtconfig)")
+    ImGui.PopStyleColor(ctx)
+    if is_hidden then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CC6666"))
+      ImGui.Text(ctx, "(hidden - right-click to show)")
+      ImGui.PopStyleColor(ctx)
+    else
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CC88"))
+      ImGui.Text(ctx, "(click to select, right-click to hide)")
+      ImGui.PopStyleColor(ctx)
+    end
+    ImGui.EndTooltip(ctx)
+  end
+
+  -- Click to select
+  if clicked then
+    return "select_active", elem
+  end
+
+  return nil
+end
+
 -- Main draw function
 function Panel:draw(ctx)
   local result = nil
@@ -232,6 +299,48 @@ function Panel:draw(ctx)
           ImGui.Unindent(ctx, 4)
         end
       end
+    end
+  end
+
+  -- Customs section: show custom elements from rtconfig
+  local custom_elements = {}
+  for _, elem in pairs(self.active_elements) do
+    if elem.is_custom then
+      -- Apply search filter
+      local name_lower = (elem.name or elem.id):lower()
+      local id_lower = elem.id:lower()
+      if search_lower == "" or name_lower:find(search_lower, 1, true) or id_lower:find(search_lower, 1, true) then
+        custom_elements[#custom_elements + 1] = elem
+      end
+    end
+  end
+
+  if #custom_elements > 0 then
+    -- Sort by ID for consistent ordering
+    table.sort(custom_elements, function(a, b) return a.id < b.id end)
+
+    ImGui.Dummy(ctx, 0, 8)
+
+    local display_name = "Customs (" .. #custom_elements .. ")"
+    local header_open, header_action = self:draw_category_header(ctx, "customs", display_name)
+
+    if header_action == "toggle_category" then
+      result = { type = "toggle_category", category = "customs" }
+    end
+
+    if header_open then
+      ImGui.Indent(ctx, 4)
+
+      for _, elem in ipairs(custom_elements) do
+        local action, target = self:draw_custom_element_item(ctx, elem)
+        if action == "toggle" then
+          result = { type = "toggle", element = target }
+        elseif action == "select_active" then
+          result = { type = "select_active", element = target }
+        end
+      end
+
+      ImGui.Unindent(ctx, 4)
     end
   end
 

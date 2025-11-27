@@ -20,6 +20,7 @@ local Coordinate = require('WalterBuilder.domain.coordinate')
 local RtconfigParser = require('WalterBuilder.domain.rtconfig_parser')
 local ExpressionEval = require('WalterBuilder.domain.expression_eval')
 local Console = require('WalterBuilder.ui.panels.debug_console')
+local TCPElements = require('WalterBuilder.defs.tcp_elements')
 
 local M = {}
 
@@ -317,6 +318,9 @@ local function convert_set_item(item, context)
     end
   end
 
+  -- Check if this is a custom element (not in default definitions)
+  local is_custom = TCPElements.get_definition(item.element) == nil
+
   local element = Element.new({
     id = item.element,
     name = get_display_name(item.element),
@@ -327,6 +331,7 @@ local function convert_set_item(item, context)
     is_color = flags.is_color,
     is_font = flags.is_font,
     is_margin = flags.is_margin,
+    is_custom = is_custom,
     description = item.comment or "",
   })
 
@@ -347,6 +352,9 @@ local function convert_clear_item(item)
 
   local flags = get_element_flags(item.element)
 
+  -- Check if this is a custom element (not in default definitions)
+  local is_custom = TCPElements.get_definition(item.element) == nil
+
   local element = Element.new({
     id = item.element,
     name = get_display_name(item.element),
@@ -357,6 +365,7 @@ local function convert_clear_item(item)
     is_color = flags.is_color,
     is_font = flags.is_font,
     is_margin = flags.is_margin,
+    is_custom = is_custom,
   })
 
   return element

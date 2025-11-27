@@ -234,10 +234,20 @@ end
 -- Handle toggle all elements in a category
 function GUI:handle_toggle_category(category)
   local elements = self.State.get_elements()
+
+  -- Helper to check if element matches category
+  local function matches_category(elem)
+    if category == "customs" then
+      return elem.is_custom
+    else
+      return elem.category == category
+    end
+  end
+
   -- Check if any element in category is visible
   local any_visible = false
   for _, elem in ipairs(elements) do
-    if elem.category == category and elem.visible then
+    if matches_category(elem) and elem.visible then
       any_visible = true
       break
     end
@@ -246,7 +256,7 @@ function GUI:handle_toggle_category(category)
   -- Toggle: if any visible, hide all; if all hidden, show all
   local new_visible = not any_visible
   for _, elem in ipairs(elements) do
-    if elem.category == category then
+    if matches_category(elem) then
       elem.visible = new_visible
     end
   end
