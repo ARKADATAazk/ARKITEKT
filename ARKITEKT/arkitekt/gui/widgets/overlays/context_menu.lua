@@ -82,12 +82,11 @@ function M.begin(ctx, id, config)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, rounding)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_PopupRounding, rounding)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)  -- No border, we'll draw our own
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, border_thickness)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowMinSize, min_width, 0)
 
-  -- Make popup background transparent so we can draw shadow behind it
-  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, Colors.with_opacity(bg_color, 0))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, Colors.with_opacity(border_color, 0))
+  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, bg_color)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, border_color)
 
   local popup_open = ImGui.BeginPopup(ctx, id)
 
@@ -100,55 +99,54 @@ function M.begin(ctx, id, config)
     local ww, wh = ImGui.GetWindowSize(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
 
+    -- Expand clip rect to allow shadow to be drawn outside popup bounds
+    ImGui.DrawList_PushClipRect(dl, wx - 12, wy - 12, wx + ww + 12, wy + wh + 12, false)
+
     -- Base black color
     local black = hexrgb("#000000")
 
-    -- Shadow parameters
-    local shadow_offset_x = 2
-    local shadow_offset_y = 3
+    -- Shadow parameters (subtle, extends beyond popup)
+    local shadow_offset_x = 1
+    local shadow_offset_y = 2
 
-    -- Multi-layer shadow for depth (drawn first, so it's behind everything)
-    -- Outer glow (largest, most transparent)
-    local spread_1 = 8
+    -- Very subtle multi-layer shadow that extends outside popup bounds
+    -- Outer glow (extends beyond edges)
+    local spread_1 = 6
     ImGui.DrawList_AddRectFilled(
       dl,
       wx + shadow_offset_x - spread_1,
       wy + shadow_offset_y - spread_1,
       wx + ww + shadow_offset_x + spread_1,
       wy + wh + shadow_offset_y + spread_1,
-      Colors.with_opacity(black, 0.08),
+      Colors.with_opacity(black, 0.04),
       rounding + spread_1
     )
 
-    -- Middle layer
-    local spread_2 = 5
+    -- Middle layer (smaller spread)
+    local spread_2 = 3
     ImGui.DrawList_AddRectFilled(
       dl,
       wx + shadow_offset_x - spread_2,
       wy + shadow_offset_y - spread_2,
       wx + ww + shadow_offset_x + spread_2,
       wy + wh + shadow_offset_y + spread_2,
-      Colors.with_opacity(black, 0.12),
+      Colors.with_opacity(black, 0.05),
       rounding + spread_2
     )
 
-    -- Inner shadow (smallest, most opaque)
-    local spread_3 = 2
+    -- Inner shadow (closest to popup edge)
+    local spread_3 = 1
     ImGui.DrawList_AddRectFilled(
       dl,
       wx + shadow_offset_x - spread_3,
       wy + shadow_offset_y - spread_3,
       wx + ww + shadow_offset_x + spread_3,
       wy + wh + shadow_offset_y + spread_3,
-      Colors.with_opacity(black, 0.15),
+      Colors.with_opacity(black, 0.06),
       rounding + spread_3
     )
 
-    -- Draw popup background (on top of shadow)
-    ImGui.DrawList_AddRectFilled(dl, wx, wy, wx + ww, wy + wh, bg_color, rounding)
-
-    -- Draw border
-    ImGui.DrawList_AddRect(dl, wx, wy, wx + ww, wy + wh, border_color, rounding, 0, border_thickness)
+    ImGui.DrawList_PopClipRect(dl)
   end
 
   return popup_open
