@@ -137,7 +137,7 @@ function GUI:draw(ctx, shell_state)
 
   -- Get screen dimensions
   local SCREEN_W, SCREEN_H
-  if is_overlay_mode and shell_state.overlay_state then
+  if is_overlay_mode and shell_state.overlay_state and shell_state.overlay_state.width then
     -- Overlay mode: bounds already account for multi-monitor via overlay manager's JS API
     SCREEN_W = shell_state.overlay_state.width
     SCREEN_H = shell_state.overlay_state.height
