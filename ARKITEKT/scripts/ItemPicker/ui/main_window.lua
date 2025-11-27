@@ -6,6 +6,7 @@ local ImGui = require 'imgui' '0.10'
 local Coordinator = require('ItemPicker.ui.grids.coordinator')
 local LayoutView = require('ItemPicker.ui.components.layout_view')
 local TrackFilter = require('ItemPicker.ui.components.track_filter')
+local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
 
 local M = {}
 local GUI = {}
@@ -398,8 +399,8 @@ function GUI:draw(ctx, shell_state)
   ImGui.PopFont(ctx)
 
   -- Keyboard shortcuts (only when not typing in text fields)
-  -- Check if any ImGui item (text input, etc.) is currently active/focused
-  local text_input_active = ImGui.IsAnyItemActive(ctx)
+  -- Check if any text input is active using both ImGui's system and ark.InputText's tracker
+  local text_input_active = ImGui.IsAnyItemActive(ctx) or InputText.is_any_active()
   if not self.state.rename_active and not text_input_active then
     -- M: Toggle muted items/tracks (respects user's checkbox preferences)
     if ImGui.IsKeyPressed(ctx, ImGui.Key_M) then

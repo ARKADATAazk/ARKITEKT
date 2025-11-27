@@ -378,6 +378,18 @@ function M.clear(id)
   end
 end
 
+--- Check if any text input is currently active/focused
+--- Useful for blocking keyboard shortcuts when typing
+--- @return boolean True if any text input has focus
+function M.is_any_active()
+  for _, state in pairs(field_state) do
+    if state.focused then
+      return true
+    end
+  end
+  return false
+end
+
 --- Clean up all field instances
 function M.cleanup()
   Base.cleanup_registry(field_state)
