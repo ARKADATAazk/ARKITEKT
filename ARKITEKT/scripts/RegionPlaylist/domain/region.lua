@@ -13,7 +13,8 @@ local DEBUG_DOMAIN = false
 --- @return table domain The region domain instance
 function M.new()
   local domain = {
-    region_index = {},  -- Map: RID (number) -> region object {rid, name, color, ...}
+    region_index = {},  -- Map: RID (number) -> region object {rid, guid, name, color, ...}
+    guid_index = {},    -- Map: GUID (string) -> region object (for stable lookups)
     pool_order = {},    -- Array of RIDs defining custom pool order
   }
 
@@ -26,6 +27,31 @@ function M.new()
   --- @return table|nil region Region object or nil if not found
   function domain:get_region_by_rid(rid)
     return self.region_index[rid]
+  end
+
+  --- Get region by GUID (stable identifier that survives renumbering)
+  --- @param guid string Region GUID
+  --- @return table|nil region Region object or nil if not found
+  function domain:get_region_by_guid(guid)
+    if not guid then return nil end
+    return self.guid_index[guid]
+  end
+
+  --- Resolve a region reference (tries GUID first, falls back to RID)
+  --- @param guid string|nil Region GUID (preferred)
+  --- @param rid number|nil Region ID (fallback)
+  --- @return table|nil region Region object or nil if not found
+  function domain:resolve_region(guid, rid)
+    -- Try GUID first (stable across renumbering)
+    if guid then
+      local region = self.guid_index[guid]
+      if region then return region end
+    end
+    -- Fall back to RID
+    if rid then
+      return self.region_index[rid]
+    end
+    return nil
   end
 
   --- Get full region index
@@ -54,11 +80,16 @@ function M.new()
   function domain:refresh_from_bridge(regions)
     -- Clear existing data
     self.region_index = {}
+    self.guid_index = {}
     self.pool_order = {}
 
     -- Rebuild from bridge data
     for _, region in ipairs(regions) do
       self.region_index[region.rid] = region
+      -- Also index by GUID for stable lookups
+      if region.guid then
+        self.guid_index[region.guid] = region
+      end
       self.pool_order[#self.pool_order + 1] = region.rid
     end
 

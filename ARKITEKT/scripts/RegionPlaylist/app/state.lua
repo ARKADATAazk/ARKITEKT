@@ -564,27 +564,45 @@ end
 
 function M.cleanup_deleted_regions()
   local removed_any = false
-  local region_index = M.get_region_index()
+  local updated_any = false
   local playlists = M.playlist:get_all()
 
   for _, pl in ipairs(playlists) do
     local i = 1
     while i <= #pl.items do
       local item = pl.items[i]
-      if item.type == "region" and not region_index[item.rid] then
-        table.remove(pl.items, i)
-        removed_any = true
-        M.add_pending_destroy(item.key)
+      if item.type == "region" then
+        -- Try to resolve region using GUID first (survives renumbering), then RID
+        local region = M.region:resolve_region(item.guid, item.rid)
+
+        if region then
+          -- Region found - check if RID needs updating (was renumbered)
+          if item.rid ~= region.rid then
+            item.rid = region.rid
+            updated_any = true
+          end
+          -- Also update GUID if it was missing (migration from old data)
+          if not item.guid and region.guid then
+            item.guid = region.guid
+            updated_any = true
+          end
+          i = i + 1
+        else
+          -- Region truly deleted - remove from playlist
+          table.remove(pl.items, i)
+          removed_any = true
+          M.add_pending_destroy(item.key)
+        end
       else
         i = i + 1
       end
     end
   end
-  
-  if removed_any then
+
+  if removed_any or updated_any then
     M.persist()
   end
-  
+
   return removed_any
 end
 
