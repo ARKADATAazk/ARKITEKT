@@ -139,6 +139,19 @@ function M.add_element(def)
   return elem
 end
 
+-- Add a pre-built Element object directly (for rtconfig loading)
+function M.add_element_direct(element)
+  -- Check if already exists
+  if M.get_element(element.id) then
+    return nil  -- Already in layout
+  end
+
+  -- Clone the element to avoid external mutation
+  local elem = element:clone()
+  state.elements[#state.elements + 1] = elem
+  return elem
+end
+
 -- Remove element
 function M.remove_element(element)
   for i, elem in ipairs(state.elements) do

@@ -281,6 +281,47 @@ function GUI:handle_add_track()
   end
 end
 
+-- Handle loading elements from rtconfig to canvas
+function GUI:handle_load_from_rtconfig(action)
+  if not action or not action.elements then return end
+
+  -- Clear existing elements first
+  if self.controller then
+    self.controller:clear_elements()
+  else
+    self.State.clear_elements()
+  end
+
+  -- Update context to match what was loaded
+  if action.context then
+    self.State.set_context(action.context)
+  end
+
+  -- Add each element
+  local loaded_count = 0
+  for _, element in ipairs(action.elements) do
+    if self.controller then
+      self.controller:add_element_direct(element)
+    else
+      self.State.add_element_direct(element)
+    end
+    loaded_count = loaded_count + 1
+  end
+
+  -- Sync canvas
+  self:sync_canvas()
+  self.code_panel:invalidate()
+
+  -- Show notification
+  local msg = string.format("Loaded %d elements from rtconfig", loaded_count)
+  if action.stats then
+    if action.stats.computed > 0 then
+      msg = msg .. string.format(" (%d computed)", action.stats.computed)
+    end
+  end
+  self.notification:set_message(msg, "success")
+end
+
 -- Draw toolbar using Button widget
 function GUI:draw_toolbar(ctx)
   local x, y = ImGui.GetCursorScreenPos(ctx)
@@ -669,7 +710,15 @@ function GUI:draw(ctx, window, shell_state)
     -- rtconfig tab (theme file viewer)
     if ImGui.BeginTabItem(ctx, "rtconfig") then
       ImGui.Dummy(ctx, 0, 4)
-      self.rtconfig_panel:draw(ctx)
+      local rtconfig_result = self.rtconfig_panel:draw(ctx)
+
+      -- Handle rtconfig actions
+      if rtconfig_result then
+        if rtconfig_result.type == "load_to_canvas" then
+          self:handle_load_from_rtconfig(rtconfig_result)
+        end
+      end
+
       ImGui.EndTabItem(ctx)
     end
 

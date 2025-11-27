@@ -5,6 +5,7 @@
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 local RtconfigParser = require('WalterBuilder.domain.rtconfig_parser')
+local RtconfigConverter = require('WalterBuilder.domain.rtconfig_converter')
 local ThemeConnector = require('WalterBuilder.domain.theme_connector')
 local Colors = require('WalterBuilder.defs.colors')
 
@@ -23,12 +24,17 @@ function M.new(opts)
     theme_info = nil,
     load_error = nil,
 
+    -- Conversion cache
+    conversion_result = nil,
+    conversion_stats = nil,
+
     -- UI state
     selected_section = nil,
     selected_layout = nil,
     selected_macro = nil,
     show_raw = false,
     filter_text = "",
+    current_context = "tcp",  -- tcp, mcp, envcp, trans
 
     -- Splitter state
     tree_width = 200,
@@ -38,15 +44,31 @@ function M.new(opts)
 
     -- Callbacks
     on_element_select = opts.on_element_select,
+    on_load_to_canvas = opts.on_load_to_canvas,  -- Called when user wants to load elements
   }, Panel)
 
   return self
+end
+
+-- Update conversion cache when rtconfig or context changes
+function Panel:update_conversion()
+  if not self.rtconfig then
+    self.conversion_result = nil
+    self.conversion_stats = nil
+    return
+  end
+
+  -- Convert elements for current context
+  self.conversion_result = RtconfigConverter.convert_layout(self.rtconfig, nil, self.current_context)
+  self.conversion_stats = RtconfigConverter.get_stats(self.conversion_result)
 end
 
 -- Load rtconfig from current theme
 function Panel:load_from_theme()
   self.load_error = nil
   self.rtconfig = nil
+  self.conversion_result = nil
+  self.conversion_stats = nil
 
   local result, err = ThemeConnector.load_current_rtconfig()
   if not result then
@@ -56,6 +78,7 @@ function Panel:load_from_theme()
 
   self.rtconfig = result.parsed
   self.theme_info = result.info
+  self:update_conversion()
   return true
 end
 
@@ -63,6 +86,8 @@ end
 function Panel:load_from_file(path)
   self.load_error = nil
   self.rtconfig = nil
+  self.conversion_result = nil
+  self.conversion_stats = nil
 
   local result, err = ThemeConnector.load_rtconfig(path)
   if not result then
@@ -72,7 +97,22 @@ function Panel:load_from_file(path)
 
   self.rtconfig = result.parsed
   self.theme_info = { rtconfig_path = path }
+  self:update_conversion()
   return true
+end
+
+-- Set the context filter (tcp, mcp, etc.)
+function Panel:set_context(context)
+  if self.current_context ~= context then
+    self.current_context = context
+    self:update_conversion()
+  end
+end
+
+-- Get elements ready for loading to canvas
+function Panel:get_loadable_elements()
+  if not self.conversion_result then return nil end
+  return RtconfigConverter.extract_elements(self.conversion_result, true, false)
 end
 
 -- Draw summary section
@@ -104,6 +144,107 @@ function Panel:draw_summary(ctx)
     summary.element_count,
     summary.simple_element_count,
     summary.computed_element_count))
+end
+
+-- Draw the "Load to Canvas" controls
+-- Returns action table if user clicked load, nil otherwise
+function Panel:draw_load_controls(ctx)
+  if not self.rtconfig then
+    return nil
+  end
+
+  ImGui.Separator(ctx)
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Context selector
+  ImGui.Text(ctx, "Context:")
+  ImGui.SameLine(ctx)
+
+  local contexts = { "tcp", "mcp", "envcp", "trans" }
+  for i, ctx_name in ipairs(contexts) do
+    if i > 1 then ImGui.SameLine(ctx) end
+
+    local is_selected = self.current_context == ctx_name
+    if is_selected then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#4488AA"))
+    end
+
+    if ImGui.SmallButton(ctx, ctx_name:upper()) then
+      self:set_context(ctx_name)
+    end
+
+    if is_selected then
+      ImGui.PopStyleColor(ctx)
+    end
+  end
+
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Conversion stats
+  if self.conversion_stats then
+    local stats = self.conversion_stats
+
+    -- Simple elements (fully understood)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CC88"))
+    ImGui.Text(ctx, string.format("Simple: %d", stats.simple))
+    ImGui.PopStyleColor(ctx)
+
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.BeginTooltip(ctx)
+      ImGui.Text(ctx, "Elements with literal coordinates")
+      ImGui.Text(ctx, "These can be visualized accurately")
+      ImGui.EndTooltip(ctx)
+    end
+
+    ImGui.SameLine(ctx, 0, 15)
+
+    -- Computed elements (expressions)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCC88"))
+    ImGui.Text(ctx, string.format("Computed: %d", stats.computed))
+    ImGui.PopStyleColor(ctx)
+
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.BeginTooltip(ctx)
+      ImGui.Text(ctx, "Elements with expressions (w<100, +, etc.)")
+      ImGui.Text(ctx, "Shown with placeholder coords")
+      ImGui.EndTooltip(ctx)
+    end
+
+    if stats.cleared > 0 then
+      ImGui.SameLine(ctx, 0, 15)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+      ImGui.Text(ctx, string.format("Cleared: %d", stats.cleared))
+      ImGui.PopStyleColor(ctx)
+    end
+  end
+
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Load button
+  local can_load = self.conversion_stats and self.conversion_stats.total > 0
+  if not can_load then
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, 0.5)
+  end
+
+  local load_clicked = ImGui.Button(ctx, "Load to Canvas", -1, 28)
+
+  if not can_load then
+    ImGui.PopStyleVar(ctx)
+  end
+
+  if load_clicked and can_load then
+    local elements = self:get_loadable_elements()
+    if elements and #elements > 0 then
+      return {
+        type = "load_to_canvas",
+        elements = elements,
+        context = self.current_context,
+        stats = self.conversion_stats,
+      }
+    end
+  end
+
+  return nil
 end
 
 -- Draw sections tree
@@ -402,7 +543,10 @@ function Panel:draw_macro_detail(ctx, macro)
 end
 
 -- Main draw function
+-- Returns action table if user performs an action, nil otherwise
 function Panel:draw(ctx)
+  local result = nil
+
   -- Load buttons
   if ImGui.Button(ctx, "Load from Theme", 120, 0) then
     self:load_from_theme()
@@ -438,6 +582,9 @@ function Panel:draw(ctx)
 
   -- Summary
   self:draw_summary(ctx)
+
+  -- Load to Canvas controls
+  result = self:draw_load_controls(ctx)
 
   ImGui.Dummy(ctx, 0, 8)
 
@@ -493,6 +640,8 @@ function Panel:draw(ctx)
   self:draw_detail(ctx)
   ImGui.Unindent(ctx, 4)
   ImGui.EndChild(ctx)
+
+  return result
 end
 
 return M
