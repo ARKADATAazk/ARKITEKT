@@ -22,6 +22,7 @@
 | **Drag Visual** | `gui/interaction/drag_visual.lua` | RegionPlaylist | - |
 | **Marching Ants** | `gui/interaction/marching_ants.lua` | TemplateBrowser, ItemPicker, RegionPlaylist | - |
 | **Blocking** | `gui/interaction/blocking.lua` | Framework (tab_strip) | - |
+| **Sliding Zone** | `gui/widgets/containers/sliding_zone.lua` | - | ItemPicker (has local impl) |
 
 ### ⚠️ Exists but UNUSED (scripts have own copies)
 
@@ -174,6 +175,17 @@ These modules were extracted to framework but RegionPlaylist never migrated to u
   - Priority levels (error > warning > info)
   - **Found in**: RegionPlaylist (ui/state/notification.lua)
 
+### Track Filter (High Value)
+- [ ] **arkitekt/gui/widgets/track_filter.lua** - Hierarchical track tree filter
+  - Build track tree from REAPER project (folder hierarchy)
+  - Whitelist/blacklist with parent inheritance
+  - Paint-to-select interaction (left=enable, right=disable)
+  - Depth slider for expand/collapse levels
+  - "All" / "None" buttons
+  - ~780 lines (`track_filter.lua` + `track_filter_bar.lua`)
+  - **Found in**: ItemPicker (`ui/components/track_filter.lua`, `track_filter_bar.lua`)
+  - **Reuse potential**: Any script needing track-based filtering (RegionPlaylist, TemplateBrowser)
+
 ---
 
 ## Lower Priority
@@ -194,19 +206,24 @@ These modules were extracted to framework but RegionPlaylist never migrated to u
   - **Found in**: RegionPlaylist, ItemPicker
 
 ### Incremental Loader
-- [ ] **arkitekt/core/incremental_loader.lua** - Progressive loading
-  - Batch processing with progress callbacks
-  - **Found in**: ItemPicker (data/loaders/incremental_loader.lua)
+- [ ] **arkitekt/core/incremental_loader.lua** - Progressive batch loading
+  - Process large datasets in small batches per frame (avoid UI blocking)
+  - Progress callbacks (`is_complete`, `progress 0-1`)
+  - Configurable batch size
+  - Hash-based duplicate detection
+  - ~650 lines
+  - **Found in**: ItemPicker (`data/loaders/incremental_loader.lua`)
+  - **Reuse potential**: Any script loading large datasets (templates, samples, items)
 
 ---
 
 ## Script Audit Summary
 
-| Script | Uses Framework | Has Local Copy (should migrate) | Reimplements |
-|--------|---------------|--------------------------------|--------------|
+| Script | Uses Framework | Has Local Copy (should migrate) | Extraction Candidates |
+|--------|---------------|--------------------------------|----------------------|
 | **RegionPlaylist** | sorting, status_bar, drag_visual, marching_ants | dependency, tree_expander, shuffle, undo | selection |
 | **TemplateBrowser** | drag_drop, marching_ants | - | sorting, status_bar, selection |
-| **ItemPicker** | marching_ants | - | sorting, status_bar, selection, drag |
+| **ItemPicker** | marching_ants | sliding_zone (partial) | track_filter, incremental_loader, search_toolbar |
 | **ThemeAdjuster** | grid | - | ? |
 | **WalterBuilder** | button, slider, checkbox, chip | - | ? |
 
@@ -228,8 +245,15 @@ These modules were extracted to framework but RegionPlaylist never migrated to u
 7. [ ] Compare shuffle implementations - migrate if equivalent
 8. [ ] Audit tree_expander and composite_undo for migration feasibility
 
+### ItemPicker Migrations
+9. [ ] Migrate ItemPicker to use framework `sliding_zone.lua`
+   - Framework version is 907 lines, feature-rich
+   - Supports: 4 edges, hover trigger, directional retract delays, group coordination
+   - ItemPicker has partial local implementation
+
 ### Future Extraction
-9. [ ] Extract search/filter pattern to `core/filter.lua` after sorting migrations complete
+10. [ ] Extract search/filter pattern to `core/filter.lua` after sorting migrations complete
+11. [ ] Extract track_filter from ItemPicker (high value, reusable)
 
 ---
 
