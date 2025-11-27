@@ -47,6 +47,40 @@ local function deterministic_color_from_id(id)
   return ark.Colors.components_to_rgba(r, g, b, 0xFF)
 end
 
+-- Build a human-readable status message from undo/redo changes
+local function _build_changes_message(prefix, changes)
+  local parts = {}
+
+  if changes.playlists_count > 0 then
+    parts[#parts + 1] = string.format("%d playlist%s",
+      changes.playlists_count,
+      changes.playlists_count ~= 1 and "s" or "")
+  end
+
+  if changes.items_count > 0 then
+    parts[#parts + 1] = string.format("%d item%s",
+      changes.items_count,
+      changes.items_count ~= 1 and "s" or "")
+  end
+
+  if changes.regions_renamed > 0 then
+    parts[#parts + 1] = string.format("%d region%s renamed",
+      changes.regions_renamed,
+      changes.regions_renamed ~= 1 and "s" or "")
+  end
+
+  if changes.regions_recolored > 0 then
+    parts[#parts + 1] = string.format("%d region%s recolored",
+      changes.regions_recolored,
+      changes.regions_recolored ~= 1 and "s" or "")
+  end
+
+  if #parts > 0 then
+    return prefix .. ": " .. table.concat(parts, ", ")
+  end
+  return prefix
+end
+
 -- Re-export mode constants for backward compatibility
 M.POOL_MODES = Constants.POOL_MODES
 M.LAYOUT_MODES = Constants.LAYOUT_MODES
@@ -418,26 +452,7 @@ function M.undo()
   local success, changes = M.restore_snapshot(snapshot)
 
   if success and changes then
-    -- Build status message from changes
-    local parts = {}
-    if changes.playlists_count > 0 then
-      parts[#parts + 1] = string.format("%d playlist%s", changes.playlists_count, changes.playlists_count ~= 1 and "s" or "")
-    end
-    if changes.items_count > 0 then
-      parts[#parts + 1] = string.format("%d item%s", changes.items_count, changes.items_count ~= 1 and "s" or "")
-    end
-    if changes.regions_renamed > 0 then
-      parts[#parts + 1] = string.format("%d region%s renamed", changes.regions_renamed, changes.regions_renamed ~= 1 and "s" or "")
-    end
-    if changes.regions_recolored > 0 then
-      parts[#parts + 1] = string.format("%d region%s recolored", changes.regions_recolored, changes.regions_recolored ~= 1 and "s" or "")
-    end
-
-    if #parts > 0 then
-      M.set_state_change_notification("Undo: " .. table.concat(parts, ", "))
-    else
-      M.set_state_change_notification("Undo")
-    end
+    M.set_state_change_notification(_build_changes_message("Undo", changes))
   end
 
   return success
@@ -452,26 +467,7 @@ function M.redo()
   local success, changes = M.restore_snapshot(snapshot)
 
   if success and changes then
-    -- Build status message from changes
-    local parts = {}
-    if changes.playlists_count > 0 then
-      parts[#parts + 1] = string.format("%d playlist%s", changes.playlists_count, changes.playlists_count ~= 1 and "s" or "")
-    end
-    if changes.items_count > 0 then
-      parts[#parts + 1] = string.format("%d item%s", changes.items_count, changes.items_count ~= 1 and "s" or "")
-    end
-    if changes.regions_renamed > 0 then
-      parts[#parts + 1] = string.format("%d region%s renamed", changes.regions_renamed, changes.regions_renamed ~= 1 and "s" or "")
-    end
-    if changes.regions_recolored > 0 then
-      parts[#parts + 1] = string.format("%d region%s recolored", changes.regions_recolored, changes.regions_recolored ~= 1 and "s" or "")
-    end
-
-    if #parts > 0 then
-      M.set_state_change_notification("Redo: " .. table.concat(parts, ", "))
-    else
-      M.set_state_change_notification("Redo")
-    end
+    M.set_state_change_notification(_build_changes_message("Redo", changes))
   end
 
   return success

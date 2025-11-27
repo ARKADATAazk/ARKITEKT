@@ -91,29 +91,24 @@ function M.create(opts)
     on_transition_scheduled = opts.on_transition_scheduled,
   })
 
+  -- Resolve active playlist using waterfall pattern (first match wins)
   local function resolve_active_playlist()
+    -- Primary: Direct accessor (set during initialization)
     local playlist = safe_call(bridge.get_active_playlist)
     if playlist then return playlist end
 
-    if bridge.controller and bridge.controller.state and bridge.controller.state.get_active_playlist then
-      playlist = safe_call(function()
-        return bridge.controller.state.get_active_playlist()
-      end)
+    -- Secondary: Via controller state accessor
+    local ctrl_state = bridge.controller and bridge.controller.state
+    if ctrl_state and ctrl_state.get_active_playlist then
+      playlist = safe_call(ctrl_state.get_active_playlist)
       if playlist then return playlist end
     end
 
-    if bridge.get_active_playlist_id and bridge.get_playlist_by_id then
-      local playlist_id = safe_call(bridge.get_active_playlist_id)
-      if playlist_id then
-        return bridge.get_playlist_by_id(playlist_id)
-      end
-    end
-
-    if bridge.controller and bridge.controller.state then
-      local active_id = bridge.controller.state.active_playlist
-      if active_id and bridge.get_playlist_by_id then
-        return bridge.get_playlist_by_id(active_id)
-      end
+    -- Tertiary: Look up by ID (combine both ID sources)
+    local playlist_id = safe_call(bridge.get_active_playlist_id)
+                     or (ctrl_state and ctrl_state.active_playlist)
+    if playlist_id and bridge.get_playlist_by_id then
+      return bridge.get_playlist_by_id(playlist_id)
     end
 
     return nil
