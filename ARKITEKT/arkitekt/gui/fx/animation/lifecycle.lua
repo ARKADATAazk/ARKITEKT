@@ -217,8 +217,129 @@ function DestroyAnim:remove(key)
   self.destroying[key] = nil
 end
 
--- Export both animation types
+-- =============================================================================
+-- DisableAnim: Disable animation with grey fade and slide down dissolve
+-- Used when items are disabled AND show_disabled_items = false
+-- =============================================================================
+-- Usage:
+--   local disabler = Lifecycle.DisableAnim.new({duration = 0.10})
+--   disabler:disable(key, rect)
+--   disabler:update(dt)
+--   disabler:render(ctx, dl, key, base_rect, base_color, rounding)
+
+local DisableAnim = {}
+DisableAnim.__index = DisableAnim
+
+function DisableAnim.new(opts)
+  opts = opts or {}
+
+  return setmetatable({
+    duration = opts.duration or 0.10,
+    disabling = {},
+    on_complete = opts.on_complete,
+  }, DisableAnim)
+end
+
+function DisableAnim:disable(key, rect, base_color)
+  if not key or not rect then return end
+
+  self.disabling[key] = {
+    elapsed = 0,
+    rect = {rect[1], rect[2], rect[3], rect[4]},
+    base_color = base_color or 0xFF555555,  -- Store original tile color
+  }
+end
+
+function DisableAnim:is_disabling(key)
+  return self.disabling[key] ~= nil
+end
+
+function DisableAnim:update(dt)
+  dt = dt or 0.016
+
+  local completed = {}
+
+  for key, anim in pairs(self.disabling) do
+    anim.elapsed = anim.elapsed + dt
+
+    if anim.elapsed >= self.duration then
+      completed[#completed + 1] = key
+    end
+  end
+
+  for _, key in ipairs(completed) do
+    self.disabling[key] = nil
+    if self.on_complete then
+      self.on_complete(key)
+    end
+  end
+end
+
+function DisableAnim:get_factor(key)
+  local anim = self.disabling[key]
+  if not anim then return 0 end
+
+  local t = math.min(1, anim.elapsed / self.duration)
+  return Easing.ease_out_quad(t)
+end
+
+function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding, icon_font, icon_font_size)
+  local anim = self.disabling[key]
+  if not anim then return false end
+
+  local t = math.min(1, anim.elapsed / self.duration)
+  local rect = anim.rect
+
+  -- Use stored base color from when animation was triggered
+  base_color = anim.base_color or base_color
+
+  local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
+  local cx = (x1 + x2) * 0.5
+  local cy = (y1 + y2) * 0.5
+  local w = x2 - x1
+  local h = y2 - y1
+
+  -- Slide down instead of zoom up
+  local slide_offset = t * h * 0.15  -- Slide down 15% of height
+  local ny1 = y1 + slide_offset
+  local ny2 = y2 + slide_offset
+
+  -- Simple dark grey animation
+  local grey = 0x40  -- Dark grey (64/255)
+  local a = (255 * (1 - Easing.ease_out_quad(t) * 0.9))//1
+
+  local fade_color = (grey << 24) | (grey << 16) | (grey << 8) | a
+
+  ImGui.DrawList_AddRectFilled(dl, x1, ny1, x2, ny2, fade_color, rounding)
+
+  -- Gaussian blur effect (same as destroy animation)
+  local blur_intensity = Easing.ease_out_quad(t)
+  local blur_layers = (blur_intensity * 3)//1 + 1
+  for i = 1, blur_layers do
+    local offset = i * 1.5 * blur_intensity
+    local blur_alpha = (a * 0.2 / blur_layers)//1
+    local blur_color = (grey << 24) | (grey << 16) | (grey << 8) | blur_alpha
+
+    ImGui.DrawList_AddRectFilled(dl,
+      x1 - offset, ny1 - offset,
+      x2 + offset, ny2 + offset,
+      blur_color, rounding + offset * 0.3)
+  end
+
+  return true
+end
+
+function DisableAnim:clear()
+  self.disabling = {}
+end
+
+function DisableAnim:remove(key)
+  self.disabling[key] = nil
+end
+
+-- Export all animation types
 M.SpawnTracker = SpawnTracker
 M.DestroyAnim = DestroyAnim
+M.DisableAnim = DisableAnim
 
 return M

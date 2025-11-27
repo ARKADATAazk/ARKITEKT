@@ -10,7 +10,7 @@ local shared = require('ItemPicker.ui.grids.factories.grid_factory_shared')
 
 local M = {}
 
-function M.create(ctx, config, state, visualization, animator)
+function M.create(ctx, config, state, visualization, animator, disable_animator)
   local grid  -- Forward declaration for selection cleanup
 
   local function get_items()
@@ -235,7 +235,7 @@ function M.create(ctx, config, state, visualization, animator)
 
     render_tile = function(ctx, rect, item_data, tile_state)
       local dl = ImGui.GetWindowDrawList(ctx)
-      AudioRenderer.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects)
+      AudioRenderer.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects, disable_animator)
     end,
   })
 

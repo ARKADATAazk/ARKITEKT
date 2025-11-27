@@ -11,7 +11,7 @@ local TileFX = require('arkitekt.gui.rendering.tile.renderer')
 
 local M = {}
 
-function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects)
+function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects, disable_animator)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local tile_w, tile_h = x2 - x1, y2 - y1
   local center_x, center_y = (x1 + x2) / 2, (y1 + y2) / 2
@@ -81,12 +81,18 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Get base color from item
   local base_color = item_data.color or 0xFF555555
 
+  -- Capture stable tile color BEFORE state effects (matching drag handler approach)
+  -- This is the "enabled" tile appearance that should be used for animations
+  local sat_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_saturation_factor or config.TILE_RENDER.base_fill.saturation_factor
+  local bright_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_brightness_factor or config.TILE_RENDER.base_fill.brightness_factor
+  local stable_tile_color = base_color
+  stable_tile_color = ark.Colors.desaturate(stable_tile_color, 1.0 - sat_factor)
+  stable_tile_color = ark.Colors.adjust_brightness(stable_tile_color, bright_factor)
+
   -- Apply muted and disabled state effects
   local render_color = BaseRenderer.apply_state_effects(base_color, muted_factor, enabled_factor, config)
 
   -- Apply base tile fill adjustments (use compact mode values for small tiles)
-  local sat_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_saturation_factor or config.TILE_RENDER.base_fill.saturation_factor
-  local bright_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_brightness_factor or config.TILE_RENDER.base_fill.brightness_factor
   render_color = ark.Colors.desaturate(render_color, 1.0 - sat_factor)
   render_color = ark.Colors.adjust_brightness(render_color, bright_factor)
 
@@ -116,6 +122,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     render_color = ark.Colors.adjust_brightness(render_color, 1.0 + selection_boost)
   end
 
+  -- Capture animation color BEFORE alpha modification (actual tile appearance color)
+  local animation_color = render_color
+
   -- Calculate combined alpha with state effects
   local base_alpha = (render_color & 0xFF) / 255
   local combined_alpha, final_alpha = BaseRenderer.calculate_combined_alpha(cascade_factor, enabled_factor, muted_factor, base_alpha, config)
@@ -140,11 +149,19 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- In normal mode (compact_factor = 0.0), header alpha should be normal
   local header_alpha_factor = 1.0 - compact_factor
 
+  -- Trigger disable animation if item is being disabled when show_disabled_items = false
+  if disable_animator and item_data.key and is_disabled and not state.settings.show_disabled_items then
+    if not disable_animator:is_disabling(item_data.key) then
+      -- Use animation_color (actual tile appearance before alpha) for matching color
+      disable_animator:disable(item_data.key, {scaled_x1, scaled_y1, scaled_x2, scaled_y2}, animation_color)
+    end
+  end
+
   -- Render base tile fill with rounding
   ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
 
-  -- Render dark backdrop for disabled items
-  if enabled_factor < 0.999 then
+  -- Render dark backdrop for disabled items (skip if show_disabled_items = false, animation handles it)
+  if enabled_factor < 0.999 and state.settings.show_disabled_items then
     local backdrop_alpha = config.TILE_RENDER.disabled.backdrop_alpha * (1.0 - enabled_factor) * cascade_factor
     local backdrop_color = ark.Colors.with_alpha(config.TILE_RENDER.disabled.backdrop_color, math.floor(backdrop_alpha))
     ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, backdrop_color, config.TILE.ROUNDING)
@@ -265,6 +282,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- Check if item is favorited
   local is_favorite = state.favorites and state.favorites.audio and state.favorites.audio[item_data.filename]
+
+  -- Use light yellow for favorite items (not muted)
+  local favorite_color = ark.Colors.hexrgb("#FFE87C")  -- Light yellow
+  local display_text_color = is_favorite and favorite_color or text_color
 
   -- Calculate star badge space - match cycle badge height dynamically
   local fav_cfg = config.TILE_RENDER.badges.favorite
@@ -443,7 +464,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Pass full x2 (cycle badge position stays fixed), use extra_text_margin for text truncation only
       BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, scaled_x2, header_height,
         item_data.name, item_data.index, item_data.total, render_color, text_alpha, config,
-        item_data.uuid, badge_rects, on_badge_click, extra_text_margin, text_color)
+        item_data.uuid, badge_rects, on_badge_click, extra_text_margin, display_text_color)
     end
   end
 
@@ -468,7 +489,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     local star_y = scaled_y1 + (header_height - star_badge_size) / 2
     local icon_size = fav_cfg.icon_size or state.icon_font_size
     Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite,
-      state.icon_font, icon_size, render_color, fav_cfg)
+      state.icon_font, icon_size, favorite_color, fav_cfg)
   end
 
   -- Render region tags (bottom left, only on larger tiles)
@@ -482,6 +503,32 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     local chip_x = scaled_x1 + chip_cfg.margin_left
     local chip_y = scaled_y2 - chip_cfg.height - chip_cfg.margin_bottom
 
+    -- Calculate available width for chips (accounting for duration if enabled)
+    local max_chip_x = scaled_x2 - chip_cfg.margin_left
+    local show_duration = state.settings.show_duration
+    if show_duration == nil then show_duration = true end
+    if show_duration and compact_factor < 0.5 and item_data.item then
+      local duration = reaper.GetMediaItemInfo_Value(item_data.item, "D_LENGTH")
+      if duration > 0 then
+        -- Calculate duration text width (same logic as duration rendering below)
+        local duration_text
+        if duration >= 3600 then
+          local hours = math.floor(duration / 3600)
+          local minutes = math.floor((duration % 3600) / 60)
+          local seconds = math.floor(duration % 60)
+          duration_text = string.format("%d:%02d:%02d", hours, minutes, seconds)
+        else
+          local minutes = math.floor(duration / 60)
+          local seconds = math.floor(duration % 60)
+          duration_text = string.format("%d:%02d", minutes, seconds)
+        end
+        local duration_w, _ = ImGui.CalcTextSize(ctx, duration_text)
+        local dt_cfg = config.TILE_RENDER.duration_text
+        -- Reserve space for duration text + its margin + extra spacing
+        max_chip_x = max_chip_x - duration_w - dt_cfg.margin_x - chip_cfg.margin_x
+      end
+    end
+
     -- Limit number of chips displayed
     local max_chips = config.REGION_TAGS.max_chips_per_tile
     local num_chips = math.min(#item_data.regions, max_chips)
@@ -493,12 +540,48 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
       local text_w, text_h = ImGui.CalcTextSize(ctx, region_name)
       local chip_w = text_w + chip_cfg.padding_x * 2
-      local chip_h = chip_cfg.height
 
-      -- Check if chip fits within tile width
-      if chip_x + chip_w > scaled_x2 - chip_cfg.margin_left then
-        break  -- Stop rendering if we run out of space
+      -- Check available space for this chip
+      local available_width = max_chip_x - chip_x
+      if available_width < chip_cfg.padding_x * 2 + 10 then
+        break  -- Not enough space for even a minimal chip
       end
+
+      -- Truncate text if needed to fit
+      local display_name = region_name
+      if chip_w > available_width then
+        -- Binary search to find max text that fits with "..."
+        local ellipsis = "..."
+        local ellipsis_w, _ = ImGui.CalcTextSize(ctx, ellipsis)
+        local target_w = available_width - chip_cfg.padding_x * 2 - ellipsis_w
+
+        if target_w > 0 then
+          local low, high = 1, #region_name
+          local best_len = 0
+          while low <= high do
+            local mid = math.floor((low + high) / 2)
+            local test_text = region_name:sub(1, mid)
+            local test_w, _ = ImGui.CalcTextSize(ctx, test_text)
+            if test_w <= target_w then
+              best_len = mid
+              low = mid + 1
+            else
+              high = mid - 1
+            end
+          end
+          if best_len > 0 then
+            display_name = region_name:sub(1, best_len) .. ellipsis
+            text_w, text_h = ImGui.CalcTextSize(ctx, display_name)
+            chip_w = text_w + chip_cfg.padding_x * 2
+          else
+            break  -- Can't fit even one character
+          end
+        else
+          break  -- Not enough space
+        end
+      end
+
+      local chip_h = chip_cfg.height
 
       -- Chip background (dark grey)
       local bg_alpha = math.floor(chip_cfg.alpha * combined_alpha)
@@ -511,7 +594,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       text_color = (text_color & 0xFFFFFF00) | text_alpha_val
       local text_x = chip_x + chip_cfg.padding_x
       local text_y = chip_y + (chip_h - text_h) / 2
-      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, region_name)
+      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, display_name)
 
       -- Move to next chip position
       chip_x = chip_x + chip_w + chip_cfg.margin_x

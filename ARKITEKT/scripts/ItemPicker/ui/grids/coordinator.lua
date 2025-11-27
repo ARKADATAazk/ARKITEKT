@@ -4,6 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local TileAnim = require('arkitekt.gui.rendering.tile.animator')
+local Lifecycle = require('arkitekt.gui.fx.animation.lifecycle')
 local AudioGridFactory = require('ItemPicker.ui.grids.factories.audio_grid_factory')
 local MidiGridFactory = require('ItemPicker.ui.grids.factories.midi_grid_factory')
 
@@ -18,6 +19,7 @@ function M.new(ctx, config, state, visualization)
     visualization = visualization,
 
     animator = nil,
+    disable_animator = nil,
     audio_grid = nil,
     midi_grid = nil,
   }, Coordinator)
@@ -25,9 +27,12 @@ function M.new(ctx, config, state, visualization)
   -- Create animator
   self.animator = TileAnim.new(12.0)
 
+  -- Create disable animator (for when items are disabled AND show_disabled_items = false)
+  self.disable_animator = Lifecycle.DisableAnim.new({duration = 0.10})
+
   -- Create grids
-  self.audio_grid = AudioGridFactory.create(ctx, config, state, visualization, self.animator)
-  self.midi_grid = MidiGridFactory.create(ctx, config, state, visualization, self.animator)
+  self.audio_grid = AudioGridFactory.create(ctx, config, state, visualization, self.animator, self.disable_animator)
+  self.midi_grid = MidiGridFactory.create(ctx, config, state, visualization, self.animator, self.disable_animator)
 
   return self
 end
@@ -35,6 +40,24 @@ end
 function Coordinator:update_animations(dt)
   if self.animator then
     self.animator:update(dt)
+  end
+  if self.disable_animator then
+    self.disable_animator:update(dt)
+  end
+end
+
+function Coordinator:render_disable_animations(ctx)
+  if not self.disable_animator then return end
+
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  -- Render all active disable animations (like grid/animation.lua does)
+  for key, anim_data in pairs(self.disable_animator.disabling) do
+    self.disable_animator:render(ctx, dl, key, anim_data.rect,
+                                  nil, -- Color is stored in anim_data
+                                  self.config.TILE.ROUNDING,
+                                  self.state.icon_font,
+                                  self.state.icon_font_size)
   end
 end
 
@@ -112,6 +135,9 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
 
     self.audio_grid:draw(ctx)
 
+    -- Render disable animations on top (after items are drawn)
+    self:render_disable_animations(ctx)
+
     -- Add Dummy to extend child bounds when using SetCursorScreenPos
     if header_offset > 0 then
       ImGui.Dummy(ctx, 0, 0)
@@ -164,6 +190,9 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
     end
 
     self.midi_grid:draw(ctx)
+
+    -- Render disable animations on top (after items are drawn)
+    self:render_disable_animations(ctx)
 
     -- Add Dummy to extend child bounds when using SetCursorScreenPos
     if header_offset > 0 then
