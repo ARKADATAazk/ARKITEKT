@@ -7,7 +7,7 @@ local ark = require('arkitekt')
 
 -- Domain services
 local TemplateOps = require('TemplateBrowser.domain.template.ops')
-local FileOps = require('TemplateBrowser.infra.file_ops')
+local FileOps = require('TemplateBrowser.data.file_ops')
 local FXQueue = require('TemplateBrowser.domain.fx.queue')
 local Scanner = require('TemplateBrowser.domain.template.scanner')
 

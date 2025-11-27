@@ -4,7 +4,7 @@
 
 local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
-local FileOps = require('TemplateBrowser.infra.file_ops')
+local FileOps = require('TemplateBrowser.data.file_ops')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ColorDefs = require('arkitekt.defs.colors')
 local UI = require('TemplateBrowser.ui.config.constants')
@@ -55,7 +55,7 @@ function M.draw_template_context_menu(ctx, state)
           -- Set color
           if tmpl_metadata then
             tmpl_metadata.chip_color = color
-            local Persistence = require('TemplateBrowser.infra.storage')
+            local Persistence = require('TemplateBrowser.data.storage')
             Persistence.save_metadata(state.metadata)
           end
           state.context_menu_template = nil
@@ -93,7 +93,7 @@ function M.draw_template_context_menu(ctx, state)
       }, "remove_color") then
         if tmpl_metadata then
           tmpl_metadata.chip_color = nil
-          local Persistence = require('TemplateBrowser.infra.storage')
+          local Persistence = require('TemplateBrowser.data.storage')
           Persistence.save_metadata(state.metadata)
         end
         state.context_menu_template = nil
@@ -113,7 +113,7 @@ function M.draw_template_context_menu(ctx, state)
             width = -1,
             height = UI.BUTTON.HEIGHT_DEFAULT
           }, "remove_from_vfolder") then
-            local Persistence = require('TemplateBrowser.infra.storage')
+            local Persistence = require('TemplateBrowser.data.storage')
 
             -- Remove template UUID from virtual folder's template_refs
             if vfolder.template_refs then
@@ -274,7 +274,7 @@ function M.draw_tag_context_menu(ctx, state)
 
         if ImGui.InvisibleButton(ctx, "##tag_color_" .. idx, chip_size, chip_size) then
           tag_data.color = color
-          local Persistence = require('TemplateBrowser.infra.storage')
+          local Persistence = require('TemplateBrowser.data.storage')
           Persistence.save_metadata(state.metadata)
           state.context_menu_tag = nil
           ImGui.CloseCurrentPopup(ctx)
@@ -309,7 +309,7 @@ function M.draw_tag_context_menu(ctx, state)
         height = UI.BUTTON.HEIGHT_DEFAULT
       }, "tag_reset_color") then
         tag_data.color = ark.Colors.hexrgb("#646464")
-        local Persistence = require('TemplateBrowser.infra.storage')
+        local Persistence = require('TemplateBrowser.data.storage')
         Persistence.save_metadata(state.metadata)
         state.context_menu_tag = nil
         ImGui.CloseCurrentPopup(ctx)
@@ -361,7 +361,7 @@ function M.draw_vst_context_menu(ctx, state)
 
         if ImGui.InvisibleButton(ctx, "##vst_color_" .. idx, chip_size, chip_size) then
           vst_data.color = color
-          local Persistence = require('TemplateBrowser.infra.storage')
+          local Persistence = require('TemplateBrowser.data.storage')
           Persistence.save_metadata(state.metadata)
           state.context_menu_vst = nil
           ImGui.CloseCurrentPopup(ctx)
@@ -396,7 +396,7 @@ function M.draw_vst_context_menu(ctx, state)
         height = UI.BUTTON.HEIGHT_DEFAULT
       }, "vst_reset_color") then
         vst_data.color = nil
-        local Persistence = require('TemplateBrowser.infra.storage')
+        local Persistence = require('TemplateBrowser.data.storage')
         Persistence.save_metadata(state.metadata)
         state.context_menu_vst = nil
         ImGui.CloseCurrentPopup(ctx)

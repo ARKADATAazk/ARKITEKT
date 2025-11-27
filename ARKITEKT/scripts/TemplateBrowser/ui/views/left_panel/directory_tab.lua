@@ -6,7 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local Tags = require('TemplateBrowser.domain.tags.service')
 local Chip = require('arkitekt.gui.widgets.data.chip')
-local FileOps = require('TemplateBrowser.infra.file_ops')
+local FileOps = require('TemplateBrowser.data.file_ops')
 local TreeViewModule = require('TemplateBrowser.ui.views.tree_view')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
 local UI = require('TemplateBrowser.ui.config.constants')
@@ -93,7 +93,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
     Tags.create_tag(state.metadata, new_tag_name, color)
 
     -- Save metadata
-    local Persistence = require('TemplateBrowser.infra.storage')
+    local Persistence = require('TemplateBrowser.data.storage')
     Persistence.save_metadata(state.metadata)
   end
 
@@ -283,7 +283,7 @@ function M.draw(ctx, state, config, width, height, gui)
     height = UI.BUTTON.HEIGHT_DEFAULT
   }, "folder_virtual") then
     -- Create new virtual folder
-    local Persistence = require('TemplateBrowser.infra.storage')
+    local Persistence = require('TemplateBrowser.data.storage')
 
     -- Determine parent folder from selection (only virtual folders/root)
     local parent_id = "__VIRTUAL_ROOT__"  -- Default to virtual root

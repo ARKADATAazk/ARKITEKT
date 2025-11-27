@@ -6,7 +6,7 @@
 -- Dependencies (cached at module load per Lua Performance Guide)
 local ImGui = require('arkitekt.platform.imgui')
 local TemplateOps = require('TemplateBrowser.domain.template.ops')
-local Persistence = require('TemplateBrowser.infra.storage')
+local Persistence = require('TemplateBrowser.data.storage')
 local Tags = require('TemplateBrowser.domain.tags.service')
 local Scanner = require('TemplateBrowser.domain.template.scanner')
 

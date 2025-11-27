@@ -1,5 +1,5 @@
 -- @noindex
--- TemplateBrowser/infra/storage.lua
+-- TemplateBrowser/data/storage.lua
 -- JSON persistence for tags, notes, and UUIDs
 
 local M = {}

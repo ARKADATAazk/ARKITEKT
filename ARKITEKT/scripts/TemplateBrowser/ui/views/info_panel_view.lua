@@ -99,7 +99,7 @@ local function draw_info_panel(ctx, gui, width, height)
 
       if notes_changed then
         Tags.set_template_notes(state.metadata, tmpl.uuid, new_notes)
-        local Persistence = require('TemplateBrowser.infra.storage')
+        local Persistence = require('TemplateBrowser.data.storage')
         Persistence.save_metadata(state.metadata)
       end
 
@@ -158,7 +158,7 @@ local function draw_info_panel(ctx, gui, width, height)
             else
               Tags.add_tag_to_template(state.metadata, tmpl.uuid, clicked_id)
             end
-            local Persistence = require('TemplateBrowser.infra.storage')
+            local Persistence = require('TemplateBrowser.data.storage')
             Persistence.save_metadata(state.metadata)
           end
         else

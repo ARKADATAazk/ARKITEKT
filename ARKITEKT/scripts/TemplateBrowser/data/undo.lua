@@ -1,5 +1,5 @@
 -- @noindex
--- TemplateBrowser/infra/undo.lua
+-- TemplateBrowser/data/undo.lua
 -- Undo/redo system for file operations
 
 local M = {}

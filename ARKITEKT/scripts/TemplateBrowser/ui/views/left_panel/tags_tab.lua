@@ -43,7 +43,7 @@ function M.draw(ctx, state, config, width, height)
     Tags.create_tag(state.metadata, new_tag_name)
 
     -- Save metadata
-    local Persistence = require('TemplateBrowser.infra.storage')
+    local Persistence = require('TemplateBrowser.data.storage')
     Persistence.save_metadata(state.metadata)
   end
 
@@ -136,7 +136,7 @@ function M.draw(ctx, state, config, width, height)
             if state.rename_buffer ~= "" and state.rename_buffer ~= renaming_tag then
               -- Rename tag
               Tags.rename_tag(state.metadata, renaming_tag, state.rename_buffer)
-              local Persistence = require('TemplateBrowser.infra.storage')
+              local Persistence = require('TemplateBrowser.data.storage')
               Persistence.save_metadata(state.metadata)
             end
             state.renaming_item = nil

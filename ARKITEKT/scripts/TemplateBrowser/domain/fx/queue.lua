@@ -87,7 +87,7 @@ function M.process_batch(state, batch_size)
 
     -- Save metadata with updated FX
     if state.metadata then
-      local Persistence = require('TemplateBrowser.infra.storage')
+      local Persistence = require('TemplateBrowser.data.storage')
       Persistence.save_metadata(state.metadata)
     end
 

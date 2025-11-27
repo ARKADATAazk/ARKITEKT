@@ -3,7 +3,7 @@
 -- Scans REAPER's track template directory with UUID tracking
 
 local M = {}
-local Persistence = require('TemplateBrowser.infra.storage')
+local Persistence = require('TemplateBrowser.data.storage')
 local FXQueue = require('TemplateBrowser.domain.fx.queue')
 
 -- Scan state for incremental scanning

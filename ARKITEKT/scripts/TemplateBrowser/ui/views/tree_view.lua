@@ -67,7 +67,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   -- Build archive tree from .archive folder
   local function build_archive_tree()
     local archive_children = {}
-    local FileOps = require('TemplateBrowser.infra.file_ops')
+    local FileOps = require('TemplateBrowser.data.file_ops')
     local archive_path = FileOps.get_archive_path()
     local sep = package.config:sub(1,1)
 
@@ -251,7 +251,7 @@ function M.draw_physical_tree(ctx, state, config)
 
     -- Folder drop callback (supports multi-drag)
     on_drop_folder = function(dragged_node_id, target_node)
-      local FileOps = require('TemplateBrowser.infra.file_ops')
+      local FileOps = require('TemplateBrowser.data.file_ops')
 
       -- Find the source node
       local function find_node_by_id(nodes, id)
@@ -413,7 +413,7 @@ function M.draw_physical_tree(ctx, state, config)
     on_drop_template = function(template_payload, target_node)
       if not target_node then return end
 
-      local FileOps = require('TemplateBrowser.infra.file_ops')
+      local FileOps = require('TemplateBrowser.data.file_ops')
 
       -- Parse payload (can be single UUID or newline-separated UUIDs)
       local uuids = {}
@@ -431,7 +431,7 @@ function M.draw_physical_tree(ctx, state, config)
 
       -- Handle virtual folder (add references, don't move files)
       if target_node.is_virtual then
-        local Persistence = require('TemplateBrowser.infra.storage')
+        local Persistence = require('TemplateBrowser.data.storage')
 
         -- Get the virtual folder from metadata
         local vfolder = state.metadata.virtual_folders[target_node.id]
@@ -569,7 +569,7 @@ function M.draw_physical_tree(ctx, state, config)
 
         for _, color_opt in ipairs(color_options) do
           if ContextMenu.item(ctx_inner, color_opt.name) then
-            local Persistence = require('TemplateBrowser.infra.storage')
+            local Persistence = require('TemplateBrowser.data.storage')
             local ImGui = require('imgui') '0.10'
 
             if node.is_virtual then
@@ -630,7 +630,7 @@ function M.draw_physical_tree(ctx, state, config)
             ContextMenu.separator(ctx_inner)
 
             if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
-              local Persistence = require('TemplateBrowser.infra.storage')
+              local Persistence = require('TemplateBrowser.data.storage')
               local ImGui = require('imgui') '0.10'
 
               -- Remove from metadata
@@ -663,8 +663,8 @@ function M.draw_physical_tree(ctx, state, config)
     -- Rename callback
     on_rename = function(node, new_name)
       if new_name ~= "" and new_name ~= node.name then
-        local Persistence = require('TemplateBrowser.infra.storage')
-        local FileOps = require('TemplateBrowser.infra.file_ops')
+        local Persistence = require('TemplateBrowser.data.storage')
+        local FileOps = require('TemplateBrowser.data.file_ops')
 
         -- Handle virtual folder rename (metadata only, no file operations)
         if node.is_virtual then
@@ -757,7 +757,7 @@ function M.draw_physical_tree(ctx, state, config)
         return
       end
 
-      local FileOps = require('TemplateBrowser.infra.file_ops')
+      local FileOps = require('TemplateBrowser.data.file_ops')
       local Scanner = require('TemplateBrowser.domain.template.scanner')
 
       -- Count templates in folder and subfolders
@@ -938,7 +938,7 @@ function M.draw_virtual_tree(ctx, state, config)
 
     on_drop_template = function(template_payload, target_node)
       if not target_node then return end
-      local FileOps = require('TemplateBrowser.infra.file_ops')
+      local FileOps = require('TemplateBrowser.data.file_ops')
 
       -- Parse payload
       local uuids = {}
@@ -954,7 +954,7 @@ function M.draw_virtual_tree(ctx, state, config)
 
       -- Only handle virtual folder drops (add references)
       if target_node.is_virtual then
-        local Persistence = require('TemplateBrowser.infra.storage')
+        local Persistence = require('TemplateBrowser.data.storage')
         local vfolder = state.metadata.virtual_folders[target_node.id]
         if not vfolder then
           state.set_status("Virtual folder not found", "error")
@@ -1020,7 +1020,7 @@ function M.draw_virtual_tree(ctx, state, config)
 
         for _, color_opt in ipairs(color_options) do
           if ContextMenu.item(ctx_inner, color_opt.name) then
-            local Persistence = require('TemplateBrowser.infra.storage')
+            local Persistence = require('TemplateBrowser.data.storage')
             local ImGui = require('imgui') '0.10'
 
             if node.is_virtual then
@@ -1044,7 +1044,7 @@ function M.draw_virtual_tree(ctx, state, config)
             ContextMenu.separator(ctx_inner)
 
             if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
-              local Persistence = require('TemplateBrowser.infra.storage')
+              local Persistence = require('TemplateBrowser.data.storage')
               local ImGui = require('imgui') '0.10'
 
               if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
@@ -1073,7 +1073,7 @@ function M.draw_virtual_tree(ctx, state, config)
 
     on_rename = function(node, new_name)
       if new_name ~= "" and new_name ~= node.name then
-        local Persistence = require('TemplateBrowser.infra.storage')
+        local Persistence = require('TemplateBrowser.data.storage')
 
         if node.is_virtual then
           if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then

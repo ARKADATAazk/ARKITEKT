@@ -47,7 +47,7 @@ function M.apply_to_selected_track(template_path, template_uuid, state)
       tmpl_metadata.last_used = os.time()
 
       -- Save metadata
-      local Persistence = require('TemplateBrowser.infra.storage')
+      local Persistence = require('TemplateBrowser.data.storage')
       Persistence.save_metadata(state.metadata)
     end
   end
@@ -114,7 +114,7 @@ function M.insert_as_new_track(template_path, template_uuid, state)
       tmpl_metadata.last_used = os.time()
 
       -- Save metadata
-      local Persistence = require('TemplateBrowser.infra.storage')
+      local Persistence = require('TemplateBrowser.data.storage')
       Persistence.save_metadata(state.metadata)
     end
   end

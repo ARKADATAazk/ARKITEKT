@@ -52,7 +52,7 @@ function M.draw(ctx, state, config, width, height)
       end
 
       -- Save metadata and trigger rescan
-      local Persistence = require('TemplateBrowser.infra.storage')
+      local Persistence = require('TemplateBrowser.data.storage')
       Persistence.save_metadata(state.metadata)
 
       -- Trigger rescan which will re-parse everything

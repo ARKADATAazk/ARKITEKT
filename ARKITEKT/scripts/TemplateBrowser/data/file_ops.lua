@@ -1,5 +1,5 @@
 -- @noindex
--- TemplateBrowser/infra/file_ops.lua
+-- TemplateBrowser/data/file_ops.lua
 -- File system operations for templates and folders
 
 local M = {}
