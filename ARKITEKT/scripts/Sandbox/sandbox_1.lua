@@ -2,18 +2,33 @@
 -- ARKITEKT/scripts/Sandbox/sandbox_1.lua
 -- Hatched Fill Effects Demo
 
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
-local root_path = script_path:match("(.*)[\\/][^\\/]+[\\/]?$") or script_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
-
-local arkitekt_path = root_path .. "ARKITEKT/"
-package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. package.path
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
+-- ============================================================================
+-- BOOTSTRAP ARKITEKT FRAMEWORK
+-- ============================================================================
+local ark
+do
+  local sep = package.config:sub(1,1)
+  local src = debug.getinfo(1, "S").source:sub(2)
+  local path = src:match("(.*"..sep..")")
+  while path and #path > 3 do
+    local bootstrap = path .. "arkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
+    local f = io.open(bootstrap, "r")
+    if f then
+      f:close()
+      package.path = path .. "?.lua;" .. path .. "?" .. sep .. "init.lua;" .. package.path
+      package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
+      ark = require('arkitekt')
+      break
+    end
+    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
+  end
+  if not ark then
+    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
+    return
+  end
+end
 
 local Shell = require('arkitekt.app.shell')
-local ark = require('arkitekt')
 local HatchedFill = require('arkitekt.gui.widgets.effects.hatched_fill')
 
 local ImGui = ark.ImGui
