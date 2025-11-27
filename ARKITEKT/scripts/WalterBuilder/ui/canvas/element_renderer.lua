@@ -149,34 +149,39 @@ function Renderer:draw_edge_markers(ctx, dl, canvas_x, canvas_y, sim_result, rec
     marker_size, bottom_color)
 end
 
--- Draw a hatched pattern for stretch areas
+-- Draw a hatched pattern for stretch areas (uses clip rect for proper bounds)
 function Renderer:draw_stretch_pattern(ctx, dl, x, y, w, h, direction, color)
   local spacing = 6
   local line_color = (color & 0xFFFFFF00) | 0x60  -- Reduce alpha
 
+  -- Use clip rect to ensure lines stay within bounds
+  ImGui.DrawList_PushClipRect(dl, x, y, x + w, y + h, true)
+
   if direction == "horizontal" or direction == "both" then
-    for i = -h, w, spacing do
-      local x1 = math.max(x, x + i)
-      local y1 = y + math.max(0, -i)
-      local x2 = math.min(x + w, x + i + h)
-      local y2 = y + math.min(h, h - i)
-      if x2 > x1 then
-        ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, line_color, 1)
-      end
+    -- Diagonal lines from top-left to bottom-right (↘)
+    local total_span = w + h
+    for offset = 0, total_span, spacing do
+      local x1 = x + offset - h
+      local y1 = y
+      local x2 = x + offset
+      local y2 = y + h
+      ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, line_color, 1)
     end
   end
 
   if direction == "vertical" then
-    for i = -w, h, spacing do
-      local x1 = x + math.max(0, -i)
-      local y1 = math.max(y, y + i)
-      local x2 = x + math.min(w, w + i)
-      local y2 = math.min(y + h, y + i + w)
-      if y2 > y1 then
-        ImGui.DrawList_AddLine(dl, x1, y2, x2, y1, line_color, 1)
-      end
+    -- Diagonal lines from top-right to bottom-left (↙)
+    local total_span = w + h
+    for offset = 0, total_span, spacing do
+      local x1 = x + w - offset + h
+      local y1 = y
+      local x2 = x + w - offset
+      local y2 = y + h
+      ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, line_color, 1)
     end
   end
+
+  ImGui.DrawList_PopClipRect(dl)
 end
 
 -- Main element draw function
