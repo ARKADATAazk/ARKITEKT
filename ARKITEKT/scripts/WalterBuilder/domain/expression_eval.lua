@@ -348,8 +348,10 @@ local function parse_bracket(str, context)
           if var_name then
             local var_val = context and context[var_name]
             if type(var_val) == "table" then
-              -- For multi-token brackets, take first element of table
-              values[#values + 1] = var_val[1] or 0
+              -- WALTER rule: When {} index is omitted inside brackets, use current position
+              -- e.g., [0 0 meter_sec meter_sec] -> [0 0 meter_sec{2} meter_sec{3}]
+              local current_pos = #values + 1  -- 1-indexed Lua = 0-indexed WALTER position
+              values[current_pos] = var_val[current_pos] or var_val[1] or 0
             elseif var_val then
               values[#values + 1] = var_val
             else
