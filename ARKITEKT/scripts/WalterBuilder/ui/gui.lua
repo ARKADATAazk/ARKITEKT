@@ -188,24 +188,23 @@ function GUI:draw(ctx, window, shell_state)
   -- Left panel: Elements
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
 
-  if ImGui.BeginChild(ctx, "left_panel", self.left_panel_width, remaining_h, 1) then
-    ImGui.Dummy(ctx, 0, 4)
-    ImGui.Indent(ctx, 4)
+  ImGui.BeginChild(ctx, "left_panel", self.left_panel_width, remaining_h, ImGui.ChildFlags_Border)
+  ImGui.Dummy(ctx, 0, 4)
+  ImGui.Indent(ctx, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
-    ImGui.Text(ctx, "Elements")
-    ImGui.PopStyleColor(ctx)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
+  ImGui.Text(ctx, "Elements")
+  ImGui.PopStyleColor(ctx)
 
-    ImGui.Dummy(ctx, 0, 4)
+  ImGui.Dummy(ctx, 0, 4)
 
-    local result = self.elements_panel:draw(ctx)
-    if result and result.type == "add" then
-      self:handle_add_element(result.definition)
-    end
-
-    ImGui.Unindent(ctx, 4)
-    ImGui.EndChild(ctx)
+  local result = self.elements_panel:draw(ctx)
+  if result and result.type == "add" then
+    self:handle_add_element(result.definition)
   end
+
+  ImGui.Unindent(ctx, 4)
+  ImGui.EndChild(ctx)
   ImGui.PopStyleColor(ctx)
 
   ImGui.SameLine(ctx, 0, 4)
@@ -215,53 +214,52 @@ function GUI:draw(ctx, window, shell_state)
 
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
 
-  if ImGui.BeginChild(ctx, "center_panel", canvas_w, remaining_h, 1) then
-    ImGui.Dummy(ctx, 0, 4)
-    ImGui.Indent(ctx, 4)
+  ImGui.BeginChild(ctx, "center_panel", canvas_w, remaining_h, ImGui.ChildFlags_Border)
+  ImGui.Dummy(ctx, 0, 4)
+  ImGui.Indent(ctx, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
-    ImGui.Text(ctx, "Preview Canvas")
-    ImGui.PopStyleColor(ctx)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
+  ImGui.Text(ctx, "Preview Canvas")
+  ImGui.PopStyleColor(ctx)
 
-    ImGui.SameLine(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
-    ImGui.Text(ctx, "(drag edges to resize)")
-    ImGui.PopStyleColor(ctx)
+  ImGui.SameLine(ctx)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+  ImGui.Text(ctx, "(drag handles to resize)")
+  ImGui.PopStyleColor(ctx)
 
-    ImGui.Dummy(ctx, 0, 4)
+  ImGui.Dummy(ctx, 0, 4)
 
-    -- Draw legend
-    ElementRenderer.new():draw_legend(ctx)
+  -- Draw legend
+  ElementRenderer.new():draw_legend(ctx)
 
-    ImGui.Dummy(ctx, 0, 4)
+  ImGui.Dummy(ctx, 0, 4)
 
-    -- Draw canvas
-    local canvas_result = self.canvas:draw(ctx)
+  -- Draw canvas
+  local canvas_result = self.canvas:draw(ctx)
 
-    -- Handle canvas selection
-    if canvas_result and canvas_result.type == "select" then
-      self.State.set_selected(canvas_result.element)
-      self.properties_panel:set_element(canvas_result.element)
-    end
-
-    -- Sync canvas config back to state
-    if self.canvas.config.show_grid ~= self.State.get_show_grid() then
-      self.State.set_show_grid(self.canvas.config.show_grid)
-    end
-    if self.canvas.config.show_attachments ~= self.State.get_show_attachments() then
-      self.State.set_show_attachments(self.canvas.config.show_attachments)
-    end
-
-    -- Sync parent size
-    local cw, ch = self.canvas:get_parent_size()
-    local sw, sh = self.State.get_parent_size()
-    if cw ~= sw or ch ~= sh then
-      self.State.set_parent_size(cw, ch)
-    end
-
-    ImGui.Unindent(ctx, 4)
-    ImGui.EndChild(ctx)
+  -- Handle canvas selection
+  if canvas_result and canvas_result.type == "select" then
+    self.State.set_selected(canvas_result.element)
+    self.properties_panel:set_element(canvas_result.element)
   end
+
+  -- Sync canvas config back to state
+  if self.canvas.config.show_grid ~= self.State.get_show_grid() then
+    self.State.set_show_grid(self.canvas.config.show_grid)
+  end
+  if self.canvas.config.show_attachments ~= self.State.get_show_attachments() then
+    self.State.set_show_attachments(self.canvas.config.show_attachments)
+  end
+
+  -- Sync parent size
+  local cw, ch = self.canvas:get_parent_size()
+  local sw, sh = self.State.get_parent_size()
+  if cw ~= sw or ch ~= sh then
+    self.State.set_parent_size(cw, ch)
+  end
+
+  ImGui.Unindent(ctx, 4)
+  ImGui.EndChild(ctx)
   ImGui.PopStyleColor(ctx)
 
   ImGui.SameLine(ctx, 0, 4)
@@ -269,41 +267,40 @@ function GUI:draw(ctx, window, shell_state)
   -- Right panel: Properties and Code (tabbed or split)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
 
-  if ImGui.BeginChild(ctx, "right_panel", self.right_panel_width, remaining_h, 1) then
-    ImGui.Dummy(ctx, 0, 4)
-    ImGui.Indent(ctx, 4)
+  ImGui.BeginChild(ctx, "right_panel", self.right_panel_width, remaining_h, ImGui.ChildFlags_Border)
+  ImGui.Dummy(ctx, 0, 4)
+  ImGui.Indent(ctx, 4)
 
-    -- Tab bar for Properties / Code
-    if ImGui.BeginTabBar(ctx, "right_tabs") then
-      -- Properties tab
-      if ImGui.BeginTabItem(ctx, "Properties") then
-        ImGui.Dummy(ctx, 0, 4)
-        local props_result = self.properties_panel:draw(ctx)
+  -- Tab bar for Properties / Code
+  if ImGui.BeginTabBar(ctx, "right_tabs") then
+    -- Properties tab
+    if ImGui.BeginTabItem(ctx, "Properties") then
+      ImGui.Dummy(ctx, 0, 4)
+      local props_result = self.properties_panel:draw(ctx)
 
-        if props_result then
-          if props_result.type == "delete" then
-            self:handle_delete_element(props_result.element)
-          elseif props_result.type == "change" then
-            self:handle_element_changed(props_result.element)
-          end
+      if props_result then
+        if props_result.type == "delete" then
+          self:handle_delete_element(props_result.element)
+        elseif props_result.type == "change" then
+          self:handle_element_changed(props_result.element)
         end
-
-        ImGui.EndTabItem(ctx)
       end
 
-      -- Code tab
-      if ImGui.BeginTabItem(ctx, "Code") then
-        ImGui.Dummy(ctx, 0, 4)
-        self.code_panel:draw(ctx)
-        ImGui.EndTabItem(ctx)
-      end
-
-      ImGui.EndTabBar(ctx)
+      ImGui.EndTabItem(ctx)
     end
 
-    ImGui.Unindent(ctx, 4)
-    ImGui.EndChild(ctx)
+    -- Code tab
+    if ImGui.BeginTabItem(ctx, "Code") then
+      ImGui.Dummy(ctx, 0, 4)
+      self.code_panel:draw(ctx)
+      ImGui.EndTabItem(ctx)
+    end
+
+    ImGui.EndTabBar(ctx)
   end
+
+  ImGui.Unindent(ctx, 4)
+  ImGui.EndChild(ctx)
   ImGui.PopStyleColor(ctx)
 end
 

@@ -185,25 +185,24 @@ function Panel:draw(ctx)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1E1E1E"))
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 8, 8)
 
-  if ImGui.BeginChild(ctx, "code_view", avail_w, avail_h - 4, 1) then
-    local code = self:generate_code()
+  ImGui.BeginChild(ctx, "code_view", avail_w, avail_h - 4, ImGui.ChildFlags_Border)
+  local code = self:generate_code()
 
-    if code == "" or #self.elements == 0 then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
-      ImGui.Text(ctx, "No elements in layout")
-      ImGui.Dummy(ctx, 0, 8)
-      ImGui.Text(ctx, "Add elements from the Elements panel")
-      ImGui.Text(ctx, "to see generated WALTER code here.")
-      ImGui.PopStyleColor(ctx)
-    else
-      -- Use monospace-style display
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#D4D4D4"))
-      self:draw_code_highlighted(ctx, code)
-      ImGui.PopStyleColor(ctx)
-    end
-
-    ImGui.EndChild(ctx)
+  if code == "" or #self.elements == 0 then
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+    ImGui.Text(ctx, "No elements in layout")
+    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Text(ctx, "Add elements from the Elements panel")
+    ImGui.Text(ctx, "to see generated WALTER code here.")
+    ImGui.PopStyleColor(ctx)
+  else
+    -- Use monospace-style display
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#D4D4D4"))
+    self:draw_code_highlighted(ctx, code)
+    ImGui.PopStyleColor(ctx)
   end
+
+  ImGui.EndChild(ctx)
 
   ImGui.PopStyleVar(ctx)
   ImGui.PopStyleColor(ctx)

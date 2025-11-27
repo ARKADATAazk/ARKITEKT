@@ -271,55 +271,59 @@ function Canvas:draw(ctx)
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
   local canvas_h = math.max(200, avail_h - 40)  -- Leave room for size display
 
-  -- Begin child region for canvas
-  if ImGui.BeginChild(ctx, "walter_canvas", avail_w, canvas_h, 1) then
-    local win_x, win_y = ImGui.GetWindowPos(ctx)
-    local dl = ImGui.GetWindowDrawList(ctx)
+  -- Begin child region for canvas (no window moving/scrolling)
+  local child_flags = ImGui.ChildFlags_Border
+  local window_flags = ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse
 
-    -- Calculate canvas position (centered)
-    local canvas_x = win_x + self.offset_x
-    local canvas_y = win_y + self.offset_y
+  ImGui.BeginChild(ctx, "walter_canvas", avail_w, canvas_h, child_flags, window_flags)
 
-    -- Draw background
-    ImGui.DrawList_AddRectFilled(dl, win_x, win_y, win_x + avail_w, win_y + canvas_h,
-      Colors.CANVAS.BACKGROUND)
+  local win_x, win_y = ImGui.GetWindowPos(ctx)
+  local win_w, win_h = ImGui.GetWindowSize(ctx)
+  local dl = ImGui.GetWindowDrawList(ctx)
 
-    -- Draw parent container background
-    ImGui.DrawList_AddRectFilled(dl,
-      canvas_x, canvas_y,
-      canvas_x + self.parent_w, canvas_y + self.parent_h,
-      Colors.CANVAS.PARENT_FILL)
+  -- Calculate canvas position (centered in the child window)
+  local canvas_x = win_x + math.max(20, (win_w - self.parent_w) / 2)
+  local canvas_y = win_y + math.max(20, (win_h - self.parent_h) / 2)
 
-    -- Draw grid
-    self:draw_grid(ctx, dl, canvas_x, canvas_y)
+  -- Draw background
+  ImGui.DrawList_AddRectFilled(dl, win_x, win_y, win_x + win_w, win_y + win_h,
+    Colors.CANVAS.BACKGROUND)
 
-    -- Draw elements
-    local sim = self:get_simulation()
-    for _, sim_result in ipairs(sim) do
-      local is_selected = sim_result.element == self.selected_element
-      local is_hovered = sim_result.element == self.hovered_element
+  -- Draw parent container background
+  ImGui.DrawList_AddRectFilled(dl,
+    canvas_x, canvas_y,
+    canvas_x + self.parent_w, canvas_y + self.parent_h,
+    Colors.CANVAS.PARENT_FILL)
 
-      self.renderer:draw_element(ctx, dl, canvas_x, canvas_y, sim_result, {
-        selected = is_selected,
-        hovered = is_hovered,
-        show_attachments = self.config.show_attachments,
-      })
-    end
+  -- Draw grid
+  self:draw_grid(ctx, dl, canvas_x, canvas_y)
 
-    -- Draw parent container border
-    ImGui.DrawList_AddRect(dl,
-      canvas_x, canvas_y,
-      canvas_x + self.parent_w, canvas_y + self.parent_h,
-      Colors.CANVAS.PARENT_BORDER, 0, 0, 2)
+  -- Draw elements
+  local sim = self:get_simulation()
+  for _, sim_result in ipairs(sim) do
+    local is_selected = sim_result.element == self.selected_element
+    local is_hovered = sim_result.element == self.hovered_element
 
-    -- Draw resize handles
-    local handles = self:draw_handles(ctx, dl, canvas_x, canvas_y)
-
-    -- Handle mouse interaction
-    result = self:handle_interaction(ctx, canvas_x, canvas_y, handles)
-
-    ImGui.EndChild(ctx)
+    self.renderer:draw_element(ctx, dl, canvas_x, canvas_y, sim_result, {
+      selected = is_selected,
+      hovered = is_hovered,
+      show_attachments = self.config.show_attachments,
+    })
   end
+
+  -- Draw parent container border
+  ImGui.DrawList_AddRect(dl,
+    canvas_x, canvas_y,
+    canvas_x + self.parent_w, canvas_y + self.parent_h,
+    Colors.CANVAS.PARENT_BORDER, 0, 0, 2)
+
+  -- Draw resize handles
+  local handles = self:draw_handles(ctx, dl, canvas_x, canvas_y)
+
+  -- Handle mouse interaction (only for handles and element selection)
+  result = self:handle_interaction(ctx, canvas_x, canvas_y, handles)
+
+  ImGui.EndChild(ctx)
 
   -- Draw size display below canvas
   ImGui.Text(ctx, string.format("Parent Size: %d x %d px", self.parent_w, self.parent_h))
