@@ -272,8 +272,11 @@ function Canvas:draw(ctx)
   local canvas_h = math.max(200, avail_h - 40)  -- Leave room for size display
 
   -- Begin child region for canvas (no window moving/scrolling)
-  -- child_flags: 1 = border, window_flags: NoScrollbar | NoScrollWithMouse
-  local window_flags = ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse
+  -- child_flags: 1 = border, window_flags: NoScrollbar | NoScrollWithMouse | NoMove
+  local window_flags = ImGui.WindowFlags_NoScrollbar
+                     | ImGui.WindowFlags_NoScrollWithMouse
+                     | ImGui.WindowFlags_NoMove
+                     | ImGui.WindowFlags_NoNav
 
   ImGui.BeginChild(ctx, "walter_canvas", avail_w, canvas_h, 1, window_flags)
 

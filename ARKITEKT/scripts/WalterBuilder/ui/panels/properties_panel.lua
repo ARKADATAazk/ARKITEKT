@@ -103,11 +103,9 @@ function Panel:draw_position_section(ctx)
   local c = element.coords
   local changed = false
 
-  ImGui.PushFont(ctx, nil)  -- Use default font
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
   ImGui.Text(ctx, "Position & Size")
   ImGui.PopStyleColor(ctx)
-  ImGui.PopFont(ctx)
 
   ImGui.Dummy(ctx, 0, 4)
 

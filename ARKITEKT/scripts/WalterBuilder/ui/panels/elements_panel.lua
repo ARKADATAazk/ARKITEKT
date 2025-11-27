@@ -75,13 +75,13 @@ function Panel:draw_element_item(ctx, def)
 
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
-  -- Draw as selectable button
-  if ImGui.Button(ctx, "##" .. def.id, avail_w - 8, 24) then
+  -- Draw as selectable button - capture result, don't return early
+  local button_clicked = ImGui.Button(ctx, "##" .. def.id, avail_w - 8, 24)
+  if button_clicked then
     self.selected_def = def
-    return "select"
   end
 
-  ImGui.PopStyleColor(ctx, 3)
+  ImGui.PopStyleColor(ctx, 3)  -- Always pop before any early return
 
   -- Draw content on top
   ImGui.SameLine(ctx, 8)
@@ -120,8 +120,13 @@ function Panel:draw_element_item(ctx, def)
   end
 
   -- Double-click to add
-  if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
+  local double_clicked = ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0)
+
+  -- Return action after all drawing is done
+  if double_clicked then
     return "add"
+  elseif button_clicked then
+    return "select"
   end
 
   return nil
