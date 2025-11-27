@@ -326,6 +326,68 @@ local function collect_layout_items(layouts, all_items)
   end
 end
 
+-- Parse a macro body line to extract SET items
+-- Macro bodies are stored as raw text, so we need to re-parse them
+local function parse_macro_body_item(body_entry)
+  if not body_entry.code then return nil end
+
+  local code = body_entry.code
+
+  -- Try to parse as SET statement
+  local element, value = code:match("^%s*set%s+([%w._]+)%s+(.+)$")
+  if element and value then
+    -- Check if value is a simple coordinate list [x y w h ...]
+    local is_simple = false
+    local coords = nil
+
+    -- Match simple coordinate: just a bracket expression with numbers
+    local bracket_content = value:match("^%[([%d%s%-%.]+)%]$")
+    if bracket_content then
+      is_simple = true
+      coords = {}
+      for num in bracket_content:gmatch("[%-%.%d]+") do
+        coords[#coords + 1] = tonumber(num)
+      end
+    end
+
+    return {
+      type = RtconfigParser.TOKEN.SET,
+      element = element,
+      value = value,
+      line = body_entry.line,
+      is_simple = is_simple,
+      coords = coords,
+    }
+  end
+
+  -- Try to parse as CLEAR statement
+  local clear_elem = code:match("^%s*clear%s+([%w._*]+)%s*$")
+  if clear_elem then
+    return {
+      type = RtconfigParser.TOKEN.CLEAR,
+      element = clear_elem,
+      line = body_entry.line,
+    }
+  end
+
+  return nil
+end
+
+-- Collect items from macro bodies (where many TCP elements are defined!)
+local function collect_macro_items(macros, all_items)
+  local macro_items = 0
+  for _, macro in ipairs(macros) do
+    for _, body_entry in ipairs(macro.body) do
+      local item = parse_macro_body_item(body_entry)
+      if item then
+        all_items[#all_items + 1] = item
+        macro_items = macro_items + 1
+      end
+    end
+  end
+  return macro_items
+end
+
 -- Convert elements from a specific layout
 -- @param parsed: The parsed rtconfig result
 -- @param layout_name: Name of the layout to convert (nil = all sections + layouts)
@@ -336,7 +398,7 @@ function M.convert_layout(parsed, layout_name, context)
     return nil, "No parsed rtconfig provided"
   end
 
-  -- If no layout specified, collect from ALL sections AND layouts
+  -- If no layout specified, collect from ALL sections, macros, AND layouts
   if not layout_name then
     local all_items = {}
 
@@ -350,7 +412,11 @@ function M.convert_layout(parsed, layout_name, context)
     end
     Console.info("Collected %d items from %d sections", section_items, #parsed.sections)
 
-    -- Also collect from all layouts (where most elements actually live!)
+    -- Collect from macro bodies (where TCP elements like tcp.mute are defined!)
+    local macro_items = collect_macro_items(parsed.macros, all_items)
+    Console.info("Collected %d items from %d macros", macro_items, #parsed.macros)
+
+    -- Also collect from all layouts
     local before_layouts = #all_items
     collect_layout_items(parsed.layouts, all_items)
     Console.info("Collected %d items from layouts (total: %d)", #all_items - before_layouts, #all_items)
