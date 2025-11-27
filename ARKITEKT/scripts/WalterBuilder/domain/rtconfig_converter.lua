@@ -279,6 +279,13 @@ local function convert_set_item(item, context)
       })
       eval_success = true
 
+      -- Debug: log raw expression for elements with negative coords or missing attachments
+      if evaluated[1] and evaluated[1] < 0 and (not evaluated[5] or evaluated[5] == 0) then
+        Console.warn("  DEBUG %s: expr='%s' → [%s] (no ls attachment)",
+          item.element, item.value or "?",
+          table.concat(evaluated, ", "))
+      end
+
       -- Also store element coordinates in context for self-references
       -- (e.g., tcp.solo references tcp.mute{3})
       context[item.element] = evaluated
