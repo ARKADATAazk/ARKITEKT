@@ -1,10 +1,14 @@
 -- @noindex
 -- WalterBuilder/ui/panels/track_properties_panel.lua
 -- Properties panel for editing selected track settings
+-- Uses Arkitekt widgets for consistent styling
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local Slider = require('arkitekt.gui.widgets.primitives.slider')
 local TrackDefaults = require('WalterBuilder.defs.track_defaults')
+local Constants = require('WalterBuilder.defs.constants')
 
 local hexrgb = ark.Colors.hexrgb
 
@@ -33,103 +37,109 @@ function Panel:set_track(track)
   self.track = track
 end
 
--- Draw height presets
+-- Draw height presets using Button widget
 function Panel:draw_height_presets(ctx)
   local track = self.track
   local changed = false
 
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
-  ImGui.Text(ctx, "Height presets:")
+  ImGui.Text(ctx, "Presets:")
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 2)
+  ImGui.SameLine(ctx, 60)
 
-  local presets = {
-    { name = "Super", height = TrackDefaults.HEIGHTS.SUPERCOLLAPSED },
-    { name = "Collapsed", height = TrackDefaults.HEIGHTS.COLLAPSED },
-    { name = "Small", height = TrackDefaults.HEIGHTS.SMALL },
-    { name = "Normal", height = TrackDefaults.HEIGHTS.NORMAL },
-    { name = "Large", height = TrackDefaults.HEIGHTS.LARGE },
-  }
-
-  for i, preset in ipairs(presets) do
+  for i, preset in ipairs(Constants.HEIGHT_PRESETS) do
     local is_current = track.height == preset.height
+    local x, y = ImGui.GetCursorScreenPos(ctx)
 
-    if is_current then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#404060"))
-    end
+    local result = Button.draw(ctx, {
+      id = "height_preset_" .. preset.name,
+      x = x,
+      y = y,
+      label = preset.name:sub(1, 3),
+      width = 38,
+      height = 22,
+      is_toggled = is_current,
+      tooltip = preset.name .. " (" .. preset.height .. "px)",
+      advance = "none",
+    })
 
-    if ImGui.Button(ctx, preset.name .. "##height", 60, 22) then
+    if result.clicked then
       track.height = preset.height
       changed = true
     end
 
-    if is_current then
-      ImGui.PopStyleColor(ctx)
-    end
+    ImGui.SetCursorScreenPos(ctx, x + 42, y)
 
-    if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, preset.height .. "px")
-    end
-
-    if i < #presets then
-      ImGui.SameLine(ctx, 0, 4)
+    if i >= #Constants.HEIGHT_PRESETS then
+      ImGui.SetCursorScreenPos(ctx, x, y + 26)
     end
   end
 
   return changed
 end
 
--- Draw state toggles
+-- Draw state toggles using Button widget
 function Panel:draw_state_toggles(ctx)
   local track = self.track
   local changed = false
+  local x, y = ImGui.GetCursorScreenPos(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
-  ImGui.Text(ctx, "Track State")
-  ImGui.PopStyleColor(ctx)
-
-  ImGui.Dummy(ctx, 0, 4)
-
-  -- Armed
-  local armed_color = track.armed and hexrgb("#CC4444") or hexrgb("#2A2A2A")
-  ImGui.PushStyleColor(ctx, ImGui.Col_Button, armed_color)
-  if ImGui.Button(ctx, "R##armed", 30, 24) then
+  -- Armed (R)
+  local armed_result = Button.draw(ctx, {
+    id = "track_armed",
+    x = x,
+    y = y,
+    label = "R",
+    width = 30,
+    height = 24,
+    is_toggled = track.armed,
+    bg_on_color = hexrgb("#CC4444"),
+    tooltip = "Record Armed",
+    advance = "none",
+  })
+  if armed_result.clicked then
     track.armed = not track.armed
     changed = true
   end
-  ImGui.PopStyleColor(ctx)
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Record Armed")
-  end
 
-  ImGui.SameLine(ctx, 0, 4)
-
-  -- Muted
-  local muted_color = track.muted and hexrgb("#888844") or hexrgb("#2A2A2A")
-  ImGui.PushStyleColor(ctx, ImGui.Col_Button, muted_color)
-  if ImGui.Button(ctx, "M##muted", 30, 24) then
+  -- Muted (M)
+  local muted_result = Button.draw(ctx, {
+    id = "track_muted",
+    x = x + 34,
+    y = y,
+    label = "M",
+    width = 30,
+    height = 24,
+    is_toggled = track.muted,
+    bg_on_color = hexrgb("#888844"),
+    tooltip = "Muted",
+    advance = "none",
+  })
+  if muted_result.clicked then
     track.muted = not track.muted
     changed = true
   end
-  ImGui.PopStyleColor(ctx)
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Muted")
-  end
 
-  ImGui.SameLine(ctx, 0, 4)
-
-  -- Soloed
-  local soloed_color = track.soloed and hexrgb("#44AA44") or hexrgb("#2A2A2A")
-  ImGui.PushStyleColor(ctx, ImGui.Col_Button, soloed_color)
-  if ImGui.Button(ctx, "S##soloed", 30, 24) then
+  -- Soloed (S)
+  local soloed_result = Button.draw(ctx, {
+    id = "track_soloed",
+    x = x + 68,
+    y = y,
+    label = "S",
+    width = 30,
+    height = 24,
+    is_toggled = track.soloed,
+    bg_on_color = hexrgb("#44AA44"),
+    tooltip = "Soloed",
+    advance = "none",
+  })
+  if soloed_result.clicked then
     track.soloed = not track.soloed
     changed = true
   end
-  ImGui.PopStyleColor(ctx)
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Soloed")
-  end
+
+  ImGui.SetCursorScreenPos(ctx, x, y + 28)
 
   return changed
 end
@@ -147,54 +157,72 @@ function Panel:draw_folder_settings(ctx)
 
   ImGui.Dummy(ctx, 0, 4)
 
-  -- Folder state
+  -- Folder state buttons
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
   ImGui.Text(ctx, "State:")
   ImGui.PopStyleColor(ctx)
 
   ImGui.SameLine(ctx, 60)
 
+  local x, y = ImGui.GetCursorScreenPos(ctx)
   local folder_states = {
     { name = "None", value = 0 },
     { name = "Open", value = 1 },
-    { name = "Closed", value = -1 },
+    { name = "Cls", value = -1 },
     { name = "Last", value = -2 },
   }
 
   for i, state in ipairs(folder_states) do
     local is_current = track.folder_state == state.value
 
-    if is_current then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#404060"))
-    end
+    local result = Button.draw(ctx, {
+      id = "folder_state_" .. state.name,
+      x = x + (i - 1) * 44,
+      y = y,
+      label = state.name,
+      width = 40,
+      height = 20,
+      is_toggled = is_current,
+      tooltip = Constants.FOLDER_STATE_LABELS[state.value],
+      advance = "none",
+    })
 
-    if ImGui.Button(ctx, state.name .. "##folder", 45, 20) then
+    if result.clicked then
       track.folder_state = state.value
       changed = true
     end
-
-    if is_current then
-      ImGui.PopStyleColor(ctx)
-    end
-
-    if i < #folder_states then
-      ImGui.SameLine(ctx, 0, 2)
-    end
   end
 
-  -- Folder depth
+  ImGui.SetCursorScreenPos(ctx, x - 60, y + 26)
+
+  -- Folder depth using Slider
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
   ImGui.Text(ctx, "Depth:")
   ImGui.PopStyleColor(ctx)
 
   ImGui.SameLine(ctx, 60)
-  ImGui.SetNextItemWidth(ctx, 80)
 
-  local depth_changed, new_depth = ImGui.SliderInt(ctx, "##folder_depth", track.folder_depth, 0, 5)
-  if depth_changed then
-    track.folder_depth = new_depth
+  x, y = ImGui.GetCursorScreenPos(ctx)
+
+  local depth_result = Slider.int(ctx, {
+    id = "folder_depth",
+    x = x,
+    y = y,
+    value = track.folder_depth,
+    min = 0,
+    max = 5,
+    width = 120,
+    height = 18,
+    tooltip_fn = function(v) return "Depth: " .. math.floor(v) end,
+    advance = "none",
+  })
+
+  if depth_result.changed then
+    track.folder_depth = math.floor(depth_result.value)
     changed = true
   end
+
+  ImGui.SetCursorScreenPos(ctx, x - 60, y + 24)
 
   return changed
 end
@@ -202,12 +230,22 @@ end
 -- Main draw function
 function Panel:draw(ctx)
   local result = nil
+  local x, y = ImGui.GetCursorScreenPos(ctx)
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
 
   -- Add track button at top
-  if ImGui.Button(ctx, "+ Add Track##add", -1, 24) then
-    if self.on_add then
-      result = { type = "add_track" }
-    end
+  local add_result = Button.draw(ctx, {
+    id = "add_track",
+    x = x,
+    y = y,
+    label = "+ Add Track",
+    width = avail_w - 4,
+    height = 24,
+    advance = "vertical",
+  })
+
+  if add_result.clicked then
+    result = { type = "add_track" }
   end
 
   ImGui.Dummy(ctx, 0, 8)
@@ -228,7 +266,7 @@ function Panel:draw(ctx)
   local track = self.track
   local changed = false
 
-  -- Track name
+  -- Track name header
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#00AAFF"))
   ImGui.Text(ctx, "Track: " .. track.name)
   ImGui.PopStyleColor(ctx)
@@ -251,23 +289,38 @@ function Panel:draw(ctx)
 
   ImGui.Dummy(ctx, 0, 8)
 
-  -- Height
+  -- Height section
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
   ImGui.Text(ctx, "Height")
   ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 4)
 
+  -- Height slider
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
   ImGui.Text(ctx, "Value:")
   ImGui.PopStyleColor(ctx)
 
   ImGui.SameLine(ctx, 60)
-  ImGui.SetNextItemWidth(ctx, 80)
 
-  local h_changed, new_h = ImGui.DragInt(ctx, "##track_height", track.height, 1, 25, 200, "%d px")
-  if h_changed then
-    track.height = new_h
+  x, y = ImGui.GetCursorScreenPos(ctx)
+
+  local height_result = Slider.int(ctx, {
+    id = "track_height",
+    x = x,
+    y = y,
+    value = track.height,
+    min = Constants.TRACK.MIN_HEIGHT,
+    max = Constants.TRACK.MAX_HEIGHT,
+    default = Constants.TRACK.DEFAULT_HEIGHT,
+    width = 140,
+    height = 18,
+    tooltip_fn = function(v) return math.floor(v) .. " px" end,
+    advance = "vertical",
+  })
+
+  if height_result.changed then
+    track.height = math.floor(height_result.value)
     changed = true
   end
 
@@ -281,7 +334,13 @@ function Panel:draw(ctx)
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 0, 8)
 
-  -- State toggles
+  -- State toggles section
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
+  ImGui.Text(ctx, "Track State")
+  ImGui.PopStyleColor(ctx)
+
+  ImGui.Dummy(ctx, 0, 4)
+
   if self:draw_state_toggles(ctx) then
     changed = true
   end
@@ -296,17 +355,24 @@ function Panel:draw(ctx)
   ImGui.Dummy(ctx, 0, 8)
 
   -- Delete button
-  ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#4A2A2A"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#5A3A3A"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#6A4A4A"))
+  x, y = ImGui.GetCursorScreenPos(ctx)
 
-  if ImGui.Button(ctx, "Remove Track", -1, 26) then
-    if self.on_delete then
-      result = { type = "delete_track", track = track }
-    end
+  local delete_result = Button.draw(ctx, {
+    id = "remove_track",
+    x = x,
+    y = y,
+    label = "Remove Track",
+    width = avail_w - 4,
+    height = 26,
+    bg_color = hexrgb("#4A2A2A"),
+    bg_hover_color = hexrgb("#5A3A3A"),
+    bg_active_color = hexrgb("#6A4A4A"),
+    advance = "vertical",
+  })
+
+  if delete_result.clicked then
+    result = { type = "delete_track", track = track }
   end
-
-  ImGui.PopStyleColor(ctx, 3)
 
   -- Notify of changes
   if changed and self.on_change then

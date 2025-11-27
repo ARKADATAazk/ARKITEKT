@@ -6,6 +6,8 @@ local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 local TCPElements = require('WalterBuilder.defs.tcp_elements')
 local Colors = require('WalterBuilder.defs.colors')
+local Chip = require('arkitekt.gui.widgets.data.chip')
+local Button = require('arkitekt.gui.widgets.primitives.button')
 
 local hexrgb = ark.Colors.hexrgb
 
@@ -61,53 +63,38 @@ function Panel:draw_category_header(ctx, category, display_name)
   return open
 end
 
--- Draw a single element item
+-- Draw a single element item using Chip widget
 function Panel:draw_element_item(ctx, def)
   local is_active = self.active_ids[def.id]
   local is_selected = self.selected_def and self.selected_def.id == def.id
 
-  -- Item background
-  local bg_color = is_selected and hexrgb("#404040") or (is_active and hexrgb("#2A3A2A") or hexrgb("#1A1A1A"))
+  -- Get category color
+  local cat_color = Colors.CATEGORY[def.category] or Colors.CATEGORY.other
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Button, bg_color)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#333333"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#444444"))
+  -- Display name with active indicator
+  local label = def.name
+  if is_active then
+    label = label .. " +"
+  end
 
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
-  -- Draw as selectable button - capture result, don't return early
-  local button_clicked = ImGui.Button(ctx, "##" .. def.id, avail_w - 8, 24)
-  if button_clicked then
-    self.selected_def = def
-  end
+  -- Draw element as DOT style chip
+  local clicked, chip_w, chip_h = Chip.draw(ctx, {
+    id = "elem_" .. def.id,
+    style = Chip.STYLE.DOT,
+    label = label,
+    color = cat_color,
+    height = 26,
+    explicit_width = avail_w - 8,
+    is_selected = is_selected,
+    interactive = true,
+    rounding = 4,
+    dot_shape = Chip.SHAPE.SQUARE,
+    dot_rounding = 2,
+  })
 
-  ImGui.PopStyleColor(ctx, 3)  -- Always pop before any early return
-
-  -- Draw content on top
-  ImGui.SameLine(ctx, 8)
-  ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) - 22)
-
-  -- Category color indicator
-  local cat_color = Colors.CATEGORY[def.category] or Colors.CATEGORY.other
-  ImGui.ColorButton(ctx, "##cat_" .. def.id, cat_color, ImGui.ColorEditFlags_NoTooltip, 8, 16)
-
-  ImGui.SameLine(ctx, 0, 6)
-
-  -- Element name
-  local text_color = is_active and hexrgb("#88CC88") or hexrgb("#CCCCCC")
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
-  ImGui.Text(ctx, def.name)
-  ImGui.PopStyleColor(ctx)
-
-  -- Active indicator
-  if is_active then
-    ImGui.SameLine(ctx, avail_w - 30)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CC88"))
-    ImGui.Text(ctx, "[+]")
-    ImGui.PopStyleColor(ctx)
-  end
-
-  -- Tooltip
+  -- Tooltip on hover
   if ImGui.IsItemHovered(ctx) then
     ImGui.BeginTooltip(ctx)
     ImGui.Text(ctx, def.id)
@@ -116,16 +103,26 @@ function Panel:draw_element_item(ctx, def)
       ImGui.Text(ctx, def.description)
       ImGui.PopStyleColor(ctx)
     end
+    if is_active then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CC88"))
+      ImGui.Text(ctx, "(already in layout)")
+      ImGui.PopStyleColor(ctx)
+    else
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+      ImGui.Text(ctx, "Double-click to add")
+      ImGui.PopStyleColor(ctx)
+    end
     ImGui.EndTooltip(ctx)
   end
 
-  -- Double-click to add
+  -- Check for double-click to add
   local double_clicked = ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0)
 
-  -- Return action after all drawing is done
+  -- Handle click/double-click
   if double_clicked then
     return "add"
-  elseif button_clicked then
+  elseif clicked then
+    self.selected_def = def
     return "select"
   end
 
@@ -199,16 +196,21 @@ function Panel:draw(ctx)
 
     ImGui.Dummy(ctx, 0, 4)
 
-    if ark.Button.draw_at_cursor(ctx, {
+    local x, y = ImGui.GetCursorScreenPos(ctx)
+    local avail_w = ImGui.GetContentRegionAvail(ctx)
+
+    local add_result = Button.draw(ctx, {
+      id = "add_element_btn",
+      x = x,
+      y = y,
       label = "Add to Layout",
-      width = -1,
+      width = avail_w - 4,
       height = 28,
-      on_click = function()
-        if self.on_add then
-          result = { type = "add", definition = self.selected_def }
-        end
-      end
-    }, "add_element_btn") then
+      advance = "vertical",
+    })
+
+    if add_result.clicked and self.on_add then
+      result = { type = "add", definition = self.selected_def }
     end
   else
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))

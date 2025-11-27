@@ -7,6 +7,9 @@ local ark = require('arkitekt')
 local Coordinate = require('WalterBuilder.domain.coordinate')
 local Simulator = require('WalterBuilder.domain.simulator')
 local Colors = require('WalterBuilder.defs.colors')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local Slider = require('arkitekt.gui.widgets.primitives.slider')
+local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
 
 local hexrgb = ark.Colors.hexrgb
 
@@ -54,22 +57,24 @@ function Panel:draw_coord_input(ctx, label, value, min_val, max_val, step, id_su
   return changed, new_val
 end
 
--- Draw attachment toggle button
+-- Draw attachment toggle button using Button widget
 function Panel:draw_attachment_toggle(ctx, label, value, id_suffix)
   local is_attached = value > 0
+  local x, y = ImGui.GetCursorScreenPos(ctx)
 
-  local bg_color = is_attached and hexrgb("#2A4A2A") or hexrgb("#2A2A2A")
-  local text_color = is_attached and hexrgb("#88CC88") or hexrgb("#888888")
+  local result = Button.draw(ctx, {
+    id = id_suffix,
+    x = x,
+    y = y,
+    label = label,
+    width = 50,
+    height = 24,
+    is_toggled = is_attached,
+    bg_on_color = hexrgb("#2A4A2A"),
+    advance = "vertical",
+  })
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Button, bg_color)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#3A3A3A"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
-
-  local clicked = ImGui.Button(ctx, label .. "##" .. id_suffix, 50, 24)
-
-  ImGui.PopStyleColor(ctx, 3)
-
-  if clicked then
+  if result.clicked then
     return true, is_attached and 0 or 1
   end
 
@@ -197,7 +202,7 @@ function Panel:draw_attachment_section(ctx)
   return changed
 end
 
--- Draw preset buttons for common attachment patterns
+-- Draw preset buttons for common attachment patterns using Button widget
 function Panel:draw_attachment_presets(ctx)
   local element = self.element
   local c = element.coords
@@ -211,67 +216,56 @@ function Panel:draw_attachment_presets(ctx)
 
   ImGui.Dummy(ctx, 0, 2)
 
-  -- Fixed (all zero)
-  if ImGui.Button(ctx, "Fixed##preset", 60, 22) then
-    c.ls, c.ts, c.rs, c.bs = 0, 0, 0, 0
-    changed = true
-  end
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Fixed position and size")
+  local x, y = ImGui.GetCursorScreenPos(ctx)
+  local presets = {
+    { id = "fixed", label = "Fixed", x = 0, tooltip = "Fixed position and size", action = function() c.ls, c.ts, c.rs, c.bs = 0, 0, 0, 0 end },
+    { id = "stretchh", label = "StrH", x = 64, tooltip = "Stretch horizontally", action = function() c.ls, c.rs = 0, 1 end },
+    { id = "stretchv", label = "StrV", x = 128, tooltip = "Stretch vertically", action = function() c.ts, c.bs = 0, 1 end },
+  }
+
+  for _, p in ipairs(presets) do
+    local result = Button.draw(ctx, {
+      id = "preset_" .. p.id,
+      x = x + p.x,
+      y = y,
+      label = p.label,
+      width = 60,
+      height = 22,
+      tooltip = p.tooltip,
+      advance = "none",
+    })
+    if result.clicked then
+      p.action()
+      changed = true
+    end
   end
 
-  ImGui.SameLine(ctx, 0, 4)
+  y = y + 26
 
-  -- Stretch H (ls=0, rs=1)
-  if ImGui.Button(ctx, "StretchH##preset", 60, 22) then
-    c.ls, c.rs = 0, 1
-    changed = true
-  end
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Stretch horizontally with parent")
-  end
+  local presets2 = {
+    { id = "anchorr", label = "AnchR", x = 0, tooltip = "Anchor to right edge", action = function() c.ls, c.rs = 1, 1 end },
+    { id = "anchorb", label = "AnchB", x = 64, tooltip = "Anchor to bottom edge", action = function() c.ts, c.bs = 1, 1 end },
+    { id = "fill", label = "Fill", x = 128, tooltip = "Fill parent (stretch both)", action = function() c.ls, c.ts, c.rs, c.bs = 0, 0, 1, 1 end },
+  }
 
-  ImGui.SameLine(ctx, 0, 4)
-
-  -- Stretch V (ts=0, bs=1)
-  if ImGui.Button(ctx, "StretchV##preset", 60, 22) then
-    c.ts, c.bs = 0, 1
-    changed = true
-  end
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Stretch vertically with parent")
-  end
-
-  -- Anchor Right
-  if ImGui.Button(ctx, "AnchorR##preset", 60, 22) then
-    c.ls, c.rs = 1, 1
-    changed = true
-  end
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Anchor to right edge")
+  for _, p in ipairs(presets2) do
+    local result = Button.draw(ctx, {
+      id = "preset_" .. p.id,
+      x = x + p.x,
+      y = y,
+      label = p.label,
+      width = 60,
+      height = 22,
+      tooltip = p.tooltip,
+      advance = "none",
+    })
+    if result.clicked then
+      p.action()
+      changed = true
+    end
   end
 
-  ImGui.SameLine(ctx, 0, 4)
-
-  -- Anchor Bottom
-  if ImGui.Button(ctx, "AnchorB##preset", 60, 22) then
-    c.ts, c.bs = 1, 1
-    changed = true
-  end
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Anchor to bottom edge")
-  end
-
-  ImGui.SameLine(ctx, 0, 4)
-
-  -- Fill (stretch both)
-  if ImGui.Button(ctx, "Fill##preset", 60, 22) then
-    c.ls, c.ts, c.rs, c.bs = 0, 0, 1, 1
-    changed = true
-  end
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Fill parent (stretch both ways)")
-  end
+  ImGui.SetCursorScreenPos(ctx, x, y + 26)
 
   return changed
 end
@@ -337,24 +331,39 @@ function Panel:draw(ctx)
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 0, 4)
 
-  -- Advanced toggle
-  local _, show_adv = ImGui.Checkbox(ctx, "Show advanced options", self.show_advanced)
-  self.show_advanced = show_adv
+  -- Advanced toggle using Checkbox widget
+  local check_result = Checkbox.draw(ctx, {
+    id = "show_advanced",
+    label = "Show advanced options",
+    checked = self.show_advanced,
+    size = 18,
+  })
+  if check_result.changed then
+    self.show_advanced = check_result.value
+  end
 
   -- Delete button
   ImGui.Dummy(ctx, 0, 8)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#4A2A2A"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#5A3A3A"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#6A4A4A"))
+  local x, y = ImGui.GetCursorScreenPos(ctx)
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
 
-  if ImGui.Button(ctx, "Remove from Layout", -1, 26) then
-    if self.on_delete then
-      result = { type = "delete", element = element }
-    end
+  local delete_result = Button.draw(ctx, {
+    id = "remove_element",
+    x = x,
+    y = y,
+    label = "Remove from Layout",
+    width = avail_w - 4,
+    height = 26,
+    bg_color = hexrgb("#4A2A2A"),
+    bg_hover_color = hexrgb("#5A3A3A"),
+    bg_active_color = hexrgb("#6A4A4A"),
+    advance = "vertical",
+  })
+
+  if delete_result.clicked and self.on_delete then
+    result = { type = "delete", element = element }
   end
-
-  ImGui.PopStyleColor(ctx, 3)
 
   -- Notify of changes
   if changed and self.on_change then

@@ -14,6 +14,7 @@ local CodePanel = require('WalterBuilder.ui.panels.code_panel')
 local TCPElements = require('WalterBuilder.defs.tcp_elements')
 local Constants = require('WalterBuilder.defs.constants')
 local Notification = require('WalterBuilder.domain.notification')
+local Button = require('arkitekt.gui.widgets.primitives.button')
 
 local hexrgb = ark.Colors.hexrgb
 
@@ -232,71 +233,93 @@ function GUI:handle_add_track()
   end
 end
 
--- Draw toolbar
+-- Draw toolbar using Button widget
 function GUI:draw_toolbar(ctx)
+  local x, y = ImGui.GetCursorScreenPos(ctx)
+  local btn_x = x
+
   -- Undo/Redo buttons (if controller available)
   if self.controller then
     local can_undo = self.controller:can_undo()
     local can_redo = self.controller:can_redo()
 
-    if not can_undo then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
-    end
-    if ImGui.Button(ctx, "Undo##toolbar", 50, 24) and can_undo then
+    local undo_result = Button.draw(ctx, {
+      id = "toolbar_undo",
+      x = btn_x,
+      y = y,
+      label = "Undo",
+      width = 50,
+      height = 24,
+      disabled = not can_undo,
+      tooltip = "Undo last action (Ctrl+Z)",
+      advance = "none",
+    })
+    if undo_result.clicked then
       self.controller:undo()
     end
-    if not can_undo then
-      ImGui.PopStyleColor(ctx)
-    end
-    if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, "Undo last action (Ctrl+Z)")
-    end
+    btn_x = btn_x + 54
 
-    ImGui.SameLine(ctx, 0, 4)
-
-    if not can_redo then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
-    end
-    if ImGui.Button(ctx, "Redo##toolbar", 50, 24) and can_redo then
+    local redo_result = Button.draw(ctx, {
+      id = "toolbar_redo",
+      x = btn_x,
+      y = y,
+      label = "Redo",
+      width = 50,
+      height = 24,
+      disabled = not can_redo,
+      tooltip = "Redo last undone action (Ctrl+Y)",
+      advance = "none",
+    })
+    if redo_result.clicked then
       self.controller:redo()
     end
-    if not can_redo then
-      ImGui.PopStyleColor(ctx)
-    end
-    if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, "Redo last undone action (Ctrl+Y)")
-    end
-
-    ImGui.SameLine(ctx, 0, 16)
+    btn_x = btn_x + 66
   end
 
-  -- Context selector (TCP, MCP, etc.)
+  -- Context label
+  ImGui.SetCursorScreenPos(ctx, btn_x, y + 4)
   ImGui.Text(ctx, "Context:")
-  ImGui.SameLine(ctx)
+  btn_x = btn_x + 60
 
+  -- Context selector (TCP, MCP, etc.)
   local contexts = {"TCP", "MCP", "EnvCP", "Trans"}
   local current = self.State.get_context():upper()
 
   for _, ctx_name in ipairs(contexts) do
     local is_active = ctx_name == current
-    if is_active then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#404060"))
-    end
 
-    if ImGui.Button(ctx, ctx_name .. "##ctx", 50, 24) then
+    local ctx_result = Button.draw(ctx, {
+      id = "ctx_" .. ctx_name,
+      x = btn_x,
+      y = y,
+      label = ctx_name,
+      width = 50,
+      height = 24,
+      is_toggled = is_active,
+      advance = "none",
+    })
+
+    if ctx_result.clicked then
       self.State.set_context(ctx_name:lower())
     end
 
-    if is_active then
-      ImGui.PopStyleColor(ctx)
-    end
-    ImGui.SameLine(ctx, 0, 4)
+    btn_x = btn_x + 54
   end
 
-  ImGui.SameLine(ctx, 0, 20)
+  btn_x = btn_x + 16
 
-  -- Actions
-  if ImGui.Button(ctx, "Load Defaults##toolbar", 100, 24) then
+  -- Load Defaults button
+  local load_result = Button.draw(ctx, {
+    id = "toolbar_load_defaults",
+    x = btn_x,
+    y = y,
+    label = "Load Defaults",
+    width = 100,
+    height = 24,
+    tooltip = "Load default TCP layout elements",
+    advance = "none",
+  })
+  if load_result.clicked then
     if self.controller then
       self.controller:load_tcp_defaults()
     else
@@ -305,13 +328,20 @@ function GUI:draw_toolbar(ctx)
       self.code_panel:invalidate()
     end
   end
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Load default TCP layout elements")
-  end
+  btn_x = btn_x + 108
 
-  ImGui.SameLine(ctx, 0, 8)
-
-  if ImGui.Button(ctx, "Clear All##toolbar", 80, 24) then
+  -- Clear All button
+  local clear_result = Button.draw(ctx, {
+    id = "toolbar_clear_all",
+    x = btn_x,
+    y = y,
+    label = "Clear All",
+    width = 80,
+    height = 24,
+    tooltip = "Remove all elements from layout",
+    advance = "none",
+  })
+  if clear_result.clicked then
     if self.controller then
       self.controller:clear_elements()
     else
@@ -321,13 +351,20 @@ function GUI:draw_toolbar(ctx)
       self.code_panel:invalidate()
     end
   end
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Remove all elements from layout")
-  end
+  btn_x = btn_x + 88
 
-  ImGui.SameLine(ctx, 0, 8)
-
-  if ImGui.Button(ctx, "Reset Tracks##toolbar", 90, 24) then
+  -- Reset Tracks button
+  local reset_result = Button.draw(ctx, {
+    id = "toolbar_reset_tracks",
+    x = btn_x,
+    y = y,
+    label = "Reset Tracks",
+    width = 95,
+    height = 24,
+    tooltip = "Reset to default demo tracks",
+    advance = "none",
+  })
+  if reset_result.clicked then
     if self.controller then
       self.controller:load_default_tracks()
     else
@@ -335,9 +372,9 @@ function GUI:draw_toolbar(ctx)
       self:sync_canvas()
     end
   end
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Reset to default demo tracks")
-  end
+
+  -- Move cursor to next line
+  ImGui.SetCursorScreenPos(ctx, x, y + 28)
 end
 
 -- Draw status bar
