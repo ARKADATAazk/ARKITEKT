@@ -71,7 +71,10 @@ ThemeAdjuster/
   - `.assembler_state.json` tracks applied assets
   - Restores original files when packages are removed
 - [x] **Output mode toggle** - Folder (📁) vs ZIP (📦) in footer
-- [ ] Handle conflicts (same key from multiple packages) - show visual indicator? Maybe not needed if priority is clear
+- [x] **Override indicator** - Orange dot shows when keys are overridden by higher-priority packages
+  - Package modal shows "Overridden by: PackageName" in tooltip
+  - Filter option to view only overridden keys
+  - Stats display shows count of overridden keys
 - [ ] **ZIP operation progress UI** - Fetch spinner/progress from existing arkitekt library when needed
 
 #### 1.2 Additional Tab: Polish & Organization

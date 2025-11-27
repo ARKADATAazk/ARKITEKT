@@ -1004,6 +1004,95 @@ function M.get_default_reassembled_path(themes_dir, theme_name)
 end
 
 -- ============================================================================
+-- SHADOW/OVERRIDE DETECTION
+-- ============================================================================
+
+-- Detect which keys from a specific package are "shadowed" (overridden by higher-priority packages)
+-- Returns: { key = overriding_pkg_id, ... } for keys that won't be used due to priority
+function M.detect_shadowed_keys(packages, active_packages, package_order, exclusions, pins, target_pkg_id)
+  local shadowed = {}  -- key -> pkg_id that overrides it
+
+  -- Find target package position in order
+  local target_pos = nil
+  for i, pkg_id in ipairs(package_order) do
+    if pkg_id == target_pkg_id then
+      target_pos = i
+      break
+    end
+  end
+
+  if not target_pos then return shadowed end
+
+  -- Find target package data
+  local target_pkg = nil
+  for _, pkg in ipairs(packages) do
+    if pkg.id == target_pkg_id then
+      target_pkg = pkg
+      break
+    end
+  end
+
+  if not target_pkg then return shadowed end
+
+  -- Get exclusions for target package
+  local target_excl = exclusions[target_pkg_id] or {}
+  local target_excl_set = {}
+  for key, _ in pairs(target_excl) do
+    target_excl_set[key] = true
+  end
+
+  -- For each key in target package, check if higher-priority package provides it
+  for key, _ in pairs(target_pkg.assets or {}) do
+    -- Skip if excluded from target package
+    if target_excl_set[key] then
+      goto continue
+    end
+
+    -- Skip if this key is pinned (pins override priority)
+    if pins[key] then
+      goto continue
+    end
+
+    -- Check packages with HIGHER priority (come AFTER in order array)
+    for i = target_pos + 1, #package_order do
+      local higher_pkg_id = package_order[i]
+
+      -- Skip if not active
+      if not active_packages[higher_pkg_id] then
+        goto next_pkg
+      end
+
+      -- Find the package
+      local higher_pkg = nil
+      for _, pkg in ipairs(packages) do
+        if pkg.id == higher_pkg_id then
+          higher_pkg = pkg
+          break
+        end
+      end
+
+      if not higher_pkg then
+        goto next_pkg
+      end
+
+      -- Check if higher package has this key (and it's not excluded)
+      local higher_excl = exclusions[higher_pkg_id] or {}
+      if higher_pkg.assets[key] and not higher_excl[key] then
+        -- This key is shadowed by higher_pkg_id
+        shadowed[key] = higher_pkg_id
+        break  -- First higher-priority package wins
+      end
+
+      ::next_pkg::
+    end
+
+    ::continue::
+  end
+
+  return shadowed
+end
+
+-- ============================================================================
 -- FILTERING
 -- ============================================================================
 
