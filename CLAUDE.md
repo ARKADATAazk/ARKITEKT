@@ -379,6 +379,87 @@ When you need more detail:
 
 ---
 
+## ImGui Reference Materials
+
+**Location**: `helpers/` (to be moved to `reference/imgui/`)
+
+When implementing widgets or understanding ImGui patterns, consult these official ReaImGui reference files:
+
+### 1. ReaImGui_Demo.lua
+**Path**: `helpers/ReaImGui_Demo.lua`
+
+Official ImGui demo ported to Lua. Shows all ImGui widgets, patterns, and real-world usage.
+
+**When to use:**
+- Implementing a new widget → Search for ImGui equivalent
+- Understanding Begin/End patterns → See real examples
+- Learning ImGui conventions → See how official demo does it
+
+**Key sections** (search by comment):
+```bash
+# Menu patterns
+grep -A 20 "BeginMenu\|MenuItem" helpers/ReaImGui_Demo.lua
+
+# Table API
+grep -A 50 "BeginTable" helpers/ReaImGui_Demo.lua
+
+# Popup patterns
+grep -A 30 "BeginPopup" helpers/ReaImGui_Demo.lua
+
+# Widget examples
+grep -A 10 "Button\|Checkbox\|Slider" helpers/ReaImGui_Demo.lua
+```
+
+### 2. imgui_defs.lua
+**Path**: `helpers/imgui_defs.lua`
+
+LuaCATS type definitions for ReaImGui. Provides autocomplete in LSP-enabled editors.
+
+**When to use:**
+- Need exact function signature → Check definitions
+- Want to know available flags → See all ImGui constants
+- IDE autocomplete setup → Reference for types
+
+**Example:**
+```lua
+-- Search for Button signature
+grep -A 5 "function.*Button" helpers/imgui_defs.lua
+```
+
+### How to Use These References
+
+**Workflow when adding a widget:**
+
+1. **Check the demo** for ImGui equivalent:
+   ```bash
+   grep -i "yourtargetwidget" helpers/ReaImGui_Demo.lua
+   ```
+
+2. **Understand the pattern** (Begin/End? Single call? Return value?)
+
+3. **Consult API philosophy** (`cookbook/API_DESIGN_PHILOSOPHY.md`):
+   - Should you match this pattern exactly?
+   - Or improve with opts table, result object, etc.?
+
+4. **Implement** following ARKITEKT conventions
+
+**Example:**
+```bash
+# Want to implement a menu bar widget
+grep -A 30 "BeginMenuBar" helpers/ReaImGui_Demo.lua
+# See: Uses BeginMenuBar/EndMenuBar pattern
+# Decision: Match this (Begin/End is good for stateful operations)
+
+# Want to implement a button
+grep -A 10 "ImGui\.Button" helpers/ReaImGui_Demo.lua
+# See: Returns boolean, positional params
+# Decision: Improve with opts table + result object (see API_DESIGN_PHILOSOPHY.md)
+```
+
+**Remember:** These show **ImGui patterns**, not ARKITEKT patterns. Use them to understand what ImGui users expect, then decide whether to match or improve (see API Design Philosophy).
+
+---
+
 ## Common Gotchas
 
 | Gotcha | Solution |
