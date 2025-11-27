@@ -48,6 +48,7 @@ function GUI:initialize_once(ctx)
     parent_h = parent_h,
     show_grid = self.State.get_show_grid(),
     show_attachments = self.State.get_show_attachments(),
+    view_mode = PreviewCanvas.VIEW_TRACKS,  -- Start in tracks view
   })
 
   -- Create panels
@@ -68,7 +69,12 @@ function GUI:initialize_once(ctx)
 
   self.code_panel = CodePanel.new()
 
-  -- Update canvas with current elements
+  -- Load default tracks if none exist
+  if #self.State.get_tracks() == 0 then
+    self.State.load_default_tracks()
+  end
+
+  -- Update canvas with current elements and tracks
   self:sync_canvas()
 
   -- Load settings
@@ -83,7 +89,9 @@ end
 -- Sync canvas with state
 function GUI:sync_canvas()
   local elements = self.State.get_elements()
+  local tracks = self.State.get_tracks()
   self.canvas:set_elements(elements)
+  self.canvas:set_tracks(tracks)
   self.elements_panel:set_active_elements(self.State.get_element_ids())
   self.code_panel:set_elements(elements)
 end
@@ -165,6 +173,16 @@ function GUI:draw_toolbar(ctx)
   if ImGui.IsItemHovered(ctx) then
     ImGui.SetTooltip(ctx, "Remove all elements from layout")
   end
+
+  ImGui.SameLine(ctx, 0, 8)
+
+  if ImGui.Button(ctx, "Reset Tracks##toolbar", 90, 24) then
+    self.State.load_default_tracks()
+    self:sync_canvas()
+  end
+  if ImGui.IsItemHovered(ctx) then
+    ImGui.SetTooltip(ctx, "Reset to default demo tracks")
+  end
 end
 
 -- Main draw function
@@ -238,9 +256,13 @@ function GUI:draw(ctx, window, shell_state)
   local canvas_result = self.canvas:draw(ctx)
 
   -- Handle canvas selection
-  if canvas_result and canvas_result.type == "select" then
-    self.State.set_selected(canvas_result.element)
-    self.properties_panel:set_element(canvas_result.element)
+  if canvas_result then
+    if canvas_result.type == "select" then
+      self.State.set_selected(canvas_result.element)
+      self.properties_panel:set_element(canvas_result.element)
+    elseif canvas_result.type == "select_track" then
+      self.State.set_selected_track(canvas_result.track)
+    end
   end
 
   -- Sync canvas config back to state

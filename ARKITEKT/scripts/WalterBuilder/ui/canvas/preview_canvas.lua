@@ -6,17 +6,22 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('WalterBuilder.defs.colors')
 local Simulator = require('WalterBuilder.domain.simulator')
 local ElementRenderer = require('WalterBuilder.ui.canvas.element_renderer')
+local TrackRenderer = require('WalterBuilder.ui.canvas.track_renderer')
 
 local M = {}
 local Canvas = {}
 Canvas.__index = Canvas
+
+-- View modes
+M.VIEW_SINGLE = "single"    -- Single track/element view
+M.VIEW_TRACKS = "tracks"    -- Multiple tracks stacked vertically
 
 -- Default canvas configuration
 local DEFAULT_CONFIG = {
   min_parent_w = 150,
   min_parent_h = 60,
   max_parent_w = 800,
-  max_parent_h = 400,
+  max_parent_h = 600,
   default_parent_w = 300,
   default_parent_h = 90,
   grid_size = 10,
@@ -32,6 +37,9 @@ function M.new(opts)
     -- Parent container dimensions (what user resizes)
     parent_w = opts.parent_w or DEFAULT_CONFIG.default_parent_w,
     parent_h = opts.parent_h or DEFAULT_CONFIG.default_parent_h,
+
+    -- View mode
+    view_mode = opts.view_mode or M.VIEW_TRACKS,
 
     -- Configuration
     config = {
@@ -55,9 +63,14 @@ function M.new(opts)
     -- Selection
     selected_element = nil,
     hovered_element = nil,
+    selected_track = nil,
+    hovered_track = nil,
 
     -- Elements to display
     elements = {},
+
+    -- Tracks to display (for VIEW_TRACKS mode)
+    tracks = {},
 
     -- Cached simulation results
     sim_cache = nil,
@@ -68,8 +81,14 @@ function M.new(opts)
     offset_x = 20,
     offset_y = 20,
 
+    -- Scroll offset for track view
+    scroll_y = 0,
+
     -- Element renderer instance
     renderer = ElementRenderer.new(),
+
+    -- Track renderer instance
+    track_renderer = TrackRenderer.new(),
   }, Canvas)
 
   return self
@@ -81,9 +100,29 @@ function Canvas:set_elements(elements)
   self.sim_cache = nil  -- Invalidate cache
 end
 
+-- Set tracks to display
+function Canvas:set_tracks(tracks)
+  self.tracks = tracks or {}
+end
+
 -- Set selected element
 function Canvas:set_selected(element)
   self.selected_element = element
+end
+
+-- Set selected track
+function Canvas:set_selected_track(track)
+  self.selected_track = track
+end
+
+-- Set view mode
+function Canvas:set_view_mode(mode)
+  self.view_mode = mode
+end
+
+-- Get view mode
+function Canvas:get_view_mode()
+  return self.view_mode
 end
 
 -- Get simulation results (cached)
@@ -263,6 +302,112 @@ function Canvas:handle_interaction(ctx, canvas_x, canvas_y, handles)
   return nil
 end
 
+-- Draw track list view
+function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
+  local result = nil
+
+  -- Calculate total height needed for all tracks
+  local total_height = 0
+  for _, track in ipairs(self.tracks) do
+    if track.visible then
+      total_height = total_height + track.height
+    end
+  end
+
+  -- Canvas position (left-aligned with padding, scrollable vertically)
+  local canvas_x = win_x + 20
+  local canvas_y = win_y + 10 - self.scroll_y
+
+  -- Draw tracks
+  local track_y = canvas_y
+  for i, track in ipairs(self.tracks) do
+    if track.visible then
+      local is_selected = (track == self.selected_track)
+
+      -- Draw track background and info
+      self.track_renderer:draw_track(ctx, dl, canvas_x, track_y, self.parent_w, track, {
+        selected = is_selected,
+        index = i,
+      })
+
+      -- Draw elements within this track
+      local sim = Simulator.simulate(self.elements, self.parent_w, track.height)
+      for _, sim_result in ipairs(sim) do
+        local elem_is_selected = sim_result.element == self.selected_element and is_selected
+        local elem_is_hovered = sim_result.element == self.hovered_element
+
+        -- Offset element by track position
+        local offset_result = {
+          element = sim_result.element,
+          rect = {
+            x = sim_result.rect.x,
+            y = sim_result.rect.y,
+            w = sim_result.rect.w,
+            h = sim_result.rect.h,
+          },
+          h_behavior = sim_result.h_behavior,
+          v_behavior = sim_result.v_behavior,
+        }
+
+        self.renderer:draw_element(ctx, dl, canvas_x, track_y, offset_result, {
+          selected = elem_is_selected,
+          hovered = elem_is_hovered,
+          show_attachments = self.config.show_attachments,
+        })
+      end
+
+      track_y = track_y + track.height
+    end
+  end
+
+  -- Handle mouse scroll
+  local wheel = ImGui.GetMouseWheel(ctx)
+  if wheel ~= 0 then
+    local scroll_speed = 30
+    self.scroll_y = math.max(0, math.min(total_height - win_h + 40, self.scroll_y - wheel * scroll_speed))
+  end
+
+  -- Handle track selection on click
+  local mx, my = ImGui.GetMousePos(ctx)
+  if ImGui.IsMouseClicked(ctx, 0) then
+    local rel_x = mx - canvas_x
+    local rel_y = my - canvas_y + self.scroll_y
+
+    if rel_x >= 0 and rel_x <= self.parent_w then
+      -- Find clicked track
+      local track_top = 0
+      for _, track in ipairs(self.tracks) do
+        if track.visible then
+          if rel_y >= track_top and rel_y < track_top + track.height then
+            self.selected_track = track
+            result = { type = "select_track", track = track }
+
+            -- Check for element within track
+            local track_rel_y = rel_y - track_top
+            local sim = Simulator.simulate(self.elements, self.parent_w, track.height)
+            local clicked_elem = Simulator.hit_test(sim, rel_x, track_rel_y)
+            if clicked_elem then
+              self.selected_element = clicked_elem
+              result = { type = "select", element = clicked_elem, track = track }
+            end
+            break
+          end
+          track_top = track_top + track.height
+        end
+      end
+    end
+  end
+
+  -- Draw border around the track list area
+  local list_height = math.min(total_height, win_h - 20)
+  ImGui.DrawList_AddRect(dl,
+    canvas_x, win_y + 10,
+    canvas_x + self.parent_w, win_y + 10 + list_height,
+    Colors.CANVAS.PARENT_BORDER, 0, 0, 1)
+
+  return result
+end
+
 -- Main draw function
 function Canvas:draw(ctx)
   local result = nil
@@ -284,53 +429,66 @@ function Canvas:draw(ctx)
   local win_w, win_h = ImGui.GetWindowSize(ctx)
   local dl = ImGui.GetWindowDrawList(ctx)
 
-  -- Calculate canvas position (centered in the child window)
-  local canvas_x = win_x + math.max(20, (win_w - self.parent_w) / 2)
-  local canvas_y = win_y + math.max(20, (win_h - self.parent_h) / 2)
-
   -- Draw background
   ImGui.DrawList_AddRectFilled(dl, win_x, win_y, win_x + win_w, win_y + win_h,
     Colors.CANVAS.BACKGROUND)
 
-  -- Draw parent container background
-  ImGui.DrawList_AddRectFilled(dl,
-    canvas_x, canvas_y,
-    canvas_x + self.parent_w, canvas_y + self.parent_h,
-    Colors.CANVAS.PARENT_FILL)
+  -- Draw based on view mode
+  if self.view_mode == M.VIEW_TRACKS and #self.tracks > 0 then
+    result = self:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
+  else
+    -- Single track view (original behavior)
+    -- Calculate canvas position (centered in the child window)
+    local canvas_x = win_x + math.max(20, (win_w - self.parent_w) / 2)
+    local canvas_y = win_y + math.max(20, (win_h - self.parent_h) / 2)
 
-  -- Draw grid
-  self:draw_grid(ctx, dl, canvas_x, canvas_y)
+    -- Draw parent container background
+    ImGui.DrawList_AddRectFilled(dl,
+      canvas_x, canvas_y,
+      canvas_x + self.parent_w, canvas_y + self.parent_h,
+      Colors.CANVAS.PARENT_FILL)
 
-  -- Draw elements
-  local sim = self:get_simulation()
-  for _, sim_result in ipairs(sim) do
-    local is_selected = sim_result.element == self.selected_element
-    local is_hovered = sim_result.element == self.hovered_element
+    -- Draw grid
+    self:draw_grid(ctx, dl, canvas_x, canvas_y)
 
-    self.renderer:draw_element(ctx, dl, canvas_x, canvas_y, sim_result, {
-      selected = is_selected,
-      hovered = is_hovered,
-      show_attachments = self.config.show_attachments,
-    })
+    -- Draw elements
+    local sim = self:get_simulation()
+    for _, sim_result in ipairs(sim) do
+      local is_selected = sim_result.element == self.selected_element
+      local is_hovered = sim_result.element == self.hovered_element
+
+      self.renderer:draw_element(ctx, dl, canvas_x, canvas_y, sim_result, {
+        selected = is_selected,
+        hovered = is_hovered,
+        show_attachments = self.config.show_attachments,
+      })
+    end
+
+    -- Draw parent container border
+    ImGui.DrawList_AddRect(dl,
+      canvas_x, canvas_y,
+      canvas_x + self.parent_w, canvas_y + self.parent_h,
+      Colors.CANVAS.PARENT_BORDER, 0, 0, 2)
+
+    -- Draw resize handles
+    local handles = self:draw_handles(ctx, dl, canvas_x, canvas_y)
+
+    -- Handle mouse interaction (only for handles and element selection)
+    result = self:handle_interaction(ctx, canvas_x, canvas_y, handles)
   end
-
-  -- Draw parent container border
-  ImGui.DrawList_AddRect(dl,
-    canvas_x, canvas_y,
-    canvas_x + self.parent_w, canvas_y + self.parent_h,
-    Colors.CANVAS.PARENT_BORDER, 0, 0, 2)
-
-  -- Draw resize handles
-  local handles = self:draw_handles(ctx, dl, canvas_x, canvas_y)
-
-  -- Handle mouse interaction (only for handles and element selection)
-  result = self:handle_interaction(ctx, canvas_x, canvas_y, handles)
 
   ImGui.EndChild(ctx)
 
-  -- Draw size display below canvas
-  ImGui.Text(ctx, string.format("Parent Size: %d x %d px", self.parent_w, self.parent_h))
+  -- Draw controls below canvas
+  ImGui.Text(ctx, string.format("TCP Width: %d px", self.parent_w))
   ImGui.SameLine(ctx, 0, 20)
+
+  -- View mode toggle
+  if ImGui.Button(ctx, self.view_mode == M.VIEW_TRACKS and "Tracks" or "Single", 60, 0) then
+    self.view_mode = (self.view_mode == M.VIEW_TRACKS) and M.VIEW_SINGLE or M.VIEW_TRACKS
+  end
+
+  ImGui.SameLine(ctx, 0, 10)
 
   -- Toggle buttons
   local _, show_grid = ImGui.Checkbox(ctx, "Grid", self.config.show_grid)

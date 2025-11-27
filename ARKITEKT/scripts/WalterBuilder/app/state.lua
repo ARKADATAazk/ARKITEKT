@@ -4,6 +4,7 @@
 
 local Element = require('WalterBuilder.domain.element')
 local TCPElements = require('WalterBuilder.defs.tcp_elements')
+local TrackDefaults = require('WalterBuilder.defs.track_defaults')
 
 local M = {}
 
@@ -14,8 +15,12 @@ local state = {
   -- Layout elements
   elements = {},
 
+  -- Track list for visualization
+  tracks = {},
+
   -- Selection
   selected_element = nil,
+  selected_track = nil,
 
   -- Canvas state
   parent_w = 300,
@@ -24,6 +29,7 @@ local state = {
   -- UI state
   show_grid = true,
   show_attachments = true,
+  show_tracks = true,  -- Show track list visualization
 
   -- Context (tcp, mcp, etc.)
   context = "tcp",
@@ -244,6 +250,92 @@ end
 -- Notify element changed (for re-rendering)
 function M.element_changed(element)
   M.save()
+end
+
+-- ============================================
+-- TRACK MANAGEMENT
+-- ============================================
+
+-- Get all tracks
+function M.get_tracks()
+  return state.tracks
+end
+
+-- Add a track
+function M.add_track(opts)
+  local track = TrackDefaults.new_track(opts)
+  state.tracks[#state.tracks + 1] = track
+  return track
+end
+
+-- Remove a track
+function M.remove_track(track)
+  for i, t in ipairs(state.tracks) do
+    if t == track or t.id == track.id then
+      table.remove(state.tracks, i)
+      if state.selected_track == t then
+        state.selected_track = nil
+      end
+      return true
+    end
+  end
+  return false
+end
+
+-- Clear all tracks
+function M.clear_tracks()
+  state.tracks = {}
+  state.selected_track = nil
+end
+
+-- Load default tracks for demonstration
+function M.load_default_tracks()
+  state.tracks = TrackDefaults.get_default_tracks()
+end
+
+-- Get selected track
+function M.get_selected_track()
+  return state.selected_track
+end
+
+-- Set selected track
+function M.set_selected_track(track)
+  state.selected_track = track
+end
+
+-- Get show tracks option
+function M.get_show_tracks()
+  return state.show_tracks
+end
+
+-- Set show tracks option
+function M.set_show_tracks(value)
+  state.show_tracks = value
+end
+
+-- Calculate total height of all tracks
+function M.get_total_tracks_height()
+  local total = 0
+  for _, track in ipairs(state.tracks) do
+    if track.visible then
+      total = total + track.height
+    end
+  end
+  return total
+end
+
+-- Get track at Y position (for hit testing)
+function M.get_track_at_y(y)
+  local current_y = 0
+  for _, track in ipairs(state.tracks) do
+    if track.visible then
+      if y >= current_y and y < current_y + track.height then
+        return track, current_y
+      end
+      current_y = current_y + track.height
+    end
+  end
+  return nil, 0
 end
 
 return M
