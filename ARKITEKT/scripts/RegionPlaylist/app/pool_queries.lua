@@ -3,6 +3,7 @@
 -- Pool filtering, sorting, and query operations (extracted from state.lua)
 
 local ark = require('arkitekt')
+local Sorting = require('arkitekt.core.sorting')
 
 local M = {}
 
@@ -23,89 +24,6 @@ function M.deterministic_color_from_id(id)
   local lightness = 0.50 + ((hash % 60) / 400)    -- 0.50-0.65
   local r, g, b = ark.Colors.hsl_to_rgb(hue, saturation, lightness)
   return ark.Colors.components_to_rgba(r, g, b, 0xFF)
-end
-
--- =============================================================================
--- REGION COMPARE FUNCTIONS
--- =============================================================================
-
-function M.compare_by_color(a, b)
-  local color_a = a.color or 0
-  local color_b = b.color or 0
-  return ark.Colors.compare_colors(color_a, color_b)
-end
-
-function M.compare_by_index(a, b)
-  return a.rid < b.rid
-end
-
-function M.compare_by_alpha(a, b)
-  local name_a = (a.name or ""):lower()
-  local name_b = (b.name or ""):lower()
-  return name_a < name_b
-end
-
-function M.compare_by_length(a, b)
-  local len_a = (a["end"] or 0) - (a.start or 0)
-  local len_b = (b["end"] or 0) - (b.start or 0)
-  return len_a < len_b
-end
-
--- =============================================================================
--- PLAYLIST COMPARE FUNCTIONS
--- =============================================================================
-
-function M.compare_playlists_by_alpha(a, b)
-  local name_a = (a.name or ""):lower()
-  local name_b = (b.name or ""):lower()
-  return name_a < name_b
-end
-
-function M.compare_playlists_by_item_count(a, b)
-  local count_a = #a.items
-  local count_b = #b.items
-  return count_a < count_b
-end
-
-function M.compare_playlists_by_color(a, b)
-  local color_a = a.chip_color or 0
-  local color_b = b.chip_color or 0
-  return ark.Colors.compare_colors(color_a, color_b)
-end
-
-function M.compare_playlists_by_index(a, b)
-  return (a.index or 0) < (b.index or 0)
-end
-
-function M.compare_playlists_by_duration(a, b)
-  return (a.total_duration or 0) < (b.total_duration or 0)
-end
-
--- =============================================================================
--- SORTING HELPERS
--- =============================================================================
-
--- Apply sort and optional reverse to a list
--- @param list Table to sort (modified in place)
--- @param sort_mode Sort mode string ("color", "index", "alpha", "length")
--- @param sort_dir Sort direction ("asc" or "desc")
--- @param compare_funcs Table mapping sort_mode to compare function
--- @return The sorted list
-function M.apply_sort(list, sort_mode, sort_dir, compare_funcs)
-  if sort_mode and compare_funcs[sort_mode] then
-    table.sort(list, compare_funcs[sort_mode])
-  end
-
-  -- Reverse if descending (only when sort_mode is active)
-  if sort_mode and sort_mode ~= "" and sort_dir == "desc" then
-    local reversed = {}
-    for i = #list, 1, -1 do
-      reversed[#reversed + 1] = list[i]
-    end
-    return reversed
-  end
-
-  return list
 end
 
 -- =============================================================================
@@ -158,22 +76,6 @@ end
 -- POOL QUERY FUNCTIONS
 -- =============================================================================
 
--- Region compare function lookup
-local REGION_COMPARE_FUNCS = {
-  color = M.compare_by_color,
-  index = M.compare_by_index,
-  alpha = M.compare_by_alpha,
-  length = M.compare_by_length,
-}
-
--- Playlist compare function lookup
-local PLAYLIST_COMPARE_FUNCS = {
-  color = M.compare_playlists_by_color,
-  index = M.compare_playlists_by_index,
-  alpha = M.compare_playlists_by_alpha,
-  length = M.compare_playlists_by_duration,
-}
-
 -- Get filtered and sorted pool regions
 -- @param params Table with: pool_order, region_index, search_filter, sort_mode, sort_dir
 -- @return Filtered and sorted list of regions
@@ -181,6 +83,7 @@ function M.get_filtered_pool_regions(params)
   local result = {}
   local search = (params.search_filter or ""):lower()
 
+  -- Filter regions
   for _, rid in ipairs(params.pool_order) do
     local region = params.region_index[rid]
     if region and region.name ~= "__TRANSITION_TRIGGER" and (search == "" or region.name:lower():find(search, 1, true)) then
@@ -188,7 +91,13 @@ function M.get_filtered_pool_regions(params)
     end
   end
 
-  return M.apply_sort(result, params.sort_mode, params.sort_dir, REGION_COMPARE_FUNCS)
+  -- Apply sorting using framework module
+  return Sorting.apply(result, {
+    mode = params.sort_mode,
+    direction = params.sort_dir,
+    -- Custom accessor for index (use rid for regions)
+    get_value = params.sort_mode == "index" and function(x) return x.rid or 0 end or nil,
+  })
 end
 
 -- Get playlists available for the pool (excludes active, applies sorting)
@@ -236,7 +145,15 @@ function M.get_playlists_for_pool(params)
     pool_playlists = filtered
   end
 
-  return M.apply_sort(pool_playlists, params.sort_mode, params.sort_dir, PLAYLIST_COMPARE_FUNCS)
+  -- Apply sorting using framework module
+  return Sorting.apply(pool_playlists, {
+    mode = params.sort_mode,
+    direction = params.sort_dir,
+    -- Custom accessors for playlist-specific fields
+    get_value = (params.sort_mode == "color" and function(x) return x.chip_color or 0 end)
+             or (params.sort_mode == "length" and function(x) return x.total_duration or 0 end)
+             or nil,
+  })
 end
 
 -- Get mixed pool (regions + playlists) with unified sorting
@@ -260,7 +177,7 @@ function M.get_mixed_pool_sorted(params)
     return result
   end
 
-  -- Combine and sort together
+  -- Combine items
   local combined = {}
 
   -- Add regions (mark type if not present)
@@ -276,53 +193,28 @@ function M.get_mixed_pool_sorted(params)
     combined[#combined + 1] = playlist
   end
 
-  -- Unified comparison function that works for both regions and playlists
-  local function unified_compare(a, b)
-    if sort_mode == "color" then
-      local color_a = a.chip_color or a.color or 0
-      local color_b = b.chip_color or b.color or 0
-      return ark.Colors.compare_colors(color_a, color_b)
-    elseif sort_mode == "index" then
-      local idx_a = a.index or a.rid or 0
-      local idx_b = b.index or b.rid or 0
-      return idx_a < idx_b
-    elseif sort_mode == "alpha" then
-      local name_a = (a.name or ""):lower()
-      local name_b = (b.name or ""):lower()
-      return name_a < name_b
-    elseif sort_mode == "length" then
-      local len_a
-      if a.type == "playlist" then
-        len_a = a.total_duration or 0
+  -- Build unified accessor that handles both regions and playlists
+  local get_value
+  if sort_mode == "color" then
+    get_value = function(x) return x.chip_color or x.color or 0 end
+  elseif sort_mode == "index" then
+    get_value = function(x) return x.index or x.rid or 0 end
+  elseif sort_mode == "length" then
+    get_value = function(x)
+      if x.type == "playlist" then
+        return x.total_duration or 0
       else
-        len_a = (a["end"] or 0) - (a.start or 0)
+        return (x["end"] or 0) - (x.start or 0)
       end
-
-      local len_b
-      if b.type == "playlist" then
-        len_b = b.total_duration or 0
-      else
-        len_b = (b["end"] or 0) - (b.start or 0)
-      end
-
-      return len_a < len_b
     end
-
-    return false
   end
 
-  table.sort(combined, unified_compare)
-
-  -- Reverse if descending
-  if sort_dir == "desc" then
-    local reversed = {}
-    for i = #combined, 1, -1 do
-      reversed[#reversed + 1] = combined[i]
-    end
-    return reversed
-  end
-
-  return combined
+  -- Apply sorting using framework module
+  return Sorting.apply(combined, {
+    mode = sort_mode,
+    direction = sort_dir,
+    get_value = get_value,
+  })
 end
 
 return M

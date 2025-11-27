@@ -385,9 +385,9 @@ end
 
 function M.get_color_sort_key(color)
   if not color or color == 0 then
-    return -1, 0, 0
+    return 999, 0, 0  -- No color sorts to end (after all hues)
   end
-  
+
   local h, s, l = M.rgb_to_hsl(color)
   
   if s < 0.08 then
@@ -402,15 +402,19 @@ end
 function M.compare_colors(color_a, color_b)
   local h_a, s_a, l_a = M.get_color_sort_key(color_a)
   local h_b, s_b, l_b = M.get_color_sort_key(color_b)
-  
-  if math.abs(h_a - h_b) > 0.01 then
+
+  -- Primary: sort by hue (ascending = RED → ORANGE → YELLOW → GREEN → CYAN → BLUE → PURPLE)
+  -- Use 0.5 degree threshold for hue binning
+  if math.abs(h_a - h_b) > 0.5 then
     return h_a < h_b
   end
-  
+
+  -- Secondary: higher saturation first (more vibrant colors)
   if math.abs(s_a - s_b) > 0.01 then
     return s_a > s_b
   end
-  
+
+  -- Tertiary: higher lightness first
   return l_a > l_b
 end
 
