@@ -125,21 +125,21 @@ function M.calculate_justified_layout(items, opts)
     local needed_width = current_row_width + min_width + (#current_row > 0 and gap or 0)
     
     if #current_row > 0 and needed_width > available_width then
-      table.insert(rows, current_row)
+      rows[#rows + 1] = current_row
       current_row = {}
       current_row_width = 0
     end
     
-    table.insert(current_row, {
+    current_row[#current_row + 1] = {
       index = i,
       item = item,
       min_width = min_width,
-    })
+    }
     current_row_width = current_row_width + min_width + (#current_row > 1 and gap or 0)
   end
   
   if #current_row > 0 then
-    table.insert(rows, current_row)
+    rows[#rows + 1] = current_row
   end
   
   local layout = {}
@@ -201,7 +201,7 @@ function M.calculate_justified_layout(items, opts)
       end
     end
     
-    table.insert(layout, row)
+    layout[#layout + 1] = row
   end
   
   return layout

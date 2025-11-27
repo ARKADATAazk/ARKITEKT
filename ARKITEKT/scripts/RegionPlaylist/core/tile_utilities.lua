@@ -35,14 +35,14 @@ function M.format_bar_length(start_time, end_time, proj)
   end
 
   -- Apply rounding tolerance: round to nearest 0.01 QN if within tolerance
-  local rounded_qn = math.floor(total_qn * 100 + 0.5) / 100
+  local rounded_qn = (total_qn * 100 + 0.5) // 1 / 100
   if math.abs(total_qn - rounded_qn) < ROUNDING_TOLERANCE then
     total_qn = rounded_qn
   end
 
-  local bars = math.floor(total_qn / time_sig_num)
+  local bars = (total_qn / time_sig_num) // 1
   local remaining_qn = total_qn - (bars * time_sig_num)
-  local beats = math.floor(remaining_qn)
+  local beats = remaining_qn // 1
   local hundredths = math.floor((remaining_qn - beats) * 100 + 0.5)
 
   -- Handle edge case where rounding hundredths gives 100

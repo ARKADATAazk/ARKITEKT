@@ -167,7 +167,7 @@ function pkg:conflicts(detailed)
         if not asset_providers[key] then
           asset_providers[key] = {}
         end
-        table.insert(asset_providers[key], P.id)
+        asset_providers[key][#asset_providers[key] + 1] = P.id
       end
     end
   end

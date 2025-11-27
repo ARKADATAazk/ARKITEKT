@@ -23,11 +23,11 @@ local function run_test()
   -- Test 1: Build config from current theme
   local config1 = Style.build_button_config()
   local bg1 = config1.bg_color
-  table.insert(state.test_results, {
+  state.test_results[#state.test_results + 1] = {
     test = "Initial button bg",
     value = string.format("0x%08X", bg1),
     passed = true,
-  })
+  }
 
   -- Test 2: Change theme
   ThemeManager.apply_theme("light")
@@ -36,18 +36,18 @@ local function run_test()
   local config2 = Style.build_button_config()
   local bg2 = config2.bg_color
 
-  table.insert(state.test_results, {
+  state.test_results[#state.test_results + 1] = {
     test = "After theme change",
     value = string.format("0x%08X", bg2),
     passed = (bg1 ~= bg2),  -- Should be different!
-  })
+  }
 
   -- Test 4: Apply dynamic preset
   local config3 = Style.build_button_config()
   Style.apply_dynamic_preset(config3, "BUTTON_TOGGLE_TEAL")
 
-  table.insert(state.test_results, {
-    test = "Preset applied (TEAL)",
+  state.test_results[#state.test_results + 1] = {
+    test = "Preset applied (TEAL",
     value = string.format("bg_on = 0x%08X", config3.bg_on_color or 0),
     passed = (config3.bg_on_color ~= nil),
   })
@@ -58,22 +58,22 @@ local function run_test()
   Style.apply_dynamic_preset(config4, "BUTTON_TOGGLE_TEAL")
   local preset_color = config4.bg_on_color
 
-  table.insert(state.test_results, {
+  state.test_results[#state.test_results + 1] = {
     test = "Preset references M.COLORS",
     value = string.format("ACCENT_TEAL = 0x%08X", teal_before),
     passed = (preset_color == teal_before),
-  })
+  }
 
   -- Test 6: Change M.COLORS directly and rebuild
   Style.COLORS.ACCENT_TEAL = Colors.hexrgb("#FF0000FF")  -- Red
   local config5 = Style.build_button_config()
   Style.apply_dynamic_preset(config5, "BUTTON_TOGGLE_TEAL")
 
-  table.insert(state.test_results, {
+  state.test_results[#state.test_results + 1] = {
     test = "Preset adapts to M.COLORS change",
     value = string.format("New color = 0x%08X", config5.bg_on_color or 0),
     passed = (config5.bg_on_color == Colors.hexrgb("#FF0000FF")),
-  })
+  }
 
   -- Restore original theme
   ThemeManager.apply_theme("dark")

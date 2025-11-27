@@ -12,7 +12,7 @@ local M = {}
 -- ============================================================================
 
 local function snap_pixel(v)
-  return math.floor(v + 0.5)
+  return (v + 0.5) // 1
 end
 
 -- ============================================================================
@@ -59,7 +59,7 @@ function M.draw_rounded_rect_path(dl, x1, y1, x2, y2, color, filled, rounding_tl
   -- Calculate arc segments (more for larger radii)
   local function get_segments(r)
     if r <= 0 then return 0 end
-    return math.max(4, math.floor(r * 0.6))
+    return math.max(4, (r * 0.6) // 1)
   end
 
   ImGui.DrawList_PathClear(dl)

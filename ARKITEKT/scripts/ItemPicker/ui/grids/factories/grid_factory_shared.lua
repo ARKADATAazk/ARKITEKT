@@ -203,7 +203,7 @@ function M.get_filtered_position(content, current_idx)
 
   for i, entry in ipairs(content) do
     if not pool_utils.is_pooled_duplicate(entry, seen_pools) then
-      table.insert(filtered_list, {index = i, entry = entry})
+      filtered_list[#filtered_list + 1] = {index = i, entry = entry}
     end
   end
 

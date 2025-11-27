@@ -81,7 +81,7 @@ function M.render_dashed_line(dl, x1, y1, x2, y2, color, thickness, config)
   local dir_y = dy / length
   
   local cycle_length = dash_length + gap_length
-  local num_cycles = math.floor(length / cycle_length)
+  local num_cycles = (length / cycle_length) // 1
   
   local pos = 0
   for i = 0, num_cycles do
@@ -114,7 +114,7 @@ function M.render_animated_dot_manhattan(dl, points, color, config)
     local dx = x2 - x1
     local dy = y2 - y1
     local length = math.sqrt(dx * dx + dy * dy)
-    table.insert(segment_lengths, length)
+    segment_lengths[#segment_lengths + 1] = length
     total_length = total_length + length
   end
   
@@ -159,7 +159,7 @@ function M.render_connection_label_manhattan(ctx, dl, connection, points, config
     local dx = x2 - x1
     local dy = y2 - y1
     local length = math.sqrt(dx * dx + dy * dy)
-    table.insert(segment_info, {x1 = x1, y1 = y1, x2 = x2, y2 = y2, length = length})
+    segment_info[#segment_info + 1] = {x1 = x1, y1 = y1, x2 = x2, y2 = y2, length = length}
     total_length = total_length + length
   end
   

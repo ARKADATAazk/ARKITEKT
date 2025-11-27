@@ -146,7 +146,7 @@ function M.checkbox_item(ctx, label, checked, config)
   local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
-  local checkbox_size = 14
+  local checkbox_size = 16  -- Slightly larger for better visibility
   local checkbox_padding = 8
   local text_w, text_h = ImGui.CalcTextSize(ctx, label)
   local item_w = math.max(avail_w, text_w + item_padding_x * 2 + checkbox_size + checkbox_padding)
@@ -157,34 +157,42 @@ function M.checkbox_item(ctx, label, checked, config)
     ImGui.DrawList_AddRectFilled(dl, item_x, item_y, item_x + item_w, item_y + item_height, item_hover_color, 2)
   end
 
-  -- Draw checkbox using dynamic accent color
+  -- Draw checkbox with improved styling matching checkbox primitive
   local checkbox_x = item_x + item_padding_x
   local checkbox_y = item_y + (item_height - checkbox_size) * 0.5
-  local accent = defaults.checkbox_accent
 
-  local checkbox_bg = checked and Colors.with_opacity(accent, 0.25) or defaults.item_bg_color
-  local checkbox_border = checked and accent or defaults.separator_color
+  -- Use theme colors for better consistency
+  local C = Theme.COLORS
+  local checkbox_bg = checked and C.BG_HOVER or C.BG_BASE
+  local checkbox_border_inner = checked and C.BORDER_HOVER or C.BORDER_INNER
+  local checkbox_border_outer = C.BORDER_OUTER
 
-  ImGui.DrawList_AddRectFilled(dl, checkbox_x, checkbox_y, checkbox_x + checkbox_size, checkbox_y + checkbox_size, checkbox_bg, 2)
-  ImGui.DrawList_AddRect(dl, checkbox_x, checkbox_y, checkbox_x + checkbox_size, checkbox_y + checkbox_size, checkbox_border, 2, 0, 1)
+  -- Draw background with rounded corners
+  ImGui.DrawList_AddRectFilled(dl, checkbox_x + 1, checkbox_y + 1,
+    checkbox_x + checkbox_size - 1, checkbox_y + checkbox_size - 1, checkbox_bg, 1)
 
-  -- Draw checkmark if checked
+  -- Draw double border for depth (matches checkbox primitive)
+  ImGui.DrawList_AddRect(dl, checkbox_x + 1, checkbox_y + 1,
+    checkbox_x + checkbox_size - 1, checkbox_y + checkbox_size - 1, checkbox_border_inner, 1, 0, 1)
+  ImGui.DrawList_AddRect(dl, checkbox_x, checkbox_y,
+    checkbox_x + checkbox_size, checkbox_y + checkbox_size, checkbox_border_outer, 1, 0, 1)
+
+  -- Draw checkmark if checked (improved design from checkbox primitive)
   if checked then
-    local check_color = accent
-    local check_padding = 3
-    -- Draw checkmark using lines
-    ImGui.DrawList_AddLine(dl,
-      checkbox_x + check_padding,
-      checkbox_y + checkbox_size * 0.5,
-      checkbox_x + checkbox_size * 0.4,
-      checkbox_y + checkbox_size - check_padding,
-      check_color, 2)
-    ImGui.DrawList_AddLine(dl,
-      checkbox_x + checkbox_size * 0.4,
-      checkbox_y + checkbox_size - check_padding,
-      checkbox_x + checkbox_size - check_padding,
-      checkbox_y + check_padding,
-      check_color, 2)
+    local check_color = C.TEXT_DIMMED
+    local padding = checkbox_size * 0.25
+    local check_size = checkbox_size - padding * 2
+
+    local cx = checkbox_x + padding
+    local cy = checkbox_y + checkbox_size * 0.5
+    local mx = cx + check_size * 0.3
+    local my = cy + check_size * 0.3
+    local ex = cx + check_size
+    local ey = cy - check_size * 0.4
+
+    -- Smooth checkmark with proper thickness
+    ImGui.DrawList_AddLine(dl, cx, cy, mx, my, check_color, 2)
+    ImGui.DrawList_AddLine(dl, mx, my, ex, ey, check_color, 2)
   end
 
   -- Draw label text
@@ -195,6 +203,75 @@ function M.checkbox_item(ctx, label, checked, config)
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
 
   ImGui.InvisibleButton(ctx, label .. "_checkbox_item", item_w, item_height)
+
+  return ImGui.IsItemClicked(ctx, 0)
+end
+
+function M.radiobutton_item(ctx, label, selected, config)
+  config = config or {}
+  local defaults = get_defaults()  -- Get fresh colors from Theme.COLORS
+
+  local item_height = config.item_height or defaults.item_height
+  local item_padding_x = config.item_padding_x or defaults.item_padding_x
+  local item_hover_color = config.item_hover_color or defaults.item_hover_color
+  local item_text_color = config.item_text_color or defaults.item_text_color
+  local item_text_hover_color = config.item_text_hover_color or defaults.item_text_hover_color
+
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
+
+  local radio_size = 16  -- Outer circle diameter
+  local radio_padding = 8
+  local text_w, text_h = ImGui.CalcTextSize(ctx, label)
+  local item_w = math.max(avail_w, text_w + item_padding_x * 2 + radio_size + radio_padding)
+
+  local item_hovered = ImGui.IsMouseHoveringRect(ctx, item_x, item_y, item_x + item_w, item_y + item_height)
+
+  if item_hovered then
+    ImGui.DrawList_AddRectFilled(dl, item_x, item_y, item_x + item_w, item_y + item_height, item_hover_color, 2)
+  end
+
+  -- Draw radio button with improved styling matching radio button primitive
+  local radio_x = item_x + item_padding_x
+  local radio_y = item_y + (item_height - radio_size) * 0.5
+  local center_x = radio_x + radio_size / 2
+  local center_y = radio_y + radio_size / 2
+
+  -- Use theme colors for better consistency
+  local C = Theme.COLORS
+  local outer_radius = radio_size / 2
+  local inner_radius = (radio_size - 4) / 2
+  local selected_radius = (radio_size - 8) / 2
+
+  local bg_color = selected and C.BG_HOVER or C.BG_BASE
+  local inner_color = C.BG_BASE
+  local border_inner = selected and C.BORDER_HOVER or C.BORDER_INNER
+  local border_outer = C.BORDER_OUTER
+
+  -- Draw outer circle
+  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, outer_radius, bg_color)
+  ImGui.DrawList_AddCircle(dl, center_x, center_y, outer_radius - 1, border_inner, 0, 1.0)
+  ImGui.DrawList_AddCircle(dl, center_x, center_y, outer_radius, border_outer, 0, 1.0)
+
+  -- Draw inner circle
+  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, inner_radius, inner_color)
+  ImGui.DrawList_AddCircle(dl, center_x, center_y, inner_radius, border_outer, 0, 1.0)
+
+  -- Draw selected indicator (filled circle)
+  if selected then
+    local selected_color = C.TEXT_DIMMED
+    ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, selected_radius, selected_color)
+  end
+
+  -- Draw label text
+  local text_color = item_hovered and item_text_hover_color or item_text_color
+  local text_x = radio_x + radio_size + radio_padding
+  local text_y = item_y + (item_height - text_h) * 0.5
+
+  ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
+
+  ImGui.InvisibleButton(ctx, label .. "_radiobutton_item", item_w, item_height)
 
   return ImGui.IsItemClicked(ctx, 0)
 end
@@ -231,9 +308,9 @@ function M.begin_menu(ctx, label, config)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
   local text_w, text_h = ImGui.CalcTextSize(ctx, label)
-  local arrow_text = ">"
-  local arrow_w = ImGui.CalcTextSize(ctx, arrow_text)
-  local item_w = math.max(avail_w, text_w + arrow_w + item_padding_x * 3)
+  local arrow_size = 6  -- Triangle size
+  local arrow_space = arrow_size + 4
+  local item_w = math.max(avail_w, text_w + arrow_space + item_padding_x * 3)
 
   local item_hovered = ImGui.IsMouseHoveringRect(ctx, item_x, item_y, item_x + item_w, item_y + item_height)
 
@@ -246,12 +323,27 @@ function M.begin_menu(ctx, label, config)
   local text_y = item_y + (item_height - text_h) * 0.5
 
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
-  ImGui.DrawList_AddText(dl, item_x + item_w - item_padding_x - arrow_w, text_y, text_color, arrow_text)
+
+  -- Draw triangle arrow (pointing right) instead of text
+  local arrow_x = item_x + item_w - item_padding_x - arrow_size
+  local arrow_y = item_y + item_height * 0.5
+  ImGui.DrawList_AddTriangleFilled(dl,
+    arrow_x, arrow_y - arrow_size * 0.6,           -- Top vertex
+    arrow_x, arrow_y + arrow_size * 0.6,           -- Bottom vertex
+    arrow_x + arrow_size, arrow_y,                 -- Right vertex (pointing right)
+    text_color)
 
   ImGui.InvisibleButton(ctx, label .. "_submenu", item_w, item_height)
 
-  -- Open submenu on hover
+  -- Open submenu on hover and position it at the right edge of the parent menu
   if item_hovered then
+    -- Calculate position: right edge of parent menu, aligned with this item
+    local parent_window_x, parent_window_y = ImGui.GetWindowPos(ctx)
+    local parent_window_w, _ = ImGui.GetWindowSize(ctx)
+    local submenu_x = parent_window_x + parent_window_w - 2  -- Slight overlap for seamless appearance
+    local submenu_y = item_y - defaults.padding  -- Align with item, accounting for padding
+
+    ImGui.SetNextWindowPos(ctx, submenu_x, submenu_y, ImGui.Cond_Always)
     ImGui.OpenPopup(ctx, label .. "_submenu_popup")
   end
 

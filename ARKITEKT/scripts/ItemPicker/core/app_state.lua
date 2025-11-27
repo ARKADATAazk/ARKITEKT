@@ -334,11 +334,11 @@ end
 
 -- Pending operations (for animations)
 function M.add_pending_spawn(key)
-  table.insert(M.pending_spawn, key)
+  M.pending_spawn[#M.pending_spawn + 1] = key
 end
 
 function M.add_pending_destroy(key)
-  table.insert(M.pending_destroy, key)
+  M.pending_destroy[#M.pending_destroy + 1] = key
 end
 
 function M.get_pending_spawn()

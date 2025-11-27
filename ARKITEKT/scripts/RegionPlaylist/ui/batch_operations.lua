@@ -22,17 +22,17 @@ function M.separate_active_items(item_keys, get_items_fn)
     for _, item in ipairs(items) do
       if item.key == key then
         if item.type == "playlist" then
-          table.insert(playlist_items, {
+          playlist_items[#playlist_items + 1] = {
             index = i,
             key = key,
             playlist_id = item.playlist_id
-          })
+          }
         else
-          table.insert(region_items, {
+          region_items[#region_items + 1] = {
             index = i,
             key = key,
             rid = item.rid
-          })
+          }
         end
         break
       end
@@ -51,19 +51,19 @@ function M.separate_pool_items(item_keys)
   for i, key in ipairs(item_keys) do
     local rid = tonumber(key:match("pool_(%d+)"))
     if rid then
-      table.insert(region_items, {
+      region_items[#region_items + 1] = {
         index = i,
         key = key,
         rid = rid
-      })
+      }
     else
       local playlist_id = key:match("pool_playlist_(.+)")
       if playlist_id then
-        table.insert(playlist_items, {
+        playlist_items[#playlist_items + 1] = {
           index = i,
           key = key,
           playlist_id = playlist_id
-        })
+        }
       end
     end
   end
@@ -81,10 +81,10 @@ function M.batch_rename(region_items, playlist_items, new_names, controller)
   if #region_items > 0 then
     local region_renames = {}
     for _, item in ipairs(region_items) do
-      table.insert(region_renames, {
+      region_renames[#region_renames + 1] = {
         rid = item.rid,
         name = new_names[item.index]
-      })
+      }
     end
     Regions.set_region_names_batch(0, region_renames)
   end
@@ -101,7 +101,7 @@ function M.batch_recolor(region_items, playlist_items, color, controller)
   if #region_items > 0 then
     local rids = {}
     for _, item in ipairs(region_items) do
-      table.insert(rids, item.rid)
+      rids[#rids + 1] = item.rid
     end
     controller:set_region_colors_batch(rids, color)
   end

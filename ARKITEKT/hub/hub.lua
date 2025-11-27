@@ -15,8 +15,8 @@ local function scan_apps(base_path)
   repeat
     local file = reaper.EnumerateFiles(base_path, i)
     if file and file:match("^ARK_.*%.lua$") then
-      table.insert(apps, {
-        name = file:match("^ARK_(.*)%.lua$"),
+      apps[#apps + 1] = {
+        name = file:match("^ARK_(.*%.lua$"),
         path = base_path .. file,
         file = file,
       })

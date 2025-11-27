@@ -37,8 +37,8 @@ function M.calculate_cascade_factor(rect, overlay_alpha, config)
   local key = string.format("%.0f_%.0f", x1, y1)
 
   if not M.tile_spawn_times[key] then
-    local grid_x = math.floor(x1 / 150)
-    local grid_y = math.floor(y1 / 150)
+    local grid_x = (x1 / 150) // 1
+    local grid_y = (y1 / 150) // 1
     local grid_distance = math.sqrt(grid_x * grid_x + grid_y * grid_y)
     M.tile_spawn_times[key] = grid_distance * config.TILE_RENDER.cascade.stagger_delay
   end
@@ -151,7 +151,7 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
   local size = math.min(x2 - x1, y2 - y1) * 0.2
 
   -- Dark spinner color (slightly lighter than background)
-  local spinner_alpha = math.floor(alpha * 100)
+  local spinner_alpha = (alpha * 100) // 1
   local spinner_color = ark.Colors.with_alpha(hexrgb("#808080"), spinner_alpha)
 
   local time = reaper.time_precise()

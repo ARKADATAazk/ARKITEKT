@@ -21,10 +21,10 @@ function Sheet.render(ctx, alpha, bounds, content_fn, opts)
     config = OverlayConfig.override(opts.config)
   end
   
-  local w = math.floor(bounds.w * (opts.width  or 0.72))
-  local h = math.floor(bounds.h * (opts.height or 0.72))
-  local x = math.floor(bounds.x + (bounds.w - w) * 0.5)
-  local y = math.floor(bounds.y + (bounds.h - h) * 0.5)
+  local w = (bounds.w * (opts.width  or 0.72)) // 1
+  local h = (bounds.h * (opts.height or 0.72)) // 1
+  local x = (bounds.x + (bounds.w - w) * 0.5) // 1
+  local y = (bounds.y + (bounds.h - h) * 0.5) // 1
   local r = opts.rounding or config.sheet.rounding
 
   local bg_base = config.sheet.background.color

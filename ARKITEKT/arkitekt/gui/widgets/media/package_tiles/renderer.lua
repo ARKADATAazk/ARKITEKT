@@ -225,7 +225,7 @@ function M.TileRenderer.background(dl, rect, bg_color, hover_factor)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   
   if M.CONFIG.tile.hover_shadow.enabled and hover_factor > 0.01 then
-    local shadow_alpha = math.floor(hover_factor * M.CONFIG.tile.hover_shadow.max_alpha)
+    local shadow_alpha = (hover_factor * M.CONFIG.tile.hover_shadow.max_alpha) // 1
     local shadow_col = (0x000000 << 8) | shadow_alpha
     for i = M.CONFIG.tile.hover_shadow.max_offset, 1, -1 do
       Draw.rect_filled(dl, x1 - i, y1 - i + 2, x2 + i, y2 + i + 2, shadow_col, M.CONFIG.tile.rounding)
@@ -341,7 +341,7 @@ function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w, tile_h)
   if metadata then
     local image_names = {}
     for key, _ in pairs(P.assets or {}) do
-      table.insert(image_names, key)
+      image_names[#image_names + 1] = key
     end
     auto_tags = metadata.suggest_tags(image_names, 0.2) or {}
   end
@@ -349,10 +349,10 @@ function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w, tile_h)
   -- Combine manual tags (like RTCONFIG) with auto-generated area tags
   local tags = {}
   for _, tag in ipairs(manual_tags) do
-    table.insert(tags, tag)
+    tags[#tags + 1] = tag
   end
   for _, tag in ipairs(auto_tags) do
-    table.insert(tags, tag)
+    tags[#tags + 1] = tag
   end
 
   if #tags == 0 then return end
@@ -364,7 +364,7 @@ function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w, tile_h)
     local display_name = M.CONFIG.tags.display[tag] or tag
     if not seen[display_name] then
       seen[display_name] = true
-      table.insert(display_tags, display_name)
+      display_tags[#display_tags + 1] = display_name
       if #display_tags >= M.CONFIG.tags.max_tags then
         break
       end
@@ -381,7 +381,7 @@ function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w, tile_h)
   for _, tag in ipairs(display_tags) do
     local text_w, _ = ImGui.CalcTextSize(ctx, tag)
     local chip_w = text_w + M.CONFIG.tags.padding_x * 2
-    table.insert(chips, {text = tag, width = chip_w})
+    chips[#chips + 1] = {text = tag, width = chip_w}
     total_width = total_width + chip_w
   end
   total_width = total_width + (#chips - 1) * M.CONFIG.tags.gap
@@ -428,7 +428,7 @@ function M.TileRenderer.checkbox(ctx, pkg, P, cb_rects, tile_x, tile_y, tile_w, 
 
   local badge = '#' .. tostring(order_index)
   local _, bh = ImGui.CalcTextSize(ctx, badge)
-  local size = math.max(M.CONFIG.checkbox.min_size, math.floor(bh + 2))
+  local size = math.max(M.CONFIG.checkbox.min_size, (bh + 2) // 1)
 
   local x2 = tile_x + tile_w - M.CONFIG.checkbox.margin
   local y1 = tile_y + M.CONFIG.checkbox.margin
@@ -521,7 +521,7 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
   local valid_keys = {}
   for _, key in ipairs(preview_keys) do
     if key then
-      table.insert(valid_keys, key)
+      valid_keys[#valid_keys + 1] = key
     end
   end
   local num_images = math.min(M.CONFIG.mosaic.count, #valid_keys)

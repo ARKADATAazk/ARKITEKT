@@ -11,7 +11,7 @@ local M = {}
 -- Helper function to apply alpha to color
 local function apply_alpha(color, alpha_factor)
   local current_alpha = color & 0xFF
-  local new_alpha = math.floor(current_alpha * alpha_factor)
+  local new_alpha = (current_alpha * alpha_factor) // 1
   return (color & 0xFFFFFF00) | math.min(255, math.max(0, new_alpha))
 end
 
@@ -258,7 +258,7 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
                 ImGui.SetCursorScreenPos(ctx, current_x, rect_y1)
                 ImGui.Dummy(ctx, item_width, rect_y2 - rect_y1)
                 visualization.DisplayWaveformTransparent(ctx, waveform, viz_color, state.draw_list,
-                  math.floor(item_width), item_uuid, state.runtime_cache, true, false)
+                  item_width // 1, item_uuid, state.runtime_cache, true, false)
               end
             end
           end
@@ -414,7 +414,7 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
             local use_filled = true
             local show_zero_line = false
             visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, state.draw_list,
-              math.floor(content_w), item_uuid, state.runtime_cache, use_filled, show_zero_line)
+              content_w // 1, item_uuid, state.runtime_cache, use_filled, show_zero_line)
           end
         end
       end

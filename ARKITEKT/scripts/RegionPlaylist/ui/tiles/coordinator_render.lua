@@ -73,10 +73,10 @@ local function extract_playlist_region_items(playlist)
   if playlist and playlist.items then
     for _, item in ipairs(playlist.items) do
       if item.type == "region" and item.rid then
-        table.insert(items, {
+        items[#items + 1] = {
           rid = item.rid,
           reps = item.reps or 1
-        })
+        }
       end
     end
   end
@@ -92,11 +92,11 @@ local function extract_pool_selection(selection)
     for _, key in ipairs(selected_keys) do
       local rid = key:match("^pool_(%d+)$")
       if rid then
-        table.insert(rids, tonumber(rid))
+        rids[#rids + 1] = tonumber(rid)
       end
       local playlist_id = key:match("^pool_playlist_(.+)$")
       if playlist_id then
-        table.insert(playlist_ids, playlist_id)
+        playlist_ids[#playlist_ids + 1] = playlist_id
       end
     end
   end
@@ -396,7 +396,7 @@ function M.draw_pool(self, ctx, regions, height)
           else
             local playlist_id = key:match("^pool_playlist_(.+)$")
             if playlist_id then
-              table.insert(playlist_colors, {id = playlist_id, color = color})
+              playlist_colors[#playlist_colors + 1] = {id = playlist_id, color = color}
             end
           end
         end

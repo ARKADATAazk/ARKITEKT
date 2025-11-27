@@ -395,7 +395,7 @@ function Grid:_draw_virtual(ctx, items, num_items)
   local scroll_y = ImGui.GetScrollY(ctx)
   local buffer_rows = self.virtual_buffer_rows
 
-  local first_visible_row = math.max(0, math.floor(scroll_y / row_height) - buffer_rows)
+  local first_visible_row = math.max(0, (scroll_y / row_height) // 1 - buffer_rows)
   local last_visible_row = math.ceil((scroll_y + avail_h) / row_height) + buffer_rows
 
   local first_item = math.max(1, first_visible_row * cols + 1)

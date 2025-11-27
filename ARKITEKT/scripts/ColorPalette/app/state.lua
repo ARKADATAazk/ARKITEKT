@@ -121,7 +121,7 @@ function M.recalculate_palette()
       local r, g, b = ark.Colors.hsl_to_rgb(hue, sat, lum)
       local color = ark.Colors.components_to_rgba(r, g, b, 0xFF)
       
-      table.insert(state.palette_colors, color)
+      state.palette_colors[#state.palette_colors + 1] = color
     end
   end
 end

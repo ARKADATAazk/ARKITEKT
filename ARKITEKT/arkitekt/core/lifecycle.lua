@@ -22,14 +22,14 @@ end
 
 -- Register any resource that implements :begin_frame() and/or :clear()
 function Group:register(resource)
-  if resource then table.insert(self._resources, resource) end
+  if resource then self._resources[#self._resources + 1] = resource end
   return resource
 end
 
 -- Create a child group (use for modals/popups or subviews).
 function Group:child()
   local g = M.new()
-  table.insert(self._children, g)
+  self._children[#self._children + 1] = g
   return g
 end
 

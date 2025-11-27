@@ -208,8 +208,8 @@ function M.new(config)
               local entries = Logger.get_entries()
               local export_text = ""
               for _, entry in ipairs(entries) do
-                local h = math.floor(entry.time / 3600) % 24
-                local m = math.floor(entry.time / 60) % 60
+                local h = (entry.time / 3600) // 1 % 24
+                local m = (entry.time / 60) // 1 % 60
                 local s = entry.time % 60
                 local time_str = string.format("%02d:%02d:%06.3f", h, m, s)
                 export_text = export_text .. string.format("[%s] [%s] %s: %s\n",
@@ -706,7 +706,7 @@ function M.new(config)
     if self.last_frame_time > 0 then
       local delta = current_time - self.last_frame_time
       self.frame_time_ms = delta * 1000
-      self.fps = math.floor(1.0 / delta + 0.5)
+      self.fps = (1.0 / delta + 0.5) // 1
     end
     self.last_frame_time = current_time
     

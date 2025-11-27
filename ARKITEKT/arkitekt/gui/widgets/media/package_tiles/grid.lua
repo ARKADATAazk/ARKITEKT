@@ -26,7 +26,7 @@ local function calculate_clamped_tile_height(avail_w, min_col_w, gap, max_height
     extra = 0
   end
   
-  local per_col_add = (cols > 0) and math.floor(math.max(0, extra) / cols) or 0
+  local per_col_add = (cols > 0) and (math.max(0, extra) / cols) // 1 or 0
   local responsive_height = math.floor((base_w + per_col_add) * 0.65)
   
   return math.min(responsive_height, max_height)

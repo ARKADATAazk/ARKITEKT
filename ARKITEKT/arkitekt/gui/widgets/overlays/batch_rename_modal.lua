@@ -198,7 +198,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local col_gap = 24  -- Gap between columns
   local right_col_width = actual_content_w - picker_size - col_gap  -- Right column takes remaining space
 
-  local start_x = math.floor(ImGui.GetCursorPosX(ctx))
+  local start_x = ImGui.GetCursorPosX(ctx) // 1
 
   -- Title centered with configurable item type
   local title_text = string.format("Rename %d %s", count, self.item_type or "items")
@@ -288,7 +288,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- RIGHT COLUMN: Pattern input + wildcards + common names + separator
   -- ========================================================================
 
-  local right_col_x = math.floor(start_x + picker_size + col_gap)
+  local right_col_x = (start_x + picker_size + col_gap) // 1
   ImGui.SetCursorPos(ctx, right_col_x, start_y)
 
   -- Pattern input field using SearchInput primitive
@@ -716,7 +716,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local button_w_small = 100  -- Cancel, Rename, Recolor
   local button_w_large = 150  -- Rename & Recolor (wider to fit text)
   local total_w = button_w_small * 3 + button_w_large + spacing * 3
-  local button_start_x = math.floor(start_x + (actual_content_w - total_w) * 0.5)
+  local button_start_x = (start_x + (actual_content_w - total_w) * 0.5) // 1
 
   -- Center buttons horizontally within content area
   ImGui.SetCursorPosX(ctx, button_start_x)

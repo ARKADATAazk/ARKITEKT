@@ -63,7 +63,7 @@ local hexrgb = ark.Colors.hexrgb
 local function log(...) local t={}; for i=1,select("#",...) do t[#t+1]=tostring(select(i,...)) end reaper.ShowConsoleMsg(table.concat(t," ").."\n") end
 local function clamp(x,a,b) if x<a then return a elseif x>b then return b else return x end end
 local function hsv_to_rgba(h,s,v,a)
-  local i = math.floor(h*6); local f = h*6 - i
+  local i = (h*6) // 1; local f = h*6 - i
   local p = v*(1-s); local q = v*(1-f*s); local t = v*(1-(1-f)*s)
   local r,g,b
   if     i%6==0 then r,g,b=v,t,p
@@ -73,9 +73,9 @@ local function hsv_to_rgba(h,s,v,a)
   elseif i%6==4 then r,g,b=t,p,v
   else               r,g,b=v,p,q
   end
-  local R = clamp(math.floor(r*255+0.5),0,255)
-  local G = clamp(math.floor(g*255+0.5),0,255)
-  local B = clamp(math.floor(b*255+0.5),0,255)
+  local R = clamp((r*255+0.5) // 1,0,255)
+  local G = clamp((g*255+0.5) // 1,0,255)
+  local B = clamp((b*255+0.5) // 1,0,255)
   local A = clamp(math.floor((a or 1)*255+0.5),0,255)
   return (R<<24) | (G<<16) | (B<<8) | A -- 0xRRGGBBAA
 end
@@ -132,8 +132,8 @@ local function render_color_tile(ctx, rect, item, state)
   if model.show_labels then
     local tw, th = ImGui.CalcTextSize(ctx, item.name)
     local pad = 6
-    local tx = math.floor(x1 + (x2-x1 - tw)*0.5)
-    local ty = math.floor(y2 - th - pad)
+    local tx = (x1 + (x2-x1 - tw)*0.5) // 1
+    local ty = (y2 - th - pad) // 1
     ImGui.DrawList_AddText(dl, tx+1, ty+1, hexrgb("#000000CC"), item.name)
     ImGui.DrawList_AddText(dl, tx,   ty,   hexrgb("#FFFFFF"), item.name)
   end

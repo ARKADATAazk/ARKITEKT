@@ -374,7 +374,8 @@ function Controller:add_item(playlist_id, rid, insert_index)
       enabled = true,
       key = self:_generate_item_key(),
     }
-    
+
+    -- Use table.insert for positional insert (3 args), not optimization
     table.insert(pl.items, insert_index or (#pl.items + 1), new_item)
     return new_item.key
   end)
@@ -399,7 +400,8 @@ function Controller:add_playlist_item(target_playlist_id, source_playlist_id, in
       enabled = true,
       key = self:_generate_item_key(),
     }
-    
+
+    -- Use table.insert for positional insert (3 args), not optimization
     table.insert(target_pl.items, insert_index or (#target_pl.items + 1), new_item)
     return new_item.key
   end)

@@ -130,7 +130,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local combined_alpha, final_alpha = BaseRenderer.calculate_combined_alpha(cascade_factor, enabled_factor, muted_factor, base_alpha, config)
   render_color = ark.Colors.with_alpha(render_color, ark.Colors.opacity(final_alpha))
 
-  local text_alpha = math.floor(0xFF * combined_alpha)
+  local text_alpha = (0xFF * combined_alpha) // 1
   local text_color = BaseRenderer.get_text_color(muted_factor, config)
 
   -- Calculate header height with animated transition
@@ -163,7 +163,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Render dark backdrop for disabled items (skip if show_disabled_items = false, animation handles it)
   if enabled_factor < 0.999 and state.settings.show_disabled_items then
     local backdrop_alpha = config.TILE_RENDER.disabled.backdrop_alpha * (1.0 - enabled_factor) * cascade_factor
-    local backdrop_color = ark.Colors.with_alpha(config.TILE_RENDER.disabled.backdrop_color, math.floor(backdrop_alpha))
+    local backdrop_color = ark.Colors.with_alpha(config.TILE_RENDER.disabled.backdrop_color, backdrop_alpha // 1)
     ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, backdrop_color, config.TILE.ROUNDING)
   end
 
@@ -212,7 +212,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         if visualization.DisplayWaveformTransparent then
           -- Apply waveform quality multiplier to reduce resolution (better performance with many items)
           local quality = state.settings.waveform_quality or 1.0
-          local target_width = math.floor(content_w * quality)
+          local target_width = (content_w * quality) // 1
           local use_filled = state.settings.waveform_filled
           if use_filled == nil then use_filled = true end
           local show_zero_line = state.settings.waveform_zero_line or false
@@ -254,7 +254,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       base_color,
       selection_config.border_saturation,
       selection_config.border_brightness,
-      math.floor(selection_config.ants_alpha * combined_alpha)
+      (selection_config.ants_alpha * combined_alpha) // 1
     )
 
     -- Mix with white to make marching ants lighter but still tinted
@@ -263,7 +263,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     r = r + (255 - r) * white_mix
     g = g + (255 - g) * white_mix
     b = b + (255 - b) * white_mix
-    ant_color = ark.Colors.components_to_rgba(math.floor(r), math.floor(g), math.floor(b), a)
+    ant_color = ark.Colors.components_to_rgba(r // 1, g // 1, b // 1, a)
 
     local inset = selection_config.ants_inset
     local selection_count = state.audio_selection_count or 1
@@ -513,13 +513,13 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         -- Calculate duration text width (same logic as duration rendering below)
         local duration_text
         if duration >= 3600 then
-          local hours = math.floor(duration / 3600)
+          local hours = (duration / 3600) // 1
           local minutes = math.floor((duration % 3600) / 60)
-          local seconds = math.floor(duration % 60)
+          local seconds = (duration % 60) // 1
           duration_text = string.format("%d:%02d:%02d", hours, minutes, seconds)
         else
-          local minutes = math.floor(duration / 60)
-          local seconds = math.floor(duration % 60)
+          local minutes = (duration / 60) // 1
+          local seconds = (duration % 60) // 1
           duration_text = string.format("%d:%02d", minutes, seconds)
         end
         local duration_w, _ = ImGui.CalcTextSize(ctx, duration_text)
@@ -584,7 +584,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local chip_h = chip_cfg.height
 
       -- Chip background (dark grey)
-      local bg_alpha = math.floor(chip_cfg.alpha * combined_alpha)
+      local bg_alpha = (chip_cfg.alpha * combined_alpha) // 1
       local bg_color = (chip_cfg.bg_color & 0xFFFFFF00) | bg_alpha
       ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, bg_color, chip_cfg.rounding)
 
@@ -657,13 +657,13 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Format duration as time (mm:ss or hh:mm:ss)
       local duration_text
       if duration >= 3600 then
-        local hours = math.floor(duration / 3600)
+        local hours = (duration / 3600) // 1
         local minutes = math.floor((duration % 3600) / 60)
-        local seconds = math.floor(duration % 60)
+        local seconds = (duration % 60) // 1
         duration_text = string.format("%d:%02d:%02d", hours, minutes, seconds)
       else
-        local minutes = math.floor(duration / 60)
-        local seconds = math.floor(duration % 60)
+        local minutes = (duration / 60) // 1
+        local seconds = (duration % 60) // 1
         duration_text = string.format("%d:%02d", minutes, seconds)
       end
 

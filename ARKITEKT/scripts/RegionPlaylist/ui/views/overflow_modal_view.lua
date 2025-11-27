@@ -53,16 +53,16 @@ function OverflowModalView:draw(ctx, window)
     local count_str = ""
     if region_count > 0 or playlist_count > 0 then
       local parts = {}
-      if region_count > 0 then table.insert(parts, region_count .. "R") end
-      if playlist_count > 0 then table.insert(parts, playlist_count .. "P") end
+      if region_count > 0 then parts[#parts + 1] = region_count .. "R" end
+      if playlist_count > 0 then parts[#parts + 1] = playlist_count .. "P" end
       count_str = " (" .. table.concat(parts, ", ") .. ")"
     end
     
-    table.insert(tab_items, {
+    tab_items[#tab_items + 1] = {
       id = tab.id,
       label = tab.label .. count_str,
       color = tab.chip_color or hexrgb("#888888"),
-    })
+    }
   end
   
   local active_id = self.state.get_active_playlist_id()

@@ -32,7 +32,7 @@ M.DEFAULTS = {
 
 local function calculate_layout(sidebar_cfg, panel_y, panel_height)
   local button_height = sidebar_cfg.button_size or M.DEFAULTS.button_size
-  local button_width = math.floor(button_height * 0.7)  -- 30% narrower
+  local button_width = (button_height * 0.7) // 1  -- 30% narrower
   local rounding = sidebar_cfg.rounding or M.DEFAULTS.rounding
 
   local elements = sidebar_cfg.elements or {}

@@ -157,7 +157,7 @@ function M.render(ctx, opts)
     -- Draw check icon for selected color
     if is_selected and opts.icon_font then
       local base_size = opts.icon_font_size or 12
-      local icon_size = math.floor(base_size * 0.5)  -- 50% of base size
+      local icon_size = (base_size * 0.5) // 1  -- 50% of base size
       ImGui.PushFont(ctx, opts.icon_font, icon_size)
       local icon_color = hexrgb("#00000099")  -- Black icon at 60% opacity
       local text_w, text_h = ImGui.CalcTextSize(ctx, ICON_CHECK)

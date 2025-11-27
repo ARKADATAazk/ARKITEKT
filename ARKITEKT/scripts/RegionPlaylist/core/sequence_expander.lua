@@ -11,7 +11,7 @@ local function normalize_loops(value)
   if reps < 1 then
     return 1
   end
-  return math.floor(reps)
+  return reps // 1
 end
 
 local function expand_items(sequence, playlist, get_playlist_by_id, context)

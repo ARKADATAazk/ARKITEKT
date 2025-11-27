@@ -183,7 +183,7 @@ function M:push(opts)
     alpha = create_alpha_tracker(alpha_opts),
   }
 
-  table.insert(self.stack, overlay)
+  self.stack[#self.stack + 1] = overlay
 
   -- Update global counter
   M._global_active_overlay_count = M._global_active_overlay_count + 1
@@ -343,7 +343,7 @@ function M:render(ctx, dt)
   local base_scrim_color = top.scrim_color or config.scrim.color
   local base_scrim_opacity = top.scrim_opacity or config.scrim.opacity
   local scrim_alpha = base_scrim_opacity * alpha_val
-  local scrim_color = (base_scrim_color & 0xFFFFFF00) | math.floor(255 * scrim_alpha + 0.5)
+  local scrim_color = (base_scrim_color & 0xFFFFFF00) | (255 * scrim_alpha + 0.5) // 1
 
   -- HYBRID APPROACH: Use BeginPopupModal for input blocking, custom rendering for visuals
   -- Set modal dim background to fully transparent (we render our own scrim)
@@ -475,7 +475,7 @@ function M:draw_close_button(ctx, overlay, vp_x, vp_y, vp_w, vp_h, dt)
                     overlay.close_button_bg_opacity
   local bg_alpha = bg_opacity * alpha_val
   local bg_color = (overlay.close_button_bg_color & 0xFFFFFF00) |
-                   math.floor(255 * bg_alpha + 0.5)
+                   (255 * bg_alpha + 0.5) // 1
   ImGui.DrawList_AddRectFilled(dl, btn_x, btn_y,
                                btn_x + overlay.close_button_size,
                                btn_y + overlay.close_button_size,
@@ -484,7 +484,7 @@ function M:draw_close_button(ctx, overlay, vp_x, vp_y, vp_w, vp_h, dt)
   local icon_color = overlay.close_button_hovered and
                     overlay.close_button_hover_color or
                     overlay.close_button_color
-  icon_color = (icon_color & 0xFFFFFF00) | math.floor(255 * alpha_val + 0.5)
+  icon_color = (icon_color & 0xFFFFFF00) | (255 * alpha_val + 0.5) // 1
 
   local padding = overlay.close_button_size * 0.3
   local x1, y1 = btn_x + padding, btn_y + padding

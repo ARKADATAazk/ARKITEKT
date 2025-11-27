@@ -88,7 +88,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
     local r = math.random(50, 255) / 255.0
     local g = math.random(50, 255) / 255.0
     local b = math.random(50, 255) / 255.0
-    local color = (math.floor(r * 255) << 16) | (math.floor(g * 255) << 8) | math.floor(b * 255)
+    local color = ((r * 255) // 1 << 16) | ((g * 255) // 1 << 8) | (b * 255) // 1
 
     Tags.create_tag(state.metadata, new_tag_name, color)
 
@@ -208,7 +208,7 @@ function M.draw(ctx, state, config, width, height, gui)
         -- Navigate to the target path
         local parts = {}
         for part in path:gmatch("[^"..package.config:sub(1,1).."]+") do
-          table.insert(parts, part)
+          parts[#parts + 1] = part
         end
 
         local current = node
@@ -393,8 +393,8 @@ function M.draw(ctx, state, config, width, height, gui)
   local header_height = 24  -- Custom collapsible header height
 
   -- Initialize stored section height ratios if not set
-  state.physical_section_height = state.physical_section_height or math.floor(total_tree_height * 0.40)
-  state.virtual_section_height = state.virtual_section_height or math.floor(total_tree_height * 0.30)
+  state.physical_section_height = state.physical_section_height or (total_tree_height * 0.40) // 1
+  state.virtual_section_height = state.virtual_section_height or (total_tree_height * 0.30) // 1
 
   -- Track section open states (initialize if not set)
   state.physical_section_open = state.physical_section_open == nil and true or state.physical_section_open
@@ -403,9 +403,9 @@ function M.draw(ctx, state, config, width, height, gui)
 
   -- Count open sections and calculate available height
   local open_sections = {}
-  if state.physical_section_open then table.insert(open_sections, "physical") end
-  if state.virtual_section_open then table.insert(open_sections, "virtual") end
-  if state.archive_section_open then table.insert(open_sections, "archive") end
+  if state.physical_section_open then open_sections[#open_sections + 1] = "physical" end
+  if state.virtual_section_open then open_sections[#open_sections + 1] = "virtual" end
+  if state.archive_section_open then open_sections[#open_sections + 1] = "archive" end
 
   local num_open = #open_sections
   local num_closed = 3 - num_open
@@ -433,19 +433,19 @@ function M.draw(ctx, state, config, width, height, gui)
     -- Two open - distribute based on ratios
     if state.physical_section_open and state.virtual_section_open then
       local total_ratio = state.physical_section_height + state.virtual_section_height
-      physical_actual_height = math.floor(available_height * (state.physical_section_height / total_ratio))
+      physical_actual_height = (available_height * (state.physical_section_height / total_ratio)) // 1
       virtual_actual_height = available_height - physical_actual_height
       archive_actual_height = header_height
     elseif state.physical_section_open and state.archive_section_open then
       local archive_stored = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_height * 2
       local total_ratio = state.physical_section_height + archive_stored
-      physical_actual_height = math.floor(available_height * (state.physical_section_height / total_ratio))
+      physical_actual_height = (available_height * (state.physical_section_height / total_ratio)) // 1
       archive_actual_height = available_height - physical_actual_height
       virtual_actual_height = header_height
     else  -- virtual and archive open
       local archive_stored = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_height * 2
       local total_ratio = state.virtual_section_height + archive_stored
-      virtual_actual_height = math.floor(available_height * (state.virtual_section_height / total_ratio))
+      virtual_actual_height = (available_height * (state.virtual_section_height / total_ratio)) // 1
       archive_actual_height = available_height - virtual_actual_height
       physical_actual_height = header_height
     end

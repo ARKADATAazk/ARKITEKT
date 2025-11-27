@@ -355,7 +355,7 @@ local function draw_mock_content(ctx)
   local selected_tag_items = {}
   for _, tag in ipairs(demo_state.tags) do
     if demo_state.selected_tags[tag.id] then
-      table.insert(selected_tag_items, tag)
+      selected_tag_items[#selected_tag_items + 1] = tag
     end
   end
   

@@ -46,7 +46,7 @@ local function create_mock_music_flow()
       { event = "OnEnemySpotted", target_section = "node-peak", mode = "INCREMENTAL" },
     },
   })
-  table.insert(nodes, intro)
+  nodes[#nodes + 1] = intro
   
   local build = Node.new({
     guid = "node-build",
@@ -65,7 +65,7 @@ local function create_mock_music_flow()
       { event = "OnPlayerDeath", target_section = "node-gameover", mode = "IMMEDIATE" },
     },
   })
-  table.insert(nodes, build)
+  nodes[#nodes + 1] = build
   
   local peak = Node.new({
     guid = "node-peak",
@@ -85,7 +85,7 @@ local function create_mock_music_flow()
       { event = "OnAllEnemiesDefeated", target_section = "node-victory", mode = "INCREMENTAL" },
     },
   })
-  table.insert(nodes, peak)
+  nodes[#nodes + 1] = peak
   
   local boss = Node.new({
     guid = "node-boss",
@@ -105,7 +105,7 @@ local function create_mock_music_flow()
       { event = "OnPlayerDeath", target_section = "node-gameover", mode = "IMMEDIATE" },
     },
   })
-  table.insert(nodes, boss)
+  nodes[#nodes + 1] = boss
   
   local victory = Node.new({
     guid = "node-victory",
@@ -122,7 +122,7 @@ local function create_mock_music_flow()
     next_section = nil,
     triggers = {},
   })
-  table.insert(nodes, victory)
+  nodes[#nodes + 1] = victory
   
   local gameover = Node.new({
     guid = "node-gameover",
@@ -139,7 +139,7 @@ local function create_mock_music_flow()
     next_section = nil,
     triggers = {},
   })
-  table.insert(nodes, gameover)
+  nodes[#nodes + 1] = gameover
   
   local connections = {}
   

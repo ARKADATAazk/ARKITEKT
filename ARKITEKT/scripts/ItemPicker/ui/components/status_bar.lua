@@ -55,7 +55,7 @@ function StatusBar:render(ctx)
   -- Loading status (highest priority)
   if self.state.is_loading then
     local progress = self.state.loading_progress or 0
-    local percent = math.floor(progress * 100)
+    local percent = (progress * 100) // 1
 
     -- Animated spinner
     local spinner_chars = Strings.STATUS.spinner_chars

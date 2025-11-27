@@ -37,10 +37,10 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
   end
 
   -- Calculate container dimensions
-  local w = math.floor(bounds.w * config.width)
-  local h = math.floor(bounds.h * config.height)
-  local x = math.floor(bounds.x + (bounds.w - w) * 0.5)
-  local y = math.floor(bounds.y + (bounds.h - h) * 0.5)
+  local w = (bounds.w * config.width) // 1
+  local h = (bounds.h * config.height) // 1
+  local x = (bounds.x + (bounds.w - w) * 0.5) // 1
+  local y = (bounds.y + (bounds.h - h) * 0.5) // 1
   local r = config.rounding
 
   -- Create child window for container (renders above scrim)
@@ -53,7 +53,7 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, r)
 
   -- Dark background color for child
-  local bg_color = Colors.with_alpha(config.bg_color, math.floor(255 * config.bg_opacity * alpha))
+  local bg_color = Colors.with_alpha(config.bg_color, (255 * config.bg_opacity * alpha) // 1)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, bg_color)
 
   -- CRITICAL: AlwaysUseWindowPadding flag ensures WindowPadding style var is applied
@@ -64,7 +64,7 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
 
   -- Draw simple 1px black border
   local dl = ImGui.GetWindowDrawList(ctx)
-  local border_color = Colors.with_alpha(config.border_color, math.floor(255 * config.border_opacity * alpha))
+  local border_color = Colors.with_alpha(config.border_color, (255 * config.border_opacity * alpha) // 1)
   ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_color, r, 0, config.border_thickness)
 
   ImGui.PopStyleColor(ctx, 1)

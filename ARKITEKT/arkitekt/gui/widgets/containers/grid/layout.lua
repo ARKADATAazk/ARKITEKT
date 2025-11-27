@@ -46,13 +46,13 @@ function M.calculate(avail_w, min_col_w, gap, n_items, origin_x, origin_y, fixed
   end
   
   -- Distribute extra width evenly, with remainder going to first columns
-  local per_col_add = (cols > 0) and math.floor(math.max(0, extra) / cols) or 0
+  local per_col_add = (cols > 0) and (math.max(0, extra) / cols) // 1 or 0
   local remainder = (cols > 0) and math.max(0, extra - per_col_add * cols) or 0
   
   -- Calculate tile height
   local tile_h
   if fixed_tile_h then
-    tile_h = math.floor(fixed_tile_h + 0.5)
+    tile_h = (fixed_tile_h + 0.5) // 1
   else
     tile_h = math.floor((base_w + per_col_add) * 0.65)
   end
@@ -69,11 +69,11 @@ function M.calculate(avail_w, min_col_w, gap, n_items, origin_x, origin_y, fixed
   for idx = 1, n_items do
     -- This column gets extra pixel if within remainder
     local col_w = base_w + per_col_add + ((col <= remainder) and 1 or 0)
-    col_w = math.floor(col_w + 0.5)
+    col_w = (col_w + 0.5) // 1
     
     -- Integer-snap coordinates for crisp rendering
-    local x1 = math.floor(x + 0.5)
-    local y1 = math.floor(y + 0.5)
+    local x1 = (x + 0.5) // 1
+    local y1 = (y + 0.5) // 1
     local x2 = x1 + col_w
     local y2 = y1 + tile_h
     

@@ -133,7 +133,7 @@ function Graph:would_create_cycle(target_id, source_id)
     -- Try to build a path showing the cycle
     local path = self:_find_path(source_id, target_id)
     if path then
-      table.insert(path, target_id)  -- Complete the cycle
+      path[#path + 1] = target_id  -- Complete the cycle
       return true, path
     end
     return true, {source_id, "...", target_id}
@@ -185,7 +185,7 @@ function Graph:get_dependents(node_id)
   local dependents = {}
   for other_id, other_node in pairs(self.nodes) do
     if other_node.all_deps[node_id] then
-      table.insert(dependents, other_id)
+      dependents[#dependents + 1] = other_id
     end
   end
 
