@@ -207,6 +207,75 @@ function M.checkbox_item(ctx, label, checked, config)
   return ImGui.IsItemClicked(ctx, 0)
 end
 
+function M.radiobutton_item(ctx, label, selected, config)
+  config = config or {}
+  local defaults = get_defaults()  -- Get fresh colors from Theme.COLORS
+
+  local item_height = config.item_height or defaults.item_height
+  local item_padding_x = config.item_padding_x or defaults.item_padding_x
+  local item_hover_color = config.item_hover_color or defaults.item_hover_color
+  local item_text_color = config.item_text_color or defaults.item_text_color
+  local item_text_hover_color = config.item_text_hover_color or defaults.item_text_hover_color
+
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
+
+  local radio_size = 16  -- Outer circle diameter
+  local radio_padding = 8
+  local text_w, text_h = ImGui.CalcTextSize(ctx, label)
+  local item_w = math.max(avail_w, text_w + item_padding_x * 2 + radio_size + radio_padding)
+
+  local item_hovered = ImGui.IsMouseHoveringRect(ctx, item_x, item_y, item_x + item_w, item_y + item_height)
+
+  if item_hovered then
+    ImGui.DrawList_AddRectFilled(dl, item_x, item_y, item_x + item_w, item_y + item_height, item_hover_color, 2)
+  end
+
+  -- Draw radio button with improved styling matching radio button primitive
+  local radio_x = item_x + item_padding_x
+  local radio_y = item_y + (item_height - radio_size) * 0.5
+  local center_x = radio_x + radio_size / 2
+  local center_y = radio_y + radio_size / 2
+
+  -- Use theme colors for better consistency
+  local C = Theme.COLORS
+  local outer_radius = radio_size / 2
+  local inner_radius = (radio_size - 4) / 2
+  local selected_radius = (radio_size - 8) / 2
+
+  local bg_color = selected and C.BG_HOVER or C.BG_BASE
+  local inner_color = C.BG_BASE
+  local border_inner = selected and C.BORDER_HOVER or C.BORDER_INNER
+  local border_outer = C.BORDER_OUTER
+
+  -- Draw outer circle
+  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, outer_radius, bg_color)
+  ImGui.DrawList_AddCircle(dl, center_x, center_y, outer_radius - 1, border_inner, 0, 1.0)
+  ImGui.DrawList_AddCircle(dl, center_x, center_y, outer_radius, border_outer, 0, 1.0)
+
+  -- Draw inner circle
+  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, inner_radius, inner_color)
+  ImGui.DrawList_AddCircle(dl, center_x, center_y, inner_radius, border_outer, 0, 1.0)
+
+  -- Draw selected indicator (filled circle)
+  if selected then
+    local selected_color = C.TEXT_DIMMED
+    ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, selected_radius, selected_color)
+  end
+
+  -- Draw label text
+  local text_color = item_hovered and item_text_hover_color or item_text_color
+  local text_x = radio_x + radio_size + radio_padding
+  local text_y = item_y + (item_height - text_h) * 0.5
+
+  ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
+
+  ImGui.InvisibleButton(ctx, label .. "_radiobutton_item", item_w, item_height)
+
+  return ImGui.IsItemClicked(ctx, 0)
+end
+
 function M.separator(ctx, config)
   config = config or {}
   local defaults = get_defaults()
