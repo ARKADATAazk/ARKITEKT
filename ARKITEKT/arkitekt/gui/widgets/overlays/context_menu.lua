@@ -3,7 +3,6 @@
 -- Enhanced context menu widget with icons, shortcuts, and ImGui-compatible API
 --
 -- Features over vanilla ImGui:
--- - Drop shadow for visual depth
 -- - Icons in menu items (using icon fonts)
 -- - Keyboard shortcut display (right-aligned)
 -- - Disabled items with optional tooltips
@@ -42,10 +41,6 @@ local Theme = require('arkitekt.core.theme')
 
 local M = {}
 local hexrgb = Colors.hexrgb
-
--- Store splitters per popup ID (for shadow z-ordering)
-local splitters = {}
-local current_popup_id = nil  -- Track current popup for end_menu
 
 -- Get dynamic defaults from Theme.COLORS
 local function get_defaults()
@@ -97,95 +92,15 @@ function M.begin(ctx, id, config)
   if not popup_open then
     ImGui.PopStyleColor(ctx, 2)
     ImGui.PopStyleVar(ctx, 5)
-    current_popup_id = nil
-  else
-    -- Track this popup for end_menu
-    current_popup_id = id
-
-    -- Get window dimensions
-    local wx, wy = ImGui.GetWindowPos(ctx)
-    local ww, wh = ImGui.GetWindowSize(ctx)
-    local dl = ImGui.GetWindowDrawList(ctx)
-
-    -- Create or get splitter for this popup ID
-    if not splitters[id] then
-      splitters[id] = ImGui.CreateDrawListSplitter(dl)
-    end
-    local splitter = splitters[id]
-
-    -- Split into 2 channels: 0 = background (shadow), 1 = foreground (content)
-    ImGui.DrawListSplitter_Split(splitter, 2)
-
-    -- Draw shadow on background channel (channel 0)
-    ImGui.DrawListSplitter_SetCurrentChannel(splitter, 0)
-
-    -- Expand clip rect to allow shadow to be drawn outside popup bounds
-    ImGui.DrawList_PushClipRect(dl, wx - 12, wy - 12, wx + ww + 12, wy + wh + 12, false)
-
-    -- Base black color
-    local black = hexrgb("#000000")
-
-    -- Shadow parameters (more visible now that it won't darken content)
-    local shadow_offset_x = 2
-    local shadow_offset_y = 3
-
-    -- Multi-layer shadow for depth
-    -- Outer glow (extends beyond edges)
-    local spread_1 = 8
-    ImGui.DrawList_AddRectFilled(
-      dl,
-      wx + shadow_offset_x - spread_1,
-      wy + shadow_offset_y - spread_1,
-      wx + ww + shadow_offset_x + spread_1,
-      wy + wh + shadow_offset_y + spread_1,
-      Colors.with_opacity(black, 0.12),
-      rounding + spread_1
-    )
-
-    -- Middle layer
-    local spread_2 = 5
-    ImGui.DrawList_AddRectFilled(
-      dl,
-      wx + shadow_offset_x - spread_2,
-      wy + shadow_offset_y - spread_2,
-      wx + ww + shadow_offset_x + spread_2,
-      wy + wh + shadow_offset_y + spread_2,
-      Colors.with_opacity(black, 0.15),
-      rounding + spread_2
-    )
-
-    -- Inner shadow (closest to popup edge)
-    local spread_3 = 2
-    ImGui.DrawList_AddRectFilled(
-      dl,
-      wx + shadow_offset_x - spread_3,
-      wy + shadow_offset_y - spread_3,
-      wx + ww + shadow_offset_x + spread_3,
-      wy + wh + shadow_offset_y + spread_3,
-      Colors.with_opacity(black, 0.20),
-      rounding + spread_3
-    )
-
-    ImGui.DrawList_PopClipRect(dl)
-
-    -- Switch to foreground channel for content (ImGui will render here)
-    ImGui.DrawListSplitter_SetCurrentChannel(splitter, 1)
   end
 
   return popup_open
 end
 
 function M.end_menu(ctx)
-  -- Merge channels before ending popup
-  if current_popup_id and splitters[current_popup_id] then
-    ImGui.DrawListSplitter_Merge(splitters[current_popup_id])
-  end
-
   ImGui.EndPopup(ctx)
   ImGui.PopStyleColor(ctx, 2)
   ImGui.PopStyleVar(ctx, 5)
-
-  current_popup_id = nil
 end
 
 --- Enhanced menu item with icons, shortcuts, and disabled state
