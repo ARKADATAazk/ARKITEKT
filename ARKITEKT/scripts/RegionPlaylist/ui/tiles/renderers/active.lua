@@ -115,11 +115,11 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
   if show_badge then
     local badge_text = (item.reps == 0) and "∞" or ("×" .. (item.reps or 1))
     local bw, _ = ImGui.CalcTextSize(ctx, badge_text)
-    table.insert(right_elements, BaseRenderer.create_element(
+    right_elements[#right_elements + 1] = BaseRenderer.create_element(
       true,
       (bw * BaseRenderer.CONFIG.badge_font_scale) + (M.CONFIG.badge_padding_x * 2),
       M.CONFIG.badge_margin
-    ))
+    )
   end
   
   if show_text then
@@ -260,11 +260,11 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
     local reps = item.reps or 1
     local badge_text = (reps == 0) and ("∞ [" .. playlist_data.item_count .. "]") or ("×" .. reps .. " [" .. playlist_data.item_count .. "]")
     local bw, _ = ImGui.CalcTextSize(ctx, badge_text)
-    table.insert(right_elements, BaseRenderer.create_element(
+    right_elements[#right_elements + 1] = BaseRenderer.create_element(
       true,
       (bw * BaseRenderer.CONFIG.badge_font_scale) + (M.CONFIG.badge_padding_x * 2),
       M.CONFIG.badge_margin
-    ))
+    )
   end
   
   if show_text then

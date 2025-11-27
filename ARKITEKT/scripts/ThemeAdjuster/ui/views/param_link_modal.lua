@@ -69,12 +69,12 @@ function ParamLinkModal:get_compatible_params()
       if group_enabled or not param_group then
         -- Check type compatibility
         if ParameterLinkManager.are_types_compatible(self.source_param_type, param.type) then
-          table.insert(compatible, {
+          compatible[#compatible + 1] = {
             id = param_name,
             name = param_name,
             type = param.type,
             description = param.description or "",
-          })
+          }
         end
       end
     end
@@ -194,11 +194,11 @@ function ParamLinkModal:render(ctx, shell_state)
     -- Convert to chip items
     local chip_items = {}
     for _, param_info in ipairs(compatible) do
-      table.insert(chip_items, {
+      chip_items[#chip_items + 1] = {
         id = param_info.id,
         label = param_info.name,
         color = hexrgb("#4A90E2"),  -- Blue for parameters
-      })
+      }
     end
 
     local clicked_param = ChipList.draw_columns(ctx, chip_items, {

@@ -71,37 +71,37 @@ function M.pretty_format_json(json_str)
     local char = json_str:sub(i, i)
 
     if escape_next then
-      table.insert(result, char)
+      result[#result + 1] = char
       escape_next = false
     elseif char == '\\' and in_string then
-      table.insert(result, char)
+      result[#result + 1] = char
       escape_next = true
     elseif char == '"' then
-      table.insert(result, char)
+      result[#result + 1] = char
       in_string = not in_string
     elseif not in_string then
       if char == '{' or char == '[' then
         indent = indent + 1
-        table.insert(result, char)
-        table.insert(result, '\n')
-        table.insert(result, string.rep('  ', indent))
+        result[#result + 1] = char
+        result[#result + 1] = '\n'
+        result[#result + 1] = string.rep('  ', indent)
       elseif char == '}' or char == ']' then
         indent = indent - 1
-        table.insert(result, '\n')
-        table.insert(result, string.rep('  ', indent))
-        table.insert(result, char)
+        result[#result + 1] = '\n'
+        result[#result + 1] = string.rep('  ', indent)
+        result[#result + 1] = char
       elseif char == ',' then
-        table.insert(result, char)
-        table.insert(result, '\n')
-        table.insert(result, string.rep('  ', indent))
+        result[#result + 1] = char
+        result[#result + 1] = '\n'
+        result[#result + 1] = string.rep('  ', indent)
       elseif char == ':' then
-        table.insert(result, char)
-        table.insert(result, ' ')
+        result[#result + 1] = char
+        result[#result + 1] = ' '
       elseif char ~= ' ' and char ~= '\n' and char ~= '\t' then
-        table.insert(result, char)
+        result[#result + 1] = char
       end
     else
-      table.insert(result, char)
+      result[#result + 1] = char
     end
   end
 

@@ -50,7 +50,7 @@ function M.load_group_preset_config(group, view)
       for _, param_name in ipairs(template.params) do
         if not all_params[param_name] then
           all_params[param_name] = true
-          table.insert(param_order, param_name)
+          param_order[#param_order + 1] = param_name
         end
       end
     end
@@ -79,7 +79,7 @@ function M.load_group_preset_config(group, view)
           new_preset.values = preset.values or {}
         end
 
-        table.insert(presets, new_preset)
+        presets[#presets + 1] = new_preset
       end
     end
   end
@@ -308,7 +308,7 @@ function M.render_preset_config(ctx, state, view)
             local current_idx = math.floor(preset.values[param_name] - param.min + 1)
             local values = {}
             for v = param.min, param.max do
-              table.insert(values, tostring(v))
+              values[#values + 1] = tostring(v)
             end
 
             local rv, new_idx = ImGui.Combo(ctx, "##" .. param_name, current_idx, table.concat(values, "\0") .. "\0")
@@ -361,7 +361,7 @@ function M.render_preset_config(ctx, state, view)
       end
     end
 
-    table.insert(state.preset_config.presets, new_preset)
+    state.preset_config.presets[#state.preset_config.presets + 1] = new_preset
   end
 
   ImGui.SameLine(ctx)
@@ -406,7 +406,7 @@ function M.apply_group_config(group, state, view)
           end
         end
 
-        table.insert(template.config.presets, template_preset)
+        template.config.presets[#template.config.presets + 1] = template_preset
       end
     end
   end

@@ -319,7 +319,7 @@ function M.TileRenderer.conflicts(ctx, dl, pkg, P, tile_x, tile_y, tile_w)
 
   local text = string.format('%d conflicts', conf_count)
   local tw, th = ImGui.CalcTextSize(ctx, text)
-  local x = tile_x + math.floor((tile_w - tw) / 2)
+  local x = tile_x + (tile_w - tw) // 2
   local y = tile_y + M.CONFIG.badge.margin
 
   Draw.text(dl, x, y, M.CONFIG.colors.text.conflict, text)
@@ -394,7 +394,7 @@ function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w, tile_h)
   local available_start = tile_x + M.CONFIG.tags.margin_x
   local available_end = tile_x + tile_w - M.CONFIG.tags.margin_x
   local available_width = available_end - available_start
-  local x = available_start + math.floor((available_width - total_width) / 2)
+  local x = available_start + (available_width - total_width) // 2
   x = math.max(x, available_start)  -- Don't go past margin
 
   for _, chip in ipairs(chips) do
@@ -494,8 +494,8 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
       local clip_x2 = clip_x1 + preview_area_w
       local clip_y2 = clip_y1 + preview_area_h
 
-      local preview_x = clip_x1 - math.floor((draw_w - preview_area_w) / 2)
-      local preview_y = clip_y1 - math.floor((draw_h - preview_area_h) / 2)
+      local preview_x = clip_x1 - (draw_w - preview_area_w) // 2
+      local preview_y = clip_y1 - (draw_h - preview_area_h) // 2
 
       -- Clip to exact bounds and draw
       ImGui.PushClipRect(ctx, clip_x1, clip_y1, clip_x2, clip_y2, true)
@@ -533,11 +533,11 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
   local total_gap = (num_images - 1) * M.CONFIG.mosaic.gap
   local cell_size = math.min(
     M.CONFIG.mosaic.max_size,
-    math.floor((available_w - total_gap) / num_images)
+    (available_w - total_gap) // num_images
   )
 
   local total_width = cell_size * num_images + total_gap
-  local mosaic_x = tile_x + math.floor((tile_w - total_width) / 2)
+  local mosaic_x = tile_x + (tile_w - total_width) // 2
   local mosaic_y = tile_y + M.CONFIG.mosaic.y_offset
   for i = 1, num_images do
     local key = valid_keys[i]
@@ -571,8 +571,8 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
           end
 
           -- Center or clip if needed
-          local img_x = cx + math.floor((cell_size - draw_w) / 2)
-          local img_y = cy + math.floor((cell_size - draw_h) / 2)
+          local img_x = cx + (cell_size - draw_w) // 2
+          local img_y = cy + (cell_size - draw_h) // 2
 
           -- Clip to cell bounds
           ImGui.PushClipRect(ctx, cx, cy, cx + cell_size, cy + cell_size, true)

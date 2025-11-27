@@ -317,7 +317,7 @@ function PackageModal:_compute_grouped_assets(keys_order)
   -- Categorize keys using cached area
   for _, key in ipairs(keys_order) do
     local area = self._area_cache[key] or get_area_from_key(key)
-    table.insert(groups[area], key)
+    groups[area][#groups[area] + 1] = key
   end
 
   return {groups = groups, order = group_order}
@@ -339,7 +339,7 @@ function PackageModal:group_assets_by_area(keys_order)
 
   for _, key in ipairs(keys_order) do
     local area = self._area_cache[key] or get_area_from_key(key)
-    table.insert(groups[area], key)
+    groups[area][#groups[area] + 1] = key
   end
 
   return groups, group_order
@@ -559,7 +559,7 @@ function PackageModal:draw_grid_view(ctx, pkg)
           local matches_search = self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true)
           local matches_status = self:passes_status_filter(key)
           if matches_search and matches_status then
-            table.insert(filtered_keys, key)
+            filtered_keys[#filtered_keys + 1] = key
           end
         end
 
@@ -567,14 +567,14 @@ function PackageModal:draw_grid_view(ctx, pkg)
           local is_collapsed = self.collapsed_groups[area] or false
 
           -- Header
-          table.insert(render_items, {
+          render_items[#render_items + 1] = {
             type = "header",
             y = current_y,
             height = header_height,
             area = area,
             count = #filtered_keys,
             collapsed = is_collapsed
-          })
+          }
           current_y = current_y + header_height
 
           -- Only add rows if not collapsed
@@ -586,17 +586,17 @@ function PackageModal:draw_grid_view(ctx, pkg)
               for col = 0, columns - 1 do
                 local idx = row * columns + col + 1
                 if idx <= #filtered_keys then
-                  table.insert(row_keys, filtered_keys[idx])
+                  row_keys[#row_keys + 1] = filtered_keys[idx]
                 end
               end
 
               if #row_keys > 0 then
-                table.insert(render_items, {
+                render_items[#render_items + 1] = {
                   type = "row",
                   y = current_y,
                   height = row_height,
                   keys = row_keys
-                })
+                }
                 current_y = current_y + row_height
               end
             end
@@ -654,7 +654,7 @@ function PackageModal:draw_grid_view(ctx, pkg)
       local matches_search = self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true)
       local matches_status = self:passes_status_filter(key)
       if matches_search and matches_status then
-        table.insert(filtered_keys, key)
+        filtered_keys[#filtered_keys + 1] = key
       end
     end
 

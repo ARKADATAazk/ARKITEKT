@@ -15,19 +15,19 @@ local HeightStabilizer = require('arkitekt.gui.systems.height_stabilizer')
 local M = {}
 
 local function calculate_clamped_tile_height(avail_w, min_col_w, gap, max_height)
-  local cols = math.max(1, math.floor((avail_w + gap) / (min_col_w + gap)))
+  local cols = math.max(1, (avail_w + gap) // (min_col_w + gap))
   local inner_w = math.max(0, avail_w - gap * (cols + 1))
   local base_w_total = min_col_w * cols
   local extra = inner_w - base_w_total
-  
+
   local base_w = min_col_w
   if cols == 1 then
     base_w = math.max(80, inner_w)
     extra = 0
   end
-  
+
   local per_col_add = (cols > 0) and (math.max(0, extra) / cols) // 1 or 0
-  local responsive_height = math.floor((base_w + per_col_add) * 0.65)
+  local responsive_height = ((base_w + per_col_add) * 0.65) // 1
   
   return math.min(responsive_height, max_height)
 end

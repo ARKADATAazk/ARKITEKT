@@ -30,7 +30,7 @@ function M.calculate(avail_w, min_col_w, gap, n_items, origin_x, origin_y, fixed
   end
   
   -- Calculate max columns that fit
-  local cols = math.max(1, math.floor((avail_w + gap) / (min_col_w + gap)))
+  local cols = math.max(1, (avail_w + gap) // (min_col_w + gap))
   cols = math.min(cols, n_items)
   
   -- Calculate actual column width with distributed extra space
@@ -54,7 +54,7 @@ function M.calculate(avail_w, min_col_w, gap, n_items, origin_x, origin_y, fixed
   if fixed_tile_h then
     tile_h = (fixed_tile_h + 0.5) // 1
   else
-    tile_h = math.floor((base_w + per_col_add) * 0.65)
+    tile_h = ((base_w + per_col_add) * 0.65) // 1
   end
   
   -- Calculate rows

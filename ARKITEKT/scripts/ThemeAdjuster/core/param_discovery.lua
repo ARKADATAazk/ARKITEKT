@@ -16,7 +16,7 @@ function M.discover_all_params()
 
     if not ok or name == nil then break end
 
-    table.insert(params, {
+    params[#params + 1] = {
       index = i,
       name = name,
       description = desc or name,
@@ -27,7 +27,7 @@ function M.discover_all_params()
       type = M.infer_control_type(min or 0, max or 1),
       category = M.infer_category(name),
       scope = M.infer_scope(desc or ""),
-    })
+    }
 
     i = i + 1
   end
@@ -84,7 +84,7 @@ function M.filter_unknown_params(all_params, known_params)
 
   for _, param in ipairs(all_params) do
     if not known_params[param.name] then
-      table.insert(unknown, param)
+      unknown[#unknown + 1] = param
     end
   end
 
@@ -102,7 +102,7 @@ function M.group_by_category(params)
       grouped[category] = {}
     end
 
-    table.insert(grouped[category], param)
+    grouped[category][#grouped[category] + 1] = param
   end
 
   return grouped
@@ -177,7 +177,7 @@ function M.organize_into_groups(params)
     if M.is_group_header(param) then
       -- Save current group if it has parameters
       if #current_group.params > 0 then
-        table.insert(groups, current_group)
+        groups[#groups + 1] = current_group
       end
 
       -- Start new group
@@ -189,13 +189,13 @@ function M.organize_into_groups(params)
       }
     else
       -- Add parameter to current group
-      table.insert(current_group.params, param)
+      current_group.params[#current_group.params + 1] = param
     end
   end
 
   -- Add final group
   if #current_group.params > 0 then
-    table.insert(groups, current_group)
+    groups[#groups + 1] = current_group
   end
 
   return groups

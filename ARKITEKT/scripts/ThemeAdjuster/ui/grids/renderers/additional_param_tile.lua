@@ -168,8 +168,8 @@ function M.render(ctx, param, tab_color, shell_state, view)
       -- Old format: preset.value for single value (backwards compat)
       local value = preset.values and preset.values[param.name] or preset.value
       if value then
-        table.insert(preset_values, value)
-        table.insert(preset_labels, preset.label or "Unnamed")
+        preset_values[#preset_values + 1] = value
+        preset_labels[#preset_labels + 1] = preset.label or "Unnamed"
       end
     end
 
@@ -460,7 +460,7 @@ function M.render_group(ctx, group_param, tab_color, shell_state, view)
   -- Build preset labels
   local preset_labels = {}
   for _, preset in ipairs(presets) do
-    table.insert(preset_labels, preset.label or "Unnamed")
+    preset_labels[#preset_labels + 1] = preset.label or "Unnamed"
   end
 
   -- Track spinner state

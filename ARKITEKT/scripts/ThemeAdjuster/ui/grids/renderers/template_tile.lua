@@ -85,7 +85,7 @@ function M.render(ctx, rect, item, state, view)
 
   local param_names = {}
   for _, param_name in ipairs(template.params or {}) do
-    table.insert(param_names, param_name)
+    param_names[#param_names + 1] = param_name
   end
 
   local params_text = table.concat(param_names, ", ")
@@ -134,7 +134,7 @@ function M.render(ctx, rect, item, state, view)
             new_preset.values = preset.values or {}
           end
 
-          table.insert(presets, new_preset)
+          presets[#presets + 1] = new_preset
         end
       end
 
@@ -330,7 +330,7 @@ function M.render_preset_config(ctx, state, view, template)
             local current_idx = math.floor(preset.values[param_name] - param.min + 1)
             local values = {}
             for v = param.min, param.max do
-              table.insert(values, tostring(v))
+              values[#values + 1] = tostring(v)
             end
 
             local rv, new_idx = ImGui.Combo(ctx, "##" .. param_name, current_idx, table.concat(values, "\0") .. "\0")
@@ -383,7 +383,7 @@ function M.render_preset_config(ctx, state, view, template)
       end
     end
 
-    table.insert(state.presets, new_preset)
+    state.presets[#state.presets + 1] = new_preset
   end
 
   ImGui.SameLine(ctx)
