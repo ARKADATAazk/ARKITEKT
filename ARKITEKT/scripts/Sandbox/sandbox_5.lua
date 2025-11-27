@@ -20,6 +20,11 @@ local Colors = require('arkitekt.core.colors')
 local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
 local hexrgb = Colors.hexrgb
 
+-- Create namespace for widget modules
+local ark = {
+  InputText = InputText
+}
+
 -- ============================================================================
 -- CUSTOM TREEVIEW CONFIG
 -- ============================================================================
@@ -175,7 +180,7 @@ local function find_node_by_id(nodes, id)
 end
 
 -- ============================================================================
--- TREE STATE
+-- TREE STATE - MUST BE DEFINED BEFORE HELPER FUNCTIONS
 -- ============================================================================
 
 local tree_state = {

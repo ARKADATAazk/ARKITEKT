@@ -20,6 +20,11 @@ local Colors = require('arkitekt.core.colors')
 local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
 local hexrgb = Colors.hexrgb
 
+-- Create namespace for widget modules
+local ark = {
+  InputText = InputText
+}
+
 -- ============================================================================
 -- CUSTOM TREEVIEW CONFIG
 -- ============================================================================
@@ -32,6 +37,8 @@ local TREE_CONFIG = {
   arrow_margin = 6,
   icon_width = 13,
   icon_margin = 4,
+  checkbox_size = 12,
+  checkbox_margin = 6,
 
   -- Padding
   padding_left = 4,
@@ -44,21 +51,38 @@ local TREE_CONFIG = {
   -- Visual features
   show_tree_lines = true,
   show_alternating_bg = false,
+  show_checkboxes = true,  -- NEW: Global checkbox toggle
   tree_line_thickness = 1,
   tree_line_style = "dotted", -- "solid" or "dotted"
   tree_line_dot_spacing = 2,
+
+  -- Default item flags
+  default_item_flags = {
+    selectable = true,
+    editable = true,
+    enabled = true,
+    checkable = false,
+    draggable = true,
+    droppable = true,
+  },
 
   -- Colors
   bg_hover = hexrgb("#2E2E2EFF"),
   bg_selected = hexrgb("#393939FF"),
   bg_selected_hover = hexrgb("#3E3E3EFF"),
   bg_alternate = hexrgb("#1C1C1CFF"),
+  bg_disabled = hexrgb("#0F0F0FFF"),
   text_normal = hexrgb("#CCCCCCFF"),
   text_hover = hexrgb("#FFFFFFFF"),
+  text_disabled = hexrgb("#666666FF"),
   arrow_color = hexrgb("#B0B0B0FF"),
   icon_color = hexrgb("#888888FF"),
   icon_open_color = hexrgb("#9A9A9AFF"),
   tree_line_color = hexrgb("#505050FF"),
+  checkbox_border = hexrgb("#888888FF"),
+  checkbox_check = hexrgb("#4A9EFFFF"),
+  checkbox_bg = hexrgb("#2A2A2AFF"),
+  checkbox_bg_disabled = hexrgb("#1A1A1AFF"),
 }
 
 -- ============================================================================
@@ -70,21 +94,25 @@ local mock_tree = {
     id = "root",
     name = "Project Root",
     color = hexrgb("#4A9EFFFF"),
+    flags = { checkable = true },
+    checked = true,
     children = {
       {
         id = "src",
         name = "src",
         color = hexrgb("#41E0A3FF"),
+        flags = { checkable = true },
+        checked = true,
         children = {
-          { id = "components", name = "components", children = {
-            { id = "button", name = "Button.lua", children = {} },
-            { id = "dropdown", name = "Dropdown.lua", children = {} },
+          { id = "components", name = "components", flags = { checkable = true }, checked = true, children = {
+            { id = "button", name = "Button.lua", flags = { checkable = true }, checked = true, children = {} },
+            { id = "dropdown", name = "Dropdown.lua", flags = { checkable = true }, checked = false, children = {} },
           }},
-          { id = "utils", name = "utils", children = {
-            { id = "colors", name = "colors.lua", children = {} },
-            { id = "config", name = "config.lua", children = {} },
+          { id = "utils", name = "utils", flags = { checkable = true }, checked = true, children = {
+            { id = "colors", name = "colors.lua", flags = { checkable = true }, checked = true, children = {} },
+            { id = "config", name = "config.lua", flags = { checkable = true }, checked = true, children = {} },
           }},
-          { id = "styles", name = "styles", children = {} },
+          { id = "styles", name = "styles", flags = { checkable = true }, checked = false, children = {} },
         }
       },
       {
@@ -107,7 +135,7 @@ local mock_tree = {
           { id = "integration", name = "integration", children = {} },
         }
       },
-      { id = "config", name = "config", children = {} },
+      { id = "config-root", name = "config", children = {} },
       { id = "scripts", name = "scripts", children = {} },
       { id = "assets", name = "assets", children = {} },
     }
@@ -125,6 +153,142 @@ local function find_node_by_id(nodes, id)
   end
   return nil
 end
+
+-- Get item flags (merge with defaults)
+local function get_item_flags(node)
+  if not node.flags then
+    return TREE_CONFIG.default_item_flags
+  end
+
+  local flags = {}
+  for key, default_val in pairs(TREE_CONFIG.default_item_flags) do
+    flags[key] = node.flags[key] ~= nil and node.flags[key] or default_val
+  end
+  return flags
+end
+
+-- Check if item is enabled
+local function is_item_enabled(node)
+  local flags = get_item_flags(node)
+  return flags.enabled
+end
+
+-- Check if item is checkable
+local function is_item_checkable(node)
+  local flags = get_item_flags(node)
+  return flags.checkable and TREE_CONFIG.show_checkboxes
+end
+
+-- Get checkbox state (true, false, or "partial" for tri-state)
+local function get_check_state(node)
+  return node.checked or false
+end
+
+-- Set checkbox state and update parent tri-state
+local function set_check_state(nodes, node_id, checked)
+  local function update_node(ns)
+    for _, n in ipairs(ns) do
+      if n.id == node_id then
+        n.checked = checked
+        -- Update children recursively if enabled
+        if n.children and #n.children > 0 then
+          for _, child in ipairs(n.children) do
+            if is_item_checkable(child) then
+              set_check_state(n.children, child.id, checked)
+            end
+          end
+        end
+        return true
+      elseif n.children then
+        if update_node(n.children) then
+          -- Update this parent's tri-state
+          local all_checked = true
+          local any_checked = false
+          local has_partial = false
+
+          for _, child in ipairs(n.children) do
+            if is_item_checkable(child) then
+              local child_state = get_check_state(child)
+              if child_state == true then
+                any_checked = true
+              elseif child_state == "partial" then
+                has_partial = true
+              else
+                all_checked = false
+              end
+            end
+          end
+
+          if has_partial or (any_checked and not all_checked) then
+            n.checked = "partial"
+          elseif all_checked then
+            n.checked = true
+          else
+            n.checked = false
+          end
+          return true
+        end
+      end
+    end
+    return false
+  end
+
+  update_node(nodes)
+end
+
+-- ============================================================================
+-- TREE STATE - MUST BE DEFINED BEFORE HELPER FUNCTIONS
+-- ============================================================================
+
+local tree_state = {
+  open = { root = true, src = true, docs = true, components = true, utils = true, guides = true },
+  selected = {}, -- Now a table of selected IDs: { [id] = true, ... }
+  focused = nil, -- Currently focused item for keyboard nav
+  anchor = nil, -- Anchor point for shift-selection
+  hovered = nil,
+  scroll_y = 0,
+  editing = nil,
+  edit_buffer = "",
+  edit_focus_set = false,
+  flat_list = {}, -- Flat list of visible items in order for arrow navigation
+  clipboard = {}, -- Clipboard for cut/copy/paste
+  clipboard_mode = nil, -- "cut" or "copy"
+  context_menu_open = false,
+  context_menu_x = 0,
+  context_menu_y = 0,
+  search_text = "",
+  search_active = false,
+  tree_bounds = {}, -- Store tree bounds for click detection
+
+  -- Type-to-search state
+  type_buffer = "",
+  type_timeout = 0,
+  type_timeout_duration = 1.0, -- seconds to wait before clearing buffer
+
+  -- Drag & drop state
+  drag_active = false,
+  drag_node_id = nil,  -- Primary dragged node
+  drag_node_ids = {},  -- All nodes being dragged (for multi-drag)
+  drag_is_copy = false, -- Ctrl held = copy instead of move
+  drag_start_x = 0,
+  drag_start_y = 0,
+  drag_threshold = 5, -- pixels to move before drag starts
+  drop_target_id = nil,
+  drop_position = nil, -- "before", "into", "after"
+
+  -- Virtual scrolling
+  use_virtual_scrolling = true,
+  total_content_height = 0,
+
+  -- Icon types
+  icon_types = {
+    folder = "folder",
+    file = "file",
+    lua = "lua",
+    markdown = "markdown",
+    config = "config",
+  },
+}
 
 -- ============================================================================
 -- MULTISELECTION HELPERS
@@ -218,16 +382,21 @@ local function delete_nodes_by_ids(nodes, ids_to_delete)
   end
 end
 
-local function duplicate_node(node)
+local function duplicate_node(node, add_copy_suffix)
+  -- add_copy_suffix: true = add " (copy)" to name, false/nil = keep original name
+  if add_copy_suffix == nil then add_copy_suffix = true end
+
   local new_node = {
-    id = node.id .. "_copy_" .. os.time(),
-    name = node.name .. " (copy)",
+    id = node.id .. "_copy_" .. os.time() .. "_" .. math.random(1000, 9999),
+    name = add_copy_suffix and (node.name .. " (copy)") or node.name,
     color = node.color,
+    flags = node.flags,
+    checked = node.checked,
     children = {}
   }
   if node.children then
     for _, child in ipairs(node.children) do
-      table.insert(new_node.children, duplicate_node(child))
+      table.insert(new_node.children, duplicate_node(child, false))  -- Children keep original names
     end
   end
   return new_node
@@ -319,52 +488,41 @@ local function insert_node_at(nodes, target_id, node_to_insert, position)
   return false
 end
 
-local tree_state = {
-  open = { root = true, src = true, docs = true, components = true, utils = true, guides = true },
-  selected = {}, -- Now a table of selected IDs: { [id] = true, ... }
-  focused = nil, -- Currently focused item for keyboard nav
-  anchor = nil, -- Anchor point for shift-selection
-  hovered = nil,
-  scroll_y = 0,
-  editing = nil,
-  edit_buffer = "",
-  edit_focus_set = false,
-  flat_list = {}, -- Flat list of visible items in order for arrow navigation
-  clipboard = {}, -- Clipboard for cut/copy/paste
-  clipboard_mode = nil, -- "cut" or "copy"
-  context_menu_open = false,
-  context_menu_x = 0,
-  context_menu_y = 0,
-  search_text = "",
-  search_active = false,
-  tree_bounds = {}, -- Store tree bounds for click detection
-
-  -- Drag & drop state
-  drag_active = false,
-  drag_node_id = nil,
-  drag_start_x = 0,
-  drag_start_y = 0,
-  drag_threshold = 5, -- pixels to move before drag starts
-  drop_target_id = nil,
-  drop_position = nil, -- "before", "into", "after"
-
-  -- Virtual scrolling
-  use_virtual_scrolling = true,
-  total_content_height = 0,
-
-  -- Icon types
-  icon_types = {
-    folder = "folder",
-    file = "file",
-    lua = "lua",
-    markdown = "markdown",
-    config = "config",
-  },
-}
-
 -- ============================================================================
 -- DRAWING FUNCTIONS
 -- ============================================================================
+
+local function draw_checkbox(dl, x, y, checked, enabled)
+  local cfg = TREE_CONFIG
+  local size = cfg.checkbox_size
+
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  local bg_color = enabled and cfg.checkbox_bg or cfg.checkbox_bg_disabled
+  local border_color = enabled and cfg.checkbox_border or cfg.text_disabled
+  local check_color = enabled and cfg.checkbox_check or cfg.text_disabled
+
+  -- Background
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + size, y + size, bg_color, 2)
+
+  -- Border
+  ImGui.DrawList_AddRect(dl, x, y, x + size, y + size, border_color, 2, 0, 1.5)
+
+  -- Checkmark or partial state
+  if checked == true then
+    -- Draw checkmark
+    local x1, y1 = x + 3, y + 6
+    local x2, y2 = x + 5, y + 9
+    local x3, y3 = x + 9, y + 3
+
+    ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, check_color, 2)
+    ImGui.DrawList_AddLine(dl, x2, y2, x3, y3, check_color, 2)
+  elseif checked == "partial" then
+    -- Draw dash for partial state (tri-state)
+    ImGui.DrawList_AddLine(dl, x + 3, y + size / 2, x + size - 3, y + size / 2, check_color, 2)
+  end
+end
 
 local function draw_arrow(dl, x, y, is_open, color)
   color = color or TREE_CONFIG.arrow_color
@@ -431,15 +589,16 @@ local function draw_markdown_icon(dl, x, y, color)
   x = math.floor(x + 0.5)
   y = math.floor(y + 0.5)
 
-  -- Draw "M" shape
-  local pts = {
-    x, y + 10,
-    x, y,
-    x + 5, y + 5,
-    x + 10, y,
-    x + 10, y + 10
-  }
-  ImGui.DrawList_AddPolyline(dl, pts, color, 0, 2)
+  -- Draw "M" shape using individual lines
+  local thickness = 2
+  -- Left vertical line
+  ImGui.DrawList_AddLine(dl, x, y + 10, x, y, color, thickness)
+  -- Left diagonal up to peak
+  ImGui.DrawList_AddLine(dl, x, y, x + 5, y + 5, color, thickness)
+  -- Right diagonal down from peak
+  ImGui.DrawList_AddLine(dl, x + 5, y + 5, x + 10, y, color, thickness)
+  -- Right vertical line
+  ImGui.DrawList_AddLine(dl, x + 10, y, x + 10, y + 10, color, thickness)
 end
 
 local function draw_config_icon(dl, x, y, color)
@@ -558,6 +717,156 @@ local function draw_tree_lines(dl, x, y, depth, item_h, has_children, is_last_ch
 end
 
 -- ============================================================================
+-- DRAG PREVIEW (VS Code style)
+-- ============================================================================
+
+local function draw_drag_preview(ctx, dl, drag_node, selected_count, is_copy_mode)
+  if not drag_node then return end
+
+  local mx, my = ImGui.GetMousePos(ctx)
+
+  -- VS Code-style drag preview
+  local padding = 8
+  local icon_size = 16
+  local badge_size = 18
+  local copy_indicator_size = 14
+  local spacing = 6
+
+  -- Measure text
+  local text = drag_node.name
+  local text_w, text_h = ImGui.CalcTextSize(ctx, text)
+
+  -- Calculate preview dimensions
+  local preview_w = padding + icon_size + spacing + text_w + padding
+  local preview_h = math.max(icon_size, text_h) + padding * 2
+
+  -- Add badge width if multiple items
+  local show_badge = selected_count > 1
+  if show_badge then
+    preview_w = preview_w + spacing + badge_size
+  end
+
+  -- Add copy indicator size if in copy mode
+  if is_copy_mode then
+    preview_w = preview_w + spacing + copy_indicator_size
+  end
+
+  -- Position slightly offset from cursor
+  local offset_x = 16
+  local offset_y = 16
+  local preview_x = mx + offset_x
+  local preview_y = my + offset_y
+
+  -- VS Code colors
+  local bg_color = hexrgb("#252526E6")  -- Dark semi-transparent
+  local border_color = hexrgb("#454545FF")
+  local text_color = hexrgb("#CCCCCCFF")
+  local badge_bg = hexrgb("#007ACCFF")  -- VS Code blue
+  local badge_text = hexrgb("#FFFFFFFF")
+
+  -- Draw shadow (subtle)
+  local shadow_offset = 2
+  local shadow_color = hexrgb("#00000040")
+  ImGui.DrawList_AddRectFilled(dl,
+    preview_x + shadow_offset, preview_y + shadow_offset,
+    preview_x + preview_w + shadow_offset, preview_y + preview_h + shadow_offset,
+    shadow_color, 4)
+
+  -- Draw background with rounded corners
+  ImGui.DrawList_AddRectFilled(dl, preview_x, preview_y, preview_x + preview_w, preview_y + preview_h, bg_color, 4)
+
+  -- Draw border
+  ImGui.DrawList_AddRect(dl, preview_x, preview_y, preview_x + preview_w, preview_y + preview_h, border_color, 4, 0, 1)
+
+  -- Draw icon
+  local icon_x = preview_x + padding
+  local icon_y = preview_y + (preview_h - icon_size) / 2
+  local has_children = drag_node.children and #drag_node.children > 0
+  local icon_color = hexrgb("#CCCCCCFF")
+
+  if has_children then
+    -- Folder icon (scaled down version)
+    local scale = icon_size / 13  -- Original folder is 13 wide
+    local folder_w = math.floor(13 * scale)
+    local folder_h = math.floor(7 * scale)
+    local tab_w = math.floor(5 * scale)
+    local tab_h = math.floor(2 * scale)
+
+    icon_x = math.floor(icon_x + 0.5)
+    icon_y = math.floor(icon_y + 0.5)
+
+    ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y, icon_x + tab_w, icon_y + tab_h, icon_color, 0)
+    ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y + tab_h, icon_x + folder_w, icon_y + tab_h + folder_h, icon_color, 0)
+  else
+    -- File icon (scaled down)
+    local scale = icon_size / 12
+    local file_w = math.floor(10 * scale)
+    local file_h = math.floor(12 * scale)
+    local fold = math.floor(3 * scale)
+
+    icon_x = math.floor(icon_x + 0.5)
+    icon_y = math.floor(icon_y + 0.5)
+
+    ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y, icon_x + file_w - fold, icon_y + file_h, icon_color, 0)
+    ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y + fold, icon_x + file_w, icon_y + file_h, icon_color, 0)
+  end
+
+  -- Draw text
+  local text_x = icon_x + icon_size + spacing
+  local text_y = preview_y + (preview_h - text_h) / 2
+  ImGui.DrawList_AddText(dl, text_x, text_y, text_color, text)
+
+  -- Draw count badge if multiple items selected
+  local content_end_x = text_x + text_w
+  if show_badge then
+    local badge_x = content_end_x + spacing
+    local badge_y = preview_y + (preview_h - badge_size) / 2
+    local badge_radius = badge_size / 2
+
+    -- Badge circle
+    ImGui.DrawList_AddCircleFilled(dl, badge_x + badge_radius, badge_y + badge_radius, badge_radius, badge_bg)
+
+    -- Badge count text
+    local count_text = tostring(selected_count)
+    local count_w, count_h = ImGui.CalcTextSize(ctx, count_text)
+    local count_x = badge_x + (badge_size - count_w) / 2
+    local count_y = badge_y + (badge_size - count_h) / 2
+    ImGui.DrawList_AddText(dl, count_x, count_y, badge_text, count_text)
+
+    content_end_x = badge_x + badge_size
+  end
+
+  -- Draw copy indicator (+ symbol) if in copy mode
+  if is_copy_mode then
+    local plus_x = content_end_x + spacing
+    local plus_y = preview_y + (preview_h - copy_indicator_size) / 2
+    local plus_size = copy_indicator_size
+    local plus_color = hexrgb("#00FF00FF")  -- Green for copy
+
+    -- Draw circle background
+    ImGui.DrawList_AddCircleFilled(dl, plus_x + plus_size/2, plus_y + plus_size/2, plus_size/2, hexrgb("#00000080"))
+
+    -- Draw + symbol
+    local plus_w = plus_size * 0.5
+    local plus_thickness = 2
+    local center_x = plus_x + plus_size / 2
+    local center_y = plus_y + plus_size / 2
+
+    -- Horizontal line
+    ImGui.DrawList_AddLine(dl,
+      center_x - plus_w/2, center_y,
+      center_x + plus_w/2, center_y,
+      plus_color, plus_thickness)
+
+    -- Vertical line
+    ImGui.DrawList_AddLine(dl,
+      center_x, center_y - plus_w/2,
+      center_x, center_y + plus_w/2,
+      plus_color, plus_thickness)
+  end
+end
+
+-- ============================================================================
 -- TREE RENDERING
 -- ============================================================================
 
@@ -565,9 +874,13 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   local cfg = TREE_CONFIG
   local item_h = cfg.item_height
 
+  -- Push ID scope for this node (ImGui best practice)
+  ImGui.PushID(ctx, node.id)
+
   -- Skip if doesn't match search
   local search_active = tree_state.search_text ~= ""
   if search_active and not has_matching_children(node, tree_state.search_text) then
+    ImGui.PopID(ctx)
     return y_pos, row_index
   end
 
@@ -602,6 +915,10 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   local is_focused = tree_state.focused == node.id
   local is_editing = tree_state.editing == node.id
 
+  -- MUST define these BEFORE is_visible block so they're available for child rendering
+  local has_children = node.children and #node.children > 0
+  local is_open = tree_state.open[node.id]
+
   -- Only draw if visible (virtual scrolling optimization)
   if is_visible then
   -- Backgrounds
@@ -619,6 +936,23 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, bg_color)
   elseif is_hovered then
     ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, cfg.bg_hover)
+  end
+
+  -- Visual feedback: Show items being dragged with semi-transparent overlay
+  if tree_state.drag_active then
+    local is_being_dragged = false
+    for _, drag_id in ipairs(tree_state.drag_node_ids) do
+      if drag_id == node.id then
+        is_being_dragged = true
+        break
+      end
+    end
+    if is_being_dragged then
+      -- Semi-transparent white overlay to indicate "being dragged"
+      ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, hexrgb("#FFFFFF18"))
+      -- Subtle border for additional feedback
+      ImGui.DrawList_AddRect(dl, visible_x + 1, y_pos + 1, visible_x + visible_w - 1, y_pos + item_h - 1, hexrgb("#FFFFFF40"), 0, 0, 1)
+    end
   end
 
   -- Focused indicator (subtle border)
@@ -639,11 +973,9 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   end
 
   -- Tree lines
-  local has_children = node.children and #node.children > 0
   draw_tree_lines(dl, indent_x, y_pos, depth, item_h, has_children, is_last_child, parent_lines)
 
   -- Arrow
-  local is_open = tree_state.open[node.id]
   if has_children then
     draw_arrow(dl, arrow_x, arrow_y, is_open, cfg.arrow_color)
   end
@@ -654,19 +986,19 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
 
   -- Text or edit field
   if is_editing then
-    -- Inline editing
-    ark.InputText.set_text("tree_edit_" .. node.id, tree_state.edit_buffer)
+    -- Inline editing (ID scoped by PushID)
+    ark.InputText.set_text("##edit", tree_state.edit_buffer)
 
     local available_w = item_right - text_x
     local result = ark.InputText.draw(ctx, {
-      id = "tree_edit_" .. node.id,
+      id = "##edit",
       x = text_x,
       y = y_pos + 1,
       width = available_w,
       height = item_h - 2,
     })
 
-    tree_state.edit_buffer = ark.InputText.get_text("tree_edit_" .. node.id) or tree_state.edit_buffer
+    tree_state.edit_buffer = ark.InputText.get_text("##edit") or tree_state.edit_buffer
 
     if not tree_state.edit_focus_set then
       ImGui.SetKeyboardFocusHere(ctx, -1)
@@ -689,8 +1021,9 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     local text_color = (is_hovered or item_selected) and cfg.text_hover or cfg.text_normal
     local text_w = ImGui.CalcTextSize(ctx, node.name)
     local available_w = item_right - text_x
+    local is_truncated = text_w > available_w
 
-    if text_w > available_w then
+    if is_truncated then
       local truncated = node.name
       while text_w > available_w - 10 and #truncated > 3 do
         truncated = truncated:sub(1, -2)
@@ -703,7 +1036,12 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
 
     -- Invisible button for interaction
     ImGui.SetCursorScreenPos(ctx, visible_x, y_pos)
-    ImGui.InvisibleButton(ctx, "##tree_item_" .. node.id, visible_w, item_h)
+    ImGui.InvisibleButton(ctx, "##item", visible_w, item_h)  -- Scoped by PushID
+
+    -- Tooltip for truncated items
+    if is_truncated and ImGui.IsItemHovered(ctx, ImGui.HoveredFlags_DelayNormal) then
+      ImGui.SetTooltip(ctx, node.name)
+    end
 
     -- Mouse down for drag start
     if ImGui.IsItemActive(ctx) and ImGui.IsMouseDragging(ctx, 0, 0) and not tree_state.drag_active then
@@ -711,6 +1049,17 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
       tree_state.drag_node_id = node.id
       tree_state.drag_start_x = mx
       tree_state.drag_start_y = my
+
+      -- Multi-drag: if dragged node is selected, drag all selected nodes
+      if is_selected(node.id) then
+        tree_state.drag_node_ids = {}
+        for id, _ in pairs(tree_state.selected) do
+          table.insert(tree_state.drag_node_ids, id)
+        end
+      else
+        -- Single drag: only drag this node
+        tree_state.drag_node_ids = { node.id }
+      end
     end
 
     -- Left click
@@ -740,8 +1089,18 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     end
 
     -- Detect drop target during drag
-    if tree_state.drag_active and tree_state.drag_node_id ~= node.id then
-      if is_hovered then
+    if tree_state.drag_active then
+      -- Check if this node is being dragged (multi-drag support)
+      local is_being_dragged = false
+      for _, drag_id in ipairs(tree_state.drag_node_ids) do
+        if drag_id == node.id then
+          is_being_dragged = true
+          break
+        end
+      end
+
+      -- Only allow drop if node is not being dragged
+      if not is_being_dragged and is_hovered then
         local relative_y = my - y_pos
         if relative_y < item_h * 0.25 then
           tree_state.drop_target_id = node.id
@@ -785,6 +1144,24 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   local next_y = y_pos + item_h
   local next_row = row_index + 1
 
+  -- Debug: Track why children aren't rendering for root
+  if node.id == "root" and depth == 0 then
+    tree_state.debug_root_open = is_open
+    tree_state.debug_root_has_children = has_children
+    tree_state.debug_root_child_count = has_children and #node.children or 0
+
+    -- More detailed debugging
+    tree_state.debug_node_id = node.id
+    tree_state.debug_node_name = node.name
+    tree_state.debug_children_nil = (node.children == nil)
+    tree_state.debug_children_count = node.children and #node.children or "NIL"
+    tree_state.debug_open_table_root = tree_state.open["root"]
+    tree_state.debug_open_table_size = 0
+    for k, v in pairs(tree_state.open) do
+      tree_state.debug_open_table_size = tree_state.debug_open_table_size + 1
+    end
+  end
+
   if is_open and has_children then
     local child_parent_lines = {}
     for i = 1, depth do
@@ -797,6 +1174,9 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
       next_y, next_row = render_tree_item(ctx, dl, child, depth + 1, next_y, visible_x, visible_w, child_parent_lines, is_last, next_row, node.id, visible_top, visible_bottom)
     end
   end
+
+  -- Pop ID scope
+  ImGui.PopID(ctx)
 
   return next_y, next_row
 end
@@ -1012,28 +1392,201 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
         end
       end
     end
+
+    -- Type-to-search: Capture alphanumeric input
+    local current_time = reaper.time_precise()
+
+    -- Update timeout - clear buffer if timeout exceeded
+    if tree_state.type_timeout > 0 and current_time > tree_state.type_timeout then
+      tree_state.type_buffer = ""
+      tree_state.type_timeout = 0
+    end
+
+    -- Capture text input using named keys
+    local char_captured = false
+    local mods = ImGui.GetKeyMods(ctx)
+    local no_modifiers = mods & ImGui.Mod_Ctrl == 0 and mods & ImGui.Mod_Alt == 0
+
+    if no_modifiers then
+      -- Check letter keys A-Z
+      local letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      for i = 1, #letters do
+        local letter = letters:sub(i, i)
+        local key = ImGui["Key_" .. letter]
+        if key and ImGui.IsKeyPressed(ctx, key) then
+          local shift_held = mods & ImGui.Mod_Shift ~= 0
+          tree_state.type_buffer = tree_state.type_buffer .. (shift_held and letter or letter:lower())
+          tree_state.type_timeout = current_time + tree_state.type_timeout_duration
+          char_captured = true
+          break
+        end
+      end
+
+      -- Check number keys 0-9 if no letter was pressed
+      if not char_captured then
+        local numbers = "0123456789"
+        for i = 1, #numbers do
+          local num = numbers:sub(i, i)
+          local key = ImGui["Key_" .. num]
+          if key and ImGui.IsKeyPressed(ctx, key) then
+            tree_state.type_buffer = tree_state.type_buffer .. num
+            tree_state.type_timeout = current_time + tree_state.type_timeout_duration
+            char_captured = true
+            break
+          end
+        end
+      end
+
+      -- Check common punctuation
+      if not char_captured then
+        local punct_keys = {
+          {ImGui.Key_Space, " "}, {ImGui.Key_Minus, "-"}, {ImGui.Key_Period, "."},
+          {ImGui.Key_Slash, "/"}, {ImGui.Key_Apostrophe, "_"}
+        }
+        for _, pair in ipairs(punct_keys) do
+          if ImGui.IsKeyPressed(ctx, pair[1]) then
+            tree_state.type_buffer = tree_state.type_buffer .. pair[2]
+            tree_state.type_timeout = current_time + tree_state.type_timeout_duration
+            char_captured = true
+            break
+          end
+        end
+      end
+    end
+
+    -- Search for matching item if buffer has content
+    if char_captured and tree_state.type_buffer ~= "" and #tree_state.flat_list > 0 then
+      local search_term = tree_state.type_buffer:lower()
+
+      -- Find first item that starts with the search term
+      local found_idx = nil
+      for i, item in ipairs(tree_state.flat_list) do
+        local item_name = item.node.name:lower()
+        if item_name:sub(1, #search_term) == search_term then
+          found_idx = i
+          break
+        end
+      end
+
+      -- If no match at start, try match anywhere
+      if not found_idx then
+        for i, item in ipairs(tree_state.flat_list) do
+          local item_name = item.node.name:lower()
+          if item_name:find(search_term, 1, true) then
+            found_idx = i
+            break
+          end
+        end
+      end
+
+      -- Jump to found item
+      if found_idx then
+        set_single_selection(tree_state.flat_list[found_idx].id)
+
+        -- Auto-scroll to item
+        local item_info = tree_state.flat_list[found_idx]
+        local item_screen_y = item_info.y_pos
+        local visible_top = y + cfg.padding_top
+        local visible_bottom = y + h - cfg.padding_bottom
+
+        if item_screen_y < visible_top then
+          tree_state.scroll_y = tree_state.scroll_y - (visible_top - item_screen_y)
+        elseif item_screen_y + item_info.height > visible_bottom then
+          tree_state.scroll_y = tree_state.scroll_y + (item_screen_y + item_info.height - visible_bottom)
+        end
+        tree_state.scroll_y = math.max(0, tree_state.scroll_y)
+      end
+    end
   end
 
   -- Handle drag & drop completion
   if tree_state.drag_active then
     if ImGui.IsMouseReleased(ctx, 0) then
-      -- Perform drop
+      -- Perform drop (multi-drag support with copy-on-drag)
       if tree_state.drop_target_id and tree_state.drop_position then
-        local drag_id = tree_state.drag_node_id
         local target_id = tree_state.drop_target_id
+        local is_copy = tree_state.drag_is_copy
+        local new_selected_ids = {}  -- Track new IDs for selection restoration
 
-        -- Prevent dropping into self or descendants
-        if drag_id ~= target_id and not is_ancestor(drag_id, target_id, nodes) then
-          local node_to_move = remove_node_from_tree(nodes, drag_id)
-          if node_to_move then
-            insert_node_at(nodes, target_id, node_to_move, tree_state.drop_position)
+        -- Determine target parent (for checking if copying to same location)
+        local target_parent_id = nil
+        if tree_state.drop_position == "into" then
+          target_parent_id = target_id
+        else
+          -- Find parent of target node
+          for _, item in ipairs(tree_state.flat_list) do
+            if item.id == target_id then
+              target_parent_id = item.parent_id
+              break
+            end
           end
+        end
+
+        -- Move or copy all dragged nodes
+        local nodes_to_insert = {}
+        for _, drag_id in ipairs(tree_state.drag_node_ids) do
+          -- Prevent dropping into self or descendants
+          if drag_id ~= target_id and not is_ancestor(drag_id, target_id, nodes) then
+            local node_to_insert
+            if is_copy then
+              -- Copy mode: Duplicate the node
+              local source_node = find_node_by_id(nodes, drag_id)
+              if source_node then
+                -- Find source parent to check if copying to same location
+                local source_parent_id = nil
+                for _, item in ipairs(tree_state.flat_list) do
+                  if item.id == drag_id then
+                    source_parent_id = item.parent_id
+                    break
+                  end
+                end
+
+                -- Only add (copy) suffix if copying to same parent
+                local same_parent = (source_parent_id == target_parent_id)
+                node_to_insert = duplicate_node(source_node, same_parent)
+                table.insert(new_selected_ids, node_to_insert.id)
+              end
+            else
+              -- Move mode: Remove and move
+              node_to_insert = remove_node_from_tree(nodes, drag_id)
+              if node_to_insert then
+                table.insert(new_selected_ids, node_to_insert.id)
+              end
+            end
+
+            if node_to_insert then
+              table.insert(nodes_to_insert, node_to_insert)
+            end
+          end
+        end
+
+        -- Insert all nodes at target
+        for i, node_to_insert in ipairs(nodes_to_insert) do
+          -- Insert in order, adjusting position for "after" to maintain order
+          local pos = tree_state.drop_position
+          if i > 1 and pos == "after" then
+            -- For subsequent items in multi-drag, keep inserting after
+            pos = "after"
+          end
+          insert_node_at(nodes, target_id, node_to_insert, pos)
+        end
+
+        -- Restore selection to moved/copied items
+        if #new_selected_ids > 0 then
+          tree_state.selected = {}
+          for _, id in ipairs(new_selected_ids) do
+            tree_state.selected[id] = true
+          end
+          tree_state.focused = new_selected_ids[1]
+          tree_state.anchor = new_selected_ids[1]
         end
       end
 
       -- Reset drag state
       tree_state.drag_active = false
       tree_state.drag_node_id = nil
+      tree_state.drag_node_ids = {}
+      tree_state.drag_is_copy = false
       tree_state.drop_target_id = nil
       tree_state.drop_position = nil
     else
@@ -1042,6 +1595,35 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
         tree_state.drop_target_id = nil
         tree_state.drop_position = nil
       end
+
+      -- Detect Ctrl for copy-on-drag
+      local ctrl_held = ImGui.GetKeyMods(ctx) & ImGui.Mod_Ctrl ~= 0
+      tree_state.drag_is_copy = ctrl_held
+
+      -- Auto-scroll when dragging near edges
+      local my = ImGui.GetMousePos(ctx)
+      local scroll_zone = 40  -- pixels from edge to trigger scroll
+      local scroll_speed = 8   -- pixels per frame
+
+      if my < y + scroll_zone then
+        -- Near top edge - scroll up
+        tree_state.scroll_y = math.max(0, tree_state.scroll_y - scroll_speed)
+      elseif my > y + h - scroll_zone then
+        -- Near bottom edge - scroll down
+        local max_scroll = math.max(0, tree_state.total_content_height - h + cfg.padding_top)
+        tree_state.scroll_y = math.min(max_scroll, tree_state.scroll_y + scroll_speed)
+      end
+    end
+  end
+
+  -- Draw drag preview (VS Code style) - drawn last to appear on top
+  if tree_state.drag_active and tree_state.drag_node_id then
+    local drag_node = find_node_by_id(nodes, tree_state.drag_node_id)
+    if drag_node then
+      -- Use actual count of dragged items (multi-drag support)
+      local drag_count = #tree_state.drag_node_ids
+
+      draw_drag_preview(ctx, dl, drag_node, drag_count, tree_state.drag_is_copy)
     end
   end
 
@@ -1253,9 +1835,12 @@ Shell.run({
 
     ImGui.SameLine(ctx)
 
+    -- Right side: Tree view
+    ImGui.BeginChild(ctx, "tree_container", 0, 0)
+
     local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
 
-    -- Search bar
+    -- Search bar at top
     ImGui.SetNextItemWidth(ctx, avail_w - 100)
     local search_changed, new_search = ImGui.InputText(ctx, "##search", tree_state.search_text)
     if search_changed then
@@ -1267,7 +1852,7 @@ Shell.run({
     end
 
     local tree_x, tree_y = ImGui.GetCursorScreenPos(ctx)
-    local tree_h = avail_h - 90
+    local tree_h = avail_h - 130  -- Leave room for search + debug info
 
     draw_custom_tree(ctx, mock_tree, tree_x, tree_y, avail_w, tree_h)
 
@@ -1296,12 +1881,45 @@ Shell.run({
       selected_text = string.format("%d items", selected_count)
     end
 
+    -- Debug info
     ImGui.Text(ctx, string.format("Selected: %s  |  Focused: %s  |  Editing: %s  |  Hovered: %s",
       selected_text,
       tree_state.focused or "None",
       tree_state.editing or "None",
       tree_state.hovered or "None"))
 
+    -- Debug: Show tree structure info
+    ImGui.Text(ctx, string.format("Tree nodes: %d  |  Flat list: %d  |  Scroll: %.1f",
+      #mock_tree,
+      #tree_state.flat_list,
+      tree_state.scroll_y))
+
+    ImGui.Text(ctx, string.format("Root: %s (children: %d)  |  src open: %s",
+      mock_tree[1] and mock_tree[1].name or "nil",
+      mock_tree[1] and mock_tree[1].children and #mock_tree[1].children or 0,
+      tree_state.open["src"] and "yes" or "no"))
+
+    -- More detailed debug
+    if #tree_state.flat_list <= 1 then
+      ImGui.TextColored(ctx, 0xFF0000FF, "WARNING: Only root in flat_list! Children not rendering!")
+      ImGui.Text(ctx, string.format("Debug: is_open=%s | has_children=%s | child_count=%s",
+        tree_state.debug_root_open and "TRUE" or "FALSE",
+        tree_state.debug_root_has_children and "TRUE" or "FALSE",
+        tostring(tree_state.debug_root_child_count or 0)))
+
+      ImGui.Text(ctx, string.format("Node: id=%s name=%s",
+        tree_state.debug_node_id or "NIL",
+        tree_state.debug_node_name or "NIL"))
+
+      ImGui.Text(ctx, string.format("Children: nil=%s count=%s | open_table[root]=%s table_size=%d",
+        tree_state.debug_children_nil and "YES" or "NO",
+        tostring(tree_state.debug_children_count or "?"),
+        tostring(tree_state.debug_open_table_root),
+        tree_state.debug_open_table_size or 0))
+    end
+
     tree_state.hovered = nil
+
+    ImGui.EndChild(ctx)  -- End tree_container
   end,
 })
