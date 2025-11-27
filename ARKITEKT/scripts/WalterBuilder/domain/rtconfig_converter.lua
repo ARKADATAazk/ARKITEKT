@@ -417,8 +417,55 @@ local FLOW_GROUP_CHILDREN = {
   master_fx_group = { "master.tcp.fx" },
 }
 
+-- Check if a flow element should be hidden based on its hide_cond/hide_val
+-- @param flow_params: Array of parameters from then statement [width, row_flag, row_val, hide_cond, hide_val]
+-- @param eval_context: The evaluation context with variable values
+-- @return: true if element should be hidden
+local function check_flow_hide_condition(flow_params, eval_context)
+  if not flow_params or #flow_params < 5 then
+    return false  -- No hide condition
+  end
+
+  local hide_cond = flow_params[4]
+  local hide_val = flow_params[5]
+
+  -- Skip if no condition (0 means no condition)
+  if hide_cond == "0" then
+    return false
+  end
+
+  -- Handle negated conditions (!var means hide when var is truthy)
+  local negated = false
+  if hide_cond:sub(1, 1) == "!" then
+    negated = true
+    hide_cond = hide_cond:sub(2)
+  end
+
+  -- Get the variable value from context
+  local cond_value = eval_context[hide_cond]
+  if cond_value == nil then
+    return false  -- Unknown variable, don't hide
+  end
+
+  -- Get scalar value if it's an array
+  if type(cond_value) == "table" then
+    cond_value = cond_value[1] or 0
+  end
+
+  -- Compare with hide_val
+  local target_val = tonumber(hide_val) or 0
+  local should_hide = (cond_value == target_val)
+
+  if negated then
+    should_hide = not should_hide
+  end
+
+  return should_hide
+end
+
 -- Calculate positions for flow layout elements
 -- Flow elements are positioned sequentially based on their order and widths
+-- Supports multi-row layout via row_flag parameter
 -- @param result: The conversion result with elements array
 -- @param eval_context: The evaluation context for resolving any remaining variables
 local function calculate_flow_positions(result, eval_context)
@@ -454,25 +501,52 @@ local function calculate_flow_positions(result, eval_context)
 
   -- Determine starting X position
   -- Flow elements typically start after the meter section
-  -- Use meter_sec variable if available, otherwise default to 50
   local meter_sec = get_scalar(eval_context.meter_sec, 50)
   local tcp_padding = get_scalar(eval_context.tcp_padding, 7)
   local start_x = meter_sec + tcp_padding
 
-  -- Calculate Y position (flow elements are typically in main content area)
+  -- Element dimensions
   local element_h = get_scalar(eval_context.element_h, 20)
-  local flow_y = tcp_padding  -- Start below top padding
+  local row_gap = 2  -- Gap between rows
 
-  -- Position flow elements sequentially
+  -- Track current position (multi-row support)
   local current_x = start_x
-  local positioned_count = 0
+  local current_row = 0
+  local current_y = tcp_padding
 
-  Console.info("Flow layout: starting at x=%d, %d elements", start_x, #flow_elements)
+  local positioned_count = 0
+  local hidden_count = 0
+
+  Console.info("Flow layout: starting at x=%d, y=%d, %d elements", start_x, current_y, #flow_elements)
 
   for _, entry in ipairs(flow_elements) do
     local elem = entry.element
     local coords = elem.coords
     local elem_id = elem.id
+    local flow_params = entry.flow_params
+
+    -- Check hide condition from flow params
+    if check_flow_hide_condition(flow_params, eval_context) then
+      -- Hide this element (set to 0 size)
+      coords.w = 0
+      coords.h = 0
+      elem.visible = false
+      hidden_count = hidden_count + 1
+      Console.info("  Flow HIDDEN: %s (hide_cond=%s)", elem_id, flow_params[4] or "?")
+      goto continue
+    end
+
+    -- Check for row change (row_flag is param 2, row_val is param 3)
+    if flow_params and #flow_params >= 2 then
+      local row_flag = tonumber(flow_params[2]) or 0
+      if row_flag == 1 then
+        -- Move to next row
+        current_row = current_row + 1
+        current_x = start_x  -- Reset X to start
+        current_y = tcp_padding + (current_row * (element_h + row_gap))
+        Console.info("  Flow ROW %d: y=%d", current_row, current_y)
+      end
+    end
 
     -- Check if this is a group that should expand to children
     local children = FLOW_GROUP_CHILDREN[elem_id]
@@ -486,12 +560,15 @@ local function calculate_flow_positions(result, eval_context)
         if child_entry then
           local child_coords = child_entry.element.coords
           child_coords.x = current_x
-          child_coords.y = flow_y
+          child_coords.y = current_y
           -- Use group width for child if child has no width
           if (child_coords.w or 0) == 0 and group_width > 0 then
             child_coords.w = group_width
           end
-          Console.info("    Child positioned: %s at x=%d (w=%d)", child_id, child_coords.x, child_coords.w or 0)
+          if (child_coords.h or 0) == 0 then
+            child_coords.h = element_h
+          end
+          Console.info("    Child positioned: %s at x=%d, y=%d (w=%d)", child_id, child_coords.x, child_coords.y, child_coords.w or 0)
           positioned_count = positioned_count + 1
         end
       end
@@ -504,20 +581,25 @@ local function calculate_flow_positions(result, eval_context)
     elseif elem_id:match("^tcp%.") or elem_id:match("^master%.tcp%.") then
       -- Direct tcp.* element - position it
       coords.x = current_x
-      coords.y = flow_y
+      coords.y = current_y
+      if (coords.h or 0) == 0 then
+        coords.h = element_h
+      end
 
       -- Advance X by element width (plus small gap)
       local elem_width = coords.w or 0
       if elem_width > 0 then
         current_x = current_x + elem_width + 2  -- 2px gap between elements
         positioned_count = positioned_count + 1
-        Console.info("  Flow positioned: %s at x=%d (w=%d)", elem_id, coords.x, elem_width)
+        Console.info("  Flow positioned: %s at x=%d, y=%d (w=%d)", elem_id, coords.x, coords.y, elem_width)
       end
     end
+
+    ::continue::
   end
 
-  if positioned_count > 0 then
-    Console.success("Flow layout complete: positioned %d elements", positioned_count)
+  if positioned_count > 0 or hidden_count > 0 then
+    Console.success("Flow layout complete: positioned %d elements, hidden %d (rows: %d)", positioned_count, hidden_count, current_row + 1)
   end
 end
 
@@ -595,6 +677,7 @@ local function convert_items(items, context_filter)
                 source_line = item.line,
                 raw_value = item.value,
                 is_flow_element = true,
+                flow_params = item.flow_params,
               }
               replaced_count = replaced_count + 1
               Console.info("  REPLACED %s with flow element (w=%d)", item.element, element.coords.w or 0)
@@ -631,6 +714,7 @@ local function convert_items(items, context_filter)
               source_line = item.line,
               raw_value = item.value,
               is_flow_element = item.is_flow_element or false,
+              flow_params = item.flow_params,
             }
             -- Store index for duplicate detection
             seen_ids[item.element] = #result.elements
