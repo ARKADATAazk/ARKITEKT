@@ -141,14 +141,15 @@ M.TILE_RENDER = {
 
   -- Selection (marching ants)
   selection = {
-    border_saturation = 0.8,
-    border_brightness = 1.4,
+    border_saturation = 1.0,  -- Full saturation for vibrant, visible ants (was 0.8)
+    border_brightness = 3.5,  -- Much lighter - tinted but very bright (was 2.0)
     ants_alpha = 0xFF,
     ants_thickness = 1,
     ants_inset = 0,
-    ants_dash = 8,
-    ants_gap = 6,
-    ants_speed = 20,
+    ants_dash = 24,  -- 3x sparser than original (was 8px)
+    ants_gap = 11,   -- Even larger gap for more spacing (was 8px, originally 6px)
+    ants_speed = 30, -- 50% faster animation for better visibility (was 20)
+    tile_brightness_boost = 0.35,  -- Brightness boost for selected tile fill
   },
 
   -- Disabled state
@@ -247,9 +248,9 @@ M.TILE_RENDER = {
     ants_enabled = true,
     ants_replace_border = false,
     ants_thickness = 1,
-    ants_dash = 8,
-    ants_gap = 6,
-    ants_speed = 20,
+    ants_dash = 24,  -- 3x sparser than original (was 8px)
+    ants_gap = 11,   -- Even larger gap for more spacing (was 8px, originally 6px)
+    ants_speed = 30, -- 50% faster animation for better visibility (was 20)
     ants_inset = 0,
     ants_alpha = 0xFF,
     glow_strength = 0.4,

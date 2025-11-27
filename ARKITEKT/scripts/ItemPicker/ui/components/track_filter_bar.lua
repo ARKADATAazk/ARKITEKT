@@ -98,9 +98,13 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
   local tag_y = y + TAG.PADDING_Y
   local tag_width = bar_width - TAG.PADDING_X * 2
 
+  -- Reserve space for ALL/NONE buttons at bottom
+  local button_area_height = 36
+  local content_height = height - button_area_height
+
   -- Calculate if we need scrolling
   local total_tags_height = #tracks * (TAG.HEIGHT + TAG.MARGIN_Y) - TAG.MARGIN_Y + TAG.PADDING_Y * 2
-  local available_height = height
+  local available_height = content_height
   local needs_scroll = total_tags_height > available_height
 
   -- Handle scrolling
@@ -120,8 +124,13 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
     end
   end
 
-  -- Clip to bar area
-  ImGui.DrawList_PushClipRect(draw_list, x, y, x + bar_width, y + height, true)
+  -- Create invisible button over entire bar area to register it for IsAnyItemHovered()
+  -- This prevents overlay from closing on right-click (overlay manager checks IsAnyItemHovered)
+  ImGui.SetCursorScreenPos(ctx, x, y)
+  ImGui.InvisibleButton(ctx, "##track_filter_bar_area", bar_width, height)
+
+  -- Clip to content area only (exclude button area at bottom)
+  ImGui.DrawList_PushClipRect(draw_list, x, y, x + bar_width, y + content_height, true)
 
   -- Paint mode state
   local left_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left)
@@ -138,9 +147,8 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
       state.persist_track_filter()
     end
     state.track_bar_painting = false
-    state.track_bar_paint_value = nil
     state.track_bar_last_painted = nil
-    state.track_bar_paint_mode = nil  -- "toggle" or "fixed"
+    state.track_bar_paint_mode = nil  -- "enable" or "disable"
     state.track_bar_prev_mouse_y = nil  -- Reset cursor tracking
   end
 
@@ -154,9 +162,9 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
       local is_enabled = state.track_filters_enabled[track.guid]
       if is_enabled == nil then is_enabled = true end
 
-      -- Check hover
+      -- Check hover (include margin/gap after track for seamless painting)
       local is_hovered = mouse_x >= tag_x and mouse_x <= tag_x + tag_width and
-                         mouse_y >= tag_top and mouse_y <= tag_bottom
+                         mouse_y >= tag_top and mouse_y <= tag_bottom + TAG.MARGIN_Y
 
       -- Background
       local bg_alpha = is_enabled and 0xAA or 0x33
@@ -199,24 +207,23 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
 
       ImGui.DrawList_AddText(draw_list, text_x, text_y, text_color, name)
 
-      -- Handle left click: toggle mode (back-and-forth painting)
+      -- Handle left click/drag: ENABLE tracks
       if is_hovered and left_clicked then
         state.track_bar_painting = true
-        state.track_bar_paint_mode = "toggle"
+        state.track_bar_paint_mode = "enable"
         state.track_bar_last_painted = track.guid
-        state.track_filters_enabled[track.guid] = not is_enabled
+        state.track_filters_enabled[track.guid] = true
         -- Invalidate filter cache
         state.runtime_cache.audio_filter_hash = nil
         state.runtime_cache.midi_filter_hash = nil
       end
 
-      -- Handle right click: fixed paint mode (bulk enable/disable)
+      -- Handle right click/drag: DISABLE tracks
       if is_hovered and right_clicked then
         state.track_bar_painting = true
-        state.track_bar_paint_mode = "fixed"
-        state.track_bar_paint_value = not is_enabled  -- Paint with opposite of first track
+        state.track_bar_paint_mode = "disable"
         state.track_bar_last_painted = track.guid
-        state.track_filters_enabled[track.guid] = state.track_bar_paint_value
+        state.track_filters_enabled[track.guid] = false
         -- Invalidate filter cache
         state.runtime_cache.audio_filter_hash = nil
         state.runtime_cache.midi_filter_hash = nil
@@ -225,16 +232,14 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
       -- Paint currently hovered track while dragging (catches current frame)
       -- Crossing detection below handles tracks skipped by fast movement
       if state.track_bar_painting and is_hovered and state.track_bar_last_painted ~= track.guid then
-        local is_dragging = (state.track_bar_paint_mode == "toggle" and left_down) or
-                            (state.track_bar_paint_mode == "fixed" and right_down)
+        local is_dragging = (state.track_bar_paint_mode == "enable" and left_down) or
+                            (state.track_bar_paint_mode == "disable" and right_down)
         if is_dragging then
           local new_value
-          if state.track_bar_paint_mode == "toggle" then
-            local current = state.track_filters_enabled[track.guid]
-            if current == nil then current = true end
-            new_value = not current
+          if state.track_bar_paint_mode == "enable" then
+            new_value = true
           else
-            new_value = state.track_bar_paint_value
+            new_value = false
           end
           state.track_filters_enabled[track.guid] = new_value
           state.track_bar_last_painted = track.guid
@@ -249,8 +254,8 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
 
   -- Handle paint drag with crossing detection (for fast cursor movement)
   if state.track_bar_painting then
-    local is_dragging = (state.track_bar_paint_mode == "toggle" and left_down) or
-                        (state.track_bar_paint_mode == "fixed" and right_down)
+    local is_dragging = (state.track_bar_paint_mode == "enable" and left_down) or
+                        (state.track_bar_paint_mode == "disable" and right_down)
 
     if is_dragging and state.track_bar_prev_mouse_y then
       -- Use crossing detection to find all tracks between prev and current Y
@@ -266,14 +271,10 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
         local track = tracks[idx]
         if track and state.track_bar_last_painted ~= track.guid then
           local new_value
-          if state.track_bar_paint_mode == "toggle" then
-            -- Toggle mode: flip the track's current state
-            local current = state.track_filters_enabled[track.guid]
-            if current == nil then current = true end
-            new_value = not current
+          if state.track_bar_paint_mode == "enable" then
+            new_value = true
           else
-            -- Fixed mode: apply the paint value
-            new_value = state.track_bar_paint_value
+            new_value = false
           end
 
           state.track_filters_enabled[track.guid] = new_value
@@ -290,6 +291,62 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
   state.track_bar_prev_mouse_y = mouse_y
 
   ImGui.DrawList_PopClipRect(draw_list)
+
+  -- Draw ALL/NONE buttons at bottom (outside clip rect)
+  local button_y = y + content_height + 4
+  local button_height = 24
+  local button_gap = 4
+  local button_width = (bar_width - TAG.PADDING_X * 2 - button_gap) / 2
+
+  -- ALL button
+  local all_x = x + TAG.PADDING_X
+  local all_hovered = mouse_x >= all_x and mouse_x <= all_x + button_width and
+                      mouse_y >= button_y and mouse_y <= button_y + button_height
+
+  if all_hovered and left_clicked then
+    for _, track in ipairs(tracks) do
+      state.track_filters_enabled[track.guid] = true
+    end
+    state.runtime_cache.audio_filter_hash = nil
+    state.runtime_cache.midi_filter_hash = nil
+    if state.persist_track_filter then state.persist_track_filter() end
+  end
+
+  local all_bg = all_hovered and ark.Colors.hexrgb("#3A3A3A") or ark.Colors.hexrgb("#2A2A2A")
+  all_bg = ark.Colors.with_alpha(all_bg, math.floor(0xEE * alpha))
+  ImGui.DrawList_AddRectFilled(draw_list, all_x, button_y, all_x + button_width, button_y + button_height, all_bg, 3)
+
+  local all_text_w = ImGui.CalcTextSize(ctx, "ALL")
+  local all_text_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), math.floor(0xEE * alpha))
+  ImGui.DrawList_AddText(draw_list,
+    all_x + (button_width - all_text_w) / 2,
+    button_y + (button_height - ImGui.GetTextLineHeight(ctx)) / 2,
+    all_text_color, "ALL")
+
+  -- NONE button
+  local none_x = all_x + button_width + button_gap
+  local none_hovered = mouse_x >= none_x and mouse_x <= none_x + button_width and
+                       mouse_y >= button_y and mouse_y <= button_y + button_height
+
+  if none_hovered and left_clicked then
+    for _, track in ipairs(tracks) do
+      state.track_filters_enabled[track.guid] = false
+    end
+    state.runtime_cache.audio_filter_hash = nil
+    state.runtime_cache.midi_filter_hash = nil
+    if state.persist_track_filter then state.persist_track_filter() end
+  end
+
+  local none_bg = none_hovered and ark.Colors.hexrgb("#3A3A3A") or ark.Colors.hexrgb("#2A2A2A")
+  none_bg = ark.Colors.with_alpha(none_bg, math.floor(0xEE * alpha))
+  ImGui.DrawList_AddRectFilled(draw_list, none_x, button_y, none_x + button_width, button_y + button_height, none_bg, 3)
+
+  local none_text_w = ImGui.CalcTextSize(ctx, "NONE")
+  local none_text_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), math.floor(0xEE * alpha))
+  ImGui.DrawList_AddText(draw_list,
+    none_x + (button_width - none_text_w) / 2,
+    button_y + (button_height - ImGui.GetTextLineHeight(ctx)) / 2,
+    none_text_color, "NONE")
 
   return bar_width
 end

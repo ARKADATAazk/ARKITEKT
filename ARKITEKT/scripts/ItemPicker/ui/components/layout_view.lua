@@ -92,6 +92,15 @@ function LayoutView:handle_shortcuts(ctx)
   -- Ctrl+F to focus search
   local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
 
+  -- Ctrl+` to toggle debug console
+  if ctrl and ImGui.IsKeyPressed(ctx, ImGui.Key_GraveAccent) then
+    local ok, ConsoleWindow = pcall(require, 'arkitekt.debug.console_window')
+    if ok and ConsoleWindow and ConsoleWindow.launch then
+      ConsoleWindow.launch()
+    end
+    return
+  end
+
   if ctrl and ImGui.IsKeyPressed(ctx, ImGui.Key_F) then
     self.focus_search = true
     return
@@ -967,11 +976,15 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
         directional_delay = true,
         retract_delay_toward = 1.0,  -- Longer delay when moving left (toward another monitor)
         retract_delay_away = 0.1,    -- Quick retract when moving right (back to content)
-        hover_extend_outside = 5,
-        hover_extend_inside = 10,  -- Small trigger zone near the collapsed strip
+        -- MASSIVE trigger zone: 200px inside content + 50px outside bounds
+        -- Catches fast cursor movement without extending infinitely (prevents other monitor triggering)
+        hover_extend_inside = 200,   -- Extend 200px into content (massive catch zone)
+        hover_extend_outside = 50,   -- Extend 50px outside left edge (bounded, not infinite)
         hover_padding = 0,
-        window_bounds = { x = coord_offset_x, y = coord_offset_y, w = screen_w, h = screen_h },
         draw_list = draw_list,
+
+        -- Enable debug logging to compare reaper.GetMousePosition() vs ImGui.GetMousePos()
+        debug_mouse_tracking = true,
 
         on_draw = function(zone_ctx, dl, bounds, visibility, zone_state)
           local bar_x = bounds.x

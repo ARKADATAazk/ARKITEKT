@@ -84,6 +84,7 @@ Shell.run({
 
   overlay = {
     esc_to_close = false,  -- GUI handles ESC for special behavior
+    close_on_background_right_click = false,  -- Disable right-click to close (conflicts with track filter painting)
     -- When dragging, bypass overlay chrome and render directly to full viewport
     should_passthrough = function() return State.dragging end,
   },

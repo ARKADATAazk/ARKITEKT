@@ -397,6 +397,15 @@ function GUI:draw(ctx, shell_state)
   reaper.PreventUIRefresh(-1)
   ImGui.PopFont(ctx)
 
+  -- CTRL+² to toggle debug console
+  local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+  if ctrl and ImGui.IsKeyPressed(ctx, ImGui.Key_GraveAccent) then  -- ² is on same key as `
+    local ok, ConsoleWindow = pcall(require, 'arkitekt.debug.console_window')
+    if ok and ConsoleWindow and ConsoleWindow.launch then
+      ConsoleWindow.launch()
+    end
+  end
+
   -- Handle exit
   if self.state.exit or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
     -- Clear drag state if still dragging on exit (e.g., Escape pressed)

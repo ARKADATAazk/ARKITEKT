@@ -110,6 +110,12 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     render_color = ark.Colors.adjust_brightness(render_color, 1.0 + hover_boost)
   end
 
+  -- Apply selection effect (brightness boost for selected tiles)
+  if tile_state.selected then
+    local selection_boost = config.TILE_RENDER.selection.tile_brightness_boost or 0.35
+    render_color = ark.Colors.adjust_brightness(render_color, 1.0 + selection_boost)
+  end
+
   -- Calculate combined alpha with state effects
   local base_alpha = (render_color & 0xFF) / 255
   local combined_alpha, final_alpha = BaseRenderer.calculate_combined_alpha(cascade_factor, enabled_factor, muted_factor, base_alpha, config)
@@ -234,16 +240,26 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       math.floor(selection_config.ants_alpha * combined_alpha)
     )
 
+    -- Mix with white to make marching ants lighter but still tinted
+    local white_mix = 0.40  -- Mix 40% white - lighter but keeps more color
+    local r, g, b, a = ark.Colors.rgba_to_components(ant_color)
+    r = r + (255 - r) * white_mix
+    g = g + (255 - g) * white_mix
+    b = b + (255 - b) * white_mix
+    ant_color = ark.Colors.components_to_rgba(math.floor(r), math.floor(g), math.floor(b), a)
+
     local inset = selection_config.ants_inset
+    local selection_count = state.audio_selection_count or 1
     MarchingAnts.draw(
       dl,
       scaled_x1 + inset, scaled_y1 + inset, scaled_x2 - inset, scaled_y2 - inset,
       ant_color,
       selection_config.ants_thickness,
-      config.TILE.ROUNDING,
+      0,  -- No rounding for marching ants (performance: skips arc calculations)
       selection_config.ants_dash,
       selection_config.ants_gap,
-      selection_config.ants_speed
+      selection_config.ants_speed,
+      selection_count  -- Performance: LOD based on selection size
     )
   end
 
