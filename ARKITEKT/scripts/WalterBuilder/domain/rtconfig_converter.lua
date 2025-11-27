@@ -610,6 +610,11 @@ local function collect_macro_items(macros, all_items)
       local code = body_entry.code or ""
       local line_num = body_entry.line
 
+      -- Debug: log any line containing recarm/recmon/recmode/env
+      if code:match("recarm") or code:match("recmon") or code:match("recmode") or code:match("tcp%.env") then
+        Console.warn(">>> MACRO %s line %d: %s", macro.name, line_num, code:sub(1, 100))
+      end
+
       -- Handle line continuations: join lines ending with \
       while code:match("\\%s*$") and i < #macro.body do
         -- Remove the trailing backslash and whitespace
@@ -656,6 +661,11 @@ function M.convert_layout(parsed, layout_name, context)
     local section_items = 0
     for _, section in ipairs(parsed.sections) do
       for _, item in ipairs(section.items) do
+        -- Debug: log any section item containing recarm/recmon/recmode/env
+        if item.element and (item.element:match("recarm") or item.element:match("recmon") or
+           item.element:match("recmode") or item.element:match("%.env")) then
+          Console.warn(">>> SECTION %s item: %s = %s", section.name, item.element, item.value or "(simple)")
+        end
         all_items[#all_items + 1] = item
         section_items = section_items + 1
       end
