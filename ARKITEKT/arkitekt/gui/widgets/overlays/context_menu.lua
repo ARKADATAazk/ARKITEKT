@@ -43,6 +43,10 @@ local Theme = require('arkitekt.core.theme')
 local M = {}
 local hexrgb = Colors.hexrgb
 
+-- Store splitters per popup ID (for shadow z-ordering)
+local splitters = {}
+local current_popup_id = nil  -- Track current popup for end_menu
+
 -- Get dynamic defaults from Theme.COLORS
 local function get_defaults()
   local C = Theme.COLORS
@@ -93,18 +97,27 @@ function M.begin(ctx, id, config)
   if not popup_open then
     ImGui.PopStyleColor(ctx, 2)
     ImGui.PopStyleVar(ctx, 5)
+    current_popup_id = nil
   else
+    -- Track this popup for end_menu
+    current_popup_id = id
+
     -- Get window dimensions
     local wx, wy = ImGui.GetWindowPos(ctx)
     local ww, wh = ImGui.GetWindowSize(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
 
-    -- Use channel system to control z-order
-    -- Channel 0 = background (shadow), Channel 1 = foreground (content)
-    ImGui.DrawList_ChannelsSplit(dl, 2)
+    -- Create or get splitter for this popup ID
+    if not splitters[id] then
+      splitters[id] = ImGui.CreateDrawListSplitter(dl)
+    end
+    local splitter = splitters[id]
+
+    -- Split into 2 channels: 0 = background (shadow), 1 = foreground (content)
+    ImGui.DrawListSplitter_Split(splitter, 2)
 
     -- Draw shadow on background channel (channel 0)
-    ImGui.DrawList_ChannelsSetCurrent(dl, 0)
+    ImGui.DrawListSplitter_SetCurrentChannel(splitter, 0)
 
     -- Expand clip rect to allow shadow to be drawn outside popup bounds
     ImGui.DrawList_PushClipRect(dl, wx - 12, wy - 12, wx + ww + 12, wy + wh + 12, false)
@@ -156,7 +169,7 @@ function M.begin(ctx, id, config)
     ImGui.DrawList_PopClipRect(dl)
 
     -- Switch to foreground channel for content (ImGui will render here)
-    ImGui.DrawList_ChannelsSetCurrent(dl, 1)
+    ImGui.DrawListSplitter_SetCurrentChannel(splitter, 1)
   end
 
   return popup_open
@@ -164,12 +177,15 @@ end
 
 function M.end_menu(ctx)
   -- Merge channels before ending popup
-  local dl = ImGui.GetWindowDrawList(ctx)
-  ImGui.DrawList_ChannelsMerge(dl)
+  if current_popup_id and splitters[current_popup_id] then
+    ImGui.DrawListSplitter_Merge(splitters[current_popup_id])
+  end
 
   ImGui.EndPopup(ctx)
   ImGui.PopStyleColor(ctx, 2)
   ImGui.PopStyleVar(ctx, 5)
+
+  current_popup_id = nil
 end
 
 --- Enhanced menu item with icons, shortcuts, and disabled state
