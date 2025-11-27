@@ -37,17 +37,25 @@ function M.draw_left_panel(ctx, gui, width, height)
     local sep_y_screen = initial_y + sep_y_local
 
     -- Handle separator dragging
-    local sep_action, sep_new_y_screen = gui.left_panel_separator:draw_horizontal(ctx, initial_x, sep_y_screen, width, 0, separator_thickness)
-    if sep_action == "drag" then
+    local ark = require('arkitekt')
+    local sep_result = ark.Splitter.draw(ctx, {
+      id = "left_panel_separator",
+      x = initial_x,
+      y = sep_y_screen,
+      width = width,
+      orientation = "horizontal",
+      thickness = separator_thickness,
+    })
+    if sep_result.action == "drag" then
       -- Convert back to local coordinates
-      local sep_new_y = sep_new_y_screen - initial_y
+      local sep_new_y = sep_result.position - initial_y
       -- Clamp to valid range
       local min_y = min_panel_height
       local max_y = height - min_panel_height
       sep_new_y = math.max(min_y, math.min(sep_new_y, max_y))
       state.left_panel_separator_ratio = sep_new_y / height
       sep_y_local = sep_new_y
-    elseif sep_action == "reset" then
+    elseif sep_result.action == "reset" then
       state.left_panel_separator_ratio = 0.65
       sep_y_local = height * state.left_panel_separator_ratio
     end
