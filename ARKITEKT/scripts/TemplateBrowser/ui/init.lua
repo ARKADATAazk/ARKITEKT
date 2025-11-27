@@ -595,6 +595,14 @@ function GUI:draw(ctx, shell_state)
   if not self.state.scan_complete then
     local window_width, window_height = ImGui.GetWindowSize(ctx)
 
+    -- Guard against NaN/inf from window size (can happen on first frame)
+    if window_width ~= window_width or window_width == math.huge or window_width == -math.huge or window_width <= 0 then
+      window_width = 800  -- Fallback width
+    end
+    if window_height ~= window_height or window_height == math.huge or window_height == -math.huge or window_height <= 0 then
+      window_height = 600  -- Fallback height
+    end
+
     -- Title text
     local text = self.state.scan_in_progress and "Scanning templates..." or "Initializing..."
     local text_width = ImGui.CalcTextSize(ctx, text)
