@@ -542,14 +542,13 @@ function M.new(opts)
       ImGui.SetNextWindowSize(ctx, self._pre_max_size.w, self._pre_max_size.h, ImGui.Cond_Always)
       self._pending_restore = false
       self._pos_size_set = true
-    elseif not self._pos_size_set or self._pos_size_frames < 3 then
-      -- Force position/size for first 3 frames to prevent flicker with tabs
+    elseif not self._pos_size_set then
       local pos  = self._saved_pos  or self.initial_pos
       local size = self._saved_size or self.initial_size
-      if pos  and pos.x  and pos.y  then ImGui.SetNextWindowPos(ctx,  pos.x,  pos.y, ImGui.Cond_Always) end
-      if size and size.w and size.h then ImGui.SetNextWindowSize(ctx, size.w, size.h, ImGui.Cond_Always) end
+      -- Use FirstUseEver so ImGui doesn't try to auto-fit content on spawn
+      if pos  and pos.x  and pos.y  then ImGui.SetNextWindowPos(ctx,  pos.x,  pos.y, ImGui.Cond_FirstUseEver) end
+      if size and size.w and size.h then ImGui.SetNextWindowSize(ctx, size.w, size.h, ImGui.Cond_FirstUseEver) end
       self._pos_size_set = true
-      self._pos_size_frames = self._pos_size_frames + 1
     end
     
     if not self.fullscreen.enabled then
@@ -583,6 +582,10 @@ function M.new(opts)
     self._body_open = false
     self._should_close = false
     self._current_ctx = ctx
+
+    -- DEBUG: Track frame count for spawn debugging
+    if not self._frame_count then self._frame_count = 0 end
+    self._frame_count = self._frame_count + 1
     
     if self.fullscreen.enabled then
       local current_time = reaper.time_precise()
@@ -641,6 +644,12 @@ function M.new(opts)
 
     local visible, open = ImGui.Begin(ctx, self.title .. "##main", true, window_flags)
     self._begun = true
+
+    -- DEBUG: Log visibility on first 5 frames
+    if self._frame_count <= 5 then
+      reaper.ShowConsoleMsg(string.format("[Frame %d] visible=%s, open=%s, flags=%d\n",
+        self._frame_count, tostring(visible), tostring(open), window_flags))
+    end
 
     if visible then
       if self.fullscreen.enabled then
