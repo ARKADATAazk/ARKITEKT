@@ -292,6 +292,7 @@ function M.run(opts)
 
   -- ============================================================================
   -- OVERLAY MODE: Branch to overlay setup (legacy mode support)
+  -- LEGACY_COMPAT: Remove in v2.0 - Use unified Window.new() path with imgui_flags
   -- ============================================================================
   if config.mode == "overlay" and not config.imgui_flags then
     return run_overlay_mode(config)
@@ -370,7 +371,7 @@ function M.run(opts)
     chrome          = config.chrome,
     imgui_flags     = config.imgui_flags,
 
-    -- Legacy chrome flags (for backward compatibility)
+    -- LEGACY_COMPAT: Remove in v2.0 - Use chrome/imgui_flags instead
     show_status_bar = config.show_status_bar,
     show_statusbar  = config.show_statusbar,
     show_titlebar   = config.show_titlebar,
@@ -383,7 +384,7 @@ function M.run(opts)
     content_padding = config.content_padding,
     titlebar_pad_h  = config.titlebar_pad_h,
     titlebar_pad_v  = config.titlebar_pad_v,
-    flags           = config.flags,
+    flags           = config.flags,  -- LEGACY_COMPAT: Use imgui_flags
     style           = style,
     tabs            = config.tabs,
     bg_color_floating = config.bg_color_floating,

@@ -117,7 +117,7 @@ function M.new(opts)
   -- If user provided custom flags, use them directly
   if config.imgui_flags ~= nil then
     base_flags = Constants.build_imgui_flags(ImGui, config.imgui_flags)
-  -- Otherwise, auto-select based on mode or use legacy flags
+  -- LEGACY_COMPAT: Remove in v2.0 - Use imgui_flags instead of flags
   elseif config.flags then
     base_flags = config.flags
   end
@@ -142,7 +142,7 @@ function M.new(opts)
     }
   end
 
-  -- Override with explicit options (legacy compatibility)
+  -- LEGACY_COMPAT: Remove in v2.0 - Use chrome preset or chrome.{option} instead
   if opts.show_titlebar ~= nil then chrome.show_titlebar = opts.show_titlebar end
   if opts.show_status_bar ~= nil then chrome.show_statusbar = opts.show_status_bar end
   if opts.show_statusbar ~= nil then chrome.show_statusbar = opts.show_statusbar end
