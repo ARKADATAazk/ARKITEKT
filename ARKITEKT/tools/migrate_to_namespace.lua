@@ -40,8 +40,8 @@ local MODULE_MAP = {
   -- Utilities
   ["arkitekt.core.colors"] = "Colors",
   ["arkitekt.gui.style.defaults"] = "Style",
-  ["arkitekt.gui.draw"] = "Draw",
-  ["arkitekt.gui.fx.animation.easing"] = "Easing",
+  ["arkitekt.gui.draw.primitives"] = "Draw",
+  ["arkitekt.gui.animation.easing"] = "Easing",
   ["arkitekt.core.math"] = "Math",
   ["arkitekt.core.uuid"] = "UUID",
 }

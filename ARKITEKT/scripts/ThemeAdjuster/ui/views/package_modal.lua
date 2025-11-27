@@ -5,7 +5,7 @@
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 local Constants = require('ThemeAdjuster.defs.constants')
-local ImageCache = require('arkitekt.core.images')
+local ImageCache = require('arkitekt.platform.images')
 local hexrgb = ark.Colors.hexrgb
 
 local M = {}
@@ -40,7 +40,7 @@ local AREA_COLORS = {
   Other = TC.other_slate,
 }
 
--- Image cache for tooltips (uses arkitekt.core.images for proper lifecycle management)
+-- Image cache for tooltips (uses arkitekt.platform.images for proper lifecycle management)
 -- See arkitekt/core/images.lua for full documentation
 local image_cache = ImageCache.new({
   budget = 10,      -- Max images to load per frame

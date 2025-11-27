@@ -2,7 +2,7 @@
 -- arkitekt/debug/_console_widget.lua
 -- Console widget implementation with ColoredTextView
 
-local ImGui = require('arkitekt.core.imgui')
+local ImGui = require('arkitekt.platform.imgui')
 local Logger = require('arkitekt.debug.logger')
 local Panel = require('arkitekt.gui.widgets.containers.panel')
 local Config = require('arkitekt.gui.widgets.containers.panel.defaults')

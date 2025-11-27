@@ -5,15 +5,15 @@ Consolidate scattered ImGui imports to use central loader.
 ## Problem
 
 60+ files do their own `require 'imgui' '0.10'` instead of using:
-- `ark.ImGui` (from namespace)
+- `Ark.ImGui` (from namespace)
 - `require('arkitekt.core.imgui')` (central wrapper)
 
 Version `'0.10'` is hardcoded in 60+ places.
 
 ## Solution
 
-### Option A: Use ark.ImGui
-Files that already have `ark` available should use `ark.ImGui`.
+### Option A: Use Ark.ImGui
+Files that already have `ark` available should use `Ark.ImGui`.
 
 ### Option B: Use central wrapper
 ```lua

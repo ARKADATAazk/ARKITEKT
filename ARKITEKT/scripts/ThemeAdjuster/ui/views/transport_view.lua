@@ -4,7 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
-local Background = require('arkitekt.gui.draw.pattern')
+local Background = require('arkitekt.gui.draw.patterns')
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local Strings = require('ThemeAdjuster.defs.strings')
 local hexrgb = ark.Colors.hexrgb

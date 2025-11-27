@@ -107,6 +107,7 @@ M.IMGUI_FLAGS = {
         "WindowFlags_NoCollapse",
         "WindowFlags_NoScrollbar",
         "WindowFlags_NoScrollWithMouse",
+        "WindowFlags_NoSavedSettings",  -- Prevent ImGui .ini conflicts with Settings system
     },
 
     -- Overlay mode (fullscreen, click-through background)
@@ -118,6 +119,7 @@ M.IMGUI_FLAGS = {
         "WindowFlags_NoScrollbar",
         "WindowFlags_NoScrollWithMouse",
         "WindowFlags_NoBackground",
+        "WindowFlags_NoSavedSettings",  -- Prevent ImGui .ini conflicts
     },
 
     -- HUD mode (always on top, minimal chrome)
@@ -127,6 +129,7 @@ M.IMGUI_FLAGS = {
         "WindowFlags_NoScrollbar",
         "WindowFlags_NoScrollWithMouse",
         "WindowFlags_TopMost",
+        "WindowFlags_NoSavedSettings",  -- Prevent ImGui .ini conflicts
     },
 }
 

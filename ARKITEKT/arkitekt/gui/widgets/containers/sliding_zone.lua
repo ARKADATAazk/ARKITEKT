@@ -4,9 +4,9 @@
 -- Supports all 4 edges, hover zones, delayed retraction, and content callbacks
 -- Uses existing Track system for consistent animation behavior
 
-local ImGui = require('arkitekt.core.imgui')
+local ImGui = require('arkitekt.platform.imgui')
 local Base = require('arkitekt.gui.widgets.base')
-local Tracks = require('arkitekt.gui.fx.animation.tracks')
+local Tracks = require('arkitekt.gui.animation.tracks')
 local Anim = require('arkitekt.core.animation')
 local Math = require('arkitekt.core.math')
 local Logger = require('arkitekt.debug.logger')

@@ -1,11 +1,20 @@
 -- @noindex
--- Arkitekt/gui/systems/drag_drop.lua
--- Generic drag and drop helpers for ImGui
+-- arkitekt/gui/interaction/drag_drop.lua
+-- Core drag-and-drop API: state management, flags, target detection
+--
+-- NOTE: This module handles the LOGIC and STATE of drag-drop operations.
+-- For VISUAL INDICATORS (glow effects, badges), see drag_visual.lua
+--
+-- Responsibilities:
+-- - Managing active drag type and hovered targets
+-- - Providing ImGui drag-drop flags
+-- - Drawing simple drop target indicators
+-- - Global drag-drop state coordination
 
-local ImGui = require('arkitekt.core.imgui')
+local ImGui = require('arkitekt.platform.imgui')
 
 local Colors = require('arkitekt.core.colors')
-local Draw = require('arkitekt.gui.draw')
+local Draw = require('arkitekt.gui.draw.primitives')
 
 local M = {}
 

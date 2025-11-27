@@ -203,25 +203,20 @@ local function draw_template_panel(ctx, gui, width, height)
 
   -- 4. DRAW DRAGGABLE SEPARATOR
   local sep_y = panel_y + grid_panel_height + separator_gap / 2
-  local sep_action, sep_value = gui.quick_access_separator:draw_horizontal(
-    ctx,
-    content_x,
-    sep_y,
-    width,
-    panel_height,
-    {
-      thickness = 6,
-      gap = separator_gap,
-      default_position = 350,
-      min_active_height = min_grid_height,
-      min_pool_height = min_quick_access_height,
-    }
-  )
+  local ark = require('arkitekt')
+  local sep_result = ark.Splitter.draw(ctx, {
+    id = "quick_access_separator",
+    x = content_x,
+    y = sep_y,
+    width = width,
+    orientation = "horizontal",
+    thickness = 6,
+  })
 
-  if sep_action == "reset" then
+  if sep_result.action == "reset" then
     state.quick_access_separator_position = 350
-  elseif sep_action == "drag" then
-    local new_grid_height = sep_value - panel_y - separator_gap / 2
+  elseif sep_result.action == "drag" then
+    local new_grid_height = sep_result.position - panel_y - separator_gap / 2
     new_grid_height = math.max(min_grid_height, math.min(new_grid_height, panel_height - min_quick_access_height - separator_gap))
     state.quick_access_separator_position = new_grid_height
   end

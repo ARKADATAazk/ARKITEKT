@@ -5,12 +5,12 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local TileFX = require('arkitekt.gui.rendering.tile.renderer')
-local TileFXConfig = require('arkitekt.gui.rendering.tile.defaults')
+local TileFX = require('arkitekt.gui.renderers.tile.renderer')
+local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 local Colors = require('arkitekt.core.colors')
-local Draw = require('arkitekt.gui.draw')
+local Draw = require('arkitekt.gui.draw.primitives')
 local Chip = require('arkitekt.gui.widgets.data.chip')
-local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
+local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local Port = require('arkitekt.gui.widgets.editors.nodal.core.port')
 
 local M = {}

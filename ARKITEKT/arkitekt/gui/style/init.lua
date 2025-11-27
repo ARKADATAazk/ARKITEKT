@@ -7,7 +7,7 @@
 --
 -- For ImGui native widgets, see imgui_defaults.lua instead.
 
-local ImGui = require('arkitekt.core.imgui')
+local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 local ConfigUtil = require('arkitekt.core.config')

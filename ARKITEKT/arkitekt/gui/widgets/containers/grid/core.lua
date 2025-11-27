@@ -9,13 +9,13 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local LayoutGrid = require('arkitekt.gui.widgets.containers.grid.layout')
-local Tracks = require('arkitekt.gui.fx.animation.tracks')
+local Tracks = require('arkitekt.gui.animation.tracks')
 local RectTrack = Tracks.RectTrack
 local Colors = require('arkitekt.core.colors')
-local Selection  = require('arkitekt.gui.systems.selection')
+local Selection  = require('arkitekt.gui.interaction.selection')
 local SelRect    = require('arkitekt.gui.widgets.data.selection_rectangle')
-local Draw       = require('arkitekt.gui.draw')
-local Dnd = require('arkitekt.gui.fx.interactions.dnd')
+local Draw       = require('arkitekt.gui.draw.primitives')
+local Dnd = require('arkitekt.gui.interaction.drag_visual')
 local DragIndicator = Dnd.DragIndicator
 local DropIndicator = Dnd.DropIndicator
 local Rendering  = require('arkitekt.gui.widgets.containers.grid.rendering')

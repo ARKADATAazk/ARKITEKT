@@ -36,12 +36,14 @@ local MODULES = {
   CornerButton = 'arkitekt.gui.widgets.primitives.corner_button',
   HueSlider = 'arkitekt.gui.widgets.primitives.hue_slider',
   InputText = 'arkitekt.gui.widgets.primitives.inputtext',
+  LoadingSpinner = 'arkitekt.gui.widgets.primitives.loading_spinner',
   MarkdownField = 'arkitekt.gui.widgets.primitives.markdown_field',
+  ProgressBar = 'arkitekt.gui.widgets.primitives.progress_bar',
   RadioButton = 'arkitekt.gui.widgets.primitives.radio_button',
   Scrollbar = 'arkitekt.gui.widgets.primitives.scrollbar',
-  Separator = 'arkitekt.gui.widgets.primitives.separator',
   Slider = 'arkitekt.gui.widgets.primitives.slider',
   Spinner = 'arkitekt.gui.widgets.primitives.spinner',
+  Splitter = 'arkitekt.gui.widgets.primitives.splitter',
 
   -- Containers
   Panel = 'arkitekt.gui.widgets.containers.panel',
@@ -53,11 +55,14 @@ local MODULES = {
   Colors = 'arkitekt.core.colors',
   Cursor = 'arkitekt.core.cursor',
   Style = 'arkitekt.gui.style',
-  Draw = 'arkitekt.gui.draw',
-  Easing = 'arkitekt.gui.fx.animation.easing',
+  Draw = 'arkitekt.gui.draw.primitives',
+  Easing = 'arkitekt.gui.animation.easing',
   Lookup = 'arkitekt.core.lookup',
   Math = 'arkitekt.core.math',
   UUID = 'arkitekt.core.uuid',
+
+  -- Platform (REAPER + ImGui specific utilities)
+  Images = 'arkitekt.platform.images',
 }
 
 -- Lazy loading with metatable

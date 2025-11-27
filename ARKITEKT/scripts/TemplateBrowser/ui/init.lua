@@ -7,7 +7,7 @@ local ark = require('arkitekt')
 local TemplateOps = require('TemplateBrowser.domain.template_ops')
 local FileOps = require('TemplateBrowser.domain.file_ops')
 local FXQueue = require('TemplateBrowser.domain.fx_queue')
-local TileAnim = require('arkitekt.gui.rendering.tile.animator')
+local TileAnim = require('arkitekt.gui.animation.tile_animator')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
 local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_config')
 local RecentPanelConfig = require('TemplateBrowser.ui.recent_panel_config')
@@ -33,12 +33,6 @@ function M.new(config, state, scanner)
     state = state,
     scanner = scanner,
     initialized = false,
-    separator1 = ark.Separator.new("sep1"),
-    separator2 = ark.Separator.new("sep2"),
-    quick_access_separator = ark.Separator.new("quick_access_sep"),
-    left_panel_separator = ark.Separator.new("left_panel_sep"),  -- Between left_panel and convenience_panel
-    dir_separator1 = ark.Separator.new("dir_sep1"),  -- Between Physical and Virtual
-    dir_separator2 = ark.Separator.new("dir_sep2"),  -- Between Virtual and Archive
     template_animator = TileAnim.new(16.0),  -- Animation speed
     template_grid = nil,  -- Initialized in initialize_once
     quick_access_grid = nil,  -- Initialized in initialize_once
@@ -591,6 +585,60 @@ function GUI:draw(ctx, shell_state)
   -- Store fonts reference for grid tiles
   self.fonts = shell_state.fonts
 
+  -- Show loading screen while scanning templates
+  if not self.state.scan_complete then
+    local window_width, window_height = ImGui.GetWindowSize(ctx)
+
+    -- Guard against NaN/inf from window size (can happen on first frame)
+    if window_width ~= window_width or window_width == math.huge or window_width == -math.huge or window_width <= 0 then
+      window_width = 800  -- Fallback width
+    end
+    if window_height ~= window_height or window_height == math.huge or window_height == -math.huge or window_height <= 0 then
+      window_height = 600  -- Fallback height
+    end
+
+    -- Title text
+    local text = self.state.scan_in_progress and "Scanning templates..." or "Initializing..."
+    local text_width = ImGui.CalcTextSize(ctx, text)
+    ImGui.SetCursorPosX(ctx, (window_width - text_width) * 0.5)
+    ImGui.SetCursorPosY(ctx, window_height * 0.5 - 30)
+    ImGui.Text(ctx, text)
+
+    -- Progress bar and percentage (only during actual scanning)
+    if self.state.scan_in_progress then
+      local progress = self.state.scan_progress or 0
+
+      -- Guard against NaN/inf
+      if progress ~= progress or progress == math.huge or progress == -math.huge then
+        progress = 0
+      end
+
+      -- Clamp to 0-1 range
+      progress = math.max(0, math.min(1, progress))
+
+      local bar_width = 300
+
+      -- Progress bar using new widget
+      ark.ProgressBar.draw(ctx, {
+        x = (window_width - bar_width) * 0.5,
+        y = window_height * 0.5,
+        width = bar_width,
+        height = 4,
+        progress = progress,
+        advance = "none",
+      })
+
+      -- Percentage text (use math.floor to ensure integer)
+      local percent_text = string.format("%d%%", math.floor(progress * 100))
+      local percent_width = ImGui.CalcTextSize(ctx, percent_text)
+      ImGui.SetCursorPosX(ctx, (window_width - percent_width) * 0.5)
+      ImGui.SetCursorPosY(ctx, window_height * 0.5 + 10)
+      ImGui.Text(ctx, percent_text)
+    end
+
+    return  -- Don't render main UI until scan is complete
+  end
+
   -- Process background FX parsing queue (5 templates per frame)
   FXQueue.process_batch(self.state, 5)
 
@@ -770,10 +818,17 @@ function GUI:draw(ctx, shell_state)
   local content_y_screen = window_screen_y + cursor_y
 
   -- Handle separator 1 dragging
-  local sep1_action, sep1_new_x_screen = self.separator1:draw_vertical(ctx, sep1_x_screen, content_y_screen, 0, panel_height, separator_thickness)
-  if sep1_action == "drag" then
+  local sep1_result = ark.Splitter.draw(ctx, {
+    id = "template_sep1",
+    x = sep1_x_screen,
+    y = content_y_screen,
+    height = panel_height,
+    orientation = "vertical",
+    thickness = separator_thickness,
+  })
+  if sep1_result.action == "drag" then
     -- Convert back to window coordinates
-    local sep1_new_x = sep1_new_x_screen - window_screen_x
+    local sep1_new_x = sep1_result.position - window_screen_x
     -- Clamp to valid range within content area
     local min_x = padding_left + min_panel_width
     local max_x = SCREEN_W - padding_right - min_panel_width * 2 - separator_thickness * 2
@@ -781,17 +836,24 @@ function GUI:draw(ctx, shell_state)
     self.state.separator1_ratio = (sep1_new_x - padding_left) / content_width
     sep1_x_local = sep1_new_x
     sep1_x_screen = window_screen_x + sep1_x_local
-  elseif sep1_action == "reset" then
+  elseif sep1_result.action == "reset" then
     self.state.separator1_ratio = self.config.FOLDERS_PANEL_WIDTH_RATIO
     sep1_x_local = padding_left + (content_width * self.state.separator1_ratio)
     sep1_x_screen = window_screen_x + sep1_x_local
   end
 
   -- Handle separator 2 dragging
-  local sep2_action, sep2_new_x_screen = self.separator2:draw_vertical(ctx, sep2_x_screen, content_y_screen, 0, panel_height, separator_thickness)
-  if sep2_action == "drag" then
+  local sep2_result = ark.Splitter.draw(ctx, {
+    id = "template_sep2",
+    x = sep2_x_screen,
+    y = content_y_screen,
+    height = panel_height,
+    orientation = "vertical",
+    thickness = separator_thickness,
+  })
+  if sep2_result.action == "drag" then
     -- Convert back to window coordinates
-    local sep2_new_x = sep2_new_x_screen - window_screen_x
+    local sep2_new_x = sep2_result.position - window_screen_x
     -- Clamp to valid range
     local min_x = sep1_x_local + separator_thickness + min_panel_width
     local max_x = SCREEN_W - padding_right - min_panel_width
@@ -799,7 +861,7 @@ function GUI:draw(ctx, shell_state)
     self.state.separator2_ratio = (sep2_new_x - padding_left) / content_width
     sep2_x_local = sep2_new_x
     sep2_x_screen = window_screen_x + sep2_x_local
-  elseif sep2_action == "reset" then
+  elseif sep2_result.action == "reset" then
     self.state.separator2_ratio = self.state.separator1_ratio + self.config.TEMPLATES_PANEL_WIDTH_RATIO
     sep2_x_local = padding_left + (content_width * self.state.separator2_ratio)
     sep2_x_screen = window_screen_x + sep2_x_local

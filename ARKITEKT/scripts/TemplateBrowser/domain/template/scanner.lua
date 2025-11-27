@@ -6,6 +6,17 @@ local M = {}
 local Persistence = require('TemplateBrowser.domain.persistence')
 local FXQueue = require('TemplateBrowser.domain.fx_queue')
 
+-- Scan state for incremental scanning
+local scan_state = {
+  active = false,
+  files_to_scan = {},
+  files_scanned = 0,
+  total_files = 0,
+  metadata = nil,
+  templates = {},
+  folders = {},
+}
+
 -- Get REAPER's default track template path
 local function get_template_path()
   local resource_path = reaper.GetResourcePath()
@@ -522,6 +533,254 @@ function M.filter_templates(state)
   end
 
   state.filtered_templates = filtered
+end
+
+-- Initialize incremental scanning
+function M.scan_init(state)
+  local template_path = get_template_path()
+
+  reaper.ShowConsoleMsg("=== TemplateBrowser: Starting incremental scan ===\n")
+  reaper.ShowConsoleMsg("Template path: " .. template_path .. "\n")
+
+  -- Load metadata
+  local metadata = Persistence.load_metadata()
+  state.metadata = metadata
+
+  -- Build list of all files to scan
+  local files_to_scan = {}
+  local folders = {}
+
+  local function enumerate_all(path, relative_path)
+    relative_path = relative_path or ""
+    local sep = package.config:sub(1,1)
+
+    -- Enumerate files
+    local idx = 0
+    while true do
+      local file = reaper.EnumerateFiles(path, idx)
+      if not file then break end
+
+      if file:match("%.RTrackTemplate$") then
+        files_to_scan[#files_to_scan + 1] = {
+          path = path,
+          file = file,
+          relative_path = relative_path,
+        }
+      end
+      idx = idx + 1
+    end
+
+    -- Enumerate subdirectories
+    idx = 0
+    while true do
+      local subdir = reaper.EnumerateSubdirectories(path, idx)
+      if not subdir then break end
+
+      if subdir ~= ".archive" then
+        local new_relative = relative_path ~= "" and (relative_path .. sep .. subdir) or subdir
+        local sub_path = path .. subdir .. sep
+
+        -- Add folder info
+        folders[#folders + 1] = {
+          name = subdir,
+          path = new_relative,
+          full_path = sub_path,
+          parent = relative_path,
+        }
+
+        -- Recursively enumerate
+        enumerate_all(sub_path, new_relative)
+      end
+
+      idx = idx + 1
+    end
+  end
+
+  enumerate_all(template_path, "")
+
+  -- Store scan state
+  scan_state.active = true
+  scan_state.files_to_scan = files_to_scan
+  scan_state.files_scanned = 0
+  scan_state.total_files = #files_to_scan
+  scan_state.metadata = metadata
+  scan_state.templates = {}
+  scan_state.folders = folders
+
+  reaper.ShowConsoleMsg(string.format("Found %d templates to scan\n", #files_to_scan))
+end
+
+-- Scan a batch of templates (call this each frame)
+-- Returns true when complete
+function M.scan_batch(state, batch_size)
+  if not scan_state.active then
+    return true
+  end
+
+  batch_size = batch_size or 50  -- Default: 50 files per frame
+
+  local start_idx = scan_state.files_scanned + 1
+  local end_idx = math.min(start_idx + batch_size - 1, scan_state.total_files)
+
+  -- Scan batch
+  for i = start_idx, end_idx do
+    local file_info = scan_state.files_to_scan[i]
+    local path = file_info.path
+    local file = file_info.file
+    local relative_path = file_info.relative_path
+
+    local template_name = file:gsub("%.RTrackTemplate$", "")
+    local full_path = path .. file
+
+    -- Get file size for change detection
+    local file_handle, err = io.open(full_path, "r")
+    local file_size = nil
+    if file_handle then
+      file_size = file_handle:seek("end")
+      file_handle:close()
+    end
+
+    -- Try to find existing template in metadata
+    local existing = Persistence.find_template(scan_state.metadata, nil, template_name, relative_path)
+
+    local uuid
+    local fx_list = {}
+    local needs_fx_parse = false
+
+    if existing then
+      uuid = existing.uuid
+      existing.name = template_name
+      existing.path = relative_path
+      existing.last_seen = os.time()
+
+      -- Check if file has changed
+      local size_changed = false
+      if file_size and existing.file_size then
+        size_changed = (existing.file_size ~= file_size)
+      elseif file_size and not existing.file_size then
+        size_changed = true
+      end
+
+      local missing_fx = (existing.fx == nil)
+
+      if size_changed then
+        needs_fx_parse = true
+        fx_list = {}
+      elseif missing_fx then
+        needs_fx_parse = true
+        fx_list = {}
+      else
+        fx_list = existing.fx or {}
+      end
+
+      if file_size then
+        existing.file_size = file_size
+      end
+    else
+      -- Create new UUID
+      uuid = Persistence.generate_uuid()
+
+      local new_metadata = {
+        uuid = uuid,
+        name = template_name,
+        path = relative_path,
+        tags = {},
+        notes = "",
+        fx = {},
+        created = os.time(),
+        last_seen = os.time(),
+        usage_count = 0,
+        last_used = nil,
+        chip_color = nil,
+      }
+
+      if file_size then
+        new_metadata.file_size = file_size
+      end
+
+      scan_state.metadata.templates[uuid] = new_metadata
+      needs_fx_parse = true
+    end
+
+    scan_state.templates[#scan_state.templates + 1] = {
+      uuid = uuid,
+      name = template_name,
+      file = file,
+      path = full_path,
+      relative_path = relative_path,
+      folder = relative_path ~= "" and relative_path or "Root",
+      fx = fx_list,
+      needs_fx_parse = needs_fx_parse,
+    }
+  end
+
+  scan_state.files_scanned = end_idx
+
+  -- Update progress
+  state.scan_progress = scan_state.files_scanned / scan_state.total_files
+
+  -- Check if complete
+  if scan_state.files_scanned >= scan_state.total_files then
+    -- Process folders and build tree
+    local folders_with_uuids = {}
+    for _, folder in ipairs(scan_state.folders) do
+      local existing_folder = Persistence.find_folder(scan_state.metadata, nil, folder.name, folder.path)
+
+      local folder_uuid
+      if existing_folder then
+        folder_uuid = existing_folder.uuid
+        existing_folder.name = folder.name
+        existing_folder.path = folder.path
+        existing_folder.last_seen = os.time()
+      else
+        folder_uuid = Persistence.generate_uuid()
+        scan_state.metadata.folders[folder_uuid] = {
+          uuid = folder_uuid,
+          name = folder.name,
+          path = folder.path,
+          tags = {},
+          created = os.time(),
+          last_seen = os.time()
+        }
+      end
+
+      folders_with_uuids[#folders_with_uuids + 1] = {
+        uuid = folder_uuid,
+        name = folder.name,
+        path = folder.path,
+        full_path = folder.full_path,
+        parent = folder.parent,
+        color = scan_state.metadata.folders[folder_uuid] and scan_state.metadata.folders[folder_uuid].color,
+      }
+    end
+
+    -- Finalize
+    state.templates = scan_state.templates
+    state.filtered_templates = scan_state.templates
+    state.folders = build_folder_tree(folders_with_uuids)
+
+    -- Save metadata
+    Persistence.save_metadata(scan_state.metadata)
+
+    reaper.ShowConsoleMsg(string.format("Scan complete: %d templates in %d folders\n",
+      #scan_state.templates, #folders_with_uuids))
+
+    -- Start background FX parsing
+    FXQueue.add_to_queue(state, scan_state.templates)
+
+    -- Reset scan state
+    scan_state.active = false
+    scan_state.files_to_scan = {}
+    scan_state.files_scanned = 0
+    scan_state.total_files = 0
+    scan_state.metadata = nil
+    scan_state.templates = {}
+    scan_state.folders = {}
+
+    return true
+  end
+
+  return false
 end
 
 return M

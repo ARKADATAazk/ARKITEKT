@@ -104,7 +104,7 @@ function M.draw_audio_only(ctx, draw_list, title_font, start_x, start_y, content
   end
 end
 
-function M.draw_mixed_horizontal(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, state, config, coordinator, separator)
+function M.draw_mixed_horizontal(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, state, config, coordinator)
   local sep_config = config.SEPARATOR
   local min_midi_width = 200
   local min_audio_width = 300
@@ -131,13 +131,6 @@ function M.draw_mixed_horizontal(ctx, draw_list, title_font, start_x, start_y, c
   midi_width = max(1, midi_width)
   audio_width = max(1, audio_width)
 
-  local sep_thickness = sep_config.thickness
-  local sep_x = start_x + midi_width + separator_gap/2
-  local mx, my = ImGui.GetMousePos(ctx)
-  local over_sep = (my >= start_y and my < start_y + header_height + content_height and
-                    mx >= sep_x - sep_thickness/2 and mx < sep_x + sep_thickness/2)
-  local block_input = separator:is_dragging() or (over_sep and ImGui.IsMouseDown(ctx, 0)) or state.show_track_filter_modal
-
   -- MIDI section (left)
   local panel_padding = 4
   local panel_rounding = 6
@@ -151,21 +144,30 @@ function M.draw_mixed_horizontal(ctx, draw_list, title_font, start_x, start_y, c
   ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
   if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0, ImGui.WindowFlags_NoScrollbar) then
-    if coordinator.midi_grid then
-      coordinator.midi_grid.block_all_input = block_input
-    end
     coordinator:render_midi_grid(ctx, midi_grid_width, midi_child_h, 0)
     ImGui.EndChild(ctx)
   end
 
   -- Vertical separator
-  local separator_x = sep_x
-  local action, value = separator:draw_vertical(ctx, separator_x, start_y, content_height, content_width, sep_config)
+  local separator_x = start_x + midi_width + separator_gap/2
+  local ark = require('arkitekt')
+  local sep_result = ark.Splitter.draw(ctx, {
+    id = "midi_audio_sep_h",
+    x = separator_x,
+    y = start_y,
+    height = header_height + content_height,
+    orientation = "vertical",
+    thickness = sep_config.thickness,
+  })
 
-  if action == "reset" then
+  local block_input = sep_result.dragging or state.show_track_filter_modal
+  if coordinator.midi_grid then coordinator.midi_grid.block_all_input = block_input end
+  if coordinator.audio_grid then coordinator.audio_grid.block_all_input = block_input end
+
+  if sep_result.action == "reset" then
     state.set_setting('separator_position_horizontal', 400)
-  elseif action == "drag" and content_width >= min_total_width then
-    local new_midi_width = value - start_x - separator_gap/2
+  elseif sep_result.action == "drag" and content_width >= min_total_width then
+    local new_midi_width = sep_result.position - start_x - separator_gap/2
     new_midi_width = max(min_midi_width, min(new_midi_width, content_width - min_audio_width - separator_gap))
     state.set_setting('separator_position_horizontal', new_midi_width)
   end
@@ -181,15 +183,12 @@ function M.draw_mixed_horizontal(ctx, draw_list, title_font, start_x, start_y, c
   ImGui.SetCursorScreenPos(ctx, audio_start_x + panel_padding, start_y + header_height)
 
   if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0, ImGui.WindowFlags_NoScrollbar) then
-    if coordinator.audio_grid then
-      coordinator.audio_grid.block_all_input = block_input
-    end
     coordinator:render_audio_grid(ctx, audio_grid_width, audio_child_h, 0)
     ImGui.EndChild(ctx)
   end
 end
 
-function M.draw_mixed_vertical(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, state, config, coordinator, separator)
+function M.draw_mixed_vertical(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, state, config, coordinator)
   local sep_config = config.SEPARATOR
   local min_midi_height = sep_config.min_midi_height
   local min_audio_height = sep_config.min_audio_height
@@ -216,13 +215,6 @@ function M.draw_mixed_vertical(ctx, draw_list, title_font, start_x, start_y, con
   midi_height = max(1, midi_height)
   audio_height = max(1, audio_height)
 
-  local sep_thickness = sep_config.thickness
-  local sep_y = start_y + header_height + midi_height + separator_gap/2
-  local mx, my = ImGui.GetMousePos(ctx)
-  local over_sep = (mx >= start_x and mx < start_x + content_width and
-                    my >= sep_y - sep_thickness/2 and my < sep_y + sep_thickness/2)
-  local block_input = separator:is_dragging() or (over_sep and ImGui.IsMouseDown(ctx, 0)) or state.show_track_filter_modal
-
   -- MIDI section with panel
   local panel_padding = 4
   local panel_rounding = 6
@@ -235,21 +227,30 @@ function M.draw_mixed_vertical(ctx, draw_list, title_font, start_x, start_y, con
   ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
   if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0, ImGui.WindowFlags_NoScrollbar) then
-    if coordinator.midi_grid then
-      coordinator.midi_grid.block_all_input = block_input
-    end
     coordinator:render_midi_grid(ctx, midi_grid_width, midi_child_h, 0)
     ImGui.EndChild(ctx)
   end
 
   -- Draggable separator
-  local separator_y = sep_y
-  local action, value = separator:draw_horizontal(ctx, start_x, separator_y, content_width, content_height, sep_config)
+  local separator_y = start_y + header_height + midi_height + separator_gap/2
+  local ark = require('arkitekt')
+  local sep_result = ark.Splitter.draw(ctx, {
+    id = "midi_audio_sep_v",
+    x = start_x,
+    y = separator_y,
+    width = content_width,
+    orientation = "horizontal",
+    thickness = sep_config.thickness,
+  })
 
-  if action == "reset" then
+  local block_input = sep_result.dragging or state.show_track_filter_modal
+  if coordinator.midi_grid then coordinator.midi_grid.block_all_input = block_input end
+  if coordinator.audio_grid then coordinator.audio_grid.block_all_input = block_input end
+
+  if sep_result.action == "reset" then
     state.set_separator_position(sep_config.default_midi_height)
-  elseif action == "drag" and content_height >= min_total_height then
-    local new_midi_height = value - start_y - header_height - separator_gap/2
+  elseif sep_result.action == "drag" and content_height >= min_total_height then
+    local new_midi_height = sep_result.position - start_y - header_height - separator_gap/2
     new_midi_height = max(min_midi_height, min(new_midi_height, content_height - min_audio_height - separator_gap))
     state.set_separator_position(new_midi_height)
   end
@@ -265,21 +266,8 @@ function M.draw_mixed_vertical(ctx, draw_list, title_font, start_x, start_y, con
   ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, audio_start_y + header_height)
 
   if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0, ImGui.WindowFlags_NoScrollbar) then
-    if coordinator.audio_grid then
-      coordinator.audio_grid.block_all_input = block_input
-    end
     coordinator:render_audio_grid(ctx, audio_grid_width, audio_child_h, 0)
     ImGui.EndChild(ctx)
-  end
-
-  -- Unblock input after separator interaction
-  if not separator:is_dragging() and not (over_sep and ImGui.IsMouseDown(ctx, 0)) then
-    if coordinator.midi_grid then
-      coordinator.midi_grid.block_all_input = false
-    end
-    if coordinator.audio_grid then
-      coordinator.audio_grid.block_all_input = false
-    end
   end
 end
 

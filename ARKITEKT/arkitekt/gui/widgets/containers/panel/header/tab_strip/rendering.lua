@@ -2,10 +2,9 @@
 -- arkitekt/gui/widgets/containers/panel/header/tab_strip/rendering.lua
 -- Tab rendering logic: drawing tabs, buttons, track background
 
-local ImGuiLoader = require('arkitekt.gui.imgui_loader')
-local ImGui = ImGuiLoader.get()
+local ImGui = require('arkitekt.platform.imgui')
 local Theme = require('arkitekt.core.theme')
-local InteractionBlocking = require('arkitekt.gui.utils.interaction_blocking')
+local InteractionBlocking = require('arkitekt.gui.interaction.blocking')
 local Colors = require('arkitekt.core.colors')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('arkitekt.gui.widgets.data.chip')

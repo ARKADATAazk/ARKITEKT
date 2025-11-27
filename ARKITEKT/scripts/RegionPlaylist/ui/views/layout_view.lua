@@ -20,7 +20,6 @@ function M.new(config, state_module)
   return setmetatable({
     config = config,
     state = state_module,
-    separator_view = ark.Separator.new(),
   }, LayoutView)
 end
 
@@ -113,38 +112,34 @@ function LayoutView:draw_horizontal(ctx, region_tiles, display_playlist, pool_da
 
   local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
 
-  local sep_thickness = separator_config.thickness
-  local sep_y = start_y + active_height + separator_gap/2
-  local mx, my = ImGui.GetMousePos(ctx)
-  local over_sep_h = (mx >= start_x and mx < start_x + content_w and my >= sep_y - sep_thickness/2 and my < sep_y + sep_thickness/2)
-  local block_input = self.separator_view:is_dragging() or (over_sep_h and ImGui.IsMouseDown(ctx, 0))
-
-  if region_tiles.active_grid then region_tiles.active_grid.block_all_input = block_input end
-  if region_tiles.pool_grid then region_tiles.pool_grid.block_all_input = block_input end
-
   region_tiles:draw_active(ctx, display_playlist, active_height, shell_state)
-  
-  local separator_y = sep_y
-  local action, value = self.separator_view:draw_horizontal(ctx, start_x, separator_y, content_w, content_h, separator_config)
-  
-  if action == "reset" then
+
+  local separator_y = start_y + active_height + separator_gap/2
+  local sep_result = ark.Splitter.draw(ctx, {
+    id = "active_pool_separator_h",
+    x = start_x,
+    y = separator_y,
+    width = content_w,
+    orientation = "horizontal",
+    thickness = separator_config.thickness,
+  })
+
+  if region_tiles.active_grid then region_tiles.active_grid.block_all_input = sep_result.dragging end
+  if region_tiles.pool_grid then region_tiles.pool_grid.block_all_input = sep_result.dragging end
+
+  if sep_result.action == "reset" then
     self.state.set_separator_position_horizontal(separator_config.default_position)
     self.state.persist_ui_prefs()
-  elseif action == "drag" and content_h >= min_total_height then
-    local new_active_height = value - start_y - separator_gap/2
+  elseif sep_result.action == "drag" and content_h >= min_total_height then
+    local new_active_height = sep_result.position - start_y - separator_gap/2
     new_active_height = max(min_active_height, min(new_active_height, content_h - min_pool_height - separator_gap))
     self.state.set_separator_position_horizontal(new_active_height)
     self.state.persist_ui_prefs()
   end
-  
+
   ImGui.SetCursorScreenPos(ctx, start_x, start_y + active_height + separator_gap)
 
   region_tiles:draw_pool(ctx, pool_data, pool_height, shell_state)
-  
-  if not self.separator_view:is_dragging() and not (over_sep_h and ImGui.IsMouseDown(ctx, 0)) then
-    if region_tiles.active_grid then region_tiles.active_grid.block_all_input = false end
-    if region_tiles.pool_grid then region_tiles.pool_grid.block_all_input = false end
-  end
 end
 
 function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data, shell_state)
@@ -179,15 +174,6 @@ function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data
 
   local start_cursor_x, start_cursor_y = ImGui.GetCursorScreenPos(ctx)
 
-  local sep_thickness = separator_config.thickness
-  local sep_x = start_cursor_x + active_width + separator_gap/2
-  local mx, my = ImGui.GetMousePos(ctx)
-  local over_sep_v = (mx >= sep_x - sep_thickness/2 and mx < sep_x + sep_thickness/2 and my >= start_cursor_y and my < start_cursor_y + content_h)
-  local block_input = self.separator_view:is_dragging() or (over_sep_v and ImGui.IsMouseDown(ctx, 0))
-
-  if region_tiles.active_grid then region_tiles.active_grid.block_all_input = block_input end
-  if region_tiles.pool_grid then region_tiles.pool_grid.block_all_input = block_input end
-
   -- Ensure content_h is valid to prevent BeginChild/EndChild errors
   local safe_content_h = math.max(1, content_h or 1)
 
@@ -206,25 +192,30 @@ function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data
   if not success and error_msg then
     Logger.error("GUI", "Layout error (left column): %s", tostring(error_msg))
   end
-  
-  local separator_x = sep_x
-  local action, value = self.separator_view:draw_vertical(ctx, separator_x, start_cursor_y, content_w, content_h, separator_config)
-  
-  if action == "reset" then
+
+  local separator_x = start_cursor_x + active_width + separator_gap/2
+  local sep_result = ark.Splitter.draw(ctx, {
+    id = "active_pool_separator_v",
+    x = separator_x,
+    y = start_cursor_y,
+    height = content_h,
+    orientation = "vertical",
+    thickness = separator_config.thickness,
+  })
+
+  if region_tiles.active_grid then region_tiles.active_grid.block_all_input = sep_result.dragging end
+  if region_tiles.pool_grid then region_tiles.pool_grid.block_all_input = sep_result.dragging end
+
+  if sep_result.action == "reset" then
     self.state.set_separator_position_vertical(separator_config.default_position)
     self.state.persist_ui_prefs()
-  elseif action == "drag" and content_w >= min_total_width then
-    local new_active_width = value - start_cursor_x - separator_gap/2
+  elseif sep_result.action == "drag" and content_w >= min_total_width then
+    local new_active_width = sep_result.position - start_cursor_x - separator_gap/2
     new_active_width = max(min_active_width, min(new_active_width, content_w - min_pool_width - separator_gap))
     self.state.set_separator_position_vertical(new_active_width)
     self.state.persist_ui_prefs()
   end
-  
-  if not self.separator_view:is_dragging() and not (over_sep_v and ImGui.IsMouseDown(ctx, 0)) then
-    if region_tiles.active_grid then region_tiles.active_grid.block_all_input = false end
-    if region_tiles.pool_grid then region_tiles.pool_grid.block_all_input = false end
-  end
-  
+
   ImGui.SetCursorScreenPos(ctx, start_cursor_x + active_width + separator_gap, start_cursor_y)
 
   -- Ensure content_h is valid to prevent BeginChild/EndChild errors

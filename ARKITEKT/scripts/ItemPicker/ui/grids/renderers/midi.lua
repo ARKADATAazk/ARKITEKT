@@ -4,10 +4,10 @@
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
-local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
+local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local BaseRenderer = require('ItemPicker.ui.grids.renderers.base')
-local Shapes = require('arkitekt.gui.rendering.shapes')
-local TileFX = require('arkitekt.gui.rendering.tile.renderer')
+local Shapes = require('arkitekt.gui.draw.shapes')
+local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 
 local M = {}
 

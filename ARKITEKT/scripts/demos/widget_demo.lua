@@ -55,7 +55,7 @@ local Shell        = require("arkitekt.app.shell")
 local Settings     = (function() local ok,m=pcall(require,"arkitekt.core.settings"); return ok and m or nil end)()
 local okStyle,Style= pcall(require,"arkitekt.gui.style.imgui")
 local ColorBlocks  = require("Arkitekt.gui.widgets.colorblocks")
-local Effects      = require("arkitekt.gui.rendering.effects")
+local Effects      = require("arkitekt.gui.draw.effects")
 local hexrgb = ark.Colors.hexrgb
 
 

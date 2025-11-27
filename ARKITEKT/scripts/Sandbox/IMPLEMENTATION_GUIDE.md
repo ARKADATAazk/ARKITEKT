@@ -3,10 +3,10 @@
 ## Completed Improvements ✅
 
 ### 1. Fixed `ark` Namespace Reference
-- **Problem:** `ark.InputText` was undefined
+- **Problem:** `Ark.InputText` was undefined
 - **Solution:** Added namespace definition:
 ```lua
-local ark = {
+local Ark = {
   InputText = InputText
 }
 ```

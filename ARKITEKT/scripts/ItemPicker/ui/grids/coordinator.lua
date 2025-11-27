@@ -3,8 +3,8 @@
 -- Coordinator for managing audio and MIDI grids
 
 local ImGui = require 'imgui' '0.10'
-local TileAnim = require('arkitekt.gui.rendering.tile.animator')
-local Lifecycle = require('arkitekt.gui.fx.animation.lifecycle')
+local TileAnim = require('arkitekt.gui.animation.tile_animator')
+local Lifecycle = require('arkitekt.gui.animation.lifecycle')
 local AudioGridFactory = require('ItemPicker.ui.grids.factories.audio_grid_factory')
 local MidiGridFactory = require('ItemPicker.ui.grids.factories.midi_grid_factory')
 

@@ -7,9 +7,9 @@ local ImGui = require 'imgui' '0.10'
 
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Colors = require('arkitekt.core.colors')
-local ResponsiveGrid = require('arkitekt.gui.systems.responsive_grid')
-local DragDrop = require('arkitekt.gui.systems.drag_drop')
-local MouseUtil = require('arkitekt.gui.systems.mouse_util')
+local ResponsiveGrid = require('arkitekt.gui.layout.responsive')
+local DragDrop = require('arkitekt.gui.interaction.drag_drop')
+local MouseUtil = require('arkitekt.gui.layout.mouse_util')
 
 local M = {}
 

@@ -5,8 +5,8 @@
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 local hexrgb = ark.Colors.hexrgb
-local TileFX = require('arkitekt.gui.rendering.tile.renderer')
-local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
+local TileFX = require('arkitekt.gui.renderers.tile.renderer')
+local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local M = {}
 
 M.tile_spawn_times = {}
@@ -145,7 +145,7 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
 
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, placeholder_color)
 
-  -- Simple rotating ring spinner (standard loading indicator)
+  -- Loading spinner using reusable widget
   local center_x = (x1 + x2) / 2
   local center_y = (y1 + y2) / 2
   local size = math.min(x2 - x1, y2 - y1) * 0.2
@@ -153,22 +153,15 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
   -- Dark spinner color (slightly lighter than background)
   local spinner_alpha = (alpha * 100) // 1
   local spinner_color = ark.Colors.with_alpha(hexrgb("#808080"), spinner_alpha)
-
-  local time = reaper.time_precise()
-  local rotation = (time * 3) % (math.pi * 2)  -- Rotates every ~2 seconds
-
-  -- Draw ring arc (3/4 circle, 1/4 gap) using PathArcTo
-  local arc_length = math.pi * 1.5  -- 270 degrees (3/4 of circle)
   local thickness = math.max(2, size * 0.2)
 
-  -- Start angle and end angle
-  local start_angle = rotation - math.pi / 2  -- Start at top
-  local end_angle = start_angle + arc_length
-
-  -- Draw the arc path
-  ImGui.DrawList_PathClear(dl)
-  ImGui.DrawList_PathArcTo(dl, center_x, center_y, size, start_angle, end_angle, 24)
-  ImGui.DrawList_PathStroke(dl, spinner_color, 0, thickness)
+  ark.LoadingSpinner.draw_direct(dl, center_x, center_y, {
+    size = size,
+    thickness = thickness,
+    color = spinner_color,
+    arc_length = 1.5,  -- 270 degrees (in pi radians)
+    speed = 3.0,
+  })
 end
 
 -- Apply muted and disabled state effects to render color
