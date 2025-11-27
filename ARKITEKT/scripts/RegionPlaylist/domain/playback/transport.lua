@@ -211,6 +211,17 @@ function Transport:next()
   self.state.playlist_pointer = self.state.playlist_pointer + 1
   Logger.info("TRANSPORT", "NEXT -> idx %d/%d", self.state.playlist_pointer, #self.state.playlist_order)
 
+  -- Sync indices immediately to prevent desync with transitions logic
+  self.state.current_idx = self.state.playlist_pointer
+  if self.state.playlist_pointer < #self.state.playlist_order then
+    self.state.next_idx = self.state.playlist_pointer + 1
+  elseif self.loop_playlist then
+    self.state.next_idx = 1
+  else
+    self.state.next_idx = -1
+  end
+  self.state:update_bounds()
+
   if _is_playing(self.proj) then
     local rid = self.state:get_current_rid()
     local region = self.state:get_region_by_rid(rid)
@@ -233,6 +244,17 @@ function Transport:prev()
 
   self.state.playlist_pointer = self.state.playlist_pointer - 1
   Logger.info("TRANSPORT", "PREV -> idx %d/%d", self.state.playlist_pointer, #self.state.playlist_order)
+
+  -- Sync indices immediately to prevent desync with transitions logic
+  self.state.current_idx = self.state.playlist_pointer
+  if self.state.playlist_pointer < #self.state.playlist_order then
+    self.state.next_idx = self.state.playlist_pointer + 1
+  elseif self.loop_playlist then
+    self.state.next_idx = 1
+  else
+    self.state.next_idx = -1
+  end
+  self.state:update_bounds()
 
   if _is_playing(self.proj) then
     local rid = self.state:get_current_rid()
