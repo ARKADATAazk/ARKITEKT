@@ -240,8 +240,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       math.floor(selection_config.ants_alpha * combined_alpha)
     )
 
-    -- Mix with white to make marching ants much lighter (tinted but very bright)
-    local white_mix = 0.65  -- Mix 65% white to make ants very light but still tinted
+    -- Mix with white to make marching ants lighter but still tinted
+    local white_mix = 0.40  -- Mix 40% white - lighter but keeps more color
     local r, g, b, a = ark.Colors.rgba_to_components(ant_color)
     r = r + (255 - r) * white_mix
     g = g + (255 - g) * white_mix
