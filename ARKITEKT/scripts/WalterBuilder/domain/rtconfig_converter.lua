@@ -402,10 +402,16 @@ local function convert_items(items, context_filter)
                 Console.warn("  FAILED EXPR for %s: %s", item.element, item.value or "(nil)")
               end
             end
-            Console.info("  + %s [%s] coords: x=%.0f y=%.0f w=%.0f h=%.0f",
+            -- Only log attachment values if non-zero
+            local attach_str = ""
+            local c = element.coords
+            if c.ls ~= 0 or c.ts ~= 0 or c.rs ~= 0 or c.bs ~= 0 then
+              attach_str = string.format(" attach=[%.0f %.0f %.0f %.0f]", c.ls, c.ts, c.rs, c.bs)
+            end
+            Console.info("  + %s [%s] coords: x=%.0f y=%.0f w=%.0f h=%.0f%s",
               element.id,
               status,
-              element.coords.x, element.coords.y, element.coords.w, element.coords.h)
+              c.x, c.y, c.w, c.h, attach_str)
             result.elements[#result.elements + 1] = {
               element = element,
               is_computed = is_computed,
