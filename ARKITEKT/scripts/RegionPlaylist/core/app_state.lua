@@ -24,6 +24,7 @@ local Region = require("RegionPlaylist.domains.region")
 local Dependency = require("RegionPlaylist.domains.dependency")
 local Playlist = require("RegionPlaylist.domains.playlist")
 local Logger = require('arkitekt.debug.logger')
+local AppEvents = require("RegionPlaylist.app.events")
 
 local M = {}
 
@@ -78,15 +79,22 @@ M.undo_manager = nil                          -- UndoManager instance
 -- Project monitoring
 M.project_monitor = nil                       -- ProjectMonitor instance
 
--- Event callbacks (set by GUI)
+-- Event callbacks (set by GUI) - Legacy, being migrated to events
 M.on_state_restored = nil                     -- Called when undo/redo restores state
 M.on_repeat_cycle = nil                       -- Called when repeat count cycles
+
+-- Event bus (Phase 2: replacing callbacks)
+M.events = nil                                -- Event bus instance
+M.EVENTS = AppEvents.EVENTS                   -- Re-export event constants
 
 -- Settings
 M.settings = nil                              -- Persistent UI settings
 
 function M.initialize(settings)
   M.settings = settings
+
+  -- Initialize event bus (Phase 2: event-driven architecture)
+  M.events = AppEvents.create_bus(DEBUG_APP_STATE)
 
   -- Initialize domains
   M.animation = Animation.new()
@@ -122,10 +130,8 @@ function M.initialize(settings)
   
   M.bridge = CoordinatorBridge.create({
     proj = 0,
-    on_region_change = function(rid, region, pointer) end,
-    on_playback_start = function(rid) end,
-    on_playback_stop = function() end,
-    on_transition_scheduled = function(rid, region_end, transition_time) end,
+    events = M.events,  -- Pass event bus (Phase 2: event-driven architecture)
+    -- Legacy callback: on_repeat_cycle (until fully migrated to events)
     on_repeat_cycle = function(key, current_loop, total_reps)
       if M.on_repeat_cycle then
         M.on_repeat_cycle(key, current_loop, total_reps)
@@ -362,6 +368,11 @@ function M.persist()
   if M.bridge then
     M.bridge:invalidate_sequence()
   end
+
+  -- Emit event (Phase 2: event-driven architecture)
+  if M.events then
+    M.events:emit(M.EVENTS.STATE_SAVED, {})
+  end
 end
 
 function M.persist_ui_prefs()
@@ -371,6 +382,11 @@ end
 function M.capture_undo_snapshot()
   local snapshot = UndoBridge.capture_snapshot(M.playlist:get_all(), M.playlist:get_active_id())
   M.undo_manager:push(snapshot)
+
+  -- Emit event (Phase 2: event-driven architecture)
+  if M.events then
+    M.events:emit(M.EVENTS.STATE_SNAPSHOT_CAPTURED, {})
+  end
 end
 
 function M.clear_pending()
@@ -402,11 +418,41 @@ function M.restore_snapshot(snapshot)
     M.bridge:get_sequence()
   end
 
+  -- Legacy callback
   if M.on_state_restored then
     M.on_state_restored()
   end
 
+  -- Emit event (Phase 2: event-driven architecture)
+  if M.events then
+    M.events:emit(M.EVENTS.STATE_RESTORED, {
+      changes = changes,
+    })
+  end
+
   return true, changes
+end
+
+-- Helper: Build status message from undo/redo changes
+local function _build_changes_message(prefix, changes)
+  local parts = {}
+  if changes.playlists_count > 0 then
+    parts[#parts + 1] = string.format("%d playlist%s", changes.playlists_count, changes.playlists_count ~= 1 and "s" or "")
+  end
+  if changes.items_count > 0 then
+    parts[#parts + 1] = string.format("%d item%s", changes.items_count, changes.items_count ~= 1 and "s" or "")
+  end
+  if changes.regions_renamed > 0 then
+    parts[#parts + 1] = string.format("%d region%s renamed", changes.regions_renamed, changes.regions_renamed ~= 1 and "s" or "")
+  end
+  if changes.regions_recolored > 0 then
+    parts[#parts + 1] = string.format("%d region%s recolored", changes.regions_recolored, changes.regions_recolored ~= 1 and "s" or "")
+  end
+
+  if #parts > 0 then
+    return prefix .. ": " .. table.concat(parts, ", ")
+  end
+  return prefix
 end
 
 function M.undo()
@@ -418,26 +464,7 @@ function M.undo()
   local success, changes = M.restore_snapshot(snapshot)
 
   if success and changes then
-    -- Build status message from changes
-    local parts = {}
-    if changes.playlists_count > 0 then
-      parts[#parts + 1] = string.format("%d playlist%s", changes.playlists_count, changes.playlists_count ~= 1 and "s" or "")
-    end
-    if changes.items_count > 0 then
-      parts[#parts + 1] = string.format("%d item%s", changes.items_count, changes.items_count ~= 1 and "s" or "")
-    end
-    if changes.regions_renamed > 0 then
-      parts[#parts + 1] = string.format("%d region%s renamed", changes.regions_renamed, changes.regions_renamed ~= 1 and "s" or "")
-    end
-    if changes.regions_recolored > 0 then
-      parts[#parts + 1] = string.format("%d region%s recolored", changes.regions_recolored, changes.regions_recolored ~= 1 and "s" or "")
-    end
-
-    if #parts > 0 then
-      M.set_state_change_notification("Undo: " .. table.concat(parts, ", "))
-    else
-      M.set_state_change_notification("Undo")
-    end
+    M.set_state_change_notification(_build_changes_message("Undo", changes))
   end
 
   return success
@@ -452,26 +479,7 @@ function M.redo()
   local success, changes = M.restore_snapshot(snapshot)
 
   if success and changes then
-    -- Build status message from changes
-    local parts = {}
-    if changes.playlists_count > 0 then
-      parts[#parts + 1] = string.format("%d playlist%s", changes.playlists_count, changes.playlists_count ~= 1 and "s" or "")
-    end
-    if changes.items_count > 0 then
-      parts[#parts + 1] = string.format("%d item%s", changes.items_count, changes.items_count ~= 1 and "s" or "")
-    end
-    if changes.regions_renamed > 0 then
-      parts[#parts + 1] = string.format("%d region%s renamed", changes.regions_renamed, changes.regions_renamed ~= 1 and "s" or "")
-    end
-    if changes.regions_recolored > 0 then
-      parts[#parts + 1] = string.format("%d region%s recolored", changes.regions_recolored, changes.regions_recolored ~= 1 and "s" or "")
-    end
-
-    if #parts > 0 then
-      M.set_state_change_notification("Redo: " .. table.concat(parts, ", "))
-    else
-      M.set_state_change_notification("Redo")
-    end
+    M.set_state_change_notification(_build_changes_message("Redo", changes))
   end
 
   return success
