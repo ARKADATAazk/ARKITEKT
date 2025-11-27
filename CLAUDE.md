@@ -87,25 +87,14 @@ tests/      # Unit tests
 
 ### Task: Add a New Widget
 
-1. **Check existing widgets**: `arkitekt/gui/widgets/[category]/`
-2. **Find similar widget** to use as template
-3. **Follow module pattern**:
-   ```lua
-   -- @noindex
-   local M = {}
-
-   function M.new(opts)
-     local self = { ... }
-     return setmetatable(self, { __index = M })
-   end
-
-   function M:draw(ctx)
-     -- ImGui calls here
-   end
-
-   return M
-   ```
-4. **Add to category index** if needed
+1. **Read the widget guide**: `cookbook/WIDGETS.md`
+2. **Check existing widgets**: `arkitekt/gui/widgets/[category]/`
+3. **Find similar widget** to use as template
+4. **Follow the widget API contract**:
+   - Signature: `function M.draw(ctx, opts) return result end`
+   - Use `Theme.COLORS` for colors (read every frame!)
+   - Use `Base.get_state(id)` for persistent state
+   - Advance cursor after drawing
 5. **Test in Sandbox**: `scripts/Sandbox/`
 
 ### Task: Fix a Bug
@@ -332,9 +321,11 @@ When you need more detail:
 1. **This file** (CLAUDE.md) - Quick reference, task cookbook
 2. **cookbook/CONVENTIONS.md** - Detailed coding standards
 3. **cookbook/PROJECT_STRUCTURE.md** - Full architecture guide
-4. **cookbook/LUA_PERFORMANCE_GUIDE.md** - Performance optimization
+4. **cookbook/WIDGETS.md** - Widget development patterns
 5. **cookbook/THEME_MANAGER.md** - Theming system guide
-6. **TODO/** - Actionable improvements to work on
+6. **cookbook/LUA_PERFORMANCE_GUIDE.md** - Performance optimization
+7. **cookbook/DEPRECATED.md** - Deprecation tracker
+8. **TODO/** - Actionable improvements to work on
 
 ---
 
