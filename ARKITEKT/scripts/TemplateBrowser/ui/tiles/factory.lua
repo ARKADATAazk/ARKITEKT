@@ -9,6 +9,7 @@ local TemplateTile = require('TemplateBrowser.ui.tiles.tile')
 local TemplateTileCompact = require('TemplateBrowser.ui.tiles.tile_compact')
 local DragDrop = require('arkitekt.gui.interaction.drag_drop')
 local Constants = require('TemplateBrowser.defs.constants')
+local Tooltips = require('TemplateBrowser.ui.tooltips')
 
 local M = {}
 
@@ -45,6 +46,14 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
       if state.star_clicked and on_star_click then
         on_star_click(template)
         state.star_clicked = false  -- Reset flag
+      end
+
+      -- Show track tree tooltip on hover (with delay)
+      if state.hover then
+        -- Create invisible rect for hover detection
+        ImGui.SetCursorScreenPos(ctx, rect[1], rect[2])
+        ImGui.InvisibleButton(ctx, "##tooltip_" .. template.uuid, rect[3] - rect[1], rect[4] - rect[2])
+        Tooltips.show_template_info(ctx, ImGui, template, metadata)
       end
 
       -- Handle drop targets for tags

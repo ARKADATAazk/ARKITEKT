@@ -48,8 +48,7 @@
 - [x] _Archive folder (renamed from .archive for visibility)
 
 ### Planned (Next Sprint)
-- [ ] Star ratings (1-5)
-- [ ] Track-tree hover preview
+- [x] Track-tree hover preview (lazy-loaded, cached)
 
 ### Backlog
 - [ ] Search in notes
@@ -84,11 +83,13 @@ TemplateBrowser/
 |------|---------|
 | `domain/template/scanner.lua` | Scan filesystem, filter templates |
 | `domain/template/operations.lua` | Insert/apply templates |
+| `domain/template/track_parser.lua` | Parse track names/hierarchy from templates |
 | `domain/search/fuzzy.lua` | Fuzzy string matching for search |
 | `domain/fx/parser.lua` | Parse FX from .RTrackTemplate |
 | `data/storage.lua` | JSON metadata persistence |
 | `data/file_ops.lua` | Move/rename/delete with archive |
 | `ui/tiles/tile.lua` | Grid tile renderer |
+| `ui/tooltips.lua` | Template tooltips with track tree preview |
 
 ---
 
