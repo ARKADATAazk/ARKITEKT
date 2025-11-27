@@ -397,8 +397,10 @@ function GUI:draw(ctx, shell_state)
   reaper.PreventUIRefresh(-1)
   ImGui.PopFont(ctx)
 
-  -- Keyboard shortcuts (only when not renaming)
-  if not self.state.rename_active then
+  -- Keyboard shortcuts (only when not typing in text fields)
+  -- Check if any ImGui item (text input, etc.) is currently active/focused
+  local text_input_active = ImGui.IsAnyItemActive(ctx)
+  if not self.state.rename_active and not text_input_active then
     -- M: Toggle muted items/tracks (respects user's checkbox preferences)
     if ImGui.IsKeyPressed(ctx, ImGui.Key_M) then
       -- Remember which muted options were previously enabled
@@ -437,6 +439,24 @@ function GUI:draw(ctx, shell_state)
     if ImGui.IsKeyPressed(ctx, ImGui.Key_D) then
       self.state.settings.show_disabled_items = not self.state.settings.show_disabled_items
       -- Invalidate cache to refresh display
+      self.state.runtime_cache.audio_filter_hash = nil
+      self.state.runtime_cache.midi_filter_hash = nil
+      self.state.persist_settings()
+    end
+
+    -- G: Toggle group items by name
+    if ImGui.IsKeyPressed(ctx, ImGui.Key_G) then
+      self.state.settings.group_items_by_name = not self.state.settings.group_items_by_name
+      -- Invalidate cache to refresh display
+      self.state.runtime_cache.audio_filter_hash = nil
+      self.state.runtime_cache.midi_filter_hash = nil
+      self.state.persist_settings()
+    end
+
+    -- R: Toggle region tags on tiles
+    if ImGui.IsKeyPressed(ctx, ImGui.Key_R) then
+      self.state.settings.show_region_tags = not self.state.settings.show_region_tags
+      -- Invalidate cache to refresh display (region data needs to be reloaded)
       self.state.runtime_cache.audio_filter_hash = nil
       self.state.runtime_cache.midi_filter_hash = nil
       self.state.persist_settings()
