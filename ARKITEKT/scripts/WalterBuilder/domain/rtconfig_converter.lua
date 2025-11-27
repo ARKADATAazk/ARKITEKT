@@ -24,7 +24,9 @@ local Console = require('WalterBuilder.ui.panels.debug_console')
 local M = {}
 
 -- Evaluation context with default values
+-- These provide reasonable defaults for visualization when runtime state isn't available
 local DEFAULT_CONTEXT = {
+  -- Parent dimensions
   w = 300,  -- Default TCP width
   h = 90,   -- Default TCP height
   scale = 1.0,
@@ -35,6 +37,31 @@ local DEFAULT_CONTEXT = {
   meter_sec = 50,
   main_sec = 200,
   folder_sec = 20,
+
+  -- Track state variables (defaults for visualization)
+  recarm = 0,
+  track_selected = 1,  -- Show as if track is selected
+  mixer_visible = 0,
+  trackcolor_valid = 0,
+  folderstate = 0,
+  folderdepth = 0,
+  maxfolderdepth = 3,
+  supercollapsed = 0,
+
+  -- Common conditionals (assume visible/enabled by default)
+  is_solo_flipped = 0,
+  hide_mute_group = 0,
+  hide_fx_group = 0,
+  hide_pan_group = 0,
+  hide_io_group = 0,
+  trackpanmode = 0,
+
+  -- Theme variant
+  theme_version = 1,
+  theme_variant = 0,
+
+  -- Main font
+  main_font = 1,
 }
 
 -- Check if a SET statement defines a variable (vs an element)
@@ -500,17 +527,42 @@ local function parse_macro_body_item(body_entry)
 end
 
 -- Collect items from macro bodies (where many TCP elements are defined!)
+-- Handles line continuations (lines ending with \)
 local function collect_macro_items(macros, all_items)
   local macro_items = 0
+
   for _, macro in ipairs(macros) do
-    for _, body_entry in ipairs(macro.body) do
-      local item = parse_macro_body_item(body_entry)
+    local i = 1
+    while i <= #macro.body do
+      local body_entry = macro.body[i]
+      local code = body_entry.code or ""
+      local line_num = body_entry.line
+
+      -- Handle line continuations: join lines ending with \
+      while code:match("\\%s*$") and i < #macro.body do
+        -- Remove the trailing backslash and whitespace
+        code = code:gsub("\\%s*$", " ")
+        -- Get next line
+        i = i + 1
+        local next_entry = macro.body[i]
+        if next_entry then
+          -- Append next line's code (trim leading whitespace for cleaner join)
+          local next_code = (next_entry.code or ""):gsub("^%s+", "")
+          code = code .. next_code
+        end
+      end
+
+      -- Parse the (possibly joined) line
+      local item = parse_macro_body_item({ code = code, line = line_num })
       if item then
         all_items[#all_items + 1] = item
         macro_items = macro_items + 1
       end
+
+      i = i + 1
     end
   end
+
   return macro_items
 end
 

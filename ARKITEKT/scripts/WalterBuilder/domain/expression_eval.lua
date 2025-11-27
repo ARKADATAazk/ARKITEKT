@@ -44,7 +44,7 @@ local function make_at_position(value, pos_name)
 end
 
 -- Default scalar values for common variables
--- These approximate typical values at 100% DPI
+-- These approximate typical values at 100% DPI and provide reasonable defaults for visualization
 M.DEFAULT_SCALARS = {
   -- DPI scaling
   scale = 1.0,
@@ -53,14 +53,15 @@ M.DEFAULT_SCALARS = {
   w = 300,  -- parent width
   h = 90,   -- parent height
 
-  -- Track state (for conditionals)
+  -- Track state (for conditionals) - defaults for visualization
   recarm = 0,
-  track_selected = 0,
+  track_selected = 1,  -- Show as if track is selected
   mixer_visible = 0,
   trackcolor_valid = 0,
   folderstate = 0,
   folderdepth = 0,
   maxfolderdepth = 3,
+  supercollapsed = 0,
 
   -- Common computed values (approximations)
   tcp_padding = 7,
@@ -69,6 +70,21 @@ M.DEFAULT_SCALARS = {
   folder_sec = 20,
   element_h = 20,
   soloFlip_h = 52,
+
+  -- Common conditionals (assume visible/enabled by default)
+  is_solo_flipped = 0,
+  hide_mute_group = 0,
+  hide_fx_group = 0,
+  hide_pan_group = 0,
+  hide_io_group = 0,
+  trackpanmode = 0,
+
+  -- Theme variant
+  theme_version = 1,
+  theme_variant = 0,
+
+  -- Main font
+  main_font = 1,
 
   -- Version info
   reaper_version = 7,
