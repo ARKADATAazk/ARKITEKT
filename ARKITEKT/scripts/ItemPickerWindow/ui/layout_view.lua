@@ -16,7 +16,6 @@ function M.new(config, state)
   return setmetatable({
     config = config,
     state = state,
-    separator_view = ark.Splitter.new(),
   }, LayoutView)
 end
 
@@ -65,29 +64,28 @@ function LayoutView:draw_vertical(ctx, coordinator, shell_state)
 
   local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
 
-  -- Check if separator is being dragged
-  local sep_thickness = separator_config.thickness or 4
-  local sep_y = start_y + midi_height + separator_gap / 2
-  local mx, my = ImGui.GetMousePos(ctx)
-  local over_sep = (mx >= start_x and mx < start_x + content_w and
-                    my >= sep_y - sep_thickness / 2 and my < sep_y + sep_thickness / 2)
-  local block_input = self.separator_view:is_dragging() or (over_sep and ImGui.IsMouseDown(ctx, 0))
-
-  -- Block grid input during separator drag
-  if coordinator.midi_grid then coordinator.midi_grid.block_all_input = block_input end
-  if coordinator.audio_grid then coordinator.audio_grid.block_all_input = block_input end
-
   -- Draw MIDI panel
   coordinator:draw_midi(ctx, midi_height, shell_state)
 
   -- Draw separator
-  local separator_y = sep_y
-  local action, value = self.separator_view:draw_horizontal(ctx, start_x, separator_y, content_w, content_h, separator_config)
+  local separator_y = start_y + midi_height + separator_gap / 2
+  local sep_result = ark.Splitter.draw(ctx, {
+    id = "midi_audio_separator_h",
+    x = start_x,
+    y = separator_y,
+    width = content_w,
+    orientation = "horizontal",
+    thickness = separator_config.thickness or 4,
+  })
 
-  if action == "reset" then
+  -- Block grid input during separator drag
+  if coordinator.midi_grid then coordinator.midi_grid.block_all_input = sep_result.dragging end
+  if coordinator.audio_grid then coordinator.audio_grid.block_all_input = sep_result.dragging end
+
+  if sep_result.action == "reset" then
     self.state.set_separator_position(self.config.SEPARATOR.default_midi_height or 250)
-  elseif action == "drag" and content_h >= min_total_height then
-    local new_midi_height = value - start_y - separator_gap / 2
+  elseif sep_result.action == "drag" and content_h >= min_total_height then
+    local new_midi_height = sep_result.position - start_y - separator_gap / 2
     new_midi_height = max(min_midi_height, min(new_midi_height, content_h - min_audio_height - separator_gap))
     self.state.set_separator_position(new_midi_height)
   end
@@ -97,12 +95,6 @@ function LayoutView:draw_vertical(ctx, coordinator, shell_state)
 
   -- Draw Audio panel
   coordinator:draw_audio(ctx, audio_height, shell_state)
-
-  -- Unblock input after separator interaction
-  if not self.separator_view:is_dragging() and not (over_sep and ImGui.IsMouseDown(ctx, 0)) then
-    if coordinator.midi_grid then coordinator.midi_grid.block_all_input = false end
-    if coordinator.audio_grid then coordinator.audio_grid.block_all_input = false end
-  end
 end
 
 function LayoutView:draw_horizontal(ctx, coordinator, shell_state)
@@ -140,18 +132,6 @@ function LayoutView:draw_horizontal(ctx, coordinator, shell_state)
 
   local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
 
-  -- Check if separator is being dragged
-  local sep_thickness = separator_config.thickness or 4
-  local sep_x = start_x + midi_width + separator_gap / 2
-  local mx, my = ImGui.GetMousePos(ctx)
-  local over_sep = (my >= start_y and my < start_y + content_h and
-                    mx >= sep_x - sep_thickness / 2 and mx < sep_x + sep_thickness / 2)
-  local block_input = self.separator_view:is_dragging() or (over_sep and ImGui.IsMouseDown(ctx, 0))
-
-  -- Block grid input during separator drag
-  if coordinator.midi_grid then coordinator.midi_grid.block_all_input = block_input end
-  if coordinator.audio_grid then coordinator.audio_grid.block_all_input = block_input end
-
   -- Use child windows for side-by-side layout
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
@@ -164,13 +144,24 @@ function LayoutView:draw_horizontal(ctx, coordinator, shell_state)
   ImGui.PopStyleVar(ctx)
 
   -- Draw vertical separator
-  local separator_x = sep_x
-  local action, value = self.separator_view:draw_vertical(ctx, separator_x, start_y, content_w, content_h, separator_config)
+  local separator_x = start_x + midi_width + separator_gap / 2
+  local sep_result = ark.Splitter.draw(ctx, {
+    id = "midi_audio_separator_v",
+    x = separator_x,
+    y = start_y,
+    height = content_h,
+    orientation = "vertical",
+    thickness = separator_config.thickness or 4,
+  })
 
-  if action == "reset" then
+  -- Block grid input during separator drag
+  if coordinator.midi_grid then coordinator.midi_grid.block_all_input = sep_result.dragging end
+  if coordinator.audio_grid then coordinator.audio_grid.block_all_input = sep_result.dragging end
+
+  if sep_result.action == "reset" then
     self.state.set_setting('separator_position_horizontal', 400)
-  elseif action == "drag" and content_w >= min_total_width then
-    local new_midi_width = value - start_x - separator_gap / 2
+  elseif sep_result.action == "drag" and content_w >= min_total_width then
+    local new_midi_width = sep_result.position - start_x - separator_gap / 2
     new_midi_width = max(min_midi_width, min(new_midi_width, content_w - min_audio_width - separator_gap))
     self.state.set_setting('separator_position_horizontal', new_midi_width)
   end
@@ -187,12 +178,6 @@ function LayoutView:draw_horizontal(ctx, coordinator, shell_state)
   ImGui.EndChild(ctx)
 
   ImGui.PopStyleVar(ctx)
-
-  -- Unblock input after separator interaction
-  if not self.separator_view:is_dragging() and not (over_sep and ImGui.IsMouseDown(ctx, 0)) then
-    if coordinator.midi_grid then coordinator.midi_grid.block_all_input = false end
-    if coordinator.audio_grid then coordinator.audio_grid.block_all_input = false end
-  end
 end
 
 return M

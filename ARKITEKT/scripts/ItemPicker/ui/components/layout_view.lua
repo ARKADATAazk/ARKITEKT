@@ -24,12 +24,10 @@ function M.new(config, state, coordinator)
     state = state,
     coordinator = coordinator,
     status_bar = nil,
-    separator = nil,
     focus_search = false,
   }, LayoutView)
 
   self.status_bar = StatusBar.new(config, state)
-  self.separator = ark.Splitter.new()
 
   return self
 end
@@ -283,9 +281,9 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   else
     local layout_mode = self.state.settings.layout_mode or "vertical"
     if layout_mode == "horizontal" then
-      ContentPanels.draw_mixed_horizontal(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, self.state, self.config, self.coordinator, self.separator)
+      ContentPanels.draw_mixed_horizontal(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, self.state, self.config, self.coordinator)
     else
-      ContentPanels.draw_mixed_vertical(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, self.state, self.config, self.coordinator, self.separator)
+      ContentPanels.draw_mixed_vertical(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, self.state, self.config, self.coordinator)
     end
   end
 

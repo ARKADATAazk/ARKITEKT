@@ -33,12 +33,6 @@ function M.new(config, state, scanner)
     state = state,
     scanner = scanner,
     initialized = false,
-    separator1 = ark.Splitter.new("sep1"),
-    separator2 = ark.Splitter.new("sep2"),
-    quick_access_separator = ark.Splitter.new("quick_access_sep"),
-    left_panel_separator = ark.Splitter.new("left_panel_sep"),  -- Between left_panel and convenience_panel
-    dir_separator1 = ark.Splitter.new("dir_sep1"),  -- Between Physical and Virtual
-    dir_separator2 = ark.Splitter.new("dir_sep2"),  -- Between Virtual and Archive
     template_animator = TileAnim.new(16.0),  -- Animation speed
     template_grid = nil,  -- Initialized in initialize_once
     quick_access_grid = nil,  -- Initialized in initialize_once
@@ -824,10 +818,17 @@ function GUI:draw(ctx, shell_state)
   local content_y_screen = window_screen_y + cursor_y
 
   -- Handle separator 1 dragging
-  local sep1_action, sep1_new_x_screen = self.separator1:draw_vertical(ctx, sep1_x_screen, content_y_screen, 0, panel_height, separator_thickness)
-  if sep1_action == "drag" then
+  local sep1_result = ark.Splitter.draw(ctx, {
+    id = "template_sep1",
+    x = sep1_x_screen,
+    y = content_y_screen,
+    height = panel_height,
+    orientation = "vertical",
+    thickness = separator_thickness,
+  })
+  if sep1_result.action == "drag" then
     -- Convert back to window coordinates
-    local sep1_new_x = sep1_new_x_screen - window_screen_x
+    local sep1_new_x = sep1_result.position - window_screen_x
     -- Clamp to valid range within content area
     local min_x = padding_left + min_panel_width
     local max_x = SCREEN_W - padding_right - min_panel_width * 2 - separator_thickness * 2
@@ -835,17 +836,24 @@ function GUI:draw(ctx, shell_state)
     self.state.separator1_ratio = (sep1_new_x - padding_left) / content_width
     sep1_x_local = sep1_new_x
     sep1_x_screen = window_screen_x + sep1_x_local
-  elseif sep1_action == "reset" then
+  elseif sep1_result.action == "reset" then
     self.state.separator1_ratio = self.config.FOLDERS_PANEL_WIDTH_RATIO
     sep1_x_local = padding_left + (content_width * self.state.separator1_ratio)
     sep1_x_screen = window_screen_x + sep1_x_local
   end
 
   -- Handle separator 2 dragging
-  local sep2_action, sep2_new_x_screen = self.separator2:draw_vertical(ctx, sep2_x_screen, content_y_screen, 0, panel_height, separator_thickness)
-  if sep2_action == "drag" then
+  local sep2_result = ark.Splitter.draw(ctx, {
+    id = "template_sep2",
+    x = sep2_x_screen,
+    y = content_y_screen,
+    height = panel_height,
+    orientation = "vertical",
+    thickness = separator_thickness,
+  })
+  if sep2_result.action == "drag" then
     -- Convert back to window coordinates
-    local sep2_new_x = sep2_new_x_screen - window_screen_x
+    local sep2_new_x = sep2_result.position - window_screen_x
     -- Clamp to valid range
     local min_x = sep1_x_local + separator_thickness + min_panel_width
     local max_x = SCREEN_W - padding_right - min_panel_width
@@ -853,7 +861,7 @@ function GUI:draw(ctx, shell_state)
     self.state.separator2_ratio = (sep2_new_x - padding_left) / content_width
     sep2_x_local = sep2_new_x
     sep2_x_screen = window_screen_x + sep2_x_local
-  elseif sep2_action == "reset" then
+  elseif sep2_result.action == "reset" then
     self.state.separator2_ratio = self.state.separator1_ratio + self.config.TEMPLATES_PANEL_WIDTH_RATIO
     sep2_x_local = padding_left + (content_width * self.state.separator2_ratio)
     sep2_x_screen = window_screen_x + sep2_x_local
