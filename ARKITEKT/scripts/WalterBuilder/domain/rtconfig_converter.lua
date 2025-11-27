@@ -407,6 +407,70 @@ local function convert_clear_item(item)
   return element
 end
 
+-- Calculate positions for flow layout elements
+-- Flow elements are positioned sequentially based on their order and widths
+-- @param result: The conversion result with elements array
+-- @param eval_context: The evaluation context for resolving any remaining variables
+local function calculate_flow_positions(result, eval_context)
+  -- Collect flow elements (preserving their order by source_line)
+  local flow_elements = {}
+  for _, entry in ipairs(result.elements) do
+    if entry.is_flow_element then
+      flow_elements[#flow_elements + 1] = entry
+    end
+  end
+
+  if #flow_elements == 0 then
+    return  -- No flow elements to position
+  end
+
+  -- Sort by source line to maintain macro order
+  table.sort(flow_elements, function(a, b)
+    return (a.source_line or 0) < (b.source_line or 0)
+  end)
+
+  -- Determine starting X position
+  -- Flow elements typically start after the meter section
+  -- Use meter_sec variable if available, otherwise default to 50
+  local meter_sec = eval_context.meter_sec or 50
+  local tcp_padding = eval_context.tcp_padding or 7
+  local start_x = meter_sec + tcp_padding
+
+  -- Calculate Y position (flow elements are typically in main content area)
+  local element_h = eval_context.element_h or 20
+  local flow_y = tcp_padding  -- Start below top padding
+
+  -- Position flow elements sequentially
+  local current_x = start_x
+  local positioned_count = 0
+
+  Console.info("Flow layout: starting at x=%d, %d elements", start_x, #flow_elements)
+
+  for _, entry in ipairs(flow_elements) do
+    local elem = entry.element
+    local coords = elem.coords
+
+    -- Only position tcp.* elements (skip groups like pan_group, fx_group)
+    if elem.id:match("^tcp%.") then
+      -- Update X position
+      coords.x = current_x
+      coords.y = flow_y
+
+      -- Advance X by element width (plus small gap)
+      local elem_width = coords.w or 0
+      if elem_width > 0 then
+        current_x = current_x + elem_width + 2  -- 2px gap between elements
+        positioned_count = positioned_count + 1
+        Console.info("  Flow positioned: %s at x=%d (w=%d)", elem.id, coords.x, elem_width)
+      end
+    end
+  end
+
+  if positioned_count > 0 then
+    Console.success("Flow layout complete: positioned %d elements", positioned_count)
+  end
+end
+
 -- Convert all elements from a section or layout items list
 -- Returns: { elements = {...}, computed_count = n, simple_count = n, eval_success = n, eval_failed = n }
 local function convert_items(items, context_filter)
@@ -494,6 +558,7 @@ local function convert_items(items, context_filter)
               eval_success = eval_success,
               source_line = item.line,
               raw_value = item.value,
+              is_flow_element = item.is_flow_element or false,
             }
             if is_computed then
               result.computed_count = result.computed_count + 1
@@ -549,6 +614,9 @@ local function convert_items(items, context_filter)
   if #sample_non_matching > 0 then
     Console.info("  Sample of non-matching SET elements: %s", table.concat(sample_non_matching, ", "))
   end
+
+  -- Calculate positions for flow layout elements
+  calculate_flow_positions(result, eval_context)
 
   return result
 end
