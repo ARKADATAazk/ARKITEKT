@@ -360,6 +360,118 @@ function M.draw_glitch(ctx, opts)
   return { width = w, height = h }
 end
 
+--- Draw corner radial effect (lines emanating from a corner)
+--- This recreates the exact visual from the WALTER screenshot
+--- @param ctx userdata ImGui context
+--- @param opts table Options: x, y, w, h, spacing, color, corner, layers, intensity
+--- @return table Result { width, height }
+function M.draw_corner_radial(ctx, opts)
+  opts = opts or {}
+
+  local x = opts.x or DEFAULTS.x
+  local y = opts.y or DEFAULTS.y
+  local w = opts.w or DEFAULTS.w
+  local h = opts.h or DEFAULTS.h
+  local spacing = opts.spacing or DEFAULTS.spacing
+  local thickness = opts.thickness or DEFAULTS.thickness
+  local color = opts.color or DEFAULTS.color
+  local corner = opts.corner or "bottom_right"  -- "top_left", "top_right", "bottom_left", "bottom_right"
+  local layers = opts.layers or 4
+  local intensity = opts.intensity or 1.5
+
+  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+
+  -- Calculate corner position
+  local cx, cy
+  if corner == "top_left" then
+    cx, cy = x, y
+  elseif corner == "top_right" then
+    cx, cy = x + w, y
+  elseif corner == "bottom_left" then
+    cx, cy = x, y + h
+  else -- bottom_right (default)
+    cx, cy = x + w, y + h
+  end
+
+  -- Draw layers from back to front
+  for layer = layers, 1, -1 do
+    local layer_mult = layer / layers
+    local layer_alpha = math.floor(((color & 0xFF) * layer_mult))
+    local layer_color = (color & 0xFFFFFF00) | layer_alpha
+    local layer_thickness = thickness + (layers - layer) * 0.3
+
+    -- Calculate max distance from corner
+    local max_dist = math.sqrt(w * w + h * h) * intensity
+
+    -- Draw lines radiating from corner
+    for dist = 0, max_dist, spacing do
+      -- The "buggy" effect comes from how endpoints are calculated
+      local t = dist / max_dist
+
+      if corner == "bottom_right" then
+        -- Lines go from bottom-right corner upward and leftward
+        local x1 = cx - dist * layer_mult
+        local y1 = cy
+        local x2 = cx
+        local y2 = cy - dist * layer_mult
+
+        -- Also draw crossing lines for the mesh effect
+        local x3 = math.max(x, cx - dist)
+        local y3 = math.max(y, cy - dist * t * layer_mult)
+        local x4 = math.max(x, cx - dist * t * layer_mult)
+        local y4 = math.max(y, cy - dist)
+
+        if x1 >= x and y2 >= y then
+          ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, layer_color, layer_thickness)
+        end
+        if x3 >= x and y3 >= y and x4 >= x and y4 >= y then
+          ImGui.DrawList_AddLine(dl, x3, y3, x4, y4, layer_color, layer_thickness)
+        end
+
+      elseif corner == "top_left" then
+        local x1 = cx + dist * layer_mult
+        local y1 = cy
+        local x2 = cx
+        local y2 = cy + dist * layer_mult
+
+        local x3 = math.min(x + w, cx + dist)
+        local y3 = math.min(y + h, cy + dist * t * layer_mult)
+        local x4 = math.min(x + w, cx + dist * t * layer_mult)
+        local y4 = math.min(y + h, cy + dist)
+
+        if x1 <= x + w and y2 <= y + h then
+          ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, layer_color, layer_thickness)
+        end
+        if x3 <= x + w and y3 <= y + h and x4 <= x + w and y4 <= y + h then
+          ImGui.DrawList_AddLine(dl, x3, y3, x4, y4, layer_color, layer_thickness)
+        end
+
+      elseif corner == "top_right" then
+        local x1 = cx - dist * layer_mult
+        local y1 = cy
+        local x2 = cx
+        local y2 = cy + dist * layer_mult
+
+        if x1 >= x and y2 <= y + h then
+          ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, layer_color, layer_thickness)
+        end
+
+      elseif corner == "bottom_left" then
+        local x1 = cx + dist * layer_mult
+        local y1 = cy
+        local x2 = cx
+        local y2 = cy - dist * layer_mult
+
+        if x1 <= x + w and y2 >= y then
+          ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, layer_color, layer_thickness)
+        end
+      end
+    end
+  end
+
+  return { width = w, height = h }
+end
+
 --- Draw exponential curve pattern (variation of the glitch)
 --- Creates a more pronounced curved/radial effect
 --- @param ctx userdata ImGui context
