@@ -2,9 +2,9 @@
 -- ThemeAdjuster/ui/views/debug_view.lua
 -- Debug tab with theme info and image browser
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
-local Theme = require('ThemeAdjuster.core.theme')
+local Theme = require('ThemeAdjuster.domain.theme.reader')
 local ImageCache = require('arkitekt.platform.images')  -- Use ARKITEKT's central image system
 local hexrgb = ark.Colors.hexrgb
 

@@ -2,12 +2,12 @@
 -- ThemeAdjuster/ui/views/assembler_view.lua
 -- Assembler tab with Panel + package grid
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local PackageTilesGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
-local PackageManager = require('ThemeAdjuster.packages.manager')
-local Config = require('ThemeAdjuster.core.config')
-local Theme = require('ThemeAdjuster.core.theme')
+local PackageManager = require('ThemeAdjuster.data.packages.manager')
+local Config = require('ThemeAdjuster.app.config')
+local Theme = require('ThemeAdjuster.domain.theme.reader')
 local PackageModal = require('ThemeAdjuster.ui.views.package_modal')
 local hexrgb = ark.Colors.hexrgb
 

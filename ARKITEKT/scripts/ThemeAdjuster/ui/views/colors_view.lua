@@ -2,7 +2,7 @@
 -- ThemeAdjuster/ui/views/colors_view.lua
 -- Color palette and track coloring tab
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local hexrgb = ark.Colors.hexrgb

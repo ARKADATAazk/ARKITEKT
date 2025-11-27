@@ -2,21 +2,23 @@
 -- ThemeAdjuster/ui/views/additional_view.lua
 -- Additional parameters tab - Grid-based tile manager
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local hexrgb = ark.Colors.hexrgb
 local Constants = require('ThemeAdjuster.defs.constants')
-local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
-local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
-local ThemeParams = require('ThemeAdjuster.core.theme_params')
-local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
+local ParamDiscovery = require('ThemeAdjuster.domain.theme.discovery')
+local ThemeMapper = require('ThemeAdjuster.domain.theme.mapper')
+local ThemeParams = require('ThemeAdjuster.domain.theme.params')
+local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
 local GridBridge = require('arkitekt.gui.widgets.containers.grid.grid_bridge')
 local LibraryGridFactory = require('ThemeAdjuster.ui.grids.library_grid_factory')
 local TemplatesGridFactory = require('ThemeAdjuster.ui.grids.templates_grid_factory')
 local AssignmentGridFactory = require('ThemeAdjuster.ui.grids.assignment_grid_factory')
 local ParamLinkModal = require('ThemeAdjuster.ui.views.param_link_modal')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
+local Logger = require('arkitekt.debug.logger')
+local log = Logger.new("AdditionalView")
 
 local PC = ark.Style.PANEL_COLORS
 
@@ -830,9 +832,9 @@ end
 function AdditionalView:export_parameters()
   local success, path = ThemeMapper.export_mappings(self.unknown_params)
   if success then
-    reaper.ShowConsoleMsg(string.format("[ThemeAdjuster] Exported to: %s\n", path))
+    log:info("Exported to: %s", path)
   else
-    reaper.ShowConsoleMsg(string.format("[ThemeAdjuster] Export failed: %s\n", path))
+    log:error("Export failed: %s", path)
   end
 end
 

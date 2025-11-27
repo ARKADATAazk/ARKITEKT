@@ -2,7 +2,7 @@
 -- ThemeAdjuster/ui/tab_content.lua
 -- Tab content handler - routes tabs to appropriate views
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local AssemblerView = require("ThemeAdjuster.ui.views.assembler_view")
 local GlobalView = require("ThemeAdjuster.ui.views.global_view")
 local TCPView = require("ThemeAdjuster.ui.views.tcp_view")

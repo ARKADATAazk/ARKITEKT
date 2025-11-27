@@ -147,7 +147,7 @@ end
 
 ```lua
 -- tcp_view.lua
-local ThemeParams = require('ThemeAdjuster.core.theme_params')
+local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 
 function M.new(State, Config, settings)
   local self = setmetatable({
@@ -219,7 +219,7 @@ end
 
 ```lua
 -- main.lua
-local ThemeParams = require('ThemeAdjuster.core.theme_params')
+local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 
 function main()
   -- CRITICAL: Index all theme parameters first

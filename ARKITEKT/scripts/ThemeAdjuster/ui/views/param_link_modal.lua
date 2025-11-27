@@ -2,11 +2,13 @@
 -- ThemeAdjuster/ui/views/param_link_modal.lua
 -- Parameter link selection modal
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
-local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
+local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local hexrgb = ark.Colors.hexrgb
+local Logger = require('arkitekt.debug.logger')
+local log = Logger.new("ParamLinkModal")
 
 local M = {}
 local ParamLinkModal = {}
@@ -93,7 +95,7 @@ function ParamLinkModal:add_to_group(target_param)
     self:close()
   else
     -- Show error (could use a toast notification system if available)
-    print("Failed to add to group: " .. (error_msg or "Unknown error"))
+    log:warn("Failed to add to group: %s", error_msg or "Unknown error")
   end
 
   return success

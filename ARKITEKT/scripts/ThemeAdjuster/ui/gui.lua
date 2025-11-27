@@ -2,11 +2,11 @@
 -- ThemeAdjuster/ui/gui.lua
 -- Main GUI orchestrator with tab system
 
-local ImGui = require 'imgui' '0.10'
-local Config = require("ThemeAdjuster.core.config")
-local PackageManager = require("ThemeAdjuster.packages.manager")
+local ImGui = require('arkitekt.platform.imgui')
+local Config = require("ThemeAdjuster.app.config")
+local PackageManager = require("ThemeAdjuster.data.packages.manager")
 local TabContent = require("ThemeAdjuster.ui.tab_content")
-local Theme = require("ThemeAdjuster.core.theme")
+local Theme = require("ThemeAdjuster.domain.theme.reader")
 
 local M = {}
 local GUI = {}

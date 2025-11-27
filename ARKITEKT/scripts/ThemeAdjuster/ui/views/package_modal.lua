@@ -2,7 +2,7 @@
 -- ThemeAdjuster/ui/views/package_modal.lua
 -- Package manifest/micro-manage modal (overlay with visual tile grid)
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local Constants = require('ThemeAdjuster.defs.constants')
 local ImageCache = require('arkitekt.platform.images')

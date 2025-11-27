@@ -2,11 +2,13 @@
 -- ThemeAdjuster/ui/grids/renderers/library_tile.lua
 -- Renders parameter tiles in the library
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
-local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
+local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
 local hexrgb = ark.Colors.hexrgb
+local Logger = require('arkitekt.debug.logger')
+local log = Logger.new("LibraryTile")
 
 local M = {}
 
@@ -359,7 +361,7 @@ function M.render_link_handle(ctx, dl, rect, param_name, view, control_rects)
         if success then
           view:save_assignments()
         else
-          print("Failed to add to group: " .. (error_msg or "Incompatible types"))
+          log:warn("Failed to add to group: %s", error_msg or "Incompatible types")
         end
       end
     end

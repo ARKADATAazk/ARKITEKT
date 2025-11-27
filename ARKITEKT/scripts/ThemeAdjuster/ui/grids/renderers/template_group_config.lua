@@ -2,7 +2,7 @@
 -- ThemeAdjuster/ui/grids/renderers/template_group_config.lua
 -- Configuration UI for template groups in the templates grid
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local hexrgb = ark.Colors.hexrgb
 
