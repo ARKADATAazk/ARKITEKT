@@ -109,11 +109,59 @@ function M.new(opts)
     config.titlebar_pad_v = Constants.TITLEBAR.pad_v
   end
 
+  -- ============================================================================
+  -- IMGUI FLAGS: Use flag builder with presets or custom flags
+  -- ============================================================================
+  local base_flags = WF_None
+
+  -- If user provided custom flags, use them directly
+  if config.imgui_flags ~= nil then
+    base_flags = Constants.build_imgui_flags(ImGui, config.imgui_flags)
+  -- Otherwise, auto-select based on mode or use legacy flags
+  elseif config.flags then
+    base_flags = config.flags
+  end
+
+  -- ============================================================================
+  -- CHROME CONFIGURATION: Determine component visibility
+  -- ============================================================================
+  -- Priority: explicit opts > chrome preset > defaults
+  local chrome = {}
+
+  -- If a chrome preset is specified, start with that
+  if config.chrome and Constants.CHROME[config.chrome] then
+    chrome = Config.deepMerge(Constants.CHROME[config.chrome], {})
+  else
+    -- Start with empty chrome config (all features opt-in)
+    chrome = {
+      show_titlebar = nil,
+      show_statusbar = nil,
+      show_icon = nil,
+      show_version = nil,
+      enable_maximize = nil,
+    }
+  end
+
+  -- Override with explicit options (legacy compatibility)
+  if opts.show_titlebar ~= nil then chrome.show_titlebar = opts.show_titlebar end
+  if opts.show_status_bar ~= nil then chrome.show_statusbar = opts.show_status_bar end
+  if opts.show_statusbar ~= nil then chrome.show_statusbar = opts.show_statusbar end
+  if opts.show_icon ~= nil then chrome.show_icon = opts.show_icon end
+  if opts.show_version ~= nil then chrome.show_version = opts.show_version end
+  if opts.enable_maximize ~= nil then chrome.enable_maximize = opts.enable_maximize end
+
+  -- Fallback to TITLEBAR defaults if still nil
+  if chrome.show_titlebar == nil then chrome.show_titlebar = true end
+  if chrome.show_statusbar == nil then chrome.show_statusbar = true end
+  if chrome.show_icon == nil then chrome.show_icon = Constants.TITLEBAR.show_icon end
+  if chrome.show_version == nil then chrome.show_version = true end
+  if chrome.enable_maximize == nil then chrome.enable_maximize = Constants.TITLEBAR.enable_maximize end
+
   local win = {
     settings        = config.settings,
     title           = config.title,
     version         = config.version,
-    flags           = config.flags or WF_None,
+    flags           = base_flags,
     topmost         = config.topmost or false,
 
     content_padding = config.content_padding,
@@ -131,6 +179,9 @@ function M.new(opts)
 
     bg_color_floating = config.bg_color_floating,
     bg_color_docked   = config.bg_color_docked,
+
+    -- Chrome configuration
+    chrome          = chrome,
 
     status_bar      = nil,
     tabs            = nil,
@@ -167,7 +218,7 @@ function M.new(opts)
       bg_color        = config.titlebar_bg_color,
       bg_color_active = config.titlebar_bg_color_active,
       text_color      = config.titlebar_text_color,
-      enable_maximize = config.enable_maximize ~= false,
+      enable_maximize = chrome.enable_maximize,
       title_font      = config.title_font,
       title_font_size = config.title_font_size,
       version_font    = config.version_font,
@@ -178,7 +229,8 @@ function M.new(opts)
       branding_text   = config.branding_text,
       branding_opacity = config.branding_opacity,
       branding_color  = config.branding_color,
-      show_icon       = config.show_icon,
+      show_icon       = chrome.show_icon,
+      show_version    = chrome.show_version,
       icon_size       = config.icon_size,
       icon_spacing    = config.icon_spacing,
       icon_color      = config.icon_color,
@@ -201,15 +253,16 @@ function M.new(opts)
     _was_docked     = false,
     _bg_color_pushed = false,
     _fullscreen_scrim_pushed = false,
-    
+
     _last_frame_time = nil,
     _current_ctx = nil,
-    
+
     overlay         = nil,
-    
+
     show_imgui_metrics = false,
   }
 
+  -- Apply additional flags for fullscreen mode if needed
   if is_fullscreen then
     if fullscreen_config.hide_titlebar and ImGui.WindowFlags_NoTitleBar then
       win.flags = win.flags | ImGui.WindowFlags_NoTitleBar
@@ -232,21 +285,8 @@ function M.new(opts)
     if ImGui.WindowFlags_NoBackground then
       win.flags = win.flags | ImGui.WindowFlags_NoBackground
     end
-    
+
     win.fullscreen.alpha:set_target(1.0)
-  else
-    if ImGui.WindowFlags_NoTitleBar then
-      win.flags = win.flags | ImGui.WindowFlags_NoTitleBar
-    end
-    if ImGui.WindowFlags_NoCollapse then
-      win.flags = win.flags | ImGui.WindowFlags_NoCollapse
-    end
-    if ImGui.WindowFlags_NoScrollbar then
-      win.flags = win.flags | ImGui.WindowFlags_NoScrollbar
-    end
-    if ImGui.WindowFlags_NoScrollWithMouse then
-      win.flags = win.flags | ImGui.WindowFlags_NoScrollWithMouse
-    end
   end
 
   if win.settings then
@@ -255,8 +295,12 @@ function M.new(opts)
     win._is_maximized = win.settings:get("window.maximized", false)
   end
 
+  -- ============================================================================
+  -- CHROME COMPONENT CREATION: Status bar, tabs, titlebar
+  -- ============================================================================
   if not is_fullscreen then
-    if opts.show_status_bar ~= false then
+    -- Status bar (only if enabled in chrome config)
+    if win.chrome.show_statusbar then
       local ok, StatusBar = pcall(require, 'arkitekt.app.chrome.status_bar')
       if ok and StatusBar and StatusBar.new then
         win.status_bar = StatusBar.new({
@@ -267,6 +311,7 @@ function M.new(opts)
       end
     end
 
+    -- Tabs (independent of chrome config)
     if opts.tabs then
       local ok, Menutabs = pcall(require, 'arkitekt.gui.widgets.navigation.menutabs')
       if ok and Menutabs and Menutabs.new then
@@ -275,7 +320,8 @@ function M.new(opts)
       end
     end
 
-    if opts.show_titlebar ~= false then
+    -- Titlebar (only if enabled in chrome config)
+    if win.chrome.show_titlebar then
       do
         local ok, Titlebar = pcall(require, 'arkitekt.app.chrome.titlebar')
         if ok and Titlebar and Titlebar.new then
@@ -296,7 +342,7 @@ function M.new(opts)
               if script_path:sub(1, 1) == "@" then
                 script_path = script_path:sub(2)
               end
-              
+
               local base_dir = script_path:match("(.+[/\\])")
               local hub_path = base_dir .. "../../ARKITEKT.lua"
               hub_path = hub_path:gsub("[/\\]+", "/"):gsub("/+", "/")
@@ -304,16 +350,16 @@ function M.new(opts)
                 hub_path = hub_path:gsub("[^/]+/%.%./", "")
               end
               hub_path = hub_path:gsub("/", "\\")
-              
+
               if reaper.file_exists(hub_path) then
                 local sanitized = hub_path:gsub("[^%w]", "")
                 local cmd_name = "_RS" .. sanitized
                 local cmd_id = reaper.NamedCommandLookup(cmd_name)
-                
+
                 if not cmd_id or cmd_id == 0 then
                   cmd_id = reaper.AddRemoveReaScript(true, 0, hub_path, true)
                 end
-                
+
                 if cmd_id and cmd_id ~= 0 then
                   reaper.Main_OnCommand(cmd_id, 0)
                 end
@@ -322,7 +368,7 @@ function M.new(opts)
               end
             end
           end
-          
+
           win._titlebar = Titlebar.new(win.titlebar_opts)
           win._titlebar:set_maximized(win._is_maximized)
         end

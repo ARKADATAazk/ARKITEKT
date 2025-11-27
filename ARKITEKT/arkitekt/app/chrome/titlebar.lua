@@ -100,6 +100,9 @@ function M.new(opts)
     icon_draw       = config.icon_draw,
     icon_image      = nil,  -- Will be loaded on first draw
 
+    -- Chrome component visibility
+    show_version    = config.show_version ~= false,
+
     -- State
     enable_maximize = config.enable_maximize ~= false,
     is_maximized    = false,
@@ -405,27 +408,28 @@ function M.new(opts)
       
       local num_buttons = 1 + (self.enable_maximize and 1 or 0)
       local total_button_width = (self.button_width * num_buttons) + (self.button_spacing * (num_buttons - 1))
-      
+
       local title_start_x = ImGui.GetCursorPosX(ctx)
       local available_width = (win_w - total_button_width) - title_start_x - self.pad_h
-      
-      if self.version and self.version ~= "" then
+
+      -- Show version only if show_version flag is true and version exists
+      if self.show_version and self.version and self.version ~= "" then
         if self.title_font then ImGui.PushFont(ctx, self.title_font, self.title_font_size) end
         local title_w = ImGui.CalcTextSize(ctx, self.title)
         local title_h = ImGui.GetTextLineHeight(ctx)
         if self.title_font then ImGui.PopFont(ctx) end
-        
+
         local version_font = self.version_font
         if version_font then ImGui.PushFont(ctx, version_font, self.version_font_size) end
         local version_w = ImGui.CalcTextSize(ctx, self.version)
         local version_h = ImGui.GetTextLineHeight(ctx)
         if version_font then ImGui.PopFont(ctx) end
-        
+
         local total_w = title_w + self.version_spacing + version_w
-        
+
         if total_w <= available_width then
           local base_y = ImGui.GetCursorPosY(ctx)
-          
+
           if self.title_font then ImGui.PushFont(ctx, self.title_font, self.title_font_size) end
           ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
           ImGui.Text(ctx, self.title)
@@ -433,12 +437,12 @@ function M.new(opts)
           if self.title_font then ImGui.PopFont(ctx) end
 
           ImGui.SameLine(ctx, 0, self.version_spacing )  -- Move version 10px left
-          
+
           local height_diff = title_h - version_h
           if height_diff ~= 0 then
             ImGui.SetCursorPosY(ctx, base_y + height_diff - 1)
           end
-          
+
           if version_font then ImGui.PushFont(ctx, version_font, self.version_font_size) end
           ImGui.PushStyleColor(ctx, ImGui.Col_Text, version_color)
           ImGui.Text(ctx, self.version)
@@ -453,6 +457,7 @@ function M.new(opts)
           if self.title_font then ImGui.PopFont(ctx) end
         end
       else
+        -- Show title only (no version)
         if self.title_font then ImGui.PushFont(ctx, self.title_font, self.title_font_size) end
         ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
         local display_title = self:_truncate_text(ctx, self.title, available_width, self.title_font, self.title_font_size)

@@ -8,6 +8,50 @@ local hexrgb = CoreColors.hexrgb
 local M = {}
 
 -- ============================================================================
+-- IMGUI FLAG BUILDER
+-- ============================================================================
+-- Builds ImGui flags from a list of flag names or a preset name
+-- @param ImGui - The ImGui module (required for flag constants)
+-- @param flags_input - Either:
+--   1. String preset name ("window", "overlay", "hud")
+--   2. Table of flag name strings ({"WindowFlags_NoTitleBar", ...})
+--   3. Number (raw flags value to return as-is)
+--   4. nil (returns 0)
+-- @return number - Combined ImGui flags value
+function M.build_imgui_flags(ImGui, flags_input)
+    if not flags_input then
+        return 0
+    end
+
+    -- If it's already a number, return as-is
+    if type(flags_input) == "number" then
+        return flags_input
+    end
+
+    local flag_names = flags_input
+
+    -- If it's a preset name string, look it up
+    if type(flags_input) == "string" then
+        if not M.IMGUI_FLAGS[flags_input] then
+            error("Unknown ImGui flag preset: " .. flags_input)
+        end
+        flag_names = M.IMGUI_FLAGS[flags_input]
+    end
+
+    -- Build flags from names
+    local result = 0
+    for _, flag_name in ipairs(flag_names) do
+        local flag_value = ImGui[flag_name]
+        if not flag_value then
+            error("Unknown ImGui flag: " .. flag_name)
+        end
+        result = result | flag_value
+    end
+
+    return result
+end
+
+-- ============================================================================
 -- PROFILER
 -- ============================================================================
 M.PROFILER_ENABLED = false
@@ -52,6 +96,74 @@ M.OVERLAY = {
 }
 
 -- ============================================================================
+-- IMGUI WINDOW FLAGS PRESETS
+-- ============================================================================
+-- Note: These are flag names that will be OR'd together at runtime via ImGui.*
+-- Example: WINDOW_FLAGS.normal will combine ImGui.WindowFlags_NoTitleBar | ImGui.WindowFlags_NoCollapse etc.
+M.IMGUI_FLAGS = {
+    -- Standard window mode (no native titlebar, using custom chrome)
+    window = {
+        "WindowFlags_NoTitleBar",
+        "WindowFlags_NoCollapse",
+        "WindowFlags_NoScrollbar",
+        "WindowFlags_NoScrollWithMouse",
+    },
+
+    -- Overlay mode (fullscreen, click-through background)
+    overlay = {
+        "WindowFlags_NoTitleBar",
+        "WindowFlags_NoResize",
+        "WindowFlags_NoMove",
+        "WindowFlags_NoCollapse",
+        "WindowFlags_NoScrollbar",
+        "WindowFlags_NoScrollWithMouse",
+        "WindowFlags_NoBackground",
+    },
+
+    -- HUD mode (always on top, minimal chrome)
+    hud = {
+        "WindowFlags_NoTitleBar",
+        "WindowFlags_NoCollapse",
+        "WindowFlags_NoScrollbar",
+        "WindowFlags_NoScrollWithMouse",
+        "WindowFlags_TopMost",
+    },
+}
+
+-- ============================================================================
+-- CHROME COMPONENT CONFIGURATION
+-- ============================================================================
+-- Controls visibility of custom chrome components (titlebar, statusbar, etc.)
+M.CHROME = {
+    -- Window mode: Full chrome with all components
+    window = {
+        show_titlebar = true,
+        show_statusbar = true,
+        show_icon = true,
+        show_version = true,
+        enable_maximize = true,
+    },
+
+    -- Overlay mode: No chrome
+    overlay = {
+        show_titlebar = false,
+        show_statusbar = false,
+        show_icon = false,
+        show_version = false,
+        enable_maximize = false,
+    },
+
+    -- HUD mode: Minimal chrome (titlebar only, no controls)
+    hud = {
+        show_titlebar = true,
+        show_statusbar = false,
+        show_icon = false,
+        show_version = false,
+        enable_maximize = false,
+    },
+}
+
+-- ============================================================================
 -- WINDOW DEFAULTS
 -- ============================================================================
 M.WINDOW = {
@@ -73,6 +185,9 @@ M.WINDOW = {
     -- Background colors
     bg_color_floating = nil,
     bg_color_docked = hexrgb("#282828"),
+
+    -- Default mode (used for flag/chrome presets)
+    mode = "window",  -- "window", "overlay", or "hud"
 }
 
 -- ============================================================================
