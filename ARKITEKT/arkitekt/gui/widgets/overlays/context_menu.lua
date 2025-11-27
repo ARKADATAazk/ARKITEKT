@@ -99,60 +99,74 @@ function M.begin(ctx, id, config)
     local ww, wh = ImGui.GetWindowSize(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
 
+    -- Use channel system to control z-order
+    -- Channel 0 = background (shadow), Channel 1 = foreground (content)
+    ImGui.DrawList_ChannelsSplit(dl, 2)
+
+    -- Draw shadow on background channel (channel 0)
+    ImGui.DrawList_ChannelsSetCurrent(dl, 0)
+
     -- Expand clip rect to allow shadow to be drawn outside popup bounds
     ImGui.DrawList_PushClipRect(dl, wx - 12, wy - 12, wx + ww + 12, wy + wh + 12, false)
 
     -- Base black color
     local black = hexrgb("#000000")
 
-    -- Shadow parameters (subtle, extends beyond popup)
-    local shadow_offset_x = 1
-    local shadow_offset_y = 2
+    -- Shadow parameters (more visible now that it won't darken content)
+    local shadow_offset_x = 2
+    local shadow_offset_y = 3
 
-    -- Very subtle multi-layer shadow that extends outside popup bounds
+    -- Multi-layer shadow for depth
     -- Outer glow (extends beyond edges)
-    local spread_1 = 6
+    local spread_1 = 8
     ImGui.DrawList_AddRectFilled(
       dl,
       wx + shadow_offset_x - spread_1,
       wy + shadow_offset_y - spread_1,
       wx + ww + shadow_offset_x + spread_1,
       wy + wh + shadow_offset_y + spread_1,
-      Colors.with_opacity(black, 0.04),
+      Colors.with_opacity(black, 0.12),
       rounding + spread_1
     )
 
-    -- Middle layer (smaller spread)
-    local spread_2 = 3
+    -- Middle layer
+    local spread_2 = 5
     ImGui.DrawList_AddRectFilled(
       dl,
       wx + shadow_offset_x - spread_2,
       wy + shadow_offset_y - spread_2,
       wx + ww + shadow_offset_x + spread_2,
       wy + wh + shadow_offset_y + spread_2,
-      Colors.with_opacity(black, 0.05),
+      Colors.with_opacity(black, 0.15),
       rounding + spread_2
     )
 
     -- Inner shadow (closest to popup edge)
-    local spread_3 = 1
+    local spread_3 = 2
     ImGui.DrawList_AddRectFilled(
       dl,
       wx + shadow_offset_x - spread_3,
       wy + shadow_offset_y - spread_3,
       wx + ww + shadow_offset_x + spread_3,
       wy + wh + shadow_offset_y + spread_3,
-      Colors.with_opacity(black, 0.06),
+      Colors.with_opacity(black, 0.20),
       rounding + spread_3
     )
 
     ImGui.DrawList_PopClipRect(dl)
+
+    -- Switch to foreground channel for content (ImGui will render here)
+    ImGui.DrawList_ChannelsSetCurrent(dl, 1)
   end
 
   return popup_open
 end
 
 function M.end_menu(ctx)
+  -- Merge channels before ending popup
+  local dl = ImGui.GetWindowDrawList(ctx)
+  ImGui.DrawList_ChannelsMerge(dl)
+
   ImGui.EndPopup(ctx)
   ImGui.PopStyleColor(ctx, 2)
   ImGui.PopStyleVar(ctx, 5)
