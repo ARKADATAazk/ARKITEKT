@@ -1186,6 +1186,7 @@ function M.get_controllable_context_vars()
     -- Dimensions
     { key = "w", label = "Track Width", type = "int", default = 400, min = 100, max = 800 },
     { key = "h", label = "Track Height", type = "int", default = 150, min = 40, max = 300 },
+    { key = "scale", label = "DPI Scale", type = "float", default = 1.0, min = 0.5, max = 2.0 },
 
     -- Visibility toggles
     { key = "hide_mute_group", label = "Hide Mute/Solo", type = "bool", default = 0 },

@@ -319,6 +319,15 @@ function Panel:draw_context_controls(ctx)
           RtconfigConverter.set_context_value(var.key, new_val)
           changed = true
         end
+      elseif var.type == "float" then
+        local current = RtconfigConverter.get_context_value(var.key)
+        ImGui.PushItemWidth(ctx, 100)
+        local val_changed, new_val = ImGui.SliderDouble(ctx, var.label, current, var.min, var.max, "%.1f")
+        ImGui.PopItemWidth(ctx)
+        if val_changed then
+          RtconfigConverter.set_context_value(var.key, new_val)
+          changed = true
+        end
       end
     end
 
