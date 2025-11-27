@@ -106,14 +106,12 @@ function M.draw(dl, x1, y1, x2, y2, color, thickness, radius, dash, gap, speed_p
   speed_px = speed_px or 30  -- Default: 50% faster for better visibility (30 vs original 20)
   selection_count = selection_count or 1
 
-  -- LOD: Smooth lerp for MASSIVE selections (200+) to avoid visible density jumps
-  -- Base is already 3x sparser (24px dash, 11px gap from constants)
+  -- LOD: Instant threshold-based sparsity for massive selections
+  -- No lerp - instant changes at thresholds for cleaner logic
   if selection_count > 200 then
-    -- Lerp from 1x to 1.5x between 200-300 items, cap at 1.5x
-    local lerp_factor = min((selection_count - 200) / 100, 1.0)
-    local sparsity_multiplier = 1.0 + (lerp_factor * 0.5)  -- 1.0 → 1.5x
-    dash = dash * sparsity_multiplier  -- 24px → 36px at 300+
-    gap = gap * sparsity_multiplier    -- 11px → 16.5px at 300+
+    -- 200+ items: 1.5x sparser (instant change at threshold)
+    dash = dash * 1.5  -- 24px → 36px
+    gap = gap * 1.5    -- 11px → 16.5px
   end
 
   -- Arc quality reduction: More aggressive for large selections
