@@ -47,13 +47,13 @@
   - Operation types (move, copy, reorder)
   - **Found in**: ItemPicker (ui/components/drag_handler.lua), RegionPlaylist (tiles)
 
-### Status Bar Widget
-- [ ] **arkitekt/gui/widgets/status_bar.lua** - Unified status bar
-  - Message types (info, warning, error, success)
-  - Auto-clear with timeout
-  - Selection info display
-  - Progress indicators
-  - **Found in**: RegionPlaylist (ui/status.lua), ItemPicker (ui/components/status_bar.lua), TemplateBrowser
+### Status Bar Migration
+- [ ] **Migrate scripts to use arkitekt/app/chrome/status_bar.lua**
+  - Framework component already exists with full features
+  - RegionPlaylist: ✅ Already uses it (just provides `get_status` callback)
+  - TemplateBrowser: ❌ Reimplements with raw ImGui - needs migration
+  - ItemPicker: ❌ Reimplements with raw ImGui - needs migration
+  - **Pattern**: Script provides `get_status()` callback, framework handles rendering
 
 ---
 
