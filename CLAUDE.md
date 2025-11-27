@@ -31,7 +31,7 @@ A Lua 5.3 framework for building ReaImGui applications in REAPER (audio workstat
 | Change **font loading** | `arkitekt/app/chrome/fonts.lua` |
 | Edit a **specific app** | `scripts/[AppName]/` |
 | Add **pure utilities** | `arkitekt/core/` (no reaper/ImGui!) |
-| Check **architecture docs** | `Documentation/architecture/` |
+| Check **cookbook** | `cookbook/` |
 | Find **actionable tasks** | `TODO/` |
 
 ### Layer Structure (per app/module)
@@ -87,25 +87,14 @@ tests/      # Unit tests
 
 ### Task: Add a New Widget
 
-1. **Check existing widgets**: `arkitekt/gui/widgets/[category]/`
-2. **Find similar widget** to use as template
-3. **Follow module pattern**:
-   ```lua
-   -- @noindex
-   local M = {}
-
-   function M.new(opts)
-     local self = { ... }
-     return setmetatable(self, { __index = M })
-   end
-
-   function M:draw(ctx)
-     -- ImGui calls here
-   end
-
-   return M
-   ```
-4. **Add to category index** if needed
+1. **Read the widget guide**: `cookbook/WIDGETS.md`
+2. **Check existing widgets**: `arkitekt/gui/widgets/[category]/`
+3. **Find similar widget** to use as template
+4. **Follow the widget API contract**:
+   - Signature: `function M.draw(ctx, opts) return result end`
+   - Use `Theme.COLORS` for colors (read every frame!)
+   - Use `Base.get_state(id)` for persistent state
+   - Advance cursor after drawing
 5. **Test in Sandbox**: `scripts/Sandbox/`
 
 ### Task: Fix a Bug
@@ -124,7 +113,7 @@ tests/      # Unit tests
    - Business logic → `domain/` or `core/`
    - State management → `app/`
 3. **Check existing patterns** in that layer
-4. **Follow conventions** from `Documentation/architecture/CONVENTIONS.md`
+4. **Follow conventions** from `cookbook/CONVENTIONS.md`
 5. **Update constants** in `defs/` if adding magic numbers
 
 ### Task: Performance Optimization
@@ -136,11 +125,11 @@ tests/      # Unit tests
    - Cache function lookups at module top: `local floor = math.floor`
    - Avoid string concatenation in hot loops
    - Pre-allocate tables when size is known
-4. **Reference**: `Documentation/LUA_PERFORMANCE_GUIDE.md`
+4. **Reference**: `cookbook/LUA_PERFORMANCE_GUIDE.md`
 
 ### Task: Refactor/Migrate Code
 
-1. **Check if migration plan exists**: `Documentation/architecture/MIGRATION_PLANS.md`
+1. **Check if migration plan exists**: `cookbook/MIGRATION_PLANS.md`
 2. **Follow the phased approach**:
    - Phase 1: Add shims (preserve old API)
    - Phase 2: Wire up new code
@@ -330,11 +319,13 @@ scripts/MyApp/
 When you need more detail:
 
 1. **This file** (CLAUDE.md) - Quick reference, task cookbook
-2. **Documentation/architecture/CONVENTIONS.md** - Detailed coding standards
-3. **Documentation/architecture/PROJECT_STRUCTURE.md** - Full architecture guide
-4. **arkitekt/app/README.md** - Framework app layer details
-5. **TODO/** - Actionable improvements to work on
-6. **ARKITEKT_Codex_Playbook_v5.md** - Batch operations, pipelines, JSON task format
+2. **cookbook/CONVENTIONS.md** - Detailed coding standards
+3. **cookbook/PROJECT_STRUCTURE.md** - Full architecture guide
+4. **cookbook/WIDGETS.md** - Widget development patterns
+5. **cookbook/THEME_MANAGER.md** - Theming system guide
+6. **cookbook/LUA_PERFORMANCE_GUIDE.md** - Performance optimization
+7. **cookbook/DEPRECATED.md** - Deprecation tracker
+8. **TODO/** - Actionable improvements to work on
 
 ---
 
