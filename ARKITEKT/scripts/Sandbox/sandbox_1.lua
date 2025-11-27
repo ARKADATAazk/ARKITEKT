@@ -13,15 +13,15 @@ package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. pa
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
 local Shell = require('arkitekt.app.shell')
-local Arkit = require('arkitekt.arkit')
+local ark = require('arkitekt')
 
 local Canvas = require('arkitekt.gui.widgets.editors.nodal.canvas')
 local Node = require('arkitekt.gui.widgets.editors.nodal.core.node')
 local Connection = require('arkitekt.gui.widgets.editors.nodal.core.connection')
 local Config = require('arkitekt.gui.widgets.editors.nodal.defaults')
 
-local ImGui = Arkit.ImGui
-local hexrgb = Arkit.hexrgb
+local ImGui = ark.ImGui
+local hexrgb = ark.Colors.hexrgb
 
 local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui')
 local function create_mock_music_flow()
