@@ -3,7 +3,7 @@
 -- ImGui theme overrides and base styling
 -- Reads colors dynamically from Theme.COLORS for unified theming
 
-local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
+local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
 
 local M = {}

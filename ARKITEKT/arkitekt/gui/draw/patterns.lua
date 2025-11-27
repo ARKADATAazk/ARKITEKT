@@ -3,7 +3,7 @@
 -- Generic pattern rendering with optional texture baking for performance
 -- Supports dots, grid lines, and diagonal stripes with automatic texture caching
 
-local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
+local ImGui = require('arkitekt.platform.imgui')
 
 local M = {}
 

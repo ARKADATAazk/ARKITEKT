@@ -3,7 +3,7 @@
 -- Centralized utility for checking if user interactions should be blocked
 -- due to popups, modals, or overlay managers being active
 
-local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
+local ImGui = require('arkitekt.platform.imgui')
 
 local M = {}
 

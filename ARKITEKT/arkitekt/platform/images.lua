@@ -50,7 +50,7 @@
 --
 -- ================================================================================
 
-local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
+local ImGui = require('arkitekt.platform.imgui')
 
 local M = {}
 

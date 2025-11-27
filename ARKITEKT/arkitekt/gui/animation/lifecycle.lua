@@ -3,7 +3,7 @@
 -- Spawn and destroy animations for UI elements
 -- Merged from spawn.lua and destroy.lua for better organization
 
-local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
+local ImGui = require('arkitekt.platform.imgui')
 local Easing = require('arkitekt.gui.animation.easing')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb

@@ -3,7 +3,7 @@
 -- FIXED: Smooth ease-in-out curve + click-through during fade-out
 -- ADDED: Profiler support via titlebar
 
-local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
+local ImGui = require('arkitekt.platform.imgui')
 local Config = require('arkitekt.core.config')
 local Constants = require('arkitekt.defs.app')
 local Typography = require('arkitekt.defs.typography')

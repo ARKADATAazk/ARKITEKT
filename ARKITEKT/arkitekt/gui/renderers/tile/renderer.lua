@@ -2,7 +2,7 @@
 -- Arkitekt/gui/fx/tile_fx.lua
 -- Multi-layer tile rendering with granular controls
 
-local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
+local ImGui = require('arkitekt.platform.imgui')
 
 local Colors = require('arkitekt.core.colors')
 local Background = require('arkitekt.gui.draw.patterns')
