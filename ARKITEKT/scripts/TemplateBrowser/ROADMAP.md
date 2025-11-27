@@ -6,10 +6,12 @@
 - Critical for large libraries (100+ templates)
 - "drm" matches "drums", "kick drm" matches "Kick Drum Kit"
 - Levenshtein distance or similar algorithm
+- **Note**: Should be part of arkitekt library's search module (reusable)
 
 ### Track Count Parsing & Display
 - Parse `<TRACK>` blocks from .RTrackTemplate files
 - Show badge on tiles: `16T` for 16-track templates
+- FX count badge: `12 FX` indicator
 - Stacked tile visual for multi-track templates (like ItemPicker drag preview)
 
 ### Inbox Workflow
@@ -23,6 +25,11 @@
 - Display FX per track (not flat list)
 - Show routing structure if possible
 
+### Insert Workflow Improvements
+- **Apply and close** - Insert template then auto-close browser
+- **Insert multiple** - Shift+click to queue multiple templates for batch insert
+- **Template sets** - Save groups of templates to insert together as a preset
+
 ## Medium Priority
 
 ### Star Ratings
@@ -35,6 +42,11 @@
 - Search in tags, FX names
 - Combined search (name + notes + tags)
 
+### Color Inheritance
+- Folders can have assigned colors
+- Templates inside inherit folder color if not overridden
+- Visual consistency for template organization
+
 ### Usage Statistics
 - Track insertion count over time
 - "Used 12 times this month"
@@ -43,10 +55,20 @@
 
 ### Stacked Tile Visual
 - Multi-track templates show layered "depth" effect
-- 2-3 offset layers behind main tile
+- 2-3 offset layers behind main tile (like ItemPicker drag UI)
 - Visual indicator of template complexity
 
 ## Lower Priority
+
+### Recent Searches
+- Dropdown showing last 5-10 searches
+- Quick re-apply previous search
+- **Note**: Should be in arkitekt library's search module (reusable)
+
+### Regex/Wildcard Search
+- Toggle for advanced users
+- Pattern matching: `drum*`, `*kit*`
+- **Note**: Should be globalized in arkitekt search module
 
 ### New Template Indicator
 - Templates added since last session highlighted
@@ -63,6 +85,7 @@
 - Apply tags to selection
 - Move selection to folder
 - Bulk color assignment
+- **Note**: Batch Rename And Recolor modularisation already planned
 
 ### Quick Filter Presets
 - Save current filter combination
@@ -92,6 +115,11 @@
 - Adjustable columns
 - Compact/comfortable/spacious presets
 
+### Export Selection
+- Zip templates + metadata for sharing
+- Import metadata from shared packs
+- Low priority
+
 ## Won't Do / Out of Scope
 
 - Template preview/audition (templates aren't audio)
@@ -99,3 +127,5 @@
 - Cloud sync (users sync REAPER folder)
 - Template editing (REAPER doesn't support this)
 - Import from other DAWs (format incompatibility)
+- Track type icons (tags sufficient)
+- Routing complexity indicators (overkill)
