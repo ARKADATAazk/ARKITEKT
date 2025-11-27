@@ -20,16 +20,31 @@
 | **Status Bar** | `app/chrome/status_bar.lua` | RegionPlaylist | TemplateBrowser, ItemPicker |
 | **Drag Drop** | `gui/interaction/drag_drop.lua` | TemplateBrowser | - |
 | **Drag Visual** | `gui/interaction/drag_visual.lua` | RegionPlaylist | - |
-| **Reorder** | `gui/interaction/reorder.lua` | ? | Audit needed |
+| **Marching Ants** | `gui/interaction/marching_ants.lua` | TemplateBrowser, ItemPicker, RegionPlaylist | - |
+| **Blocking** | `gui/interaction/blocking.lua` | Framework (tab_strip) | - |
 
-### ⚠️ Exists but UNUSED
+### ⚠️ Exists but UNUSED (scripts have own copies)
+
+These were "extracted from RegionPlaylist" but RegionPlaylist still uses its own local implementations!
+
+| Component | Framework Location | Script Copy | Notes |
+|-----------|-------------------|-------------|-------|
+| **Dependency Graph** | `core/dependency_graph.lua` | `RegionPlaylist/domain/dependency.lua` | Circular ref detection |
+| **Tree Expander** | `core/tree_expander.lua` | `RegionPlaylist/engine/` | Nested structure → flat sequence |
+| **Shuffle** | `core/shuffle.lua` | `RegionPlaylist/engine/` | Fisher-Yates shuffle |
+| **Composite Undo** | `core/composite_undo.lua` | `RegionPlaylist/data/undo.lua` | App + external state undo |
+
+### ⚠️ Exists but COMPLETELY UNUSED
+
+Nobody uses these - not even internally:
 
 | Component | Location | Notes |
 |-----------|----------|-------|
-| **Selection** | `gui/interaction/selection.lua` | Full API (single, toggle, range). NO script uses it! |
-| **Selection Rectangle** | `gui/widgets/data/selection_rectangle.lua` | Visual component |
-| **Marching Ants** | `gui/interaction/marching_ants.lua` | Selection visual |
-| **Blocking** | `gui/interaction/blocking.lua` | Modal blocking |
+| **Selection** | `gui/interaction/selection.lua` | Full API (single, toggle, range, rect). NO script uses it! |
+| **Reorder** | `gui/interaction/reorder.lua` | Array reordering for DnD |
+| **Selection Rectangle** | `gui/widgets/data/selection_rectangle.lua` | Visual component (only in demos) |
+| **Events** | `core/events.lua` | Pub/sub event bus |
+| **State Machine** | `core/state_machine.lua` | FSM with guards, lifecycle hooks |
 
 ### ❌ Needs Extraction
 
@@ -114,6 +129,27 @@ sel:invert(order)                      -- Flip selection
   - TemplateBrowser: ❌ Reimplements in ui/status.lua
   - ItemPicker: ❌ Reimplements in ui/components/status_bar.lua
 
+#### RegionPlaylist → Framework Migrations
+
+These modules were extracted to framework but RegionPlaylist never migrated to use them:
+
+- [ ] **Dependency Graph** - `domain/dependency.lua` → `arkitekt/core/dependency_graph.lua`
+  - Compare APIs, ensure framework version covers all use cases
+  - Migrate RegionPlaylist to use framework version
+  - Delete local copy
+
+- [ ] **Tree Expander** - `engine/sequence_expander.lua` → `arkitekt/core/tree_expander.lua`
+  - Used for: nested playlist → flat sequence expansion
+  - Compare implementations
+
+- [ ] **Shuffle** - engine code → `arkitekt/core/shuffle.lua`
+  - Fisher-Yates algorithm
+  - Check if RegionPlaylist engine can use framework version
+
+- [ ] **Composite Undo** - `data/undo.lua` → `arkitekt/core/composite_undo.lua`
+  - Combines app state + REAPER state
+  - May have script-specific extensions
+
 ---
 
 ## Extraction Tasks
@@ -166,24 +202,34 @@ sel:invert(order)                      -- Flip selection
 
 ## Script Audit Summary
 
-| Script | Uses Framework | Reimplements |
-|--------|---------------|--------------|
-| **RegionPlaylist** | sorting, status_bar, drag_visual | selection |
-| **TemplateBrowser** | drag_drop | sorting, status_bar, selection |
-| **ItemPicker** | - | sorting, status_bar, selection, drag |
-| **ThemeAdjuster** | ? | ? |
-| **WalterBuilder** | ? | ? |
+| Script | Uses Framework | Has Local Copy (should migrate) | Reimplements |
+|--------|---------------|--------------------------------|--------------|
+| **RegionPlaylist** | sorting, status_bar, drag_visual, marching_ants | dependency, tree_expander, shuffle, undo | selection |
+| **TemplateBrowser** | drag_drop, marching_ants | - | sorting, status_bar, selection |
+| **ItemPicker** | marching_ants | - | sorting, status_bar, selection, drag |
+| **ThemeAdjuster** | grid | - | ? |
+| **WalterBuilder** | button, slider, checkbox, chip | - | ? |
 
 ---
 
 ## Next Actions
 
+### Quick Wins (Low Risk)
 1. [ ] Migrate TemplateBrowser sorting to `arkitekt/core/sorting.lua`
 2. [ ] Migrate ItemPicker sorting to `arkitekt/core/sorting.lua`
-3. [ ] Audit why `gui/interaction/selection.lua` is unused - API mismatch?
-4. [ ] Migrate TemplateBrowser status bar to framework
-5. [ ] Migrate ItemPicker status bar to framework
-6. [ ] Extract search/filter pattern after sorting migrations complete
+
+### Medium Priority
+3. [ ] Migrate TemplateBrowser status bar to framework
+4. [ ] Migrate ItemPicker status bar to framework
+5. [ ] Audit `gui/interaction/selection.lua` - why unused? API mismatch?
+
+### RegionPlaylist Consolidation
+6. [ ] Compare `domain/dependency.lua` vs `core/dependency_graph.lua` - migrate if equivalent
+7. [ ] Compare shuffle implementations - migrate if equivalent
+8. [ ] Audit tree_expander and composite_undo for migration feasibility
+
+### Future Extraction
+9. [ ] Extract search/filter pattern to `core/filter.lua` after sorting migrations complete
 
 ---
 
