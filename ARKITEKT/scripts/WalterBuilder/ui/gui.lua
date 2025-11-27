@@ -12,6 +12,8 @@ local PropertiesPanel = require('WalterBuilder.ui.panels.properties_panel')
 local TrackPropertiesPanel = require('WalterBuilder.ui.panels.track_properties_panel')
 local CodePanel = require('WalterBuilder.ui.panels.code_panel')
 local TCPElements = require('WalterBuilder.defs.tcp_elements')
+local Constants = require('WalterBuilder.defs.constants')
+local Notification = require('WalterBuilder.domain.notification')
 
 local hexrgb = ark.Colors.hexrgb
 
@@ -19,10 +21,11 @@ local M = {}
 local GUI = {}
 GUI.__index = GUI
 
-function M.new(state_module, settings)
+function M.new(state_module, settings, controller)
   local self = setmetatable({
     State = state_module,
     settings = settings,
+    controller = controller,
     initialized = false,
 
     -- Panels
@@ -32,10 +35,36 @@ function M.new(state_module, settings)
     track_properties_panel = nil,
     code_panel = nil,
 
+    -- Notification system
+    notification = Notification.new(),
+
     -- Layout
-    left_panel_width = 200,
-    right_panel_width = 280,
+    left_panel_width = Constants.PANEL.LEFT_WIDTH,
+    right_panel_width = Constants.PANEL.RIGHT_WIDTH,
   }, GUI)
+
+  -- Wire up controller callbacks
+  if controller then
+    controller.on_status = function(message, msg_type)
+      self.notification:set_message(message, msg_type)
+    end
+
+    controller.on_elements_changed = function()
+      self:sync_canvas()
+      self.code_panel:invalidate()
+    end
+
+    controller.on_tracks_changed = function()
+      self:sync_canvas()
+    end
+
+    controller.on_selection_changed = function()
+      self.properties_panel:set_element(self.State.get_selected())
+      self.track_properties_panel:set_track(self.State.get_selected_track())
+      self.canvas:set_selected(self.State.get_selected())
+      self.canvas:set_selected_track(self.State.get_selected_track())
+    end
+  end
 
   return self
 end
@@ -112,63 +141,135 @@ end
 
 -- Handle adding an element
 function GUI:handle_add_element(def)
-  local elem = self.State.add_element(def)
-  if elem then
-    self.State.set_selected(elem)
-    self:sync_canvas()
-    self.canvas:set_selected(elem)
-    self.properties_panel:set_element(elem)
-    self.code_panel:invalidate()
+  if self.controller then
+    local elem = self.controller:add_element(def)
+    if elem then
+      self.canvas:set_selected(elem)
+      self.properties_panel:set_element(elem)
+    end
+  else
+    local elem = self.State.add_element(def)
+    if elem then
+      self.State.set_selected(elem)
+      self:sync_canvas()
+      self.canvas:set_selected(elem)
+      self.properties_panel:set_element(elem)
+      self.code_panel:invalidate()
+    end
   end
 end
 
 -- Handle element changes
 function GUI:handle_element_changed(element)
-  self.State.element_changed(element)
+  if self.controller then
+    self.controller:update_element(element, {})  -- Element already modified
+  else
+    self.State.element_changed(element)
+  end
   self.canvas.sim_cache = nil  -- Invalidate simulation cache
   self.code_panel:invalidate()
 end
 
 -- Handle element deletion
 function GUI:handle_delete_element(element)
-  self.State.remove_element(element)
-  self.State.clear_selection()
-  self.canvas:set_selected(nil)
-  self.properties_panel:set_element(nil)
-  self:sync_canvas()
-  self.code_panel:invalidate()
+  if self.controller then
+    self.controller:remove_element(element)
+    self.canvas:set_selected(nil)
+    self.properties_panel:set_element(nil)
+  else
+    self.State.remove_element(element)
+    self.State.clear_selection()
+    self.canvas:set_selected(nil)
+    self.properties_panel:set_element(nil)
+    self:sync_canvas()
+    self.code_panel:invalidate()
+  end
 end
 
 -- Handle track changes
 function GUI:handle_track_changed(track)
-  -- Track object already updated, just refresh canvas
+  if self.controller then
+    self.controller:update_track(track, {})  -- Track already modified
+  end
   self.canvas.sim_cache = nil  -- Invalidate simulation cache
 end
 
 -- Handle track deletion
 function GUI:handle_delete_track(track)
-  self.State.remove_track(track)
-  self.State.set_selected_track(nil)
-  self.canvas:set_selected_track(nil)
-  self.track_properties_panel:set_track(nil)
-  self:sync_canvas()
+  if self.controller then
+    self.controller:remove_track(track)
+    self.canvas:set_selected_track(nil)
+    self.track_properties_panel:set_track(nil)
+  else
+    self.State.remove_track(track)
+    self.State.set_selected_track(nil)
+    self.canvas:set_selected_track(nil)
+    self.track_properties_panel:set_track(nil)
+    self:sync_canvas()
+  end
 end
 
 -- Handle adding a new track
 function GUI:handle_add_track()
-  local new_track = self.State.add_track({
-    name = "New Track " .. (#self.State.get_tracks() + 1),
-  })
-  if new_track then
-    self.State.set_selected_track(new_track)
-    self.canvas:set_selected_track(new_track)
-    self.track_properties_panel:set_track(new_track)
-    self:sync_canvas()
+  if self.controller then
+    local new_track = self.controller:add_track({
+      name = "New Track " .. (#self.State.get_tracks() + 1),
+    })
+    if new_track then
+      self.canvas:set_selected_track(new_track)
+      self.track_properties_panel:set_track(new_track)
+    end
+  else
+    local new_track = self.State.add_track({
+      name = "New Track " .. (#self.State.get_tracks() + 1),
+    })
+    if new_track then
+      self.State.set_selected_track(new_track)
+      self.canvas:set_selected_track(new_track)
+      self.track_properties_panel:set_track(new_track)
+      self:sync_canvas()
+    end
   end
 end
 
 -- Draw toolbar
 function GUI:draw_toolbar(ctx)
+  -- Undo/Redo buttons (if controller available)
+  if self.controller then
+    local can_undo = self.controller:can_undo()
+    local can_redo = self.controller:can_redo()
+
+    if not can_undo then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+    end
+    if ImGui.Button(ctx, "Undo##toolbar", 50, 24) and can_undo then
+      self.controller:undo()
+    end
+    if not can_undo then
+      ImGui.PopStyleColor(ctx)
+    end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, "Undo last action (Ctrl+Z)")
+    end
+
+    ImGui.SameLine(ctx, 0, 4)
+
+    if not can_redo then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+    end
+    if ImGui.Button(ctx, "Redo##toolbar", 50, 24) and can_redo then
+      self.controller:redo()
+    end
+    if not can_redo then
+      ImGui.PopStyleColor(ctx)
+    end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, "Redo last undone action (Ctrl+Y)")
+    end
+
+    ImGui.SameLine(ctx, 0, 16)
+  end
+
   -- Context selector (TCP, MCP, etc.)
   ImGui.Text(ctx, "Context:")
   ImGui.SameLine(ctx)
@@ -196,9 +297,13 @@ function GUI:draw_toolbar(ctx)
 
   -- Actions
   if ImGui.Button(ctx, "Load Defaults##toolbar", 100, 24) then
-    self.State.load_tcp_defaults()
-    self:sync_canvas()
-    self.code_panel:invalidate()
+    if self.controller then
+      self.controller:load_tcp_defaults()
+    else
+      self.State.load_tcp_defaults()
+      self:sync_canvas()
+      self.code_panel:invalidate()
+    end
   end
   if ImGui.IsItemHovered(ctx) then
     ImGui.SetTooltip(ctx, "Load default TCP layout elements")
@@ -207,10 +312,14 @@ function GUI:draw_toolbar(ctx)
   ImGui.SameLine(ctx, 0, 8)
 
   if ImGui.Button(ctx, "Clear All##toolbar", 80, 24) then
-    self.State.clear_elements()
-    self.properties_panel:set_element(nil)
-    self:sync_canvas()
-    self.code_panel:invalidate()
+    if self.controller then
+      self.controller:clear_elements()
+    else
+      self.State.clear_elements()
+      self.properties_panel:set_element(nil)
+      self:sync_canvas()
+      self.code_panel:invalidate()
+    end
   end
   if ImGui.IsItemHovered(ctx) then
     ImGui.SetTooltip(ctx, "Remove all elements from layout")
@@ -219,11 +328,36 @@ function GUI:draw_toolbar(ctx)
   ImGui.SameLine(ctx, 0, 8)
 
   if ImGui.Button(ctx, "Reset Tracks##toolbar", 90, 24) then
-    self.State.load_default_tracks()
-    self:sync_canvas()
+    if self.controller then
+      self.controller:load_default_tracks()
+    else
+      self.State.load_default_tracks()
+      self:sync_canvas()
+    end
   end
   if ImGui.IsItemHovered(ctx) then
     ImGui.SetTooltip(ctx, "Reset to default demo tracks")
+  end
+end
+
+-- Draw status bar
+function GUI:draw_status_bar(ctx)
+  -- Update notification timeouts
+  self.notification:update()
+
+  local message, msg_type = self.notification:get_message()
+  if message then
+    local color = self.notification:get_message_color()
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, color)
+    ImGui.Text(ctx, message)
+    ImGui.PopStyleColor(ctx)
+  else
+    -- Show default status
+    local elem_count = #self.State.get_elements()
+    local track_count = #self.State.get_tracks()
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+    ImGui.Text(ctx, string.format("%d elements, %d tracks", elem_count, track_count))
+    ImGui.PopStyleColor(ctx)
   end
 end
 
@@ -400,6 +534,12 @@ function GUI:draw(ctx, window, shell_state)
   ImGui.Unindent(ctx, 4)
   ImGui.EndChild(ctx)
   ImGui.PopStyleColor(ctx)
+
+  -- Status bar at bottom
+  ImGui.Dummy(ctx, 0, 4)
+  ImGui.Separator(ctx)
+  ImGui.Dummy(ctx, 0, 2)
+  self:draw_status_bar(ctx)
 end
 
 return M
