@@ -2,8 +2,7 @@
 -- Arkitekt/gui/widgets/nodal/core/port.lua
 -- Port widget for connections (merged with renderer)
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local M = {}
 

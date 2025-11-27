@@ -58,6 +58,9 @@ local MODULES = {
   Lookup = 'arkitekt.core.lookup',
   Math = 'arkitekt.core.math',
   UUID = 'arkitekt.core.uuid',
+
+  -- Platform (REAPER + ImGui specific utilities)
+  Images = 'arkitekt.platform.images',
 }
 
 -- Lazy loading with metatable

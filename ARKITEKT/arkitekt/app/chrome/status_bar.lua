@@ -2,7 +2,7 @@
 -- Arkitekt/app/chrome/status_bar/widget.lua
 -- Modular status bar rendering - positioning handled by the containing window
 
-local ImGui = require('arkitekt.core.imgui')
+local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
 local Config = require('arkitekt.core.config')
 local Constants = require('arkitekt.defs.app')
 local Colors = require('arkitekt.core.colors')

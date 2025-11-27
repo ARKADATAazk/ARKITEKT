@@ -3,7 +3,7 @@
 -- Base widget utilities for standardized widget API
 -- Provides shared functionality: instance management, state handling, opts parsing
 
-local ImGui = require('arkitekt.core.imgui')
+local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
 local Colors = require('arkitekt.core.colors')
 local Anim = require('arkitekt.core.animation')
 local CoreMath = require('arkitekt.core.math')

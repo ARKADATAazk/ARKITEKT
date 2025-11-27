@@ -5,7 +5,7 @@
 -- REMOVED: Keyboard shortcuts and tooltips for cleaner interface
 -- UPDATED: ImGui 0.10 font size handling
 
-local ImGui = require('arkitekt.core.imgui')
+local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
 local Colors = require('arkitekt.core.colors')
 local Config = require('arkitekt.core.config')
 local Constants = require('arkitekt.defs.app')

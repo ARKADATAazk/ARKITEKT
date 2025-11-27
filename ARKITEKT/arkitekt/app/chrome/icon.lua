@@ -2,7 +2,7 @@
 -- Arkitekt/app/icon.lua
 -- App icon drawing functions (DPI-aware vector graphics and PNG images)
 
-local ImGui = require('arkitekt.core.imgui')
+local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
 
 local M = {}
 

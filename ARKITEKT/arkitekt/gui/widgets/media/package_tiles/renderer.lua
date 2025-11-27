@@ -9,7 +9,7 @@ local ImGui = require 'imgui' '0.10'
 local Draw = require('arkitekt.gui.draw')
 local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
 local Colors = require('arkitekt.core.colors')
-local ImageCache = require('arkitekt.core.images')
+local ImageCache = require('arkitekt.platform.images')
 
 -- Lazy-load script colors (ThemeAdjuster-specific)
 local ScriptColors = nil

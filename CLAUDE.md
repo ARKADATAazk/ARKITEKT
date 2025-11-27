@@ -12,7 +12,7 @@ A Lua 5.3 framework for building ReaImGui applications in REAPER (audio workstat
 **Critical Rules:**
 1. **Namespace**: `arkitekt.*` for requires, `ark.*` for lazy-loaded widgets/utilities.
 2. **Bootstrap**: Use `dofile()`, not `require()` for entry points.
-3. **Layer purity**: `core/*` and `storage/*` must NOT use `reaper.*` or `ImGui.*` at import time.
+3. **Layer purity**: `core/*` = 100% pure (no platform APIs). Use `platform/*` for ImGui/REAPER wrappers.
 4. **No globals**: Everything returns a module table `M`.
 5. **Read before writing**: ALWAYS read existing code before proposing changes.
 
@@ -26,8 +26,13 @@ ark.Button.draw(ctx, {label = "Click"})
 ark.Panel.draw(ctx, opts)
 ark.ImGui.Text(ctx, "Hello")  -- ImGui is pre-loaded
 
+-- Platform utilities (lazy-loaded)
+local cache = ark.Images.new({budget = 20})
+cache:draw_thumb(ctx, image_path, 64)
+
 -- Direct requires also work
 local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.platform.imgui')  -- Platform layer
 local Shell = require('arkitekt.app.shell')
 ```
 
@@ -44,7 +49,8 @@ local Shell = require('arkitekt.app.shell')
 | Work on **animations** | `arkitekt/gui/fx/animation/` |
 | Change **font loading** | `arkitekt/app/chrome/fonts.lua` |
 | Edit a **specific app** | `scripts/[AppName]/` |
-| Add **pure utilities** | `arkitekt/core/` (no reaper/ImGui!) |
+| Add **pure utilities** | `arkitekt/core/` (100% pure, no platform APIs!) |
+| Add **platform utilities** | `arkitekt/platform/` (ImGui/REAPER wrappers) |
 | Check **cookbook** | `cookbook/` |
 | Find **actionable tasks** | `TODO/` |
 
@@ -53,7 +59,8 @@ local Shell = require('arkitekt.app.shell')
 ```
 app/        # Application orchestration, wiring
 domain/     # Business logic (pure, no UI)
-core/       # Pure utilities (no reaper/ImGui at import)
+core/       # Pure utilities (100% portable, no platform APIs)
+platform/   # Platform wrappers (ImGui/REAPER abstractions)
 storage/    # Persistence (pure)
 ui/         # Views, components
 widgets/    # Reusable UI elements
@@ -62,6 +69,7 @@ tests/      # Unit tests
 ```
 
 **Dependency flow**: `UI → App → Domain ← Infra`
+**Platform usage**: `UI/App/Widgets → Platform → ImGui/REAPER APIs`
 **NEVER**: UI → Storage directly, or Domain → UI
 
 ---
@@ -114,16 +122,25 @@ local config = {
 
 ### Layer Purity Violations
 
-**Pure layers** (NO `reaper.*`, NO `ImGui.*` at import time):
-- `core/*`
-- `storage/*`
-- `domain/*`
+**100% Pure layers** (NO `reaper.*`, NO `ImGui.*` - not even at runtime):
+- `core/*` - Truly portable utilities (json, math, cursor, uuid, etc.)
+- `storage/*` - Pure persistence logic
+- `domain/*` - Business logic
 - `selectors.lua` (if present)
 
-**Runtime layers** (may use `reaper.*` and `ImGui`):
-- `app/*`
-- `ui/*`, `views/*`, `widgets/*`
-- `engine/*`
+**Platform abstraction layer** (ImGui/REAPER wrappers and utilities):
+- `platform/*` - Version loaders, image cache, platform-specific helpers
+  - Examples: `platform/imgui.lua` (version loader), `platform/images.lua` (image cache)
+
+**Runtime layers** (may use `reaper.*` and `ImGui` freely):
+- `app/*` - Application orchestration, bootstrap, runtime
+- `ui/*`, `views/*`, `widgets/*` - UI components
+- `gui/*` - Rendering, drawing, styling
+- `engine/*` - App-specific engines
+
+**Key Rule**: "Import time" vs "Runtime"
+- ✅ OK: Using `reaper.*` inside functions (runtime) in `core/*`
+- ❌ BAD: `local ImGui = require(...)` at module top-level in `core/*`
 
 ---
 
@@ -335,6 +352,10 @@ local Shell = require('arkitekt.app.runtime.shell')
 local Settings = require('arkitekt.core.settings')
 local Logger = require('arkitekt.debug.logger')
 local Constants = require('arkitekt.app.init.constants')
+
+-- Platform (ImGui/REAPER abstractions)
+local ImGui = require('arkitekt.platform.imgui')
+local Images = require('arkitekt.platform.images')
 
 -- Widgets
 local Button = require('arkitekt.gui.widgets.primitives.button')

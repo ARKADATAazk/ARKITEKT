@@ -6,7 +6,7 @@
 -- ================================================================================
 --
 -- BASIC SETUP:
---   local ImageCache = require('arkitekt.core.images')
+--   local ImageCache = require('arkitekt.platform.images')
 --   local cache = ImageCache.new({
 --     budget = 20,      -- Max images to load per frame (prevents UI freeze)
 --     max_cache = 100,  -- Max total cached images (LRU eviction)
@@ -50,7 +50,7 @@
 --
 -- ================================================================================
 
-local ImGui = require('arkitekt.core.imgui')
+local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
 
 local M = {}
 
