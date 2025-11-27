@@ -6,7 +6,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Draw = require('arkitekt.gui.draw')
+local Draw = require('arkitekt.gui.draw.primitives')
 
 -- Load overlay manager for modal blocking checks (optional dependency)
 local OverlayManager = nil

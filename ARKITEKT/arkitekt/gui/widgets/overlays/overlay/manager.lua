@@ -7,7 +7,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Draw   = require('arkitekt.gui.draw')
+local Draw   = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
 local CoreMath = require('arkitekt.core.math')
 local Theme  = require('arkitekt.core.theme')
@@ -29,7 +29,7 @@ M._global_active_overlay_count = 0
 
 local Easing = nil
 do
-  local ok, mod = pcall(require, 'arkitekt.gui.fx.animation.easing')
+  local ok, mod = pcall(require, 'arkitekt.gui.animation.easing')
   if ok then Easing = mod end
 end
 

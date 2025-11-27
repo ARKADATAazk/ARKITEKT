@@ -5,11 +5,11 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Dnd = require('arkitekt.gui.fx.interactions.dnd')
+local Dnd = require('arkitekt.gui.interaction.drag_visual')
 local DragIndicator = Dnd.DragIndicator
 local ActiveTile = require('RegionPlaylist.ui.tiles.renderers.active')
 local PoolTile = require('RegionPlaylist.ui.tiles.renderers.pool')
-local ResponsiveGrid = require('arkitekt.gui.systems.responsive_grid')
+local ResponsiveGrid = require('arkitekt.gui.layout.responsive')
 local State = require('RegionPlaylist.core.app_state')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local SWSImporter = require('RegionPlaylist.storage.sws_importer')

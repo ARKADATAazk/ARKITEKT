@@ -1,11 +1,10 @@
 -- @noindex
--- Arkitekt/gui/fx/interactions/dnd.lua
+-- Arkitekt/gui/interaction/drag_visual.lua (formerly fx/interactions/dnd.lua)
 -- Unified drag-and-drop visual system
 -- Merged from dnd/config.lua, dnd/drag_indicator.lua, and dnd/drop_indicator.lua
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
-local Draw = require('arkitekt.gui.draw')
+local ImGui = require('arkitekt.platform.imgui')
+local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.core.theme')
 local hexrgb = Colors.hexrgb

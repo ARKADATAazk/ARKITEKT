@@ -5,7 +5,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
-local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
+local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local TileHelpers = require('TemplateBrowser.ui.tiles.helpers')
 
 local M = {}

@@ -7,7 +7,7 @@ local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 local StatusBar = require('ItemPicker.ui.components.status_bar')
 local RegionFilterBar = require('ItemPicker.ui.components.region_filter_bar')
-local Background = require('arkitekt.gui.draw.pattern')
+local Background = require('arkitekt.gui.draw.patterns')
 
 -- Sub-modules
 local SettingsPanel = require('ItemPicker.ui.components.layout_view.settings_panel')

@@ -6,9 +6,9 @@
 local ImGui = require 'imgui' '0.10'
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
-local Draw = require('arkitekt.gui.draw')
-local TileFX = require('arkitekt.gui.rendering.tile.renderer')
-local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
+local Draw = require('arkitekt.gui.draw.primitives')
+local TileFX = require('arkitekt.gui.renderers.tile.renderer')
+local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 
 local M = {}
 

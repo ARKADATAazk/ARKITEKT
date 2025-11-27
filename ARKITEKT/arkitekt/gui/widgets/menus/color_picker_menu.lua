@@ -6,7 +6,7 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('arkitekt.defs.colors')
 local ColorUtils = require('arkitekt.core.colors')
 local Chip = require('arkitekt.gui.widgets.data.chip')
-local Draw = require('arkitekt.gui.draw')
+local Draw = require('arkitekt.gui.draw.primitives')
 local Unicode = require('arkitekt.core.unicode')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 

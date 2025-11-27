@@ -46,7 +46,10 @@ local Shell = require('arkitekt.app.shell')
 | Change **app bootstrap** | `arkitekt/app/` (init/, runtime/, chrome/) |
 | Add **constants/defaults** | `arkitekt/defs/` or app-specific `defs/` |
 | Modify **theming** | `arkitekt/core/theme_manager/` |
-| Work on **animations** | `arkitekt/gui/fx/animation/` |
+| Work on **animations** | `arkitekt/gui/animation/` |
+| Work on **drawing/rendering** | `arkitekt/gui/draw/` or `arkitekt/gui/renderers/` |
+| Add **interaction handlers** | `arkitekt/gui/interaction/` (drag-drop, selection, reorder) |
+| Add **layout utilities** | `arkitekt/gui/layout/` (responsive grids, stabilizers) |
 | Change **font loading** | `arkitekt/app/chrome/fonts.lua` |
 | Edit a **specific app** | `scripts/[AppName]/` |
 | Add **pure utilities** | `arkitekt/core/` (100% pure, no platform APIs!) |

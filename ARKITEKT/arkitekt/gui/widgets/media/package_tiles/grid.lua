@@ -7,10 +7,10 @@ local ImGui = require 'imgui' '0.10'
 
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local Colors = require('arkitekt.core.colors')
-local TileAnim = require('arkitekt.gui.rendering.tile.animator')
+local TileAnim = require('arkitekt.gui.animation.tile_animator')
 local Renderer = require('arkitekt.gui.widgets.media.package_tiles.renderer')
 local Micromanage = require('arkitekt.gui.widgets.media.package_tiles.micromanage')
-local HeightStabilizer = require('arkitekt.gui.systems.height_stabilizer')
+local HeightStabilizer = require('arkitekt.gui.layout.height_stabilizer')
 
 local M = {}
 

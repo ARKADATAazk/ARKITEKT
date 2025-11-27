@@ -5,7 +5,7 @@
 local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
 
 local Colors = require('arkitekt.core.colors')
-local Background = require('arkitekt.gui.draw.pattern')
+local Background = require('arkitekt.gui.draw.patterns')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max

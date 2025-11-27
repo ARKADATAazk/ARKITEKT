@@ -5,8 +5,8 @@
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 local hexrgb = ark.Colors.hexrgb
-local TileFX = require('arkitekt.gui.rendering.tile.renderer')
-local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
+local TileFX = require('arkitekt.gui.renderers.tile.renderer')
+local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local M = {}
 
 M.tile_spawn_times = {}

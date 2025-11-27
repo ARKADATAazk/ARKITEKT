@@ -13,10 +13,10 @@ local ConnectionRenderer = require('arkitekt.gui.widgets.editors.nodal.rendering
 local Port = require('arkitekt.gui.widgets.editors.nodal.core.port')
 local Layout = require('arkitekt.gui.widgets.editors.nodal.systems.auto_layout')
 local Viewport = require('arkitekt.gui.widgets.editors.nodal.systems.viewport')
-local Dnd = require('arkitekt.gui.fx.interactions.dnd')
+local Dnd = require('arkitekt.gui.interaction.drag_visual')
 local DragIndicator = Dnd.DragIndicator
 local DropIndicator = Dnd.DropIndicator
-local Background = require('arkitekt.gui.draw.pattern')
+local Background = require('arkitekt.gui.draw.patterns')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

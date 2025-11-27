@@ -21,7 +21,7 @@ end
 
 local Draw = nil
 do
-  local ok, mod = pcall(require, 'arkitekt.gui.draw')
+  local ok, mod = pcall(require, 'arkitekt.gui.draw.primitives')
   if ok then Draw = mod end
 end
 

@@ -7,7 +7,7 @@ local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 local Style = require('arkitekt.gui.style')
 
-local TileFXConfig = require('arkitekt.gui.rendering.tile.defaults')
+local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local hexrgb = ark.Colors.hexrgb

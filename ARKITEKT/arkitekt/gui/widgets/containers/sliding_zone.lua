@@ -6,7 +6,7 @@
 
 local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
 local Base = require('arkitekt.gui.widgets.base')
-local Tracks = require('arkitekt.gui.fx.animation.tracks')
+local Tracks = require('arkitekt.gui.animation.tracks')
 local Anim = require('arkitekt.core.animation')
 local Math = require('arkitekt.core.math')
 local Logger = require('arkitekt.debug.logger')

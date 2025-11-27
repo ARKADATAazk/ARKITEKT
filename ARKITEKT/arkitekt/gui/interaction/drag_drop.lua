@@ -2,10 +2,10 @@
 -- Arkitekt/gui/systems/drag_drop.lua
 -- Generic drag and drop helpers for ImGui
 
-local ImGui = require('arkitekt.platform.imgui':gsub('core', 'platform'))
+local ImGui = require('arkitekt.platform.imgui')
 
 local Colors = require('arkitekt.core.colors')
-local Draw = require('arkitekt.gui.draw')
+local Draw = require('arkitekt.gui.draw.primitives')
 
 local M = {}
 

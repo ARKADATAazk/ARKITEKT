@@ -8,7 +8,7 @@ local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 local Style = require('arkitekt.gui.style')
 
-local TileFXConfig = require('arkitekt.gui.rendering.tile.defaults')
+local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 local hexrgb = ark.Colors.hexrgb
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
