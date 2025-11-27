@@ -1,6 +1,39 @@
 -- @noindex
 -- Arkitekt/gui/widgets/controls/context_menu.lua
--- Reusable context menu widget
+-- Enhanced context menu widget with icons, shortcuts, and ImGui-compatible API
+--
+-- Features over vanilla ImGui:
+-- - Drop shadow for visual depth
+-- - Icons in menu items (using icon fonts)
+-- - Keyboard shortcut display (right-aligned)
+-- - Disabled items with optional tooltips
+-- - Labeled separators
+-- - Theme integration
+-- - checkbox_item/radiobutton_item variants
+--
+-- Usage (ImGui-compatible API):
+--   if ContextMenu.BeginPopup(ctx, "my_menu") then
+--     if ContextMenu.MenuItem(ctx, "Copy", "Ctrl+C") then
+--       -- Handle copy
+--     end
+--     if ContextMenu.MenuItem(ctx, "Paste", "Ctrl+V", false, can_paste) then
+--       -- Handle paste (disabled if can_paste is false)
+--     end
+--     ContextMenu.Separator(ctx, "Recent Files")  -- Labeled separator
+--     if ContextMenu.BeginMenu(ctx, "More Options") then
+--       if ContextMenu.MenuItem(ctx, "Option 1") then end
+--       ContextMenu.EndMenu(ctx)
+--     end
+--     ContextMenu.EndPopup(ctx)
+--   end
+--
+-- With icons:
+--   if ContextMenu.MenuItem(ctx, "Save", "Ctrl+S", false, true, {
+--     icon = "\u{e0c7}",  -- Font Awesome icon
+--     icon_font = my_icon_font
+--   }) then
+--     -- Handle save
+--   end
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -98,38 +131,146 @@ function M.end_menu(ctx)
   ImGui.PopStyleVar(ctx, 5)
 end
 
-function M.item(ctx, label, config)
+--- Enhanced menu item with icons, shortcuts, and disabled state
+--- @param ctx userdata ImGui context
+--- @param label string Item label
+--- @param shortcut string|nil Keyboard shortcut text (e.g., "Ctrl+C")
+--- @param selected boolean|nil If true, shows a checkmark
+--- @param enabled boolean|nil If false, item is grayed out (default: true)
+--- @param config table|nil Optional config: icon, icon_font, tooltip
+--- @return boolean True if clicked
+function M.MenuItem(ctx, label, shortcut, selected, enabled, config)
   config = config or {}
-  local defaults = get_defaults()  -- Get fresh colors from Theme.COLORS
+  local defaults = get_defaults()
+
+  -- Handle optional parameters (match ImGui signature)
+  if type(shortcut) == "table" then
+    config = shortcut
+    shortcut = config.shortcut
+    selected = config.selected
+    enabled = config.enabled
+  end
+
+  enabled = (enabled == nil) and true or enabled
+  selected = selected or false
+  shortcut = shortcut or config.shortcut
 
   local item_height = config.item_height or defaults.item_height
   local item_padding_x = config.item_padding_x or defaults.item_padding_x
   local item_hover_color = config.item_hover_color or defaults.item_hover_color
-  local item_text_color = config.item_text_color or defaults.item_text_color
-  local item_text_hover_color = config.item_text_hover_color or defaults.item_text_hover_color
+  local item_text_color = enabled and (config.item_text_color or defaults.item_text_color) or defaults.item_disabled_color
+  local item_text_hover_color = enabled and (config.item_text_hover_color or defaults.item_text_hover_color) or defaults.item_disabled_color
+
+  local icon = config.icon
+  local icon_font = config.icon_font
+  local tooltip = config.tooltip
 
   local dl = ImGui.GetWindowDrawList(ctx)
   local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
+  -- Calculate layout
+  local icon_width = 0
+  local icon_spacing = 0
+  if icon then
+    if icon_font then
+      ImGui.PushFont(ctx, icon_font)
+    end
+    icon_width = ImGui.CalcTextSize(ctx, icon)
+    if icon_font then
+      ImGui.PopFont(ctx)
+    end
+    icon_spacing = 8
+  end
+
+  -- Calculate checkmark width (for selected items)
+  local check_width = 0
+  local check_spacing = 0
+  if selected then
+    check_width = 12
+    check_spacing = 6
+  end
+
   local text_w, text_h = ImGui.CalcTextSize(ctx, label)
-  local item_w = math.max(avail_w, text_w + item_padding_x * 2)
 
-  local item_hovered = ImGui.IsMouseHoveringRect(ctx, item_x, item_y, item_x + item_w, item_y + item_height)
+  -- Calculate shortcut width
+  local shortcut_w = 0
+  local shortcut_spacing = 0
+  if shortcut and shortcut ~= "" then
+    shortcut_w = ImGui.CalcTextSize(ctx, shortcut)
+    shortcut_spacing = 24  -- Spacing between label and shortcut
+  end
 
+  local item_w = math.max(avail_w, check_width + check_spacing + icon_width + icon_spacing + text_w + shortcut_spacing + shortcut_w + item_padding_x * 2)
+
+  local item_hovered = enabled and ImGui.IsMouseHoveringRect(ctx, item_x, item_y, item_x + item_w, item_y + item_height)
+
+  -- Draw hover background
   if item_hovered then
     ImGui.DrawList_AddRectFilled(dl, item_x, item_y, item_x + item_w, item_y + item_height, item_hover_color, 2)
   end
 
   local text_color = item_hovered and item_text_hover_color or item_text_color
-  local text_x = item_x + item_padding_x
+  local current_x = item_x + item_padding_x
+
+  -- Draw checkmark if selected
+  if selected then
+    local check_y = item_y + (item_height - check_width) * 0.5
+    local check_color = text_color
+
+    -- Draw checkmark using lines
+    local cx = current_x + 2
+    local cy = check_y + check_width * 0.5
+    local mx = cx + check_width * 0.3
+    local my = cy + check_width * 0.3
+    local ex = cx + check_width - 2
+    local ey = cy - check_width * 0.4
+
+    ImGui.DrawList_AddLine(dl, cx, cy, mx, my, check_color, 2)
+    ImGui.DrawList_AddLine(dl, mx, my, ex, ey, check_color, 2)
+
+    current_x = current_x + check_width + check_spacing
+  end
+
+  -- Draw icon if provided
+  if icon then
+    if icon_font then
+      ImGui.PushFont(ctx, icon_font)
+    end
+    local icon_y = item_y + (item_height - text_h) * 0.5
+    ImGui.DrawList_AddText(dl, current_x, icon_y, text_color, icon)
+    if icon_font then
+      ImGui.PopFont(ctx)
+    end
+    current_x = current_x + icon_width + icon_spacing
+  end
+
+  -- Draw label
   local text_y = item_y + (item_height - text_h) * 0.5
+  ImGui.DrawList_AddText(dl, current_x, text_y, text_color, label)
 
-  ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
+  -- Draw shortcut (right-aligned, dimmed)
+  if shortcut and shortcut ~= "" then
+    local shortcut_color = Colors.with_opacity(text_color, enabled and 0.6 or 0.4)
+    local shortcut_x = item_x + item_w - shortcut_w - item_padding_x
+    ImGui.DrawList_AddText(dl, shortcut_x, text_y, shortcut_color, shortcut)
+  end
 
-  ImGui.InvisibleButton(ctx, label .. "_item", item_w, item_height)
+  -- Invisible button for interaction
+  ImGui.InvisibleButton(ctx, label .. "_menuitem", item_w, item_height)
 
-  return ImGui.IsItemClicked(ctx, 0)
+  -- Show tooltip on hover if disabled
+  if tooltip and item_hovered and not enabled then
+    ImGui.SetTooltip(ctx, tooltip)
+  end
+
+  return enabled and ImGui.IsItemClicked(ctx, 0) or false
+end
+
+-- Legacy API (backward compatibility)
+function M.item(ctx, label, config)
+  config = config or {}
+  return M.MenuItem(ctx, label, config.shortcut, config.selected, config.enabled, config)
 end
 
 function M.checkbox_item(ctx, label, checked, config)
@@ -276,32 +417,82 @@ function M.radiobutton_item(ctx, label, selected, config)
   return ImGui.IsItemClicked(ctx, 0)
 end
 
-function M.separator(ctx, config)
+--- Separator with optional label (like "--- Recent Files ---")
+--- @param ctx userdata ImGui context
+--- @param label string|nil Optional label text
+--- @param config table|nil Optional config
+function M.Separator(ctx, label, config)
   config = config or {}
+
+  -- Handle label passed as config
+  if type(label) == "table" then
+    config = label
+    label = config.label
+  end
+
   local defaults = get_defaults()
   local separator_color = config.separator_color or defaults.separator_color
+  local label_color = config.label_color or defaults.item_disabled_color
 
   ImGui.Dummy(ctx, 1, 4)
   local x, y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
   local dl = ImGui.GetWindowDrawList(ctx)
-  -- Enhanced separator with inset from edges
-  ImGui.DrawList_AddLine(dl, x + 8, y, x + avail_w - 8, y, separator_color, 1)
 
-  ImGui.Dummy(ctx, 1, 6)
+  if label and label ~= "" then
+    -- Separator with label (like VSCode section headers)
+    local label_w, label_h = ImGui.CalcTextSize(ctx, label)
+    local inset = 8
+    local label_x = x + inset
+    local label_y = y
+
+    -- Draw label
+    ImGui.DrawList_AddText(dl, label_x, label_y, label_color, label)
+
+    -- Draw line after label
+    local line_start_x = label_x + label_w + 8
+    if line_start_x < x + avail_w - inset then
+      ImGui.DrawList_AddLine(dl, line_start_x, y + label_h / 2, x + avail_w - inset, y + label_h / 2, separator_color, 1)
+    end
+
+    ImGui.Dummy(ctx, 1, label_h + 2)
+  else
+    -- Standard separator with inset from edges
+    ImGui.DrawList_AddLine(dl, x + 8, y, x + avail_w - 8, y, separator_color, 1)
+    ImGui.Dummy(ctx, 1, 6)
+  end
 end
 
--- Submenu support
-function M.begin_menu(ctx, label, config)
+-- Legacy API (backward compatibility)
+function M.separator(ctx, config)
+  return M.Separator(ctx, nil, config)
+end
+
+--- Submenu support (ImGui-compatible API)
+--- @param ctx userdata ImGui context
+--- @param label string Submenu label
+--- @param enabled boolean|nil If false, submenu is grayed out (default: true)
+--- @param config table|nil Optional config
+--- @return boolean True if submenu is open
+function M.BeginMenu(ctx, label, enabled, config)
   config = config or {}
-  local defaults = get_defaults()  -- Get fresh colors from Theme.COLORS
+
+  -- Handle enabled passed as config
+  if type(enabled) == "table" then
+    config = enabled
+    enabled = config.enabled
+  end
+
+  enabled = (enabled == nil) and true or enabled
+
+  local defaults = get_defaults()
 
   local item_height = config.item_height or defaults.item_height
   local item_padding_x = config.item_padding_x or defaults.item_padding_x
   local item_hover_color = config.item_hover_color or defaults.item_hover_color
-  local item_text_color = config.item_text_color or defaults.item_text_color
-  local item_text_hover_color = config.item_text_hover_color or defaults.item_text_hover_color
+  local item_text_color = enabled and (config.item_text_color or defaults.item_text_color) or defaults.item_disabled_color
+  local item_text_hover_color = enabled and (config.item_text_hover_color or defaults.item_text_hover_color) or defaults.item_disabled_color
 
   local dl = ImGui.GetWindowDrawList(ctx)
   local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
@@ -312,7 +503,7 @@ function M.begin_menu(ctx, label, config)
   local arrow_space = arrow_size + 4
   local item_w = math.max(avail_w, text_w + arrow_space + item_padding_x * 3)
 
-  local item_hovered = ImGui.IsMouseHoveringRect(ctx, item_x, item_y, item_x + item_w, item_y + item_height)
+  local item_hovered = enabled and ImGui.IsMouseHoveringRect(ctx, item_x, item_y, item_x + item_w, item_y + item_height)
 
   if item_hovered then
     ImGui.DrawList_AddRectFilled(dl, item_x, item_y, item_x + item_w, item_y + item_height, item_hover_color, 2)
@@ -324,7 +515,7 @@ function M.begin_menu(ctx, label, config)
 
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
 
-  -- Draw triangle arrow (pointing right) instead of text
+  -- Draw triangle arrow (pointing right)
   local arrow_x = item_x + item_w - item_padding_x - arrow_size
   local arrow_y = item_y + item_height * 0.5
   ImGui.DrawList_AddTriangleFilled(dl,
@@ -334,6 +525,11 @@ function M.begin_menu(ctx, label, config)
     text_color)
 
   ImGui.InvisibleButton(ctx, label .. "_submenu", item_w, item_height)
+
+  -- Only open submenu if enabled
+  if not enabled then
+    return false
+  end
 
   -- Open submenu on hover and position it at the right edge of the parent menu
   if item_hovered then
@@ -369,10 +565,22 @@ function M.begin_menu(ctx, label, config)
   return submenu_open
 end
 
-function M.end_submenu(ctx)
+function M.EndMenu(ctx)
   ImGui.EndPopup(ctx)
   ImGui.PopStyleColor(ctx, 2)
   ImGui.PopStyleVar(ctx, 3)
 end
+
+-- ============================================================================
+-- ImGui-COMPATIBLE ALIASES (for users coming from vanilla ImGui)
+-- ============================================================================
+
+-- Popup aliases
+M.BeginPopup = M.begin  -- Same as begin(), just renamed
+M.EndPopup = M.end_menu -- Same as end_menu(), just renamed
+
+-- Legacy aliases (backward compatibility)
+M.begin_menu = M.BeginMenu
+M.end_submenu = M.EndMenu
 
 return M
