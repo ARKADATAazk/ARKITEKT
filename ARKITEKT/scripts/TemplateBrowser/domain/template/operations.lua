@@ -43,8 +43,14 @@ function M.apply_to_selected_track(template_path, template_uuid, state)
   if template_uuid and state.metadata then
     local tmpl_metadata = state.metadata.templates[template_uuid]
     if tmpl_metadata then
+      local now = os.time()
       tmpl_metadata.usage_count = (tmpl_metadata.usage_count or 0) + 1
-      tmpl_metadata.last_used = os.time()
+      tmpl_metadata.last_used = now
+      -- Add to usage history for time-based statistics
+      if not tmpl_metadata.usage_history then
+        tmpl_metadata.usage_history = {}
+      end
+      tmpl_metadata.usage_history[#tmpl_metadata.usage_history + 1] = now
       Persistence.save_metadata(state.metadata)
     end
   end
@@ -99,8 +105,14 @@ function M.insert_as_new_track(template_path, template_uuid, state)
   if template_uuid and state.metadata then
     local tmpl_metadata = state.metadata.templates[template_uuid]
     if tmpl_metadata then
+      local now = os.time()
       tmpl_metadata.usage_count = (tmpl_metadata.usage_count or 0) + 1
-      tmpl_metadata.last_used = os.time()
+      tmpl_metadata.last_used = now
+      -- Add to usage history for time-based statistics
+      if not tmpl_metadata.usage_history then
+        tmpl_metadata.usage_history = {}
+      end
+      tmpl_metadata.usage_history[#tmpl_metadata.usage_history + 1] = now
       Persistence.save_metadata(state.metadata)
     end
   end

@@ -5,6 +5,7 @@
 local Strings = require('TemplateBrowser.defs.strings')
 local Defaults = require('TemplateBrowser.defs.defaults')
 local TrackParser = require('TemplateBrowser.domain.template.track_parser')
+local Stats = require('TemplateBrowser.domain.template.stats')
 
 local M = {}
 
@@ -111,9 +112,16 @@ function M.show_template_info(ctx, ImGui, template, metadata)
       ImGui.Text(ctx, "Tags: " .. table.concat(tmpl_meta.tags, ", "))
     end
 
-    -- Usage stats
+    -- Usage stats (enhanced with time-based analysis)
     if tmpl_meta then
-      if tmpl_meta.usage_count and tmpl_meta.usage_count > 0 then
+      local usage_history = tmpl_meta.usage_history
+      if usage_history and #usage_history > 0 then
+        -- Use stats module for rich summary
+        local stats = Stats.calculate_stats(usage_history)
+        local summary = Stats.format_summary(stats)
+        ImGui.Text(ctx, "Usage: " .. summary)
+      elseif tmpl_meta.usage_count and tmpl_meta.usage_count > 0 then
+        -- Fallback for old data without history
         ImGui.Text(ctx, string.format("Used: %d times", tmpl_meta.usage_count))
       end
 

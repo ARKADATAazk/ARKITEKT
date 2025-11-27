@@ -49,10 +49,10 @@
 
 ### Planned (Next Sprint)
 - [x] Track-tree hover preview (lazy-loaded, cached)
+- [x] Usage statistics over time (sparkline, trends, streaks)
 
 ### Backlog
 - [ ] Search in notes
-- [ ] Usage statistics over time
 - [ ] New template indicator
 - [ ] Auto-tag suggestions
 - [ ] Bulk operations
@@ -84,6 +84,7 @@ TemplateBrowser/
 | `domain/template/scanner.lua` | Scan filesystem, filter templates |
 | `domain/template/operations.lua` | Insert/apply templates |
 | `domain/template/track_parser.lua` | Parse track names/hierarchy from templates |
+| `domain/template/stats.lua` | Usage statistics calculations (trends, streaks) |
 | `domain/search/fuzzy.lua` | Fuzzy string matching for search |
 | `domain/fx/parser.lua` | Parse FX from .RTrackTemplate |
 | `data/storage.lua` | JSON metadata persistence |
