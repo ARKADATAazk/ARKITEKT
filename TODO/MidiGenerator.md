@@ -216,6 +216,45 @@ end
 
 ---
 
+## Algorithm Sources (for porting to Lua)
+
+### Euclidean/Rhythm
+| Source | Language | Notes |
+|--------|----------|-------|
+| [brianhouse/bjorklund](https://github.com/brianhouse/bjorklund) | Python | Clean ~50 LOC, easy port |
+| [sndkit/euclid](https://paulbatchelor.github.io/sndkit/euclid/) | C | Well-documented, bit manipulation |
+| [Euclidean rhythm demo](https://dbkaplun.github.io/euclidean-rhythm/) | JS | Visual, good for testing |
+
+### Music Theory
+| Source | Language | Notes |
+|--------|----------|-------|
+| [Tonal.js](https://github.com/tonaljs/tonal) | TypeScript | **Best choice** - functional, pure, comprehensive |
+| [musthe](https://github.com/gciruelos/musthe) | Python | Simple ~500 LOC, scales/chords/intervals |
+| [mingus](https://bspaans.github.io/python-mingus/) | Python | Full theory + voice leading |
+| [Basic Music Theory in 200 Lines](https://www.mvanga.com/blog/basic-music-theory-in-200-lines-of-python) | Python | Tutorial, build from scratch |
+
+### Randomization/Probability
+| Source | Language | Notes |
+|--------|----------|-------|
+| [X-Raym randomization](https://www.extremraym.com/en/reaper-randomisation-takes/) | EEL/Lua | Normal distribution with GUI |
+| [pycomposer](https://pypi.org/project/pycomposer/) | Python | Stochastic composition |
+
+### Generative/Advanced
+| Source | Language | Notes |
+|--------|----------|-------|
+| [MarkovMusic-with-ToneJS](https://github.com/lukaszog/MarkovMusic-with-ToneJS) | JS | Markov chain music |
+| JFugue LSystemMusic.java | Java | L-system music generation |
+| [Fractal Music article](https://medium.com/@dmkoelle/creating-fractal-music-in-very-few-lines-of-code-32b8fcbb8974) | - | 1/f noise approach |
+
+### Porting Priority
+
+1. **Tonal.js** → `arkitekt/core/music/` (scales, chords, intervals)
+2. **bjorklund** → `arkitekt/core/patterns/euclidean.lua`
+3. **X-Raym normal distribution** → `arkitekt/core/random/distributions.lua`
+4. **musthe harmonize()** → chord progression helpers
+
+---
+
 ## Related
 
 - [SelectionNumbering.md](./SelectionNumbering.md) - Uses shuffle algorithms
