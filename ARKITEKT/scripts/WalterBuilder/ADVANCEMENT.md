@@ -6,13 +6,21 @@ This document tracks the development progress of the visual rtconfig editor/buil
 
 ---
 
-## Current Status: Expression Evaluation Working
+## Current Status: Flow Layout & Group Expansion Working
 
 **Date**: 2024-11-27
 
-The expression evaluator now successfully parses and evaluates 80/80 computed expressions from complex rtconfig themes. Elements are positioned correctly on the canvas.
+The expression evaluator now successfully parses and evaluates 80/80 computed expressions from complex rtconfig themes. **Flow layout macros** with `then` statements are now parsed and positioned correctly, including **group expansion** for pan_group, fx_group, and input_group.
 
 ### Recent Updates
+
+**2024-11-27 (Session 3) - Flow Layout & Groups**
+- **Parsed `then` statements** from flow macros - discovered that tcp.recarm, tcp.recmon, tcp.recmode, tcp.env use `then` keyword instead of `set`
+- **Flow layout calculation** - elements from flow macros now positioned sequentially with proper X coordinates
+- **Group expansion** - pan_group, fx_group, input_group expand to their child tcp.* elements
+- **Flow elements replace section definitions** - flow elements now properly override static section definitions
+- **OVR.* variable detection** - variables with dots that aren't element contexts (OVR.*, etc.) now recognized as variables
+- **Array-to-scalar extraction** - added `get_scalar()` helper to handle variables that are arrays when used in arithmetic
 
 **2024-11-27 (Session 2)**
 - Added **Customs section** in elements panel for theme-specific elements not in standard definitions
@@ -248,6 +256,112 @@ end
 **Symptom**: Elements with negative x appeared on left edge
 **Cause**: Negative coordinates weren't being interpreted as right-relative
 **Fix**: Added negative coordinate handling in `compute_rect()`
+
+---
+
+## Flow Layout System
+
+### Flow Macros and `then` Statements
+
+WALTER uses a custom DSL inside macros for flow layout. Instead of `set` statements with coordinates, flow macros use `then` statements to position elements sequentially.
+
+**Flow macro structure:**
+```
+macro flow_layout row_height
+  ; Variables define element widths
+  set recarm_w 16
+  set recmon_w 16
+
+  ; Elements positioned with 'then' keyword
+  then tcp.recarm recarm_w ...
+  then tcp.recmon recmon_w ...
+  then tcp.recmode 16 ...
+  then tcp.env 32 ...
+endmacro
+```
+
+**`then` statement format:**
+```
+then element_id width_var [row_flag row_val hide_cond hide_val]
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| element_id | The element to position (e.g., tcp.recarm) |
+| width_var | Variable name or literal for element width |
+| row_flag | Optional: 'row' keyword for row changes |
+| row_val | Row number if row_flag present |
+| hide_cond | Optional: Variable for conditional hide |
+| hide_val | Value that triggers hiding |
+
+### Flow Groups
+
+Groups are virtual containers that expand to multiple child elements:
+
+```lua
+FLOW_GROUP_CHILDREN = {
+  pan_group = { "tcp.pan", "tcp.width" },
+  fx_group = { "tcp.fx" },
+  input_group = { "tcp.recinput" },
+  master_pan_group = { "master.tcp.pan", "master.tcp.width" },
+  master_fx_group = { "master.tcp.fx" },
+}
+```
+
+When a group like `pan_group` appears in a flow macro, it expands to position all its children sequentially.
+
+### Flow Position Calculation
+
+Flow elements are positioned sequentially starting from `meter_sec + tcp_padding`:
+
+```lua
+local start_x = meter_sec + tcp_padding
+local current_x = start_x
+
+for each flow_element in order_by_source_line do
+  if is_group(element) then
+    for each child in group_children do
+      position_element(child, current_x)
+      current_x = current_x + child_width
+    end
+  else
+    position_element(element, current_x)
+    current_x = current_x + element_width
+  end
+end
+```
+
+### Priority: Flow vs Section Definitions
+
+When an element is defined both in a `[tcp]` section and in a flow macro:
+- **Flow elements win** - they replace section definitions
+- This ensures flow layout overrides static positioning
+- Debug logging shows "Replaced X existing definitions with flow versions"
+
+---
+
+## Element Contexts
+
+Elements are categorized by their context prefix:
+
+```lua
+ELEMENT_CONTEXTS = {
+  tcp = true,      -- Track Control Panel
+  mcp = true,      -- Mixer Control Panel
+  envcp = true,    -- Envelope Control Panel
+  trans = true,    -- Transport
+  masterlayout = true,
+  master = true,
+  global = true,
+}
+```
+
+**Variable detection rule:**
+- Names without dots → always variables
+- Names with dots → check if prefix matches ELEMENT_CONTEXTS
+- `tcp.mute` → element (tcp is a context)
+- `OVR.scale` → variable (OVR is not a context)
+- `meter_sec` → variable (no dot)
 
 ---
 
