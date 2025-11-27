@@ -605,6 +605,20 @@ local function calculate_flow_positions(result, eval_context)
         coords.h = element_h
       end
 
+      -- Fallback widths for flow elements when variables evaluate to 0
+      local FLOW_WIDTH_DEFAULTS = {
+        tcp_LabelSize = 80,
+        tcp_VolSize = 50,
+        tcp_PanSize = 40,
+        tcp_InSize = 40,
+        ["OVR.tcp_recarm.width"] = 20,
+        ["OVR.tcp_recmon.width"] = 15,
+        ["OVR.tcp_io.width"] = 34,
+        ["OVR.tcp_fx.width"] = 24,
+        ["OVR.tcp_env.width"] = 41,
+        ["OVR.tcp_recmode.width"] = 39,
+      }
+
       -- Get flow width from flow_params if element width is 0
       local elem_width = coords.w or 0
       if elem_width == 0 and flow_params and flow_params[1] then
@@ -614,6 +628,11 @@ local function calculate_flow_positions(result, eval_context)
         if not width_val then
           -- Try to look up as a variable
           width_val = get_scalar(eval_context[width_var], 0)
+          -- If still 0, use fallback defaults
+          if (not width_val or width_val == 0) and FLOW_WIDTH_DEFAULTS[width_var] then
+            width_val = FLOW_WIDTH_DEFAULTS[width_var]
+            Console.info("  Flow width fallback: %s = %d", width_var, width_val)
+          end
         end
         if width_val and width_val > 0 then
           coords.w = width_val

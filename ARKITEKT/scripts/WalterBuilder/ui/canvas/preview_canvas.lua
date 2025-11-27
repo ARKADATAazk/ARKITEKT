@@ -449,7 +449,7 @@ function Canvas:handle_interaction(ctx, canvas_x, canvas_y, handles)
       self.drag_start_h = self.parent_h
       self.drag_start_y = my
 
-    -- Then check if clicking on selected element (for drag/resize)
+    -- Check if clicking on selected element (for drag/resize)
     elseif selected_rect and self.selected_element then
       local zone = get_element_hit_zone(rel_x, rel_y, selected_rect, self.config.element_edge_threshold)
       if zone then
@@ -474,9 +474,21 @@ function Canvas:handle_interaction(ctx, canvas_x, canvas_y, handles)
         }
         self.drag_start_x = mx
         self.drag_start_y = my
+      else
+        -- Clicked outside selected element - try to select another
+        if rel_x >= 0 and rel_x <= self.parent_w and rel_y >= 0 and rel_y <= self.parent_h then
+          local clicked = Simulator.hit_test(sim, rel_x, rel_y)
+          if clicked then
+            self.selected_element = clicked
+            result = { type = "select", element = clicked }
+          else
+            self.selected_element = nil
+            result = { type = "deselect" }
+          end
+        end
       end
 
-    -- Finally check for element selection (clicking a different element)
+    -- No element selected - check for element selection
     else
       if rel_x >= 0 and rel_x <= self.parent_w and rel_y >= 0 and rel_y <= self.parent_h then
         local clicked = Simulator.hit_test(sim, rel_x, rel_y)
@@ -744,6 +756,20 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
         }
         self.drag_start_x = mx
         self.drag_start_y = my
+      else
+        -- Clicked outside selected element - check for new selection
+        if rel_x >= 0 and rel_x <= self.parent_w and mouse_track then
+          self.selected_track = mouse_track
+          local track_rel_y = rel_y - mouse_track_top
+          local clicked_elem = Simulator.hit_test(mouse_track_sim, rel_x, track_rel_y)
+          if clicked_elem then
+            self.selected_element = clicked_elem
+            result = { type = "select", element = clicked_elem, track = mouse_track }
+          else
+            self.selected_element = nil
+            result = { type = "select_track", track = mouse_track }
+          end
+        end
       end
 
     else
