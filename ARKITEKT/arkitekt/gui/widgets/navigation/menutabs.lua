@@ -2,8 +2,7 @@
 -- Arkitekt/gui/widgets/menutabs.lua
 -- Equal-width menu tabs for ReaImGui 0.9+
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
 local Config = require('arkitekt.core.config')
 local Theme = require('arkitekt.core.theme')
