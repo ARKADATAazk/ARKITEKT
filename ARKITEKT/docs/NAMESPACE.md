@@ -40,7 +40,7 @@ Following ImGui's namespace pattern:
 - `Ark.MarkdownField`
 - `Ark.RadioButton`
 - `Ark.Scrollbar`
-- `Ark.Separator`
+- `Ark.Splitter`
 - `Ark.Slider`
 - `Ark.Spinner`
 

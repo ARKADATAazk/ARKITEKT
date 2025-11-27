@@ -29,7 +29,7 @@ function M.new(config, state, coordinator)
   }, LayoutView)
 
   self.status_bar = StatusBar.new(config, state)
-  self.separator = ark.Separator.new()
+  self.separator = ark.Splitter.new()
 
   return self
 end

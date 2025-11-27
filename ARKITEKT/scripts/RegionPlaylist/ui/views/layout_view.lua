@@ -20,7 +20,7 @@ function M.new(config, state_module)
   return setmetatable({
     config = config,
     state = state_module,
-    separator_view = ark.Separator.new(),
+    separator_view = ark.Splitter.new(),
   }, LayoutView)
 end
 
