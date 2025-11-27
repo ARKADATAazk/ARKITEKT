@@ -247,7 +247,6 @@ function M.new(opts)
     _saved_pos      = nil,
     _saved_size     = nil,
     _pos_size_set   = false,
-    _pos_size_frames = 0,  -- Track frames since first pos/size set
     _body_open      = false,
     _begun          = false,
     _titlebar       = nil,
@@ -607,9 +606,9 @@ function M.new(opts)
     elseif not self._pos_size_set then
       local pos  = self._saved_pos  or self.initial_pos
       local size = self._saved_size or self.initial_size
-      -- Use FirstUseEver so ImGui doesn't try to auto-fit content on spawn
-      if pos  and pos.x  and pos.y  then ImGui.SetNextWindowPos(ctx,  pos.x,  pos.y, ImGui.Cond_FirstUseEver) end
-      if size and size.w and size.h then ImGui.SetNextWindowSize(ctx, size.w, size.h, ImGui.Cond_FirstUseEver) end
+      -- Use Once (per session) to override ImGui's .ini persistence with our Settings
+      if pos  and pos.x  and pos.y  then ImGui.SetNextWindowPos(ctx,  pos.x,  pos.y, ImGui.Cond_Once) end
+      if size and size.w and size.h then ImGui.SetNextWindowSize(ctx, size.w, size.h, ImGui.Cond_Once) end
       self._pos_size_set = true
     end
     
