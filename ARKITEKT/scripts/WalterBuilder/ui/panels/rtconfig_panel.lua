@@ -110,9 +110,14 @@ function Panel:set_context(context)
 end
 
 -- Get elements ready for loading to canvas
+-- Returns only visual elements (filters out colors, fonts, margins, zero-size)
 function Panel:get_loadable_elements()
   if not self.conversion_result then return nil end
-  return RtconfigConverter.extract_elements(self.conversion_result, true, false)
+  return RtconfigConverter.extract_elements(self.conversion_result, {
+    include_computed = true,
+    include_cleared = false,
+    filter_non_visual = true,
+  })
 end
 
 -- Draw summary section

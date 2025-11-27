@@ -15,6 +15,34 @@ local Coordinate = require('WalterBuilder.domain.coordinate')
 
 local M = {}
 
+-- Map @position names to array indices
+-- @x or @0 = 1, @y or @1 = 2, @w or @2 = 3, etc. (1-indexed for Lua)
+local POSITION_MAP = {
+  x = 1, ["0"] = 1,
+  y = 2, ["1"] = 2,
+  w = 3, ["2"] = 3,
+  h = 4, ["3"] = 4,
+  ls = 5, ["4"] = 5,
+  ts = 6, ["5"] = 6,
+  rs = 7, ["6"] = 7,
+  bs = 8, ["7"] = 8,
+}
+
+-- Create a sparse coordinate array with value at the given position
+-- e.g., make_at_position(40, "y") -> {0, 40}
+-- e.g., make_at_position(1, "w") -> {0, 0, 1}
+local function make_at_position(value, pos_name)
+  local pos = POSITION_MAP[pos_name]
+  if not pos then return { value } end
+
+  local result = {}
+  for i = 1, pos - 1 do
+    result[i] = 0
+  end
+  result[pos] = value
+  return result
+end
+
 -- Default scalar values for common variables
 -- These approximate typical values at 100% DPI
 M.DEFAULT_SCALARS = {
@@ -114,16 +142,29 @@ local function tokenize(expr)
       tokens[#tokens + 1] = { type = "cmp", value = ">" }
       i = i + 1
 
-    -- Number (including negative)
+    -- Number (including negative), possibly with @position suffix
     elseif c:match("[%d%-]") then
       local j = i
       while j <= len and expr:sub(j, j):match("[%d%.%-]") do
         j = j + 1
       end
-      tokens[#tokens + 1] = { type = "number", value = tonumber(expr:sub(i, j - 1)) }
+      local num_val = tonumber(expr:sub(i, j - 1))
+
+      -- Check for @position suffix (e.g., 40@y, 1@w)
+      local at_pos = nil
+      if expr:sub(j, j) == "@" then
+        local k = j + 1
+        while k <= len and expr:sub(k, k):match("[%w]") do
+          k = k + 1
+        end
+        at_pos = expr:sub(j + 1, k - 1)
+        j = k
+      end
+
+      tokens[#tokens + 1] = { type = "number", value = num_val, at_pos = at_pos }
       i = j
 
-    -- Identifier (variable name, possibly with {index})
+    -- Identifier (variable name, possibly with {index} and/or @position)
     elseif c:match("[%a_]") then
       local j = i
       while j <= len and expr:sub(j, j):match("[%w_.]") do
@@ -142,7 +183,18 @@ local function tokenize(expr)
         j = k + 1
       end
 
-      tokens[#tokens + 1] = { type = "ident", value = name, index = index }
+      -- Check for @position suffix (e.g., recarm@w)
+      local at_pos = nil
+      if expr:sub(j, j) == "@" then
+        local k = j + 1
+        while k <= len and expr:sub(k, k):match("[%w]") do
+          k = k + 1
+        end
+        at_pos = expr:sub(j + 1, k - 1)
+        j = k
+      end
+
+      tokens[#tokens + 1] = { type = "ident", value = name, index = index, at_pos = at_pos }
       i = j
 
     -- Dot (standalone, used in some contexts)
@@ -260,19 +312,32 @@ local function eval_tokens(tokens, pos, context)
     return values, pos + 1
   end
 
-  -- Number - scalar value
+  -- Number - scalar value, possibly with @position
   if token.type == "number" then
+    if token.at_pos then
+      -- e.g., 40@y -> {0, 40}
+      return make_at_position(token.value, token.at_pos), pos + 1
+    end
     return { token.value }, pos + 1
   end
 
-  -- Identifier - variable reference
+  -- Identifier - variable reference, possibly with @position
   if token.type == "ident" then
     local value = get_scalar(token.value, context, token.index)
+    local result
     if type(value) == "table" then
-      return value, pos + 1
+      result = value
     else
-      return { value }, pos + 1
+      result = { value }
     end
+
+    -- Handle @position suffix (e.g., recarm@w)
+    if token.at_pos then
+      local scalar = result[1] or 0
+      return make_at_position(scalar, token.at_pos), pos + 1
+    end
+
+    return result, pos + 1
   end
 
   -- Binary operator (prefix notation)

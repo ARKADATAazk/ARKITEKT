@@ -24,11 +24,27 @@ local Console = require('WalterBuilder.ui.panels.debug_console')
 local M = {}
 
 -- Evaluation context with default values
-local eval_context = {
+local DEFAULT_CONTEXT = {
   w = 300,  -- Default TCP width
   h = 90,   -- Default TCP height
   scale = 1.0,
+
+  -- Common pre-computed variables (typical values at 100% DPI)
+  tcp_padding = 7,
+  element_h = 20,
+  meter_sec = 50,
+  main_sec = 200,
+  folder_sec = 20,
 }
+
+-- Check if a SET statement defines a variable (vs an element)
+-- Variables: simple names like "meter_sec", "tcp_padding"
+-- Elements: dotted names like "tcp.mute", "tcp.pan"
+local function is_variable_definition(element_name)
+  -- Elements always have dots (tcp.mute, mcp.volume, etc.)
+  -- Variables are simple names (meter_sec, element_h, etc.)
+  return not element_name:match("%.")
+end
 
 -- Element name to category mapping
 local CATEGORY_MAP = {
@@ -146,9 +162,54 @@ local function get_element_flags(element_id)
   return flags
 end
 
+-- Evaluate an expression and return the result array
+-- @param expr: The expression string (e.g., "+ [10 20] scale")
+-- @param context: The evaluation context with variables
+-- @return: Array of values, or nil on failure
+local function evaluate_expression(expr, context)
+  if not expr then return nil end
+
+  -- Check if it's a simple bracket expression first
+  local bracket_content = expr:match("^%[([%d%s%-%.]+)%]$")
+  if bracket_content then
+    local values = {}
+    for num in bracket_content:gmatch("[%-%.%d]+") do
+      values[#values + 1] = tonumber(num)
+    end
+    return values
+  end
+
+  -- Use the expression evaluator
+  return ExpressionEval.evaluate(expr, context)
+end
+
+-- Process a variable definition SET statement
+-- Updates the context with the computed value
+-- @param item: The SET item (element = variable name, value = expression)
+-- @param context: The evaluation context to update
+-- @return: true if processed successfully
+local function process_variable_definition(item, context)
+  if not item.element or not item.value then return false end
+
+  local result = evaluate_expression(item.value, context)
+  if result and #result > 0 then
+    -- Store as array if multiple values, scalar if single
+    if #result == 1 then
+      context[item.element] = result[1]
+    else
+      context[item.element] = result
+    end
+    return true
+  end
+
+  return false
+end
+
 -- Convert a parsed SET item to an Element
+-- @param item: The SET item from parser
+-- @param context: The evaluation context with variables
 -- Returns element, is_computed (boolean), eval_success (boolean)
-local function convert_set_item(item)
+local function convert_set_item(item, context)
   if not item.element then
     return nil, false, false
   end
@@ -174,11 +235,8 @@ local function convert_set_item(item)
     })
     eval_success = true
   else
-    -- Try to evaluate the expression
-    local evaluated = nil
-    if item.value then
-      evaluated = ExpressionEval.evaluate(item.value, eval_context)
-    end
+    -- Try to evaluate the expression using context
+    local evaluated = evaluate_expression(item.value, context)
 
     if evaluated and #evaluated > 0 then
       -- Expression evaluated successfully
@@ -193,6 +251,10 @@ local function convert_set_item(item)
         bs = evaluated[8] or 0,
       })
       eval_success = true
+
+      -- Also store element coordinates in context for self-references
+      -- (e.g., tcp.solo references tcp.mute{3})
+      context[item.element] = evaluated
     else
       -- Evaluation failed - use placeholder coords
       coords = Coordinate.new({
@@ -259,7 +321,14 @@ local function convert_items(items, context_filter)
     cleared_count = 0,
     eval_success_count = 0,
     eval_failed_count = 0,
+    variable_count = 0,
   }
+
+  -- Initialize evaluation context from defaults
+  local eval_context = {}
+  for k, v in pairs(DEFAULT_CONTEXT) do
+    eval_context[k] = v
+  end
 
   local set_count = 0
   local matched_count = 0
@@ -270,6 +339,17 @@ local function convert_items(items, context_filter)
   for _, item in ipairs(items) do
     if item.type == RtconfigParser.TOKEN.SET then
       set_count = set_count + 1
+
+      -- Check if this is a variable definition (no dot in name)
+      if is_variable_definition(item.element) then
+        -- Process variable and add to context
+        if process_variable_definition(item, eval_context) then
+          result.variable_count = result.variable_count + 1
+        end
+        -- Continue to next item - variables are not visual elements
+        goto continue
+      end
+
       -- Filter by context if specified
       local matches_context = true
       if context_filter then
@@ -285,7 +365,7 @@ local function convert_items(items, context_filter)
           -- Skip duplicate - keep first occurrence
         else
           seen_ids[item.element] = true
-          local element, is_computed, eval_success = convert_set_item(item)
+          local element, is_computed, eval_success = convert_set_item(item, eval_context)
           if element then
             local status = "simple"
             if is_computed then
@@ -321,6 +401,8 @@ local function convert_items(items, context_filter)
         end
       end
 
+      ::continue::
+
     elseif item.type == RtconfigParser.TOKEN.CLEAR then
       -- Filter by context if specified
       local matches_context = true
@@ -345,8 +427,8 @@ local function convert_items(items, context_filter)
   end
 
   -- Log summary with deduplication info
-  Console.success("Conversion complete: %d SET items, %d matched context, %d unique elements (%d duplicates skipped)",
-    set_count, matched_count, #result.elements, duplicate_count)
+  Console.success("Conversion complete: %d SET items, %d variables processed, %d matched context, %d unique elements (%d duplicates skipped)",
+    set_count, result.variable_count, matched_count, #result.elements, duplicate_count)
   Console.info("  Simple: %d | Computed: %d (eval OK: %d, eval FAIL: %d) | Cleared: %d",
     result.simple_count, result.computed_count, result.eval_success_count, result.eval_failed_count, result.cleared_count)
 
@@ -553,17 +635,50 @@ function M.get_stats(result)
   }
 end
 
+-- Check if an element is a visual element (should be rendered on canvas)
+-- Non-visual elements: .color, .font, .margin (these are styling, not layout)
+local function is_visual_element(element)
+  local id = element.id or ""
+
+  -- Filter out styling elements (not positioned on canvas)
+  if id:match("%.color$") or id:match("%.color%.") then
+    return false
+  end
+  if id:match("%.font$") or id:match("%.font%.") then
+    return false
+  end
+  if id:match("%.margin$") then
+    return false
+  end
+
+  -- Filter elements with no valid size (0x0 can be hidden)
+  -- But keep .size elements since they define container bounds
+  if not id:match("%.size$") then
+    if element.coords.w <= 0 and element.coords.h <= 0 then
+      return false  -- Zero-size non-container elements aren't visual
+    end
+  end
+
+  return true
+end
+
 -- Extract just the Element objects (for loading into State)
 -- @param result: The conversion result from convert_layout
--- @param include_computed: Whether to include computed elements (default: true)
--- @param include_cleared: Whether to include cleared elements (default: false)
-function M.extract_elements(result, include_computed, include_cleared)
+-- @param opts: Options table:
+--   include_computed: Whether to include computed elements (default: true)
+--   include_cleared: Whether to include cleared elements (default: false)
+--   filter_non_visual: Whether to filter out .color/.font/.margin (default: true)
+function M.extract_elements(result, opts)
   if not result then return {} end
 
-  include_computed = include_computed ~= false
-  include_cleared = include_cleared or false
+  opts = opts or {}
+  local include_computed = opts.include_computed ~= false
+  local include_cleared = opts.include_cleared or false
+  local filter_non_visual = opts.filter_non_visual ~= false
 
   local elements = {}
+  local filtered_count = 0
+
   for _, entry in ipairs(result.elements) do
     local include = true
 
@@ -574,9 +689,19 @@ function M.extract_elements(result, include_computed, include_cleared)
       include = false
     end
 
+    -- Filter non-visual elements (colors, fonts, margins)
+    if include and filter_non_visual and not is_visual_element(entry.element) then
+      include = false
+      filtered_count = filtered_count + 1
+    end
+
     if include then
       elements[#elements + 1] = entry.element
     end
+  end
+
+  if filtered_count > 0 then
+    Console.info("Filtered %d non-visual elements (color/font/margin/zero-size)", filtered_count)
   end
 
   return elements
