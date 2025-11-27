@@ -421,6 +421,15 @@ local function convert_items(items, context_filter)
     if item.type == RtconfigParser.TOKEN.SET then
       set_count = set_count + 1
 
+      -- Debug: track specific elements we're looking for
+      local tracked_elements = {
+        ["tcp.recarm"] = true, ["tcp.recmon"] = true,
+        ["tcp.recmode"] = true, ["tcp.env"] = true,
+      }
+      if tracked_elements[item.element] then
+        Console.warn(">>> FOUND %s in items, value: %s", item.element, item.value or "(simple)")
+      end
+
       -- Check if this is a variable definition (no dot in name)
       if is_variable_definition(item.element) then
         -- Process variable and add to context
