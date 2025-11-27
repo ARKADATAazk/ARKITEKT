@@ -94,6 +94,25 @@ local DEFAULT_CONTEXT = {
   show_recmon_group = 1,
   show_recmode_group = 1,
   show_env_group = 1,
+
+  -- Flow element widths (computed by rtconfig, we provide defaults)
+  tcp_LabelSize = 80,
+  tcp_VolSize = 50,
+  tcp_PanSize = 40,
+  tcp_InSize = 40,
+  tcpLabelAutoMeasured = 80,  -- Simulated runtime label width
+  tcp_LabelPair = 80,
+  tcp_VolPair = 50,
+  tcp_vol_len_offs = 0,
+  tcp_label_len_offs = 0,
+
+  -- OVR (override) widths for flow elements (dotted names flattened)
+  ["OVR.tcp_recarm.width"] = 20,
+  ["OVR.tcp_recmon.width"] = 15,
+  ["OVR.tcp_io.width"] = 34,
+  ["OVR.tcp_fx.width"] = 24,
+  ["OVR.tcp_env.width"] = 41,
+  ["OVR.tcp_recmode.width"] = 39,
 }
 
 -- Known element context prefixes (these define visual elements, not variables)
@@ -586,8 +605,24 @@ local function calculate_flow_positions(result, eval_context)
         coords.h = element_h
       end
 
-      -- Advance X by element width (plus small gap)
+      -- Get flow width from flow_params if element width is 0
       local elem_width = coords.w or 0
+      if elem_width == 0 and flow_params and flow_params[1] then
+        -- Try to evaluate the width from the flow parameter
+        local width_var = flow_params[1]
+        local width_val = tonumber(width_var)
+        if not width_val then
+          -- Try to look up as a variable
+          width_val = get_scalar(eval_context[width_var], 0)
+        end
+        if width_val and width_val > 0 then
+          coords.w = width_val
+          elem_width = width_val
+          Console.info("  Flow width from param: %s = %d", width_var, elem_width)
+        end
+      end
+
+      -- Advance X by element width (plus small gap)
       if elem_width > 0 then
         current_x = current_x + elem_width + 2  -- 2px gap between elements
         positioned_count = positioned_count + 1
@@ -1187,6 +1222,11 @@ function M.get_controllable_context_vars()
     { key = "w", label = "Track Width", type = "int", default = 400, min = 100, max = 800 },
     { key = "h", label = "Track Height", type = "int", default = 150, min = 40, max = 300 },
     { key = "scale", label = "DPI Scale", type = "float", default = 1.0, min = 0.5, max = 2.0 },
+
+    -- Flow element widths
+    { key = "tcp_LabelSize", label = "Label Width", type = "int", default = 80, min = 0, max = 200 },
+    { key = "tcp_VolSize", label = "Volume Width", type = "int", default = 50, min = 0, max = 100 },
+    { key = "tcp_PanSize", label = "Pan Width", type = "int", default = 40, min = 0, max = 100 },
 
     -- Visibility toggles
     { key = "hide_mute_group", label = "Hide Mute/Solo", type = "bool", default = 0 },
