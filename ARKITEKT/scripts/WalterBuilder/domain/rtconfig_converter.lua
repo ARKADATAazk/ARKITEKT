@@ -192,9 +192,18 @@ end
 -- Evaluate an expression and return the result array
 -- @param expr: The expression string (e.g., "+ [10 20] scale")
 -- @param context: The evaluation context with variables
+-- @param debug_element: Optional element name to debug
 -- @return: Array of values, or nil on failure
-local function evaluate_expression(expr, context)
+local function evaluate_expression(expr, context, debug_element)
   if not expr then return nil end
+
+  -- Debug output for specific element
+  if debug_element == "tcp.mute" then
+    Console.warn("DEBUG tcp.mute expr: %s", expr)
+    Console.warn("DEBUG context.scale = %s", tostring(context.scale))
+    Console.warn("DEBUG context.is_solo_flipped = %s", tostring(context.is_solo_flipped))
+    Console.warn("DEBUG context.meter_sec = %s", tostring(context.meter_sec))
+  end
 
   -- Check if it's a simple bracket expression first
   local bracket_content = expr:match("^%[([%d%s%-%.]+)%]$")
@@ -207,7 +216,13 @@ local function evaluate_expression(expr, context)
   end
 
   -- Use the expression evaluator
-  return ExpressionEval.evaluate(expr, context)
+  local result = ExpressionEval.evaluate(expr, context)
+
+  if debug_element == "tcp.mute" then
+    Console.warn("DEBUG tcp.mute result: %s", result and table.concat(result, ", ") or "nil")
+  end
+
+  return result
 end
 
 -- Process a variable definition SET statement
@@ -263,7 +278,7 @@ local function convert_set_item(item, context)
     eval_success = true
   else
     -- Try to evaluate the expression using context
-    local evaluated = evaluate_expression(item.value, context)
+    local evaluated = evaluate_expression(item.value, context, item.element)
 
     if evaluated and #evaluated > 0 then
       -- Expression evaluated successfully
