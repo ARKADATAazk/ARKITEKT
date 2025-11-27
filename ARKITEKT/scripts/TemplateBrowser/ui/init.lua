@@ -591,6 +591,46 @@ function GUI:draw(ctx, shell_state)
   -- Store fonts reference for grid tiles
   self.fonts = shell_state.fonts
 
+  -- Show loading screen while scanning templates
+  if not self.state.scan_complete then
+    local window_width, window_height = ImGui.GetWindowSize(ctx)
+
+    -- Title text
+    local text = self.state.scan_in_progress and "Scanning templates..." or "Initializing..."
+    local text_width = ImGui.CalcTextSize(ctx, text)
+    ImGui.SetCursorPosX(ctx, (window_width - text_width) * 0.5)
+    ImGui.SetCursorPosY(ctx, window_height * 0.5 - 30)
+    ImGui.Text(ctx, text)
+
+    -- Progress bar
+    if self.state.scan_in_progress then
+      local progress = self.state.scan_progress or 0
+      local bar_width = 300
+      local bar_height = 4
+
+      ImGui.SetCursorPosX(ctx, (window_width - bar_width) * 0.5)
+      ImGui.SetCursorPosY(ctx, window_height * 0.5)
+
+      -- Progress bar background
+      local draw_list = ImGui.GetWindowDrawList(ctx)
+      local pos_x, pos_y = ImGui.GetCursorScreenPos(ctx)
+      local col_bg = ImGui.GetColorEx(ctx, ImGui.Col_FrameBg)
+      local col_progress = ImGui.GetColorEx(ctx, ImGui.Col_ButtonActive)
+
+      ImGui.DrawList_AddRectFilled(draw_list, pos_x, pos_y, pos_x + bar_width, pos_y + bar_height, col_bg)
+      ImGui.DrawList_AddRectFilled(draw_list, pos_x, pos_y, pos_x + (bar_width * progress), pos_y + bar_height, col_progress)
+
+      -- Percentage text
+      local percent_text = string.format("%d%%", progress * 100)
+      local percent_width = ImGui.CalcTextSize(ctx, percent_text)
+      ImGui.SetCursorPosX(ctx, (window_width - percent_width) * 0.5)
+      ImGui.SetCursorPosY(ctx, window_height * 0.5 + 10)
+      ImGui.Text(ctx, percent_text)
+    end
+
+    return  -- Don't render main UI until scan is complete
+  end
+
   -- Process background FX parsing queue (5 templates per frame)
   FXQueue.process_batch(self.state, 5)
 

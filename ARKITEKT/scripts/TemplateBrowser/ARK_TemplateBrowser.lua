@@ -21,10 +21,7 @@ local hexrgb = ark.Colors.hexrgb
 -- Initialize state
 State.initialize(Config)
 
--- Initialize scanner and load templates
-Scanner.scan_templates(State)
-
--- Create GUI instance
+-- Create GUI instance (scanner will run after window opens)
 local gui = GUI.new(Config, State, Scanner)
 
 -- Run in overlay mode
@@ -39,6 +36,22 @@ Shell.run({
   },
 
   draw = function(ctx, state)
+    -- Run incremental scanner
+    if not State.scan_complete then
+      if not State.scan_in_progress then
+        -- Initialize scan on first frame
+        State.scan_in_progress = true
+        Scanner.scan_init(State)
+      else
+        -- Continue scanning (50 files per frame)
+        local complete = Scanner.scan_batch(State, 50)
+        if complete then
+          State.scan_complete = true
+          State.scan_in_progress = false
+        end
+      end
+    end
+
     if gui and gui.draw then
       gui:draw(ctx, {
         fonts = state.fonts,

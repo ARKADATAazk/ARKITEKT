@@ -67,6 +67,11 @@ M.exit = false
 M.overlay_alpha = 1.0
 M.reparse_armed = false  -- Force reparse button armed state
 
+-- Scanner state (for deferred loading)
+M.scan_complete = false
+M.scan_in_progress = false
+M.scan_progress = 0  -- 0.0 to 1.0
+
 function M.initialize(config)
   M.config = config
   M.folders = {}
@@ -109,6 +114,11 @@ function M.initialize(config)
   -- Keyboard shortcuts
   M.focus_search = false
   M.grid_navigation = nil
+
+  -- Scanner state
+  M.scan_complete = false
+  M.scan_in_progress = false
+  M.scan_progress = 0
 
   -- Panel layout defaults
   M.separator1_ratio = config.FOLDERS_PANEL_WIDTH_RATIO or 0.22
