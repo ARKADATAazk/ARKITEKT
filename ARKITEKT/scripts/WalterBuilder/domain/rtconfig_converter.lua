@@ -18,9 +18,17 @@
 local Element = require('WalterBuilder.domain.element')
 local Coordinate = require('WalterBuilder.domain.coordinate')
 local RtconfigParser = require('WalterBuilder.domain.rtconfig_parser')
+local ExpressionEval = require('WalterBuilder.domain.expression_eval')
 local Console = require('WalterBuilder.ui.panels.debug_console')
 
 local M = {}
+
+-- Evaluation context with default values
+local eval_context = {
+  w = 300,  -- Default TCP width
+  h = 90,   -- Default TCP height
+  scale = 1.0,
+}
 
 -- Element name to category mapping
 local CATEGORY_MAP = {
@@ -139,16 +147,19 @@ local function get_element_flags(element_id)
 end
 
 -- Convert a parsed SET item to an Element
--- Returns element, is_computed (boolean)
+-- Returns element, is_computed (boolean), eval_success (boolean)
 local function convert_set_item(item)
   if not item.element then
-    return nil, false
+    return nil, false, false
   end
 
   local flags = get_element_flags(item.element)
 
   -- Create coordinate from parsed data
   local coords
+  local is_computed = not item.is_simple
+  local eval_success = false
+
   if item.is_simple and item.coords then
     -- Simple coordinates - direct mapping
     coords = Coordinate.new({
@@ -161,13 +172,34 @@ local function convert_set_item(item)
       rs = item.coords[7] or 0,
       bs = item.coords[8] or 0,
     })
+    eval_success = true
   else
-    -- Computed expression - use placeholder coords
-    -- Mark as computed for UI to display appropriately
-    coords = Coordinate.new({
-      x = 0, y = 0, w = 20, h = 20,
-      ls = 0, ts = 0, rs = 0, bs = 0,
-    })
+    -- Try to evaluate the expression
+    local evaluated = nil
+    if item.value then
+      evaluated = ExpressionEval.evaluate(item.value, eval_context)
+    end
+
+    if evaluated and #evaluated > 0 then
+      -- Expression evaluated successfully
+      coords = Coordinate.new({
+        x = evaluated[1] or 0,
+        y = evaluated[2] or 0,
+        w = evaluated[3] or 0,
+        h = evaluated[4] or 0,
+        ls = evaluated[5] or 0,
+        ts = evaluated[6] or 0,
+        rs = evaluated[7] or 0,
+        bs = evaluated[8] or 0,
+      })
+      eval_success = true
+    else
+      -- Evaluation failed - use placeholder coords
+      coords = Coordinate.new({
+        x = 0, y = 0, w = 20, h = 20,
+        ls = 0, ts = 0, rs = 0, bs = 0,
+      })
+    end
   end
 
   local element = Element.new({
@@ -183,8 +215,8 @@ local function convert_set_item(item)
     description = item.comment or "",
   })
 
-  -- Return whether this was computed (for UI to show badge)
-  return element, not item.is_simple
+  -- Return whether this was computed and whether eval succeeded
+  return element, is_computed, eval_success
 end
 
 -- Convert a parsed CLEAR item to an Element (invisible)
@@ -216,7 +248,7 @@ local function convert_clear_item(item)
 end
 
 -- Convert all elements from a section or layout items list
--- Returns: { elements = {...}, computed_count = n, simple_count = n }
+-- Returns: { elements = {...}, computed_count = n, simple_count = n, eval_success = n, eval_failed = n }
 local function convert_items(items, context_filter)
   Console.info("Converting %d items with filter '%s'", #items, context_filter or "none")
 
@@ -225,6 +257,8 @@ local function convert_items(items, context_filter)
     computed_count = 0,
     simple_count = 0,
     cleared_count = 0,
+    eval_success_count = 0,
+    eval_failed_count = 0,
   }
 
   local set_count = 0
@@ -251,20 +285,30 @@ local function convert_items(items, context_filter)
           -- Skip duplicate - keep first occurrence
         else
           seen_ids[item.element] = true
-          local element, is_computed = convert_set_item(item)
+          local element, is_computed, eval_success = convert_set_item(item)
           if element then
-            Console.info("  + %s [%s] coords: x=%s y=%s w=%s h=%s",
+            local status = "simple"
+            if is_computed then
+              status = eval_success and "eval OK" or "eval FAIL"
+            end
+            Console.info("  + %s [%s] coords: x=%.0f y=%.0f w=%.0f h=%.0f",
               element.id,
-              is_computed and "computed" or "simple",
+              status,
               element.coords.x, element.coords.y, element.coords.w, element.coords.h)
             result.elements[#result.elements + 1] = {
               element = element,
               is_computed = is_computed,
+              eval_success = eval_success,
               source_line = item.line,
               raw_value = item.value,
             }
             if is_computed then
               result.computed_count = result.computed_count + 1
+              if eval_success then
+                result.eval_success_count = result.eval_success_count + 1
+              else
+                result.eval_failed_count = result.eval_failed_count + 1
+              end
             else
               result.simple_count = result.simple_count + 1
             end
@@ -303,8 +347,8 @@ local function convert_items(items, context_filter)
   -- Log summary with deduplication info
   Console.success("Conversion complete: %d SET items, %d matched context, %d unique elements (%d duplicates skipped)",
     set_count, matched_count, #result.elements, duplicate_count)
-  Console.info("  Elements: %d simple, %d computed, %d cleared",
-    result.simple_count, result.computed_count, result.cleared_count)
+  Console.info("  Simple: %d | Computed: %d (eval OK: %d, eval FAIL: %d) | Cleared: %d",
+    result.simple_count, result.computed_count, result.eval_success_count, result.eval_failed_count, result.cleared_count)
 
   -- Log sample of non-matching elements to help debug
   if #sample_non_matching > 0 then
