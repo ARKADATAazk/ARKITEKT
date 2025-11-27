@@ -232,13 +232,53 @@ local function tokenize(expr)
 end
 
 -- Parse a bracket expression into a coordinate array
-local function parse_bracket(str)
+-- Handles both simple numbers and variable references
+-- @param str: The bracket expression string "[x y w h ...]"
+-- @param context: The evaluation context for resolving variables
+local function parse_bracket(str, context)
   local content = str:match("^%[(.*)%]$")
   if not content then return nil end
 
   local values = {}
-  for num in content:gmatch("[%-%.%d]+") do
-    values[#values + 1] = tonumber(num)
+
+  -- Parse each space-separated token in the bracket
+  for token in content:gmatch("%S+") do
+    -- Check if it's a number
+    local num = tonumber(token)
+    if num then
+      values[#values + 1] = num
+    else
+      -- It's a variable reference, possibly with {index}
+      local var_name, index_str = token:match("^([%w_.]+){(%d+)}$")
+      if var_name then
+        -- Variable with index: foo{0}
+        local index = tonumber(index_str)
+        local var_val = context and context[var_name]
+        if type(var_val) == "table" then
+          values[#values + 1] = var_val[index + 1] or 0  -- 0-indexed to 1-indexed
+        elseif var_val then
+          values[#values + 1] = var_val
+        else
+          values[#values + 1] = M.DEFAULT_SCALARS[var_name] or 0
+        end
+      else
+        -- Simple variable reference
+        var_name = token:match("^([%w_.]+)$")
+        if var_name then
+          local var_val = context and context[var_name]
+          if type(var_val) == "table" then
+            values[#values + 1] = var_val[1] or 0
+          elseif var_val then
+            values[#values + 1] = var_val
+          else
+            values[#values + 1] = M.DEFAULT_SCALARS[var_name] or 0
+          end
+        else
+          -- Unknown token, use 0
+          values[#values + 1] = 0
+        end
+      end
+    end
   end
 
   return values
@@ -322,9 +362,9 @@ local function eval_tokens(tokens, pos, context)
 
   local token = tokens[pos]
 
-  -- Bracket expression - direct coordinate
+  -- Bracket expression - direct coordinate (may contain variable references)
   if token.type == "bracket" then
-    local values = parse_bracket(token.value)
+    local values = parse_bracket(token.value, context)
     return values, pos + 1
   end
 

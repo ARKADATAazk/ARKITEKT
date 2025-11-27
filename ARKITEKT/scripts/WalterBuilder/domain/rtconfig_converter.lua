@@ -397,6 +397,10 @@ local function convert_items(items, context_filter)
             local status = "simple"
             if is_computed then
               status = eval_success and "eval OK" or "eval FAIL"
+              -- Log failed expressions for debugging
+              if not eval_success then
+                Console.warn("  FAILED EXPR for %s: %s", item.element, item.value or "(nil)")
+              end
             end
             Console.info("  + %s [%s] coords: x=%.0f y=%.0f w=%.0f h=%.0f",
               element.id,
