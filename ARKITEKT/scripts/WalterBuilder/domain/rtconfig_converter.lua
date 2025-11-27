@@ -324,27 +324,27 @@ local function evaluate_expression(expr, context, element_name)
     return values
   end
 
-  -- Debug: trace specific elements
+  -- Debug: trace specific elements (using Console.info which we know works)
   local trace_this = M.DEBUG_EXPRESSIONS and element_name and (
-    element_name:match("meter") or
-    element_name:match("mute") or
-    element_name:match("solo")
+    element_name == "tcp.meter" or
+    element_name == "tcp.mute" or
+    element_name == "tcp.solo" or
+    element_name == "meter_sec" or
+    element_name == "is_solo_flipped"
   )
 
   if trace_this then
-    Console.warn("EXPR DEBUG: %s", element_name)
-    Console.warn("  expr: %s", expr:sub(1, 80))
-    Console.warn("  context.meter_sec = %s", fmt_arr(context.meter_sec))
-    Console.warn("  context.is_solo_flipped = %s", tostring(context.is_solo_flipped))
-    ExpressionEval.set_debug(true)
+    Console.info(">>> EXPR DEBUG: %s", element_name)
+    Console.info("    expr: %s", expr:sub(1, 100))
+    Console.info("    context.meter_sec = %s", fmt_arr(context.meter_sec))
+    Console.info("    context.is_solo_flipped = %s", tostring(context.is_solo_flipped))
   end
 
   -- Use the expression evaluator
   local result = ExpressionEval.evaluate(expr, context)
 
   if trace_this then
-    Console.warn("  result = %s", fmt_arr(result))
-    ExpressionEval.set_debug(false)
+    Console.info("    result = %s", fmt_arr(result))
   end
 
   return result
