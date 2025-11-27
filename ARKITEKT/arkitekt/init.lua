@@ -9,7 +9,18 @@
 -- AUTO-BOOTSTRAP
 -- ============================================================================
 -- Run bootstrap to set up package paths and validate dependencies
-local bootstrap_path = debug.getinfo(1,"S").source:sub(2):match("(.-arkitekt[/\\])") .. "app/bootstrap.lua"
+local sep = package.config:sub(1,1)
+local src = debug.getinfo(1,"S").source:sub(2)
+-- Get the directory containing this init.lua (arkitekt/)
+local arkitekt_dir = src:match("(.-arkitekt)[/\\]") or src:match("(.*)[/\\]")
+if not arkitekt_dir then
+  error("ARKITEKT init.lua: Cannot determine arkitekt directory from: " .. tostring(src))
+end
+local bootstrap_path = arkitekt_dir .. sep .. "arkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
+-- If this file IS in arkitekt/, adjust path
+if src:match("arkitekt[/\\]init%.lua$") then
+  bootstrap_path = arkitekt_dir .. sep .. "app" .. sep .. "bootstrap.lua"
+end
 local bootstrap_context = dofile(bootstrap_path).init()
 
 if not bootstrap_context then
