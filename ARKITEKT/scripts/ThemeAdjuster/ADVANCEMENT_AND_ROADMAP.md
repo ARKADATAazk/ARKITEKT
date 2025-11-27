@@ -59,15 +59,19 @@ ThemeAdjuster/
 ### Phase 1: Core Functionality (Critical Path)
 
 #### 1.1 Assembler: Theme Output System
-**Priority: HIGH** - Without this, the Assembler tab is incomplete
+**Priority: HIGH** - Core apply functionality
 
-- [ ] Implement "Reassemble Theme" action
+- [x] Implement "Reassemble Theme" action
   - Copy base theme to output folder
   - Apply package assets based on resolution order
   - Preserve theme metadata
-- [ ] Add output folder selection (or default to `<ThemeName>_Reassembled/`)
-- [ ] Add theme backup before modification
-- [ ] Handle conflicts (same key from multiple packages)
+- [x] Add output folder selection (default: `<ThemeName>_Reassembled/`)
+- [x] Add theme backup before modification (folder mode)
+- [x] **Delta tracking** - Only copy changed files on subsequent applies
+  - `.assembler_state.json` tracks applied assets
+  - Restores original files when packages are removed
+- [x] **Output mode toggle** - Folder (📁) vs ZIP (📦) in footer
+- [ ] Handle conflicts (same key from multiple packages) - show warning?
 - [ ] **ZIP operation progress UI** - Since PowerShell runs hidden (no scary console flash), need in-app feedback:
   - Progress bar or spinner during extract/compress
   - Log/status text showing what's happening
