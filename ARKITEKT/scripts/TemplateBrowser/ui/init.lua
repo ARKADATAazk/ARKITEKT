@@ -9,6 +9,7 @@ local ark = require('arkitekt')
 local TemplateOps = require('TemplateBrowser.domain.template.ops')
 local FileOps = require('TemplateBrowser.infra.file_ops')
 local FXQueue = require('TemplateBrowser.domain.fx.queue')
+local Scanner = require('TemplateBrowser.domain.template.scanner')
 
 -- UI components
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
@@ -30,6 +31,7 @@ local ConveniencePanelView = require('TemplateBrowser.ui.views.convenience_panel
 local TemplatePanelView = require('TemplateBrowser.ui.views.template_panel_view')
 local InfoPanelView = require('TemplateBrowser.ui.views.info_panel_view')
 local TemplateModalsView = require('TemplateBrowser.ui.views.template_modals_view')
+local StatusBar = require('TemplateBrowser.ui.status')
 
 local M = {}
 local GUI = {}
@@ -199,7 +201,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end,
     on_search_changed = function(new_query)
       self.state.search_query = new_query
-      local Scanner = require('TemplateBrowser.domain.template.scanner')
+      
       Scanner.filter_templates(self.state)
     end,
     get_sort_mode = function()
@@ -207,7 +209,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end,
     on_sort_changed = function(new_mode)
       self.state.sort_mode = new_mode
-      local Scanner = require('TemplateBrowser.domain.template.scanner')
+      
       Scanner.filter_templates(self.state)
     end,
     get_filter_items = function()
@@ -251,7 +253,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       end
 
       -- Re-filter templates
-      local Scanner = require('TemplateBrowser.domain.template.scanner')
+      
       Scanner.filter_templates(self.state)
     end,
     get_view_mode_label = function()
@@ -426,7 +428,7 @@ function GUI:draw(ctx, shell_state)
 
       -- Rescan if any succeeded
       if success_count > 0 then
-        local Scanner = require('TemplateBrowser.domain.template.scanner')
+        
         Scanner.scan_templates(self.state)
 
         -- Success message
@@ -468,7 +470,7 @@ function GUI:draw(ctx, shell_state)
         if success then
           self.state.set_status("Archived: " .. self.state.selected_template.name, "success")
           -- Rescan templates
-          local Scanner = require('TemplateBrowser.domain.template.scanner')
+          
           Scanner.scan_templates(self.state)
           self.state.selected_template = nil
         else
@@ -656,7 +658,7 @@ function GUI:draw(ctx, shell_state)
   TemplateModalsView.draw_conflict_resolution_modal(ctx, self.state)
 
   -- Status bar at the bottom
-  local StatusBar = require('TemplateBrowser.ui.status')
+  
   local status_bar_y = SCREEN_H - padding_bottom - status_bar_height
   ImGui.SetCursorPos(ctx, padding_left, status_bar_y)
   StatusBar.draw(ctx, self.state, content_width, status_bar_height)

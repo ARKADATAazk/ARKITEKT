@@ -3,6 +3,13 @@
 -- Factory for creating grid callback handlers
 -- Eliminates ~300 LOC duplication between template_grid and quick_access_grid
 
+-- Dependencies (cached at module load per Lua Performance Guide)
+local ImGui = require('arkitekt.platform.imgui')
+local TemplateOps = require('TemplateBrowser.domain.template.ops')
+local Persistence = require('TemplateBrowser.infra.storage')
+local Tags = require('TemplateBrowser.domain.tags.service')
+local Scanner = require('TemplateBrowser.domain.template.scanner')
+
 local M = {}
 
 --- Create grid callbacks for template or quick access grids
@@ -13,44 +20,6 @@ local M = {}
 function M.create(gui, get_templates_fn, opts)
   opts = opts or {}
   local is_quick_access = opts.is_quick_access or false
-
-  -- Lazy-load dependencies to avoid circular requires
-  local _ImGui, _TemplateOps, _Persistence, _Tags, _Scanner
-
-  local function get_ImGui()
-    if not _ImGui then
-      _ImGui = require('arkitekt.platform.imgui')
-    end
-    return _ImGui
-  end
-
-  local function get_TemplateOps()
-    if not _TemplateOps then
-      _TemplateOps = require('TemplateBrowser.domain.template.ops')
-    end
-    return _TemplateOps
-  end
-
-  local function get_Persistence()
-    if not _Persistence then
-      _Persistence = require('TemplateBrowser.infra.storage')
-    end
-    return _Persistence
-  end
-
-  local function get_Tags()
-    if not _Tags then
-      _Tags = require('TemplateBrowser.domain.tags.service')
-    end
-    return _Tags
-  end
-
-  local function get_Scanner()
-    if not _Scanner then
-      _Scanner = require('TemplateBrowser.domain.template.scanner')
-    end
-    return _Scanner
-  end
 
   return {
     --- Handle template selection
@@ -85,7 +54,6 @@ function M.create(gui, get_templates_fn, opts)
 
       -- Check for rename (Ctrl+DoubleClick) only on main grid
       if not is_quick_access then
-        local ImGui = get_ImGui()
         local ctrl_down = ImGui.IsKeyDown(gui.ctx, ImGui.Mod_Ctrl)
         if ctrl_down then
           -- Start rename
@@ -97,7 +65,6 @@ function M.create(gui, get_templates_fn, opts)
       end
 
       -- Apply template to track
-      local TemplateOps = get_TemplateOps()
       TemplateOps.apply_to_selected_track(template.path, template.uuid, gui.state)
     end,
 
@@ -116,7 +83,6 @@ function M.create(gui, get_templates_fn, opts)
     on_star_click = function(template)
       if not template then return end
 
-      local Persistence = get_Persistence()
       local favorites_id = "__FAVORITES__"
 
       -- Get favorites folder
@@ -151,7 +117,6 @@ function M.create(gui, get_templates_fn, opts)
 
       -- If currently viewing Favorites folder, refresh the filter
       if gui.state.selected_folder == favorites_id then
-        local Scanner = get_Scanner()
         Scanner.filter_templates(gui.state)
       end
     end,
@@ -161,9 +126,6 @@ function M.create(gui, get_templates_fn, opts)
     --- @param payload table Drag payload with tag info
     on_tag_drop = function(template, payload)
       if not template or not payload then return end
-
-      local Tags = get_Tags()
-      local Persistence = get_Persistence()
 
       -- Get tag name from payload
       local tag_name = payload.label or payload.id
@@ -203,7 +165,6 @@ function M.create(gui, get_templates_fn, opts)
 
       -- Re-filter if tag filters active
       if next(gui.state.filter_tags) then
-        local Scanner = get_Scanner()
         Scanner.filter_templates(gui.state)
       end
 
