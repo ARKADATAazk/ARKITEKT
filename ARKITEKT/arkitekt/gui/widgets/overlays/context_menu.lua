@@ -94,31 +94,53 @@ function M.begin(ctx, id, config)
     ImGui.PopStyleColor(ctx, 2)
     ImGui.PopStyleVar(ctx, 5)
   else
-    -- Draw subtle shadow/halo effect
+    -- Draw optimized multi-layer shadow/glow effect
     local wx, wy = ImGui.GetWindowPos(ctx)
     local ww, wh = ImGui.GetWindowSize(ctx)
     local bg_dl = ImGui.GetBackgroundDrawList(ctx)
 
-    -- Draw multi-layer shadow for soft glow effect
-    local shadow_offset = 3
-    local shadow_spread = 6
+    -- Base black color
+    local black = hexrgb("#000000")
+
+    -- Multi-layer shadow for smooth blur effect (from outer to inner)
+    -- Each layer is slightly smaller and more opaque, creating a gradient
+    local shadow_offset_x = 2
+    local shadow_offset_y = 3  -- Slightly more vertical offset for depth
+
+    -- Outer glow (largest, most transparent)
+    local spread_1 = 8
     ImGui.DrawList_AddRectFilled(
       bg_dl,
-      wx + shadow_offset - shadow_spread,
-      wy + shadow_offset - shadow_spread,
-      wx + ww + shadow_offset + shadow_spread,
-      wy + wh + shadow_offset + shadow_spread,
-      hexrgb("#00000040"),  -- 25% opacity
-      rounding + shadow_spread
+      wx + shadow_offset_x - spread_1,
+      wy + shadow_offset_y - spread_1,
+      wx + ww + shadow_offset_x + spread_1,
+      wy + wh + shadow_offset_y + spread_1,
+      Colors.with_opacity(black, 0.08),  -- Very subtle outer glow
+      rounding + spread_1
     )
+
+    -- Middle layer
+    local spread_2 = 5
     ImGui.DrawList_AddRectFilled(
       bg_dl,
-      wx + shadow_offset - shadow_spread/2,
-      wy + shadow_offset - shadow_spread/2,
-      wx + ww + shadow_offset + shadow_spread/2,
-      wy + wh + shadow_offset + shadow_spread/2,
-      hexrgb("#00000030"),  -- 19% opacity
-      rounding + shadow_spread/2
+      wx + shadow_offset_x - spread_2,
+      wy + shadow_offset_y - spread_2,
+      wx + ww + shadow_offset_x + spread_2,
+      wy + wh + shadow_offset_y + spread_2,
+      Colors.with_opacity(black, 0.12),  -- Medium opacity
+      rounding + spread_2
+    )
+
+    -- Inner shadow (smallest, most opaque)
+    local spread_3 = 2
+    ImGui.DrawList_AddRectFilled(
+      bg_dl,
+      wx + shadow_offset_x - spread_3,
+      wy + shadow_offset_y - spread_3,
+      wx + ww + shadow_offset_x + spread_3,
+      wy + wh + shadow_offset_y + spread_3,
+      Colors.with_opacity(black, 0.18),  -- More opaque for definition
+      rounding + spread_3
     )
   end
 
