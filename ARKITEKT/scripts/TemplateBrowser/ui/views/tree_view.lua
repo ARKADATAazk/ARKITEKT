@@ -4,6 +4,7 @@
 -- Handles Physical and Virtual folder trees
 
 local TreeView = require('arkitekt.gui.widgets.navigation.tree_view')
+local PathValidation = require('arkitekt.core.path_validation')
 
 local M = {}
 
@@ -773,6 +774,12 @@ function M.draw_physical_tree(ctx, state, config)
 
       if template_count == 0 then
         -- Empty folder: attempt to delete directly (will only work if truly empty)
+        -- SECURITY: Validate path before deletion
+        local path_ok, path_err = PathValidation.is_safe_path(node.full_path)
+        if not path_ok then
+          state.set_status("Invalid path: " .. (path_err or "unknown"), "error")
+          return
+        end
         success = os.remove(node.full_path)
         if success then
           state.set_status("Deleted empty folder: " .. node.name, "success")
@@ -807,6 +814,13 @@ function M.draw_physical_tree(ctx, state, config)
           undo_fn = function()
             if archive_path then
               -- Restore from archive
+              -- SECURITY: Validate paths before restore
+              local src_ok, src_err = PathValidation.is_safe_path(archive_path)
+              local dst_ok, dst_err = PathValidation.is_safe_path(node.full_path)
+              if not src_ok or not dst_ok then
+                reaper.ShowConsoleMsg(string.format("Undo blocked - invalid path: %s\n", src_err or dst_err or "unknown"))
+                return false
+              end
               local restore_success = os.rename(archive_path, node.full_path)
               if restore_success then
                 Scanner.scan_templates(state)
@@ -819,6 +833,12 @@ function M.draw_physical_tree(ctx, state, config)
           end,
           redo_fn = function()
             if template_count == 0 then
+              -- SECURITY: Validate path before redo
+              local path_ok, path_err = PathValidation.is_safe_path(node.full_path)
+              if not path_ok then
+                reaper.ShowConsoleMsg(string.format("Redo blocked - invalid path: %s\n", path_err or "unknown"))
+                return false
+              end
               local redo_success = os.remove(node.full_path)
               if not redo_success then
                 redo_success, archive_path = FileOps.delete_folder(node.full_path)

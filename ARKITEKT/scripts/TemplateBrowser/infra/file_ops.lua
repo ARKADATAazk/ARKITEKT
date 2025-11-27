@@ -4,6 +4,9 @@
 
 local M = {}
 
+-- DEPENDENCIES
+local PathValidation = require('arkitekt.core.path_validation')
+
 -- Get separator for current OS
 local function get_sep()
   return package.config:sub(1,1)
@@ -100,6 +103,13 @@ end
 -- Move a file to archive with timestamp
 -- Returns: success (bool), archive_path (string or nil)
 function M.archive_file(file_path)
+  -- SECURITY: Validate input path
+  local ok, err = PathValidation.is_safe_path(file_path)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid file path: %s\n", err))
+    return false, nil
+  end
+
   local sep = get_sep()
   file_path = normalize_path(file_path)
 
@@ -139,6 +149,21 @@ end
 
 -- Rename a template file
 function M.rename_template(old_path, new_name)
+  -- SECURITY: Validate inputs
+  local ok, err = PathValidation.is_safe_path(old_path)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid source path: %s\n", err))
+    return false, nil
+  end
+
+  -- SECURITY: Sanitize and validate new filename
+  new_name = PathValidation.sanitize_filename(new_name)
+  ok, err = PathValidation.is_safe_filename(new_name)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid filename: %s\n", err))
+    return false, nil
+  end
+
   local sep = get_sep()
   old_path = normalize_path(old_path)
   local dir = old_path:match("^(.*)[/\\]")
@@ -156,6 +181,21 @@ end
 
 -- Rename a folder (directory)
 function M.rename_folder(old_path, new_name)
+  -- SECURITY: Validate inputs
+  local ok, err = PathValidation.is_safe_path(old_path)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid source path: %s\n", err))
+    return false, nil
+  end
+
+  -- SECURITY: Sanitize and validate new folder name
+  new_name = PathValidation.sanitize_filename(new_name)
+  ok, err = PathValidation.is_safe_filename(new_name)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid folder name: %s\n", err))
+    return false, nil
+  end
+
   local sep = get_sep()
   old_path = normalize_path(old_path)
   local parent = old_path:match("^(.*)[/\\]")
@@ -180,6 +220,19 @@ end
 -- conflict_mode: nil (no conflict), "overwrite", "keep_both", "cancel"
 -- Returns: success (bool), new_path (string or nil), conflict_detected (bool)
 function M.move_template(template_path, target_folder_path, conflict_mode)
+  -- SECURITY: Validate input paths
+  local ok, err = PathValidation.is_safe_path(template_path)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid source path: %s\n", err))
+    return false, nil, false
+  end
+
+  ok, err = PathValidation.is_safe_path(target_folder_path)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid target path: %s\n", err))
+    return false, nil, false
+  end
+
   local sep = get_sep()
   template_path = normalize_path(template_path)
   target_folder_path = normalize_path(target_folder_path)
@@ -242,6 +295,19 @@ end
 
 -- Move folder (and all its contents) to a different location
 function M.move_folder(folder_path, target_parent_path)
+  -- SECURITY: Validate input paths
+  local ok, err = PathValidation.is_safe_path(folder_path)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid source path: %s\n", err))
+    return false, nil
+  end
+
+  ok, err = PathValidation.is_safe_path(target_parent_path)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid target path: %s\n", err))
+    return false, nil
+  end
+
   local sep = get_sep()
   folder_path = normalize_path(folder_path)
   target_parent_path = normalize_path(target_parent_path)
@@ -266,6 +332,21 @@ end
 
 -- Create a new folder
 function M.create_folder(parent_path, folder_name)
+  -- SECURITY: Validate inputs
+  local ok, err = PathValidation.is_safe_path(parent_path)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid parent path: %s\n", err))
+    return false, nil
+  end
+
+  -- SECURITY: Sanitize and validate new folder name
+  folder_name = PathValidation.sanitize_filename(folder_name)
+  ok, err = PathValidation.is_safe_filename(folder_name)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid folder name: %s\n", err))
+    return false, nil
+  end
+
   local sep = get_sep()
   parent_path = normalize_path(parent_path)
   local new_path = parent_path .. sep .. folder_name
@@ -297,6 +378,13 @@ end
 -- Note: Folder archiving moves the entire folder with its contents
 -- Returns: success (bool), archive_path (string or nil)
 function M.delete_folder(folder_path)
+  -- SECURITY: Validate input path
+  local ok, err = PathValidation.is_safe_path(folder_path)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid folder path: %s\n", err))
+    return false, nil
+  end
+
   local sep = get_sep()
   folder_path = normalize_path(folder_path)
 
