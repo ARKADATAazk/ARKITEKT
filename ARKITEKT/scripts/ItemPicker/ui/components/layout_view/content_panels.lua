@@ -4,7 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
-local TrackFilterBar = require('ItemPicker.ui.components.track_filter_bar')
+local TrackFilterBar = require('ItemPicker.ui.components.filters.track')
 
 local M = {}
 

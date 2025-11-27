@@ -1,5 +1,5 @@
 -- @noindex
--- ItemPicker/ui/components/region_filter_bar.lua
+-- ItemPicker/ui/components/filters/region.lua
 -- Region filter bar - clickable chips to filter items by region
 
 local ImGui = require 'imgui' '0.10'

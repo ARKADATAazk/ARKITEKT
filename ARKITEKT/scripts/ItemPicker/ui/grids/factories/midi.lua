@@ -1,12 +1,12 @@
 -- @noindex
--- ItemPicker/ui/tiles/factories/midi_grid_factory.lua
+-- ItemPicker/ui/grids/factories/midi.lua
 -- Factory for creating MIDI items grid
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')
-local shared = require('ItemPicker.ui.grids.factories.grid_factory_shared')
+local shared = require('ItemPicker.ui.grids.factories.shared')
 
 local M = {}
 

@@ -76,7 +76,7 @@ M.data = {
 -- ============================================================================
 
 --- Main window / GUI orchestrator
-M.ui = require("ItemPicker.ui.main_window")
+M.ui = require("ItemPicker.ui.init")
 
 --- Visualization
 -- Waveform and MIDI thumbnail generation

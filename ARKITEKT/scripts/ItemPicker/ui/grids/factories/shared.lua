@@ -1,4 +1,5 @@
 -- @noindex
+-- ItemPicker/ui/grids/factories/shared.lua
 -- Shared utilities for audio and MIDI grid factories
 -- Extracts common filtering, sorting, and conversion logic
 

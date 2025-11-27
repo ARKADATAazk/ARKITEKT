@@ -1,12 +1,12 @@
 -- @noindex
--- ItemPicker/ui/tiles/factories/audio_grid_factory.lua
+-- ItemPicker/ui/grids/factories/audio.lua
 -- Factory for creating audio items grid
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
-local shared = require('ItemPicker.ui.grids.factories.grid_factory_shared')
+local shared = require('ItemPicker.ui.grids.factories.shared')
 
 local M = {}
 

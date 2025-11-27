@@ -1,5 +1,5 @@
 -- @noindex
--- ItemPicker/ui/views/drag_handler.lua
+-- ItemPicker/ui/components/drag.lua
 -- Drag and drop handler with visual preview
 
 local ImGui = require 'imgui' '0.10'

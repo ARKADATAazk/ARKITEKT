@@ -1,5 +1,5 @@
 -- @noindex
--- ItemPicker/ui/components/track_filter_bar.lua
+-- ItemPicker/ui/components/filters/track.lua
 -- Track filter bar - vertical tags on left side to filter items by track
 
 local ImGui = require 'imgui' '0.10'

@@ -1,5 +1,5 @@
 -- @noindex
--- ItemPicker/ui/gui.lua
+-- ItemPicker/ui/init.lua
 -- GUI orchestrator
 
 local ImGui = require 'imgui' '0.10'

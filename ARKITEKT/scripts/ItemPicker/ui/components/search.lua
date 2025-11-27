@@ -1,5 +1,5 @@
 -- @noindex
--- ItemPicker/ui/components/search_with_mode.lua
+-- ItemPicker/ui/components/search.lua
 -- Custom search field with mode selector using dropdown primitive
 
 local ImGui = require 'imgui' '0.10'
