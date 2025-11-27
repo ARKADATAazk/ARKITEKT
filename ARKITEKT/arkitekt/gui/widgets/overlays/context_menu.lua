@@ -94,11 +94,10 @@ function M.begin(ctx, id, config)
     ImGui.PopStyleColor(ctx, 2)
     ImGui.PopStyleVar(ctx, 5)
   else
-    -- Draw optimized multi-layer shadow/glow effect
-    -- Use window draw list with expanded clip rect for shadow
+    -- Draw shadow on background draw list (renders BEHIND popup)
     local wx, wy = ImGui.GetWindowPos(ctx)
     local ww, wh = ImGui.GetWindowSize(ctx)
-    local dl = ImGui.GetWindowDrawList(ctx)
+    local bg_dl = ImGui.GetBackgroundDrawList(ctx)
 
     -- Base black color
     local black = hexrgb("#000000")
@@ -107,23 +106,13 @@ function M.begin(ctx, id, config)
     local shadow_offset_x = 2
     local shadow_offset_y = 3
 
-    -- Expand clip rect to allow drawing shadow outside window bounds
-    local spread_max = 10
-    ImGui.DrawList_PushClipRect(dl,
-      wx - spread_max,
-      wy - spread_max,
-      wx + ww + spread_max * 2,
-      wy + wh + spread_max * 2,
-      false  -- Don't intersect with current clip
-    )
-
-    -- Multi-layer shadow for smooth blur (draw outer to inner)
-    -- Increased opacities for better visibility
+    -- Multi-layer shadow for smooth blur
+    -- Draw on background layer so it appears BEHIND the popup
 
     -- Outer glow (largest, most transparent)
     local spread_1 = 8
     ImGui.DrawList_AddRectFilled(
-      dl,
+      bg_dl,
       wx + shadow_offset_x - spread_1,
       wy + shadow_offset_y - spread_1,
       wx + ww + shadow_offset_x + spread_1,
@@ -135,7 +124,7 @@ function M.begin(ctx, id, config)
     -- Middle layer
     local spread_2 = 5
     ImGui.DrawList_AddRectFilled(
-      dl,
+      bg_dl,
       wx + shadow_offset_x - spread_2,
       wy + shadow_offset_y - spread_2,
       wx + ww + shadow_offset_x + spread_2,
@@ -147,7 +136,7 @@ function M.begin(ctx, id, config)
     -- Inner shadow (smallest, most opaque)
     local spread_3 = 2
     ImGui.DrawList_AddRectFilled(
-      dl,
+      bg_dl,
       wx + shadow_offset_x - spread_3,
       wy + shadow_offset_y - spread_3,
       wx + ww + shadow_offset_x + spread_3,
@@ -155,9 +144,6 @@ function M.begin(ctx, id, config)
       Colors.with_opacity(black, 0.25),
       rounding + spread_3
     )
-
-    -- Restore clip rect
-    ImGui.DrawList_PopClipRect(dl)
   end
 
   return popup_open
