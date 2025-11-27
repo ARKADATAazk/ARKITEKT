@@ -1,18 +1,244 @@
-# Framework Tagging Service TODO
+# Framework Preset Management System TODO
 
-> Design a unified tagging/action-chip service based on the superior `batch_rename_modal.lua` design.
+> Design a framework-wide system for managing presets (common names, tags, wildcards, etc.) with defaults, user customization, and persistence.
 
 ---
 
-## Reference Implementation
+## Vision
 
-**Location**: `arkitekt/gui/widgets/overlays/batch_rename_modal.lua` (983 lines)
+A unified preset system that:
+1. **Ships with defaults** - Framework includes built-in presets (Game Music, General Music, etc.)
+2. **User derivation** - Users can customize defaults without destroying them (append, delete, modify)
+3. **User creation** - Users can create entirely new preset lists
+4. **Persistence** - All customizations persist across sessions (REAPER ExtState)
+5. **Editor window** - Dedicated UI to manage all presets framework-wide
+6. **Auto-population** - Any dropdown/feature using presets automatically shows user's lists
 
-### Key Design Patterns
+---
 
-#### 1. Semantic Color-Coding
+## Architecture
 
-Chips are color-coded by meaning, not decoration:
+### Data Model
+
+```
+Presets
+├── defaults/              # Ships with framework (read-only)
+│   ├── game_music.lua     # Combat, calm, tension, victory...
+│   └── general_music.lua  # Intro, verse, chorus, bridge...
+│
+├── user/                  # User customizations (persisted)
+│   ├── derived/           # Based on defaults
+│   │   ├── game_music_custom.json   # Additions/deletions to game_music
+│   │   └── general_music_custom.json
+│   └── custom/            # Entirely new lists
+│       └── my_sfx_names.json
+```
+
+### Derivation Model
+
+Users don't copy the entire default - they store **diffs**:
+
+```lua
+-- user/derived/game_music_custom.json
+{
+  base = "game_music",           -- Which default this derives from
+  additions = {                  -- New items to append
+    {name = "stealth", color = "calm_green"},
+    {name = "chase", color = "intense_red"},
+  },
+  deletions = {"victory", "defeat"},  -- Items to hide from default
+  overrides = {                  -- Modify existing items
+    combat = {color = "special_purple"},  -- Change combat's color
+  },
+}
+```
+
+**Benefits:**
+- Default updates don't destroy user work
+- User sees their changes clearly
+- Can "reset to default" by clearing derivation
+
+### Resolution Order
+
+When a feature requests preset "game_music":
+1. Load default `game_music.lua`
+2. If user derivation exists, apply additions/deletions/overrides
+3. Return merged result
+
+---
+
+## Framework Components
+
+### 1. Preset Registry (`arkitekt/core/preset_registry.lua`)
+
+Central registry for all preset types:
+
+```lua
+local PresetRegistry = require('arkitekt.core.preset_registry')
+
+-- Register a preset type
+PresetRegistry.register_type({
+  id = "common_names",
+  defaults_path = "arkitekt/defs/presets/common_names/",
+  user_key = "ARKITEKT_PRESETS_COMMON_NAMES",  -- ExtState key
+})
+
+-- Get all available lists for a type
+local lists = PresetRegistry.get_lists("common_names")
+-- Returns: {"game_music", "general_music", "my_sfx_names"}
+
+-- Get resolved preset (default + user derivation merged)
+local names = PresetRegistry.get("common_names", "game_music")
+-- Returns: {{name="combat", color=...}, {name="calm", color=...}, ...}
+
+-- Get just the user's derivation (for editor)
+local derivation = PresetRegistry.get_derivation("common_names", "game_music")
+
+-- Save user derivation
+PresetRegistry.save_derivation("common_names", "game_music", {
+  additions = {...},
+  deletions = {...},
+})
+```
+
+### 2. Preset Editor Window (`arkitekt/gui/windows/preset_editor.lua`)
+
+Dedicated window to manage all presets:
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Preset Editor                               [_][□][×]│
+├─────────────────────────────────────────────────────┤
+│ Type: [Common Names ▾]                              │
+│                                                     │
+│ Lists:                                              │
+│ ┌───────────────────────────────────────────────┐  │
+│ │ ★ Game Music (default)        [Edit] [Reset]  │  │
+│ │ ★ General Music (default)     [Edit] [Reset]  │  │
+│ │   My SFX Names (custom)       [Edit] [Delete] │  │
+│ │                                               │  │
+│ │                        [+ New List]           │  │
+│ └───────────────────────────────────────────────┘  │
+├─────────────────────────────────────────────────────┤
+│ Editing: Game Music (derived from default)          │
+│                                                     │
+│ [Show All] [Show Additions Only] [Show Deletions]   │
+│                                                     │
+│ ┌───────────────────────────────────────────────┐  │
+│ │ ✓ combat      [■ red]    [×]  (default)       │  │
+│ │ ✓ calm        [■ green]  [×]  (default)       │  │
+│ │ ✗ victory     [■ gold]        (hidden)        │  │
+│ │ ✓ stealth     [■ green]  [×]  (added)         │  │
+│ │ ✓ chase       [■ red]    [×]  (added)         │  │
+│ └───────────────────────────────────────────────┘  │
+│                                                     │
+│ [+ Add Item]                    [Save] [Cancel]     │
+└─────────────────────────────────────────────────────┘
+```
+
+Features:
+- List all preset types (common names, wildcards, tags, etc.)
+- Show default vs user-created lists
+- Edit derivations (add, hide, modify items)
+- Create entirely new custom lists
+- Reset to default (clear derivation)
+- Delete custom lists
+
+### 3. Persistence (`arkitekt/core/preset_persistence.lua`)
+
+Uses REAPER ExtState for persistence:
+
+```lua
+-- ExtState keys (per preset type)
+-- ARKITEKT_PRESETS_COMMON_NAMES = JSON blob of all user data
+
+local Persistence = require('arkitekt.core.preset_persistence')
+
+-- Load all user data for a type
+local user_data = Persistence.load("common_names")
+
+-- Save all user data for a type
+Persistence.save("common_names", user_data)
+```
+
+### 4. Preset-Aware Dropdown (`arkitekt/gui/widgets/forms/preset_combo.lua`)
+
+Drop-in replacement for combo that auto-populates from registry:
+
+```lua
+local PresetCombo = require('arkitekt.gui.widgets.forms.preset_combo')
+
+-- Automatically shows all available lists
+local result = PresetCombo.draw(ctx, {
+  id = "names_category",
+  preset_type = "common_names",
+  current_value = self.selected_list,
+  on_change = function(list_id) ... end,
+})
+-- Dropdown shows: "Game Music", "General Music", "My SFX Names"
+```
+
+---
+
+## Default Presets to Ship
+
+### Common Names (`arkitekt/defs/presets/common_names/`)
+
+**game_music.lua** (current batch_rename_modal content):
+- Combat, battle, boss, action (intense_red)
+- Calm, peaceful, ambience, explore (calm_green)
+- Tension, suspense, stealth (tension_yellow)
+- Victory, defeat, theme (victory_gold)
+- Intro, outro, loop (structure_gray)
+- Stinger, break, transition (special_purple)
+
+**general_music.lua**:
+- Intro, verse, chorus, bridge, outro (structure_gray)
+- Build, drop, breakdown (tension_yellow)
+- Ambient, pad, texture (calm_green)
+
+### Wildcards (`arkitekt/defs/presets/wildcards/`)
+
+**standard.lua**:
+- `$n` - Number (sequential)
+- `$l` - Length (duration)
+- `$d` - Date
+- `$t` - Time
+- `$p` - Project name
+- `$r` - Region name (original)
+
+---
+
+## Migration Path
+
+### Phase 1: Extract Current Hardcoded Data
+- [ ] Move `batch_rename_modal.lua` common names to `defs/presets/common_names/`
+- [ ] Move wildcards to `defs/presets/wildcards/`
+- [ ] Keep batch_rename_modal working (reads from new location)
+
+### Phase 2: Add Registry + Persistence
+- [ ] Create `preset_registry.lua`
+- [ ] Create `preset_persistence.lua`
+- [ ] Update batch_rename_modal to use registry
+- [ ] User can now customize via code (no UI yet)
+
+### Phase 3: Editor Window
+- [ ] Create `preset_editor.lua` window
+- [ ] Hook into main app menu or toolbar
+- [ ] Full CRUD for derivations and custom lists
+
+### Phase 4: Auto-Population
+- [ ] Create `preset_combo.lua` widget
+- [ ] Any script can use presets with one line
+- [ ] New scripts get user's presets for free
+
+---
+
+## Reference: Current Chip Palette Design
+
+The batch_rename_modal.lua (983 lines) has the superior chip design to preserve:
+
+### Semantic Color-Coding
 
 ```lua
 local COLORS = {
@@ -22,139 +248,39 @@ local COLORS = {
   structure_gray = hexrgb("#8B8B8B"),   -- Intro, outro, verse, chorus
   special_purple = hexrgb("#9B7CB8"),   -- Break, stinger, loop
   victory_gold = hexrgb("#B89B5C"),     -- Victory, theme
-  ...
 }
 ```
 
-#### 2. Action-Oriented Chips (Click to Build)
-
-```lua
-local clicked = Chip.draw(ctx, {
-  label = name,
-  style = Chip.STYLE.ACTION,
-  interactive = true,
-  bg_color = color,  -- Semantic color
-  text_color = tag_config.text_color,
-})
-
-if clicked then
-  -- Insert into pattern
-  self.pattern = self.pattern .. sep .. name_text
-end
-```
-
-#### 3. Modifier Key Support
+### Action Chips with Modifiers
 
 - **Normal click**: Insert with separator (underscore)
 - **SHIFT+click**: Insert without separator
 - **SHIFT+CTRL+click**: Capitalize first letter
 
-```lua
-local is_shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift)
-local is_ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl)
+### Flow Layout
 
-if is_shift and is_ctrl then
-  name_text = name:sub(1, 1):upper() .. name:sub(2)
-end
+Chips wrap automatically when container width exceeded.
 
-if is_shift then
-  self.pattern = self.pattern .. name_text  -- No separator
-else
-  self.pattern = self.pattern .. "_" .. name_text  -- With separator
-end
-```
+### Category Selector
 
-#### 4. Context Menu on Wildcards
-
-Right-click wildcards for options (padding, start index, case):
-
-```lua
-if ImGui.IsItemHovered(ctx) and ImGui.IsMouseClicked(ctx, 1) then
-  ImGui.OpenPopup(ctx, "wildcard_context_" .. chip_data.type)
-end
-
-if ContextMenu.begin(ctx, "wildcard_context_number") then
-  ContextMenu.checkbox_item(ctx, "Start from 0", self.start_index == 0)
-  ContextMenu.checkbox_item(ctx, "Padding: 01", self.padding == 2)
-  ...
-end
-```
-
-#### 5. Category Selector
-
-Chips organized into categories with dropdown:
-
-```lua
-local result = Combo.draw(ctx, {
-  id = "names_category",
-  options = {
-    {value = "game", label = "Game Music"},
-    {value = "general", label = "General Music"},
-  },
-  current_value = self.names_category,
-  on_change = function(value)
-    self.names_category = value
-  end,
-})
-
-local common_names = self.names_category == "game" and game_music_names or general_music_names
-```
-
-#### 6. Automatic Flow Layout
-
-Chips wrap to next line when container width exceeded:
-
-```lua
-if cur_line_x + chip_spacing + chip_width > right_col_width then
-  cur_line_x = 0
-  cur_line_y = cur_line_y + line_height
-end
-
-ImGui.SetCursorPos(ctx, cur_line_x, cur_line_y)
-Chip.draw(ctx, {...})
-cur_line_x = cur_line_x + chip_width
-```
+Dropdown switches between preset lists (Game Music, General Music, user lists).
 
 ---
 
-## Extraction Plan
+## Extraction: Action Chip Palette Widget
 
-### Target Module: `arkitekt/gui/widgets/data/action_chip_palette.lua`
+Separate from preset management, extract the chip UI:
 
-A reusable "chip palette" widget that:
-1. Renders a collection of action chips with automatic wrapping
-2. Supports semantic color-coding by category
-3. Handles click/modifier interactions
-4. Optional context menus on chips
-5. Category selector (dropdown or tabs)
-
-### API Design (Draft)
+**Target**: `arkitekt/gui/widgets/data/action_chip_palette.lua`
 
 ```lua
 local ActionChipPalette = require('arkitekt.gui.widgets.data.action_chip_palette')
 
--- Define chip categories with semantic colors
-local CATEGORIES = {
-  game = {
-    {name = "combat", color = COLORS.intense_red},
-    {name = "calm", color = COLORS.calm_green},
-    ...
-  },
-  general = {
-    {name = "intro", color = COLORS.structure_gray},
-    {name = "verse", color = COLORS.structure_gray},
-    ...
-  },
-}
-
--- Draw palette
 local result = ActionChipPalette.draw(ctx, {
   id = "rename_chips",
-  categories = CATEGORIES,
-  current_category = "game",
+  items = preset_items,  -- From PresetRegistry.get()
   width = 300,
   height = 120,
-  on_category_change = function(cat) ... end,
   on_chip_click = function(name, modifiers)
     -- modifiers = {shift = bool, ctrl = bool}
     return processed_text
@@ -168,41 +294,11 @@ end
 
 ---
 
-## Components to Extract
-
-| Component | From | Target |
-|-----------|------|--------|
-| Semantic color palette | `batch_rename_modal.lua:481-495` | `defs/semantic_colors.lua` |
-| Category chip definitions | `batch_rename_modal.lua:497-544` | Per-app `defs/` or shared |
-| Flow layout logic | `batch_rename_modal.lua:555-627` | `action_chip_palette.lua` |
-| Modifier key handling | `batch_rename_modal.lua:599-623` | `action_chip_palette.lua` |
-| Wildcard context menu | `batch_rename_modal.lua:380-441` | Separate or inline |
-
----
-
-## Comparison: TemplateBrowser Tags vs BatchRename Chips
-
-| Feature | TemplateBrowser `tags/service.lua` | BatchRename Chips |
-|---------|-----------------------------------|-------------------|
-| Purpose | CRUD operations on tags | Action chips for building patterns |
-| Interaction | Assign/remove from items | Click to insert text |
-| Color | User-assigned per tag | Semantic by category |
-| Modifiers | None | Shift, Ctrl combos |
-| Context menu | None | Right-click options |
-| Categories | None | Game Music / General Music |
-| Flow layout | None (list) | Automatic wrapping |
-
-**Conclusion**: BatchRename chips are more sophisticated for UI interaction. TemplateBrowser tags are for data management. Both serve different purposes but could share:
-- Chip widget (`gui/widgets/data/chip.lua`) ✅ Already shared
-- Semantic color palette (extract from batch rename)
-- Flow layout logic (extract from batch rename)
-
----
-
 ## Priority
 
-**Medium** - The batch rename modal already works. Extraction benefits future scripts needing similar chip palettes (e.g., RegionPlaylist tags, ItemPicker region tags).
+**Medium-High** - The preset system enables consistent UX across all scripts and gives users control over their workflow vocabulary. But batch_rename_modal already works, so this is enhancement not urgent fix.
 
 ---
 
 *Created: 2025-11-27*
+*Updated: 2025-11-27 - Expanded to framework-wide preset management system*

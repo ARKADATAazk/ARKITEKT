@@ -223,13 +223,14 @@ These modules were extracted to framework but RegionPlaylist never migrated to u
   - **Found in**: ItemPicker (`data/loaders/incremental_loader.lua`)
   - **Reuse potential**: Any script loading large datasets (templates, samples, items)
 
-### Tags Service
-- [ ] **arkitekt/core/tags.lua** - Tag management (CRUD)
-  - Create, rename, delete tags
-  - Assign/remove tags from items
-  - Tag color support
-  - **Found in**: TemplateBrowser (`domain/tags/service.lua`)
-  - **Note**: For action-chip UI design, see `TODO/TAGGING_SERVICE.md`
+### Preset Management System (Framework-Wide)
+- [ ] **arkitekt/core/preset_registry.lua** - Central preset management
+  - Default presets ship with framework (read-only)
+  - User derivations (append, delete, modify without destroying defaults)
+  - User-created custom lists
+  - Persistence via REAPER ExtState
+  - **See**: `TODO/TAGGING_SERVICE.md` for full design
+  - **Affects**: Common names (batch rename), wildcards, tags, any future presets
 
 ### Action Chip Palette (High Value)
 - [ ] **arkitekt/gui/widgets/data/action_chip_palette.lua** - Interactive chip palette
@@ -238,9 +239,8 @@ These modules were extracted to framework but RegionPlaylist never migrated to u
   - Click-to-insert with modifier keys (Shift, Ctrl)
   - Right-click context menus
   - Automatic flow layout (wrapping)
-  - Category selector (dropdown)
   - ~200 lines to extract from 983-line modal
-  - **Reference**: `arkitekt/gui/widgets/overlays/batch_rename_modal.lua`
+  - **Part of**: Preset Management System (uses PresetRegistry for data)
   - **See**: `TODO/TAGGING_SERVICE.md` for full design
 
 ### Batch Processor (Configurable)
