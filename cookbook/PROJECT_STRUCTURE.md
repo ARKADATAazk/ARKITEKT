@@ -2,6 +2,8 @@
 
 > A comprehensive guide to organizing ARKITEKT scripts using Clean Architecture principles adapted for REAPER/Lua.
 
+**Note:** This describes the canonical/ideal structure. For the pragmatic approach to scripts (where `domain/` can use `reaper.*`), see [SCRIPT_LAYERS.md](./SCRIPT_LAYERS.md).
+
 ## Table of Contents
 
 1. [Design Philosophy](#design-philosophy)
@@ -59,7 +61,7 @@ The previous organization used vague folders like `core/`, `utils/`, and `servic
 | Layer | Purpose | Dependencies | Example Files |
 |-------|---------|--------------|---------------|
 | `app/` | Bootstrap, wire dependencies, hold state | domain, infra | `init.lua`, `state.lua` |
-| `domain/` | Business logic, rules, validation | None (pure) | `playlist/service.lua` |
+| `domain/` | Business logic, rules, validation | Can use `reaper.*` in scripts | `playlist/service.lua` |
 | `infra/` | External I/O, REAPER API, caching | domain (interfaces) | `storage.lua`, `cache.lua` |
 | `ui/` | Presentation, user interaction | app, domain | `init.lua`, `views/` |
 | `defs/` | Static constants, defaults, strings | None | `constants.lua` |

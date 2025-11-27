@@ -12,8 +12,9 @@
 ThemeAdjuster is a **well-architected, production-quality application** with excellent domain logic and proper REAPER integration. This refactor focuses on:
 
 1. **Structural migration** to canonical app/domain/infra/ui architecture (MIGRATION_PLANS.md)
-2. **Layer purity fixes** (move REAPER API wrappers to platform layer)
-3. **Code quality improvements** (logging, imports, magic numbers)
+2. **Code quality improvements** (logging, imports, magic numbers)
+
+**Note:** Per [cookbook/SCRIPT_LAYERS.md](../../../cookbook/SCRIPT_LAYERS.md), scripts don't need a `platform/` layer. Domain can use `reaper.*` directly.
 
 **Key Strengths to Preserve:**
 - ✅ Sophisticated package resolution system with conflict detection
@@ -32,11 +33,11 @@ ThemeAdjuster/
 ├── core/                      # ❌ Mixed concerns - needs splitting
 │   ├── config.lua             # → app/config.lua
 │   ├── state.lua              # → app/state.lua (excellent state management!)
-│   ├── theme.lua              # → platform/theme.lua OR domain/theme/reader.lua
+│   ├── theme.lua              # → domain/theme/reader.lua
 │   ├── theme_mapper.lua       # → domain/theme/mapper.lua
-│   ├── theme_params.lua       # ⚠️  Uses reaper.* → platform/theme_params.lua
+│   ├── theme_params.lua       # → domain/theme/params.lua (uses reaper.* - OK in scripts)
 │   ├── parameter_link_manager.lua  # → domain/links/manager.lua
-│   └── param_discovery.lua    # ⚠️  Uses reaper.* → platform/param_discovery.lua
+│   └── param_discovery.lua    # → domain/theme/discovery.lua (uses reaper.* - OK in scripts)
 │
 ├── packages/                  # Domain-specific, but does I/O
 │   ├── image_map.lua          # → domain/packages/image_map.lua (pure logic)
@@ -87,17 +88,14 @@ ThemeAdjuster/
 ├── domain/
 │   ├── theme/
 │   │   ├── mapper.lua         # FROM: core/theme_mapper.lua (JSON logic)
-│   │   └── reader.lua         # FROM: core/theme.lua (pure logic)
+│   │   ├── reader.lua         # FROM: core/theme.lua
+│   │   ├── params.lua         # FROM: core/theme_params.lua (uses reaper.*)
+│   │   └── discovery.lua      # FROM: core/param_discovery.lua (uses reaper.*)
 │   ├── links/
 │   │   └── manager.lua        # FROM: core/parameter_link_manager.lua
 │   └── packages/
-│       ├── image_map.lua      # FROM: packages/image_map.lua (pure)
-│       └── metadata.lua       # FROM: packages/metadata.lua (pure)
-│
-├── platform/                  # NEW: REAPER/ImGui wrappers
-│   ├── theme_params.lua       # FROM: core/theme_params.lua
-│   ├── param_discovery.lua    # FROM: core/param_discovery.lua
-│   └── imgui.lua              # NEW: Centralized ImGui version loader
+│       ├── image_map.lua      # FROM: packages/image_map.lua
+│       └── metadata.lua       # FROM: packages/metadata.lua
 │
 ├── infra/
 │   ├── storage.lua            # NEW: Settings persistence abstraction
@@ -139,43 +137,43 @@ ThemeAdjuster/
 │   └── strings.lua
 │
 └── tests/                     # NEW: Add test structure
-    ├── domain/
-    │   ├── theme_test.lua
-    │   ├── packages_test.lua
-    │   └── links_test.lua
-    └── platform/
-        └── theme_params_test.lua
+    └── domain/
+        ├── theme_test.lua
+        ├── packages_test.lua
+        └── links_test.lua
 ```
 
 ---
 
 ## High Priority Tasks
 
-### 1. Layer Purity Violations ⚠️
+### 1. Structural Migration
 
-**Issue**: Core modules use `reaper.*` APIs directly, violating pure layer separation.
+**Issue**: Core modules have mixed concerns - need to split into proper layers.
 
-**Files affected:**
-- `core/theme_params.lua:34` - Uses `reaper.ThemeLayout_GetParameter()`
-- `core/param_discovery.lua` - Uses `reaper.*` APIs (implied)
-- `core/theme.lua` - May use `reaper.*` APIs (needs verification)
+**Files to move:**
+- `core/theme_params.lua` → `domain/theme/params.lua` (uses `reaper.*` - OK in scripts)
+- `core/param_discovery.lua` → `domain/theme/discovery.lua` (uses `reaper.*` - OK in scripts)
+- `core/theme.lua` → `domain/theme/reader.lua`
+- `core/theme_mapper.lua` → `domain/theme/mapper.lua`
 
 **Action:**
 ```bash
-# Move REAPER API wrappers to platform layer
-mkdir -p ThemeAdjuster/platform
-git mv core/theme_params.lua platform/theme_params.lua
-git mv core/param_discovery.lua platform/param_discovery.lua
+# Create domain structure
+mkdir -p ThemeAdjuster/domain/theme
+
+# Move files
+git mv core/theme_params.lua domain/theme/params.lua
+git mv core/param_discovery.lua domain/theme/discovery.lua
+git mv core/theme.lua domain/theme/reader.lua
+git mv core/theme_mapper.lua domain/theme/mapper.lua
 
 # Update all requires:
 # FROM: local ThemeParams = require("ThemeAdjuster.core.theme_params")
-# TO:   local ThemeParams = require("ThemeAdjuster.platform.theme_params")
+# TO:   local ThemeParams = require("ThemeAdjuster.domain.theme.params")
 ```
 
-**Files to update** (grep results needed):
-- All view files that import `theme_params`
-- All files that import `param_discovery`
-- `core/state.lua` if it imports these
+**Note:** Per [cookbook/SCRIPT_LAYERS.md](../../../cookbook/SCRIPT_LAYERS.md), `domain/` can use `reaper.*` in scripts - no need for separate `platform/` layer.
 
 **Effort**: Low (mostly mechanical renames)
 **Priority**: HIGH - Establishes correct architecture
@@ -184,7 +182,7 @@ git mv core/param_discovery.lua platform/param_discovery.lua
 
 ### 2. Direct ImGui Requires ⚠️
 
-**Issue**: UI files use direct ImGui version require instead of platform layer.
+**Issue**: UI files use direct ImGui version require instead of framework loader.
 
 **Pattern found:**
 ```lua
@@ -198,25 +196,13 @@ local ImGui = require 'imgui' '0.10'
 local ImGui = require 'imgui' '0.10'
 ```
 
-**Action 1**: Create centralized ImGui loader
-```lua
--- platform/imgui.lua (NEW)
--- @noindex
--- Centralized ImGui version loader
-
-local M = require 'imgui' '0.10'
-return M
-```
-
-**Action 2**: Update all imports
+**Action**: Update all imports to use framework loader
 ```bash
 # Search for all direct ImGui requires
-grep -r "require 'imgui' '0.10'" ThemeAdjuster/ui/
+grep -r "require 'imgui'" ThemeAdjuster/ui/
 
 # Replace with:
-local ImGui = require('ThemeAdjuster.platform.imgui')
-# or from arkitekt if preferred:
-# local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.platform.imgui')
 ```
 
 **Files to update** (estimated 15-20 files):
@@ -463,26 +449,19 @@ mkdir -p ThemeAdjuster/tests/platform
 | ADD RE-EXPORT | `core/config.lua` | `return require("ThemeAdjuster.app.config")` |
 | ADD RE-EXPORT | `core/state.lua` | `return require("ThemeAdjuster.app.state")` |
 
-**Step 2.2**: Create `platform/` folder (REAPER API wrappers)
-| Action | File | Notes |
-|--------|------|-------|
-| MOVE | `core/theme_params.lua` → `platform/theme_params.lua` | REAPER API wrapper |
-| MOVE | `core/param_discovery.lua` → `platform/param_discovery.lua` | REAPER API wrapper |
-| CREATE | `platform/imgui.lua` | Centralized ImGui loader |
-| ADD RE-EXPORT | `core/theme_params.lua` | `return require("ThemeAdjuster.platform.theme_params")` |
-| ADD RE-EXPORT | `core/param_discovery.lua` | `return require("ThemeAdjuster.platform.param_discovery")` |
-
-**Step 2.3**: Create `domain/` folder (pure business logic)
+**Step 2.2**: Create `domain/` folder (business logic - can use `reaper.*`)
 | Action | File | Notes |
 |--------|------|-------|
 | MOVE | `core/theme.lua` → `domain/theme/reader.lua` | Rename for clarity |
 | MOVE | `core/theme_mapper.lua` → `domain/theme/mapper.lua` | Keep JSON logic |
+| MOVE | `core/theme_params.lua` → `domain/theme/params.lua` | Uses reaper.* - OK in scripts |
+| MOVE | `core/param_discovery.lua` → `domain/theme/discovery.lua` | Uses reaper.* - OK in scripts |
 | MOVE | `core/parameter_link_manager.lua` → `domain/links/manager.lua` | |
-| MOVE | `packages/image_map.lua` → `domain/packages/image_map.lua` | Pure logic |
-| MOVE | `packages/metadata.lua` → `domain/packages/metadata.lua` | Pure data |
+| MOVE | `packages/image_map.lua` → `domain/packages/image_map.lua` | |
+| MOVE | `packages/metadata.lua` → `domain/packages/metadata.lua` | |
 | ADD RE-EXPORT | All old locations | Point to new locations |
 
-**Step 2.4**: Create `infra/` folder (I/O operations)
+**Step 2.3**: Create `infra/` folder (I/O operations)
 | Action | File | Notes |
 |--------|------|-------|
 | MOVE | `packages/manager.lua` → `infra/packages/manager.lua` | Heavy I/O |
@@ -490,7 +469,7 @@ mkdir -p ThemeAdjuster/tests/platform
 | CREATE | `infra/packages/demo_data.lua` | Extract demo data (Task #6) |
 | ADD RE-EXPORT | `packages/manager.lua` | `return require("ThemeAdjuster.infra.packages.manager")` |
 
-**Step 2.5**: Reorganize `ui/` folder
+**Step 2.4**: Reorganize `ui/` folder
 | Action | File | Notes |
 |--------|------|-------|
 | MOVE | `ui/gui.lua` → `ui/init.lua` | Rename to convention |
@@ -515,12 +494,11 @@ mkdir -p ThemeAdjuster/tests/platform
 **Create test structure:**
 ```
 tests/
-├── domain/
-│   ├── theme_mapper_test.lua    # Test JSON mapping logic
-│   ├── packages_test.lua        # Test package resolution
-│   └── links_test.lua           # Test parameter linking
-└── platform/
-    └── theme_params_test.lua    # Test parameter indexing
+└── domain/
+    ├── theme_mapper_test.lua    # Test JSON mapping logic
+    ├── theme_params_test.lua    # Test parameter indexing
+    ├── packages_test.lua        # Test package resolution
+    └── links_test.lua           # Test parameter linking
 ```
 
 **Example test** (using busted or similar):
@@ -569,7 +547,6 @@ end
 
 **Files to document:**
 - All public functions in `domain/` modules
-- All public functions in `platform/` modules
 - State management API (`app/state.lua`)
 
 **Effort**: Medium (2-3 hours)
@@ -602,13 +579,12 @@ end
 ## Migration Checklist
 
 ### High Priority
-- [ ] 1. Move `theme_params.lua` to `platform/`
-- [ ] 2. Move `param_discovery.lua` to `platform/`
-- [ ] 3. Create `platform/imgui.lua` loader
-- [ ] 4. Update all direct ImGui requires (15-20 files)
-- [ ] 5. Replace console logging with Logger
-- [ ] 6. Update all requires after moves
-- [ ] 7. Test all views still work
+- [ ] 1. Move `theme_params.lua` to `domain/theme/params.lua`
+- [ ] 2. Move `param_discovery.lua` to `domain/theme/discovery.lua`
+- [ ] 3. Update all ImGui requires to use `arkitekt.platform.imgui`
+- [ ] 4. Replace console logging with Logger
+- [ ] 5. Update all requires after moves
+- [ ] 6. Test all views still work
 
 ### Medium Priority
 - [ ] 8. Create `app/init.lua` bootstrap
@@ -695,11 +671,10 @@ end
 ## Success Criteria
 
 ✅ **Complete when:**
-1. All files follow canonical `app/domain/platform/infra/ui` structure
-2. No `reaper.*` calls in `core/` or `domain/` folders
-3. All ImGui requires go through `platform/imgui.lua`
-4. Console logging replaced with arkitekt Logger
-5. All views work correctly with new structure
-6. No regression in functionality
+1. All files follow canonical `app/domain/infra/ui` structure
+2. All ImGui requires use `arkitekt.platform.imgui`
+3. Console logging replaced with arkitekt Logger
+4. All views work correctly with new structure
+5. No regression in functionality
 
 🎉 **Result:** Production-ready, architecturally sound ThemeAdjuster following ARKITEKT best practices
