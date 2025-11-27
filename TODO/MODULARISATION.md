@@ -56,7 +56,7 @@ Nobody uses these - not even internally:
 |-----------|-----------------|----------|
 | Search/Filter | `core/filter.lua` | All scripts |
 | Search Toolbar | `gui/widgets/search_toolbar.lua` | ItemPicker, TemplateBrowser |
-| Notification/Toast | `gui/widgets/notification.lua` | RegionPlaylist, TemplateBrowser |
+| **Notification Service** | `core/notification.lua` | WalterBuilder (best), RegionPlaylist, TemplateBrowser |
 
 ---
 
@@ -251,6 +251,44 @@ These modules were extracted to framework but RegionPlaylist never migrated to u
   - **Maybe later**: add more operations (retag, properties) if needed
   - **Current**: `arkitekt/gui/widgets/overlays/batch_rename_modal.lua` (983 lines)
   - **See**: `TODO/BATCH_PROCESSOR.md` for details
+
+### Notification Service (High Value)
+- [ ] **arkitekt/core/notification.lua** - Timed status messages with status_bar integration
+  - **Best reference**: WalterBuilder `domain/notification.lua` (86 lines, cleanest)
+  - **Problem**: `app/chrome/status_bar.lua` is UI-only, needs `get_status()` callback
+  - Each script reimplements the domain logic separately
+
+  **Proposed unified API:**
+  ```lua
+  local Notification = require('arkitekt.core.notification')
+  local notif = Notification.new({
+    timeouts = {info = 3, success = 3, warning = 5, error = 8}
+  })
+
+  -- Simple API
+  notif:show("Processing...", "info")
+  notif:success("Saved 5 regions")
+  notif:warning("No items selected")
+  notif:error("Failed to load file")
+
+  -- Built-in status_bar adapter
+  local status_bar = StatusBar.new({
+    get_status = function() return notif:get_status() end,
+  })
+  ```
+
+  **Current implementations:**
+  | Script | File | Lines | Notes |
+  |--------|------|-------|-------|
+  | WalterBuilder | `domain/notification.lua` | 86 | Generic, clean API, configurable timeouts |
+  | RegionPlaylist | `ui/state/notification.lua` | 112 | Domain-specific fields, more coupled |
+  | TemplateBrowser | `ui/status.lua` | 49 | UI component with inline logic, no domain |
+
+  **Improvements over WalterBuilder:**
+  - `get_status()` adapter built-in for status_bar integration
+  - Convenience methods (`:success()`, `:error()`, `:warning()`)
+  - Per-type configurable timeouts (errors stay longer)
+  - Future: message queue for sequential display
 
 ---
 
