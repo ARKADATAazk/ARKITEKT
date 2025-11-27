@@ -361,12 +361,50 @@ These are domain-specific and unlikely to be extracted:
   - **Reuse potential**: Medium - enables animated buttons elsewhere
   - **Effort**: Medium (needs generalization)
 
-### Text Truncation Utility (MEDIUM VALUE - Quick Win)
-- [ ] **arkitekt/core/text_utils.lua** - Text fitting utilities
-  - **Source**: `TemplateBrowser/ui/tiles/helpers.lua` (30 lines)
-  - **Function**: `truncate_text(ctx, text, max_width)` - Binary search for fit
-  - **Reuse potential**: High - needed anywhere text must fit
-  - **Effort**: Low (single function)
+### Text Truncation Utility (HIGH VALUE - Critical Consolidation)
+- [ ] **arkitekt/core/text_utils.lua** - Centralized text fitting utilities
+  - **Problem**: 9+ duplicate implementations across codebase!
+
+  **Framework copies (5):**
+  - `gui/renderers/grid.lua:15` - `truncate_text(ctx, text, max_width, ellipsis)`
+  - `gui/widgets/base.lua:51` - `truncate_text(ctx, text, max_width, suffix)`
+  - `app/chrome/titlebar.lua:116` - `_truncate_text(ctx, text, max_width, font, font_size)`
+  - `gui/widgets/media/media_grid/renderers/base.lua:47`
+  - `gui/widgets/media/package_tiles/renderer.lua:199`
+
+  **Script copies (4+):**
+  - `RegionPlaylist/ui/tiles/renderers/base.lua:138`
+  - `RegionPlaylist/ui/views/transport/display_widget.lua:63` (char-based variant)
+  - `ItemPicker/ui/grids/renderers/base.lua:54`
+  - `TemplateBrowser/ui/tiles/helpers.lua:11`
+
+  **Variations to unify:**
+  - Ellipsis: `"…"` vs `"..."`
+  - Algorithm: binary search vs linear char count
+  - Font handling: some support font push/pop
+  - Responsive: one scales chars based on width
+
+  **Proposed unified API:**
+  ```lua
+  local Text = require('arkitekt.core.text_utils')
+
+  -- Core truncation (binary search, most common)
+  Text.truncate(ctx, text, max_width)
+  Text.truncate(ctx, text, max_width, {ellipsis = "..."})
+
+  -- Char-based (fixed-width contexts)
+  Text.truncate_chars(text, max_chars)
+  Text.truncate_chars(text, max_chars, {ellipsis = "…"})
+
+  -- With font (titlebar use case)
+  Text.truncate(ctx, text, max_width, {font = font, font_size = 14})
+
+  -- Draw directly to DrawList
+  Text.draw_truncated(ctx, dl, x, y, text, max_width, color)
+  ```
+
+  - **Effort**: Low-Medium (consolidate existing implementations)
+  - **Impact**: High (eliminates 9+ duplicates, single source of truth)
 
 ### Music Time Formatting (LOW-MEDIUM VALUE)
 - [ ] **arkitekt/core/music_formatting.lua** - Musical time display
@@ -404,13 +442,13 @@ These are domain-specific and unlikely to be extracted:
 
 ## Quick Win Priority List
 
-| # | Task | Effort | Value | Files |
-|---|------|--------|-------|-------|
-| 1 | Extract transport icons | Low | High | 1 → 1 |
-| 2 | Extract text truncation | Low | Medium | 1 → 1 |
-| 3 | Migrate TemplateBrowser sorting | Low | Medium | 1 |
-| 4 | Migrate ItemPicker sorting | Low | Medium | 1 |
-| 5 | Extract music time formatting | Low | Low-Med | 1 → 1 |
+| # | Task | Effort | Value | Duplicates |
+|---|------|--------|-------|------------|
+| 1 | **Consolidate text truncation** | Low-Med | **Critical** | 9+ copies |
+| 2 | Extract transport icons | Low | High | 1 |
+| 3 | Migrate TemplateBrowser sorting | Low | Medium | - |
+| 4 | Migrate ItemPicker sorting | Low | Medium | - |
+| 5 | Extract music time formatting | Low | Low-Med | 1 |
 
 ---
 
