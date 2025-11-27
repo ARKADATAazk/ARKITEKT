@@ -41,9 +41,9 @@ local MODULES = {
   ProgressBar = 'arkitekt.gui.widgets.primitives.progress_bar',
   RadioButton = 'arkitekt.gui.widgets.primitives.radio_button',
   Scrollbar = 'arkitekt.gui.widgets.primitives.scrollbar',
-  Separator = 'arkitekt.gui.widgets.primitives.separator',
   Slider = 'arkitekt.gui.widgets.primitives.slider',
   Spinner = 'arkitekt.gui.widgets.primitives.spinner',
+  Splitter = 'arkitekt.gui.widgets.primitives.splitter',
 
   -- Containers
   Panel = 'arkitekt.gui.widgets.containers.panel',

@@ -1,60 +1,60 @@
-# ARKITEKT Namespace (`ark.*`)
+# ARKITEKT Namespace (`Ark.*`)
 
 The ARKITEKT namespace provides ImGui-style access to all widgets and utilities through a single, clean interface.
 
 ## Quick Start
 
 ```lua
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
 -- Access widgets directly
-ark.Button.draw(ctx, {label = "Click"})
-ark.Checkbox.draw(ctx, {checked = true})
-ark.Panel.draw(ctx, {title = "Panel", body = ...})
+Ark.Button.draw(ctx, {label = "Click"})
+Ark.Checkbox.draw(ctx, {checked = true})
+Ark.Panel.draw(ctx, {title = "Panel", body = ...})
 
 -- Access utilities
-local color = ark.Colors.hex_to_rgba("#3B82F6")
-local eased = ark.Easing.ease_out_cubic(0.5)
-local random_id = ark.UUID.generate()
+local color = Ark.Colors.hex_to_rgba("#3B82F6")
+local eased = Ark.Easing.ease_out_cubic(0.5)
+local random_id = Ark.UUID.generate()
 ```
 
 ## Design Philosophy
 
 Following ImGui's namespace pattern:
-- **Single import**: `local ark = require('arkitekt')` gives access to everything
+- **Single import**: `local Ark = require('arkitekt')` gives access to everything
 - **Lazy loading**: Modules only load when first accessed
 - **No circular dependencies**: Widgets use direct requires internally
-- **Familiar syntax**: `ark.Widget.method()` mirrors `ImGui.Widget()`
+- **Familiar syntax**: `Ark.Widget.method()` mirrors `ImGui.Widget()`
 
 ## Available Modules
 
 ### Primitives (14)
-- `ark.Badge`
-- `ark.Button`
-- `ark.Checkbox`
-- `ark.CloseButton`
-- `ark.Combo`
-- `ark.CornerButton`
-- `ark.HueSlider`
-- `ark.InputText`
-- `ark.MarkdownField`
-- `ark.RadioButton`
-- `ark.Scrollbar`
-- `ark.Separator`
-- `ark.Slider`
-- `ark.Spinner`
+- `Ark.Badge`
+- `Ark.Button`
+- `Ark.Checkbox`
+- `Ark.CloseButton`
+- `Ark.Combo`
+- `Ark.CornerButton`
+- `Ark.HueSlider`
+- `Ark.InputText`
+- `Ark.MarkdownField`
+- `Ark.RadioButton`
+- `Ark.Scrollbar`
+- `Ark.Separator`
+- `Ark.Slider`
+- `Ark.Spinner`
 
 ### Containers (2)
-- `ark.Panel`
-- `ark.TileGroup`
+- `Ark.Panel`
+- `Ark.TileGroup`
 
 ### Utilities (6)
-- `ark.Colors` - Color manipulation and conversion
-- `ark.Style` - Default styling configuration
-- `ark.Draw` - Drawing utilities
-- `ark.Easing` - Animation easing functions
-- `ark.Math` - Math utilities
-- `ark.UUID` - UUID generation
+- `Ark.Colors` - Color manipulation and conversion
+- `Ark.Style` - Default styling configuration
+- `Ark.Draw` - Drawing utilities
+- `Ark.Easing` - Animation easing functions
+- `Ark.Math` - Math utilities
+- `Ark.UUID` - UUID generation
 
 ## Comparison: Old vs New
 
@@ -74,14 +74,14 @@ Checkbox.draw(ctx, {checked = true})
 
 ### New Approach (Recommended!)
 ```lua
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
-ark.Button.draw(ctx, {label = "Click"})
-ark.Checkbox.draw(ctx, {checked = true})
+Ark.Button.draw(ctx, {label = "Click"})
+Ark.Checkbox.draw(ctx, {checked = true})
 ```
 
 **Pros**: Clean, consistent, one import, lazy loaded
-**Cons**: Extra `ark.` prefix (but matches ImGui style!)
+**Cons**: Extra `Ark.` prefix (but matches ImGui style!)
 
 ## Implementation Details
 
@@ -89,12 +89,12 @@ ark.Checkbox.draw(ctx, {checked = true})
 Modules are loaded **only when first accessed**:
 
 ```lua
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 -- At this point: NO widgets are loaded yet!
 
-ark.Button.draw(...)  -- Now button.lua loads
-ark.Button.draw(...)  -- Cached! No reload
-ark.Checkbox.draw(...) -- Now checkbox.lua loads
+Ark.Button.draw(...)  -- Now button.lua loads
+Ark.Button.draw(...)  -- Cached! No reload
+Ark.Checkbox.draw(...) -- Now checkbox.lua loads
 ```
 
 This means:
@@ -106,12 +106,12 @@ This means:
 After first access, modules are cached:
 
 ```lua
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
 -- First access: loads and caches button.lua
-local btn1 = ark.Button
+local btn1 = Ark.Button
 -- Second access: returns cached module (instant!)
-local btn2 = ark.Button
+local btn2 = Ark.Button
 
 assert(btn1 == btn2)  -- true! Same table
 ```
@@ -120,28 +120,28 @@ assert(btn1 == btn2)  -- true! Same table
 Invalid widgets produce clear errors:
 
 ```lua
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
-ark.InvalidWidget.draw(...)
--- Error: ark.InvalidWidget is not a valid widget.
+Ark.InvalidWidget.draw(...)
+-- Error: Ark.InvalidWidget is not a valid widget.
 --        See MODULES table in arkitekt/init.lua
 ```
 
 ## Migration Guide
 
 ### For New Projects
-Use `ark.*` namespace everywhere:
+Use `Ark.*` namespace everywhere:
 
 ```lua
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
 -- Widgets
-ark.Button.draw(ctx, {...})
-ark.Panel.draw(ctx, {...})
+Ark.Button.draw(ctx, {...})
+Ark.Panel.draw(ctx, {...})
 
 -- Utilities
-local color = ark.Colors.hex_to_rgba("#FF0000")
-local eased = ark.Easing.ease_in_out_quad(t)
+local color = Ark.Colors.hex_to_rgba("#FF0000")
+local eased = Ark.Easing.ease_in_out_quad(t)
 ```
 
 ### For Existing Projects
@@ -152,33 +152,33 @@ No breaking changes! Mix and match as needed:
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
 -- Add namespace for new code
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
 -- Both work fine together!
 Button.draw(ctx, {...})
-ark.Checkbox.draw(ctx, {...})
+Ark.Checkbox.draw(ctx, {...})
 ```
 
-## Why "ark"?
+## Why "Ark"?
 
-- **Short**: 3 letters (like `std`, `os`, `io` in Lua)
+- **Short**: 3 letters (like `os`, `io` in Lua)
 - **Memorable**: Abbreviation of ARKITEKT
 - **No conflicts**: Unlikely to clash with user code
-- **Consistent**: Matches ImGui's lowercase namespace style
+- **Consistent**: Matches ImGui's PascalCase namespace style and module naming convention
 
 ## Performance
 
 ✅ **No overhead**: Lazy loading means zero cost for unused modules
 ✅ **One-time cost**: First access loads module, then cached forever
-✅ **Same speed**: After loading, `ark.Button` is identical to direct require
+✅ **Same speed**: After loading, `Ark.Button` is identical to direct require
 
 Benchmark (after first access):
 ```lua
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
 -- These are IDENTICAL after first access:
-ark.Button.draw(...)    -- Just a table lookup!
+Ark.Button.draw(...)    -- Just a table lookup!
 Button.draw(...)        -- Direct reference
 ```
 
@@ -199,6 +199,6 @@ local Button = require('arkitekt.gui.widgets.primitives.button')
 ```
 
 This prevents circular dependencies:
-- User code → `ark` namespace → widgets
+- User code → `Ark` namespace → widgets
 - Panel → direct require → Button
 - No cycle! ✅
