@@ -1,10 +1,6 @@
 -- @noindex
 -- arkitekt/core/fs.lua
--- Pure filesystem utilities (no reaper.* or ImGui.* dependencies)
---
--- LAYER PURITY: This is a PURE core module - NO reaper.* or ImGui.* calls allowed
--- For directory existence checks, use reaper.EnumerateFiles/EnumerateSubdirectories
--- in your app/domain layer.
+-- Filesystem utilities for REAPER scripts
 
 local M = {}
 
@@ -66,7 +62,7 @@ function M.extension(path)
 end
 
 -- ============================================================================
--- FILE OPERATIONS (Pure - uses io.open only)
+-- FILE OPERATIONS
 -- ============================================================================
 
 --- Check if a file exists (works for files only, not directories)
@@ -142,7 +138,94 @@ function M.write_text_atomic(path, content)
   return true
 end
 
---- Copy a file
+-- ============================================================================
+-- DIRECTORY OPERATIONS
+-- ============================================================================
+
+--- Check if a directory exists
+--- @param path string Path to check
+--- @return boolean exists True if directory exists
+function M.dir_exists(path)
+  if not path then return false end
+  return (reaper.EnumerateFiles(path, 0) or
+          reaper.EnumerateSubdirectories(path, 0)) ~= nil
+end
+
+--- Create directory (and parents if needed)
+--- @param path string Directory path to create
+--- @return boolean success True if directory exists/was created
+function M.mkdir(path)
+  if not path then return false end
+  reaper.RecursiveCreateDirectory(path, 0)
+  return M.dir_exists(path)
+end
+
+--- Ensure parent directory exists before writing a file
+--- @param file_path string Full path to the file
+--- @return boolean success True if parent directory exists/was created
+function M.ensure_parent_dir(file_path)
+  local dir = M.dirname(file_path)
+  if dir and dir ~= "" then
+    return M.mkdir(dir)
+  end
+  return true
+end
+
+--- List files in a directory
+--- @param dir string Directory path
+--- @param ext string|nil Optional extension filter (e.g., ".png")
+--- @return table files Array of full file paths
+function M.list_files(dir, ext)
+  local out = {}
+  if not dir then return out end
+
+  local i = 0
+  while true do
+    local f = reaper.EnumerateFiles(dir, i)
+    if not f then break end
+    if not ext or f:lower():sub(-#ext) == ext:lower() then
+      out[#out + 1] = M.join(dir, f)
+    end
+    i = i + 1
+  end
+  return out
+end
+
+--- List subdirectories in a directory
+--- @param dir string Directory path
+--- @return table dirs Array of full directory paths
+function M.list_subdirs(dir)
+  local out = {}
+  if not dir then return out end
+
+  local j = 0
+  while true do
+    local s = reaper.EnumerateSubdirectories(dir, j)
+    if not s then break end
+    out[#out + 1] = M.join(dir, s)
+    j = j + 1
+  end
+  return out
+end
+
+--- List files recursively
+--- @param dir string Directory path
+--- @param ext string|nil Optional extension filter
+--- @return table files Array of full file paths
+function M.list_files_recursive(dir, ext)
+  local out = M.list_files(dir, ext)
+
+  for _, subdir in ipairs(M.list_subdirs(dir)) do
+    local sub_files = M.list_files_recursive(subdir, ext)
+    for _, f in ipairs(sub_files) do
+      out[#out + 1] = f
+    end
+  end
+
+  return out
+end
+
+--- Copy a file (ensures parent directory exists)
 --- @param src string Source path
 --- @param dst string Destination path
 --- @return boolean success True on success
@@ -156,20 +239,10 @@ function M.copy_file(src, dst)
     return false, "Cannot read source: " .. src
   end
 
+  -- Ensure destination directory exists
+  M.ensure_parent_dir(dst)
+
   return M.write_text(dst, content)
 end
-
--- ============================================================================
--- DIRECTORY EXISTENCE (Platform Note)
--- ============================================================================
-
--- NOTE: Checking directory existence requires platform-specific APIs.
--- In REAPER scripts, use:
---   local function dir_exists(path)
---     return path and (reaper.EnumerateFiles(path, 0) or
---                      reaper.EnumerateSubdirectories(path, 0)) ~= nil
---   end
---
--- This module intentionally does NOT provide dir_exists to maintain purity.
 
 return M

@@ -4,7 +4,7 @@
 
 local M = {}
 local JSON = require('arkitekt.core.json')
-local Fs = require('arkitekt.platform.fs')
+local Fs = require('arkitekt.core.fs')
 local PathValidation = require('arkitekt.core.path_validation')
 local Logger = require('arkitekt.debug.logger')
 local DemoData = require('ThemeAdjuster.data.packages.demo_data')

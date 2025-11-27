@@ -4,7 +4,7 @@
 local M = {}
 
 -- Dependencies
-local Fs = require('arkitekt.platform.fs')
+local Fs = require('arkitekt.core.fs')
 local PathValidation = require('arkitekt.core.path_validation')
 local Logger = require('arkitekt.debug.logger')
 
