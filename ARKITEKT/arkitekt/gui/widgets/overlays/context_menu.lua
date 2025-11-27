@@ -146,7 +146,7 @@ function M.checkbox_item(ctx, label, checked, config)
   local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
-  local checkbox_size = 14
+  local checkbox_size = 16  -- Slightly larger for better visibility
   local checkbox_padding = 8
   local text_w, text_h = ImGui.CalcTextSize(ctx, label)
   local item_w = math.max(avail_w, text_w + item_padding_x * 2 + checkbox_size + checkbox_padding)
@@ -157,34 +157,42 @@ function M.checkbox_item(ctx, label, checked, config)
     ImGui.DrawList_AddRectFilled(dl, item_x, item_y, item_x + item_w, item_y + item_height, item_hover_color, 2)
   end
 
-  -- Draw checkbox using dynamic accent color
+  -- Draw checkbox with improved styling matching checkbox primitive
   local checkbox_x = item_x + item_padding_x
   local checkbox_y = item_y + (item_height - checkbox_size) * 0.5
-  local accent = defaults.checkbox_accent
 
-  local checkbox_bg = checked and Colors.with_opacity(accent, 0.25) or defaults.item_bg_color
-  local checkbox_border = checked and accent or defaults.separator_color
+  -- Use theme colors for better consistency
+  local C = Theme.COLORS
+  local checkbox_bg = checked and C.BG_HOVER or C.BG_BASE
+  local checkbox_border_inner = checked and C.BORDER_HOVER or C.BORDER_INNER
+  local checkbox_border_outer = C.BORDER_OUTER
 
-  ImGui.DrawList_AddRectFilled(dl, checkbox_x, checkbox_y, checkbox_x + checkbox_size, checkbox_y + checkbox_size, checkbox_bg, 2)
-  ImGui.DrawList_AddRect(dl, checkbox_x, checkbox_y, checkbox_x + checkbox_size, checkbox_y + checkbox_size, checkbox_border, 2, 0, 1)
+  -- Draw background with rounded corners
+  ImGui.DrawList_AddRectFilled(dl, checkbox_x + 1, checkbox_y + 1,
+    checkbox_x + checkbox_size - 1, checkbox_y + checkbox_size - 1, checkbox_bg, 1)
 
-  -- Draw checkmark if checked
+  -- Draw double border for depth (matches checkbox primitive)
+  ImGui.DrawList_AddRect(dl, checkbox_x + 1, checkbox_y + 1,
+    checkbox_x + checkbox_size - 1, checkbox_y + checkbox_size - 1, checkbox_border_inner, 1, 0, 1)
+  ImGui.DrawList_AddRect(dl, checkbox_x, checkbox_y,
+    checkbox_x + checkbox_size, checkbox_y + checkbox_size, checkbox_border_outer, 1, 0, 1)
+
+  -- Draw checkmark if checked (improved design from checkbox primitive)
   if checked then
-    local check_color = accent
-    local check_padding = 3
-    -- Draw checkmark using lines
-    ImGui.DrawList_AddLine(dl,
-      checkbox_x + check_padding,
-      checkbox_y + checkbox_size * 0.5,
-      checkbox_x + checkbox_size * 0.4,
-      checkbox_y + checkbox_size - check_padding,
-      check_color, 2)
-    ImGui.DrawList_AddLine(dl,
-      checkbox_x + checkbox_size * 0.4,
-      checkbox_y + checkbox_size - check_padding,
-      checkbox_x + checkbox_size - check_padding,
-      checkbox_y + check_padding,
-      check_color, 2)
+    local check_color = C.TEXT_DIMMED
+    local padding = checkbox_size * 0.25
+    local check_size = checkbox_size - padding * 2
+
+    local cx = checkbox_x + padding
+    local cy = checkbox_y + checkbox_size * 0.5
+    local mx = cx + check_size * 0.3
+    local my = cy + check_size * 0.3
+    local ex = cx + check_size
+    local ey = cy - check_size * 0.4
+
+    -- Smooth checkmark with proper thickness
+    ImGui.DrawList_AddLine(dl, cx, cy, mx, my, check_color, 2)
+    ImGui.DrawList_AddLine(dl, mx, my, ex, ey, check_color, 2)
   end
 
   -- Draw label text
@@ -231,9 +239,9 @@ function M.begin_menu(ctx, label, config)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
   local text_w, text_h = ImGui.CalcTextSize(ctx, label)
-  local arrow_text = ">"
-  local arrow_w = ImGui.CalcTextSize(ctx, arrow_text)
-  local item_w = math.max(avail_w, text_w + arrow_w + item_padding_x * 3)
+  local arrow_size = 6  -- Triangle size
+  local arrow_space = arrow_size + 4
+  local item_w = math.max(avail_w, text_w + arrow_space + item_padding_x * 3)
 
   local item_hovered = ImGui.IsMouseHoveringRect(ctx, item_x, item_y, item_x + item_w, item_y + item_height)
 
@@ -246,12 +254,27 @@ function M.begin_menu(ctx, label, config)
   local text_y = item_y + (item_height - text_h) * 0.5
 
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
-  ImGui.DrawList_AddText(dl, item_x + item_w - item_padding_x - arrow_w, text_y, text_color, arrow_text)
+
+  -- Draw triangle arrow (pointing right) instead of text
+  local arrow_x = item_x + item_w - item_padding_x - arrow_size
+  local arrow_y = item_y + item_height * 0.5
+  ImGui.DrawList_AddTriangleFilled(dl,
+    arrow_x, arrow_y - arrow_size * 0.6,           -- Top vertex
+    arrow_x, arrow_y + arrow_size * 0.6,           -- Bottom vertex
+    arrow_x + arrow_size, arrow_y,                 -- Right vertex (pointing right)
+    text_color)
 
   ImGui.InvisibleButton(ctx, label .. "_submenu", item_w, item_height)
 
-  -- Open submenu on hover
+  -- Open submenu on hover and position it at the right edge of the parent menu
   if item_hovered then
+    -- Calculate position: right edge of parent menu, aligned with this item
+    local parent_window_x, parent_window_y = ImGui.GetWindowPos(ctx)
+    local parent_window_w, _ = ImGui.GetWindowSize(ctx)
+    local submenu_x = parent_window_x + parent_window_w - 2  -- Slight overlap for seamless appearance
+    local submenu_y = item_y - defaults.padding  -- Align with item, accounting for padding
+
+    ImGui.SetNextWindowPos(ctx, submenu_x, submenu_y, ImGui.Cond_Always)
     ImGui.OpenPopup(ctx, label .. "_submenu_popup")
   end
 
