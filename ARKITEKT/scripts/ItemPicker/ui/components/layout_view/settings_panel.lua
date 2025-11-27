@@ -242,6 +242,18 @@ function M.draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
     function() state.set_setting('show_duration', not show_duration) end
   )
 
+  -- Auto-Preview on Hover checkbox
+  local show_duration_label_width = ImGui.CalcTextSize(ctx, "Show Duration")
+  local auto_preview_checkbox_x = show_duration_checkbox_x + show_duration_label_width + 18 + 8
+  local auto_preview = state.settings.auto_preview_on_hover or false
+
+  draw_checkbox(ctx, draw_list, "auto_preview_on_hover",
+    auto_preview_checkbox_x, waveform_y,
+    "Auto-Preview on Hover",
+    auto_preview, settings_alpha,
+    function() state.set_setting('auto_preview_on_hover', not auto_preview) end
+  )
+
   ImGui.PopStyleVar(ctx)
 end
 

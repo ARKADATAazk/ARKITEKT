@@ -148,6 +148,8 @@ function M.new(opts)
     }),
 
     hover_id         = nil,
+    prev_hover_id    = nil,
+    hover_start_time = nil,
     current_rects    = {},
     drag             = DnDState.new({
       threshold = (opts.config and opts.config.drag and opts.config.drag.threshold) or DEFAULTS.drag.threshold
@@ -629,6 +631,24 @@ function Grid:_draw_virtual(ctx, items, num_items)
     self.render_overlays(ctx, self.current_rects)
   end
 
+  -- Hover change detection for auto-preview and other hover-based behaviors
+  if self.hover_id ~= self.prev_hover_id then
+    if self.behaviors and self.behaviors.on_hover then
+      self.behaviors.on_hover(self, self.hover_id, self.prev_hover_id)
+    end
+    if self.hover_id then
+      self.hover_start_time = reaper.time_precise()
+    else
+      self.hover_start_time = nil
+    end
+    self.prev_hover_id = self.hover_id
+  end
+
+  if self.hover_id and self.hover_start_time and self.behaviors and self.behaviors.on_hover_tick then
+    local elapsed = reaper.time_precise() - self.hover_start_time
+    self.behaviors.on_hover_tick(self, self.hover_id, elapsed)
+  end
+
   -- Reserve vertical space for scrollbar calculation
   ImGui.SetCursorPosY(ctx, total_height)
   ImGui.Dummy(ctx, 0, 0)
@@ -1101,6 +1121,27 @@ function Grid:draw(ctx)
 
   if self.render_overlays then
     self.render_overlays(ctx, self.current_rects)
+  end
+
+  -- Hover change detection for auto-preview and other hover-based behaviors
+  if self.hover_id ~= self.prev_hover_id then
+    -- Hover changed - call on_hover behavior if defined
+    if self.behaviors and self.behaviors.on_hover then
+      self.behaviors.on_hover(self, self.hover_id, self.prev_hover_id)
+    end
+    -- Reset hover timer when hover changes
+    if self.hover_id then
+      self.hover_start_time = reaper.time_precise()
+    else
+      self.hover_start_time = nil
+    end
+    self.prev_hover_id = self.hover_id
+  end
+
+  -- Call on_hover_tick for continuous hover tracking (e.g., auto-preview delay)
+  if self.hover_id and self.hover_start_time and self.behaviors and self.behaviors.on_hover_tick then
+    local elapsed = reaper.time_precise() - self.hover_start_time
+    self.behaviors.on_hover_tick(self, self.hover_id, elapsed)
   end
 
   -- Reserve vertical space for full grid height so scrollbar calculation is correct
