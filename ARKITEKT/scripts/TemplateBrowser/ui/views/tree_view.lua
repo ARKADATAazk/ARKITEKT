@@ -3,8 +3,16 @@
 -- Template Browser TreeView module for folder tree rendering
 -- Handles Physical and Virtual folder trees
 
+-- Dependencies (cached at module load per Lua Performance Guide)
 local TreeView = require('arkitekt.gui.widgets.navigation.tree_view')
 local PathValidation = require('arkitekt.core.path_validation')
+local ImGui = require('arkitekt.platform.imgui')
+local FileOps = require('TemplateBrowser.data.file_ops')
+local Scanner = require('TemplateBrowser.domain.template.scanner')
+local Persistence = require('TemplateBrowser.data.storage')
+local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
+local Colors = require('arkitekt.core.colors')
+local ColorDefs = require('arkitekt.defs.colors')
 
 local M = {}
 
@@ -67,7 +75,6 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   -- Build archive tree from .archive folder
   local function build_archive_tree()
     local archive_children = {}
-    local FileOps = require('TemplateBrowser.data.file_ops')
     local archive_path = FileOps.get_archive_path()
     local sep = package.config:sub(1,1)
 
@@ -245,14 +252,11 @@ function M.draw_physical_tree(ctx, state, config)
       -- For backward compatibility, set selected_folder to the clicked node
       state.selected_folder = node.path
 
-      local Scanner = require('TemplateBrowser.domain.template.scanner')
       Scanner.filter_templates(state)
     end,
 
     -- Folder drop callback (supports multi-drag)
     on_drop_folder = function(dragged_node_id, target_node)
-      local FileOps = require('TemplateBrowser.data.file_ops')
-
       -- Find the source node
       local function find_node_by_id(nodes, id)
         for _, n in ipairs(nodes) do
@@ -369,7 +373,6 @@ function M.draw_physical_tree(ctx, state, config)
               end
             end
             if undo_success then
-              local Scanner = require('TemplateBrowser.domain.template.scanner')
               Scanner.scan_templates(state)
             end
             return undo_success
@@ -388,7 +391,6 @@ function M.draw_physical_tree(ctx, state, config)
               end
             end
             if redo_success then
-              local Scanner = require('TemplateBrowser.domain.template.scanner')
               Scanner.scan_templates(state)
             end
             return redo_success
@@ -396,7 +398,6 @@ function M.draw_physical_tree(ctx, state, config)
         })
 
         -- Rescan templates
-        local Scanner = require('TemplateBrowser.domain.template.scanner')
         Scanner.scan_templates(state)
 
         -- Success message
@@ -412,8 +413,6 @@ function M.draw_physical_tree(ctx, state, config)
     -- Template drop callback (supports multi-drag)
     on_drop_template = function(template_payload, target_node)
       if not target_node then return end
-
-      local FileOps = require('TemplateBrowser.data.file_ops')
 
       -- Parse payload (can be single UUID or newline-separated UUIDs)
       local uuids = {}
@@ -431,8 +430,6 @@ function M.draw_physical_tree(ctx, state, config)
 
       -- Handle virtual folder (add references, don't move files)
       if target_node.is_virtual then
-        local Persistence = require('TemplateBrowser.data.storage')
-
         -- Get the virtual folder from metadata
         local vfolder = state.metadata.virtual_folders[target_node.id]
         if not vfolder then
@@ -534,7 +531,6 @@ function M.draw_physical_tree(ctx, state, config)
 
       -- Rescan if any succeeded
       if success_count > 0 then
-        local Scanner = require('TemplateBrowser.domain.template.scanner')
         Scanner.scan_templates(state)
 
         -- Success message
@@ -553,10 +549,6 @@ function M.draw_physical_tree(ctx, state, config)
 
     -- Context menu renderer (called inline by TreeView)
     render_context_menu = function(ctx_inner, node)
-      local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
-      local Colors = require('arkitekt.core.colors')
-      local ColorDefs = require('arkitekt.defs.colors')
-
       if ContextMenu.begin(ctx_inner, "folder_context_menu") then
         -- Build color options from centralized palette
         local color_options = {{ name = "None", color = nil }}
@@ -569,9 +561,6 @@ function M.draw_physical_tree(ctx, state, config)
 
         for _, color_opt in ipairs(color_options) do
           if ContextMenu.item(ctx_inner, color_opt.name) then
-            local Persistence = require('TemplateBrowser.data.storage')
-            local ImGui = require('imgui') '0.10'
-
             if node.is_virtual then
               -- Update virtual folder color
               if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
@@ -579,7 +568,6 @@ function M.draw_physical_tree(ctx, state, config)
                 Persistence.save_metadata(state.metadata)
 
                 -- No need to rescan, just update UI
-                local Scanner = require('TemplateBrowser.domain.template.scanner')
                 Scanner.scan_templates(state)
               end
             else
@@ -613,7 +601,6 @@ function M.draw_physical_tree(ctx, state, config)
               Persistence.save_metadata(state.metadata)
 
               -- Rescan to update UI
-              local Scanner = require('TemplateBrowser.domain.template.scanner')
               Scanner.scan_templates(state)
             end
 
@@ -630,9 +617,6 @@ function M.draw_physical_tree(ctx, state, config)
             ContextMenu.separator(ctx_inner)
 
             if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
-              local Persistence = require('TemplateBrowser.data.storage')
-              local ImGui = require('imgui') '0.10'
-
               -- Remove from metadata
               if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
                 state.metadata.virtual_folders[node.id] = nil
@@ -645,7 +629,6 @@ function M.draw_physical_tree(ctx, state, config)
                 end
 
                 -- Refresh UI (no need to rescan templates, just rebuild tree)
-                local Scanner = require('TemplateBrowser.domain.template.scanner')
                 Scanner.filter_templates(state)
 
                 state.set_status("Deleted virtual folder: " .. node.name, "success")
@@ -663,9 +646,6 @@ function M.draw_physical_tree(ctx, state, config)
     -- Rename callback
     on_rename = function(node, new_name)
       if new_name ~= "" and new_name ~= node.name then
-        local Persistence = require('TemplateBrowser.data.storage')
-        local FileOps = require('TemplateBrowser.data.file_ops')
-
         -- Handle virtual folder rename (metadata only, no file operations)
         if node.is_virtual then
           if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
@@ -728,7 +708,6 @@ function M.draw_physical_tree(ctx, state, config)
             undo_fn = function()
               local undo_success = FileOps.rename_folder(new_path, node.name)
               if undo_success then
-                local Scanner = require('TemplateBrowser.domain.template.scanner')
                 Scanner.scan_templates(state)
               end
               return undo_success
@@ -736,7 +715,6 @@ function M.draw_physical_tree(ctx, state, config)
             redo_fn = function()
               local redo_success = FileOps.rename_folder(old_path, new_name)
               if redo_success then
-                local Scanner = require('TemplateBrowser.domain.template.scanner')
                 Scanner.scan_templates(state)
               end
               return redo_success
@@ -744,7 +722,6 @@ function M.draw_physical_tree(ctx, state, config)
           })
 
           -- Light rescan: just rebuild folder tree and template list from updated metadata
-          local Scanner = require('TemplateBrowser.domain.template.scanner')
           Scanner.scan_templates(state)
         end
       end
@@ -756,9 +733,6 @@ function M.draw_physical_tree(ctx, state, config)
       if node.id == "__ROOT__" or node.id == "__VIRTUAL_ROOT__" or node.is_virtual then
         return
       end
-
-      local FileOps = require('TemplateBrowser.data.file_ops')
-      local Scanner = require('TemplateBrowser.domain.template.scanner')
 
       -- Count templates in folder and subfolders
       local template_count = 0
@@ -927,7 +901,6 @@ function M.draw_virtual_tree(ctx, state, config)
     on_select = function(node, selected_nodes)
       state.selected_folders = selected_nodes
       state.selected_folder = node.path
-      local Scanner = require('TemplateBrowser.domain.template.scanner')
       Scanner.filter_templates(state)
     end,
 
@@ -938,7 +911,6 @@ function M.draw_virtual_tree(ctx, state, config)
 
     on_drop_template = function(template_payload, target_node)
       if not target_node then return end
-      local FileOps = require('TemplateBrowser.data.file_ops')
 
       -- Parse payload
       local uuids = {}
@@ -954,7 +926,6 @@ function M.draw_virtual_tree(ctx, state, config)
 
       -- Only handle virtual folder drops (add references)
       if target_node.is_virtual then
-        local Persistence = require('TemplateBrowser.data.storage')
         local vfolder = state.metadata.virtual_folders[target_node.id]
         if not vfolder then
           state.set_status("Virtual folder not found", "error")
@@ -1004,10 +975,6 @@ function M.draw_virtual_tree(ctx, state, config)
     end,
 
     render_context_menu = function(ctx_inner, node)
-      local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
-      local Colors = require('arkitekt.core.colors')
-      local ColorDefs = require('arkitekt.defs.colors')
-
       if ContextMenu.begin(ctx_inner, "folder_context_menu") then
         -- Build color options from centralized palette
         local color_options = {{ name = "None", color = nil }}
@@ -1020,14 +987,10 @@ function M.draw_virtual_tree(ctx, state, config)
 
         for _, color_opt in ipairs(color_options) do
           if ContextMenu.item(ctx_inner, color_opt.name) then
-            local Persistence = require('TemplateBrowser.data.storage')
-            local ImGui = require('imgui') '0.10'
-
             if node.is_virtual then
               if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
                 state.metadata.virtual_folders[node.id].color = color_opt.color
                 Persistence.save_metadata(state.metadata)
-                local Scanner = require('TemplateBrowser.domain.template.scanner')
                 Scanner.scan_templates(state)
               end
             end
@@ -1044,9 +1007,6 @@ function M.draw_virtual_tree(ctx, state, config)
             ContextMenu.separator(ctx_inner)
 
             if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
-              local Persistence = require('TemplateBrowser.data.storage')
-              local ImGui = require('imgui') '0.10'
-
               if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
                 state.metadata.virtual_folders[node.id] = nil
                 Persistence.save_metadata(state.metadata)
@@ -1056,7 +1016,6 @@ function M.draw_virtual_tree(ctx, state, config)
                   state.selected_folders = {}
                 end
 
-                local Scanner = require('TemplateBrowser.domain.template.scanner')
                 Scanner.filter_templates(state)
 
                 state.set_status("Deleted virtual folder: " .. node.name, "success")
@@ -1073,8 +1032,6 @@ function M.draw_virtual_tree(ctx, state, config)
 
     on_rename = function(node, new_name)
       if new_name ~= "" and new_name ~= node.name then
-        local Persistence = require('TemplateBrowser.data.storage')
-
         if node.is_virtual then
           if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
             local vfolder = state.metadata.virtual_folders[node.id]

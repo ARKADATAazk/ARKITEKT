@@ -2,9 +2,13 @@
 -- TemplateBrowser/ui/views/template_panel_view.lua
 -- Middle panel view: Recent templates + template grid
 
+-- Dependencies (cached at module load per Lua Performance Guide)
 local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.factory')
+local Chip = require('arkitekt.gui.widgets.data.chip')
+local Colors = require('arkitekt.core.colors')
+local Scanner = require('TemplateBrowser.domain.template.scanner')
 
 local M = {}
 
@@ -80,9 +84,6 @@ local function draw_template_panel(ctx, gui, width, height)
   local panel_height = height
 
   -- 1. FILTER CHIPS (Tags and FX) - Below header, before grid
-  local Chip = require('arkitekt.gui.widgets.data.chip')
-  local Colors = require('arkitekt.core.colors')
-
   local filter_chip_height = 0
   local has_filters = (next(state.filter_tags) ~= nil) or (next(state.filter_fx) ~= nil)
 
@@ -121,7 +122,6 @@ local function draw_template_panel(ctx, gui, width, height)
 
         if clicked then
           state.filter_tags[tag_name] = nil
-          local Scanner = require('TemplateBrowser.domain.template.scanner')
           Scanner.filter_templates(state)
         end
 
@@ -154,7 +154,6 @@ local function draw_template_panel(ctx, gui, width, height)
 
       if clicked then
         state.filter_fx[fx_name] = nil
-        local Scanner = require('TemplateBrowser.domain.template.scanner')
         Scanner.filter_templates(state)
       end
 
@@ -203,7 +202,6 @@ local function draw_template_panel(ctx, gui, width, height)
 
   -- 4. DRAW DRAGGABLE SEPARATOR
   local sep_y = panel_y + grid_panel_height + separator_gap / 2
-  local ark = require('arkitekt')
   local sep_result = ark.Splitter.draw(ctx, {
     id = "quick_access_separator",
     x = content_x,
