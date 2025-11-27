@@ -39,8 +39,8 @@ The previous organization used vague folders like `core/`, `utils/`, and `servic
 └─────────────────────────┬───────────────────────────────┘
                           │ depends on
 ┌─────────────────────────▼───────────────────────────────┐
-│                       INFRA                              │
-│   (persistence, REAPER API - implementation details)    │
+│                       DATA                               │
+│   (persistence, caching - implementation details)       │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -48,7 +48,7 @@ The previous organization used vague folders like `core/`, `utils/`, and `servic
 
 | Benefit | Description |
 |---------|-------------|
-| **Testability** | Domain layer has no UI/storage deps → easy to unit test |
+| **Testability** | Domain layer has no UI/data deps → easy to unit test |
 | **Clarity** | Clear where every file belongs |
 | **Reusability** | Domain logic could be used by different UIs |
 | **Maintainability** | Changes in one layer don't ripple to others |
