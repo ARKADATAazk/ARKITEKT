@@ -3,6 +3,7 @@
 -- Project-scoped disk cache with LRU eviction (max 5 projects)
 
 local M = {}
+local JSON = require('arkitekt.core.json')
 
 -- Cache directory: REAPER_RESOURCE_PATH/Data/ARKITEKT/ItemPicker/
 --   ├── cache_index.lua (tracks 5 most recent projects)
@@ -16,80 +17,14 @@ local current_cache = nil -- In-memory cache for current project
 local MAX_PROJECTS = 5
 local flushed = false -- Prevent double flush
 
--- Simple Lua table serialization (supports nested tables, numbers, and strings)
--- Uses table buffer pattern to avoid O(n²) string concatenation
-local function serialize(t, indent, buf)
-  indent = indent or ""
-  buf = buf or {}
-
-  if type(t) ~= "table" then
-    if type(t) == "number" then
-      return tostring(t)
-    elseif type(t) == "string" then
-      return string.format("%q", t)
-    else
-      return "nil"
-    end
-  end
-
-  local next_indent = indent .. "  "
-  buf[#buf + 1] = "{\n"
-
-  -- Handle array part
-  for i, v in ipairs(t) do
-    buf[#buf + 1] = next_indent
-    if type(v) == "number" then
-      buf[#buf + 1] = tostring(v)
-    elseif type(v) == "string" then
-      buf[#buf + 1] = string.format("%q", v)
-    elseif type(v) == "table" then
-      serialize(v, next_indent, buf)
-    end
-    buf[#buf + 1] = ",\n"
-  end
-
-  -- Handle hash part (for MIDI thumbnails with x1,y1,x2,y2 and hash strings)
-  local array_len = #t
-  for k, v in pairs(t) do
-    if type(k) ~= "number" or k > array_len then
-      buf[#buf + 1] = next_indent
-      buf[#buf + 1] = "["
-      buf[#buf + 1] = string.format("%q", tostring(k))
-      buf[#buf + 1] = "] = "
-      if type(v) == "number" then
-        buf[#buf + 1] = tostring(v)
-      elseif type(v) == "string" then
-        buf[#buf + 1] = string.format("%q", v)
-      elseif type(v) == "table" then
-        serialize(v, next_indent, buf)
-      end
-      buf[#buf + 1] = ",\n"
-    end
-  end
-
-  buf[#buf + 1] = indent
-  buf[#buf + 1] = "}"
-
-  -- Only concat at top level
-  if indent == "" then
-    return table.concat(buf)
-  end
+-- SECURITY FIX: Use safe JSON encoding/decoding instead of unsafe load()
+-- Simple wrapper functions for JSON serialization
+local function serialize(t)
+  return JSON.encode(t)
 end
 
--- Deserialize Lua table from string
 local function deserialize(str)
-  if not str or str == "" then return nil end
-
-  local func, err = load("return " .. str)
-  if not func then
-    return nil
-  end
-
-  local success, result = pcall(func)
-  if success then
-    return result
-  end
-  return nil
+  return JSON.decode(str)
 end
 
 -- Get current project GUID

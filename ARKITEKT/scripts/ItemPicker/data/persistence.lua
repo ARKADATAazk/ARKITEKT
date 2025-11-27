@@ -3,6 +3,7 @@
 -- Settings persistence using REAPER project extended state
 
 local M = {}
+local JSON = require('arkitekt.core.json')
 
 local EXTNAME = "ARK_ItemPicker"
 local SETTINGS_KEY = "settings"
@@ -46,8 +47,9 @@ function M.load_settings()
     return get_default_settings()
   end
 
-  local success, settings = pcall(load("return " .. state_str))
-  if not success or type(settings) ~= "table" then
+  -- SECURITY FIX: Use safe JSON.decode instead of unsafe load()
+  local settings = JSON.decode(state_str)
+  if not settings or type(settings) ~= "table" then
     return get_default_settings()
   end
 
@@ -65,37 +67,11 @@ end
 function M.save_settings(settings)
   if not settings then return end
 
-  -- Serialize settings table
-  local function serialize(tbl)
-    local parts = {}
-    for k, v in pairs(tbl) do
-      local key_str
-      if type(k) == "string" then
-        key_str = string.format("[%q]", k)
-      else
-        key_str = string.format("[%s]", tostring(k))
-      end
-
-      local val_str
-      if type(v) == "string" then
-        val_str = string.format("%q", v)
-      elseif type(v) == "number" then
-        val_str = tostring(v)
-      elseif type(v) == "boolean" then
-        val_str = tostring(v)
-      elseif v == nil then
-        val_str = "nil"
-      else
-        val_str = "nil"  -- Skip complex types
-      end
-
-      parts[#parts + 1] = key_str .. "=" .. val_str
-    end
-    return "{" .. table.concat(parts, ",") .. "}"
+  -- SECURITY FIX: Use safe JSON.encode instead of custom serialization
+  local serialized = JSON.encode(settings)
+  if serialized then
+    reaper.SetProjExtState(0, EXTNAME, SETTINGS_KEY, serialized)
   end
-
-  local serialized = serialize(settings)
-  reaper.SetProjExtState(0, EXTNAME, SETTINGS_KEY, serialized)
 end
 
 -- Disabled items persistence
@@ -106,8 +82,9 @@ function M.load_disabled_items()
     return { audio = {}, midi = {} }
   end
 
-  local success, disabled = pcall(load("return " .. state_str))
-  if not success or type(disabled) ~= "table" then
+  -- SECURITY FIX: Use safe JSON.decode instead of unsafe load()
+  local disabled = JSON.decode(state_str)
+  if not disabled or type(disabled) ~= "table" then
     return { audio = {}, midi = {} }
   end
 
@@ -117,23 +94,11 @@ end
 function M.save_disabled_items(disabled)
   if not disabled then return end
 
-  local function serialize_set(tbl)
-    if not tbl then return "{}" end
-    local parts = {}
-    for k, _ in pairs(tbl) do
-      local key_str = string.format("[%q]", tostring(k))
-      parts[#parts + 1] = key_str .. "=true"
-    end
-    return "{" .. table.concat(parts, ",") .. "}"
+  -- SECURITY FIX: Use safe JSON.encode instead of custom serialization
+  local serialized = JSON.encode(disabled)
+  if serialized then
+    reaper.SetProjExtState(0, EXTNAME, "disabled_items", serialized)
   end
-
-  local serialized = string.format(
-    "{audio=%s,midi=%s}",
-    serialize_set(disabled.audio),
-    serialize_set(disabled.midi)
-  )
-
-  reaper.SetProjExtState(0, EXTNAME, "disabled_items", serialized)
 end
 
 -- Favorites persistence
@@ -144,8 +109,9 @@ function M.load_favorites()
     return { audio = {}, midi = {} }
   end
 
-  local success, favorites = pcall(load("return " .. state_str))
-  if not success or type(favorites) ~= "table" then
+  -- SECURITY FIX: Use safe JSON.decode instead of unsafe load()
+  local favorites = JSON.decode(state_str)
+  if not favorites or type(favorites) ~= "table" then
     return { audio = {}, midi = {} }
   end
 
@@ -155,23 +121,11 @@ end
 function M.save_favorites(favorites)
   if not favorites then return end
 
-  local function serialize_set(tbl)
-    if not tbl then return "{}" end
-    local parts = {}
-    for k, _ in pairs(tbl) do
-      local key_str = string.format("[%q]", tostring(k))
-      parts[#parts + 1] = key_str .. "=true"
-    end
-    return "{" .. table.concat(parts, ",") .. "}"
+  -- SECURITY FIX: Use safe JSON.encode instead of custom serialization
+  local serialized = JSON.encode(favorites)
+  if serialized then
+    reaper.SetProjExtState(0, EXTNAME, "favorites", serialized)
   end
-
-  local serialized = string.format(
-    "{audio=%s,midi=%s}",
-    serialize_set(favorites.audio),
-    serialize_set(favorites.midi)
-  )
-
-  reaper.SetProjExtState(0, EXTNAME, "favorites", serialized)
 end
 
 -- Track filter persistence
@@ -182,8 +136,9 @@ function M.load_track_filter()
     return { whitelist = nil, enabled = nil }
   end
 
-  local success, filter = pcall(load("return " .. state_str))
-  if not success or type(filter) ~= "table" then
+  -- SECURITY FIX: Use safe JSON.decode instead of unsafe load()
+  local filter = JSON.decode(state_str)
+  if not filter or type(filter) ~= "table" then
     return { whitelist = nil, enabled = nil }
   end
 
@@ -191,25 +146,15 @@ function M.load_track_filter()
 end
 
 function M.save_track_filter(whitelist, enabled)
-  local function serialize_set(tbl)
-    if not tbl then return "nil" end
-    local parts = {}
-    for k, v in pairs(tbl) do
-      local key_str = string.format("[%q]", tostring(k))
-      local val_str = v and "true" or "false"
-      parts[#parts + 1] = key_str .. "=" .. val_str
-    end
-    if #parts == 0 then return "nil" end
-    return "{" .. table.concat(parts, ",") .. "}"
+  -- SECURITY FIX: Use safe JSON.encode instead of custom serialization
+  local filter_data = {
+    whitelist = whitelist,
+    enabled = enabled
+  }
+  local serialized = JSON.encode(filter_data)
+  if serialized then
+    reaper.SetProjExtState(0, EXTNAME, "track_filter", serialized)
   end
-
-  local serialized = string.format(
-    "{whitelist=%s,enabled=%s}",
-    serialize_set(whitelist),
-    serialize_set(enabled)
-  )
-
-  reaper.SetProjExtState(0, EXTNAME, "track_filter", serialized)
 end
 
 return M
