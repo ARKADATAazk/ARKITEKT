@@ -243,14 +243,14 @@ These modules were extracted to framework but RegionPlaylist never migrated to u
   - **Reference**: `arkitekt/gui/widgets/overlays/batch_rename_modal.lua`
   - **See**: `TODO/TAGGING_SERVICE.md` for full design
 
-### Batch Processor (God Object)
-- [ ] **arkitekt/gui/widgets/overlays/batch_processor.lua** - Generic batch operations modal
-  - Evolve `batch_rename_modal.lua` into configurable multi-operation processor
-  - Operations: rename, recolor, retag, set properties, move to folder, assign to playlist
-  - Tabbed or collapsible section UI
-  - Per-operation callbacks or unified result object
+### Batch Processor (Configurable)
+- [ ] **Make `batch_rename_modal.lua` configurable** - Not a new module, just parameterize existing
+  - Enable/disable rename section, recolor section
+  - Custom wildcard sets, custom common names presets
+  - Already works well - just needs config options for reuse
+  - **Maybe later**: add more operations (retag, properties) if needed
   - **Current**: `arkitekt/gui/widgets/overlays/batch_rename_modal.lua` (983 lines)
-  - **See**: `TODO/BATCH_PROCESSOR.md` for full design
+  - **See**: `TODO/BATCH_PROCESSOR.md` for details
 
 ---
 
