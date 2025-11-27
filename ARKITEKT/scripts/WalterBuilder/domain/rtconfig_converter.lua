@@ -229,6 +229,9 @@ local function convert_items(items, context_filter)
 
   local set_count = 0
   local matched_count = 0
+  local seen_ids = {}  -- Track seen element IDs to deduplicate
+  local duplicate_count = 0
+  local sample_non_matching = {}  -- Sample of elements that didn't match filter
 
   for _, item in ipairs(items) do
     if item.type == RtconfigParser.TOKEN.SET then
@@ -241,23 +244,36 @@ local function convert_items(items, context_filter)
 
       if matches_context then
         matched_count = matched_count + 1
-        local element, is_computed = convert_set_item(item)
-        if element then
-          Console.info("  + %s [%s] coords: x=%s y=%s w=%s h=%s",
-            element.id,
-            is_computed and "computed" or "simple",
-            element.coords.x, element.coords.y, element.coords.w, element.coords.h)
-          result.elements[#result.elements + 1] = {
-            element = element,
-            is_computed = is_computed,
-            source_line = item.line,
-            raw_value = item.value,
-          }
-          if is_computed then
-            result.computed_count = result.computed_count + 1
-          else
-            result.simple_count = result.simple_count + 1
+
+        -- Check for duplicate element IDs
+        if seen_ids[item.element] then
+          duplicate_count = duplicate_count + 1
+          -- Skip duplicate - keep first occurrence
+        else
+          seen_ids[item.element] = true
+          local element, is_computed = convert_set_item(item)
+          if element then
+            Console.info("  + %s [%s] coords: x=%s y=%s w=%s h=%s",
+              element.id,
+              is_computed and "computed" or "simple",
+              element.coords.x, element.coords.y, element.coords.w, element.coords.h)
+            result.elements[#result.elements + 1] = {
+              element = element,
+              is_computed = is_computed,
+              source_line = item.line,
+              raw_value = item.value,
+            }
+            if is_computed then
+              result.computed_count = result.computed_count + 1
+            else
+              result.simple_count = result.simple_count + 1
+            end
           end
+        end
+      else
+        -- Log a sample of non-matching elements for debugging
+        if #sample_non_matching < 10 and item.element then
+          sample_non_matching[#sample_non_matching + 1] = item.element
         end
       end
 
@@ -284,8 +300,16 @@ local function convert_items(items, context_filter)
     end
   end
 
-  Console.success("Conversion complete: %d SET items found, %d matched context, %d elements created (%d simple, %d computed, %d cleared)",
-    set_count, matched_count, #result.elements, result.simple_count, result.computed_count, result.cleared_count)
+  -- Log summary with deduplication info
+  Console.success("Conversion complete: %d SET items, %d matched context, %d unique elements (%d duplicates skipped)",
+    set_count, matched_count, #result.elements, duplicate_count)
+  Console.info("  Elements: %d simple, %d computed, %d cleared",
+    result.simple_count, result.computed_count, result.cleared_count)
+
+  -- Log sample of non-matching elements to help debug
+  if #sample_non_matching > 0 then
+    Console.info("  Sample of non-matching SET elements: %s", table.concat(sample_non_matching, ", "))
+  end
 
   return result
 end
