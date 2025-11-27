@@ -6,7 +6,7 @@
 
 ## Progress Assessment
 
-### Current Progress: ~25-30%
+### Current Progress: ~65-70%
 
 **What works:**
 - ✅ Rtconfig parsing (sections, macros, expressions)
@@ -18,19 +18,23 @@
 - ✅ Element panel with categories
 - ✅ Custom element detection
 - ✅ Debug console
-- ✅ Basic property inspector
+- ✅ Property inspector with coordinate editing
+- ✅ Element drag-to-move
+- ✅ Element edge/corner resize
+- ✅ Context variable controls (w, h, scale, hide flags, track state)
+- ✅ Export to rtconfig (Code panel with copy-to-clipboard)
+- ✅ Grid snapping during drag
+- ✅ Modified element tracking
 
 **What's missing for a full IDE:**
 - ❌ AST preservation (expressions stored as strings, not editable AST)
-- ❌ Element editing (drag to reposition, resize)
 - ❌ Expression editor (visual builder for WALTER expressions)
 - ❌ Variable editor (create/modify variables)
 - ❌ Macro editor (create/modify macros)
 - ❌ Conditional logic editor (if/then/else visual flow)
-- ❌ Export to rtconfig (serialize changes back to file)
 - ❌ Undo/redo system
 - ❌ Multi-context editing (TCP, MCP, EnvCP, Transport)
-- ❌ Live preview sync with REAPER
+- ❌ Preserve original formatting during export
 
 ---
 
@@ -198,19 +202,19 @@ Start with Override Mode, gradually add AST capabilities.
 ## Success Metrics
 
 ### Phase 1 Complete When:
-- [ ] Can drag element to new position
-- [ ] Can resize element by dragging edges
-- [ ] Changes visible in property panel
-- [ ] Can export element as SET statement
+- [x] Can drag element to new position ✅
+- [x] Can resize element by dragging edges ✅
+- [x] Changes visible in property panel ✅
+- [x] Can export element as SET statement ✅
 
 ### Phase 2 Complete When:
-- [ ] Can edit coordinate values directly
-- [ ] Can toggle attachments visually
-- [ ] Context variables adjustable via UI
-- [ ] Live preview updates on variable change
+- [x] Can edit coordinate values directly ✅
+- [x] Can toggle attachments visually ✅
+- [x] Context variables adjustable via UI ✅
+- [x] Live preview updates on variable change ✅
 
 ### Phase 3 Complete When:
-- [ ] Can export full modified rtconfig
+- [x] Can export full modified rtconfig ✅
 - [ ] Changes preserve original formatting
 - [ ] Undo/redo works for all operations
 - [ ] Can create new elements from scratch

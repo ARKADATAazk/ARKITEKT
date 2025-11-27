@@ -28,6 +28,8 @@ local DEFAULT_CONFIG = {
   show_grid = true,
   show_attachments = true,
   handle_size = 8,
+  element_handle_size = 6,  -- Size of element resize handles
+  element_edge_threshold = 5,  -- Pixels from edge to trigger resize
 }
 
 function M.new(opts)
@@ -51,15 +53,25 @@ function M.new(opts)
       show_grid = opts.show_grid ~= false,
       show_attachments = opts.show_attachments ~= false,
       handle_size = opts.handle_size or DEFAULT_CONFIG.handle_size,
+      element_handle_size = DEFAULT_CONFIG.element_handle_size,
+      element_edge_threshold = DEFAULT_CONFIG.element_edge_threshold,
     },
 
     -- Interaction state
-    dragging = nil,  -- nil, "right", "bottom", "corner", "width", "track_height"
+    dragging = nil,  -- nil, "right", "bottom", "corner", "width", "track_height", "element_move", "element_resize_*"
     drag_start_w = 0,
     drag_start_h = 0,
     drag_start_x = 0,
     drag_start_y = 0,
     drag_track = nil,  -- Track being resized
+
+    -- Element drag state
+    drag_element = nil,  -- Element being dragged
+    drag_element_start_coords = nil,  -- Original coords before drag
+    drag_element_start_rect = nil,  -- Computed rect at drag start
+
+    -- Edit tracking
+    modified_elements = {},  -- Track which elements have been modified
 
     -- Selection
     selected_element = nil,
@@ -230,12 +242,198 @@ local function point_in_rect(px, py, rect)
      and py >= rect.y and py <= rect.y + rect.h
 end
 
+-- Determine which part of an element was clicked (for resize vs move)
+-- Returns: nil (outside), "move" (interior), "resize_e", "resize_s", "resize_se", "resize_w", "resize_n", etc.
+local function get_element_hit_zone(px, py, rect, threshold)
+  if not rect or rect.w <= 0 or rect.h <= 0 then return nil end
+
+  local in_bounds = px >= rect.x and px <= rect.x + rect.w
+                and py >= rect.y and py <= rect.y + rect.h
+
+  if not in_bounds then return nil end
+
+  local on_left = px < rect.x + threshold
+  local on_right = px > rect.x + rect.w - threshold
+  local on_top = py < rect.y + threshold
+  local on_bottom = py > rect.y + rect.h - threshold
+
+  -- Corners first (priority over edges)
+  if on_bottom and on_right then return "resize_se" end
+  if on_bottom and on_left then return "resize_sw" end
+  if on_top and on_right then return "resize_ne" end
+  if on_top and on_left then return "resize_nw" end
+
+  -- Edges
+  if on_right then return "resize_e" end
+  if on_left then return "resize_w" end
+  if on_bottom then return "resize_s" end
+  if on_top then return "resize_n" end
+
+  -- Interior = move
+  return "move"
+end
+
+-- Get cursor style for a hit zone
+local function get_cursor_for_zone(zone)
+  if not zone then return nil end
+  local cursors = {
+    move = ImGui.MouseCursor_Hand,
+    resize_e = ImGui.MouseCursor_ResizeEW,
+    resize_w = ImGui.MouseCursor_ResizeEW,
+    resize_n = ImGui.MouseCursor_ResizeNS,
+    resize_s = ImGui.MouseCursor_ResizeNS,
+    resize_ne = ImGui.MouseCursor_ResizeNESW,
+    resize_sw = ImGui.MouseCursor_ResizeNESW,
+    resize_nw = ImGui.MouseCursor_ResizeNWSE,
+    resize_se = ImGui.MouseCursor_ResizeNWSE,
+  }
+  return cursors[zone]
+end
+
+-- Draw element resize handles on selected element
+function Canvas:draw_element_handles(ctx, dl, canvas_x, canvas_y, rect)
+  local hs = self.config.element_handle_size
+  local half = hs / 2
+
+  -- Handle positions (centered on edges and corners)
+  local handles = {
+    -- Corners
+    { x = rect.x - half, y = rect.y - half },                     -- NW
+    { x = rect.x + rect.w - half, y = rect.y - half },           -- NE
+    { x = rect.x - half, y = rect.y + rect.h - half },           -- SW
+    { x = rect.x + rect.w - half, y = rect.y + rect.h - half }, -- SE
+    -- Edge centers
+    { x = rect.x + rect.w / 2 - half, y = rect.y - half },       -- N
+    { x = rect.x + rect.w / 2 - half, y = rect.y + rect.h - half }, -- S
+    { x = rect.x - half, y = rect.y + rect.h / 2 - half },       -- W
+    { x = rect.x + rect.w - half, y = rect.y + rect.h / 2 - half }, -- E
+  }
+
+  -- Draw handles (white fill with dark border)
+  for _, h in ipairs(handles) do
+    ImGui.DrawList_AddRectFilled(dl,
+      canvas_x + h.x, canvas_y + h.y,
+      canvas_x + h.x + hs, canvas_y + h.y + hs,
+      0xFFFFFFFF, 1)
+    ImGui.DrawList_AddRect(dl,
+      canvas_x + h.x, canvas_y + h.y,
+      canvas_x + h.x + hs, canvas_y + h.y + hs,
+      0x000000FF, 1, 0, 1)
+  end
+end
+
+-- Apply drag delta to element coordinates
+function Canvas:apply_element_drag(drag_type, dx, dy)
+  if not self.drag_element or not self.drag_element_start_coords then return end
+
+  local coords = self.drag_element.coords
+  local start = self.drag_element_start_coords
+
+  -- Snap to grid if enabled
+  local snap = self.config.grid_size
+  local snap_dx = math.floor(dx / snap + 0.5) * snap
+  local snap_dy = math.floor(dy / snap + 0.5) * snap
+
+  if drag_type == "element_move" then
+    -- Move: update x and y
+    coords.x = start.x + snap_dx
+    coords.y = start.y + snap_dy
+
+  elseif drag_type == "element_resize_e" then
+    -- East: extend width
+    coords.w = math.max(5, start.w + snap_dx)
+
+  elseif drag_type == "element_resize_w" then
+    -- West: move left edge, adjust width
+    coords.x = start.x + snap_dx
+    coords.w = math.max(5, start.w - snap_dx)
+
+  elseif drag_type == "element_resize_s" then
+    -- South: extend height
+    coords.h = math.max(5, start.h + snap_dy)
+
+  elseif drag_type == "element_resize_n" then
+    -- North: move top edge, adjust height
+    coords.y = start.y + snap_dy
+    coords.h = math.max(5, start.h - snap_dy)
+
+  elseif drag_type == "element_resize_se" then
+    -- Southeast: extend both
+    coords.w = math.max(5, start.w + snap_dx)
+    coords.h = math.max(5, start.h + snap_dy)
+
+  elseif drag_type == "element_resize_nw" then
+    -- Northwest: move both edges
+    coords.x = start.x + snap_dx
+    coords.y = start.y + snap_dy
+    coords.w = math.max(5, start.w - snap_dx)
+    coords.h = math.max(5, start.h - snap_dy)
+
+  elseif drag_type == "element_resize_ne" then
+    -- Northeast
+    coords.y = start.y + snap_dy
+    coords.w = math.max(5, start.w + snap_dx)
+    coords.h = math.max(5, start.h - snap_dy)
+
+  elseif drag_type == "element_resize_sw" then
+    -- Southwest
+    coords.x = start.x + snap_dx
+    coords.w = math.max(5, start.w - snap_dx)
+    coords.h = math.max(5, start.h + snap_dy)
+  end
+
+  -- Mark as modified
+  self.modified_elements[self.drag_element.id] = true
+
+  -- Invalidate simulation cache
+  self.sim_cache = nil
+end
+
+-- Check if an element has been modified
+function Canvas:is_element_modified(element)
+  return self.modified_elements[element.id] == true
+end
+
+-- Get all modified elements
+function Canvas:get_modified_elements()
+  local modified = {}
+  for _, elem in ipairs(self.elements) do
+    if self.modified_elements[elem.id] then
+      modified[#modified + 1] = elem
+    end
+  end
+  return modified
+end
+
+-- Clear modification tracking
+function Canvas:clear_modifications()
+  self.modified_elements = {}
+end
+
 -- Handle mouse interaction
 function Canvas:handle_interaction(ctx, canvas_x, canvas_y, handles)
   local mx, my = ImGui.GetMousePos(ctx)
+  local rel_x = mx - canvas_x
+  local rel_y = my - canvas_y
+  local result = nil
+
+  -- Get simulation for hit testing
+  local sim = self:get_simulation()
+
+  -- Find selected element's current rect (if any)
+  local selected_rect = nil
+  if self.selected_element then
+    for _, sim_result in ipairs(sim) do
+      if sim_result.element == self.selected_element then
+        selected_rect = sim_result.rect
+        break
+      end
+    end
+  end
 
   -- Check for drag start
   if ImGui.IsMouseClicked(ctx, 0) then
+    -- First check canvas resize handles
     if point_in_rect(mx, my, handles.corner) then
       self.dragging = "corner"
       self.drag_start_w = self.parent_w
@@ -250,16 +448,45 @@ function Canvas:handle_interaction(ctx, canvas_x, canvas_y, handles)
       self.dragging = "bottom"
       self.drag_start_h = self.parent_h
       self.drag_start_y = my
+
+    -- Then check if clicking on selected element (for drag/resize)
+    elseif selected_rect and self.selected_element then
+      local zone = get_element_hit_zone(rel_x, rel_y, selected_rect, self.config.element_edge_threshold)
+      if zone then
+        -- Start element drag
+        if zone == "move" then
+          self.dragging = "element_move"
+        else
+          self.dragging = "element_" .. zone  -- e.g., "element_resize_se"
+        end
+        self.drag_element = self.selected_element
+        self.drag_element_start_coords = {
+          x = self.selected_element.coords.x,
+          y = self.selected_element.coords.y,
+          w = self.selected_element.coords.w,
+          h = self.selected_element.coords.h,
+        }
+        self.drag_element_start_rect = {
+          x = selected_rect.x,
+          y = selected_rect.y,
+          w = selected_rect.w,
+          h = selected_rect.h,
+        }
+        self.drag_start_x = mx
+        self.drag_start_y = my
+      end
+
+    -- Finally check for element selection (clicking a different element)
     else
-      -- Check for element selection
-      local rel_x = mx - canvas_x
-      local rel_y = my - canvas_y
       if rel_x >= 0 and rel_x <= self.parent_w and rel_y >= 0 and rel_y <= self.parent_h then
-        local sim = self:get_simulation()
         local clicked = Simulator.hit_test(sim, rel_x, rel_y)
         if clicked then
           self.selected_element = clicked
-          return { type = "select", element = clicked }
+          result = { type = "select", element = clicked }
+        else
+          -- Clicked empty space - deselect
+          self.selected_element = nil
+          result = { type = "deselect" }
         end
       end
     end
@@ -270,37 +497,56 @@ function Canvas:handle_interaction(ctx, canvas_x, canvas_y, handles)
     local dx = mx - self.drag_start_x
     local dy = my - self.drag_start_y
 
+    -- Canvas resize
     if self.dragging == "right" or self.dragging == "corner" then
       local new_w = self.drag_start_w + dx
       new_w = math.max(self.config.min_parent_w, math.min(self.config.max_parent_w, new_w))
       self.parent_w = math.floor(new_w)
+      self.sim_cache = nil
     end
 
     if self.dragging == "bottom" or self.dragging == "corner" then
       local new_h = self.drag_start_h + dy
       new_h = math.max(self.config.min_parent_h, math.min(self.config.max_parent_h, new_h))
       self.parent_h = math.floor(new_h)
+      self.sim_cache = nil
     end
 
-    self.sim_cache = nil  -- Invalidate cache
+    -- Element drag/resize
+    if self.dragging:match("^element_") then
+      self:apply_element_drag(self.dragging, dx, dy)
+      result = { type = "element_modified", element = self.drag_element }
+    end
   end
 
   -- End dragging
   if ImGui.IsMouseReleased(ctx, 0) then
+    if self.dragging and self.dragging:match("^element_") and self.drag_element then
+      result = { type = "element_drag_end", element = self.drag_element }
+    end
     self.dragging = nil
+    self.drag_element = nil
+    self.drag_element_start_coords = nil
+    self.drag_element_start_rect = nil
   end
 
-  -- Update hovered element
-  local rel_x = mx - canvas_x
-  local rel_y = my - canvas_y
+  -- Update hovered element and cursor
   if rel_x >= 0 and rel_x <= self.parent_w and rel_y >= 0 and rel_y <= self.parent_h then
-    local sim = self:get_simulation()
     self.hovered_element = Simulator.hit_test(sim, rel_x, rel_y)
+
+    -- Set cursor based on what we're hovering over
+    if selected_rect and not self.dragging then
+      local zone = get_element_hit_zone(rel_x, rel_y, selected_rect, self.config.element_edge_threshold)
+      local cursor = get_cursor_for_zone(zone)
+      if cursor then
+        ImGui.SetMouseCursor(ctx, cursor)
+      end
+    end
   else
     self.hovered_element = nil
   end
 
-  return nil
+  return result
 end
 
 -- Draw track list view with resize handles
@@ -546,15 +792,28 @@ function Canvas:draw(ctx)
 
     -- Draw elements
     local sim = self:get_simulation()
+    local selected_rect = nil
     for _, sim_result in ipairs(sim) do
       local is_selected = sim_result.element == self.selected_element
       local is_hovered = sim_result.element == self.hovered_element
+      local is_modified = self:is_element_modified(sim_result.element)
 
       self.renderer:draw_element(ctx, dl, canvas_x, canvas_y, sim_result, {
         selected = is_selected,
         hovered = is_hovered,
         show_attachments = self.config.show_attachments,
+        modified = is_modified,
       })
+
+      -- Track selected element's rect for drawing handles
+      if is_selected then
+        selected_rect = sim_result.rect
+      end
+    end
+
+    -- Draw resize handles on selected element
+    if selected_rect and selected_rect.w > 0 and selected_rect.h > 0 then
+      self:draw_element_handles(ctx, dl, canvas_x, canvas_y, selected_rect)
     end
 
     -- Draw parent container border

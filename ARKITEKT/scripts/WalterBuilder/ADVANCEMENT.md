@@ -6,13 +6,24 @@ This document tracks the development progress of the visual rtconfig editor/buil
 
 ---
 
-## Current Status: Flow Layout & Group Expansion Working
+## Current Status: Visual Element Editing Working
 
 **Date**: 2024-11-27
 
-The expression evaluator now successfully parses and evaluates 80/80 computed expressions from complex rtconfig themes. **Flow layout macros** with `then` statements are now parsed and positioned correctly, including **group expansion** for pan_group, fx_group, and input_group.
+The expression evaluator now successfully parses and evaluates 80/80 computed expressions from complex rtconfig themes. **Visual editing** is now available - elements can be dragged to reposition and resized by dragging edges/corners.
 
 ### Recent Updates
+
+**2024-11-27 (Session 4) - Element Drag/Resize & Context Variables**
+- **Element drag-to-move** - click and drag element interior to reposition
+- **Element edge resize** - drag element edges/corners to resize (8 resize directions)
+- **Grid snapping** - coordinates snap to 10px grid during drag
+- **Resize handles** - white square handles shown on selected element corners/edges
+- **Cursor feedback** - appropriate resize cursors shown when hovering element edges
+- **Modified indicator** - orange triangle marker on elements that have been edited
+- **Modification tracking** - canvas tracks which elements have been modified for export
+- **DPI Scale slider** - added scale context variable (0.5-2.0) for testing scale-responsive layouts
+- **Float slider support** - rtconfig panel now supports float-type controllable variables
 
 **2024-11-27 (Session 3) - Flow Layout & Groups**
 - **Parsed `then` statements** from flow macros - discovered that tcp.recarm, tcp.recmon, tcp.recmode, tcp.env use `then` keyword instead of `set`

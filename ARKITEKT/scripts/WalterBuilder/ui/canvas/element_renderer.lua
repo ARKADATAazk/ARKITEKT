@@ -260,6 +260,16 @@ function Renderer:draw_element(ctx, dl, canvas_x, canvas_y, sim_result, opts)
   if opts.show_attachments then
     self:draw_attachment_indicators(ctx, dl, canvas_x, canvas_y, sim_result, rect)
   end
+
+  -- Draw modified indicator (small orange triangle in top-right corner)
+  if opts.modified then
+    local marker_size = 8
+    ImGui.DrawList_AddTriangleFilled(dl,
+      x2 - marker_size, y1,
+      x2, y1,
+      x2, y1 + marker_size,
+      0xFF8800FF)  -- Orange
+  end
 end
 
 -- Draw legend explaining colors
