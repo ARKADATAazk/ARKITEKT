@@ -333,8 +333,8 @@ When you need more detail:
 2. **cookbook/CONVENTIONS.md** - Detailed coding standards
 3. **cookbook/PROJECT_STRUCTURE.md** - Full architecture guide
 4. **cookbook/LUA_PERFORMANCE_GUIDE.md** - Performance optimization
-5. **TODO/** - Actionable improvements to work on
-6. **ARKITEKT_Codex_Playbook_v5.md** - Batch operations, pipelines, JSON task format
+5. **cookbook/THEME_MANAGER.md** - Theming system guide
+6. **TODO/** - Actionable improvements to work on
 
 ---
 
