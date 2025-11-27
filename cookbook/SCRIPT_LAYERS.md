@@ -67,7 +67,7 @@ scripts/RegionPlaylist/
 │   ├── region/              # Region data
 │   └── playback/            # Playback logic (transport, transitions)
 ├── ui/                      # Views, tiles
-├── storage/                 # Persistence
+├── data/                 # Persistence
 ├── defs/                    # Constants
 └── tests/                   # Integration tests
 ```
@@ -128,7 +128,7 @@ These exist because they solve **cross-script problems** (ImGui version compat, 
 | `ui/`, `views/` | Rendering, user interaction | Yes (via ImGui) |
 | `engine/` | Script-specific orchestration | Yes (transport, timing) |
 | `domains/` | Business data structures | Can if needed |
-| `storage/` | Persistence | Yes (ExtState, files) |
+| `data/` | Persistence | Yes (ExtState, files) |
 | `defs/` | Constants, defaults | No |
 | `tests/` | Integration tests | Yes (runs in REAPER) |
 

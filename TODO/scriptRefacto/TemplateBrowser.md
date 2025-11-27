@@ -498,21 +498,21 @@ return require("TemplateBrowser.app.config")
 
 **Status**: ⬜
 
-**These are in `domain/` but perform I/O, should be in `infra/`**:
+**These are in `domain/` but perform I/O, should be in `data/`**:
 
 | Current | New | Rename? |
 |---------|-----|---------|
-| `domain/persistence.lua` | `infra/storage.lua` | Yes (rename to match convention) |
-| `domain/undo.lua` | `infra/undo.lua` | No |
-| `domain/file_ops.lua` | `infra/file_ops.lua` | No |
+| `domain/persistence.lua` | `data/storage.lua` | Yes (rename to match convention) |
+| `domain/undo.lua` | `data/undo.lua` | No |
+| `domain/file_ops.lua` | `data/file_ops.lua` | No |
 
 **Note**: Re-export shims ALREADY EXIST!
-- `domain/persistence.lua` → Already re-exports `infra/storage.lua` ✅
-- `domain/undo.lua` → Already re-exports `infra/undo.lua` ✅
-- `domain/file_ops.lua` → Already re-exports `infra/file_ops.lua` ✅
+- `domain/persistence.lua` → Already re-exports `data/storage.lua` ✅
+- `domain/undo.lua` → Already re-exports `data/undo.lua` ✅
+- `domain/file_ops.lua` → Already re-exports `data/file_ops.lua` ✅
 
 **Action Items**:
-- [ ] VERIFY: Files are actually in `infra/` (check filesystem)
+- [ ] VERIFY: Files are actually in `data/` (check filesystem)
 - [ ] IF NOT: Move them now
 - [ ] UPDATE: All `require()` statements to use `infra.*` not `domain.*`
 - [ ] GREP: Find all `require.*domain\.persistence` → change to `infra.storage`
@@ -886,7 +886,7 @@ log:info("New template UUID: %s -> %s", template_name, uuid)
 
 **Files to update**:
 - [ ] `domain/template/scanner.lua` (~20 occurrences)
-- [ ] `infra/storage.lua` (persistence logging)
+- [ ] `data/storage.lua` (persistence logging)
 - [ ] Any other files using `reaper.ShowConsoleMsg` for debug
 
 **Action Items**:
@@ -1083,7 +1083,7 @@ end
 - [ ] `ui/init.lua`:
   - [ ] `GUI:draw()` (332 lines, main render loop)
   - [ ] `GUI:initialize_once()` (initialization logic)
-- [ ] `infra/storage.lua`:
+- [ ] `data/storage.lua`:
   - [ ] `json_encode()` (custom JSON encoder)
   - [ ] `json_decode()` (custom JSON decoder)
 
@@ -1218,7 +1218,7 @@ FXQueue.process_batch(self.state, config.FX_QUEUE.BATCH_SIZE)
 
 **Simple implementation**:
 ```lua
--- Already have JSON encoder in infra/storage.lua
+-- Already have JSON encoder in data/storage.lua
 -- Just need UI buttons and file picker
 function M.export_metadata(path)
   local Storage = require('TemplateBrowser.infra.storage')
@@ -1246,9 +1246,9 @@ end
 | 2 | `core/state.lua` | `app/state.lua` | ⬜ |
 | 3 | `core/shortcuts.lua` | `ui/shortcuts.lua` | ⬜ |
 | 4 | `core/tooltips.lua` | `ui/tooltips.lua` | ⬜ |
-| 5 | `domain/persistence.lua` | `infra/storage.lua` | ⬜ *(shim exists)* |
-| 6 | `domain/undo.lua` | `infra/undo.lua` | ⬜ *(shim exists)* |
-| 7 | `domain/file_ops.lua` | `infra/file_ops.lua` | ⬜ *(shim exists)* |
+| 5 | `domain/persistence.lua` | `data/storage.lua` | ⬜ *(shim exists)* |
+| 6 | `domain/undo.lua` | `data/undo.lua` | ⬜ *(shim exists)* |
+| 7 | `domain/file_ops.lua` | `data/file_ops.lua` | ⬜ *(shim exists)* |
 | 8 | `domain/scanner.lua` | `domain/template/scanner.lua` | ⬜ *(shim exists)* |
 | 9 | `domain/template_ops.lua` | `domain/template/ops.lua` | ⬜ *(shim exists)* |
 | 10 | `domain/tags.lua` | `domain/tags/service.lua` | ⬜ |

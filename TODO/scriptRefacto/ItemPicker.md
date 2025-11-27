@@ -26,7 +26,7 @@ ItemPicker has **excellent code quality (9/10)** but is **architecturally non-co
 
 - Missing `domain/` layer entirely (business logic scattered)
 - Uses `core/` instead of `app/`
-- Uses `data/` instead of `infra/`
+- Uses `data/` instead of `data/`
 - Has `services/` folder (should be split/deleted)
 - Has `utils/` folder (should use arkitekt.debug.logger)
 - `init.lua` at root instead of `app/init.lua`
@@ -48,13 +48,13 @@ ItemPicker/
 │   ├── controller.lua                # ❌ Should be domain/items/service.lua
 │   └── preview_manager.lua           # ❌ Should be domain/preview/manager.lua
 │
-├── data/                             # ❌ Should be "infra/"
+├── data/                             # ❌ Should be "data/"
 │   ├── reaper_api.lua
-│   ├── persistence.lua               # ❌ Should be infra/storage.lua
-│   ├── disk_cache.lua                # ❌ Should be infra/cache.lua
+│   ├── persistence.lua               # ❌ Should be data/storage.lua
+│   ├── disk_cache.lua                # ❌ Should be data/cache.lua
 │   ├── job_queue.lua
 │   └── loaders/
-│       └── incremental_loader.lua    # ❌ Should be infra/loader.lua (flattened)
+│       └── incremental_loader.lua    # ❌ Should be data/loader.lua (flattened)
 │
 ├── services/                         # ❌ Should NOT exist - split this!
 │   ├── utils.lua                     # ❌ Delete or merge
@@ -112,7 +112,7 @@ ItemPicker/
 │   └── pool/
 │       └── utils.lua                # FROM: services/pool_utils.lua
 │
-├── infra/                           # Infrastructure (I/O, external systems)
+├── data/                           # Infrastructure (I/O, external systems)
 │   ├── storage.lua                  # FROM: data/persistence.lua (renamed)
 │   ├── cache.lua                    # FROM: data/disk_cache.lua (renamed)
 │   ├── job_queue.lua                # FROM: data/job_queue.lua
@@ -157,7 +157,7 @@ ItemPicker/
     │   ├── items_test.lua
     │   ├── preview_test.lua
     │   └── pool_test.lua
-    └── infra/
+    └── data/
         └── storage_test.lua
 ```
 
@@ -199,7 +199,7 @@ mkdir -p ItemPicker/tests/infra
 
 - [ ] Create `app/` folder
 - [ ] Create `domain/` folder with subdirectories
-- [ ] Create `infra/` folder
+- [ ] Create `data/` folder
 - [ ] Create `ui/state/` folder
 - [ ] Create `ui/components/filters/` folder
 - [ ] Create `tests/` folder structure
@@ -391,19 +391,19 @@ mv services/pool_utils.lua domain/pool/utils.lua
 
 ---
 
-### Phase 5: Rename data/ → infra/ 🏗️
+### Phase 5: Rename data/ → data/ 🏗️
 
 **Rename folder and reorganize files:**
 
 #### 5.1: Rename folder
 
 ```bash
-mv data/ infra/
+mv data/ data/
 ```
 
 **Note:** This is a bulk rename - all files move at once.
 
-- [ ] Rename `data/` → `infra/`
+- [ ] Rename `data/` → `data/`
 - [ ] Update ALL requires: `ItemPicker.data.` → `ItemPicker.infra.`
 - [ ] Test: Items still load
 - [ ] Test: Settings persist correctly
@@ -415,15 +415,15 @@ mv data/ infra/
 
 | Old Path | New Path | Action |
 |----------|----------|--------|
-| `infra/persistence.lua` | `infra/storage.lua` | Rename + update requires |
-| `infra/disk_cache.lua` | `infra/cache.lua` | Rename + update requires |
-| `infra/loaders/incremental_loader.lua` | `infra/loader.lua` | Flatten + update requires |
+| `data/persistence.lua` | `data/storage.lua` | Rename + update requires |
+| `data/disk_cache.lua` | `data/cache.lua` | Rename + update requires |
+| `data/loaders/incremental_loader.lua` | `data/loader.lua` | Flatten + update requires |
 
 **Steps:**
 
 1. **Rename persistence → storage:**
    ```bash
-   mv infra/persistence.lua infra/storage.lua
+   mv data/persistence.lua data/storage.lua
    ```
    - [ ] Rename file
    - [ ] Update file path comment
@@ -432,7 +432,7 @@ mv data/ infra/
 
 2. **Rename disk_cache → cache:**
    ```bash
-   mv infra/disk_cache.lua infra/cache.lua
+   mv data/disk_cache.lua data/cache.lua
    ```
    - [ ] Rename file
    - [ ] Update file path comment
@@ -441,8 +441,8 @@ mv data/ infra/
 
 3. **Flatten incremental_loader:**
    ```bash
-   mv infra/loaders/incremental_loader.lua infra/loader.lua
-   rmdir infra/loaders
+   mv data/loaders/incremental_loader.lua data/loader.lua
+   rmdir data/loaders
    ```
    - [ ] Move file out of loaders/ subfolder
    - [ ] Update file path comment
@@ -482,7 +482,7 @@ mv services/visualization.lua ui/visualization.lua
 
 - [ ] **Option A:** Delete if functionality duplicated in arkitekt core
 - [ ] **Option B:** Merge useful functions into domain/items/service.lua
-- [ ] **Option C:** Keep as `infra/utils.lua` if truly needed
+- [ ] **Option C:** Keep as `data/utils.lua` if truly needed
 
 **Action (choose one):**
 
@@ -695,7 +695,7 @@ Controller.init(App.infra.reaper_api, App.utils)
 touch tests/domain/items_test.lua
 touch tests/domain/preview_test.lua
 touch tests/domain/pool_test.lua
-touch tests/infra/storage_test.lua
+touch tests/data/storage_test.lua
 ```
 
 - [ ] Create test file stubs
@@ -771,7 +771,7 @@ git add .
 git commit -m "refactor(ItemPicker): Migrate to target architecture
 
 - Move core/ → app/
-- Move data/ → infra/
+- Move data/ → data/
 - Create domain/ layer with items/, preview/, pool/
 - Split services/ → domain/ and ui/
 - Delete utils/ (use arkitekt logger)
@@ -803,7 +803,7 @@ Fixes: #XXX"
 | 2 | Move app layer | 2h |
 | 3 | Create UI state | 1.5h |
 | 4 | Create domain layer | 2.5h |
-| 5 | Rename data/ → infra/ | 2.5h |
+| 5 | Rename data/ → data/ | 2.5h |
 | 6 | Split/delete services/ | 1.75h |
 | 7 | Delete utils/ | 0.75h |
 | 8 | Reorganize UI | 2.5h |
@@ -907,7 +907,7 @@ Migration is complete when:
 
 - [x] All 28 files moved to correct locations
 - [x] All 4 folders deleted (core/, data/, services/, utils/)
-- [x] New folders created (app/, domain/, infra/, ui/state/)
+- [x] New folders created (app/, domain/, data/, ui/state/)
 - [x] Entry point uses new structure
 - [x] All features work as before
 - [x] No performance regression
@@ -928,7 +928,7 @@ ls utils/       # ❌ Should fail
 # MUST exist:
 ls app/         # ✅ Should contain: init.lua, config.lua, state.lua
 ls domain/      # ✅ Should contain: items/, preview/, pool/
-ls infra/       # ✅ Should contain: storage.lua, cache.lua, loader.lua, etc.
+ls data/       # ✅ Should contain: storage.lua, cache.lua, loader.lua, etc.
 ls ui/state/    # ✅ Should contain: preferences.lua
 ```
 
@@ -938,7 +938,7 @@ ls ui/state/    # ✅ Should contain: preferences.lua
 
 1. **services/utils.lua fate:**
    - [ ] Audit content - what functions exist?
-   - [ ] Decision: Delete, merge, or keep as infra/utils.lua?
+   - [ ] Decision: Delete, merge, or keep as data/utils.lua?
    - [ ] Document decision and rationale
 
 2. **Re-export shims:**
@@ -971,7 +971,7 @@ ls ui/state/    # ✅ Should contain: preferences.lua
 TemplateBrowser has completed:
 - ✅ `app/` folder created
 - ✅ `domain/` with subdirs (fx/, tags/, template/)
-- ✅ `infra/` folder created
+- ✅ `data/` folder created
 - ✅ `ui/config/` folder created
 - ⚠️ Re-export shims in place (core/ still exists)
 - ⚠️ Entry point still uses old paths

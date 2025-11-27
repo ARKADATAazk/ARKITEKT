@@ -29,7 +29,7 @@ See [cookbook/MIGRATION_PLANS.md](../../../../cookbook/MIGRATION_PLANS.md#region
 | `core/` | `app/` + distribute | 5 |
 | `domains/` | `domain/` + `ui/state/` | 6 |
 | `engine/` | `domain/playback/` | 7 |
-| `storage/` | `infra/` | 3 |
+| `storage/` | `data/` | 3 |
 
 ## Key Decisions
 
@@ -59,17 +59,17 @@ The "engine" is actually **playback domain logic** - it's the core business logi
 
 **Note:** `domain/playback/` can use `reaper.*` - we don't enforce strict purity in scripts (see [cookbook/SCRIPT_LAYERS.md](../../../../cookbook/SCRIPT_LAYERS.md)).
 
-### 3. coordinator_bridge → infra/
+### 3. coordinator_bridge → data/
 
 The bridge is infrastructure (wires domain to REAPER):
-- `engine/coordinator_bridge.lua` → `infra/bridge.lua`
+- `engine/coordinator_bridge.lua` → `data/bridge.lua`
 
-### 4. Storage → infra/
+### 4. Storage → data/
 
 Already correctly isolated:
-- `storage/persistence.lua` → `infra/storage.lua`
-- `storage/sws_importer.lua` → `infra/sws_import.lua`
-- `storage/undo_bridge.lua` → `infra/undo.lua`
+- `storage/persistence.lua` → `data/storage.lua`
+- `storage/sws_importer.lua` → `data/sws_import.lua`
+- `storage/undo_bridge.lua` → `data/undo.lua`
 
 ## Prerequisites
 

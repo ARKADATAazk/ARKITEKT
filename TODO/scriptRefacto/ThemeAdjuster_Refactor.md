@@ -11,7 +11,7 @@
 
 ThemeAdjuster is a **well-architected, production-quality application** with excellent domain logic and proper REAPER integration. This refactor focuses on:
 
-1. **Structural migration** to canonical app/domain/infra/ui architecture (MIGRATION_PLANS.md)
+1. **Structural migration** to canonical app/domain/data/ui architecture (MIGRATION_PLANS.md)
 2. **Code quality improvements** (logging, imports, magic numbers)
 
 **Note:** Per [cookbook/SCRIPT_LAYERS.md](../../../cookbook/SCRIPT_LAYERS.md), scripts don't need a `platform/` layer. Domain can use `reaper.*` directly.
@@ -41,7 +41,7 @@ ThemeAdjuster/
 │
 ├── packages/                  # Domain-specific, but does I/O
 │   ├── image_map.lua          # → domain/packages/image_map.lua (pure logic)
-│   ├── manager.lua            # → infra/packages/manager.lua (I/O heavy!)
+│   ├── manager.lua            # → data/packages/manager.lua (I/O heavy!)
 │   └── metadata.lua           # → domain/packages/metadata.lua (pure data)
 │
 ├── defs/                      # ✅ Keep as-is
@@ -97,7 +97,7 @@ ThemeAdjuster/
 │       ├── image_map.lua      # FROM: packages/image_map.lua
 │       └── metadata.lua       # FROM: packages/metadata.lua
 │
-├── infra/
+├── data/
 │   ├── storage.lua            # NEW: Settings persistence abstraction
 │   └── packages/
 │       └── manager.lua        # FROM: packages/manager.lua (I/O operations)
@@ -232,7 +232,7 @@ reaper.ShowConsoleMsg("[PackageScanner] Total packages found: " .. #packages .. 
 
 **Action**: Replace with arkitekt Logger
 ```lua
--- At top of infra/packages/manager.lua
+-- At top of data/packages/manager.lua
 local Logger = require('arkitekt.debug.logger')
 local log = Logger.new("PackageScanner")
 
@@ -383,9 +383,9 @@ footer = {
 
 **File**: `packages/manager.lua:16-72`
 
-**Action**: Extract to `infra/packages/demo_data.lua`
+**Action**: Extract to `data/packages/demo_data.lua`
 ```lua
--- infra/packages/demo_data.lua (NEW)
+-- data/packages/demo_data.lua (NEW)
 -- @noindex
 -- Demo package data generator for development/testing
 
@@ -431,7 +431,7 @@ mkdir -p ThemeAdjuster/platform
 mkdir -p ThemeAdjuster/domain/theme
 mkdir -p ThemeAdjuster/domain/links
 mkdir -p ThemeAdjuster/domain/packages
-mkdir -p ThemeAdjuster/infra/packages
+mkdir -p ThemeAdjuster/data/packages
 mkdir -p ThemeAdjuster/ui/config
 mkdir -p ThemeAdjuster/ui/views/modals
 mkdir -p ThemeAdjuster/tests/domain
@@ -461,12 +461,12 @@ mkdir -p ThemeAdjuster/tests/platform
 | MOVE | `packages/metadata.lua` → `domain/packages/metadata.lua` | |
 | ADD RE-EXPORT | All old locations | Point to new locations |
 
-**Step 2.3**: Create `infra/` folder (I/O operations)
+**Step 2.3**: Create `data/` folder (I/O operations)
 | Action | File | Notes |
 |--------|------|-------|
-| MOVE | `packages/manager.lua` → `infra/packages/manager.lua` | Heavy I/O |
-| CREATE | `infra/storage.lua` | Extract persistence abstraction |
-| CREATE | `infra/packages/demo_data.lua` | Extract demo data (Task #6) |
+| MOVE | `packages/manager.lua` → `data/packages/manager.lua` | Heavy I/O |
+| CREATE | `data/storage.lua` | Extract persistence abstraction |
+| CREATE | `data/packages/demo_data.lua` | Extract demo data (Task #6) |
 | ADD RE-EXPORT | `packages/manager.lua` | `return require("ThemeAdjuster.infra.packages.manager")` |
 
 **Step 2.4**: Reorganize `ui/` folder
@@ -593,12 +593,12 @@ end
 - [ ] 11. Move `core/config.lua` → `app/config.lua`
 - [ ] 12. Move `core/state.lua` → `app/state.lua`
 - [ ] 13. Reorganize `domain/` folder structure
-- [ ] 14. Reorganize `infra/` folder structure
+- [ ] 14. Reorganize `data/` folder structure
 - [ ] 15. Remove `_view` suffixes from view files
 - [ ] 16. Move modals to `ui/views/modals/`
 - [ ] 17. Test all tabs and functionality
 - [ ] 18. Delete empty `core/` folder
-- [ ] 19. Delete empty `packages/` folder (after moving to infra/)
+- [ ] 19. Delete empty `packages/` folder (after moving to data/)
 
 ### Low Priority
 - [ ] 20. Add unit tests for domain logic
@@ -671,7 +671,7 @@ end
 ## Success Criteria
 
 ✅ **Complete when:**
-1. All files follow canonical `app/domain/infra/ui` structure
+1. All files follow canonical `app/domain/data/ui` structure
 2. All ImGui requires use `arkitekt.platform.imgui`
 3. Console logging replaced with arkitekt Logger
 4. All views work correctly with new structure

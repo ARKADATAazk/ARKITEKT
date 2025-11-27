@@ -32,7 +32,7 @@ All scripts follow this canonical structure (see [SCRIPT_LAYERS.md](./SCRIPT_LAY
 │   │   └── repository.lua # Data access abstraction
 │   └── ...
 │
-├── storage/          # Persistence (ExtState, JSON)
+├── data/          # Persistence (ExtState, JSON)
 │   ├── persistence.lua
 │   └── undo.lua      # Undo system bridge
 │
@@ -51,7 +51,7 @@ All scripts follow this canonical structure (see [SCRIPT_LAYERS.md](./SCRIPT_LAY
 | Principle | Description |
 |-----------|-------------|
 | **Separation of Concerns** | Domain logic grouped by concept |
-| **Dependency Direction** | `ui/` → `domain/` → `storage/` |
+| **Dependency Direction** | `ui/` → `domain/` → `data/` |
 | **State Simplification** | `app/state.lua` is a container, not business logic |
 | **UI State Isolation** | Animation, preferences → `ui/state/` |
 | **Pragmatic Purity** | Scripts can use `reaper.*` in domain (see SCRIPT_LAYERS.md) |
@@ -751,7 +751,7 @@ RegionPlaylist/
 │   ├── quantize.lua
 │   ├── transitions.lua
 │   └── coordinator_bridge.lua
-├── storage/
+├── data/
 │   ├── persistence.lua
 │   ├── sws_importer.lua
 │   └── undo_bridge.lua
@@ -815,9 +815,9 @@ RegionPlaylist/
 │   └── dependency.lua        # FROM: domains/dependency.lua
 │
 ├── infra/
-│   ├── storage.lua           # FROM: storage/persistence.lua
-│   ├── sws_import.lua        # FROM: storage/sws_importer.lua
-│   ├── undo.lua              # FROM: storage/undo_bridge.lua
+│   ├── storage.lua           # FROM: data/persistence.lua
+│   ├── sws_import.lua        # FROM: data/sws_importer.lua
+│   ├── undo.lua              # FROM: data/undo_bridge.lua
 │   └── bridge.lua            # FROM: engine/coordinator_bridge.lua
 │
 ├── ui/
@@ -893,9 +893,9 @@ RegionPlaylist/
 | `engine/quantize.lua` | `domain/playback/quantize.lua` | Move |
 | `engine/transitions.lua` | `domain/playback/transitions.lua` | Move |
 | `engine/coordinator_bridge.lua` | `infra/bridge.lua` | Move |
-| `storage/persistence.lua` | `infra/storage.lua` | Move |
-| `storage/sws_importer.lua` | `infra/sws_import.lua` | Move |
-| `storage/undo_bridge.lua` | `infra/undo.lua` | Move |
+| `data/persistence.lua` | `infra/storage.lua` | Move |
+| `data/sws_importer.lua` | `infra/sws_import.lua` | Move |
+| `data/undo_bridge.lua` | `infra/undo.lua` | Move |
 | `ui/gui.lua` | `ui/init.lua` | Rename |
 | `ui/status.lua` | `ui/views/status.lua` | Move |
 | `ui/shortcuts.lua` | `ui/shortcuts.lua` | Keep |
@@ -907,7 +907,7 @@ RegionPlaylist/
 - `core/` (empty after migration)
 - `domains/` (empty after migration)
 - `engine/` (empty after migration)
-- `storage/` (empty after migration)
+- `data/` (empty after migration)
 
 ---
 

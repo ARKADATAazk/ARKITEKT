@@ -86,7 +86,7 @@ function M.create(config) end
 |------|-------------|
 | **app/ always has 2 files** | `init.lua` (bootstrap), `state.lua` (container) |
 | **domain/ organization** | Group by business concept (see note below) |
-| **storage/ handles persistence** | ExtState, JSON files |
+| **data/ handles persistence** | ExtState, JSON files |
 | **ui/init.lua** | Always the UI orchestrator entry point |
 | **ui/state/** | UI-only state (preferences, animation, NOT business data) |
 | **Keep defs/** | This name is clear and doesn't collide |
@@ -99,9 +99,9 @@ function M.create(config) end
 |--------|-----|-------------|
 | `core/` | Becomes dumping ground | Distribute to proper layers |
 | `utils/` | Too vague | Use arkitekt utilities or specific layer |
-| `services/` | Ambiguous | `domain/*/service.lua` or `storage/` |
+| `services/` | Ambiguous | `domain/*/service.lua` or `data/` |
 | `helpers/` | Too vague | Put in specific layer |
-| `lib/` | Unclear scope | `domain/` for logic, `storage/` for persistence |
+| `lib/` | Unclear scope | `domain/` for logic, `data/` for persistence |
 | `common/` | Everything is "common" | Be specific |
 
 ### File Size Guidelines
@@ -254,9 +254,9 @@ local M = {
     region = nil,
   },
 
-  -- Infrastructure (injected)
-  infra = {
-    storage = nil,
+  -- Data layer (injected)
+  data = {
+    persistence = nil,
     undo = nil,
   },
 
@@ -271,7 +271,7 @@ local M = {
 --- @param deps table Dependencies to inject
 function M.initialize(deps)
   M.services = deps.services or M.services
-  M.infra = deps.infra or M.infra
+  M.data = deps.data or M.data
   M.events = deps.events
   M.ui = deps.ui
 end
@@ -279,7 +279,7 @@ end
 --- Reset state (for testing)
 function M.reset()
   M.services = { playlist = nil, region = nil }
-  M.infra = { storage = nil, undo = nil }
+  M.data = { persistence = nil, undo = nil }
   M.events = nil
   M.ui = nil
 end
@@ -578,7 +578,7 @@ local clamped_pos = max(region.start, min(playpos, region["end"]))
 
 - [ ] `app/` has `init.lua` and `state.lua`
 - [ ] `domain/` groups by business concept
-- [ ] `storage/` handles persistence (ExtState, JSON)
+- [ ] `data/` handles persistence (ExtState, JSON)
 - [ ] `ui/state/` contains only UI preferences, not business data
 - [ ] No `core/`, `utils/`, or `services/` folders
 

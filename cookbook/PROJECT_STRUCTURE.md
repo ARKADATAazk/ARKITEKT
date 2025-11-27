@@ -60,9 +60,9 @@ The previous organization used vague folders like `core/`, `utils/`, and `servic
 
 | Layer | Purpose | Dependencies | Example Files |
 |-------|---------|--------------|---------------|
-| `app/` | Bootstrap, wire dependencies, hold state | domain, storage | `init.lua`, `state.lua` |
+| `app/` | Bootstrap, wire dependencies, hold state | domain, data | `init.lua`, `state.lua` |
 | `domain/` | Business logic, rules, validation | Can use `reaper.*` in scripts | `playlist/service.lua` |
-| `storage/` | Persistence (ExtState, JSON) | domain (interfaces) | `persistence.lua` |
+| `data/` | Persistence (ExtState, JSON) | domain (interfaces) | `persistence.lua` |
 | `ui/` | Presentation, user interaction | app, domain | `init.lua`, `views/` |
 | `defs/` | Static constants, defaults, strings | None | `constants.lua` |
 | `tests/` | Test files | Mirrors source | `domain/playlist_test.lua` |
@@ -86,7 +86,7 @@ The previous organization used vague folders like `core/`, `utils/`, and `servic
 │   └── [shared]/             # Cross-cutting domain concerns
 │       └── *.lua
 │
-├── storage/                  # PERSISTENCE LAYER
+├── data/                  # PERSISTENCE LAYER
 │   ├── persistence.lua       # JSON/ExtState persistence
 │   ├── undo.lua              # Undo system integration
 │   └── cache.lua             # Disk/memory caching (optional)
@@ -119,7 +119,7 @@ The previous organization used vague folders like `core/`, `utils/`, and `servic
 └── tests/                    # TEST FILES (integration tests in REAPER)
     ├── domain/               # Domain tests
     │   └── [aggregate]_test.lua
-    ├── storage/              # Persistence tests
+    ├── data/              # Persistence tests
     │   └── persistence_test.lua
     └── integration/          # End-to-end tests
         └── workflow_test.lua
@@ -138,20 +138,20 @@ The previous organization used vague folders like `core/`, `utils/`, and `servic
 | File | Responsibility |
 |------|----------------|
 | `init.lua` | Create instances, inject dependencies, return configured app |
-| `state.lua` | Hold references to domain services, storage, UI state (container only) |
+| `state.lua` | Hold references to domain services, data, UI state (container only) |
 
 **Example `app/init.lua`:**
 
 ```lua
 -- app/init.lua
-local Persistence = require("storage.persistence")
+local Persistence = require("data.persistence")
 local PlaylistService = require("domain.playlist.service")
 local PlaylistRepository = require("domain.playlist.repository")
 local State = require("app.state")
 local EventBus = require("arkitekt.core.events")
 
 local function bootstrap(settings)
-  -- Create storage
+  -- Create data layer
   local persistence = Persistence.new("RegionPlaylist")
   local undo = UndoManager.new()
   local events = EventBus.new()
@@ -165,7 +165,7 @@ local function bootstrap(settings)
   -- Wire up state container
   State.initialize({
     services = { playlist = playlist_service },
-    storage = { persistence = persistence, undo = undo },
+    data = { persistence = persistence, undo = undo },
     events = events,
   })
 
@@ -188,8 +188,8 @@ local M = {
     region = nil,
   },
 
-  -- Storage (injected)
-  storage = {
+  -- Data layer (injected)
+  data = {
     persistence = nil,
     undo = nil,
   },
@@ -203,7 +203,7 @@ local M = {
 
 function M.initialize(deps)
   M.services = deps.services
-  M.storage = deps.storage
+  M.data = deps.data
   M.events = deps.events
 end
 
@@ -334,7 +334,7 @@ return M
 
 ---
 
-### `storage/` - Persistence Layer
+### `data/` - Persistence Layer
 
 **Purpose:** Data persistence, caching, undo system integration.
 
@@ -346,10 +346,10 @@ return M
 | `undo.lua` | REAPER undo system bridge |
 | `cache.lua` | Disk/memory caching (optional) |
 
-**Example `storage/persistence.lua`:**
+**Example `data/persistence.lua`:**
 
 ```lua
--- storage/persistence.lua
+-- data/persistence.lua
 local json = require("arkitekt.core.json")
 local Logger = require("arkitekt.debug.logger")
 
@@ -547,13 +547,13 @@ features/
 |------|-------------|
 | **app/ always has 2 files** | `init.lua` (bootstrap), `state.lua` (container) |
 | **domain/ groups by concept** | Business logic; can use `reaper.*` in scripts |
-| **storage/ handles persistence** | ExtState, JSON files |
+| **data/ handles persistence** | ExtState, JSON files |
 | **ui/init.lua** | Always the UI orchestrator entry point |
 | **ui/state/** | UI-only state (preferences, animation, NOT business data) |
 | **Keep defs/** | This name is clear and doesn't collide |
 | **No core/** | Eliminated - distribute to proper layers |
 | **No utils/** | Use arkitekt utilities or put in appropriate layer |
-| **No services/** | Too vague - use `domain/` for logic, `storage/` for persistence |
+| **No services/** | Too vague - use `domain/` for logic, `data/` for persistence |
 
 > **Pragmatic approach:** See [SCRIPT_LAYERS.md](./SCRIPT_LAYERS.md) for why scripts don't enforce strict purity.
 
