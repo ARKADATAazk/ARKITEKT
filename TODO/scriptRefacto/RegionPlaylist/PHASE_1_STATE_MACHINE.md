@@ -69,6 +69,185 @@ Introduce `arkitekt.core.state_machine` for playback state.
 | `transitioning` | `complete` | `playing` | - |
 | `transitioning` | `stop` | `idle` | - |
 
+## Sub-Phases (Safe Migration Path)
+
+Break Phase 1 into atomic, testable steps. **Each sub-phase should be a separate commit.**
+
+| Sub-Phase | Risk | Rollback | Test After |
+|-----------|------|----------|------------|
+| 1.1 Create FSM module | None | Delete file | Unit tests |
+| 1.2 Add FSM to engine (inactive) | None | Remove import | App starts |
+| 1.3 Add compat shims | Low | Revert file | All playback works |
+| 1.4 Wire play/stop to FSM | Medium | Revert transport.lua | Play/stop works |
+| 1.5 Wire pause to FSM | Medium | Revert | Pause/resume works |
+| 1.6 Wire transitions to FSM | High | Revert | Region transitions work |
+| 1.7 Remove legacy booleans | Low | Revert | Full regression test |
+
+### Sub-Phase 1.1: Create FSM Module (Zero Risk)
+
+Create the module without wiring it anywhere.
+
+**Files**: `engine/playback_fsm.lua` (new)
+**Risk**: None - no existing code touched
+**Rollback**: Delete the file
+**Test**: Unit tests only
+
+---
+
+### Sub-Phase 1.2: Add FSM to Engine (Zero Risk)
+
+Import FSM but don't use it yet.
+
+**Files**: `engine/core.lua`
+**Changes**:
+```lua
+-- Add import
+local PlaybackFSM = require("RegionPlaylist.engine.playback_fsm")
+
+-- Create FSM in engine constructor (but don't use it)
+self._fsm = PlaybackFSM.new({ events = opts.events })
+```
+**Risk**: None - FSM exists but isn't used
+**Rollback**: Remove the import and creation
+**Test**: App starts normally
+
+---
+
+### Sub-Phase 1.3: Add Backward Compatibility Shims (Low Risk)
+
+Add computed properties that will allow gradual migration.
+
+**Files**: `engine/transport.lua`
+**Changes**:
+```lua
+-- Keep old booleans but add FSM-aware getters
+function Transport:get_playback_state()
+  if self.fsm then
+    return self.fsm:get_state()
+  end
+  -- Legacy fallback
+  if self.is_playing then
+    return self.is_paused and "paused" or "playing"
+  end
+  return "idle"
+end
+
+-- Dual-write: update both FSM and legacy
+function Transport:_sync_fsm_state(target)
+  if self.fsm and self.fsm:get_state() ~= target then
+    self.fsm:force(target)
+  end
+end
+```
+**Risk**: Low - adds code, doesn't change behavior
+**Rollback**: Revert transport.lua
+**Test**: All playback operations work identically
+
+---
+
+### Sub-Phase 1.4: Wire Play/Stop to FSM (Medium Risk)
+
+Replace play/stop logic with FSM.
+
+**Files**: `engine/transport.lua`
+**Changes**:
+```lua
+function Transport:play()
+  -- Use FSM as source of truth
+  if self.fsm:is("playing") then return end
+
+  local ok = self.fsm:send("play")
+  if not ok then return false end
+
+  -- Legacy sync (remove in 1.7)
+  self.is_playing = true
+  self.is_paused = false
+
+  -- Rest of play logic...
+end
+
+function Transport:stop()
+  self.fsm:send("stop")
+
+  -- Legacy sync (remove in 1.7)
+  self.is_playing = false
+  self.is_paused = false
+
+  -- Rest of stop logic...
+end
+```
+**Risk**: Medium - changes control flow
+**Rollback**: Revert transport.lua
+**Test**:
+- Play from idle works
+- Stop during playback works
+- Play with empty sequence blocked by guard
+
+---
+
+### Sub-Phase 1.5: Wire Pause/Resume to FSM (Medium Risk)
+
+**Files**: `engine/transport.lua`
+**Changes**: Similar pattern for pause/resume
+**Risk**: Medium
+**Rollback**: Revert transport.lua
+**Test**:
+- Pause during playback works
+- Resume from pause works
+- Pause position recorded
+
+---
+
+### Sub-Phase 1.6: Wire Transitions to FSM (High Risk)
+
+This is the most complex change - the transition logic.
+
+**Files**: `engine/transitions.lua`, `engine/transport.lua`
+**Changes**:
+```lua
+-- transitions.lua
+function Transitions:handle_smooth_transitions()
+  -- Use FSM state check instead of booleans
+  if self.fsm:is_not("playing", "transitioning") then return end
+
+  -- When queuing next region:
+  if should_transition then
+    self.fsm:send("transition")
+  end
+
+  -- When transition completes:
+  if transition_complete then
+    self.fsm:send("complete")
+  end
+end
+```
+**Risk**: High - transition logic is complex
+**Rollback**: Revert both files
+**Test**:
+- Region A → Region B transition works
+- Same-region repeat works
+- Playlist loop works
+- Manual seek during playback works
+
+---
+
+### Sub-Phase 1.7: Remove Legacy Booleans (Low Risk)
+
+After all tests pass, remove the legacy sync code.
+
+**Files**: `engine/transport.lua`
+**Changes**:
+```lua
+-- Remove:
+self.is_playing = true   -- Delete these lines
+self.is_paused = false   -- throughout the file
+```
+**Risk**: Low (if previous phases tested)
+**Rollback**: Re-add the lines
+**Test**: Full regression test suite
+
+---
+
 ## Implementation Plan
 
 ### Step 1: Create engine/playback_fsm.lua

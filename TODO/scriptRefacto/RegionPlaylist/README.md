@@ -31,11 +31,41 @@ RegionPlaylist is the most complex ARKITEKT script (~14,000 lines, 49 files). Th
 
 **Recommendation**: Complete Phases 1-3 first. Phase 4 (full structure migration per MIGRATION_PLANS.md) can wait until other scripts are migrated.
 
+## Sub-Phase Summary
+
+Each phase is broken into atomic, testable sub-phases with individual commits:
+
+### Phase 1: StateMachine (7 sub-phases)
+| # | Task | Risk |
+|---|------|------|
+| 1.1 | Create FSM module | None |
+| 1.2 | Add FSM to engine (inactive) | None |
+| 1.3 | Add backward-compat shims | Low |
+| 1.4 | Wire play/stop to FSM | Medium |
+| 1.5 | Wire pause to FSM | Medium |
+| 1.6 | Wire transitions to FSM | **High** |
+| 1.7 | Remove legacy booleans | Low |
+
+### Phase 2: Events (8 sub-phases)
+| # | Task | Risk |
+|---|------|------|
+| 2.1 | Create events module | None |
+| 2.2 | Add bus to app_state (inactive) | None |
+| 2.3 | Emit playback events (alongside callbacks) | Low |
+| 2.4 | Extract handlers module | Low |
+| 2.5 | Migrate state callbacks | Medium |
+| 2.6 | Migrate playback callbacks | Medium |
+| 2.7 | Use extracted handlers | Low |
+| 2.8 | Cleanup direct callbacks | Low |
+
+**Key principle**: Each sub-phase can be reverted independently. Test after each.
+
 ## Phase Files
 
-- [PHASE_1_STATE_MACHINE.md](PHASE_1_STATE_MACHINE.md) - Introduce explicit playback state machine
-- [PHASE_2_EVENTS.md](PHASE_2_EVENTS.md) - Migrate callbacks to event bus
+- [PHASE_1_STATE_MACHINE.md](PHASE_1_STATE_MACHINE.md) - Introduce explicit playback state machine (7 sub-phases)
+- [PHASE_2_EVENTS.md](PHASE_2_EVENTS.md) - Migrate callbacks to event bus (8 sub-phases)
 - [NITPICKS.md](NITPICKS.md) - Small code quality improvements
+- [TESTING.md](TESTING.md) - **Testing & verification strategy**
 - [PHASE_4_STRUCTURE.md](PHASE_4_STRUCTURE.md) - Full structure migration (defer)
 
 ## Quick Wins (Can Do Anytime)

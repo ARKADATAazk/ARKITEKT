@@ -68,6 +68,228 @@ Examples:
 - ui.search_changed
 ```
 
+## Sub-Phases (Safe Migration Path)
+
+Break Phase 2 into atomic steps. **Each sub-phase should be a separate commit.**
+
+| Sub-Phase | Risk | Rollback | Test After |
+|-----------|------|----------|------------|
+| 2.1 Create events module | None | Delete file | Unit tests |
+| 2.2 Add bus to app_state (inactive) | None | Revert | App starts |
+| 2.3 Emit playback events | Low | Revert | Playback works |
+| 2.4 Extract handlers module | Low | Revert | All callbacks work |
+| 2.5 Migrate state callbacks | Medium | Revert | Undo/redo works |
+| 2.6 Migrate playback callbacks | Medium | Revert | Playback events fire |
+| 2.7 Remove direct callbacks | Low | Revert | Full test |
+
+### Sub-Phase 2.1: Create Events Module (Zero Risk)
+
+Create the module without wiring it.
+
+**Files**: `app/events.lua` (new)
+**Risk**: None - no existing code touched
+**Rollback**: Delete the file
+**Test**: Unit tests only
+
+---
+
+### Sub-Phase 2.2: Add Bus to app_state (Zero Risk)
+
+Initialize event bus but don't use it yet.
+
+**Files**: `core/app_state.lua`
+**Changes**:
+```lua
+local AppEvents = require("RegionPlaylist.app.events")
+
+function M.initialize(settings)
+  -- Create event bus (unused for now)
+  M.events = AppEvents.create_bus(DEBUG_APP_STATE)
+  M.EVENTS = AppEvents.EVENTS
+
+  -- ... existing initialization (unchanged)
+end
+```
+**Risk**: None - bus exists but nothing emits/subscribes
+**Rollback**: Remove the two lines
+**Test**: App starts normally
+
+---
+
+### Sub-Phase 2.3: Emit Playback Events (Low Risk)
+
+Start emitting events alongside existing callbacks.
+
+**Files**: `engine/coordinator_bridge.lua`
+**Changes**:
+```lua
+-- In existing callback handlers, ADD event emission
+on_region_change = function(rid, region, pointer)
+  -- Existing callback (keep for now)
+  if opts.on_region_change then
+    opts.on_region_change(rid, region, pointer)
+  end
+
+  -- NEW: Also emit event
+  if app_state.events then
+    app_state.events:emit(app_state.EVENTS.PLAYBACK_REGION_CHANGED, {
+      rid = rid,
+      region = region,
+      pointer = pointer,
+    })
+  end
+end
+```
+**Risk**: Low - adds emission, doesn't change behavior
+**Rollback**: Remove the event emission lines
+**Test**:
+- Enable debug on event bus
+- Verify events logged during playback
+
+---
+
+### Sub-Phase 2.4: Extract Handlers Module (Low Risk)
+
+Create `ui/handlers.lua` with extracted callbacks.
+
+**Files**: `ui/handlers.lua` (new)
+**Changes**:
+- Copy callbacks from gui.lua
+- Wrap in factory function
+- Don't change gui.lua yet
+
+**Risk**: Low - new file, no existing code changed
+**Rollback**: Delete the file
+**Test**: Import and call `create_tile_handlers()` in console
+
+---
+
+### Sub-Phase 2.5: Migrate State Callbacks (Medium Risk)
+
+Replace `on_state_restored` direct callback with event subscription.
+
+**Files**: `core/app_state.lua`, `ui/gui.lua`
+**Changes**:
+
+```lua
+-- app_state.lua: Emit event instead of calling callback
+function M.undo()
+  -- ... existing logic
+
+  -- REMOVE: Direct callback
+  -- if M.on_state_restored then M.on_state_restored() end
+
+  -- ADD: Event emission
+  if M.events then
+    M.events:emit(M.EVENTS.STATE_RESTORED, { action = "undo", changes = changes })
+  end
+end
+
+-- gui.lua: Subscribe to event
+function M.create(State, AppConfig, settings)
+  -- ... existing setup
+
+  -- REMOVE: Direct callback assignment
+  -- State.on_state_restored = function() self:refresh_tabs() end
+
+  -- ADD: Event subscription
+  self._unsub_state = State.events:on(State.EVENTS.STATE_RESTORED, function()
+    self:refresh_tabs()
+    -- ... rest of handler
+  end)
+end
+```
+
+**Risk**: Medium - changes how state restoration notifies GUI
+**Rollback**: Revert both files
+**Test**:
+- Add items, undo → tabs refresh
+- Undo/redo multiple times → no stale state
+
+---
+
+### Sub-Phase 2.6: Migrate Playback Callbacks (Medium Risk)
+
+Replace `on_repeat_cycle` and other playback callbacks.
+
+**Files**: `core/app_state.lua`, `ui/gui.lua`, `engine/coordinator_bridge.lua`
+**Changes**: Similar pattern to 2.5
+
+**Risk**: Medium - changes playback notification flow
+**Rollback**: Revert files
+**Test**:
+- Play region with repeat → repeat cycle event fires
+- UI updates on region change
+
+---
+
+### Sub-Phase 2.7: Use Extracted Handlers (Low Risk)
+
+Replace inline callbacks in gui.lua with handlers module.
+
+**Files**: `ui/gui.lua`
+**Changes**:
+```lua
+local Handlers = require("RegionPlaylist.ui.handlers")
+
+function M.create(State, AppConfig, settings)
+  -- ...
+
+  -- REPLACE 230 lines of callbacks with:
+  local tile_handlers = Handlers.create_tile_handlers(
+    self.controller, State, State.events
+  )
+
+  self.region_tiles = RegionTiles.create(tile_handlers)
+end
+```
+
+**Risk**: Low (if handlers module tested)
+**Rollback**: Revert gui.lua, keep handlers.lua
+**Test**: All tile interactions work
+
+---
+
+### Sub-Phase 2.8: Cleanup Direct Callbacks (Low Risk)
+
+Remove the now-unused direct callback properties.
+
+**Files**: `core/app_state.lua`
+**Changes**:
+```lua
+-- REMOVE these lines:
+M.on_state_restored = nil
+M.on_repeat_cycle = nil
+```
+
+**Risk**: Low (if event subscriptions verified)
+**Rollback**: Re-add the lines
+**Test**: Full regression test
+
+---
+
+## Integration Points (Risk Areas)
+
+These are the connections between modules that could break:
+
+| From | To | Via | Risk |
+|------|-----|-----|------|
+| coordinator_bridge | app_state | `on_repeat_cycle` callback | Medium |
+| app_state | gui | `on_state_restored` callback | Medium |
+| gui | region_tiles | 40+ callbacks | Low (extracted) |
+| controller | app_state | Direct state mutation | Low |
+
+### Safe Order
+
+1. Wire events **alongside** existing callbacks first
+2. Verify events fire correctly (debug mode)
+3. Add event subscriptions **alongside** direct callbacks
+4. Verify both paths work
+5. Remove direct callbacks one at a time
+6. Test after each removal
+
+---
+
 ## Implementation Plan
 
 ### Step 1: Create app/events.lua
