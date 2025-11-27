@@ -510,6 +510,77 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
   end
 end
 
+-- Insert item(s) at edit cursor position on selected track
+-- @param items_to_insert: array of MediaItem pointers
+-- @param state: app state for lookup tables
+-- @param use_pooled_copy: boolean for MIDI pooling
+-- @return boolean success
+function M.InsertItemsAtEditCursor(items_to_insert, state, use_pooled_copy)
+  if not items_to_insert or #items_to_insert == 0 then
+    return false
+  end
+
+  -- Get target track (first selected, or create new)
+  local track = reaper.GetSelectedTrack(0, 0)
+  if not track then
+    -- No track selected - create a new one
+    reaper.InsertTrackAtIndex(reaper.CountTracks(0), false)
+    track = reaper.GetTrack(0, reaper.CountTracks(0) - 1)
+  end
+
+  -- Get edit cursor position
+  local cursor_pos = reaper.GetCursorPosition()
+
+  -- Apply snap to grid if enabled
+  if reaper.GetToggleCommandState(1157) == 1 then
+    cursor_pos = reaper.SnapToGrid(0, cursor_pos)
+  end
+
+  -- Handle pooled MIDI copy behavior
+  local want_pooled = use_pooled_copy == true
+  local original_toggle = reaper.GetToggleCommandState(41071) == 1
+  if want_pooled and not original_toggle then
+    reaper.Main_OnCommand(41071, 0)  -- Toggle pooled MIDI source ON
+  end
+
+  -- Insert all items sequentially
+  reaper.SelectAllMediaItems(0, false)
+  local current_pos = cursor_pos
+
+  for _, insert_item in ipairs(items_to_insert) do
+    if insert_item and reaper.ValidatePtr2(0, insert_item, "MediaItem*") then
+      reaper.SetMediaItemSelected(insert_item, true)
+
+      -- Create copy using ApplyNudge (nudgewhat=5 = duplicate/copies mode)
+      reaper.ApplyNudge(0, 1, 5, 1, current_pos, false, 1)
+      local inserted = reaper.GetSelectedMediaItem(0, 0)
+
+      if inserted then
+        reaper.MoveMediaItemToTrack(inserted, track)
+
+        -- If user doesn't want pooled copy, unpool the inserted item
+        if not want_pooled then
+          reaper.SetMediaItemSelected(inserted, true)
+          reaper.Main_OnCommand(41613, 0)  -- Unpool MIDI item
+        end
+
+        -- Calculate next position (current item length)
+        local item_len = reaper.GetMediaItemInfo_Value(inserted, "D_LENGTH")
+        current_pos = current_pos + item_len
+      end
+      reaper.SelectAllMediaItems(0, false)
+    end
+  end
+
+  -- Restore original toggle state
+  local current_toggle = reaper.GetToggleCommandState(41071) == 1
+  if current_toggle ~= original_toggle then
+    reaper.Main_OnCommand(41071, 0)  -- Toggle back to original
+  end
+
+  return true
+end
+
 -- Get all project regions (for filter bar)
 function M.GetAllProjectRegions()
   local regions = {}

@@ -7,6 +7,7 @@ local ark = require('arkitekt')
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
 local shared = require('ItemPicker.ui.grids.factories.shared')
+local ItemsService = require('ItemPicker.domain.items.service')
 
 local M = {}
 
@@ -419,6 +420,12 @@ function M.create(ctx, config, state, visualization, animator, disable_animator)
     on_select = function(grid, keys)
       -- Update state with current selection count
       state.audio_selection_count = #keys
+    end,
+
+    -- ENTER: Insert selected items at edit cursor
+    enter = function(grid, keys)
+      if not keys or #keys == 0 then return end
+      ItemsService.insert_items_at_cursor(keys, state, true, false)  -- is_audio=true
     end,
 
     -- SPACE: Preview (default mode)
