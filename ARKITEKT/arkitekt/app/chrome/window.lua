@@ -623,7 +623,10 @@ function M.new(opts)
     if not self.settings then return end
     if self._is_maximized then return end
     if self.fullscreen.enabled then return end
-    
+
+    -- Don't save position/size when docked - those values are controlled by the dock
+    if self._was_docked then return end
+
     local wx, wy = ImGui.GetWindowPos(ctx)
     local ww, wh = ImGui.GetWindowSize(ctx)
     local pos  = { x = floor(wx), y = floor(wy) }
