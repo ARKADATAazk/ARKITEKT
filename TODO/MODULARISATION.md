@@ -406,6 +406,58 @@ These are domain-specific and unlikely to be extracted:
   - **Effort**: Low-Medium (consolidate existing implementations)
   - **Impact**: High (eliminates 9+ duplicates, single source of truth)
 
+### Easing Functions - UNDERUSED (Migration Needed)
+- [ ] **Migrate to `arkitekt/gui/animation/easing.lua`**
+  - **Framework provides**: 16 easing functions (linear, quad, cubic, sine, expo, back variants)
+  - **Currently used by**: lifecycle.lua, overlay/manager.lua, tab_animator.lua (only 3!)
+
+  **Duplications found:**
+  | File | Function | Notes |
+  |------|----------|-------|
+  | `gui/widgets/media/media_grid/renderers/base.lua:18` | `ease_out_back()` | **Exact duplicate** |
+  | `ItemPicker/ui/grids/renderers/base.lua:25` | `ease_out_back()` | **Exact duplicate** |
+
+  - **Effort**: Trivial (add require, delete local function)
+  - **Impact**: Removes 2 duplicates, increases framework usage
+
+### Cascade Animation - DUPLICATED (Migration Needed)
+- [ ] **Consolidate cascade animation helpers**
+  - Both `media_grid` and `ItemPicker` have identical `calculate_cascade_factor()` functions
+
+  **Duplications found:**
+  | File | Notes |
+  |------|-------|
+  | `gui/widgets/media/media_grid/renderers/base.lua:25-44` | Original in framework |
+  | `ItemPicker/ui/grids/renderers/base.lua:32-51` | **Near-identical copy** |
+
+  - **Shared**: spawn time tracking, stagger delay, easing application
+  - **Option A**: ItemPicker imports from media_grid/renderers/base
+  - **Option B**: Extract to shared animation utilities
+  - **Effort**: Low
+  - **Impact**: Removes duplicate, single source of truth
+
+### Duration Formatting - DUPLICATED
+- [ ] **arkitekt/core/duration.lua** - Time duration display
+  - **Problem**: Multiple scripts format seconds as `HH:MM:SS` or `MM:SS`
+
+  **Duplications found:**
+  | File | Format | Notes |
+  |------|--------|-------|
+  | `RegionPlaylist/ui/views/transport/display_widget.lua:166` | `%d:%02d:%02d:%02d` | With milliseconds |
+  | `ItemPicker/ui/grids/renderers/audio.lua:519-667` | `%d:%02d:%02d` / `%d:%02d` | Dual format |
+  | `ItemPicker/ui/grids/renderers/midi.lua:516-520` | `%d:%02d:%02d` / `%d:%02d` | Dual format |
+
+  **Proposed API:**
+  ```lua
+  local Duration = require('arkitekt.core.duration')
+  Duration.format(seconds)                    -- "1:23" or "1:23:45"
+  Duration.format(seconds, {ms = true})       -- "1:23:45:123"
+  Duration.format(seconds, {always_hours = true})  -- "0:01:23"
+  ```
+
+  - **Effort**: Low
+  - **Impact**: Removes 3+ duplicates
+
 ### Music Time Formatting (LOW-MEDIUM VALUE)
 - [ ] **arkitekt/core/music_formatting.lua** - Musical time display
   - **Source**: `RegionPlaylist/ui/tile_utilities.lua` (61 lines)
@@ -594,11 +646,14 @@ File.list_subdirs(dir)   -- List subdirectories
 | 1 | **Consolidate text truncation** | Low-Med | **Critical** | 9+ copies | |
 | 2 | **Migrate TemplateBrowser to core/uuid** | **Trivial** | Medium | 1 exact copy | |
 | 3 | **Migrate TemplateBrowser to core/json** | Low | Medium | 1 copy (130 lines) | |
-| 4 | **Extract file utilities** | Medium | High | 4+ copies | |
-| 5 | **Migrate lerp/clamp usage to core/math** | Low | Medium | 5+ copies | |
-| 6 | Extract transport icons | Low | High | 1 | |
-| 7 | Migrate TemplateBrowser sorting | Low | Medium | - | |
-| 8 | Migrate ItemPicker sorting | Low | Medium | - | |
+| 4 | **Migrate ease_out_back to Easing** | **Trivial** | Low | 2 exact copies | |
+| 5 | **Extract file utilities** | Medium | High | 4+ copies | |
+| 6 | **Migrate lerp/clamp usage to core/math** | Low | Medium | 5+ copies | |
+| 7 | **Consolidate cascade animation** | Low | Medium | 2 copies | |
+| 8 | **Extract duration formatting** | Low | Medium | 3+ copies | |
+| 9 | Extract transport icons | Low | High | 1 | |
+| 10 | Migrate TemplateBrowser sorting | Low | Medium | - | |
+| 11 | Migrate ItemPicker sorting | Low | Medium | - | |
 
 ---
 
