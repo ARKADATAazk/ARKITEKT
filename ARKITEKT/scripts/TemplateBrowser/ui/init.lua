@@ -602,23 +602,20 @@ function GUI:draw(ctx, shell_state)
     ImGui.SetCursorPosY(ctx, window_height * 0.5 - 30)
     ImGui.Text(ctx, text)
 
-    -- Progress bar
+    -- Progress bar and percentage (only during actual scanning)
     if self.state.scan_in_progress then
       local progress = self.state.scan_progress or 0
       local bar_width = 300
-      local bar_height = 4
 
-      ImGui.SetCursorPosX(ctx, (window_width - bar_width) * 0.5)
-      ImGui.SetCursorPosY(ctx, window_height * 0.5)
-
-      -- Progress bar background
-      local draw_list = ImGui.GetWindowDrawList(ctx)
-      local pos_x, pos_y = ImGui.GetCursorScreenPos(ctx)
-      local col_bg = ImGui.GetColorEx(ctx, ImGui.Col_FrameBg)
-      local col_progress = ImGui.GetColorEx(ctx, ImGui.Col_ButtonActive)
-
-      ImGui.DrawList_AddRectFilled(draw_list, pos_x, pos_y, pos_x + bar_width, pos_y + bar_height, col_bg)
-      ImGui.DrawList_AddRectFilled(draw_list, pos_x, pos_y, pos_x + (bar_width * progress), pos_y + bar_height, col_progress)
+      -- Progress bar using new widget
+      ark.ProgressBar.draw(ctx, {
+        x = (window_width - bar_width) * 0.5,
+        y = window_height * 0.5,
+        width = bar_width,
+        height = 4,
+        progress = progress,
+        advance = "none",
+      })
 
       -- Percentage text
       local percent_text = string.format("%d%%", progress * 100)
