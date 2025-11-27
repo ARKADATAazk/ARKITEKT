@@ -129,14 +129,14 @@ function TreeView:is_selected(id)
 end
 ```
 
-### 2. **Undefined Reference to `ark.InputText`**
+### 2. **Undefined Reference to `Ark.InputText`**
 ```lua
 -- Line 658 in sandbox_4.lua
-ark.InputText.set_text("tree_edit_" .. node.id, tree_state.edit_buffer)
+Ark.InputText.set_text("tree_edit_" .. node.id, tree_state.edit_buffer)
 ```
 **Issue:** `ark` is not defined in scope. Should be:
 ```lua
-local ark = { InputText = InputText }  -- Define namespace
+local Ark = { InputText = InputText }  -- Define namespace
 ```
 
 ### 3. **No Item State Management**
