@@ -3,47 +3,22 @@
 -- Centralized constants and configuration values
 --
 -- THEME INTEGRATION:
--- Colors are now derived from the Theme Manager for dark/light theme support.
--- Call M.refresh_colors() when theme changes, or use M.get_colors() for
--- dynamic color access.
---
--- Note: Theme initialization is lazy to support loading before Shell.run()
+-- Colors now derive from Theme.COLORS (the same source used by titlebar context menu).
+-- This ensures ItemPicker respects the persisted theme mode.
 
 local ark = require('arkitekt')
 local hexrgb = ark.Colors.hexrgb
 
 local M = {}
 
--- Lazy load Theme and ItemPickerTheme to avoid requiring before Theme.init()
+-- Lazy load Theme to avoid circular dependency issues
 local _Theme
-local _ItemPickerTheme
-local _theme_initialized = false
-
 local function get_theme()
   if not _Theme then
     local ok, theme = pcall(require, 'arkitekt.core.theme')
     if ok then _Theme = theme end
   end
   return _Theme
-end
-
-local function get_item_picker_theme()
-  if not _ItemPickerTheme then
-    local ok, theme = pcall(require, 'scripts.ItemPicker.defs.theme')
-    if ok then _ItemPickerTheme = theme end
-  end
-  return _ItemPickerTheme
-end
-
---- Ensure theme is initialized (call after Shell.run() starts)
-local function ensure_theme_initialized()
-  if _theme_initialized then return end
-
-  local ItemPickerTheme = get_item_picker_theme()
-  if ItemPickerTheme and ItemPickerTheme.init then
-    ItemPickerTheme.init()
-    _theme_initialized = true
-  end
 end
 
 -- =============================================================================
@@ -106,22 +81,25 @@ M.CACHE = {
 -- =============================================================================
 -- COLORS (Theme-derived)
 -- =============================================================================
--- Colors are now computed from Theme Manager for dark/light theme support.
--- Use M.get_colors() for dynamic access or M.COLORS for cached values.
+-- Uses Theme.COLORS directly - same source as titlebar context menu theme picker.
 
 -- Cache for computed colors
 local _colors_cache = nil
 local _cache_t = nil
 
+--- Check if we're in light theme mode
+local function is_light_theme()
+  local Theme = get_theme()
+  return Theme and Theme.get_t and Theme.get_t() > 0.5 or false
+end
+
 --- Get theme-derived colors (computed on demand)
 --- @return table Colors table with theme-reactive values
 function M.get_colors()
-  ensure_theme_initialized()
-
   local Theme = get_theme()
-  local ItemPickerTheme = get_item_picker_theme()
+  local ThemeColors = Theme and Theme.COLORS or {}
 
-  -- Get current t value (default to 0 for dark theme if Theme not available)
+  -- Get current t value for cache invalidation
   local current_t = Theme and Theme.get_t and Theme.get_t() or 0
 
   -- Return cache if t hasn't changed
@@ -129,44 +107,42 @@ function M.get_colors()
     return _colors_cache
   end
 
-  -- Get computed palette from theme (or empty table if not available)
-  local palette = ItemPickerTheme and ItemPickerTheme.get() or {}
+  local is_light = is_light_theme()
 
-  -- Get Theme.COLORS (or empty table if not available)
-  local ThemeColors = Theme and Theme.COLORS or {}
-
-  -- Build colors table with theme values, falling back to defaults
+  -- Build colors table using Theme.COLORS with fallbacks
   _colors_cache = {
-    HOVER_OVERLAY = palette.HOVER_OVERLAY or hexrgb("#FFFFFF20"),
-    TEXT_SHADOW = palette.TEXT_SHADOW or hexrgb("#00000050"),
-    DEFAULT_TRACK_COLOR = {
-      palette.DEFAULT_TRACK_COLOR_R or 85/256,
-      palette.DEFAULT_TRACK_COLOR_G or 91/256,
-      palette.DEFAULT_TRACK_COLOR_B or 91/256,
-    },
+    -- Hover overlay - invert for light theme
+    HOVER_OVERLAY = is_light and hexrgb("#00000020") or hexrgb("#FFFFFF20"),
+    TEXT_SHADOW = is_light and hexrgb("#FFFFFF30") or hexrgb("#00000050"),
+
+    -- Default track color (when track has no color)
+    DEFAULT_TRACK_COLOR = {85/256, 91/256, 91/256},
 
     -- Status bar colors
-    LOADING = palette.LOADING or hexrgb("#4A9EFF"),
-    HINT = palette.TEXT_HINT or hexrgb("#888888"),
+    LOADING = hexrgb("#4A9EFF"),  -- Blue loading indicator (consistent)
+    HINT = ThemeColors.TEXT_DIMMED or hexrgb("#888888"),
 
-    -- Panel colors (use Theme.COLORS for BG-derived values)
+    -- Panel colors (from Theme.COLORS)
     PANEL_BACKGROUND = ThemeColors.BG_CHROME or hexrgb("#0F0F0F"),
     PANEL_BORDER = ThemeColors.BG_PANEL or hexrgb("#1A1A1A"),
     PATTERN = ThemeColors.PATTERN_PRIMARY or hexrgb("#2A2A2A"),
 
     -- Text colors
-    MUTED_TEXT = palette.TEXT_MUTED or hexrgb("#CC2222"),
-    PRIMARY_TEXT = palette.TEXT_PRIMARY or hexrgb("#FFFFFF"),
+    MUTED_TEXT = hexrgb("#CC2222"),  -- Red for muted (consistent)
+    PRIMARY_TEXT = ThemeColors.TEXT_NORMAL or hexrgb("#FFFFFF"),
 
     -- Backdrop/badge colors
-    BADGE_BG = palette.BADGE_BG or hexrgb("#14181C"),
+    BADGE_BG = is_light and hexrgb("#E8ECF0") or hexrgb("#14181C"),
     DISABLED_BACKDROP = ThemeColors.BG_PANEL or hexrgb("#1A1A1A"),
 
     -- Drag handler
-    DEFAULT_DRAG_COLOR = palette.DRAG_COLOR or hexrgb("#42E896FF"),
+    DEFAULT_DRAG_COLOR = hexrgb("#42E896FF"),  -- Teal (consistent)
 
-    -- Fallback
-    FALLBACK_TRACK = palette.FALLBACK_TRACK or 0x4A5A6AFF,
+    -- Fallback track color
+    FALLBACK_TRACK = 0x4A5A6AFF,
+
+    -- Section header text color
+    SECTION_HEADER_TEXT = ThemeColors.TEXT_NORMAL or hexrgb("#FFFFFF"),
   }
 
   _cache_t = current_t
@@ -180,7 +156,6 @@ function M.refresh_colors()
 end
 
 -- Legacy static access (uses cached theme colors)
--- Note: For dynamic theming, prefer M.get_colors()
 M.COLORS = setmetatable({}, {
   __index = function(_, key)
     return M.get_colors()[key]
@@ -201,77 +176,74 @@ M.GRID = {
 }
 
 -- =============================================================================
--- TILE RENDERING (Theme-reactive)
+-- TILE RENDERING
 -- =============================================================================
--- Some values are computed from theme palette for dark/light support.
+-- Most values are static. Theme-reactive values use Theme.COLORS.
 
---- Get theme-reactive tile render config
---- @return table TILE_RENDER config with theme-derived values
+--- Get tile render config
+--- @return table TILE_RENDER config
 function M.get_tile_render()
-  ensure_theme_initialized()
-
   local Theme = get_theme()
-  local ItemPickerTheme = get_item_picker_theme()
-  local palette = ItemPickerTheme and ItemPickerTheme.get() or {}
   local ThemeColors = Theme and Theme.COLORS or {}
+  local is_light = is_light_theme()
 
   return {
     -- Base tile fill
     base_fill = {
-      saturation_factor = palette.BASE_SATURATION_FACTOR or 0.9,
-      brightness_factor = palette.BASE_BRIGHTNESS_FACTOR or 0.6,
-      compact_saturation_factor = palette.COMPACT_SATURATION_FACTOR or 0.7,
-      compact_brightness_factor = palette.COMPACT_BRIGHTNESS_FACTOR or 0.4,
+      saturation_factor = 0.9,
+      brightness_factor = 0.6,
+      compact_saturation_factor = 0.7,
+      compact_brightness_factor = 0.4,
     },
 
     -- Hover effect
     hover = {
-      brightness_boost = palette.HOVER_BRIGHTNESS_BOOST or 0.50,
+      brightness_boost = 0.50,
     },
 
     -- Minimum lightness
-    min_lightness = palette.TILE_MIN_LIGHTNESS or 0.20,
+    min_lightness = 0.20,
 
     -- Duration text
     duration_text = {
       margin_x = 4,
       margin_y = 3,
-      dark_tile_threshold = palette.DURATION_DARK_THRESHOLD or 0.80,
-      light_saturation = palette.DURATION_LIGHT_SATURATION or 0.2,
-      light_value = palette.DURATION_LIGHT_VALUE or 4.2,
-      dark_saturation = palette.DURATION_DARK_SATURATION or 0.4,
-      dark_value = palette.DURATION_DARK_VALUE or 0.18,
+      dark_tile_threshold = 0.80,
+      light_saturation = 0.2,
+      light_value = 4.2,
+      dark_saturation = 0.4,
+      dark_value = 0.18,
     },
 
     -- Selection (marching ants)
     selection = {
-      border_saturation = palette.SELECTION_BORDER_SATURATION or 1.0,
-      border_brightness = palette.SELECTION_BORDER_BRIGHTNESS or 3.5,
+      border_saturation = 1.0,
+      border_brightness = 3.5,
       ants_alpha = 0xFF,
       ants_thickness = 1,
       ants_inset = 0,
       ants_dash = 24,
       ants_gap = 11,
       ants_speed = 30,
-      tile_brightness_boost = palette.SELECTION_TILE_BRIGHTNESS_BOOST or 0.35,
+      tile_brightness_boost = 0.35,
     },
 
     -- Disabled state
     disabled = {
-      desaturate = palette.DISABLED_DESATURATE or 0.10,
-      brightness = palette.DISABLED_BRIGHTNESS or 0.60,
-      min_alpha = math.floor((palette.DISABLED_MIN_ALPHA or 0.27) * 255),
+      desaturate = 0.10,
+      brightness = 0.60,
+      min_alpha = 0x44,
       fade_speed = 20.0,
       backdrop_color = ThemeColors.BG_PANEL or hexrgb("#1A1A1A"),
-      backdrop_alpha = math.floor((palette.DISABLED_BACKDROP_ALPHA or 0.53) * 255),
+      backdrop_alpha = 0x88,
     },
 
     -- Muted state
     muted = {
-      text_color = palette.TEXT_MUTED or hexrgb("#CC2222"),
-      desaturate = palette.MUTED_DESATURATE or 0.25,
-      brightness = palette.MUTED_BRIGHTNESS or 0.70,
-      alpha_factor = palette.MUTED_ALPHA_FACTOR or 0.85,
+      text_color = hexrgb("#CC2222"),
+      desaturate = 0.25,
+      brightness = 0.70,
+      alpha_factor = 0.85,
       fade_speed = 20.0,
     },
 
@@ -282,8 +254,8 @@ function M.get_tile_render()
       rounding_offset = 2,
       saturation_factor = 0.7,
       brightness_factor = 1,
-      alpha = math.floor((palette.HEADER_ALPHA or 0.87) * 255),
-      text_shadow = palette.HEADER_TEXT_SHADOW or hexrgb("#00000099"),
+      alpha = 0xDD,
+      text_shadow = is_light and hexrgb("#FFFFFF40") or hexrgb("#00000099"),
     },
 
     -- Badges (use theme-derived badge colors)
@@ -293,33 +265,33 @@ function M.get_tile_render()
         padding_y = 0,
         margin = 4,
         rounding = 3,
-        bg = palette.BADGE_BG or hexrgb("#14181C"),
-        border_darken = palette.BADGE_BORDER_DARKEN or 0.4,
-        border_alpha = math.floor((palette.BADGE_BORDER_ALPHA or 0.4) * 255),
+        bg = is_light and hexrgb("#E8ECF0") or hexrgb("#14181C"),
+        border_darken = 0.4,
+        border_alpha = 0x66,
       },
       pool = {
         padding_x = 4,
         padding_y = 0,
         margin = 4,
         rounding = 3,
-        bg = palette.BADGE_BG or hexrgb("#14181C"),
-        border_darken = palette.BADGE_BORDER_DARKEN or 0.4,
-        border_alpha = math.floor((palette.BADGE_BORDER_ALPHA or 0.33) * 255),
+        bg = is_light and hexrgb("#E8ECF0") or hexrgb("#14181C"),
+        border_darken = 0.4,
+        border_alpha = 0x55,
       },
       favorite = {
         icon_size = 14,
         margin = 4,
         spacing = 4,
         rounding = 3,
-        bg = palette.BADGE_BG or hexrgb("#14181C"),
-        border_darken = palette.BADGE_BORDER_DARKEN or 0.4,
-        border_alpha = math.floor((palette.BADGE_BORDER_ALPHA or 0.4) * 255),
+        bg = is_light and hexrgb("#E8ECF0") or hexrgb("#14181C"),
+        border_darken = 0.4,
+        border_alpha = 0x66,
       },
     },
 
     -- Text
     text = {
-      primary_color = palette.TEXT_PRIMARY or hexrgb("#FFFFFF"),
+      primary_color = ThemeColors.TEXT_NORMAL or hexrgb("#FFFFFF"),
       padding_left = 4,
       padding_top = 3,
       margin_right = 6,
@@ -329,26 +301,26 @@ function M.get_tile_render()
     waveform = {
       saturation_multiplier = 0.0,
       brightness_multiplier = 1.0,
-      saturation = palette.WAVEFORM_SATURATION or 0.3,
-      brightness = palette.WAVEFORM_BRIGHTNESS or 0.1,
-      line_alpha = palette.WAVEFORM_LINE_ALPHA or 0.95,
-      zero_line_alpha = palette.WAVEFORM_ZERO_LINE_ALPHA or 0.3,
+      saturation = 0.3,
+      brightness = 0.1,
+      line_alpha = 0.95,
+      zero_line_alpha = 0.3,
     },
 
     -- Tile FX
     tile_fx = {
-      fill_opacity = palette.TILE_FX_FILL_OPACITY or 0.65,
-      fill_saturation = palette.TILE_FX_FILL_SATURATION or 0.75,
-      fill_brightness = palette.TILE_FX_FILL_BRIGHTNESS or 0.6,
+      fill_opacity = 0.65,
+      fill_saturation = 0.75,
+      fill_brightness = 0.6,
       border_opacity = 0.0,
       border_saturation = 0.8,
       border_brightness = 1.4,
       border_thickness = 1.0,
-      gradient_intensity = palette.TILE_FX_GRADIENT_INTENSITY or 0.2,
-      gradient_opacity = palette.TILE_FX_GRADIENT_OPACITY or 0.08,
-      specular_strength = palette.TILE_FX_SPECULAR_STRENGTH or 0.12,
+      gradient_intensity = 0.2,
+      gradient_opacity = 0.08,
+      specular_strength = 0.12,
       specular_coverage = 0.25,
-      inner_shadow_strength = palette.TILE_FX_INNER_SHADOW_STRENGTH or 0.25,
+      inner_shadow_strength = 0.25,
       ants_enabled = true,
       ants_replace_border = false,
       ants_thickness = 1,
@@ -357,10 +329,10 @@ function M.get_tile_render()
       ants_speed = 30,
       ants_inset = 0,
       ants_alpha = 0xFF,
-      glow_strength = palette.TILE_FX_GLOW_STRENGTH or 0.4,
+      glow_strength = 0.4,
       glow_layers = 3,
-      hover_fill_boost = palette.TILE_FX_HOVER_FILL_BOOST or 0.16,
-      hover_specular_boost = palette.TILE_FX_HOVER_SPECULAR_BOOST or 1.2,
+      hover_fill_boost = 0.16,
+      hover_specular_boost = 1.2,
     },
 
     -- Animation speeds
@@ -387,11 +359,11 @@ function M.get_tile_render()
       header_covers_tile = true,
       hide_pool_count = true,
       disable_header_fill = true,
-      visualization_alpha = palette.SMALL_TILE_VISUALIZATION_ALPHA or 0.1,
-      header_saturation_factor = palette.SMALL_TILE_HEADER_SATURATION or 0.6,
-      header_brightness_factor = palette.SMALL_TILE_HEADER_BRIGHTNESS or 0.7,
+      visualization_alpha = 0.1,
+      header_saturation_factor = 0.6,
+      header_brightness_factor = 0.7,
       header_alpha = 0.0,
-      header_text_shadow = palette.HEADER_TEXT_SHADOW or hexrgb("#00000099"),
+      header_text_shadow = is_light and hexrgb("#FFFFFF40") or hexrgb("#00000099"),
     },
   }
 end
@@ -401,7 +373,6 @@ local _tile_render_cache = nil
 local _tile_render_cache_t = nil
 
 -- Legacy static access (uses cached theme config)
--- Note: For dynamic theming, prefer M.get_tile_render()
 M.TILE_RENDER = setmetatable({}, {
   __index = function(_, key)
     local Theme = get_theme()
@@ -424,15 +395,12 @@ M.TILE_RENDER = setmetatable({}, {
 })
 
 -- =============================================================================
--- REGION TAGS (Theme-reactive)
+-- REGION TAGS
 -- =============================================================================
 
---- Get theme-reactive region tags config
+--- Get region tags config
 function M.get_region_tags()
-  ensure_theme_initialized()
-
-  local ItemPickerTheme = get_item_picker_theme()
-  local palette = ItemPickerTheme and ItemPickerTheme.get() or {}
+  local is_light = is_light_theme()
 
   return {
     enabled = false,
@@ -445,9 +413,9 @@ function M.get_region_tags()
       margin_bottom = 4,
       margin_left = 4,
       rounding = 0,
-      bg_color = palette.REGION_CHIP_BG or hexrgb("#14181C"),
+      bg_color = is_light and hexrgb("#E8ECF0") or hexrgb("#14181C"),
       alpha = 0xFF,
-      text_min_lightness = palette.REGION_TEXT_MIN_LIGHTNESS or 0.35,
+      text_min_lightness = 0.35,
     },
 
     min_tile_height = 50,
@@ -497,7 +465,7 @@ M.UI_PANELS = {
   },
 
   filter = {
-    max_height = 200,  -- Increased to support many lines of region chips with long names
+    max_height = 200,
     trigger_into_panels = 10,
     spacing_below_search = 8,
   },
