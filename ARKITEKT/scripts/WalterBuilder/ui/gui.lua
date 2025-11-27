@@ -17,6 +17,7 @@ local TCPElements = require('WalterBuilder.defs.tcp_elements')
 local Constants = require('WalterBuilder.defs.constants')
 local Notification = require('WalterBuilder.domain.notification')
 local Button = require('arkitekt.gui.widgets.primitives.button')
+local WalterSettings = require('WalterBuilder.infra.settings')
 
 local hexrgb = ark.Colors.hexrgb
 
@@ -49,6 +50,9 @@ function M.new(state_module, settings, controller)
     -- Splitter drag state
     left_splitter_drag_start = 0,
     right_splitter_drag_start = 0,
+
+    -- Tab state
+    select_default_tab = true,  -- Select default tab on first frame
   }, GUI)
 
   -- Wire up controller callbacks
@@ -130,11 +134,9 @@ function GUI:initialize_once(ctx)
   -- Update canvas with current elements and tracks
   self:sync_canvas()
 
-  -- Load settings
-  if self.settings then
-    self.left_panel_width = self.settings:get('left_panel_width', 200)
-    self.right_panel_width = self.settings:get('right_panel_width', 280)
-  end
+  -- Load settings from WalterSettings
+  self.left_panel_width = WalterSettings.get_value('left_panel_width', Constants.PANEL.LEFT_WIDTH)
+  self.right_panel_width = WalterSettings.get_value('right_panel_width', Constants.PANEL.RIGHT_WIDTH)
 
   self.initialized = true
 end
@@ -571,6 +573,14 @@ function GUI:draw(ctx, window, shell_state)
     new_w = math.max(150, math.min(350, new_w))
     self.left_panel_width = new_w
   end
+  -- Save position when drag ends
+  if ImGui.IsMouseReleased(ctx, 0) and self.left_splitter_drag_start ~= 0 then
+    if self.left_panel_width ~= self.left_splitter_drag_start then
+      WalterSettings.set_value('left_panel_width', self.left_panel_width)
+      WalterSettings.maybe_flush()
+    end
+    self.left_splitter_drag_start = 0
+  end
 
   local dl = ImGui.GetWindowDrawList(ctx)
   local ls_color = (ls_hovered or ls_active) and hexrgb("#888888") or hexrgb("#555555")
@@ -669,6 +679,14 @@ function GUI:draw(ctx, window, shell_state)
     new_w = math.max(200, math.min(450, new_w))
     self.right_panel_width = new_w
   end
+  -- Save position when drag ends
+  if ImGui.IsMouseReleased(ctx, 0) and self.right_splitter_drag_start ~= 0 then
+    if self.right_panel_width ~= self.right_splitter_drag_start then
+      WalterSettings.set_value('right_panel_width', self.right_panel_width)
+      WalterSettings.maybe_flush()
+    end
+    self.right_splitter_drag_start = 0
+  end
 
   local rs_color = (rs_hovered or rs_active) and hexrgb("#888888") or hexrgb("#555555")
   ImGui.DrawList_AddRectFilled(dl, rsplit_x, rsplit_y, rsplit_x + splitter_w, rsplit_y + remaining_h, rs_color)
@@ -683,6 +701,12 @@ function GUI:draw(ctx, window, shell_state)
   ImGui.Indent(ctx, 4)
 
   -- Tab bar for Track / Element / Code
+  -- Select rtconfig tab by default on first frame
+  local select_rtconfig = self.select_default_tab
+  if select_rtconfig then
+    self.select_default_tab = false  -- Only do this once
+  end
+
   if ImGui.BeginTabBar(ctx, "right_tabs") then
     -- Track tab (for track properties)
     if ImGui.BeginTabItem(ctx, "Track") then
@@ -725,8 +749,9 @@ function GUI:draw(ctx, window, shell_state)
       ImGui.EndTabItem(ctx)
     end
 
-    -- rtconfig tab (theme file viewer)
-    if ImGui.BeginTabItem(ctx, "rtconfig") then
+    -- rtconfig tab (theme file viewer) - default tab
+    local rtconfig_flags = select_rtconfig and ImGui.TabItemFlags_SetSelected or 0
+    if ImGui.BeginTabItem(ctx, "rtconfig", nil, rtconfig_flags) then
       ImGui.Dummy(ctx, 0, 4)
       local rtconfig_result = self.rtconfig_panel:draw(ctx)
 

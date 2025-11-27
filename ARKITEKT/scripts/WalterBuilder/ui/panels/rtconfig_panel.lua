@@ -8,6 +8,7 @@ local RtconfigParser = require('WalterBuilder.domain.rtconfig_parser')
 local RtconfigConverter = require('WalterBuilder.domain.rtconfig_converter')
 local ThemeConnector = require('WalterBuilder.domain.theme_connector')
 local Colors = require('WalterBuilder.defs.colors')
+local WalterSettings = require('WalterBuilder.infra.settings')
 
 local hexrgb = ark.Colors.hexrgb
 
@@ -113,10 +114,12 @@ end
 -- Returns only visual elements (filters out colors, fonts, margins, zero-size)
 function Panel:get_loadable_elements()
   if not self.conversion_result then return nil end
+  local force_visible = WalterSettings.get_force_visible()
   return RtconfigConverter.extract_elements(self.conversion_result, {
     include_computed = true,
     include_cleared = false,
     filter_non_visual = true,
+    force_visible = force_visible,
   })
 end
 
@@ -221,6 +224,26 @@ function Panel:draw_load_controls(ctx)
       ImGui.Text(ctx, string.format("Cleared: %d", stats.cleared))
       ImGui.PopStyleColor(ctx)
     end
+  end
+
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Force Visible checkbox
+  local force_visible = WalterSettings.get_force_visible()
+  local changed, new_val = ImGui.Checkbox(ctx, "Force Visible", force_visible)
+  if changed then
+    WalterSettings.set_force_visible(new_val)
+    WalterSettings.maybe_flush()
+  end
+
+  if ImGui.IsItemHovered(ctx) then
+    ImGui.BeginTooltip(ctx)
+    ImGui.Text(ctx, "Show all elements regardless of size")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+    ImGui.Text(ctx, "Many elements have 0x0 size due to conditional")
+    ImGui.Text(ctx, "logic. Enable to see their positions anyway.")
+    ImGui.PopStyleColor(ctx)
+    ImGui.EndTooltip(ctx)
   end
 
   ImGui.Dummy(ctx, 0, 4)

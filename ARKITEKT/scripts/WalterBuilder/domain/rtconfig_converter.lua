@@ -693,11 +693,11 @@ end
 
 -- Check if an element is a visual element (should be rendered on canvas)
 -- Non-visual elements: .color, .font, .margin (these are styling, not layout)
-local function is_visual_element(element)
+local function is_visual_element(element, force_visible)
   local id = element.id or ""
   local coords = element.coords
 
-  -- Filter out styling elements (not positioned on canvas)
+  -- Filter out styling elements (not positioned on canvas) - always filter these
   if id:match("%.color$") or id:match("%.color%.") then
     return false
   end
@@ -716,6 +716,11 @@ local function is_visual_element(element)
 
   -- Keep .size elements - they define container bounds
   if id:match("%.size$") then
+    return true
+  end
+
+  -- Force visible mode: show all positioned elements regardless of size
+  if force_visible then
     return true
   end
 
@@ -742,6 +747,7 @@ end
 --   include_computed: Whether to include computed elements (default: true)
 --   include_cleared: Whether to include cleared elements (default: false)
 --   filter_non_visual: Whether to filter out .color/.font/.margin (default: true)
+--   force_visible: Show all elements regardless of size (default: false)
 function M.extract_elements(result, opts)
   if not result then return {} end
 
@@ -749,6 +755,7 @@ function M.extract_elements(result, opts)
   local include_computed = opts.include_computed ~= false
   local include_cleared = opts.include_cleared or false
   local filter_non_visual = opts.filter_non_visual ~= false
+  local force_visible = opts.force_visible or false
 
   local elements = {}
   local filtered_count = 0
@@ -764,7 +771,7 @@ function M.extract_elements(result, opts)
     end
 
     -- Filter non-visual elements (colors, fonts, margins)
-    if include and filter_non_visual and not is_visual_element(entry.element) then
+    if include and filter_non_visual and not is_visual_element(entry.element, force_visible) then
       include = false
       filtered_count = filtered_count + 1
     end
