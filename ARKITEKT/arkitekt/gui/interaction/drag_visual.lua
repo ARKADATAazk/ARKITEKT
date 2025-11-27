@@ -1,7 +1,17 @@
 -- @noindex
--- Arkitekt/gui/interaction/drag_visual.lua (formerly fx/interactions/dnd.lua)
--- Unified drag-and-drop visual system
--- Merged from dnd/config.lua, dnd/drag_indicator.lua, and dnd/drop_indicator.lua
+-- arkitekt/gui/interaction/drag_visual.lua (formerly fx/interactions/dnd.lua)
+-- Drag-and-drop VISUAL EFFECTS: glow, badges, animated indicators
+--
+-- NOTE: This module handles the APPEARANCE of drag-drop operations.
+-- For CORE API (state management, flags), see drag_drop.lua
+--
+-- Responsibilities:
+-- - Drawing animated drag indicators (glow effects, pulsing)
+-- - Drawing drop zone highlights with mode-specific colors
+-- - Rendering operation badges (copy "+", move arrow, etc.)
+-- - Theme-reactive color configuration
+--
+-- Original source: Merged from dnd/config.lua, dnd/drag_indicator.lua, dnd/drop_indicator.lua
 
 local ImGui = require('arkitekt.platform.imgui')
 local Draw = require('arkitekt.gui.draw.primitives')
