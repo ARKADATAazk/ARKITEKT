@@ -3,7 +3,7 @@
 -- Panel container configuration for template info & tags
 -- All visual styling comes from library defaults
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local M = {}
 

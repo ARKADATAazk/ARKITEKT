@@ -2,8 +2,10 @@
 -- TemplateBrowser/ui/status.lua
 -- Status bar component for displaying messages
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
+local Layout = require('TemplateBrowser.defs.constants')
+
 local M = {}
 
 -- Draw status bar at the bottom of the window
@@ -12,27 +14,27 @@ function M.draw(ctx, state, width, height)
     return
   end
 
-  -- Auto-clear after 10 seconds
+  -- Auto-clear after timeout (from constants)
+  local auto_clear_timeout = Layout.STATUS_BAR.AUTO_CLEAR_TIMEOUT
   local current_time = reaper.time_precise()
-  if state.status_timestamp and (current_time - state.status_timestamp) > 10 then
-    state.status_message = ""
+  if state.status_timestamp and (current_time - state.status_timestamp) > auto_clear_timeout then
+    state.clear_status()
     return
   end
 
   local x, y = ImGui.GetCursorScreenPos(ctx)
   local dl = ImGui.GetWindowDrawList(ctx)
 
-  -- Transparent background with colored text based on message type
+  -- Color based on message type (from constants)
   local text_color
-
   if state.status_type == "error" then
-    text_color = ark.Colors.hexrgb("#FF4444FF")  -- Bright red
+    text_color = Layout.STATUS.ERROR
   elseif state.status_type == "warning" then
-    text_color = ark.Colors.hexrgb("#FFA500FF")  -- Orange
+    text_color = Layout.STATUS.WARNING
   elseif state.status_type == "success" then
-    text_color = ark.Colors.hexrgb("#4AFF4AFF")  -- Bright green
-  else  -- info
-    text_color = ark.Colors.hexrgb("#FFFFFFFF")  -- White
+    text_color = Layout.STATUS.SUCCESS
+  else
+    text_color = Layout.STATUS.INFO
   end
 
   -- Draw text with padding

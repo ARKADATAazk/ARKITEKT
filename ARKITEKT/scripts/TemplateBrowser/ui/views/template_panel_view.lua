@@ -2,9 +2,9 @@
 -- TemplateBrowser/ui/views/template_panel_view.lua
 -- Middle panel view: Recent templates + template grid
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
-local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
+local TemplateGridFactory = require('TemplateBrowser.ui.tiles.factory')
 
 local M = {}
 
@@ -121,7 +121,7 @@ local function draw_template_panel(ctx, gui, width, height)
 
         if clicked then
           state.filter_tags[tag_name] = nil
-          local Scanner = require('TemplateBrowser.domain.scanner')
+          local Scanner = require('TemplateBrowser.domain.template.scanner')
           Scanner.filter_templates(state)
         end
 
@@ -154,7 +154,7 @@ local function draw_template_panel(ctx, gui, width, height)
 
       if clicked then
         state.filter_fx[fx_name] = nil
-        local Scanner = require('TemplateBrowser.domain.scanner')
+        local Scanner = require('TemplateBrowser.domain.template.scanner')
         Scanner.filter_templates(state)
       end
 

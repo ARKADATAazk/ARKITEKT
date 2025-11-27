@@ -2,18 +2,18 @@
 -- TemplateBrowser/ui/views/convenience_panel/vsts_tab.lua
 -- Mini VSTs tab for convenience panel
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
-local UI = require('TemplateBrowser.ui.ui_constants')
+local UI = require('TemplateBrowser.ui.config.constants')
 
 local M = {}
 
 -- Draw mini VSTS content (list of all FX with filtering, no reparse button)
 function M.draw(ctx, state, config, width, height)
   -- Get all FX from templates
-  local FXParser = require('TemplateBrowser.domain.fx_parser')
+  local FXParser = require('TemplateBrowser.domain.fx.parser')
   local all_fx = FXParser.get_all_fx(state.templates)
 
   -- Header with VST count
@@ -65,7 +65,7 @@ function M.draw(ctx, state, config, width, height)
         end
 
         -- Re-filter templates
-        local Scanner = require('TemplateBrowser.domain.scanner')
+        local Scanner = require('TemplateBrowser.domain.template.scanner')
         Scanner.filter_templates(state)
       end
 

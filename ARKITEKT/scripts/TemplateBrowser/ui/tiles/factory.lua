@@ -2,7 +2,7 @@
 -- TemplateBrowser/ui/tiles/factory.lua
 -- Grid factory for template tiles
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')

@@ -2,14 +2,14 @@
 -- TemplateBrowser/ui/views/left_panel/directory_tab.lua
 -- Directory tab: Folder tree + folder creation + tags mini-list
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
-local Tags = require('TemplateBrowser.domain.tags')
+local Tags = require('TemplateBrowser.domain.tags.service')
 local Chip = require('arkitekt.gui.widgets.data.chip')
-local FileOps = require('TemplateBrowser.domain.file_ops')
+local FileOps = require('TemplateBrowser.infra.file_ops')
 local TreeViewModule = require('TemplateBrowser.ui.views.tree_view')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
-local UI = require('TemplateBrowser.ui.ui_constants')
+local UI = require('TemplateBrowser.ui.config.constants')
 
 local M = {}
 
@@ -93,7 +93,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
     Tags.create_tag(state.metadata, new_tag_name, color)
 
     -- Save metadata
-    local Persistence = require('TemplateBrowser.domain.persistence')
+    local Persistence = require('TemplateBrowser.infra.storage')
     Persistence.save_metadata(state.metadata)
   end
 
@@ -134,7 +134,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
           end
 
           -- Re-filter templates
-          local Scanner = require('TemplateBrowser.domain.scanner')
+          local Scanner = require('TemplateBrowser.domain.template.scanner')
           Scanner.filter_templates(state)
         end
 
@@ -244,7 +244,7 @@ function M.draw(ctx, state, config, width, height, gui)
 
     local success, new_path = FileOps.create_folder(parent_path, new_folder_name)
     if success then
-      local Scanner = require('TemplateBrowser.domain.scanner')
+      local Scanner = require('TemplateBrowser.domain.template.scanner')
       Scanner.scan_templates(state)
 
       -- Select the newly created folder
@@ -283,7 +283,7 @@ function M.draw(ctx, state, config, width, height, gui)
     height = UI.BUTTON.HEIGHT_DEFAULT
   }, "folder_virtual") then
     -- Create new virtual folder
-    local Persistence = require('TemplateBrowser.domain.persistence')
+    local Persistence = require('TemplateBrowser.infra.storage')
 
     -- Determine parent folder from selection (only virtual folders/root)
     local parent_id = "__VIRTUAL_ROOT__"  -- Default to virtual root
@@ -371,7 +371,7 @@ function M.draw(ctx, state, config, width, height, gui)
 
   if ImGui.Selectable(ctx, "All Templates", is_all_selected) then
     state.selected_folder = ""
-    local Scanner = require('TemplateBrowser.domain.scanner')
+    local Scanner = require('TemplateBrowser.domain.template.scanner')
     Scanner.filter_templates(state)
   end
 

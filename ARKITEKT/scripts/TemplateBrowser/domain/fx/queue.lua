@@ -3,7 +3,7 @@
 -- Background FX parsing queue to prevent UI lag
 
 local M = {}
-local FXParser = require('TemplateBrowser.domain.fx_parser')
+local FXParser = require('TemplateBrowser.domain.fx.parser')
 
 -- Initialize parsing queue
 function M.init_queue(state)
@@ -87,12 +87,12 @@ function M.process_batch(state, batch_size)
 
     -- Save metadata with updated FX
     if state.metadata then
-      local Persistence = require('TemplateBrowser.domain.persistence')
+      local Persistence = require('TemplateBrowser.infra.storage')
       Persistence.save_metadata(state.metadata)
     end
 
     -- Re-filter templates to update FX display
-    local Scanner = require('TemplateBrowser.domain.scanner')
+    local Scanner = require('TemplateBrowser.domain.template.scanner')
     Scanner.filter_templates(state)
   end
 

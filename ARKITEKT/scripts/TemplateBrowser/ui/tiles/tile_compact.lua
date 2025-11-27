@@ -3,7 +3,7 @@
 -- Compact horizontal template tile renderer (list view mode)
 -- Inspired by Parameter Library tiles - much smaller vertically, data laid out horizontally
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local TileHelpers = require('TemplateBrowser.ui.tiles.helpers')

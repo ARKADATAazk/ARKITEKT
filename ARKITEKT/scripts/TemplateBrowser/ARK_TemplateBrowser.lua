@@ -10,11 +10,12 @@ local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])")
 -- Load required modules
 local Shell = require('arkitekt.app.shell')
 
--- Load TemplateBrowser modules
-local Config = require('TemplateBrowser.core.config')
-local State = require('TemplateBrowser.core.state')
-local GUI = require('TemplateBrowser.ui.gui')
-local Scanner = require('TemplateBrowser.domain.scanner')
+-- Load TemplateBrowser modules (using canonical paths)
+local Config = require('TemplateBrowser.app.config')
+local State = require('TemplateBrowser.app.state')
+local GUI = require('TemplateBrowser.ui.init')
+local Scanner = require('TemplateBrowser.domain.template.scanner')
+local Constants = require('TemplateBrowser.defs.constants')
 
 local hexrgb = ark.Colors.hexrgb
 
@@ -43,8 +44,8 @@ Shell.run({
         State.scan_in_progress = true
         Scanner.scan_init(State)
       else
-        -- Continue scanning (50 files per frame)
-        local complete = Scanner.scan_batch(State, 50)
+        -- Continue scanning
+        local complete = Scanner.scan_batch(State, Constants.SCANNER.BATCH_SIZE)
         if complete then
           State.scan_complete = true
           State.scan_in_progress = false

@@ -2,14 +2,14 @@
 -- TemplateBrowser/ui/views/info_panel_view.lua
 -- Right panel view: Template info & tag assignment
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
-local TemplateOps = require('TemplateBrowser.domain.template_ops')
-local Tags = require('TemplateBrowser.domain.tags')
+local TemplateOps = require('TemplateBrowser.domain.template.ops')
+local Tags = require('TemplateBrowser.domain.tags.service')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
-local Tooltips = require('TemplateBrowser.core.tooltips')
-local UI = require('TemplateBrowser.ui.ui_constants')
+local Tooltips = require('TemplateBrowser.ui.tooltips')
+local UI = require('TemplateBrowser.ui.config.constants')
 
 local M = {}
 local hexrgb = ark.Colors.hexrgb
@@ -99,7 +99,7 @@ local function draw_info_panel(ctx, gui, width, height)
 
       if notes_changed then
         Tags.set_template_notes(state.metadata, tmpl.uuid, new_notes)
-        local Persistence = require('TemplateBrowser.domain.persistence')
+        local Persistence = require('TemplateBrowser.infra.storage')
         Persistence.save_metadata(state.metadata)
       end
 
@@ -158,7 +158,7 @@ local function draw_info_panel(ctx, gui, width, height)
             else
               Tags.add_tag_to_template(state.metadata, tmpl.uuid, clicked_id)
             end
-            local Persistence = require('TemplateBrowser.domain.persistence')
+            local Persistence = require('TemplateBrowser.infra.storage')
             Persistence.save_metadata(state.metadata)
           end
         else

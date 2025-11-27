@@ -180,4 +180,15 @@ M.DRAG_TYPES = {
   FOLDER = "tb_folder",
 }
 
+-- ============================================================================
+-- BATCH PROCESSING
+-- ============================================================================
+M.FX_QUEUE = {
+  BATCH_SIZE = 5,  -- Templates per frame for FX parsing
+}
+
+M.SCANNER = {
+  BATCH_SIZE = 50,  -- Files per frame during template scanning
+}
+
 return M

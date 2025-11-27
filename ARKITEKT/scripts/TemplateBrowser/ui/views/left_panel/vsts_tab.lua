@@ -2,18 +2,18 @@
 -- TemplateBrowser/ui/views/left_panel/vsts_tab.lua
 -- VSTs tab: List of all FX with filtering
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
-local UI = require('TemplateBrowser.ui.ui_constants')
+local UI = require('TemplateBrowser.ui.config.constants')
 
 local M = {}
 
 -- Draw VSTS content (list of all FX with filtering)
 function M.draw(ctx, state, config, width, height)
   -- Get all FX from templates
-  local FXParser = require('TemplateBrowser.domain.fx_parser')
+  local FXParser = require('TemplateBrowser.domain.fx.parser')
   local all_fx = FXParser.get_all_fx(state.templates)
 
   -- Header with VST count and Force Reparse button
@@ -52,11 +52,11 @@ function M.draw(ctx, state, config, width, height)
       end
 
       -- Save metadata and trigger rescan
-      local Persistence = require('TemplateBrowser.domain.persistence')
+      local Persistence = require('TemplateBrowser.infra.storage')
       Persistence.save_metadata(state.metadata)
 
       -- Trigger rescan which will re-parse everything
-      local Scanner = require('TemplateBrowser.domain.scanner')
+      local Scanner = require('TemplateBrowser.domain.template.scanner')
       Scanner.scan_templates(state)
 
       state.reparse_armed = false
@@ -115,7 +115,7 @@ function M.draw(ctx, state, config, width, height)
         end
 
         -- Re-filter templates
-        local Scanner = require('TemplateBrowser.domain.scanner')
+        local Scanner = require('TemplateBrowser.domain.template.scanner')
         Scanner.filter_templates(state)
       end
 

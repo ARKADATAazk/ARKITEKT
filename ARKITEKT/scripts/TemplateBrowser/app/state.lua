@@ -127,7 +127,7 @@ function M.initialize(config)
   M.quick_access_separator_position = 350  -- Default main grid height (px)
 
   -- Create undo manager
-  local Undo = require('TemplateBrowser.domain.undo')
+  local Undo = require('TemplateBrowser.infra.undo')
   M.undo_manager = Undo.new()
 end
 
