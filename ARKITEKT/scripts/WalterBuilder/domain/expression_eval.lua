@@ -43,6 +43,15 @@ local function make_at_position(value, pos_name)
   return result
 end
 
+-- Debug mode - set to true to trace expression evaluation
+M.DEBUG = false
+
+local function debug_log(...)
+  if M.DEBUG then
+    print(string.format("[EXPR] " .. select(1, ...), select(2, ...)))
+  end
+end
+
 -- Default scalar values for common variables
 -- These approximate typical values at 100% DPI and provide reasonable defaults for visualization
 M.DEFAULT_SCALARS = {
@@ -260,6 +269,8 @@ local function parse_bracket(str, context)
     tokens[#tokens + 1] = token
   end
 
+  debug_log("parse_bracket: '%s' -> %d tokens", content, #tokens)
+
   -- Special case: single token that's a table variable -> return the table directly
   -- This handles [meter_sec] where meter_sec is an array like [19, 0, 280, 90]
   if #tokens == 1 then
@@ -270,15 +281,19 @@ local function parse_bracket(str, context)
       local var_name = token:match("^([%w_.]+)$")
       if var_name then
         local var_val = context and context[var_name]
+        debug_log("  single-token lookup: '%s' in context = %s", var_name, tostring(var_val))
         if var_val == nil then
           var_val = M.DEFAULT_SCALARS[var_name]
+          debug_log("  fallback to DEFAULT_SCALARS: %s", tostring(var_val))
         end
         if type(var_val) == "table" then
           -- Return the table directly for single-token array variables
+          debug_log("  returning table: [%s]", table.concat(var_val, ", "))
           return var_val
         elseif var_val then
           return { var_val }
         else
+          debug_log("  variable '%s' not found, returning {0}", var_name)
           return { 0 }
         end
       end
@@ -376,6 +391,17 @@ local function get_scalar(name, context, index)
   return value
 end
 
+-- Format array for debug output
+local function fmt_arr(arr)
+  if not arr then return "nil" end
+  if type(arr) ~= "table" then return tostring(arr) end
+  local parts = {}
+  for i, v in ipairs(arr) do
+    parts[i] = string.format("%.1f", v)
+  end
+  return "[" .. table.concat(parts, ", ") .. "]"
+end
+
 -- Evaluate a binary operation on two coordinate arrays
 local function eval_op(op, a, b)
   -- Ensure both are arrays of same length
@@ -397,6 +423,7 @@ local function eval_op(op, a, b)
     end
   end
 
+  debug_log("eval_op: %s %s %s = %s", fmt_arr(a), op, fmt_arr(b), fmt_arr(result))
   return result
 end
 
@@ -589,12 +616,29 @@ function M.evaluate(expr, context)
   context.w = context.w or M.DEFAULT_SCALARS.w
   context.h = context.h or M.DEFAULT_SCALARS.h
 
+  -- Debug: trace specific expressions
+  local trace_this = M.DEBUG and (
+    expr:match("meter_sec") or
+    expr:match("tcp%.mute") or
+    expr:match("tcp%.solo")
+  )
+
+  if trace_this then
+    debug_log("=== EVALUATING: %s", expr:sub(1, 80))
+    debug_log("  context.meter_sec = %s", fmt_arr(context.meter_sec))
+  end
+
   local tokens = tokenize(expr)
   if #tokens == 0 then
     return nil
   end
 
   local result, _ = eval_tokens(tokens, 1, context)
+
+  if trace_this then
+    debug_log("  RESULT: %s", fmt_arr(result))
+  end
+
   return result
 end
 
@@ -620,6 +664,11 @@ end
 function M.eval_to_coord(expr, context)
   local values = M.evaluate(expr, context)
   return M.to_coordinate(values)
+end
+
+-- Enable/disable debug mode
+function M.set_debug(enabled)
+  M.DEBUG = enabled
 end
 
 return M

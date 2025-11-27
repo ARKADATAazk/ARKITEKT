@@ -24,6 +24,10 @@ local TCPElements = require('WalterBuilder.defs.tcp_elements')
 
 local M = {}
 
+-- Enable expression debug mode for troubleshooting
+-- Set to true to trace meter/mute/solo expression evaluation
+M.DEBUG_EXPRESSIONS = true  -- TEMPORARILY ENABLED FOR DEBUGGING
+
 -- Custom context overrides (set by UI)
 local custom_context = {}
 
@@ -291,11 +295,23 @@ local function get_element_flags(element_id)
   return flags
 end
 
+-- Format array for debug
+local function fmt_arr(arr)
+  if not arr then return "nil" end
+  if type(arr) ~= "table" then return tostring(arr) end
+  local parts = {}
+  for i, v in ipairs(arr) do
+    parts[i] = string.format("%.0f", v)
+  end
+  return "[" .. table.concat(parts, ", ") .. "]"
+end
+
 -- Evaluate an expression and return the result array
 -- @param expr: The expression string (e.g., "+ [10 20] scale")
 -- @param context: The evaluation context with variables
+-- @param element_name: Optional element name for debug logging
 -- @return: Array of values, or nil on failure
-local function evaluate_expression(expr, context)
+local function evaluate_expression(expr, context, element_name)
   if not expr then return nil end
 
   -- Check if it's a simple bracket expression first
@@ -308,8 +324,30 @@ local function evaluate_expression(expr, context)
     return values
   end
 
+  -- Debug: trace specific elements
+  local trace_this = M.DEBUG_EXPRESSIONS and element_name and (
+    element_name:match("meter") or
+    element_name:match("mute") or
+    element_name:match("solo")
+  )
+
+  if trace_this then
+    Console.warn("EXPR DEBUG: %s", element_name)
+    Console.warn("  expr: %s", expr:sub(1, 80))
+    Console.warn("  context.meter_sec = %s", fmt_arr(context.meter_sec))
+    Console.warn("  context.is_solo_flipped = %s", tostring(context.is_solo_flipped))
+    ExpressionEval.set_debug(true)
+  end
+
   -- Use the expression evaluator
-  return ExpressionEval.evaluate(expr, context)
+  local result = ExpressionEval.evaluate(expr, context)
+
+  if trace_this then
+    Console.warn("  result = %s", fmt_arr(result))
+    ExpressionEval.set_debug(false)
+  end
+
+  return result
 end
 
 -- Process a variable definition SET statement
@@ -320,7 +358,7 @@ end
 local function process_variable_definition(item, context)
   if not item.element or not item.value then return false end
 
-  local result = evaluate_expression(item.value, context)
+  local result = evaluate_expression(item.value, context, item.element)
   if result and #result > 0 then
     -- Store as array if multiple values, scalar if single
     if #result == 1 then
@@ -328,6 +366,12 @@ local function process_variable_definition(item, context)
     else
       context[item.element] = result
     end
+
+    -- Debug: log meter_sec computation
+    if M.DEBUG_EXPRESSIONS and item.element == "meter_sec" then
+      Console.warn("SET meter_sec = %s", fmt_arr(context[item.element]))
+    end
+
     return true
   end
 
@@ -365,7 +409,7 @@ local function convert_set_item(item, context)
     eval_success = true
   else
     -- Try to evaluate the expression using context
-    local evaluated = evaluate_expression(item.value, context)
+    local evaluated = evaluate_expression(item.value, context, item.element)
 
     if evaluated and #evaluated > 0 then
       -- Expression evaluated successfully
