@@ -4,7 +4,6 @@
 -- MODIFIED: Integrated Logger for debug output
 
 local Logger = require("arkitekt.debug.logger")
-local Constants = require("RegionPlaylist.defs.constants")
 
 -- Performance: Localize math functions for hot path (runs every frame during playback)
 local max = math.max
@@ -14,9 +13,6 @@ local floor = math.floor
 
 -- Set to true for per-frame playback position logging (very verbose!)
 local DEBUG_PLAYPOS = false
-
--- Localize constants for hot path
-local PLAYBACK = Constants.PLAYBACK
 
 local M = {}
 local Transitions = {}
@@ -35,24 +31,17 @@ end
 function M.new(opts)
   opts = opts or {}
   local self = setmetatable({}, Transitions)
-
+  
   self.proj = opts.proj or 0
   self.state = opts.state
   self.transport = opts.transport
-  self.fsm = opts.fsm  -- Playback FSM (Phase 1: explicit state machine)
   self.on_repeat_cycle = opts.on_repeat_cycle
-
+  
   return self
 end
 
 function Transitions:handle_smooth_transitions()
-  -- Use FSM state if available, otherwise check REAPER transport
-  if self.fsm then
-    if self.fsm:is_not("playing", "transitioning") then return end
-  else
-    if not _is_playing(self.proj) then return end
-  end
-
+  if not _is_playing(self.proj) then return end
   if #self.state.playlist_order == 0 then return end
 
   local playpos = _get_play_pos(self.proj)
@@ -85,16 +74,11 @@ function Transitions:handle_smooth_transitions()
     if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "Branch 1: In next_bounds (different region)") end
     
     local entering_different_region = (self.state.current_idx ~= self.state.next_idx)
-    local playhead_went_backward = (playpos < self.state.last_play_pos - PLAYBACK.BACKWARD_JUMP_THRESHOLD)
+    local playhead_went_backward = (playpos < self.state.last_play_pos - 0.1)
     
     if entering_different_region or playhead_went_backward then
       Logger.info("TRANSITIONS", "TRANSITION FIRING: %d -> %d", self.state.current_idx, self.state.next_idx)
-
-      -- FSM: Complete transition (go back to playing)
-      if self.fsm and self.fsm:is("transitioning") then
-        self.fsm:send("complete")
-      end
-
+      
       self.state.current_idx = self.state.next_idx
       self.state.playlist_pointer = self.state.current_idx
       local rid = self.state.playlist_order[self.state.current_idx]
@@ -116,9 +100,9 @@ function Transitions:handle_smooth_transitions()
       elseif self.transport.loop_playlist and #self.state.playlist_order > 0 then
         next_candidate = 1
       else
-        next_candidate = PLAYBACK.INDEX_UNINITIALIZED
+        next_candidate = -1
       end
-
+      
       if next_candidate >= 1 then
         self.state.next_idx = next_candidate
         local rid = self.state.playlist_order[self.state.next_idx]
@@ -129,7 +113,7 @@ function Transitions:handle_smooth_transitions()
           self:_queue_next_region_if_near_end(playpos)
         end
       else
-        self.state.next_idx = PLAYBACK.INDEX_UNINITIALIZED
+        self.state.next_idx = -1
         Logger.info("TRANSITIONS", "No next candidate")
       end
     end
@@ -141,14 +125,9 @@ function Transitions:handle_smooth_transitions()
     if is_same_region and self.state.next_idx >= 1 then
       local time_to_end = self.state.current_bounds.end_pos - playpos
       
-      if time_to_end <= PLAYBACK.TRANSITION_TIME_THRESHOLD and time_to_end >= -PLAYBACK.TRANSITION_TIME_TOLERANCE then
+      if time_to_end <= 0.05 and time_to_end >= -0.01 then
         Logger.info("TRANSITIONS", "TIME-BASED TRANSITION (same region): %d -> %d", self.state.current_idx, self.state.next_idx)
-
-        -- FSM: Complete transition (go back to playing)
-        if self.fsm and self.fsm:is("transitioning") then
-          self.fsm:send("complete")
-        end
-
+        
         self.state.current_idx = self.state.next_idx
         self.state.playlist_pointer = self.state.current_idx
         
@@ -164,9 +143,9 @@ function Transitions:handle_smooth_transitions()
         elseif self.transport.loop_playlist and #self.state.playlist_order > 0 then
           next_candidate = 1
         else
-          next_candidate = PLAYBACK.INDEX_UNINITIALIZED
+          next_candidate = -1
         end
-
+        
         if next_candidate >= 1 then
           self.state.next_idx = next_candidate
           local rid = self.state.playlist_order[self.state.next_idx]
@@ -176,7 +155,7 @@ function Transitions:handle_smooth_transitions()
             self.state.next_bounds.end_pos = region["end"]
           end
         else
-          self.state.next_idx = PLAYBACK.INDEX_UNINITIALIZED
+          self.state.next_idx = -1
         end
       else
         self:_queue_next_region_if_near_end(playpos)
@@ -184,14 +163,14 @@ function Transitions:handle_smooth_transitions()
     else
       self:_queue_next_region_if_near_end(playpos)
     end
-
+    
   else
     if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "Branch 3: Out of bounds, syncing") end
     local found_idx = self.state:find_index_at_position(playpos)
     if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "find_index_at_position(%.3f) returned: %d", playpos, found_idx) end
-
+    
     if found_idx >= 1 then
-      local was_uninitialized = (self.state.current_idx == PLAYBACK.INDEX_UNINITIALIZED)
+      local was_uninitialized = (self.state.current_idx == -1)
       
       local first_idx_at_pos = found_idx
       if DEBUG_PLAYPOS then
@@ -224,9 +203,9 @@ function Transitions:handle_smooth_transitions()
       elseif self.transport.loop_playlist and #self.state.playlist_order > 0 then
         next_candidate = 1
       else
-        next_candidate = PLAYBACK.INDEX_UNINITIALIZED
+        next_candidate = -1
       end
-
+      
       if next_candidate >= 1 then
         self.state.next_idx = next_candidate
         local rid_next = self.state.playlist_order[self.state.next_idx]
@@ -234,18 +213,18 @@ function Transitions:handle_smooth_transitions()
         if region_next then
           self.state.next_bounds.start_pos = region_next.start
           self.state.next_bounds.end_pos = region_next["end"]
-
+          
           if was_uninitialized then
             self:_queue_next_region_if_near_end(playpos)
           end
         end
       else
-        self.state.next_idx = PLAYBACK.INDEX_UNINITIALIZED
+        self.state.next_idx = -1
       end
     elseif #self.state.playlist_order > 0 then
       local first_region = self.state:get_region_by_rid(self.state.playlist_order[1])
       if first_region and playpos < first_region.start then
-        self.state.current_idx = PLAYBACK.INDEX_UNINITIALIZED
+        self.state.current_idx = -1
         self.state.next_idx = 1
         self.state.next_bounds.start_pos = first_region.start
         self.state.next_bounds.end_pos = first_region["end"]
@@ -258,25 +237,19 @@ end
 
 function Transitions:_queue_next_region_if_near_end(playpos)
   local time_to_end = self.state.current_bounds.end_pos - playpos
-
-  if time_to_end < PLAYBACK.SEEK_QUEUE_THRESHOLD and time_to_end > 0 and self.state.next_idx >= 1 then
+  
+  if time_to_end < 0.5 and time_to_end > 0 and self.state.next_idx >= 1 then
     if not self.state.goto_region_queued or self.state.goto_region_target ~= self.state.next_idx then
       local rid = self.state.playlist_order[self.state.next_idx]
       local region = self.state:get_region_by_rid(rid)
       if region then
         Logger.info("TRANSPORT", "Queuing GoToRegion(%d) - %.2fs to end", region.rid, time_to_end)
-
-        -- FSM: Enter transitioning state
-        if self.fsm and self.fsm:is("playing") then
-          self.fsm:send("transition", { target = self.state.next_idx })
-        end
-
         self.transport:_seek_to_region(region.rid)
         self.state.goto_region_queued = true
         self.state.goto_region_target = self.state.next_idx
       end
     end
-  elseif time_to_end > PLAYBACK.SEEK_QUEUE_THRESHOLD then
+  elseif time_to_end > 0.5 then
     self.state.goto_region_queued = false
     self.state.goto_region_target = nil
   end

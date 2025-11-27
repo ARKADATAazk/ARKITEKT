@@ -3,14 +3,10 @@
 -- Transport control and seeking logic
 
 local Logger = require('arkitekt.debug.logger')
-local Constants = require("RegionPlaylist.defs.constants")
 
 local M = {}
 local Transport = {}
 Transport.__index = Transport
-
--- Localize constants
-local PLAYBACK = Constants.PLAYBACK
 
 local function _has_sws()
   return (reaper.SNM_GetIntConfigVar ~= nil) and (reaper.SNM_SetIntConfigVar ~= nil)
@@ -32,17 +28,15 @@ function M.new(opts)
 
   self.proj = opts.proj or 0
   self.state = opts.state
-  self.fsm = opts.fsm  -- Playback FSM (Phase 1: explicit state machine)
 
   self.transport_override = (opts.transport_override == true)
   self.loop_playlist = (opts.loop_playlist == true)
   self.follow_viewport = (opts.follow_viewport == true)
   self.shuffle_enabled = false  -- Initialize to false, will be set properly below
 
-  -- Legacy booleans (will be removed in Phase 1.7)
   self.is_playing = false
   self.last_seek_time = 0
-  self.seek_throttle = PLAYBACK.SEEK_THROTTLE
+  self.seek_throttle = 0.06
 
   -- Pause state tracking - simpler approach
   self.is_paused = false
@@ -142,11 +136,6 @@ function Transport:_seek_to_region(region_num)
 end
 
 function Transport:play()
-  -- FSM guard: check if already playing
-  if self.fsm and self.fsm:is("playing") then
-    return true  -- Already playing, nothing to do
-  end
-
   local rid = self.state:get_current_rid()
   if not rid then
     Logger.warn("TRANSPORT", "play() called but no current RID")
@@ -159,21 +148,10 @@ function Transport:play()
     return false
   end
 
-  -- FSM guard: try to transition to playing
-  if self.fsm then
-    -- Update sequence length before attempting play
-    self.fsm:set_sequence_length(#self.state.playlist_order)
-    local ok = self.fsm:send("play")
-    if not ok then
-      Logger.warn("TRANSPORT", "FSM blocked play transition")
-      return false
-    end
-  end
-
   self:_enter_playlist_mode_if_needed()
 
-  -- Detect pause/resume: check FSM state or legacy flag
-  local is_resuming = self.fsm and self.fsm:get_previous_state() == "paused" or self.is_paused
+  -- Detect pause/resume: if is_paused flag is set, we're resuming
+  local is_resuming = self.is_paused
 
   if _is_playing(self.proj) then
     Logger.info("TRANSPORT", "SEEK to region '%s' (RID %d) at %.2fs", region.name or "?", region.rid, region.start)
@@ -184,21 +162,18 @@ function Transport:play()
       -- Resuming from pause - just unpause without seeking
       Logger.info("TRANSPORT", "RESUME playback")
       reaper.OnPlayButton()
-      self.is_paused = false  -- Clear pause flag (legacy sync, remove in 1.7)
+      self.is_paused = false  -- Clear pause flag
     else
       -- Starting fresh - seek to region start and reset indices
       Logger.info("TRANSPORT", "PLAY '%s' (RID %d) from %.2fs", region.name or "?", region.rid, region.start)
       reaper.SetEditCurPos2(self.proj, region.start, false, false)
       reaper.OnPlayButton()
-      self.state.current_idx = PLAYBACK.INDEX_UNINITIALIZED
+      self.state.current_idx = -1
       self.state.next_idx = self.state.playlist_pointer
     end
   end
 
-  -- Legacy sync (remove in 1.7)
   self.is_playing = true
-  self.is_paused = false
-
   self.state:update_bounds()
 
   return true
@@ -206,20 +181,11 @@ end
 
 function Transport:stop()
   Logger.info("TRANSPORT", "STOP - resetting to beginning")
-
-  -- FSM transition
-  if self.fsm then
-    self.fsm:send("stop")
-  end
-
   reaper.OnStopButton()
-
-  -- Legacy sync (remove in 1.7)
   self.is_playing = false
-  self.is_paused = false
-
-  self.state.current_idx = PLAYBACK.INDEX_UNINITIALIZED
-  self.state.next_idx = PLAYBACK.INDEX_UNINITIALIZED
+  self.is_paused = false  -- Clear pause flag
+  self.state.current_idx = -1
+  self.state.next_idx = -1
   self.state.playlist_pointer = 1  -- Reset to beginning for next play
 
   self:_leave_playlist_mode_if_needed()
@@ -227,21 +193,10 @@ end
 
 function Transport:pause()
   Logger.info("TRANSPORT", "PAUSE at idx %d", self.state.playlist_pointer)
-
-  -- FSM transition
-  if self.fsm then
-    -- Store pause position before transitioning
-    self.fsm:set_pause_position(reaper.GetPlayPositionEx(self.proj))
-    self.fsm:send("pause")
-  end
-
   -- Pause without resetting playlist state (for resume)
   reaper.OnPauseButton()
-
-  -- Legacy sync (remove in 1.7)
   self.is_playing = false
-  self.is_paused = true
-
+  self.is_paused = true  -- Set pause flag so resume detection works
   -- Don't reset current_idx, next_idx, or playlist_pointer - keep for resume
   -- Don't leave playlist mode - we might resume
 end
@@ -294,34 +249,22 @@ end
 
 function Transport:poll_transport_sync()
   if not self.transport_override then return end
-
-  -- Use FSM state if available
-  local currently_playing = self.fsm and self.fsm:is_active() or self.is_playing
-  if currently_playing then return end
-
+  if self.is_playing then return end
   if not _is_playing(self.proj) then return end
-
+  
   local playpos = _get_play_pos(self.proj)
-
+  
   for i, rid in ipairs(self.state.playlist_order) do
     local region = self.state:get_region_by_rid(rid)
     if region then
       if playpos >= region.start and playpos < region["end"] then
         self.state.playlist_pointer = i
-        self.state.current_idx = i
-
-        -- FSM transition: force to playing when transport override takes over
-        if self.fsm then
-          self.fsm:set_sequence_length(#self.state.playlist_order)
-          self.fsm:force("playing")
-        end
-
-        -- Legacy sync (remove in 1.7)
         self.is_playing = true
-
+        self.state.current_idx = i
+        
         local meta = self.state.playlist_metadata[i]
         local should_loop = meta and meta.current_loop < meta.reps
-
+        
         if should_loop then
           self.state.next_idx = i
         else
@@ -330,10 +273,10 @@ function Transport:poll_transport_sync()
           elseif self.loop_playlist and #self.state.playlist_order > 0 then
             self.state.next_idx = 1
           else
-            self.state.next_idx = PLAYBACK.INDEX_UNINITIALIZED
+            self.state.next_idx = -1
           end
         end
-
+        
         self.state:update_bounds()
         self:_enter_playlist_mode_if_needed()
         return
@@ -417,75 +360,16 @@ end
 
 function Transport:check_stopped()
   if not _is_playing(self.proj) then
-    -- Use FSM state if available, otherwise legacy flags
-    local fsm_playing = self.fsm and self.fsm:is("playing", "transitioning")
-    local fsm_paused = self.fsm and self.fsm:is("paused")
-    local is_active = fsm_playing or (not self.fsm and self.is_playing)
-    local is_paused = fsm_paused or (not self.fsm and self.is_paused)
-
     -- Don't treat pause as a stop - only clear state if we're not paused
-    if is_active and not is_paused then
-      -- FSM transition
-      if self.fsm then
-        self.fsm:send("stop")
-      end
-
-      -- Legacy sync (remove in 1.7)
+    if self.is_playing and not self.is_paused then
       self.is_playing = false
-
-      self.state.current_idx = PLAYBACK.INDEX_UNINITIALIZED
-      self.state.next_idx = PLAYBACK.INDEX_UNINITIALIZED
+      self.state.current_idx = -1
+      self.state.next_idx = -1
       self:_leave_playlist_mode_if_needed()
       return true
     end
   end
   return false
-end
-
--- =============================================================================
--- FSM BACKWARD COMPATIBILITY SHIMS (Phase 1.3)
--- These methods allow gradual migration to FSM-based state management
--- =============================================================================
-
---- Get playback state - queries FSM with legacy fallback
---- @return string state Current playback state ("idle", "playing", "paused", "transitioning")
-function Transport:get_playback_state()
-  if self.fsm then
-    return self.fsm:get_state()
-  end
-  -- Legacy fallback
-  if self.is_playing then
-    return self.is_paused and "paused" or "playing"
-  end
-  return "idle"
-end
-
---- Sync FSM state with current boolean flags (dual-write helper)
---- Used during migration to keep FSM in sync with legacy booleans
---- @param target string Target state to sync to
-function Transport:_sync_fsm_state(target)
-  if self.fsm and self.fsm:get_state() ~= target then
-    self.fsm:force(target)
-  end
-end
-
---- Check if FSM is in specific state(s)
---- @param ... string State names to check
---- @return boolean is_match True if current state matches any argument
-function Transport:is_fsm_state(...)
-  if self.fsm then
-    return self.fsm:is(...)
-  end
-  return false
-end
-
---- Check if FSM is active (playing or transitioning)
---- @return boolean is_active True if playback is active
-function Transport:is_fsm_active()
-  if self.fsm then
-    return self.fsm:is_active()
-  end
-  return self.is_playing
 end
 
 M.Transport = Transport

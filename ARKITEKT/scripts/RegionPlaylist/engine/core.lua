@@ -6,7 +6,6 @@ local EngineState = require('RegionPlaylist.engine.engine_state')
 local EngineTransport = require('RegionPlaylist.engine.transport')
 local EngineTransitions = require('RegionPlaylist.engine.transitions')
 local EngineQuantize = require('RegionPlaylist.engine.quantize')
-local PlaybackFSM = require('RegionPlaylist.engine.playback_fsm')
 
 local M = {}
 local Engine = {}
@@ -18,29 +17,21 @@ function M.new(opts)
 
   self.proj = opts.proj or 0
   self.state = EngineState.new({ proj = self.proj })
-
-  -- Create playback FSM (Phase 1: explicit state machine)
-  self.fsm = PlaybackFSM.new({
-    events = opts.events,
-    debug = opts.debug_fsm or false,
-  })
-
+  
   self.transport = EngineTransport.new({
     proj = self.proj,
     state = self.state,
-    fsm = self.fsm,  -- Pass FSM to transport
     transport_override = opts.transport_override,
     loop_playlist = opts.loop_playlist,
     follow_viewport = opts.follow_viewport,
     shuffle_enabled = opts.shuffle_enabled,
     shuffle_mode = opts.shuffle_mode,
   })
-
+  
   self.transitions = EngineTransitions.new({
     proj = self.proj,
     state = self.state,
     transport = self.transport,
-    fsm = self.fsm,  -- Pass FSM to transitions
     on_repeat_cycle = opts.on_repeat_cycle,
   })
   
@@ -85,11 +76,6 @@ function Engine:set_sequence(sequence)
       }
     end
     self:set_order(order)
-  end
-
-  -- Sync FSM sequence length for play guard
-  if self.fsm then
-    self.fsm:set_sequence_length(#(sequence or {}))
   end
 end
 
@@ -210,21 +196,6 @@ function Engine:get_is_playing()
   return self.transport.is_playing
 end
 
-function Engine:get_fsm()
-  return self.fsm
-end
-
-function Engine:get_playback_state()
-  if self.fsm then
-    return self.fsm:get_state()
-  end
-  -- Legacy fallback
-  if self.transport.is_playing then
-    return self.transport.is_paused and "paused" or "playing"
-  end
-  return "idle"
-end
-
 function Engine:get_state()
   local state_snapshot = self.state:get_state_snapshot()
   local current_loop, total_loops = 1, 1
@@ -254,8 +225,6 @@ function Engine:get_state()
     current_item_key = self.state.get_current_item_key and self.state:get_current_item_key() or nil,
     current_loop = current_loop,
     total_loops = total_loops,
-    -- FSM state (Phase 1: explicit state machine)
-    fsm_state = self.fsm and self.fsm:get_state() or nil,
   }
 end
 

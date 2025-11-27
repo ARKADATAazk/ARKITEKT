@@ -9,10 +9,6 @@ local RegionState = require("RegionPlaylist.storage.persistence")
 local SequenceExpander = require("RegionPlaylist.core.sequence_expander")
 local Logger = require("arkitekt.debug.logger")
 local Callbacks = require("arkitekt.core.callbacks")
-local Constants = require("RegionPlaylist.defs.constants")
-
--- Localize constants
-local PLAYBACK = Constants.PLAYBACK
 
 -- Set to true for verbose sequence building debug logs
 local DEBUG_BRIDGE = false
@@ -43,7 +39,6 @@ function M.create(opts)
     get_active_playlist = opts.get_active_playlist,
     get_active_playlist_id = opts.get_active_playlist_id,
     on_repeat_cycle = opts.on_repeat_cycle,
-    events = opts.events,  -- Optional event bus (Phase 2: event-driven architecture)
     sequence_cache = {},
     sequence_cache_dirty = true,
     sequence_lookup = {},
@@ -96,24 +91,29 @@ function M.create(opts)
     on_transition_scheduled = opts.on_transition_scheduled,
   })
 
-  -- Resolve active playlist using waterfall pattern (first match wins)
   local function resolve_active_playlist()
-    -- Primary: Direct accessor (set during initialization)
     local playlist = safe_call(bridge.get_active_playlist)
     if playlist then return playlist end
 
-    -- Secondary: Via controller state accessor
-    local ctrl_state = bridge.controller and bridge.controller.state
-    if ctrl_state and ctrl_state.get_active_playlist then
-      playlist = safe_call(ctrl_state.get_active_playlist)
+    if bridge.controller and bridge.controller.state and bridge.controller.state.get_active_playlist then
+      playlist = safe_call(function()
+        return bridge.controller.state.get_active_playlist()
+      end)
       if playlist then return playlist end
     end
 
-    -- Tertiary: Look up by ID
-    local playlist_id = safe_call(bridge.get_active_playlist_id)
-                     or (ctrl_state and ctrl_state.active_playlist)
-    if playlist_id and bridge.get_playlist_by_id then
-      return bridge.get_playlist_by_id(playlist_id)
+    if bridge.get_active_playlist_id and bridge.get_playlist_by_id then
+      local playlist_id = safe_call(bridge.get_active_playlist_id)
+      if playlist_id then
+        return bridge.get_playlist_by_id(playlist_id)
+      end
+    end
+
+    if bridge.controller and bridge.controller.state then
+      local active_id = bridge.controller.state.active_playlist
+      if active_id and bridge.get_playlist_by_id then
+        return bridge.get_playlist_by_id(active_id)
+      end
     end
 
     return nil
@@ -246,6 +246,8 @@ function M.create(opts)
   end
 
   function bridge:_emit_repeat_cycle_if_needed()
+    if not self.on_repeat_cycle then return end
+
     local key = self:get_current_item_key()
     if not key then
       self._last_reported_loop_key = nil
@@ -256,19 +258,7 @@ function M.create(opts)
     local loop, total = self:get_current_loop_info()
     if key ~= self._last_reported_loop_key or loop ~= self._last_reported_loop then
       if total > 1 and loop > 1 then
-        -- Legacy callback
-        if self.on_repeat_cycle then
-          self.on_repeat_cycle(key, loop, total)
-        end
-
-        -- Emit event (Phase 2: event-driven architecture)
-        if self.events then
-          self.events:emit("playback.repeat_cycle", {
-            key = key,
-            current_loop = loop,
-            total_loops = total,
-          })
-        end
+        self.on_repeat_cycle(key, loop, total)
       end
       self._last_reported_loop_key = key
       self._last_reported_loop = loop
@@ -289,61 +279,27 @@ function M.create(opts)
 
     -- If we're starting after a stop (not resuming from pause), force reset to beginning
     -- This must happen AFTER _ensure_sequence() so it overrides sequence restoration
-    local is_resuming = self.engine.transport.is_paused
-    if not is_resuming and
-       self.engine.state.current_idx == PLAYBACK.INDEX_UNINITIALIZED and
-       self.engine.state.next_idx == PLAYBACK.INDEX_UNINITIALIZED then
+    if not self.engine.transport.is_paused and
+       self.engine.state.current_idx == -1 and
+       self.engine.state.next_idx == -1 then
       self.engine.state.playlist_pointer = 1
     end
 
-    local result = self.engine:play()
-
-    -- Emit event (Phase 2: event-driven architecture)
-    if result and self.events then
-      local event_name = is_resuming and "playback.resumed" or "playback.started"
-      self.events:emit(event_name, {
-        rid = self:get_current_rid(),
-        pointer = self.engine:get_playlist_pointer(),
-        playlist_id = self._playing_playlist_id,
-      })
-    end
-
-    return result
+    return self.engine:play()
   end
 
   function bridge:stop()
     Logger.info("BRIDGE", "STOP - clearing playlist '%s'", tostring(self._playing_playlist_id))
-
-    local result = self.engine:stop()
-
-    -- Emit event (Phase 2: event-driven architecture)
-    if self.events then
-      self.events:emit("playback.stopped", {
-        playlist_id = self._playing_playlist_id,
-      })
-    end
-
     -- Clear the playing playlist ID when stopping
     -- This allows the sequence to be rebuilt for a different playlist on next play
     self._playing_playlist_id = nil
     -- Clear the last known position so rebuild_sequence doesn't restore it
     self._last_known_item_key = nil
-
-    return result
+    return self.engine:stop()
   end
 
   function bridge:pause()
-    local result = self.engine:pause()
-
-    -- Emit event (Phase 2: event-driven architecture)
-    if result and self.events then
-      self.events:emit("playback.paused", {
-        position = reaper.GetPlayPositionEx(self.proj),
-        pointer = self.engine:get_playlist_pointer(),
-      })
-    end
-
-    return result
+    return self.engine:pause()
   end
 
   function bridge:next()
@@ -484,9 +440,9 @@ function M.create(opts)
 
   function bridge:get_current_playlist_key()
     if not self.engine:get_is_playing() then return nil end
-
+    
     self:_ensure_sequence()
-    local current_idx = self.engine.state and self.engine.state.current_idx or PLAYBACK.INDEX_UNINITIALIZED
+    local current_idx = self.engine.state and self.engine.state.current_idx or -1
     if current_idx < 1 then return nil end
 
     -- Find the most specific (smallest range) playlist containing current_idx
@@ -512,9 +468,9 @@ function M.create(opts)
   function bridge:is_playlist_active(playlist_key)
     if not self.engine:get_is_playing() then return false end
     if not playlist_key then return false end
-
+    
     self:_ensure_sequence()
-    local current_idx = self.engine.state and self.engine.state.current_idx or PLAYBACK.INDEX_UNINITIALIZED
+    local current_idx = self.engine.state and self.engine.state.current_idx or -1
     if current_idx < 1 then return false end
     
     local range_info = self.playlist_ranges[playlist_key]
