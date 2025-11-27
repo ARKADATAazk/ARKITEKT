@@ -3,6 +3,12 @@
 > Migration plan for improving RegionPlaylist's state machine and event patterns.
 > Based on code review findings.
 
+## Related Documentation
+
+- [cookbook/SCRIPT_LAYERS.md](../../../cookbook/SCRIPT_LAYERS.md) - Platform layer architecture
+- [cookbook/TESTING.md](../../../cookbook/TESTING.md) - Testing framework guide
+- [cookbook/PROJECT_STRUCTURE.md](../../../cookbook/PROJECT_STRUCTURE.md) - Canonical script structure
+
 ## Overview
 
 RegionPlaylist is the most complex ARKITEKT script (~14,000 lines, 49 files). The current architecture is solid but has two key areas for improvement:

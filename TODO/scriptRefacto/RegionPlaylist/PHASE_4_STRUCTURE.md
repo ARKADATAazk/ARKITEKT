@@ -12,6 +12,12 @@ This phase aligns RegionPlaylist with the canonical ARKITEKT structure. It's def
 3. TemplateBrowser should be migrated first as reference implementation
 4. Lessons from other migrations will inform this one
 
+## Related Documentation
+
+- [cookbook/SCRIPT_LAYERS.md](../../../../cookbook/SCRIPT_LAYERS.md) - Platform layer architecture
+- [cookbook/TESTING.md](../../../../cookbook/TESTING.md) - Testing patterns
+- [cookbook/MIGRATION_PLANS.md](../../../../cookbook/MIGRATION_PLANS.md) - Full migration guide
+
 ## Target Structure
 
 See [cookbook/MIGRATION_PLANS.md](../../../../cookbook/MIGRATION_PLANS.md#regionplaylist-migration) for the complete target structure.
@@ -22,7 +28,7 @@ See [cookbook/MIGRATION_PLANS.md](../../../../cookbook/MIGRATION_PLANS.md#region
 |---------|--------|----------------|
 | `core/` | `app/` + distribute | 5 |
 | `domains/` | `domain/` + `ui/state/` | 6 |
-| `engine/` | `domain/playback/` | 7 |
+| `engine/` | `domain/playback/` + `platform/` | 7 |
 | `storage/` | `infra/` | 3 |
 
 ## Key Decisions
@@ -34,15 +40,70 @@ These are UI concerns, not business logic:
 - `domains/notification.lua` → `ui/state/notification.lua`
 - `domains/ui_preferences.lua` → `ui/state/preferences.lua`
 
-### 2. Engine → domain/playback/
+### 2. Engine → domain/playback/ + platform/
 
-The engine is pure playback logic:
-- `engine/core.lua` → `domain/playback/engine.lua`
-- `engine/engine_state.lua` → `domain/playback/state.lua`
-- `engine/transport.lua` → `domain/playback/transport.lua`
-- `engine/transitions.lua` → `domain/playback/transitions.lua`
-- `engine/quantize.lua` → `domain/playback/quantize.lua`
-- `engine/playback.lua` → `domain/playback/loop.lua`
+The engine contains **mixed concerns**. Per [cookbook/SCRIPT_LAYERS.md](../../../../cookbook/SCRIPT_LAYERS.md), we must separate:
+
+**Pure playback logic → `domain/playback/`** (NO `reaper.*` calls):
+- `engine/engine_state.lua` → `domain/playback/state.lua` (sequence, indices)
+- `engine/playback.lua` → `domain/playback/loop.lua` (loop logic)
+- Sequence expansion, item management
+
+**REAPER API wrappers → `platform/`** (wraps `reaper.*` calls):
+- `platform/transport.lua` - Wraps `reaper.GetPlayState()`, `reaper.OnPlayButton()`, etc.
+- `platform/timing.lua` - Wraps `reaper.GetPlayPosition()`, `reaper.time_precise()`
+- `platform/regions.lua` - Wraps `reaper.EnumProjectMarkers()`, region queries
+
+**Orchestration → `app/` or `engine/`** (uses platform + domain):
+- `engine/core.lua` → `app/playback_controller.lua` or keep in `engine/`
+- `engine/transport.lua` → Split: pure logic to domain, REAPER calls to platform
+- `engine/transitions.lua` → Split: state machine to domain, timing to platform
+
+**Example split for transport.lua:**
+
+```lua
+-- platform/transport.lua (REAPER wrappers)
+local M = {}
+
+function M.get_play_state(proj)
+  return reaper.GetPlayState()
+end
+
+function M.get_play_position(proj)
+  return reaper.GetPlayPosition()
+end
+
+function M.start_playback()
+  reaper.OnPlayButton()
+end
+
+function M.stop_playback()
+  reaper.OnStopButton()
+end
+
+return M
+```
+
+```lua
+-- domain/playback/transport.lua (pure logic)
+local M = {}
+
+function M.new(platform_transport)
+  local self = {
+    _platform = platform_transport,
+    loop_enabled = false,
+    shuffle_enabled = false,
+  }
+  return setmetatable(self, { __index = M })
+end
+
+function M:is_playing()
+  local state = self._platform.get_play_state()
+  return state & 1 == 1  -- Pure bit check
+end
+
+return M
+```
 
 ### 3. coordinator_bridge → infra/
 

@@ -2,6 +2,11 @@
 
 > How to verify each phase doesn't break anything
 
+## Related Documentation
+
+- [cookbook/TESTING.md](../../../cookbook/TESTING.md) - General testing framework and patterns
+- The test runner API and assertion helpers are documented there
+
 ## Manual Test Checklist
 
 Run these tests after each sub-phase:
