@@ -605,6 +605,15 @@ function GUI:draw(ctx, shell_state)
     -- Progress bar and percentage (only during actual scanning)
     if self.state.scan_in_progress then
       local progress = self.state.scan_progress or 0
+
+      -- Guard against NaN/inf
+      if progress ~= progress or progress == math.huge or progress == -math.huge then
+        progress = 0
+      end
+
+      -- Clamp to 0-1 range
+      progress = math.max(0, math.min(1, progress))
+
       local bar_width = 300
 
       -- Progress bar using new widget
@@ -617,8 +626,8 @@ function GUI:draw(ctx, shell_state)
         advance = "none",
       })
 
-      -- Percentage text
-      local percent_text = string.format("%d%%", progress * 100)
+      -- Percentage text (use math.floor to ensure integer)
+      local percent_text = string.format("%d%%", math.floor(progress * 100))
       local percent_width = ImGui.CalcTextSize(ctx, percent_text)
       ImGui.SetCursorPosX(ctx, (window_width - percent_width) * 0.5)
       ImGui.SetCursorPosY(ctx, window_height * 0.5 + 10)
