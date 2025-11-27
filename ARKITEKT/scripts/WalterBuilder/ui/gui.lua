@@ -12,6 +12,7 @@ local PropertiesPanel = require('WalterBuilder.ui.panels.properties_panel')
 local TrackPropertiesPanel = require('WalterBuilder.ui.panels.track_properties_panel')
 local CodePanel = require('WalterBuilder.ui.panels.code_panel')
 local RtconfigPanel = require('WalterBuilder.ui.panels.rtconfig_panel')
+local RtconfigConverter = require('WalterBuilder.domain.rtconfig_converter')
 local DebugConsole = require('WalterBuilder.ui.panels.debug_console')
 local TCPElements = require('WalterBuilder.defs.tcp_elements')
 local Constants = require('WalterBuilder.defs.constants')
@@ -361,6 +362,11 @@ function GUI:handle_load_from_rtconfig(action)
   end
 
   DebugConsole.info("=== Load complete: %d loaded, %d skipped ===", loaded_count, skipped_count)
+
+  -- Sync canvas dimensions with context variables
+  local ctx_w = RtconfigConverter.get_context_value("w")
+  local ctx_h = RtconfigConverter.get_context_value("h")
+  self.canvas:set_parent_size(ctx_w, ctx_h)
 
   -- Sync canvas
   self:sync_canvas()
@@ -797,6 +803,11 @@ function GUI:draw(ctx, window, shell_state)
         if rtconfig_result.type == "load_to_canvas" then
           self:handle_load_from_rtconfig(rtconfig_result)
         elseif rtconfig_result.type == "context_changed" then
+          -- Sync canvas dimensions with context variables
+          local ctx_w = RtconfigConverter.get_context_value("w")
+          local ctx_h = RtconfigConverter.get_context_value("h")
+          self.canvas:set_parent_size(ctx_w, ctx_h)
+
           -- Re-load elements with new context values
           local elements = self.rtconfig_panel:get_loadable_elements()
           if elements and #elements > 0 then
