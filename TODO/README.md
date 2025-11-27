@@ -6,10 +6,15 @@ Actionable improvement tasks for the ARKITEKT codebase.
 
 | File | Description | Priority |
 |------|-------------|----------|
-| [ThemeAdjuster_Refactor.md](ThemeAdjuster_Refactor.md) | Structural migration + layer purity fixes for ThemeAdjuster | High |
 | [CONSTANT_ORGANIZATION.md](CONSTANT_ORGANIZATION.md) | Improve constant organization, bidirectional lookups, feature flags | Medium |
 | [PERFORMANCE.md](PERFORMANCE.md) | Lua performance optimizations | Medium |
 | [IMGUI_CENTRALIZATION.md](IMGUI_CENTRALIZATION.md) | Consolidate scattered ImGui imports to central loader | Low |
+
+## Script Refactoring
+
+| File | Description | Priority |
+|------|-------------|----------|
+| [scriptRefacto/ThemeAdjuster_Refactor.md](scriptRefacto/ThemeAdjuster_Refactor.md) | Structural migration + layer purity fixes for ThemeAdjuster | High |
 
 ## Related Documentation
 
