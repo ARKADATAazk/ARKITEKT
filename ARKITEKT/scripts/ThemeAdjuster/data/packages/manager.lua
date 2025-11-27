@@ -798,6 +798,212 @@ function M.delete_state(theme_root)
 end
 
 -- ============================================================================
+-- REASSEMBLED FOLDER OUTPUT (with delta tracking)
+-- ============================================================================
+
+-- Get path to assembler state inside a reassembled folder
+local function get_reassembled_state_path(output_dir)
+  return output_dir .. SEP .. ".assembler_state.json"
+end
+
+-- Load previous apply state from reassembled folder
+local function load_reassembled_state(output_dir)
+  local state_path = get_reassembled_state_path(output_dir)
+  local json = Fs.read_text(state_path)
+  if not json then return nil end
+  return decode_json(json)
+end
+
+-- Save apply state to reassembled folder
+local function save_reassembled_state(output_dir, state)
+  local state_path = get_reassembled_state_path(output_dir)
+  local json = encode_json(state)
+  return Fs.write_text(state_path, json)
+end
+
+-- Apply to an unpacked "Reassembled" folder with delta tracking
+-- source_dir: base theme source (extracted cache or folder theme)
+-- output_dir: where to create/update the reassembled folder
+-- resolved_map: { key = { path, provider, ... }, ... }
+-- opts: { force_full = bool } - if true, recopy everything
+-- Returns: { ok, files_copied, files_skipped, files_removed, output_dir, errors, is_new }
+function M.apply_to_reassembled_folder(source_dir, output_dir, resolved_map, opts)
+  opts = opts or {}
+  local result = {
+    ok = true,
+    files_copied = 0,
+    files_skipped = 0,
+    files_removed = 0,
+    output_dir = output_dir,
+    errors = {},
+    is_new = false,
+  }
+
+  if not source_dir or not dir_exists(source_dir) then
+    result.ok = false
+    table.insert(result.errors, "Source directory not found: " .. (source_dir or "nil"))
+    return result
+  end
+
+  -- Find ui_img in source
+  local source_ui_img = find_ui_img_dir(source_dir)
+  if not source_ui_img then
+    result.ok = false
+    table.insert(result.errors, "No ui_img directory found in source")
+    return result
+  end
+
+  -- Check if output folder exists
+  local is_new_folder = not dir_exists(output_dir)
+  result.is_new = is_new_folder
+
+  -- Load previous state (if exists)
+  local prev_state = nil
+  if not is_new_folder and not opts.force_full then
+    prev_state = load_reassembled_state(output_dir)
+  end
+
+  -- First run or force_full: copy entire base theme
+  if is_new_folder or opts.force_full then
+    reaper.RecursiveCreateDirectory(output_dir, 0)
+    if not copy_tree(source_dir, output_dir) then
+      result.ok = false
+      table.insert(result.errors, "Failed to copy base theme to output folder")
+      return result
+    end
+  end
+
+  -- Find ui_img in output
+  local output_ui_img = find_ui_img_dir(output_dir)
+  if not output_ui_img then
+    -- Create it if missing
+    output_ui_img = output_dir .. SEP .. "ui_img"
+    reaper.RecursiveCreateDirectory(output_ui_img, 0)
+  end
+
+  -- Build new state
+  local new_state = {
+    version = 1,
+    applied_at = os.date("!%Y-%m-%dT%H:%M:%SZ"),
+    base_theme = source_dir,
+    assets = {},  -- key -> { provider, path, hash }
+  }
+
+  -- Track what was in previous state for removal detection
+  local prev_assets = (prev_state and prev_state.assets) or {}
+
+  -- Process each resolved asset
+  for key, asset in pairs(resolved_map) do
+    local src_path = asset.path
+    local dst_path = output_ui_img .. SEP .. key .. ".png"
+
+    -- Skip mock paths (demo mode)
+    if src_path:match("^%(mock%)") then
+      goto continue
+    end
+
+    -- Check source exists
+    if not file_exists(src_path) then
+      table.insert(result.errors, "Source not found: " .. src_path)
+      goto continue
+    end
+
+    -- Check if we need to copy (delta logic)
+    local need_copy = true
+    if prev_state and prev_assets[key] then
+      -- Same provider and path? Skip copy
+      if prev_assets[key].provider == asset.provider and prev_assets[key].path == src_path then
+        need_copy = false
+        result.files_skipped = result.files_skipped + 1
+      end
+    end
+
+    -- Copy if needed
+    if need_copy then
+      local ok, err = copy_file(src_path, dst_path)
+      if ok then
+        result.files_copied = result.files_copied + 1
+      else
+        table.insert(result.errors, "Copy failed for " .. key .. ": " .. (err or "unknown"))
+      end
+    end
+
+    -- Record in new state
+    new_state.assets[key] = {
+      provider = asset.provider,
+      path = src_path,
+    }
+
+    -- Remove from prev_assets tracking (so we know what was removed)
+    prev_assets[key] = nil
+
+    ::continue::
+  end
+
+  -- Handle removed assets (keys that were in prev_state but not in new resolved_map)
+  -- Restore original from source or remove the override
+  for key, _ in pairs(prev_assets) do
+    local original_path = source_ui_img .. SEP .. key .. ".png"
+    local dst_path = output_ui_img .. SEP .. key .. ".png"
+
+    if file_exists(original_path) then
+      -- Restore original
+      local ok, err = copy_file(original_path, dst_path)
+      if ok then
+        result.files_removed = result.files_removed + 1
+      else
+        table.insert(result.errors, "Failed to restore original for " .. key .. ": " .. (err or "unknown"))
+      end
+    else
+      -- No original, just remove the file
+      os.remove(dst_path)
+      result.files_removed = result.files_removed + 1
+    end
+  end
+
+  -- Save new state
+  if not save_reassembled_state(output_dir, new_state) then
+    table.insert(result.errors, "Warning: Failed to save state file")
+  end
+
+  return result
+end
+
+-- Get info about an existing reassembled folder
+function M.get_reassembled_info(output_dir)
+  if not dir_exists(output_dir) then
+    return { exists = false }
+  end
+
+  local state = load_reassembled_state(output_dir)
+  if not state then
+    return {
+      exists = true,
+      has_state = false,
+      asset_count = 0,
+    }
+  end
+
+  local asset_count = 0
+  for _ in pairs(state.assets or {}) do
+    asset_count = asset_count + 1
+  end
+
+  return {
+    exists = true,
+    has_state = true,
+    applied_at = state.applied_at,
+    base_theme = state.base_theme,
+    asset_count = asset_count,
+  }
+end
+
+-- Get default output path for reassembled folder
+function M.get_default_reassembled_path(themes_dir, theme_name)
+  return themes_dir .. SEP .. (theme_name or "Theme") .. "_Reassembled"
+end
+
+-- ============================================================================
 -- FILTERING
 -- ============================================================================
 
