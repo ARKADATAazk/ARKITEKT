@@ -36,9 +36,13 @@ M.items = require("ItemPicker.domain.items.service")
 -- Handles audio/MIDI preview playback
 M.preview = require("ItemPicker.domain.preview.manager")
 
---- Pool utilities
--- Shared logic for filtering pooled item duplicates
-M.pool = require("ItemPicker.domain.pool.utils")
+--- Filters
+-- Filtering logic for items, tracks, pools, regions
+M.filters = {
+  items = require("ItemPicker.domain.filters.items"),
+  track = require("ItemPicker.domain.filters.track"),
+  pool = require("ItemPicker.domain.filters.pool"),
+}
 
 -- ============================================================================
 -- DATA LAYER (Infrastructure / I/O)
@@ -71,7 +75,7 @@ M.data = {
 -- ============================================================================
 
 --- Main window / GUI orchestrator
-M.ui = require("ItemPicker.ui.init")
+M.ui = require("ItemPicker.ui.main_window")
 
 --- Visualization
 -- Waveform and MIDI thumbnail generation

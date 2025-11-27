@@ -274,8 +274,8 @@ function M.toggle_midi_favorite(item_name)
   M.persist_favorites()
 end
 
--- Item cycling (uses shared pool_utils for filtering)
-local pool_utils = require('ItemPicker.domain.pool.utils')
+-- Item cycling (uses shared pool filter for filtering)
+local pool_utils = require('ItemPicker.domain.filters.pool')
 
 function M.cycle_audio_item(filename, delta)
   local content = M.samples[filename]

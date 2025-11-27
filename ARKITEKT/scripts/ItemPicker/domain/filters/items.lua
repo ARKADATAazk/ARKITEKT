@@ -1,10 +1,6 @@
 -- @noindex
--- Shared utilities for audio and MIDI grid factories
--- Extracts common filtering, sorting, and conversion logic
-
-local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
-local pool_utils = require('ItemPicker.domain.filters.pool')
+-- ItemPicker/domain/filters/items.lua
+-- Pure item filtering and sorting logic (no UI dependencies)
 
 local M = {}
 
@@ -76,7 +72,6 @@ function M.passes_search_filter(settings, item_name, track_name, regions)
     end
     return false
   elseif search_mode == "mixed" then
-    -- Search all: item names, track names, and region names
     if item_name:lower():find(search_lower, 1, true) then
       return true
     end
@@ -98,15 +93,14 @@ function M.passes_search_filter(settings, item_name, track_name, regions)
 end
 
 -- Check if item passes track filter
-function M.passes_track_filter(state, track_guid)
-  -- If no track filtering is set up, pass all items
-  if not state.track_filters_enabled then
+function M.passes_track_filter(track_filters_enabled, track_guid)
+  if not track_filters_enabled then
     return true
   end
 
-  -- Check if at least one track is disabled (otherwise no filtering needed)
+  -- Check if at least one track is disabled
   local has_disabled = false
-  for guid, enabled in pairs(state.track_filters_enabled) do
+  for guid, enabled in pairs(track_filters_enabled) do
     if not enabled then
       has_disabled = true
       break
@@ -114,16 +108,14 @@ function M.passes_track_filter(state, track_guid)
   end
 
   if not has_disabled then
-    return true  -- All tracks enabled, no filtering
+    return true
   end
 
-  -- Check if this item's track is enabled
   if not track_guid then
-    return true  -- No track info, pass by default
+    return true
   end
 
-  local is_enabled = state.track_filters_enabled[track_guid]
-  -- If not in the map, it means it's not whitelisted, so filter it out
+  local is_enabled = track_filters_enabled[track_guid]
   if is_enabled == nil then
     return false
   end
@@ -174,7 +166,6 @@ function M.apply_sorting(filtered, sort_mode, sort_reverse)
           return a_pool > b_pool
         end
       end
-      -- Tie-breaker: sort by name
       local a_name = (a.name or ""):lower()
       local b_name = (b.name or ""):lower()
       return a_name < b_name
@@ -182,86 +173,24 @@ function M.apply_sorting(filtered, sort_mode, sort_reverse)
   end
 end
 
--- Convert REAPER track color to RGBA
-function M.convert_track_color(track_color)
-  if (track_color & 0x01000000) ~= 0 then
-    local colorref = track_color & 0x00FFFFFF
-    local R = colorref & 255
-    local G = (colorref >> 8) & 255
-    local B = (colorref >> 16) & 255
-    return ImGui.ColorConvertDouble4ToU32(R/255, G/255, B/255, 1)
-  else
-    -- Default grey for no custom color
-    return ImGui.ColorConvertDouble4ToU32(85/255, 91/255, 91/255, 1)
+-- Check if item passes all filters (convenience function)
+function M.passes_all_filters(settings, state, entry, key)
+  if not M.passes_favorites_filter(settings, state.favorites or {}, key) then
+    return false
   end
-end
-
--- Get filtered position and count for an item in content array
-function M.get_filtered_position(content, current_idx)
-  local seen_pools = {}
-  local filtered_list = {}
-
-  for i, entry in ipairs(content) do
-    if not pool_utils.is_pooled_duplicate(entry, seen_pools) then
-      filtered_list[#filtered_list + 1] = {index = i, entry = entry}
-    end
+  if not M.passes_disabled_filter(settings, state.disabled_items or {}, key) then
+    return false
   end
-
-  local current_position = 1
-  for pos, item in ipairs(filtered_list) do
-    if item.index == current_idx then
-      current_position = pos
-      break
-    end
+  if not M.passes_mute_filters(settings, entry.track_muted, entry.item_muted) then
+    return false
   end
-
-  return current_position, #filtered_list
-end
-
--- Build UUID-to-key mapping for selected items
-function M.build_uuid_to_key_map(selected_keys, content_map, current_item_map)
-  local map = {}
-  for _, uuid in ipairs(selected_keys) do
-    for key, content in pairs(content_map) do
-      local idx = current_item_map[key] or 1
-      local entry = content[idx]
-      if entry and entry.uuid == uuid then
-        map[uuid] = key
-        break
-      end
-    end
+  if not M.passes_search_filter(settings, entry.name or "", entry.track_name, entry.regions) then
+    return false
   end
-  return map
-end
-
--- Toggle state for multi-select (batch operation)
-function M.toggle_multi_select(selected_keys, uuid_map, state_table, get_first_state)
-  if #selected_keys > 1 then
-    -- Batch toggle based on first item's state
-    local first_key = uuid_map[selected_keys[1]]
-    local new_state = not get_first_state(first_key)
-
-    for _, uuid in ipairs(selected_keys) do
-      local key = uuid_map[uuid]
-      if key then
-        if new_state then
-          state_table[key] = true
-        else
-          state_table[key] = nil
-        end
-      end
-    end
-  elseif #selected_keys == 1 then
-    -- Single toggle
-    local key = uuid_map[selected_keys[1]]
-    if key then
-      if state_table[key] then
-        state_table[key] = nil
-      else
-        state_table[key] = true
-      end
-    end
+  if not M.passes_track_filter(state.track_filters_enabled, entry.track_guid) then
+    return false
   end
+  return true
 end
 
 return M

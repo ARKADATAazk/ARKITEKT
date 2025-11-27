@@ -17,7 +17,7 @@ M.app = App
 M.domain = {
   items = App.items,
   preview = App.preview,
-  pool = App.pool,
+  filters = App.filters,
 }
 
 -- ============================================================================

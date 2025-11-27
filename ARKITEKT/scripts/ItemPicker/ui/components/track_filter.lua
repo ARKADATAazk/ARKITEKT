@@ -4,20 +4,22 @@
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
+local TrackFilter = require('ItemPicker.domain.filters.track')
+
 local M = {}
 
 -- Tile styling constants
 local TRACK_TILE = {
-  HEIGHT = 18,  -- Reduced from 26 (-30%)
+  HEIGHT = 18,
   PADDING_X = 6,
   PADDING_Y = 2,
   MARGIN_Y = 1,
   ROUNDING = 3,
   COLOR_BAR_WIDTH = 3,
-  INDENT = 16,  -- Per level indent
+  INDENT = 16,
 }
 
--- Get track color from REAPER's COLORREF format
+-- Get track color from REAPER's COLORREF format (UI-specific, uses ImGui)
 local function get_track_display_color(track_color)
   if track_color and (track_color & 0x01000000) ~= 0 then
     local colorref = track_color & 0x00FFFFFF
@@ -30,106 +32,27 @@ local function get_track_display_color(track_color)
   end
 end
 
--- Build track hierarchy from project
-function M.build_track_tree()
-  local tracks = {}
-  local track_count = reaper.CountTracks(0)
-
-  -- First pass: collect all tracks with metadata
-  local all_tracks = {}
-  for i = 0, track_count - 1 do
-    local track = reaper.GetTrack(0, i)
-    if not track then goto continue end
-
-    local guid = reaper.GetTrackGUID(track)
-    local _, name = reaper.GetTrackName(track)
-    local color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
-    local depth = reaper.GetMediaTrackInfo_Value(track, "I_FOLDERDEPTH")
-    local folder_depth = reaper.GetTrackDepth(track)
-
-    all_tracks[i + 1] = {
-      track = track,
-      guid = guid,
-      name = name or ("Track " .. (i + 1)),
-      color = color,
-      display_color = get_track_display_color(color),
-      index = i + 1,
-      depth = folder_depth,
-      folder_depth = depth,  -- 1 = folder start, 0 = normal, -1/-2 = folder end
-      children = {},
-      is_folder = depth == 1,
-      parent = nil,  -- Will be set during tree building
-    }
-
-    ::continue::
-  end
-
-  -- Second pass: build tree structure with parent references
-  local root = { children = {}, guid = nil }
-  local stack = { root }
-
-  for i, track_data in ipairs(all_tracks) do
-    local parent = stack[#stack]
-    track_data.parent = parent.guid and parent or nil  -- Don't set root as parent
-    parent.children[#parent.children + 1] = track_data
-
-    if track_data.folder_depth == 1 then
-      -- This is a folder, push to stack
-      stack[#stack + 1] = track_data
-    elseif track_data.folder_depth < 0 then
-      -- End of folder(s)
-      for j = 1, -track_data.folder_depth do
-        if #stack > 1 then
-          table.remove(stack)
-        end
-      end
+-- Add display colors to track tree (UI enhancement)
+local function add_display_colors(tracks)
+  for _, track in ipairs(tracks) do
+    track.display_color = get_track_display_color(track.color)
+    if track.children then
+      add_display_colors(track.children)
     end
   end
-
-  return root.children
 end
 
--- Check if a track is effectively selected (itself and all ancestors)
-local function is_effectively_selected(track, whitelist)
-  -- Check self
-  local self_selected = whitelist[track.guid]
-  if self_selected == nil then self_selected = true end
-  if not self_selected then return false end
-
-  -- Check ancestors
-  local ancestor = track.parent
-  while ancestor do
-    local ancestor_selected = whitelist[ancestor.guid]
-    if ancestor_selected == nil then ancestor_selected = true end
-    if not ancestor_selected then return false end
-    ancestor = ancestor.parent
-  end
-
-  return true
+-- Build track hierarchy with display colors
+function M.build_track_tree()
+  local tracks = TrackFilter.build_track_tree()
+  add_display_colors(tracks)
+  return tracks
 end
 
--- Check if parent is disabled (for visual feedback)
-local function is_parent_disabled(track, whitelist)
-  local ancestor = track.parent
-  while ancestor do
-    local ancestor_selected = whitelist[ancestor.guid]
-    if ancestor_selected == nil then ancestor_selected = true end
-    if not ancestor_selected then return true end
-    ancestor = ancestor.parent
-  end
-  return false
-end
-
--- Build full track path string (e.g., "Folder > Subfolder > Track")
-local function get_track_path(track)
-  local path_parts = {}
-  local current = track
-  while current do
-    table.insert(path_parts, 1, current.name)
-    current = current.parent
-  end
-  return table.concat(path_parts, " > ")
-end
+-- Re-export domain functions for backward compatibility
+local is_effectively_selected = TrackFilter.is_effectively_selected
+local is_parent_disabled = TrackFilter.is_parent_disabled
+local get_track_path = TrackFilter.get_track_path
 
 -- Draw a single track tile
 local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selected, is_hovered, depth, is_expanded, has_children, parent_disabled)
@@ -389,84 +312,33 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
   return current_y
 end
 
--- Calculate total height needed for track tree
-local function calculate_tree_height(tracks, state, depth)
-  depth = depth or 0
-  local height = 0
-
-  for _, track in ipairs(tracks) do
-    height = height + TRACK_TILE.HEIGHT + TRACK_TILE.MARGIN_Y
-
-    local has_children = track.children and #track.children > 0
-    local is_expanded = state.track_expanded and state.track_expanded[track.guid]
-    if is_expanded == nil then is_expanded = true end
-
-    if has_children and is_expanded then
-      height = height + calculate_tree_height(track.children, state, depth + 1)
-    end
-  end
-
-  return height
+-- Use domain functions with UI-specific parameters
+local function calculate_tree_height(tracks, state)
+  return TrackFilter.calculate_tree_height(tracks, state.track_expanded, TRACK_TILE.HEIGHT, TRACK_TILE.MARGIN_Y)
 end
 
--- Calculate maximum depth of the track tree
-local function calculate_max_depth(tracks, current_depth)
-  current_depth = current_depth or 0
-  local max_depth = current_depth
-
-  for _, track in ipairs(tracks) do
-    if track.children and #track.children > 0 then
-      local child_depth = calculate_max_depth(track.children, current_depth + 1)
-      if child_depth > max_depth then
-        max_depth = child_depth
-      end
-    end
-  end
-
-  return max_depth
+local function calculate_max_depth(tracks)
+  return TrackFilter.calculate_max_depth(tracks)
 end
 
--- Set expansion state based on depth level
-local function set_expansion_level(tracks, state, target_level, current_depth)
-  current_depth = current_depth or 0
-
-  for _, track in ipairs(tracks) do
-    if track.children and #track.children > 0 then
-      -- Expand if current depth is less than target level
-      state.track_expanded[track.guid] = current_depth < target_level
-      set_expansion_level(track.children, state, target_level, current_depth + 1)
-    end
-  end
+local function set_expansion_level(tracks, state, target_level)
+  if not state.track_expanded then state.track_expanded = {} end
+  TrackFilter.set_expansion_level(tracks, state.track_expanded, target_level)
 end
 
 -- Open the track filter modal
 function M.open_modal(state)
-  -- Build track tree
   state.track_tree = M.build_track_tree()
 
-  -- Initialize whitelist if not present (all selected by default)
   if not state.track_whitelist then
-    state.track_whitelist = {}
-    local function init_whitelist(tracks)
-      for _, track in ipairs(tracks) do
-        state.track_whitelist[track.guid] = true
-        if track.children then
-          init_whitelist(track.children)
-        end
-      end
-    end
-    init_whitelist(state.track_tree)
+    state.track_whitelist = TrackFilter.init_whitelist(state.track_tree)
   end
 
-  -- Initialize expanded state
   if not state.track_expanded then
     state.track_expanded = {}
   end
 
-  -- Reset scroll position
   state.track_filter_scroll_y = 0
-
-  -- Set flag to show modal (rendered directly in ItemPicker)
   state.show_track_filter_modal = true
 end
 
@@ -521,26 +393,12 @@ function M.render_modal(ctx, state, bounds)
   -- Keyboard shortcuts
   local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
   if ctrl_down then
-    -- Ctrl+A: Select all
     if ImGui.IsKeyPressed(ctx, ImGui.Key_A) then
-      local function select_all(tracks)
-        for _, track in ipairs(tracks) do
-          state.track_whitelist[track.guid] = true
-          if track.children then select_all(track.children) end
-        end
-      end
-      select_all(state.track_tree)
+      TrackFilter.set_all_tracks(state.track_tree, state.track_whitelist, true)
       if state.persist_track_filter then state.persist_track_filter() end
     end
-    -- Ctrl+D: Deselect all
     if ImGui.IsKeyPressed(ctx, ImGui.Key_D) then
-      local function deselect_all(tracks)
-        for _, track in ipairs(tracks) do
-          state.track_whitelist[track.guid] = false
-          if track.children then deselect_all(track.children) end
-        end
-      end
-      deselect_all(state.track_tree)
+      TrackFilter.set_all_tracks(state.track_tree, state.track_whitelist, false)
       if state.persist_track_filter then state.persist_track_filter() end
     end
   end
@@ -563,21 +421,7 @@ function M.render_modal(ctx, state, bounds)
   ImGui.DrawList_AddText(draw_list, modal_x + padding, modal_y + padding, title_color, "TRACK FILTER")
 
   -- Track count
-  local total_count = 0
-  local selected_count = 0
-  local function count_tracks(tracks)
-    for _, track in ipairs(tracks) do
-      total_count = total_count + 1
-      if state.track_whitelist[track.guid] then
-        selected_count = selected_count + 1
-      end
-      if track.children then
-        count_tracks(track.children)
-      end
-    end
-  end
-  count_tracks(state.track_tree)
-
+  local total_count, selected_count = TrackFilter.count_tracks(state.track_tree, state.track_whitelist)
   local count_text = string.format("%d / %d selected", selected_count, total_count)
   local count_w = ImGui.CalcTextSize(ctx, count_text)
   local count_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#888888"), (0xFF * alpha) // 1)
@@ -723,13 +567,7 @@ function M.render_modal(ctx, state, bounds)
                       mouse_y >= btn_y and mouse_y <= btn_y + btn_height
 
   if all_hovered and left_clicked then
-    local function select_all(tracks)
-      for _, track in ipairs(tracks) do
-        state.track_whitelist[track.guid] = true
-        if track.children then select_all(track.children) end
-      end
-    end
-    select_all(state.track_tree)
+    TrackFilter.set_all_tracks(state.track_tree, state.track_whitelist, true)
     if state.persist_track_filter then state.persist_track_filter() end
   end
 
@@ -748,13 +586,7 @@ function M.render_modal(ctx, state, bounds)
                        mouse_y >= btn_y and mouse_y <= btn_y + btn_height
 
   if none_hovered and left_clicked then
-    local function select_none(tracks)
-      for _, track in ipairs(tracks) do
-        state.track_whitelist[track.guid] = false
-        if track.children then select_none(track.children) end
-      end
-    end
-    select_none(state.track_tree)
+    TrackFilter.set_all_tracks(state.track_tree, state.track_whitelist, false)
     if state.persist_track_filter then state.persist_track_filter() end
   end
 
