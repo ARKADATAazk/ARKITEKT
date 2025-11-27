@@ -4,6 +4,7 @@
 
 local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
+local Fs = require('arkitekt.core.fs')
 local Constants = require('ThemeAdjuster.defs.constants')
 local ImageCache = require('arkitekt.platform.images')
 local hexrgb = ark.Colors.hexrgb
@@ -13,7 +14,7 @@ local PackageModal = {}
 PackageModal.__index = PackageModal
 
 -- Platform path separator
-local SEP = package.config:sub(1,1)
+local SEP = Fs.SEP
 
 -- Tile constants - wide rectangles
 local TILE_WIDTH = 195

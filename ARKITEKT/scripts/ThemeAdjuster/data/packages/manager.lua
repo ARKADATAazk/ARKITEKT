@@ -4,6 +4,7 @@
 
 local M = {}
 local JSON = require('arkitekt.core.json')
+local Fs = require('arkitekt.platform.fs')
 local PathValidation = require('arkitekt.core.path_validation')
 local Logger = require('arkitekt.debug.logger')
 local DemoData = require('ThemeAdjuster.data.packages.demo_data')
@@ -11,8 +12,11 @@ local DemoData = require('ThemeAdjuster.data.packages.demo_data')
 -- Logger instance for package scanning
 local log = Logger.new("PackageScanner")
 
--- Platform path separator
-local SEP = package.config:sub(1,1)
+-- Import commonly used functions from Fs
+local SEP = Fs.SEP
+local file_exists = Fs.file_exists
+local dir_exists = Fs.dir_exists
+local copy_file = Fs.copy_file
 
 -- ============================================================================
 -- PACKAGE SCANNING
@@ -279,35 +283,6 @@ end
 -- APPLY PIPELINE
 -- ============================================================================
 
--- Helper: Check if file exists
-local function file_exists(path)
-  local f = io.open(path, "rb")
-  if f then f:close() return true end
-  return false
-end
-
--- Helper: Copy file
-local function copy_file(src, dst)
-  local src_file = io.open(src, "rb")
-  if not src_file then return false, "Cannot open source: " .. src end
-
-  local content = src_file:read("*all")
-  src_file:close()
-
-  -- Ensure destination directory exists
-  local dst_dir = dst:match("^(.*)" .. SEP)
-  if dst_dir then
-    reaper.RecursiveCreateDirectory(dst_dir, 0)
-  end
-
-  local dst_file = io.open(dst, "wb")
-  if not dst_file then return false, "Cannot write destination: " .. dst end
-
-  dst_file:write(content)
-  dst_file:close()
-  return true
-end
-
 -- Helper: Get script cache directory (in REAPER Data folder)
 local function get_cache_dir()
   local resource_path = reaper.GetResourcePath()
@@ -497,69 +472,34 @@ end
 -- ZIP THEME SUPPORT
 -- ============================================================================
 
--- Helper: Check if directory exists
-local function dir_exists(path)
-  return path and (reaper.EnumerateFiles(path, 0) or reaper.EnumerateSubdirectories(path, 0)) ~= nil
-end
-
--- Helper: Read entire file
-local function read_all(path)
-  local f = io.open(path, "rb")
-  if not f then return nil end
-  local s = f:read("*a")
-  f:close()
-  return s
-end
-
--- Helper: Write entire file
-local function write_all(path, data)
-  local f = io.open(path, "wb")
-  if not f then return false end
-  f:write(data or "")
-  f:close()
-  return true
-end
-
 -- Helper: Remove directory recursively
 local function rm_rf(dir)
   if not dir_exists(dir) then return end
-  local i = 0
-  while true do
-    local f = reaper.EnumerateFiles(dir, i)
-    if not f then break end
-    os.remove(dir .. SEP .. f)
-    i = i + 1
+  -- Remove files
+  for _, f in ipairs(Fs.list_files(dir)) do
+    os.remove(f)
   end
-  local j = 0
-  local subs = {}
-  while true do
-    local s = reaper.EnumerateSubdirectories(dir, j)
-    if not s then break end
-    subs[#subs + 1] = dir .. SEP .. s
-    j = j + 1
+  -- Recursively remove subdirectories
+  for _, sd in ipairs(Fs.list_subdirs(dir)) do
+    rm_rf(sd)
   end
-  for _, sd in ipairs(subs) do rm_rf(sd) end
   os.remove(dir)
 end
 
 -- Helper: Copy directory tree
 local function copy_tree(src, dst)
-  reaper.RecursiveCreateDirectory(dst, 0)
-  local i = 0
-  while true do
-    local f = reaper.EnumerateFiles(src, i)
-    if not f then break end
-    local ok = copy_file(src .. SEP .. f, dst .. SEP .. f)
+  Fs.mkdir(dst)
+  -- Copy files
+  for _, f in ipairs(Fs.list_files(src)) do
+    local name = Fs.basename(f)
+    local ok = copy_file(f, Fs.join(dst, name))
     if not ok then return false end
-    i = i + 1
   end
-  local j = 0
-  while true do
-    local s = reaper.EnumerateSubdirectories(src, j)
-    if not s then break end
-    local ok = copy_tree(src .. SEP .. s, dst .. SEP .. s)
+  -- Recursively copy subdirectories
+  for _, sd in ipairs(Fs.list_subdirs(src)) do
+    local name = Fs.basename(sd)
+    local ok = copy_tree(sd, Fs.join(dst, name))
     if not ok then return false end
-    j = j + 1
   end
   return true
 end
@@ -746,7 +686,7 @@ function M.apply_to_zip_theme(cache_dir, themes_dir, theme_name, resolved_map, o
   end
 
   -- Move to ColorThemes directory
-  local data = read_all(out_zip)
+  local data = Fs.read_text(out_zip)
   if not data then
     result.ok = false
     table.insert(result.errors, "Failed to read created ZIP")
@@ -754,7 +694,7 @@ function M.apply_to_zip_theme(cache_dir, themes_dir, theme_name, resolved_map, o
   end
 
   os.remove(final_path)
-  if not write_all(final_path, data) then
+  if not Fs.write_text(final_path, data) then
     result.ok = false
     table.insert(result.errors, "Failed to move ZIP to ColorThemes")
     return result
@@ -824,7 +764,7 @@ function M.save_state(theme_root, state_data)
 
   -- Encode and write
   local json = encode_json(state)
-  if not write_all(state_path, json) then
+  if not Fs.write_text(state_path, json) then
     return false, "Failed to write state file"
   end
 
@@ -838,7 +778,7 @@ function M.load_state(theme_root)
   local state_path = M.get_state_path(theme_root)
   if not state_path then return nil end
 
-  local json = read_all(state_path)
+  local json = Fs.read_text(state_path)
   if not json then return nil end
 
   local state = decode_json(json)

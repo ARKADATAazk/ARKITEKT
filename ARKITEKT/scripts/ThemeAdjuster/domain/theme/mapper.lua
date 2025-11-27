@@ -4,6 +4,7 @@
 
 local ParamDiscovery = require('ThemeAdjuster.domain.theme.discovery')
 local JSON = require('arkitekt.core.json')
+local Fs = require('arkitekt.core.fs')
 
 local M = {}
 
@@ -11,53 +12,30 @@ local M = {}
 M.current_mappings = nil
 M.current_theme_name = nil
 
--- Check if file exists
-local function file_exists(path)
-  local file = io.open(path, "r")
-  if file then
-    file:close()
-    return true
-  end
-  return false
-end
+-- Import file_exists from Fs
+local file_exists = Fs.file_exists
 
 -- Load JSON file
 local function load_json(path)
-  local file = io.open(path, "r")
-  if not file then return nil end
-
-  local content = file:read("*all")
-  file:close()
-
+  local content = Fs.read_text(path)
   if not content or content == "" then
     return nil
   end
 
   -- Decode JSON using arkitekt JSON library
-  local decoded = JSON.decode(content)
-  return decoded
+  return JSON.decode(content)
 end
 
 -- Save JSON file (with pretty formatting)
 local function save_json(path, data)
-  local file = io.open(path, "w")
-  if not file then return false end
-
   -- Encode to JSON
   local json_str = JSON.encode(data)
-
-  if not json_str then
-    file:close()
-    return false
-  end
+  if not json_str then return false end
 
   -- Pretty-format the JSON (basic indentation)
   local formatted = M.pretty_format_json(json_str)
 
-  file:write(formatted)
-  file:close()
-
-  return true
+  return Fs.write_text(path, formatted)
 end
 
 -- Pretty-format JSON with indentation

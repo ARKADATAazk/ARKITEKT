@@ -2,46 +2,32 @@
 -- ThemeAdjuster/domain/theme/reader.lua
 -- Streamlined theme/cache management with JSON-based linking
 local M = {}
+
+-- Dependencies
+local Fs = require('arkitekt.platform.fs')
 local PathValidation = require('arkitekt.core.path_validation')
-local SEP = package.config:sub(1,1)
+local Logger = require('arkitekt.debug.logger')
 
--- ---------------- utils ----------------
-local function join(a,b) return (a:sub(-1)==SEP) and (a..b) or (a..SEP..b) end
-local function file_exists(p) local f=io.open(p,"rb"); if f then f:close() return true end end
-local function dir_exists(p) return p and (reaper.EnumerateFiles(p,0) or reaper.EnumerateSubdirectories(p,0)) ~= nil end
-local function read_text(p) local f=io.open(p,"rb"); if not f then return nil end local s=f:read("*a"); f:close(); return s end
-local function write_text(p,s) local f=io.open(p,"wb"); if not f then return false end f:write(s or ""); f:close(); return true end
-local function dirname(p) return p and p:match("^(.*[\\/])") or "" end
-local function basename_no_ext(p) local n=(p or ""):match("[^\\/]+$") or p return n and n:gsub("%.%w+$","") or nil end
-local function script_base_dir() local src=debug.getinfo(1,'S').source:sub(2); return src:match("(.*"..SEP..")") or ("."..SEP) end
+-- Logger instance
+local log = Logger.new("ThemeReader")
 
-local function list_files(dir, ext, out)
-  out = out or {}
-  local i=0; while true do
-    local f = reaper.EnumerateFiles(dir, i); if not f then break end
-    if not ext or f:lower():sub(-#ext) == ext:lower() then out[#out+1] = join(dir, f) end
-    i=i+1
-  end
-  return out
-end
+-- Import commonly used functions from Fs
+local SEP = Fs.SEP
+local join = Fs.join
+local file_exists = Fs.file_exists
+local dir_exists = Fs.dir_exists
+local read_text = Fs.read_text
+local write_text = Fs.write_text
+local dirname = Fs.dirname
+local basename_no_ext = Fs.basename_no_ext
+local list_files = Fs.list_files
+local list_files_recursive = Fs.list_files_recursive
+local list_subdirs = Fs.list_subdirs
 
-local function list_files_recursive(dir, ext, out)
-  out = list_files(dir, ext, out or {})
-  local j=0; while true do
-    local s = reaper.EnumerateSubdirectories(dir, j); if not s then break end
-    out = list_files_recursive(join(dir, s), ext, out)
-    j=j+1
-  end
-  return out
-end
-
-local function list_subdirs(dir, out)
-  out = out or {}
-  local j=0; while true do
-    local s = reaper.EnumerateSubdirectories(dir, j); if not s then break end
-    out[#out+1] = join(dir, s); j=j+1
-  end
-  return out
+-- Script-specific helper
+local function script_base_dir()
+  local src = debug.getinfo(1, 'S').source:sub(2)
+  return src:match("(.*" .. SEP .. ")") or ("." .. SEP)
 end
 
 local function remove_dir_rec(dir)
@@ -49,11 +35,11 @@ local function remove_dir_rec(dir)
   -- SECURITY: Validate path before recursive deletion
   local ok, err = PathValidation.is_safe_path(dir)
   if not ok then
-    reaper.ShowConsoleMsg(string.format("ERROR: Blocked unsafe recursive deletion: %s\n", err or "unknown"))
+    log:error("Blocked unsafe recursive deletion: %s", err or "unknown")
     return false
   end
-  for _,p in ipairs(list_files(dir, nil, {})) do os.remove(p) end
-  for _,sd in ipairs(list_subdirs(dir, {})) do remove_dir_rec(sd) end
+  for _, p in ipairs(list_files(dir)) do os.remove(p) end
+  for _, sd in ipairs(list_subdirs(dir)) do remove_dir_rec(sd) end
   os.remove(dir)
   return true
 end
