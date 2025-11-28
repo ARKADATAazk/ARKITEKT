@@ -27,7 +27,9 @@ scripts/MyApp/
 
 ---
 
-## 2. Entry Point Template
+## 2. Entry Point - Window Mode
+
+Based on **RegionPlaylist** - standard windowed application.
 
 Create `scripts/MyApp/ARK_MyApp.lua`:
 
@@ -44,12 +46,69 @@ local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])")
 -- IMPORTS
 -- ============================================================================
 local Shell = require('arkitekt.app.shell')
+local Settings = require('arkitekt.core.settings')
 local Config = require('MyApp.app.config')
 local State = require('MyApp.app.state')
 local GUI = require('MyApp.ui.init')
 
 -- ============================================================================
--- TOOLBAR STATE (optional - for toggle scripts)
+-- SETTINGS & STATE INITIALIZATION
+-- ============================================================================
+local data_dir = Ark._bootstrap.get_data_dir("MyApp")
+local settings = Settings.new(data_dir, "settings.json")
+
+State.initialize(settings)
+
+-- Create GUI instance
+local gui = GUI.create(State, Config, settings)
+
+-- ============================================================================
+-- RUN APPLICATION
+-- ============================================================================
+Shell.run({
+  title        = "My App",
+  version      = "v1.0.0",
+  settings     = settings,
+  initial_pos  = { x = 100, y = 100 },
+  initial_size = { w = 900, h = 600 },
+  min_size     = { w = 600, h = 400 },
+  icon_color   = Ark.Colors.hexrgb("#4A90D9"),
+
+  draw = function(ctx, shell_state)
+    gui:draw(ctx, shell_state.window, shell_state)
+  end,
+
+  on_close = function()
+    State.save()
+  end,
+})
+```
+
+---
+
+## 2b. Entry Point - Overlay Mode
+
+Based on **ItemPicker** - fullscreen overlay with transparency.
+
+```lua
+-- @noindex
+-- MyOverlayApp - Fullscreen overlay tool
+
+-- ============================================================================
+-- LOAD ARKITEKT FRAMEWORK
+-- ============================================================================
+local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+
+-- ============================================================================
+-- IMPORTS
+-- ============================================================================
+local Shell = require('arkitekt.app.shell')
+local Config = require('MyOverlayApp.app.config')
+local State = require('MyOverlayApp.app.state')
+local GUI = require('MyOverlayApp.ui.init')
+
+-- ============================================================================
+-- TOOLBAR TOGGLE
 -- ============================================================================
 local function SetButtonState(set)
   local _, _, sec, cmd = reaper.get_action_context()
@@ -61,25 +120,47 @@ end
 -- INITIALIZATION
 -- ============================================================================
 State.initialize(Config)
+local gui = GUI.new(Config, State)
 
--- ============================================================================
--- RUN APPLICATION
--- ============================================================================
+local function cleanup()
+  SetButtonState(0)
+  State.cleanup()
+end
+
 SetButtonState(1)
 
+-- ============================================================================
+-- RUN OVERLAY
+-- ============================================================================
 Shell.run({
-  title = Config.WINDOW_TITLE,
-  width = Config.WINDOW_WIDTH,
-  height = Config.WINDOW_HEIGHT,
+  mode = "overlay",
+  title = "My Overlay App",
+  toggle_button = true,
+  app_name = "my_overlay_app",
 
-  on_frame = function(ctx)
-    GUI.draw(ctx)
+  overlay = {
+    esc_to_close = true,
+    close_on_background_right_click = true,
+    -- Optional: bypass overlay chrome during drag operations
+    should_passthrough = function() return State.is_dragging end,
+  },
+
+  draw = function(ctx, state)
+    -- Return false to close the overlay
+    if State.should_close then
+      return false
+    end
+
+    gui:draw(ctx, {
+      fonts = state.fonts,
+      overlay_state = state.overlay or {},
+      is_overlay_mode = true,
+    })
+
+    return true  -- Keep running
   end,
 
-  on_close = function()
-    SetButtonState(0)
-    State.save()
-  end,
+  on_close = cleanup,
 })
 ```
 
@@ -115,9 +196,6 @@ Create `scripts/MyApp/app/state.lua`:
 -- @noindex
 local M = {}
 
-local Settings = require('arkitekt.core.settings')
-local Ark = require('arkitekt')
-
 -- Private state
 local settings = nil
 local state = {
@@ -127,14 +205,13 @@ local state = {
   items = {},
 }
 
-function M.initialize(config)
+-- Settings passed from entry point (already created there)
+function M.initialize(settings_instance)
   if state.initialized then return end
 
-  -- Initialize persistent settings
-  local data_dir = Ark._bootstrap.get_data_dir("MyApp")
-  settings = Settings.new(data_dir, "settings.json")
+  settings = settings_instance
 
-  -- Load saved state
+  -- Load saved state from settings
   state.selected_item = settings:get("selected_item")
 
   state.initialized = true
@@ -145,6 +222,11 @@ function M.save()
     settings:set("selected_item", state.selected_item)
     settings:save()
   end
+end
+
+function M.cleanup()
+  M.save()
+  -- Any other cleanup needed
 end
 
 -- Getters/setters
@@ -179,9 +261,19 @@ local M = {}
 
 local Ark = require('arkitekt')
 local ImGui = Ark.ImGui
-local State = require('MyApp.app.state')
 
-function M.draw(ctx)
+-- Factory function - creates GUI instance with dependencies
+function M.create(state, config, settings)
+  local self = {
+    state = state,
+    config = config,
+    settings = settings,
+  }
+  return setmetatable(self, { __index = M })
+end
+
+-- Draw function receives ctx and shell_state
+function M:draw(ctx, window, shell_state)
   -- Use Ark widgets
   local button_result = Ark.Button.draw(ctx, {
     label = "Click Me",
@@ -197,10 +289,15 @@ function M.draw(ctx)
   -- Or use ImGui directly
   ImGui.Text(ctx, "Hello from MyApp!")
 
-  -- Show selected item
-  local selected = State.get_selected_item()
+  -- Access state through self
+  local selected = self.state.get_selected_item()
   if selected then
     ImGui.Text(ctx, "Selected: " .. tostring(selected))
+  end
+
+  -- Access window dimensions if needed
+  if window then
+    ImGui.Text(ctx, string.format("Window: %dx%d", window.w, window.h))
   end
 end
 
@@ -339,10 +436,9 @@ local state = {
 
 Shell.run({
   title = "Simple Tool",
-  width = 300,
-  height = 150,
+  initial_size = { w = 300, h = 150 },
 
-  on_frame = function(ctx)
+  draw = function(ctx, shell_state)
     ImGui.Text(ctx, "Counter: " .. state.counter)
 
     local result = Ark.Button.draw(ctx, {label = "Increment"})
@@ -355,17 +451,80 @@ Shell.run({
 
 ---
 
-## 10. Next Steps
+## 10. Shell.run Options Reference
 
-1. **Read the guides:**
+### Window Mode (default)
+
+```lua
+Shell.run({
+  -- Required
+  title = "App Name",
+  draw = function(ctx, shell_state) end,
+
+  -- Optional - Window
+  version = "v1.0.0",
+  initial_pos = { x = 100, y = 100 },
+  initial_size = { w = 800, h = 600 },
+  min_size = { w = 400, h = 300 },
+
+  -- Optional - Appearance
+  icon_color = Ark.Colors.hexrgb("#4A90D9"),
+  icon_size = 18,
+
+  -- Optional - Persistence
+  settings = settings_instance,  -- Auto-saves window pos/size
+
+  -- Optional - Status bar
+  get_status_func = function() return "Status text" end,
+
+  -- Optional - Custom fonts
+  fonts = {
+    title_size = 24,
+    icons = 20,
+  },
+
+  -- Optional - Lifecycle
+  on_close = function() end,
+})
+```
+
+### Overlay Mode
+
+```lua
+Shell.run({
+  mode = "overlay",
+  title = "Overlay App",
+  toggle_button = true,
+  app_name = "my_app",  -- Used for settings storage
+
+  overlay = {
+    esc_to_close = true,
+    close_on_background_right_click = true,
+    should_passthrough = function() return is_dragging end,
+  },
+
+  draw = function(ctx, state)
+    -- Return false to close overlay
+    return true
+  end,
+
+  on_close = function() end,
+})
+```
+
+---
+
+## 11. Next Steps
+
+1. **Study the reference apps:**
+   - `scripts/RegionPlaylist/` - **Window mode** reference (state, settings, status bar)
+   - `scripts/ItemPicker/` - **Overlay mode** reference (drag handling, passthrough)
+   - `scripts/Sandbox/` - Widget experimentation
+
+2. **Read the guides:**
    - [CONVENTIONS.md](CONVENTIONS.md) - Naming and patterns
    - [WIDGETS.md](WIDGETS.md) - Full widget API
    - [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Architecture details
-
-2. **Study existing apps:**
-   - `scripts/ItemPicker/` - Good example of full structure
-   - `scripts/RegionPlaylist/` - Complex state management
-   - `scripts/Sandbox/` - Widget experimentation
 
 3. **Use the Ark namespace:**
    - `Ark.Button`, `Ark.Panel`, `Ark.Colors`, etc.
@@ -420,6 +579,8 @@ cache:draw_thumb(ctx, image_path, 64)  -- Handles loading/caching
 | Issue | Solution |
 |-------|----------|
 | "Module not found" | Check `package.path` - bootstrap should set it up |
-| Widget not rendering | Ensure you're inside `Shell.run` `on_frame` callback |
+| Widget not rendering | Ensure you're inside `Shell.run` `draw` callback |
 | State not persisting | Call `settings:save()` in `on_close` |
 | Colors wrong | Read `Theme.COLORS` every frame, not at module load |
+| Overlay not closing | Return `false` from `draw` function |
+| Window size not working | Use `initial_size = { w = X, h = Y }` not `width`/`height` |
