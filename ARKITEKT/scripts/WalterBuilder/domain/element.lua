@@ -42,6 +42,7 @@ function M.new(opts)
     is_color = opts.is_color or false,  -- Is this a .color element?
     is_font = opts.is_font or false,  -- Is this a .font element?
     is_margin = opts.is_margin or false,  -- Is this a .margin element?
+    is_custom = opts.is_custom or false,  -- Custom element (not in default definitions)
 
     -- Parent reference
     parent = opts.parent,  -- For nested elements like tcp.volume.label
@@ -130,6 +131,7 @@ function Element:clone()
     is_color = self.is_color,
     is_font = self.is_font,
     is_margin = self.is_margin,
+    is_custom = self.is_custom,
     parent = self.parent,
   })
 end

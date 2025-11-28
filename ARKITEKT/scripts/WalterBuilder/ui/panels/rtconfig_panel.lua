@@ -5,8 +5,10 @@
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 local RtconfigParser = require('WalterBuilder.domain.rtconfig_parser')
+local RtconfigConverter = require('WalterBuilder.domain.rtconfig_converter')
 local ThemeConnector = require('WalterBuilder.domain.theme_connector')
 local Colors = require('WalterBuilder.defs.colors')
+local WalterSettings = require('WalterBuilder.infra.settings')
 
 local hexrgb = ark.Colors.hexrgb
 
@@ -23,12 +25,17 @@ function M.new(opts)
     theme_info = nil,
     load_error = nil,
 
+    -- Conversion cache
+    conversion_result = nil,
+    conversion_stats = nil,
+
     -- UI state
     selected_section = nil,
     selected_layout = nil,
     selected_macro = nil,
     show_raw = false,
     filter_text = "",
+    current_context = "tcp",  -- tcp, mcp, envcp, trans
 
     -- Splitter state
     tree_width = 200,
@@ -38,15 +45,31 @@ function M.new(opts)
 
     -- Callbacks
     on_element_select = opts.on_element_select,
+    on_load_to_canvas = opts.on_load_to_canvas,  -- Called when user wants to load elements
   }, Panel)
 
   return self
+end
+
+-- Update conversion cache when rtconfig or context changes
+function Panel:update_conversion()
+  if not self.rtconfig then
+    self.conversion_result = nil
+    self.conversion_stats = nil
+    return
+  end
+
+  -- Convert elements for current context
+  self.conversion_result = RtconfigConverter.convert_layout(self.rtconfig, nil, self.current_context)
+  self.conversion_stats = RtconfigConverter.get_stats(self.conversion_result)
 end
 
 -- Load rtconfig from current theme
 function Panel:load_from_theme()
   self.load_error = nil
   self.rtconfig = nil
+  self.conversion_result = nil
+  self.conversion_stats = nil
 
   local result, err = ThemeConnector.load_current_rtconfig()
   if not result then
@@ -56,6 +79,7 @@ function Panel:load_from_theme()
 
   self.rtconfig = result.parsed
   self.theme_info = result.info
+  self:update_conversion()
   return true
 end
 
@@ -63,6 +87,8 @@ end
 function Panel:load_from_file(path)
   self.load_error = nil
   self.rtconfig = nil
+  self.conversion_result = nil
+  self.conversion_stats = nil
 
   local result, err = ThemeConnector.load_rtconfig(path)
   if not result then
@@ -72,7 +98,29 @@ function Panel:load_from_file(path)
 
   self.rtconfig = result.parsed
   self.theme_info = { rtconfig_path = path }
+  self:update_conversion()
   return true
+end
+
+-- Set the context filter (tcp, mcp, etc.)
+function Panel:set_context(context)
+  if self.current_context ~= context then
+    self.current_context = context
+    self:update_conversion()
+  end
+end
+
+-- Get elements ready for loading to canvas
+-- Returns only visual elements (filters out colors, fonts, margins, zero-size)
+function Panel:get_loadable_elements()
+  if not self.conversion_result then return nil end
+  local force_visible = WalterSettings.get_force_visible()
+  return RtconfigConverter.extract_elements(self.conversion_result, {
+    include_computed = true,
+    include_cleared = false,
+    filter_non_visual = true,
+    force_visible = force_visible,
+  })
 end
 
 -- Draw summary section
@@ -104,6 +152,225 @@ function Panel:draw_summary(ctx)
     summary.element_count,
     summary.simple_element_count,
     summary.computed_element_count))
+end
+
+-- Draw the "Load to Canvas" controls
+-- Returns action table if user clicked load, nil otherwise
+function Panel:draw_load_controls(ctx)
+  if not self.rtconfig then
+    return nil
+  end
+
+  ImGui.Separator(ctx)
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Context selector
+  ImGui.Text(ctx, "Context:")
+  ImGui.SameLine(ctx)
+
+  local contexts = { "tcp", "mcp", "envcp", "trans" }
+  for i, ctx_name in ipairs(contexts) do
+    if i > 1 then ImGui.SameLine(ctx) end
+
+    local is_selected = self.current_context == ctx_name
+    if is_selected then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#4488AA"))
+    end
+
+    if ImGui.SmallButton(ctx, ctx_name:upper()) then
+      self:set_context(ctx_name)
+    end
+
+    if is_selected then
+      ImGui.PopStyleColor(ctx)
+    end
+  end
+
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Conversion stats
+  if self.conversion_stats then
+    local stats = self.conversion_stats
+
+    -- Simple elements (fully understood)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CC88"))
+    ImGui.Text(ctx, string.format("Simple: %d", stats.simple))
+    ImGui.PopStyleColor(ctx)
+
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.BeginTooltip(ctx)
+      ImGui.Text(ctx, "Elements with literal coordinates")
+      ImGui.Text(ctx, "These can be visualized accurately")
+      ImGui.EndTooltip(ctx)
+    end
+
+    ImGui.SameLine(ctx, 0, 15)
+
+    -- Computed elements (expressions)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCC88"))
+    ImGui.Text(ctx, string.format("Computed: %d", stats.computed))
+    ImGui.PopStyleColor(ctx)
+
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.BeginTooltip(ctx)
+      ImGui.Text(ctx, "Elements with expressions (w<100, +, etc.)")
+      ImGui.Text(ctx, "Shown with placeholder coords")
+      ImGui.EndTooltip(ctx)
+    end
+
+    if stats.cleared > 0 then
+      ImGui.SameLine(ctx, 0, 15)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+      ImGui.Text(ctx, string.format("Cleared: %d", stats.cleared))
+      ImGui.PopStyleColor(ctx)
+    end
+  end
+
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Force Visible checkbox
+  local force_visible = WalterSettings.get_force_visible()
+  local changed, new_val = ImGui.Checkbox(ctx, "Force Visible", force_visible)
+  if changed then
+    WalterSettings.set_force_visible(new_val)
+    WalterSettings.maybe_flush()
+  end
+
+  if ImGui.IsItemHovered(ctx) then
+    ImGui.BeginTooltip(ctx)
+    ImGui.Text(ctx, "Show all elements regardless of size")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+    ImGui.Text(ctx, "Many elements have 0x0 size due to conditional")
+    ImGui.Text(ctx, "logic. Enable to see their positions anyway.")
+    ImGui.PopStyleColor(ctx)
+    ImGui.EndTooltip(ctx)
+  end
+
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Load button
+  local can_load = self.conversion_stats and self.conversion_stats.total > 0
+  if not can_load then
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, 0.5)
+  end
+
+  local load_clicked = ImGui.Button(ctx, "Load to Canvas", -1, 28)
+
+  if not can_load then
+    ImGui.PopStyleVar(ctx)
+  end
+
+  if load_clicked and can_load then
+    local elements = self:get_loadable_elements()
+    if elements and #elements > 0 then
+      return {
+        type = "load_to_canvas",
+        elements = elements,
+        context = self.current_context,
+        stats = self.conversion_stats,
+      }
+    end
+  end
+
+  return nil
+end
+
+-- Draw context variable controls
+-- Returns true if any value changed (caller should re-convert)
+function Panel:draw_context_controls(ctx)
+  local changed = false
+  local vars = RtconfigConverter.get_controllable_context_vars()
+
+  -- Header with reset button
+  local header_flags = ImGui.TreeNodeFlags_DefaultOpen
+  if RtconfigConverter.is_context_modified() then
+    header_flags = header_flags | ImGui.TreeNodeFlags_Framed
+  end
+
+  local header_label = "Context Variables"
+  if RtconfigConverter.is_context_modified() then
+    header_label = header_label .. " (modified)"
+  end
+
+  if ImGui.CollapsingHeader(ctx, header_label, header_flags) then
+    ImGui.Indent(ctx, 4)
+
+    -- Reset button if modified
+    if RtconfigConverter.is_context_modified() then
+      if ImGui.SmallButton(ctx, "Reset to Defaults") then
+        RtconfigConverter.reset_context()
+        changed = true
+      end
+      ImGui.Dummy(ctx, 0, 4)
+    end
+
+    -- Dimensions section
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CCFF"))
+    ImGui.Text(ctx, "Dimensions")
+    ImGui.PopStyleColor(ctx)
+
+    for _, var in ipairs(vars) do
+      if var.type == "int" then
+        local current = RtconfigConverter.get_context_value(var.key)
+        ImGui.PushItemWidth(ctx, 100)
+        local val_changed, new_val = ImGui.SliderInt(ctx, var.label, current, var.min, var.max)
+        ImGui.PopItemWidth(ctx)
+        if val_changed then
+          RtconfigConverter.set_context_value(var.key, new_val)
+          changed = true
+        end
+      elseif var.type == "float" then
+        local current = RtconfigConverter.get_context_value(var.key)
+        ImGui.PushItemWidth(ctx, 100)
+        local val_changed, new_val = ImGui.SliderDouble(ctx, var.label, current, var.min, var.max, "%.1f")
+        ImGui.PopItemWidth(ctx)
+        if val_changed then
+          RtconfigConverter.set_context_value(var.key, new_val)
+          changed = true
+        end
+      end
+    end
+
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Visibility toggles section
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CCFF"))
+    ImGui.Text(ctx, "Visibility")
+    ImGui.PopStyleColor(ctx)
+
+    for _, var in ipairs(vars) do
+      if var.type == "bool" and var.key:match("^hide_") then
+        local current = RtconfigConverter.get_context_value(var.key)
+        local val_changed, new_val = ImGui.Checkbox(ctx, var.label, current == 1)
+        if val_changed then
+          RtconfigConverter.set_context_value(var.key, new_val and 1 or 0)
+          changed = true
+        end
+      end
+    end
+
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Track state section
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CCFF"))
+    ImGui.Text(ctx, "Track State")
+    ImGui.PopStyleColor(ctx)
+
+    for _, var in ipairs(vars) do
+      if var.type == "bool" and not var.key:match("^hide_") then
+        local current = RtconfigConverter.get_context_value(var.key)
+        local val_changed, new_val = ImGui.Checkbox(ctx, var.label, current == 1)
+        if val_changed then
+          RtconfigConverter.set_context_value(var.key, new_val and 1 or 0)
+          changed = true
+        end
+      end
+    end
+
+    ImGui.Unindent(ctx, 4)
+  end
+
+  return changed
 end
 
 -- Draw sections tree
@@ -402,7 +669,10 @@ function Panel:draw_macro_detail(ctx, macro)
 end
 
 -- Main draw function
+-- Returns action table if user performs an action, nil otherwise
 function Panel:draw(ctx)
+  local result = nil
+
   -- Load buttons
   if ImGui.Button(ctx, "Load from Theme", 120, 0) then
     self:load_from_theme()
@@ -438,6 +708,24 @@ function Panel:draw(ctx)
 
   -- Summary
   self:draw_summary(ctx)
+
+  -- Load to Canvas controls
+  result = self:draw_load_controls(ctx)
+
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Context variable controls
+  if self.rtconfig then
+    local context_changed = self:draw_context_controls(ctx)
+    if context_changed then
+      -- Re-convert with new context values
+      self:update_conversion()
+      -- Signal that canvas should reload
+      if not result then
+        result = { type = "context_changed" }
+      end
+    end
+  end
 
   ImGui.Dummy(ctx, 0, 8)
 
@@ -493,6 +781,8 @@ function Panel:draw(ctx)
   self:draw_detail(ctx)
   ImGui.Unindent(ctx, 4)
   ImGui.EndChild(ctx)
+
+  return result
 end
 
 return M

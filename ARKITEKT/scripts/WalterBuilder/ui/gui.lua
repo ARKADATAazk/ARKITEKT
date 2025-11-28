@@ -12,10 +12,13 @@ local PropertiesPanel = require('WalterBuilder.ui.panels.properties_panel')
 local TrackPropertiesPanel = require('WalterBuilder.ui.panels.track_properties_panel')
 local CodePanel = require('WalterBuilder.ui.panels.code_panel')
 local RtconfigPanel = require('WalterBuilder.ui.panels.rtconfig_panel')
+local RtconfigConverter = require('WalterBuilder.domain.rtconfig_converter')
+local DebugConsole = require('WalterBuilder.ui.panels.debug_console')
 local TCPElements = require('WalterBuilder.defs.tcp_elements')
 local Constants = require('WalterBuilder.defs.constants')
 local Notification = require('WalterBuilder.domain.notification')
 local Button = require('arkitekt.gui.widgets.primitives.button')
+local WalterSettings = require('WalterBuilder.infra.settings')
 
 local hexrgb = ark.Colors.hexrgb
 
@@ -48,6 +51,9 @@ function M.new(state_module, settings, controller)
     -- Splitter drag state
     left_splitter_drag_start = 0,
     right_splitter_drag_start = 0,
+
+    -- Tab state
+    select_default_tab = true,  -- Select default tab on first frame
   }, GUI)
 
   -- Wire up controller callbacks
@@ -129,11 +135,9 @@ function GUI:initialize_once(ctx)
   -- Update canvas with current elements and tracks
   self:sync_canvas()
 
-  -- Load settings
-  if self.settings then
-    self.left_panel_width = self.settings:get('left_panel_width', 200)
-    self.right_panel_width = self.settings:get('right_panel_width', 280)
-  end
+  -- Load settings from WalterSettings
+  self.left_panel_width = WalterSettings.get_value('left_panel_width', Constants.PANEL.LEFT_WIDTH)
+  self.right_panel_width = WalterSettings.get_value('right_panel_width', Constants.PANEL.RIGHT_WIDTH)
 
   self.initialized = true
 end
@@ -228,6 +232,40 @@ function GUI:handle_reset_element(element)
   end
 end
 
+-- Handle toggle all elements in a category
+function GUI:handle_toggle_category(category)
+  local elements = self.State.get_elements()
+
+  -- Helper to check if element matches category
+  local function matches_category(elem)
+    if category == "customs" then
+      return elem.is_custom
+    else
+      return elem.category == category
+    end
+  end
+
+  -- Check if any element in category is visible
+  local any_visible = false
+  for _, elem in ipairs(elements) do
+    if matches_category(elem) and elem.visible then
+      any_visible = true
+      break
+    end
+  end
+
+  -- Toggle: if any visible, hide all; if all hidden, show all
+  local new_visible = not any_visible
+  for _, elem in ipairs(elements) do
+    if matches_category(elem) then
+      elem.visible = new_visible
+    end
+  end
+
+  self:sync_canvas()
+  self.code_panel:invalidate()
+end
+
 -- Handle selecting an active element from the palette
 function GUI:handle_select_active_element(element)
   self.State.set_selected(element)
@@ -279,6 +317,73 @@ function GUI:handle_add_track()
       self:sync_canvas()
     end
   end
+end
+
+-- Handle loading elements from rtconfig to canvas
+function GUI:handle_load_from_rtconfig(action)
+  if not action or not action.elements then
+    DebugConsole.error("Load failed: no action or elements")
+    return
+  end
+
+  DebugConsole.info("=== Loading %d elements to canvas ===", #action.elements)
+
+  -- Clear existing elements first
+  if self.controller then
+    self.controller:clear_elements()
+  else
+    self.State.clear_elements()
+  end
+
+  -- Update context to match what was loaded
+  if action.context then
+    self.State.set_context(action.context)
+    DebugConsole.info("Set context to: %s", action.context)
+  end
+
+  -- Add each element
+  local loaded_count = 0
+  local skipped_count = 0
+  for _, element in ipairs(action.elements) do
+    local added = nil
+    if self.controller then
+      added = self.controller:add_element_direct(element)
+    else
+      added = self.State.add_element_direct(element)
+    end
+    if added then
+      loaded_count = loaded_count + 1
+      DebugConsole.success("  Loaded: %s at (%d, %d) size %dx%d",
+        added.id, added.coords.x, added.coords.y, added.coords.w, added.coords.h)
+    else
+      skipped_count = skipped_count + 1
+      DebugConsole.warn("  Skipped (duplicate?): %s", element.id)
+    end
+  end
+
+  DebugConsole.info("=== Load complete: %d loaded, %d skipped ===", loaded_count, skipped_count)
+
+  -- Sync canvas dimensions with context variables
+  local ctx_w = RtconfigConverter.get_context_value("w")
+  local ctx_h = RtconfigConverter.get_context_value("h")
+  self.canvas:set_parent_size(ctx_w, ctx_h)
+
+  -- Update all track heights to match context
+  self.State.set_all_tracks_height(ctx_h)
+  self.canvas:set_tracks(self.State.get_tracks())
+
+  -- Sync canvas
+  self:sync_canvas()
+  self.code_panel:invalidate()
+
+  -- Show notification
+  local msg = string.format("Loaded %d elements from rtconfig", loaded_count)
+  if action.stats then
+    if action.stats.computed > 0 then
+      msg = msg .. string.format(" (%d computed)", action.stats.computed)
+    end
+  end
+  self.notification:set_message(msg, "success")
 end
 
 -- Draw toolbar using Button widget
@@ -467,30 +572,33 @@ function GUI:draw(ctx, window, shell_state)
   -- Left panel: Elements
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
 
-  ImGui.BeginChild(ctx, "left_panel", self.left_panel_width, remaining_h, 1, 0)
-  ImGui.Dummy(ctx, 0, 4)
-  ImGui.Indent(ctx, 4)
+  if ImGui.BeginChild(ctx, "left_panel", self.left_panel_width, remaining_h, 1, 0) then
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.Indent(ctx, 4)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
-  ImGui.Text(ctx, "Elements")
-  ImGui.PopStyleColor(ctx)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
+    ImGui.Text(ctx, "Elements")
+    ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 4)
+    ImGui.Dummy(ctx, 0, 4)
 
-  local result = self.elements_panel:draw(ctx)
-  if result then
-    if result.type == "add" then
-      self:handle_add_element(result.definition)
-    elseif result.type == "select_active" then
-      self:handle_select_active_element(result.element)
-    elseif result.type == "toggle" then
-      self:handle_toggle_element(result.element)
-    elseif result.type == "reset" then
-      self:handle_reset_element(result.element)
+    local result = self.elements_panel:draw(ctx)
+    if result then
+      if result.type == "add" then
+        self:handle_add_element(result.definition)
+      elseif result.type == "select_active" then
+        self:handle_select_active_element(result.element)
+      elseif result.type == "toggle" then
+        self:handle_toggle_element(result.element)
+      elseif result.type == "reset" then
+        self:handle_reset_element(result.element)
+      elseif result.type == "toggle_category" then
+        self:handle_toggle_category(result.category)
+      end
     end
-  end
 
-  ImGui.Unindent(ctx, 4)
+    ImGui.Unindent(ctx, 4)
+  end
   ImGui.EndChild(ctx)
   ImGui.PopStyleColor(ctx)
 
@@ -511,6 +619,14 @@ function GUI:draw(ctx, window, shell_state)
     local new_w = self.left_splitter_drag_start + delta_x
     new_w = math.max(150, math.min(350, new_w))
     self.left_panel_width = new_w
+  end
+  -- Save position when drag ends
+  if ImGui.IsMouseReleased(ctx, 0) and self.left_splitter_drag_start ~= 0 then
+    if self.left_panel_width ~= self.left_splitter_drag_start then
+      WalterSettings.set_value('left_panel_width', self.left_panel_width)
+      WalterSettings.maybe_flush()
+    end
+    self.left_splitter_drag_start = 0
   end
 
   local dl = ImGui.GetWindowDrawList(ctx)
@@ -610,6 +726,14 @@ function GUI:draw(ctx, window, shell_state)
     new_w = math.max(200, math.min(450, new_w))
     self.right_panel_width = new_w
   end
+  -- Save position when drag ends
+  if ImGui.IsMouseReleased(ctx, 0) and self.right_splitter_drag_start ~= 0 then
+    if self.right_panel_width ~= self.right_splitter_drag_start then
+      WalterSettings.set_value('right_panel_width', self.right_panel_width)
+      WalterSettings.maybe_flush()
+    end
+    self.right_splitter_drag_start = 0
+  end
 
   local rs_color = (rs_hovered or rs_active) and hexrgb("#888888") or hexrgb("#555555")
   ImGui.DrawList_AddRectFilled(dl, rsplit_x, rsplit_y, rsplit_x + splitter_w, rsplit_y + remaining_h, rs_color)
@@ -624,6 +748,12 @@ function GUI:draw(ctx, window, shell_state)
   ImGui.Indent(ctx, 4)
 
   -- Tab bar for Track / Element / Code
+  -- Select rtconfig tab by default on first frame
+  local select_rtconfig = self.select_default_tab
+  if select_rtconfig then
+    self.select_default_tab = false  -- Only do this once
+  end
+
   if ImGui.BeginTabBar(ctx, "right_tabs") then
     -- Track tab (for track properties)
     if ImGui.BeginTabItem(ctx, "Track") then
@@ -666,10 +796,44 @@ function GUI:draw(ctx, window, shell_state)
       ImGui.EndTabItem(ctx)
     end
 
-    -- rtconfig tab (theme file viewer)
-    if ImGui.BeginTabItem(ctx, "rtconfig") then
+    -- rtconfig tab (theme file viewer) - default tab
+    local rtconfig_flags = select_rtconfig and ImGui.TabItemFlags_SetSelected or 0
+    if ImGui.BeginTabItem(ctx, "rtconfig", nil, rtconfig_flags) then
       ImGui.Dummy(ctx, 0, 4)
-      self.rtconfig_panel:draw(ctx)
+      local rtconfig_result = self.rtconfig_panel:draw(ctx)
+
+      -- Handle rtconfig actions
+      if rtconfig_result then
+        if rtconfig_result.type == "load_to_canvas" then
+          self:handle_load_from_rtconfig(rtconfig_result)
+        elseif rtconfig_result.type == "context_changed" then
+          -- Sync canvas dimensions with context variables
+          local ctx_w = RtconfigConverter.get_context_value("w")
+          local ctx_h = RtconfigConverter.get_context_value("h")
+          self.canvas:set_parent_size(ctx_w, ctx_h)
+
+          -- Update all track heights to match context
+          self.State.set_all_tracks_height(ctx_h)
+          self.canvas:set_tracks(self.State.get_tracks())
+
+          -- Re-load elements with new context values
+          local elements = self.rtconfig_panel:get_loadable_elements()
+          if elements and #elements > 0 then
+            self:handle_load_from_rtconfig({
+              elements = elements,
+              context = self.rtconfig_panel.current_context,
+            })
+          end
+        end
+      end
+
+      ImGui.EndTabItem(ctx)
+    end
+
+    -- Debug console tab
+    if ImGui.BeginTabItem(ctx, "Console") then
+      ImGui.Dummy(ctx, 0, 4)
+      DebugConsole.draw(ctx)
       ImGui.EndTabItem(ctx)
     end
 

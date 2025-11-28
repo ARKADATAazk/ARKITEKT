@@ -207,6 +207,16 @@ function Controller:add_element(def)
   return elem
 end
 
+-- Add a pre-built Element object directly (for rtconfig loading)
+-- Does not capture undo snapshot individually - caller should handle batch undo
+function Controller:add_element_direct(element)
+  local elem = self.State.add_element_direct(element)
+  if elem and DEBUG_CONTROLLER then
+    Logger.debug("CONTROLLER", "Added element directly: %s", elem.id)
+  end
+  return elem
+end
+
 -- Remove element
 function Controller:remove_element(element)
   if not element then return false end
