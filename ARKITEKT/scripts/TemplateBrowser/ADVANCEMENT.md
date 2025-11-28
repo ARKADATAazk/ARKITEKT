@@ -44,7 +44,7 @@
 - [x] Track count parsing from .RTrackTemplate files
 - [x] Track count badge on tiles (`5T`, `16T`)
 - [x] Stacked visual for multi-track templates
-- [x] _Inbox folder workflow (pinned at top, template count badge)
+- [x] _Inbox folder workflow (Quick Access mode, hidden from tree)
 - [x] _Archive folder (renamed from .archive for visibility)
 
 ### Planned (Next Sprint)

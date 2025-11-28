@@ -161,38 +161,15 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   }
 
   -- Add all physical folders as children of Physical Root
-  -- Find _Inbox folder and pin it at top with template count
-  local inbox_node = nil
-  local other_children = {}
-
+  -- Skip special folders (_Inbox, _Archive) - they have their own sections
   if node.children then
     for _, child in ipairs(node.children) do
-      local converted = convert_physical_node(child)
-      if child.name == Constants.FOLDERS.INBOX then
-        inbox_node = converted
-        inbox_node.is_inbox = true
-        -- Count templates in inbox folder
-        local inbox_count = 0
-        if all_templates then
-          for _, tmpl in ipairs(all_templates) do
-            if tmpl.relative_path == Constants.FOLDERS.INBOX then
-              inbox_count = inbox_count + 1
-            end
-          end
-        end
-        inbox_node.template_count = inbox_count  -- Used by TreeView for badge display
-      else
-        other_children[#other_children + 1] = converted
+      -- Skip _Inbox and _Archive folders
+      if child.name ~= Constants.FOLDERS.INBOX and child.name ~= Constants.FOLDERS.ARCHIVE then
+        local converted = convert_physical_node(child)
+        physical_root.children[#physical_root.children + 1] = converted
       end
     end
-  end
-
-  -- Pin _Inbox at top, then other folders
-  if inbox_node then
-    physical_root.children[#physical_root.children + 1] = inbox_node
-  end
-  for _, child in ipairs(other_children) do
-    physical_root.children[#physical_root.children + 1] = child
   end
 
   root_nodes[#root_nodes + 1] = physical_root
@@ -259,7 +236,7 @@ function M.draw_physical_tree(ctx, state, config)
   TreeView.draw(ctx, physical_nodes, tree_state, {
     enable_rename = true,
     show_colors = true,
-    show_template_count = true,  -- Show template count badge for _Inbox
+    show_template_count = true,  -- Enable template count badges on folders
     enable_drag_drop = true,  -- Enable folder drag-and-drop
     enable_multi_select = true,  -- Enable multi-select with Ctrl/Shift
     context_menu_id = "folder_context_menu",  -- Enable context menu
