@@ -883,13 +883,21 @@ local function convert_items(items, context_filter)
           if item.is_flow_element then
             local element, is_computed, eval_success = convert_set_item(item, eval_context)
             if element then
-              -- Preserve the ORIGINAL source_line so flow elements sort by first occurrence
-              local original_source_line = result.elements[existing_idx].source_line
+              -- Preserve source_line ONLY if replacing another flow element (duplicate in macro)
+              -- Otherwise use the flow element's line number to maintain macro order
+              local original_entry = result.elements[existing_idx]
+              local use_source_line = item.line  -- Default: use macro line number
+              if original_entry.is_flow_element then
+                -- Replacing flow with flow: preserve first occurrence line
+                use_source_line = original_entry.source_line
+              end
+              -- else: replacing section element with flow: use macro line (item.line)
+
               result.elements[existing_idx] = {
                 element = element,
                 is_computed = is_computed,
                 eval_success = eval_success,
-                source_line = original_source_line,  -- Use original, not replacement line
+                source_line = use_source_line,
                 raw_value = item.value,
                 is_flow_element = true,
                 flow_params = item.flow_params,
