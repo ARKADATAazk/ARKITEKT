@@ -101,37 +101,59 @@ Shell.run({
 })
 ```
 **Use case:** Prevent user from opening multiple instances of same script.
+**Note:** REAPER already handles this via toggle action behavior.
 
-### Keyboard Shortcuts
-```lua
-Shell.run({
-  shortcuts = {
-    ["Ctrl+S"] = save_function,
-    ["Ctrl+Z"] = undo_function,
-    ["Escape"] = close_window,
-  },
-})
-```
-**Use case:** Global shortcuts without manual IsKeyPressed checks.
+---
 
-### Menu Bar
+## NOT Shell Config (Separate Widgets/Utilities)
+
+These are better as standalone modules called from GUI, not Shell config:
+
+### Keyboard Shortcuts → Utility Module
+**Current pattern (RegionPlaylist):**
 ```lua
-Shell.run({
-  menu_bar = {
-    File = {
-      {"New", new_file},
-      {"Open", open_file},
-      {"---"},  -- Separator
-      {"Exit", close_window},
-    },
-    Edit = {
-      {"Undo", undo, "Ctrl+Z"},
-      {"Redo", redo, "Ctrl+Y"},
-    },
-  },
-})
+-- ui/shortcuts.lua - Dedicated module
+function M.handle_keyboard_shortcuts(ctx, state, tiles)
+  if ctrl and ImGui.IsKeyPressed(ctx, ImGui.Key_Z) then
+    State.undo()
+  end
+  -- ...
+end
+
+-- Called from GUI layer
+Shortcuts.handle_keyboard_shortcuts(ctx, self.State, self.region_tiles)
 ```
-**Use case:** Standard app menu bar integrated with chrome.
+
+**Why NOT in Shell:**
+- Shortcuts depend on app state
+- Need to check modals/popups before handling
+- App-specific logic doesn't belong in Shell
+
+**Future:** Could create `Ark.Shortcuts` utility for cleaner declaration.
+See: `scripts/RegionPlaylist/ui/shortcuts.lua` for reference pattern.
+
+### Menu Bar → Widget
+**Should be a widget used in draw function:**
+```lua
+-- In draw function, not Shell config
+if Ark.MenuBar.begin(ctx) then
+  if Ark.MenuBar.menu(ctx, "File") then
+    Ark.MenuBar.item(ctx, "Open", open_file)
+    Ark.MenuBar.item(ctx, "Save", save_file)
+    Ark.MenuBar.end_menu(ctx)
+  end
+  Ark.MenuBar.end(ctx)
+end
+```
+
+**Why NOT in Shell:**
+- Menus are often dynamic (recent files, undo history)
+- Need access to ctx and app state
+- Better as ImGui-style Begin/End pattern
+
+**Future:** See `TODO/IMGUI_API_COVERAGE.md` for Menu Bar widget spec.
+
+---
 
 ### Declarative Persistence
 ```lua
