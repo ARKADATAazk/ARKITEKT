@@ -76,35 +76,19 @@ M.PROFILER_ENABLED = false
 ```
 
 **Solution:**
-Create centralized feature flags file.
+Create centralized feature flags file (kept minimal - only flags actually used in code).
 
 ```lua
--- arkitekt/defs/features.lua (NEW FILE)
+-- arkitekt/defs/features.lua
 local M = {}
 
--- ============================================================================
--- FRAMEWORK FEATURES
--- ============================================================================
-M.LAZY_LOADING = true
-M.PROFILER = false
-M.DEBUG_LOGGING = false
-M.THEME_SYNC = true
-M.EXPERIMENTAL_WIDGETS = false
-
--- ============================================================================
--- PLATFORM SPECIFIC
--- ============================================================================
-M.OSX_WORKAROUNDS = reaper.GetOS():match("OSX") ~= nil
-M.WINDOWS_CONSOLE = reaper.GetOS():match("Win") ~= nil
-
--- ============================================================================
--- DEPRECATION FLAGS (remove in 1.0)
--- ============================================================================
-M.LEGACY_THEME_SUPPORT = true
-M.OLD_CONFIG_FORMAT = true
+-- Profiler: Performance profiling window
+M.PROFILER_ENABLED = false
 
 return M
 ```
+
+**Note:** Originally included experimental/platform/deprecation flags, but stripped to only what's actually checked in code. Add flags only when needed, not speculatively.
 
 **Benefits:**
 - Single source of truth for all toggles
