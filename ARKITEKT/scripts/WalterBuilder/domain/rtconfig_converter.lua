@@ -879,13 +879,14 @@ local function convert_items(items, context_filter)
         -- Check for duplicate element IDs
         local existing_idx = seen_ids[item.element]
         if existing_idx then
+          local original_entry = result.elements[existing_idx]
+
           -- Flow elements REPLACE existing definitions (they have proper widths)
           if item.is_flow_element then
             local element, is_computed, eval_success = convert_set_item(item, eval_context)
             if element then
               -- Preserve source_line ONLY if replacing another flow element (duplicate in macro)
               -- Otherwise use the flow element's line number to maintain macro order
-              local original_entry = result.elements[existing_idx]
               local use_source_line = item.line  -- Default: use macro line number
               if original_entry.is_flow_element then
                 -- Replacing flow with flow: preserve first occurrence line
@@ -904,6 +905,22 @@ local function convert_items(items, context_filter)
               }
               replaced_count = replaced_count + 1
               Console.info("  REPLACED %s with flow element (w=%d)", item.element, element.coords.w or 0)
+            end
+          -- Non-flow SET can REPLACE flow elements (e.g., drawTcp overrides calcTcpFlow)
+          elseif original_entry.is_flow_element then
+            local element, is_computed, eval_success = convert_set_item(item, eval_context)
+            if element then
+              result.elements[existing_idx] = {
+                element = element,
+                is_computed = is_computed,
+                eval_success = eval_success,
+                source_line = item.line,  -- Use new SET line
+                raw_value = item.value,
+                is_flow_element = false,
+                flow_params = nil,
+              }
+              replaced_count = replaced_count + 1
+              Console.info("  REPLACED flow %s with SET statement", item.element)
             end
           else
             duplicate_count = duplicate_count + 1
