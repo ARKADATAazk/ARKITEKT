@@ -39,6 +39,7 @@ local state = {
   },
   tile_size = 220,
   output_mode = "folder",  -- "folder" (unpacked) or "zip"
+  show_default_60_params = true,  -- Show Default 6.0 specific parameters in TCP/MCP views
 
   -- Theme info
   theme_status = "direct",  -- or "zip-ready", "needs-link", etc.
@@ -60,6 +61,7 @@ function M.initialize(settings)
     state.filters = settings:get('filters', state.filters)
     state.tile_size = settings:get('tile_size', 220)
     state.output_mode = settings:get('output_mode', "folder")
+    state.show_default_60_params = settings:get('show_default_60_params', true)
 
     -- Load configurations
     local saved_configs = settings:get('configurations', nil)
@@ -109,6 +111,7 @@ function M.get_search_text() return state.search_text end
 function M.get_filters() return state.filters end
 function M.get_tile_size() return state.tile_size end
 function M.get_output_mode() return state.output_mode end
+function M.get_show_default_60_params() return state.show_default_60_params end
 function M.get_packages() return state.packages end
 function M.get_theme_status() return state.theme_status end
 function M.get_theme_name() return state.theme_name end
@@ -156,6 +159,11 @@ end
 function M.set_output_mode(value)
   state.output_mode = value
   if state.settings then state.settings:set('output_mode', value) end
+end
+
+function M.set_show_default_60_params(value)
+  state.show_default_60_params = value
+  if state.settings then state.settings:set('show_default_60_params', value) end
 end
 
 -- Helper to save configurations
