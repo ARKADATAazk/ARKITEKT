@@ -81,23 +81,25 @@ Ark.Button(ctx, {
   -- Required
   label = "Save",
 
-  -- Size (optional)
-  width = 100,
-  height = 30,
+  -- Size (optional, aliases: w/h)
+  width = 100,    -- or: w = 100
+  height = 30,    -- or: h = 30
 
   -- State (optional)
   disabled = false,
-  is_toggled = false,
+  toggled = false,
+
+  -- Styling (optional)
+  style = "success",   -- semantic preset
 
   -- Callbacks (optional)
-  on_click = function() end,
-  on_right_click = function() end,
+  click = function() end,
+  right_click = function() end,
 
   -- Extras (optional)
   tooltip = "Save the file",
   icon = "",           -- Icon character
   icon_font = font,     -- Font for icon
-  preset_name = "BUTTON_SUCCESS",
 })
 ```
 
@@ -150,7 +152,7 @@ Ark.Checkbox(ctx, {
   checked = config.auto_save,
 
   -- Callbacks
-  on_change = function(new_value)
+  change = function(new_value)
     config.auto_save = new_value
   end,
 
@@ -214,13 +216,13 @@ Ark.Slider(ctx, {
   is_integer = true,   -- Force integer
 
   -- Callbacks
-  on_change = function(new_value)
+  change = function(new_value)
     config.volume = new_value
     audio.set_volume(new_value)
   end,
 
   -- Extras
-  width = 200,
+  width = 200,         -- or: w = 200
   disabled = false,
   tooltip = "Adjust volume level",
 })
@@ -274,7 +276,7 @@ Ark.InputText(ctx, {
   text = config.name,
 
   -- Size
-  width = 200,
+  width = 200,         -- or: w = 200
 
   -- Hint/placeholder
   hint = "Enter your name",
@@ -284,10 +286,10 @@ Ark.InputText(ctx, {
   pattern = "^[a-zA-Z]+$",  -- Optional regex
 
   -- Callbacks
-  on_change = function(new_text)
+  change = function(new_text)
     config.name = new_text
   end,
-  on_enter = function(text)
+  enter = function(text)
     submit_form()
   end,
 
@@ -350,10 +352,10 @@ Ark.Combo(ctx, {
 
   -- Display
   preview = nil,                -- Custom preview text
-  width = 150,
+  width = 150,                  -- or: w = 150
 
   -- Callbacks
-  on_change = function(index, item)
+  change = function(index, item)
     config.theme = index
     apply_theme(item)
   end,
@@ -417,7 +419,7 @@ Ark.RadioButton(ctx, {
   active = selected == 1,
 
   -- Callbacks
-  on_click = function()
+  click = function()
     selected = 1
   end,
 

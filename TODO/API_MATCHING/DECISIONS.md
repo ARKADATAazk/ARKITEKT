@@ -742,6 +742,77 @@ end
 
 ---
 
+## Decision 19: Opts Naming Conventions
+
+### Problem
+Opts field names were inconsistent and verbose:
+- `on_click` / `on_right_click` - redundant `on_` prefix
+- `is_toggled` - redundant `is_` prefix
+- `preset_name` - unclear name
+- `width` / `height` - no terse alternative
+
+### Choice
+Cleaner names with terse aliases for common fields:
+
+```lua
+Ark.Button(ctx, {
+  label = "Save",
+
+  -- Size (both forms work)
+  width = 120,    -- or: w = 120
+  height = 32,    -- or: h = 32
+
+  -- State (cleaner names)
+  disabled = false,
+  toggled = false,     -- was: is_toggled
+
+  -- Styling
+  style = "success",   -- was: preset_name
+
+  -- Callbacks (no on_ prefix)
+  click = save_file,        -- was: on_click
+  right_click = show_menu,  -- was: on_right_click
+
+  -- Extras
+  tooltip = "Save file",
+  icon = "",
+})
+```
+
+### Aliases
+
+| Verbose | Terse |
+|---------|-------|
+| `width` | `w` |
+| `height` | `h` |
+
+### Renames (no aliases, just better names)
+
+| Old | New |
+|-----|-----|
+| `on_click` | `click` |
+| `on_right_click` | `right_click` |
+| `is_toggled` | `toggled` |
+| `preset_name` | `style` |
+
+### Implementation
+```lua
+local w = opts.w or opts.width
+local h = opts.h or opts.height
+local click = opts.click        -- old on_click deprecated
+local toggled = opts.toggled    -- old is_toggled deprecated
+local style = opts.style        -- old preset_name deprecated
+```
+
+### Rationale
+- **Shorter**: Less typing, less noise
+- **Flexible**: Verbose or terse, user's choice
+- **Cleaner callbacks**: `click` is obvious in context (it's a function)
+- **Cleaner state**: `toggled` is simpler than `is_toggled`
+- **Semantic styling**: `style = "danger"` reads better than `preset_name = "danger"`
+
+---
+
 ## Summary Table
 
 | Aspect | ImGui | ARKITEKT Current | ARKITEKT Target |
