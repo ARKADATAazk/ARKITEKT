@@ -14,6 +14,9 @@
 | **Return values** | Result object | Richer than boolean, still works inline |
 | **Public API** | Minimal | Hide cleanup, measure, internals |
 | **Hover animations** | Keep (strong tables) | Smooth UX, automatic cleanup |
+| **ImGui flags** | Use directly (`ImGui.WindowFlags_*`) | No value in renaming constants |
+| **Chrome options** | Positive naming (`titlebar = true`) | Avoid double negatives |
+| **Shell** | Keep & extend | Real value: lifecycle, chrome, themes |
 
 ---
 
@@ -48,6 +51,7 @@ local w = ImGui.CalcTextSize(ctx, text)
 | File | Description |
 |------|-------------|
 | [DECISIONS.md](DECISIONS.md) | Detailed rationale for each design choice |
+| [SCOPE.md](SCOPE.md) | What gets Ark.* vs stays ImGui.* |
 | [WIDGET_SIGNATURES.md](WIDGET_SIGNATURES.md) | ImGui → Ark signature mappings for each widget |
 | [IMPLEMENTATION.md](IMPLEMENTATION.md) | Step-by-step implementation guide |
 | [CHECKLIST.md](CHECKLIST.md) | Progress tracker for migration |
