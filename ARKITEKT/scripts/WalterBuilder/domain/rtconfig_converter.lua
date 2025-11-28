@@ -873,11 +873,13 @@ local function convert_items(items, context_filter)
           if item.is_flow_element then
             local element, is_computed, eval_success = convert_set_item(item, eval_context)
             if element then
+              -- Preserve the ORIGINAL source_line so flow elements sort by first occurrence
+              local original_source_line = result.elements[existing_idx].source_line
               result.elements[existing_idx] = {
                 element = element,
                 is_computed = is_computed,
                 eval_success = eval_success,
-                source_line = item.line,
+                source_line = original_source_line,  -- Use original, not replacement line
                 raw_value = item.value,
                 is_flow_element = true,
                 flow_params = item.flow_params,
