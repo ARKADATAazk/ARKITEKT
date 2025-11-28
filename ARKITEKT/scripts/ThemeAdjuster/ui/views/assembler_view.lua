@@ -2,12 +2,12 @@
 -- ThemeAdjuster/ui/views/assembler_view.lua
 -- Assembler tab with Panel + package grid
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local PackageTilesGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
-local PackageManager = require('ThemeAdjuster.packages.manager')
-local Config = require('ThemeAdjuster.core.config')
-local Theme = require('ThemeAdjuster.core.theme')
+local PackageManager = require('ThemeAdjuster.data.packages.manager')
+local Config = require('ThemeAdjuster.app.config')
+local Theme = require('ThemeAdjuster.domain.theme.reader')
 local PackageModal = require('ThemeAdjuster.ui.views.package_modal')
 local hexrgb = ark.Colors.hexrgb
 
@@ -130,6 +130,24 @@ function M.new(State, AppConfig, settings)
         config = {
           on_draw = function(ctx, dl, x, y, width, height, state)
             self:draw_zip_status(ctx, dl, x, y, width, height)
+          end,
+        },
+      },
+      -- Output mode toggle
+      {
+        id = "output_mode",
+        type = "button",
+        width = 60,
+        spacing_before = 8,
+        config = {
+          label = State.get_output_mode() == "folder" and "📁" or "📦",
+          tooltip = State.get_output_mode() == "folder" and "Output: Folder (click for ZIP)" or "Output: ZIP (click for Folder)",
+          on_click = function()
+            local current = State.get_output_mode()
+            local new_mode = (current == "folder") and "zip" or "folder"
+            State.set_output_mode(new_mode)
+            -- Update button label/tooltip via container refresh
+            self:refresh_footer_mode_button()
           end,
         },
       },
@@ -368,6 +386,23 @@ function AssemblerView:sync_model_to_state()
   State.set_package_pins(self.package_model.pins)
 end
 
+function AssemblerView:refresh_footer_mode_button()
+  local State = self.State
+  local mode = State.get_output_mode()
+
+  -- Update the output mode button in the footer
+  if self.container and self.container.footer_elements then
+    for _, elem in ipairs(self.container.footer_elements) do
+      if elem.id == "output_mode" and elem.config then
+        elem.config.label = (mode == "folder") and "📁" or "📦"
+        elem.config.tooltip = (mode == "folder")
+          and "Output: Folder (click for ZIP)"
+          or "Output: ZIP (click for Folder)"
+      end
+    end
+  end
+end
+
 function AssemblerView:update(dt)
   -- Update animations
   if self.grid and self.grid.custom_state and self.grid.custom_state.animator then
@@ -463,68 +498,129 @@ function AssemblerView:do_apply()
     end
 
   else
-    -- ZIP theme: create patched ZIP
+    -- ZIP/Folder theme: output based on mode setting
     if not cache_dir then
       reaper.ShowMessageBox("Cache directory not found.\nRebuild cache first.", "Apply Error", 0)
       return
     end
 
-    local output_name = (info.theme_name or "Theme") .. " (Reassembled).ReaperThemeZip"
-    local overwrite = false
+    local output_mode = State.get_output_mode()
 
-    -- Check if file already exists
-    local existing = PackageManager.check_reassembled_exists(info.themes_dir, info.theme_name)
-    if existing.exists then
-      -- Prompt for overwrite vs new version
-      local overwrite_confirm = reaper.ShowMessageBox(
-        string.format("A reassembled ZIP already exists:\n%s\n\nOverwrite it?\n\nYes = Overwrite\nNo = Create new version", existing.path:match("[^\\/]+$")),
-        "File Exists",
+    if output_mode == "folder" then
+      -- FOLDER MODE: Create/update unpacked reassembled folder with delta tracking
+      local output_dir = PackageManager.get_default_reassembled_path(info.themes_dir, info.theme_name)
+      local existing_info = PackageManager.get_reassembled_info(output_dir)
+
+      local action_text = existing_info.exists and "update" or "create"
+      local delta_text = ""
+      if existing_info.exists and existing_info.has_state then
+        delta_text = string.format("\n\nPrevious apply: %d assets\n(Only changed files will be copied)",
+          existing_info.asset_count)
+      end
+
+      -- Confirm apply
+      local confirm = reaper.ShowMessageBox(
+        string.format("Apply %d assets to reassembled folder?\n\nOutput: %s%s\n\nLoad theme after?",
+          active_count, output_dir:match("[^\\/]+$") or output_dir, delta_text),
+        "Confirm Apply (Folder)",
         3  -- Yes/No/Cancel
       )
 
-      if overwrite_confirm == 2 then return end  -- Cancel
-      overwrite = (overwrite_confirm == 6)  -- Yes = overwrite
-    end
+      if confirm == 2 then return end  -- Cancel
+      local load_after = (confirm == 6)  -- Yes
 
-    -- Confirm apply
-    local action_text = overwrite and "overwrite existing" or "create new"
-    local confirm = reaper.ShowMessageBox(
-      string.format("Apply %d assets and %s ZIP?\n\nLoad theme after creation?", active_count, action_text),
-      "Confirm Apply (ZIP)",
-      3  -- Yes/No/Cancel
-    )
+      -- Do the apply
+      result = PackageManager.apply_to_reassembled_folder(cache_dir, output_dir, resolved)
+      self.last_apply_result = result
 
-    if confirm == 2 then return end  -- Cancel
-    local load_after = (confirm == 6)  -- Yes
+      -- Show result
+      if result.ok then
+        local msg = string.format(
+          "Folder %s!\n\nFiles copied: %d\nFiles skipped (unchanged): %d\nFiles restored: %d\nOutput: %s",
+          result.is_new and "created" or "updated",
+          result.files_copied,
+          result.files_skipped,
+          result.files_removed,
+          result.output_dir
+        )
+        if #result.errors > 0 then
+          msg = msg .. string.format("\nWarnings: %d", #result.errors)
+        end
+        reaper.ShowMessageBox(msg, "Apply Complete", 0)
 
-    -- Do the apply
-    result = PackageManager.apply_to_zip_theme(cache_dir, info.themes_dir, info.theme_name, resolved, { overwrite = overwrite })
-    self.last_apply_result = result
-
-    -- Show result
-    if result.ok then
-      local msg = string.format(
-        "ZIP created!\n\nFiles copied: %d\nOutput: %s",
-        result.files_copied,
-        result.output_path
-      )
-      if #result.errors > 0 then
-        msg = msg .. string.format("\nWarnings: %d", #result.errors)
+        -- Load theme if requested
+        if load_after and result.output_dir then
+          reaper.OpenColorThemeFile(result.output_dir)
+          reaper.ThemeLayout_RefreshAll()
+        end
+      else
+        local msg = string.format(
+          "Apply failed!\n\nFiles copied: %d\nErrors: %d\n\n%s",
+          result.files_copied,
+          #result.errors,
+          table.concat(result.errors, "\n")
+        )
+        reaper.ShowMessageBox(msg, "Apply Error", 0)
       end
-      reaper.ShowMessageBox(msg, "Apply Complete", 0)
 
-      -- Load theme if requested
-      if load_after and result.output_path then
-        PackageManager.load_zip_theme(result.output_path)
-      end
     else
-      local msg = string.format(
-        "ZIP creation failed!\n\nFiles copied: %d\nErrors: %d\n\n%s",
-        result.files_copied,
-        #result.errors,
-        table.concat(result.errors, "\n")
+      -- ZIP MODE: Create patched ZIP (original behavior)
+      local overwrite = false
+
+      -- Check if file already exists
+      local existing = PackageManager.check_reassembled_exists(info.themes_dir, info.theme_name)
+      if existing.exists then
+        -- Prompt for overwrite vs new version
+        local overwrite_confirm = reaper.ShowMessageBox(
+          string.format("A reassembled ZIP already exists:\n%s\n\nOverwrite it?\n\nYes = Overwrite\nNo = Create new version", existing.path:match("[^\\/]+$")),
+          "File Exists",
+          3  -- Yes/No/Cancel
+        )
+
+        if overwrite_confirm == 2 then return end  -- Cancel
+        overwrite = (overwrite_confirm == 6)  -- Yes = overwrite
+      end
+
+      -- Confirm apply
+      local action_text = overwrite and "overwrite existing" or "create new"
+      local confirm = reaper.ShowMessageBox(
+        string.format("Apply %d assets and %s ZIP?\n\nLoad theme after creation?", active_count, action_text),
+        "Confirm Apply (ZIP)",
+        3  -- Yes/No/Cancel
       )
-      reaper.ShowMessageBox(msg, "Apply Error", 0)
+
+      if confirm == 2 then return end  -- Cancel
+      local load_after = (confirm == 6)  -- Yes
+
+      -- Do the apply
+      result = PackageManager.apply_to_zip_theme(cache_dir, info.themes_dir, info.theme_name, resolved, { overwrite = overwrite })
+      self.last_apply_result = result
+
+      -- Show result
+      if result.ok then
+        local msg = string.format(
+          "ZIP created!\n\nFiles copied: %d\nOutput: %s",
+          result.files_copied,
+          result.output_path
+        )
+        if #result.errors > 0 then
+          msg = msg .. string.format("\nWarnings: %d", #result.errors)
+        end
+        reaper.ShowMessageBox(msg, "Apply Complete", 0)
+
+        -- Load theme if requested
+        if load_after and result.output_path then
+          PackageManager.load_zip_theme(result.output_path)
+        end
+      else
+        local msg = string.format(
+          "ZIP creation failed!\n\nFiles copied: %d\nErrors: %d\n\n%s",
+          result.files_copied,
+          #result.errors,
+          table.concat(result.errors, "\n")
+        )
+        reaper.ShowMessageBox(msg, "Apply Error", 0)
+      end
     end
   end
 end

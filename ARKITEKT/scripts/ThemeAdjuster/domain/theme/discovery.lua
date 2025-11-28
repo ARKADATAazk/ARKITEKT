@@ -1,5 +1,5 @@
 -- @noindex
--- ThemeAdjuster/core/param_discovery.lua
+-- ThemeAdjuster/domain/theme/discovery.lua
 -- Auto-discovery of theme parameters via REAPER API
 
 local M = {}

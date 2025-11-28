@@ -12,7 +12,7 @@ A Lua 5.3 framework for building ReaImGui applications in REAPER (audio workstat
 **Critical Rules:**
 1. **Namespace**: `arkitekt.*` for requires, `Ark.*` for lazy-loaded widgets/utilities.
 2. **Bootstrap**: Use `dofile()`, not `require()` for entry points.
-3. **Layer purity**: `core/*` = 100% pure (no platform APIs). Use `platform/*` for ImGui/REAPER wrappers.
+3. **Layer organization**: `core/*` = reusable utilities, `platform/*` = API abstractions. Both can use `reaper.*`/`ImGui.*` (ARKITEKT is REAPER-only).
 4. **No globals**: Everything returns a module table `M`.
 5. **Read before writing**: ALWAYS read existing code before proposing changes.
 
@@ -52,8 +52,8 @@ local Shell = require('arkitekt.app.shell')
 | Add **layout utilities** | `arkitekt/gui/layout/` (responsive grids, stabilizers) |
 | Change **font loading** | `arkitekt/app/chrome/fonts.lua` |
 | Edit a **specific app** | `scripts/[AppName]/` |
-| Add **pure utilities** | `arkitekt/core/` (100% pure, no platform APIs!) |
-| Add **platform utilities** | `arkitekt/platform/` (ImGui/REAPER wrappers) |
+| Add **reusable utilities** | `arkitekt/core/` (fs, json, settings, etc.) |
+| Add **platform abstractions** | `arkitekt/platform/` (ImGui version loader, image cache) |
 | Check **cookbook** | `cookbook/` |
 | Find **actionable tasks** | `TODO/` |
 
@@ -61,10 +61,10 @@ local Shell = require('arkitekt.app.shell')
 
 ```
 app/        # Application orchestration, wiring
-domain/     # Business logic (pure, no UI)
-core/       # Pure utilities (100% portable, no platform APIs)
-platform/   # Platform wrappers (ImGui/REAPER abstractions)
-storage/    # Persistence (pure)
+domain/     # Business logic (no UI dependencies)
+core/       # Reusable utilities (fs, json, settings, math helpers)
+platform/   # API abstractions (ImGui version loader, image cache)
+storage/    # Persistence logic
 ui/         # Views, components
 widgets/    # Reusable UI elements
 defs/       # Constants, configuration
@@ -83,7 +83,7 @@ tests/      # Unit tests
 
 | Don't | Do Instead |
 |-------|------------|
-| Add `reaper.*` in `core/*` | Keep core pure, move runtime code to `app/` |
+| Add UI logic in `domain/*` | Keep domain focused on business logic, no ImGui calls |
 | Create globals | Return module table `M` |
 | Hardcode magic numbers | Use constants from `arkitekt/defs/` |
 | Create new folders blindly | Check if existing structure fits |
@@ -123,27 +123,33 @@ local config = {
 
 **When to override**: Only when the user explicitly asks for custom styling, or the app genuinely needs different values.
 
-### Layer Purity Violations
+### Layer Organization
 
-**100% Pure layers** (NO `reaper.*`, NO `ImGui.*` - not even at runtime):
-- `core/*` - Truly portable utilities (json, math, cursor, uuid, etc.)
-- `storage/*` - Pure persistence logic
-- `domain/*` - Business logic
-- `selectors.lua` (if present)
+**ARKITEKT is a REAPER-only framework** - strict "purity" (no `reaper.*`) is unnecessary. All layers can use `reaper.*` APIs since ARKITEKT always runs in REAPER with ReaImGui.
 
-**Platform abstraction layer** (ImGui/REAPER wrappers and utilities):
-- `platform/*` - Version loaders, image cache, platform-specific helpers
-  - Examples: `platform/imgui.lua` (version loader), `platform/images.lua` (image cache)
+**Reusable utilities** (`core/*`):
+- `core/*` - Filesystem, JSON, settings, math helpers, validation
+- Can freely use `reaper.*` (e.g., `reaper.EnumerateFiles`, `reaper.RecursiveCreateDirectory`)
+- Examples: `core/fs.lua`, `core/json.lua`, `core/settings.lua`
 
-**Runtime layers** (may use `reaper.*` and `ImGui` freely):
+**Platform abstractions** (`platform/*`):
+- `platform/*` - API version compatibility, complex integrations
+- Examples: `platform/imgui.lua` (version loader), `platform/images.lua` (image cache with texture management)
+- Use this for abstractions that hide complexity, NOT for "purity" separation
+
+**Business logic** (`domain/*`):
+- `domain/*` - App-specific business logic
+- Can use `reaper.*` for REAPER-specific operations (theme params, project data, etc.)
+- Should NOT contain ImGui/UI calls - keep UI separate
+
+**UI layers** (may use both `reaper.*` and `ImGui` freely):
 - `app/*` - Application orchestration, bootstrap, runtime
 - `ui/*`, `views/*`, `widgets/*` - UI components
 - `gui/*` - Rendering, drawing, styling
-- `engine/*` - App-specific engines
 
-**Key Rule**: "Import time" vs "Runtime"
-- ✅ OK: Using `reaper.*` inside functions (runtime) in `core/*`
-- ❌ BAD: `local ImGui = require(...)` at module top-level in `core/*`
+**Key Rule**: Separation is about **responsibility**, not "purity"
+- ✅ OK: `reaper.*` anywhere it makes sense
+- ❌ BAD: ImGui calls in `domain/*` (mixing UI with business logic)
 
 ---
 
@@ -172,7 +178,7 @@ local config = {
 2. **Understand the context** - read related files if needed
 3. **Make surgical fix** - change only what's necessary
 4. **Don't refactor** surrounding code unless asked
-5. **Verify layer rules** - did you add reaper/ImGui to pure layer?
+5. **Verify layer rules** - did you add ImGui calls to `domain/*`?
 
 ### Task: Add Feature to Existing App
 
@@ -335,7 +341,7 @@ Module top-level should ONLY:
 Before completing any task, verify:
 
 - [ ] No `require("arkitekt.` (old namespace)
-- [ ] No `reaper.*` or `ImGui.*` in pure layers
+- [ ] No ImGui calls in `domain/*` (keep UI separate from business logic)
 - [ ] No globals introduced
 - [ ] No files outside task scope modified
 - [ ] Diff is surgical (no formatting changes)
@@ -360,6 +366,10 @@ local Shell = require('arkitekt.app.runtime.shell')
 local Settings = require('arkitekt.core.settings')
 local Logger = require('arkitekt.debug.logger')
 local Constants = require('arkitekt.app.init.constants')
+
+-- Core utilities
+local Fs = require('arkitekt.core.fs')
+local JSON = require('arkitekt.core.json')
 
 -- Platform (ImGui/REAPER abstractions)
 local ImGui = require('arkitekt.platform.imgui')
@@ -501,6 +511,6 @@ grep -A 10 "ImGui\.Button" helpers/ReaImGui_Demo.lua
 
 1. **Read first, write second** - Understand before changing
 2. **Minimal changes** - Do exactly what's asked, nothing more
-3. **Respect layers** - Pure stays pure, runtime stays runtime
+3. **Respect layers** - Keep UI out of domain, use core utilities when available
 4. **Follow patterns** - Look at similar code in the codebase
 5. **Use Ark.* namespace** - Prefer `Ark.Button`, `Ark.ImGui` over scattered requires

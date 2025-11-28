@@ -80,7 +80,7 @@ local function create_render_tile(view)
   return function(ctx, rect, item, state, grid)
     -- Check if this is a group header
     if ark.TileGroup.is_group_header(item) then
-      local ImGui = require 'imgui' '0.10'
+      local ImGui = require('arkitekt.platform.imgui')
       local group_id = item.__group_id
       local group_ref = item.__group_ref
 

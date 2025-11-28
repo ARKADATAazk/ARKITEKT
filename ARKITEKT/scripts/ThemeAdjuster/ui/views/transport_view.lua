@@ -2,10 +2,10 @@
 -- ThemeAdjuster/ui/views/transport_view.lua
 -- Transport bar configuration tab
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
-local ThemeParams = require('ThemeAdjuster.core.theme_params')
+local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 local Strings = require('ThemeAdjuster.defs.strings')
 local hexrgb = ark.Colors.hexrgb
 

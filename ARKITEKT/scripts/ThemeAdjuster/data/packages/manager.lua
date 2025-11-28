@@ -1,75 +1,22 @@
 -- @noindex
--- ThemeAdjuster/packages/manager.lua
+-- ThemeAdjuster/data/packages/manager.lua
 -- Package discovery, indexing, and management
 
 local M = {}
 local JSON = require('arkitekt.core.json')
+local Fs = require('arkitekt.core.fs')
 local PathValidation = require('arkitekt.core.path_validation')
+local Logger = require('arkitekt.debug.logger')
+local DemoData = require('ThemeAdjuster.data.packages.demo_data')
 
--- Platform path separator
-local SEP = package.config:sub(1,1)
+-- Logger instance for package scanning
+local log = Logger.new("PackageScanner")
 
--- ============================================================================
--- DEMO DATA GENERATOR
--- ============================================================================
-
-local function generate_demo_packages()
-  local packages = {}
-  local package_names = {
-    "CleanLines", "DarkBevel", "FlatModern", "GlassUI",
-    "MinimalPro", "NeonGlow", "RetroWave", "SoftGradient"
-  }
-
-  local areas = {"tcp", "mcp", "transport", "global"}
-  local asset_types = {
-    "panel_bg", "mute_on", "mute_off", "solo_on", "solo_off",
-    "recarm_on", "recarm_off", "fx_on", "fx_off"
-  }
-
-  for i, name in ipairs(package_names) do
-    local keys = {}
-    local assets = {}
-
-    -- Generate random assets for this package
-    local asset_count = math.random(15, 45)
-    for j = 1, asset_count do
-      local area = areas[math.random(1, #areas)]
-      local asset = asset_types[math.random(1, #asset_types)]
-      local key = area .. "_" .. asset
-
-      if not assets[key] then
-        keys[#keys + 1] = key
-        assets[key] = {
-          path = string.format("(mock)/%s/%s.png", name, key),
-          is_strip = false,
-        }
-      end
-    end
-
-    table.sort(keys)
-
-    packages[i] = {
-      id = name,
-      path = string.format("(mock)/Assembler/Packages/%s", name),
-      assets = assets,
-      keys_order = keys,
-      meta = {
-        name = name,
-        version = "1.0.0",
-        author = "ARKADATA",
-        description = string.format("%s theme package", name),
-        tags = {"demo"},
-        mosaic = {keys[1], keys[2], keys[3]},
-        color = string.format("#%02X%02X%02X",
-          math.random(100, 255),
-          math.random(100, 255),
-          math.random(100, 255)),
-      },
-    }
-  end
-
-  return packages
-end
+-- Import commonly used functions from Fs
+local SEP = Fs.SEP
+local file_exists = Fs.file_exists
+local dir_exists = Fs.dir_exists
+local copy_file = Fs.copy_file
 
 -- ============================================================================
 -- PACKAGE SCANNING
@@ -95,9 +42,7 @@ local function scan_package_folder(package_path, package_id)
 
   -- Check for preview.png first
   local preview_path = package_path .. SEP .. "preview.png"
-  local preview_file = io.open(preview_path, "r")
-  if preview_file then
-    preview_file:close()
+  if file_exists(preview_path) then
     package.meta.preview_path = preview_path
   end
 
@@ -106,9 +51,7 @@ local function scan_package_folder(package_path, package_id)
   local rtconfig_patterns = {"rtconfig.txt", "rtconfig"}
   for _, rtconfig_name in ipairs(rtconfig_patterns) do
     local rtconfig_path = package_path .. SEP .. rtconfig_name
-    local rtconfig_file = io.open(rtconfig_path, "r")
-    if rtconfig_file then
-      rtconfig_file:close()
+    if file_exists(rtconfig_path) then
       rtconfig_found = true
       break
     end
@@ -120,21 +63,9 @@ local function scan_package_folder(package_path, package_id)
 
   -- Try to load manifest.json (optional)
   local manifest_path = package_path .. SEP .. "manifest.json"
-  local manifest_file = io.open(manifest_path, "r")
-  if manifest_file then
-    local content = manifest_file:read("*all")
-    manifest_file:close()
-
-    local ok, manifest = pcall(function()
-      -- Simple JSON parse for basic structure
-      -- Note: This is a minimal implementation. For production, use a proper JSON library
-      local data = {}
-      for key, value in string.gmatch(content, '"([^"]+)"%s*:%s*"([^"]+)"') do
-        data[key] = value
-      end
-      return data
-    end)
-
+  local content = Fs.read_text(manifest_path)
+  if content then
+    local ok, manifest = pcall(JSON.decode, content)
     if ok and manifest then
       package.meta.name = manifest.name or package_id
       package.meta.version = manifest.version or "1.0.0"
@@ -186,26 +117,26 @@ end
 
 function M.scan_packages(theme_root, demo_mode)
   if demo_mode then
-    return generate_demo_packages()
+    return DemoData.generate()
   end
 
-  reaper.ShowConsoleMsg("[PackageScanner] theme_root = " .. tostring(theme_root) .. "\n")
+  log:debug("theme_root = %s", tostring(theme_root))
 
   if not theme_root or theme_root == "" then
-    reaper.ShowConsoleMsg("[PackageScanner] theme_root is nil or empty, returning empty\n")
+    log:debug("theme_root is nil or empty, returning empty")
     return {}
   end
 
   local packages_path = theme_root .. SEP .. "Assembler" .. SEP .. "Packages"
-  reaper.ShowConsoleMsg("[PackageScanner] packages_path = " .. packages_path .. "\n")
+  log:debug("packages_path = %s", packages_path)
   local packages = {}
 
   -- Check if Packages directory exists
   local test_file = reaper.EnumerateSubdirectories(packages_path, 0)
-  reaper.ShowConsoleMsg("[PackageScanner] First subdirectory test = " .. tostring(test_file) .. "\n")
+  log:debug("First subdirectory test = %s", tostring(test_file))
   if not test_file then
     -- Directory doesn't exist, return empty
-    reaper.ShowConsoleMsg("[PackageScanner] Packages directory does not exist\n")
+    log:debug("Packages directory does not exist")
     return {}
   end
 
@@ -214,11 +145,11 @@ function M.scan_packages(theme_root, demo_mode)
   repeat
     local folder = reaper.EnumerateSubdirectories(packages_path, i)
     if folder then
-      reaper.ShowConsoleMsg("[PackageScanner] Found package folder: " .. folder .. "\n")
+      log:debug("Found package folder: %s", folder)
       local package_path = packages_path .. SEP .. folder
       local package, has_assets = scan_package_folder(package_path, folder)
 
-      reaper.ShowConsoleMsg("[PackageScanner] Package " .. folder .. " has " .. #package.keys_order .. " assets\n")
+      log:debug("Package %s has %d assets", folder, #package.keys_order)
 
       if has_assets then
         table.insert(packages, package)
@@ -227,7 +158,7 @@ function M.scan_packages(theme_root, demo_mode)
     i = i + 1
   until not folder
 
-  reaper.ShowConsoleMsg("[PackageScanner] Total packages found: " .. #packages .. "\n")
+  log:info("Total packages found: %d", #packages)
   return packages
 end
 
@@ -335,35 +266,6 @@ end
 -- ============================================================================
 -- APPLY PIPELINE
 -- ============================================================================
-
--- Helper: Check if file exists
-local function file_exists(path)
-  local f = io.open(path, "rb")
-  if f then f:close() return true end
-  return false
-end
-
--- Helper: Copy file
-local function copy_file(src, dst)
-  local src_file = io.open(src, "rb")
-  if not src_file then return false, "Cannot open source: " .. src end
-
-  local content = src_file:read("*all")
-  src_file:close()
-
-  -- Ensure destination directory exists
-  local dst_dir = dst:match("^(.*)" .. SEP)
-  if dst_dir then
-    reaper.RecursiveCreateDirectory(dst_dir, 0)
-  end
-
-  local dst_file = io.open(dst, "wb")
-  if not dst_file then return false, "Cannot write destination: " .. dst end
-
-  dst_file:write(content)
-  dst_file:close()
-  return true
-end
 
 -- Helper: Get script cache directory (in REAPER Data folder)
 local function get_cache_dir()
@@ -554,69 +456,34 @@ end
 -- ZIP THEME SUPPORT
 -- ============================================================================
 
--- Helper: Check if directory exists
-local function dir_exists(path)
-  return path and (reaper.EnumerateFiles(path, 0) or reaper.EnumerateSubdirectories(path, 0)) ~= nil
-end
-
--- Helper: Read entire file
-local function read_all(path)
-  local f = io.open(path, "rb")
-  if not f then return nil end
-  local s = f:read("*a")
-  f:close()
-  return s
-end
-
--- Helper: Write entire file
-local function write_all(path, data)
-  local f = io.open(path, "wb")
-  if not f then return false end
-  f:write(data or "")
-  f:close()
-  return true
-end
-
 -- Helper: Remove directory recursively
 local function rm_rf(dir)
   if not dir_exists(dir) then return end
-  local i = 0
-  while true do
-    local f = reaper.EnumerateFiles(dir, i)
-    if not f then break end
-    os.remove(dir .. SEP .. f)
-    i = i + 1
+  -- Remove files
+  for _, f in ipairs(Fs.list_files(dir)) do
+    os.remove(f)
   end
-  local j = 0
-  local subs = {}
-  while true do
-    local s = reaper.EnumerateSubdirectories(dir, j)
-    if not s then break end
-    subs[#subs + 1] = dir .. SEP .. s
-    j = j + 1
+  -- Recursively remove subdirectories
+  for _, sd in ipairs(Fs.list_subdirs(dir)) do
+    rm_rf(sd)
   end
-  for _, sd in ipairs(subs) do rm_rf(sd) end
   os.remove(dir)
 end
 
 -- Helper: Copy directory tree
 local function copy_tree(src, dst)
-  reaper.RecursiveCreateDirectory(dst, 0)
-  local i = 0
-  while true do
-    local f = reaper.EnumerateFiles(src, i)
-    if not f then break end
-    local ok = copy_file(src .. SEP .. f, dst .. SEP .. f)
+  Fs.mkdir(dst)
+  -- Copy files
+  for _, f in ipairs(Fs.list_files(src)) do
+    local name = Fs.basename(f)
+    local ok = copy_file(f, Fs.join(dst, name))
     if not ok then return false end
-    i = i + 1
   end
-  local j = 0
-  while true do
-    local s = reaper.EnumerateSubdirectories(src, j)
-    if not s then break end
-    local ok = copy_tree(src .. SEP .. s, dst .. SEP .. s)
+  -- Recursively copy subdirectories
+  for _, sd in ipairs(Fs.list_subdirs(src)) do
+    local name = Fs.basename(sd)
+    local ok = copy_tree(sd, Fs.join(dst, name))
     if not ok then return false end
-    j = j + 1
   end
   return true
 end
@@ -625,6 +492,16 @@ end
 local function try_run(cmd)
   local r = os.execute(cmd)
   return r == true or r == 0
+end
+
+local function try_run_hidden_ps(ps_cmd)
+  -- Use io.popen with -WindowStyle Hidden to avoid console flash on Windows
+  local f = io.popen(ps_cmd, "r")
+  if not f then return false end
+  f:read("*a")  -- consume any output
+  local ok, _, code = f:close()
+  -- Lua 5.3: f:close() returns (true, "exit", 0) on success
+  return ok == true or code == 0
 end
 
 local function make_zip(src_dir, out_zip)
@@ -643,9 +520,10 @@ local function make_zip(src_dir, out_zip)
 
   local osname = reaper.GetOS() or ""
   if osname:find("Win") then
-    local ps = ([[powershell -NoProfile -Command "Set-Location '%s'; if (Test-Path '%s') {Remove-Item '%s' -Force}; Compress-Archive -Path * -DestinationPath '%s' -Force"]])
+    -- Use -WindowStyle Hidden to prevent console window flash
+    local ps = ([[powershell -WindowStyle Hidden -NoProfile -Command "Set-Location '%s'; if (Test-Path '%s') {Remove-Item '%s' -Force}; Compress-Archive -Path * -DestinationPath '%s' -Force"]])
       :format(src_dir:gsub("'", "''"), out_zip:gsub("'", "''"), out_zip:gsub("'", "''"), out_zip:gsub("'", "''"))
-    return try_run(ps)
+    return try_run_hidden_ps(ps)
   else
     local zip = ([[cd "%s" && rm -f "%s" && zip -qr "%s" *]]):format(src_dir, out_zip, out_zip)
     return try_run(zip)
@@ -803,7 +681,7 @@ function M.apply_to_zip_theme(cache_dir, themes_dir, theme_name, resolved_map, o
   end
 
   -- Move to ColorThemes directory
-  local data = read_all(out_zip)
+  local data = Fs.read_text(out_zip)
   if not data then
     result.ok = false
     table.insert(result.errors, "Failed to read created ZIP")
@@ -811,7 +689,7 @@ function M.apply_to_zip_theme(cache_dir, themes_dir, theme_name, resolved_map, o
   end
 
   os.remove(final_path)
-  if not write_all(final_path, data) then
+  if not Fs.write_text(final_path, data) then
     result.ok = false
     table.insert(result.errors, "Failed to move ZIP to ColorThemes")
     return result
@@ -881,7 +759,7 @@ function M.save_state(theme_root, state_data)
 
   -- Encode and write
   local json = encode_json(state)
-  if not write_all(state_path, json) then
+  if not Fs.write_text(state_path, json) then
     return false, "Failed to write state file"
   end
 
@@ -895,7 +773,7 @@ function M.load_state(theme_root)
   local state_path = M.get_state_path(theme_root)
   if not state_path then return nil end
 
-  local json = read_all(state_path)
+  local json = Fs.read_text(state_path)
   if not json then return nil end
 
   local state = decode_json(json)
@@ -917,6 +795,301 @@ function M.delete_state(theme_root)
     return true
   end
   return false
+end
+
+-- ============================================================================
+-- REASSEMBLED FOLDER OUTPUT (with delta tracking)
+-- ============================================================================
+
+-- Get path to assembler state inside a reassembled folder
+local function get_reassembled_state_path(output_dir)
+  return output_dir .. SEP .. ".assembler_state.json"
+end
+
+-- Load previous apply state from reassembled folder
+local function load_reassembled_state(output_dir)
+  local state_path = get_reassembled_state_path(output_dir)
+  local json = Fs.read_text(state_path)
+  if not json then return nil end
+  return decode_json(json)
+end
+
+-- Save apply state to reassembled folder
+local function save_reassembled_state(output_dir, state)
+  local state_path = get_reassembled_state_path(output_dir)
+  local json = encode_json(state)
+  return Fs.write_text(state_path, json)
+end
+
+-- Apply to an unpacked "Reassembled" folder with delta tracking
+-- source_dir: base theme source (extracted cache or folder theme)
+-- output_dir: where to create/update the reassembled folder
+-- resolved_map: { key = { path, provider, ... }, ... }
+-- opts: { force_full = bool } - if true, recopy everything
+-- Returns: { ok, files_copied, files_skipped, files_removed, output_dir, errors, is_new }
+function M.apply_to_reassembled_folder(source_dir, output_dir, resolved_map, opts)
+  opts = opts or {}
+  local result = {
+    ok = true,
+    files_copied = 0,
+    files_skipped = 0,
+    files_removed = 0,
+    output_dir = output_dir,
+    errors = {},
+    is_new = false,
+  }
+
+  if not source_dir or not dir_exists(source_dir) then
+    result.ok = false
+    table.insert(result.errors, "Source directory not found: " .. (source_dir or "nil"))
+    return result
+  end
+
+  -- Find ui_img in source
+  local source_ui_img = find_ui_img_dir(source_dir)
+  if not source_ui_img then
+    result.ok = false
+    table.insert(result.errors, "No ui_img directory found in source")
+    return result
+  end
+
+  -- Check if output folder exists
+  local is_new_folder = not dir_exists(output_dir)
+  result.is_new = is_new_folder
+
+  -- Load previous state (if exists)
+  local prev_state = nil
+  if not is_new_folder and not opts.force_full then
+    prev_state = load_reassembled_state(output_dir)
+  end
+
+  -- First run or force_full: copy entire base theme
+  if is_new_folder or opts.force_full then
+    reaper.RecursiveCreateDirectory(output_dir, 0)
+    if not copy_tree(source_dir, output_dir) then
+      result.ok = false
+      table.insert(result.errors, "Failed to copy base theme to output folder")
+      return result
+    end
+  end
+
+  -- Find ui_img in output
+  local output_ui_img = find_ui_img_dir(output_dir)
+  if not output_ui_img then
+    -- Create it if missing
+    output_ui_img = output_dir .. SEP .. "ui_img"
+    reaper.RecursiveCreateDirectory(output_ui_img, 0)
+  end
+
+  -- Build new state
+  local new_state = {
+    version = 1,
+    applied_at = os.date("!%Y-%m-%dT%H:%M:%SZ"),
+    base_theme = source_dir,
+    assets = {},  -- key -> { provider, path, hash }
+  }
+
+  -- Track what was in previous state for removal detection
+  local prev_assets = (prev_state and prev_state.assets) or {}
+
+  -- Process each resolved asset
+  for key, asset in pairs(resolved_map) do
+    local src_path = asset.path
+    local dst_path = output_ui_img .. SEP .. key .. ".png"
+
+    -- Skip mock paths (demo mode)
+    if src_path:match("^%(mock%)") then
+      goto continue
+    end
+
+    -- Check source exists
+    if not file_exists(src_path) then
+      table.insert(result.errors, "Source not found: " .. src_path)
+      goto continue
+    end
+
+    -- Check if we need to copy (delta logic)
+    local need_copy = true
+    if prev_state and prev_assets[key] then
+      -- Same provider and path? Skip copy
+      if prev_assets[key].provider == asset.provider and prev_assets[key].path == src_path then
+        need_copy = false
+        result.files_skipped = result.files_skipped + 1
+      end
+    end
+
+    -- Copy if needed
+    if need_copy then
+      local ok, err = copy_file(src_path, dst_path)
+      if ok then
+        result.files_copied = result.files_copied + 1
+      else
+        table.insert(result.errors, "Copy failed for " .. key .. ": " .. (err or "unknown"))
+      end
+    end
+
+    -- Record in new state
+    new_state.assets[key] = {
+      provider = asset.provider,
+      path = src_path,
+    }
+
+    -- Remove from prev_assets tracking (so we know what was removed)
+    prev_assets[key] = nil
+
+    ::continue::
+  end
+
+  -- Handle removed assets (keys that were in prev_state but not in new resolved_map)
+  -- Restore original from source or remove the override
+  for key, _ in pairs(prev_assets) do
+    local original_path = source_ui_img .. SEP .. key .. ".png"
+    local dst_path = output_ui_img .. SEP .. key .. ".png"
+
+    if file_exists(original_path) then
+      -- Restore original
+      local ok, err = copy_file(original_path, dst_path)
+      if ok then
+        result.files_removed = result.files_removed + 1
+      else
+        table.insert(result.errors, "Failed to restore original for " .. key .. ": " .. (err or "unknown"))
+      end
+    else
+      -- No original, just remove the file
+      os.remove(dst_path)
+      result.files_removed = result.files_removed + 1
+    end
+  end
+
+  -- Save new state
+  if not save_reassembled_state(output_dir, new_state) then
+    table.insert(result.errors, "Warning: Failed to save state file")
+  end
+
+  return result
+end
+
+-- Get info about an existing reassembled folder
+function M.get_reassembled_info(output_dir)
+  if not dir_exists(output_dir) then
+    return { exists = false }
+  end
+
+  local state = load_reassembled_state(output_dir)
+  if not state then
+    return {
+      exists = true,
+      has_state = false,
+      asset_count = 0,
+    }
+  end
+
+  local asset_count = 0
+  for _ in pairs(state.assets or {}) do
+    asset_count = asset_count + 1
+  end
+
+  return {
+    exists = true,
+    has_state = true,
+    applied_at = state.applied_at,
+    base_theme = state.base_theme,
+    asset_count = asset_count,
+  }
+end
+
+-- Get default output path for reassembled folder
+function M.get_default_reassembled_path(themes_dir, theme_name)
+  return themes_dir .. SEP .. (theme_name or "Theme") .. "_Reassembled"
+end
+
+-- ============================================================================
+-- SHADOW/OVERRIDE DETECTION
+-- ============================================================================
+
+-- Detect which keys from a specific package are "shadowed" (overridden by higher-priority packages)
+-- Returns: { key = overriding_pkg_id, ... } for keys that won't be used due to priority
+function M.detect_shadowed_keys(packages, active_packages, package_order, exclusions, pins, target_pkg_id)
+  local shadowed = {}  -- key -> pkg_id that overrides it
+
+  -- Find target package position in order
+  local target_pos = nil
+  for i, pkg_id in ipairs(package_order) do
+    if pkg_id == target_pkg_id then
+      target_pos = i
+      break
+    end
+  end
+
+  if not target_pos then return shadowed end
+
+  -- Find target package data
+  local target_pkg = nil
+  for _, pkg in ipairs(packages) do
+    if pkg.id == target_pkg_id then
+      target_pkg = pkg
+      break
+    end
+  end
+
+  if not target_pkg then return shadowed end
+
+  -- Get exclusions for target package
+  local target_excl = exclusions[target_pkg_id] or {}
+  local target_excl_set = {}
+  for key, _ in pairs(target_excl) do
+    target_excl_set[key] = true
+  end
+
+  -- For each key in target package, check if higher-priority package provides it
+  for key, _ in pairs(target_pkg.assets or {}) do
+    -- Skip if excluded from target package
+    if target_excl_set[key] then
+      goto continue
+    end
+
+    -- Skip if this key is pinned (pins override priority)
+    if pins[key] then
+      goto continue
+    end
+
+    -- Check packages with HIGHER priority (come AFTER in order array)
+    for i = target_pos + 1, #package_order do
+      local higher_pkg_id = package_order[i]
+
+      -- Skip if not active
+      if not active_packages[higher_pkg_id] then
+        goto next_pkg
+      end
+
+      -- Find the package
+      local higher_pkg = nil
+      for _, pkg in ipairs(packages) do
+        if pkg.id == higher_pkg_id then
+          higher_pkg = pkg
+          break
+        end
+      end
+
+      if not higher_pkg then
+        goto next_pkg
+      end
+
+      -- Check if higher package has this key (and it's not excluded)
+      local higher_excl = exclusions[higher_pkg_id] or {}
+      if higher_pkg.assets[key] and not higher_excl[key] then
+        -- This key is shadowed by higher_pkg_id
+        shadowed[key] = higher_pkg_id
+        break  -- First higher-priority package wins
+      end
+
+      ::next_pkg::
+    end
+
+    ::continue::
+  end
+
+  return shadowed
 end
 
 -- ============================================================================

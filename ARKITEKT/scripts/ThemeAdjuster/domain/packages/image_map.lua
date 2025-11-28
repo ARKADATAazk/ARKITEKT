@@ -1,5 +1,5 @@
 -- @noindex
--- ThemeAdjuster/packages/image_map.lua
+-- ThemeAdjuster/domain/packages/image_map.lua
 -- Image map for package resolution preview
 
 local M = {}

@@ -12,9 +12,9 @@ local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])")
 -- ============================================================================
 
 local Shell = require("arkitekt.app.shell")
-local Config = require("ThemeAdjuster.core.config")
-local State = require("ThemeAdjuster.core.state")
-local ThemeParams = require("ThemeAdjuster.core.theme_params")
+local Config = require("ThemeAdjuster.app.config")
+local State = require("ThemeAdjuster.app.state")
+local ThemeParams = require("ThemeAdjuster.domain.theme.params")
 local GUI = require("ThemeAdjuster.ui.gui")
 local StatusConfig = require("ThemeAdjuster.ui.status")
 local Settings = require("arkitekt.core.settings")

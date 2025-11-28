@@ -1,5 +1,5 @@
 -- @noindex
--- ThemeAdjuster/core/config.lua
+-- ThemeAdjuster/app/config.lua
 -- Configuration following RegionPlaylist pattern
 
 local Constants = require('ThemeAdjuster.defs.constants')

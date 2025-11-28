@@ -2,10 +2,12 @@
 -- ThemeAdjuster/ui/views/package_modal.lua
 -- Package manifest/micro-manage modal (overlay with visual tile grid)
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
+local Fs = require('arkitekt.core.fs')
 local Constants = require('ThemeAdjuster.defs.constants')
 local ImageCache = require('arkitekt.platform.images')
+local PackageManager = require('ThemeAdjuster.data.packages.manager')
 local hexrgb = ark.Colors.hexrgb
 
 local M = {}
@@ -13,7 +15,7 @@ local PackageModal = {}
 PackageModal.__index = PackageModal
 
 -- Platform path separator
-local SEP = package.config:sub(1,1)
+local SEP = Fs.SEP
 
 -- Tile constants - wide rectangles
 local TILE_WIDTH = 195
@@ -58,20 +60,8 @@ local function check_dpi_variants(base_path)
   local base = base_path:gsub("%.png$", ""):gsub("%.PNG$", "")
 
   -- Check for 150% and 200% variants
-  local has_150 = false
-  local has_200 = false
-
-  local file_150 = io.open(base .. "_150.png", "r")
-  if file_150 then
-    file_150:close()
-    has_150 = true
-  end
-
-  local file_200 = io.open(base .. "_200.png", "r")
-  if file_200 then
-    file_200:close()
-    has_200 = true
-  end
+  local has_150 = Fs.file_exists(base .. "_150.png")
+  local has_200 = Fs.file_exists(base .. "_200.png")
 
   return has_150, has_200
 end
@@ -143,6 +133,7 @@ function M.new(State, settings)
     _area_cache = {},      -- key -> area string
     _grouped_cache = nil,  -- cached grouped assets
     _stats_cache = nil,    -- cached stats {total, included, excluded, pinned}
+    _shadowed_cache = {},  -- key -> overriding_pkg_id (keys overridden by higher priority)
   }, PackageModal)
 
   return self
@@ -163,6 +154,7 @@ function PackageModal:show(package_data)
   self._area_cache = {}
   self._grouped_cache = nil
   self._stats_cache = nil
+  self._shadowed_cache = {}
 
   -- Cache area detection and DPI variants for all keys
   for _, key in ipairs(package_data.keys_order or {}) do
@@ -179,6 +171,16 @@ function PackageModal:show(package_data)
   -- Pre-compute grouped assets
   self._grouped_cache = self:_compute_grouped_assets(package_data.keys_order or {})
 
+  -- Compute shadowed keys (overridden by higher priority packages)
+  self._shadowed_cache = PackageManager.detect_shadowed_keys(
+    self.State.get_packages(),
+    self.State.get_active_packages(),
+    self.State.get_package_order(),
+    self.State.get_package_exclusions(),
+    self.State.get_package_pins(),
+    package_data.id
+  )
+
   -- Compute initial stats
   self:_compute_stats()
 end
@@ -192,6 +194,7 @@ function PackageModal:_compute_stats()
   local excluded = 0
   local pinned_here = 0
   local pinned_elsewhere = 0
+  local shadowed = 0
 
   local excl = self:get_package_exclusions(pkg.id)
   local pins = self.State.get_package_pins()
@@ -206,6 +209,10 @@ function PackageModal:_compute_stats()
     elseif pin_owner then
       pinned_elsewhere = pinned_elsewhere + 1
     end
+    -- Count shadowed keys (overridden by higher priority)
+    if self._shadowed_cache[key] then
+      shadowed = shadowed + 1
+    end
   end
 
   self._stats_cache = {
@@ -213,7 +220,8 @@ function PackageModal:_compute_stats()
     included = total - excluded,
     excluded = excluded,
     pinned_here = pinned_here,
-    pinned_elsewhere = pinned_elsewhere
+    pinned_elsewhere = pinned_elsewhere,
+    shadowed = shadowed
   }
 end
 
@@ -231,6 +239,7 @@ function PackageModal:close()
   self._area_cache = {}
   self._grouped_cache = nil
   self._stats_cache = nil
+  self._shadowed_cache = {}
 end
 
 function PackageModal:get_package_exclusions(pkg_id)
@@ -292,6 +301,7 @@ function PackageModal:passes_status_filter(key)
   local pinned_to = self:get_pinned_provider(key)
   local is_pinned_here = pinned_to == pkg.id
   local is_pinned_elsewhere = pinned_to and pinned_to ~= pkg.id
+  local is_shadowed = self._shadowed_cache[key] ~= nil
 
   if self.status_filter == "excluded" then
     return is_excluded
@@ -299,6 +309,8 @@ function PackageModal:passes_status_filter(key)
     return is_pinned_here
   elseif self.status_filter == "pinned_elsewhere" then
     return is_pinned_elsewhere
+  elseif self.status_filter == "shadowed" then
+    return is_shadowed
   end
 
   return true
@@ -353,6 +365,7 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   local pinned_to = self:get_pinned_provider(key)
   local is_pinned = pinned_to == pkg.id
   local is_pinned_elsewhere = pinned_to and pinned_to ~= pkg.id
+  local shadowed_by = self._shadowed_cache[key]  -- pkg_id that overrides this key
 
   -- Get asset info
   local asset = pkg.assets and pkg.assets[key]
@@ -444,19 +457,27 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, display_name)
 
   -- BADGE SYSTEM for status indicators (right side of tile)
+  -- Positions: excluded at -56, shadowed at -42, pinned_elsewhere at -28, pinned_here at -14
 
   -- Excluded badge (red circle)
   if not included then
-    local badge_x = x2 - 42
+    local badge_x = x2 - 56
     local badge_y = y1 + TILE_HEIGHT * 0.5
     ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb("#CC3333"))
   end
 
-  -- Pinned elsewhere badge (orange dot)
+  -- Shadowed badge (orange circle) - overridden by higher priority package
+  if shadowed_by and not is_pinned_elsewhere then
+    local badge_x = x2 - 42
+    local badge_y = y1 + TILE_HEIGHT * 0.5
+    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb("#E8A54A"))
+  end
+
+  -- Pinned elsewhere badge (yellow-orange dot) - different shade from shadowed
   if is_pinned_elsewhere then
     local badge_x = x2 - 28
     local badge_y = y1 + TILE_HEIGHT * 0.5
-    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb("#E8A54A"))
+    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb("#F5C542"))
   end
 
   -- Pinned here badge (green dot)
@@ -506,7 +527,10 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
     if is_pinned then
       ImGui.TextColored(ctx, hexrgb("#4AE290"), "PINNED HERE")
     elseif is_pinned_elsewhere then
-      ImGui.TextColored(ctx, hexrgb("#E8A54A"), "Pinned to: " .. pinned_to)
+      ImGui.TextColored(ctx, hexrgb("#F5C542"), "Pinned to: " .. pinned_to)
+    end
+    if shadowed_by and not is_pinned_elsewhere then
+      ImGui.TextColored(ctx, hexrgb("#E8A54A"), "Overridden by: " .. shadowed_by)
     end
 
     -- DPI info
@@ -741,7 +765,11 @@ function PackageModal:draw_content(ctx, bounds)
     end
     if stats.pinned_elsewhere > 0 then
       ImGui.SameLine(ctx, 0, 8)
-      ImGui.TextColored(ctx, hexrgb("#E8A54A"), tostring(stats.pinned_elsewhere) .. " contested")
+      ImGui.TextColored(ctx, hexrgb("#F5C542"), tostring(stats.pinned_elsewhere) .. " contested")
+    end
+    if stats.shadowed > 0 then
+      ImGui.SameLine(ctx, 0, 8)
+      ImGui.TextColored(ctx, hexrgb("#E8A54A"), tostring(stats.shadowed) .. " overridden")
     end
   end
 
@@ -809,7 +837,8 @@ function PackageModal:draw_content(ctx, bounds)
     all = "All",
     excluded = "Excluded",
     pinned = "Pinned",
-    pinned_elsewhere = "Contested"
+    pinned_elsewhere = "Contested",
+    shadowed = "Overridden"
   }
   local filter_label = "Filter: " .. filter_labels[self.status_filter]
   local filter_result = ark.Button.draw(ctx, {
@@ -837,8 +866,11 @@ function PackageModal:draw_content(ctx, bounds)
     if ImGui.MenuItem(ctx, "Pinned Here", nil, self.status_filter == "pinned") then
       self.status_filter = "pinned"
     end
-    if ImGui.MenuItem(ctx, "Contested", nil, self.status_filter == "pinned_elsewhere") then
+    if ImGui.MenuItem(ctx, "Contested (pinned elsewhere)", nil, self.status_filter == "pinned_elsewhere") then
       self.status_filter = "pinned_elsewhere"
+    end
+    if ImGui.MenuItem(ctx, "Overridden (by priority)", nil, self.status_filter == "shadowed") then
+      self.status_filter = "shadowed"
     end
     ImGui.EndPopup(ctx)
   end

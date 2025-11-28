@@ -2,7 +2,7 @@
 -- ThemeAdjuster/ui/grids/renderers/tile_visuals.lua
 -- Shared visual effects for tiles (marching ants, hover, selection)
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local M = {}
 

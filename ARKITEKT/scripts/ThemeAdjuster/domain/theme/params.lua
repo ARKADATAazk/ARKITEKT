@@ -1,6 +1,9 @@
 -- @noindex
--- ThemeAdjuster/core/theme_params.lua
+-- ThemeAdjuster/domain/theme/params.lua
 -- REAPER theme parameter indexing and access layer
+
+local Logger = require('arkitekt.debug.logger')
+local log = Logger.new("ThemeParams")
 
 local M = {}
 
@@ -125,7 +128,7 @@ function M.set_param(param, value, persist)
 
   local idx = M.get_param_index(param)
   if not idx then
-    reaper.ShowConsoleMsg("ThemeAdjuster: Unknown parameter '" .. param .. "'\n")
+    log:warn("Unknown parameter '%s'", param)
     return false
   end
 
@@ -264,7 +267,7 @@ function M.initialize()
   local total = count_table(paramsIdx.A) + count_table(paramsIdx.B) +
                 count_table(paramsIdx.C) + count_table(paramsIdx.global)
 
-  reaper.ShowConsoleMsg("ThemeAdjuster: Indexed " .. total .. " theme parameters\n")
+  log:info("Indexed %d theme parameters", total)
 end
 
 return M

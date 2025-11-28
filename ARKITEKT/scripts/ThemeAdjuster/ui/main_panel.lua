@@ -2,7 +2,7 @@
 -- ThemeAdjuster/ui/main_panel.lua
 -- Top-level panel with tab_strip (alternative to Shell menutabs)
 
-local Config = require('ThemeAdjuster.core.config')
+local Config = require('ThemeAdjuster.app.config')
 local ark = require('arkitekt')
 
 local M = {}

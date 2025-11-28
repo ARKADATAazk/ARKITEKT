@@ -1,5 +1,5 @@
 -- @noindex
--- ThemeAdjuster/core/parameter_link_manager.lua
+-- ThemeAdjuster/domain/links/manager.lua
 -- Parameter linking and synchronization system (GROUP-BASED)
 
 local ark = require('arkitekt')

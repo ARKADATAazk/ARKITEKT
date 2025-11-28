@@ -2,12 +2,12 @@
 -- ThemeAdjuster/ui/views/tcp_view.lua
 -- TCP (Track Control Panel) configuration tab
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
-local ThemeParams = require('ThemeAdjuster.core.theme_params')
-local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
-local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
+local ThemeParams = require('ThemeAdjuster.domain.theme.params')
+local ThemeMapper = require('ThemeAdjuster.domain.theme.mapper')
+local ParamDiscovery = require('ThemeAdjuster.domain.theme.discovery')
 local Strings = require('ThemeAdjuster.defs.strings')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
 local hexrgb = ark.Colors.hexrgb
@@ -316,6 +316,16 @@ function TCPView:draw(ctx, shell_state)
   ImGui.Text(ctx, "Configure track appearance and element visibility")
   ImGui.PopStyleColor(ctx)
 
+  -- Default 6.0 params toggle (right-aligned)
+  ImGui.SameLine(ctx, avail_w - 180)
+  local show_d60 = self.State.get_show_default_60_params()
+  if ark.Checkbox.draw_at_cursor(ctx, "Default 6.0 params", show_d60, nil, "tcp_d60_toggle") then
+    self.State.set_show_default_60_params(not show_d60)
+  end
+  if ImGui.IsItemHovered(ctx) then
+    ImGui.SetTooltip(ctx, "Show Default 6.0 theme-specific sizing and visibility controls")
+  end
+
   ImGui.Dummy(ctx, 0, 8)
 
   -- Determine if we need two columns
@@ -432,7 +442,8 @@ function TCPView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 16)
 
-    -- Sizing Controls Section
+    -- Sizing Controls Section (Default 6.0 specific)
+    if show_d60 then
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "SIZING CONTROLS")
     ImGui.PopFont(ctx)
@@ -576,8 +587,10 @@ function TCPView:draw(ctx, shell_state)
     ImGui.EndGroup(ctx)
 
     ImGui.Dummy(ctx, 0, 16)
+    end -- if show_d60 (SIZING CONTROLS)
 
-    -- Element Visibility Section
+    -- Element Visibility Section (Default 6.0 specific)
+    if show_d60 then
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "ELEMENT VISIBILITY")
     ImGui.PopFont(ctx)
@@ -630,6 +643,7 @@ function TCPView:draw(ctx, shell_state)
       ImGui.EndTable(ctx)
     end
     ImGui.PopStyleVar(ctx)
+    end -- if show_d60 (ELEMENT VISIBILITY)
 
     ImGui.Unindent(ctx, 8)
     ImGui.Dummy(ctx, 0, 2)

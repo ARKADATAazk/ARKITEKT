@@ -2,10 +2,10 @@
 -- ThemeAdjuster/ui/views/packages_view.lua
 -- Packages grid view with Panel header and ARKITEKT package_tiles
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local PackageTilesGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
-local PackageManager = require('ThemeAdjuster.packages.manager')
+local PackageManager = require('ThemeAdjuster.data.packages.manager')
 local hexrgb = ark.Colors.hexrgb
 
 local M = {}
