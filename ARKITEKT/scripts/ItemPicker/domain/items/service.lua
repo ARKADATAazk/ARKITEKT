@@ -1,6 +1,7 @@
 -- @noindex
--- ItemPicker/core/controller.lua
--- Business logic controller
+-- ItemPicker/domain/items/service.lua
+-- Business logic controller for item operations
+-- @migrated 2024-11-27 from core/controller.lua
 
 local M = {}
 
@@ -11,7 +12,7 @@ local incremental_loader_module
 function M.init(reaper_interface_module, utils_module)
   reaper_interface = reaper_interface_module
   utils = utils_module
-  incremental_loader_module = require('ItemPicker.data.loaders.incremental_loader')
+  incremental_loader_module = require('ItemPicker.data.loader')
   -- Expose reaper_interface for incremental loader
   M.reaper_interface = reaper_interface_module
 end
@@ -103,6 +104,43 @@ function M.insert_item_at_mouse(item, state, use_pooled_copy)
 
   reaper.PreventUIRefresh(-1)
   local undo_msg = use_pooled_copy and "Insert Pooled MIDI Item from ItemPicker" or "Insert Item from ItemPicker"
+  reaper.Undo_EndBlock(undo_msg, -1)
+
+  return success
+end
+
+-- Insert selected items at edit cursor position
+-- @param selected_keys: array of item UUIDs to insert
+-- @param state: app state with lookup tables
+-- @param is_audio: true for audio items, false for MIDI
+-- @param use_pooled_copy: boolean for MIDI pooling
+function M.insert_items_at_cursor(selected_keys, state, is_audio, use_pooled_copy)
+  if not selected_keys or #selected_keys == 0 then return false end
+
+  -- Build list of MediaItem pointers from UUIDs
+  local items_to_insert = {}
+  local lookup = is_audio and state.audio_item_lookup or state.midi_item_lookup
+
+  for _, uuid in ipairs(selected_keys) do
+    local item_data = lookup and lookup[uuid]
+    if item_data then
+      local media_item = item_data[1]  -- MediaItem pointer
+      if media_item and reaper.ValidatePtr2(0, media_item, "MediaItem*") then
+        items_to_insert[#items_to_insert + 1] = media_item
+      end
+    end
+  end
+
+  if #items_to_insert == 0 then return false end
+
+  reaper.Undo_BeginBlock()
+  reaper.PreventUIRefresh(1)
+
+  local success = reaper_interface.InsertItemsAtEditCursor(items_to_insert, state, use_pooled_copy)
+
+  reaper.PreventUIRefresh(-1)
+  local count = #items_to_insert
+  local undo_msg = string.format("Insert %d item%s at cursor from ItemPicker", count, count > 1 and "s" or "")
   reaper.Undo_EndBlock(undo_msg, -1)
 
   return success

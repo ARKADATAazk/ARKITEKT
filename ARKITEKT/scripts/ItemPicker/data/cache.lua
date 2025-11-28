@@ -1,6 +1,7 @@
 -- @noindex
--- ItemPicker/data/disk_cache.lua
+-- ItemPicker/data/cache.lua
 -- Project-scoped disk cache with LRU eviction (max 5 projects)
+-- @migrated 2024-11-27 from data/disk_cache.lua
 
 local M = {}
 local JSON = require('arkitekt.core.json')

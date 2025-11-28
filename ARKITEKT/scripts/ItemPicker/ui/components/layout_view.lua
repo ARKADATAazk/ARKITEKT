@@ -1,12 +1,12 @@
 -- @noindex
--- ItemPicker/ui/views/layout_view.lua
+-- ItemPicker/ui/components/layout_view.lua
 -- Main layout view with absolute positioning and fade animations
 -- Refactored: Now uses separate modules for settings, search toolbar, and content panels
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
-local StatusBar = require('ItemPicker.ui.components.status_bar')
-local RegionFilterBar = require('ItemPicker.ui.components.region_filter_bar')
+local StatusBar = require('ItemPicker.ui.components.status')
+local RegionFilterBar = require('ItemPicker.ui.components.filters.region')
 local Background = require('arkitekt.gui.draw.patterns')
 
 -- Sub-modules

@@ -1,5 +1,5 @@
 -- @noindex
--- ItemPicker/ui/views/status_bar.lua
+-- ItemPicker/ui/components/status.lua
 -- Status bar showing selection info and tips
 
 local ImGui = require 'imgui' '0.10'

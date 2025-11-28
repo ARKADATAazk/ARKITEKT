@@ -1,6 +1,7 @@
 -- @noindex
--- ItemPicker/storage/persistence.lua
+-- ItemPicker/data/storage.lua
 -- Settings persistence using REAPER project extended state
+-- @migrated 2024-11-27 from data/persistence.lua
 
 local M = {}
 local JSON = require('arkitekt.core.json')

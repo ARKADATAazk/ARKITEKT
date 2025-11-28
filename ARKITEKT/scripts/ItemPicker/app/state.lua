@@ -1,14 +1,15 @@
 -- @noindex
--- ItemPicker/core/app_state.lua
+-- ItemPicker/app/state.lua
 -- Centralized state management (single source of truth)
+-- @migrated 2024-11-27 from core/app_state.lua
 
-local Persistence = require("ItemPicker.data.persistence")
+local Persistence = require("ItemPicker.data.storage")
 local Defaults = require("ItemPicker.defs.defaults")
-local PreviewManager = require("ItemPicker.core.preview_manager")
+local PreviewManager = require("ItemPicker.domain.preview.manager")
 
 local M = {}
 
-package.loaded["ItemPicker.core.app_state"] = M
+package.loaded["ItemPicker.app.state"] = M
 
 -- Settings (persisted) - initialize from defaults
 M.settings = {}
@@ -273,8 +274,8 @@ function M.toggle_midi_favorite(item_name)
   M.persist_favorites()
 end
 
--- Item cycling (uses shared pool_utils for filtering)
-local pool_utils = require('ItemPicker.services.pool_utils')
+-- Item cycling (uses shared pool filter for filtering)
+local pool_utils = require('ItemPicker.domain.filters.pool')
 
 function M.cycle_audio_item(filename, delta)
   local content = M.samples[filename]
@@ -449,7 +450,7 @@ function M.cleanup()
   -- Skip disk cache flush - causes 5 second UI freeze
   -- Waveforms/MIDI will be regenerated on next open (fast with job queue)
   -- If you want persistent cache, uncomment the code below:
-  -- local disk_cache_ok, disk_cache = pcall(require, 'ItemPicker.data.disk_cache')
+  -- local disk_cache_ok, disk_cache = pcall(require, 'ItemPicker.data.cache')
   -- if disk_cache_ok and disk_cache.flush then
   --   disk_cache.flush()
   -- end

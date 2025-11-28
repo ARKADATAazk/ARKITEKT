@@ -1,12 +1,13 @@
 -- @noindex
--- ItemPicker/ui/tiles/factories/audio_grid_factory.lua
+-- ItemPicker/ui/grids/factories/audio.lua
 -- Factory for creating audio items grid
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
-local shared = require('ItemPicker.ui.grids.factories.grid_factory_shared')
+local shared = require('ItemPicker.ui.grids.factories.shared')
+local ItemsService = require('ItemPicker.domain.items.service')
 
 local M = {}
 
@@ -421,6 +422,12 @@ function M.create(ctx, config, state, visualization, animator, disable_animator)
       state.audio_selection_count = #keys
     end,
 
+    -- ENTER: Insert selected items at edit cursor
+    enter = function(grid, keys)
+      if not keys or #keys == 0 then return end
+      ItemsService.insert_items_at_cursor(keys, state, true, false)  -- is_audio=true
+    end,
+
     -- SPACE: Preview (default mode)
     space = function(grid, keys)
       if not keys or #keys == 0 then return end
@@ -511,6 +518,42 @@ function M.create(ctx, config, state, visualization, animator, disable_animator)
           state.rename_focused = false  -- Reset focus flag
           state.rename_queue = keys  -- Store all selected for batch rename
           state.rename_queue_index = 1
+          return
+        end
+      end
+    end,
+
+    -- Hover change: reset auto-preview tracking
+    on_hover = function(grid, new_key, prev_key)
+      -- Reset auto-preview trigger when hover changes
+      state.auto_preview_triggered_key = nil
+
+      -- Stop preview when leaving all tiles (if auto-preview is active)
+      if not new_key and state.settings.auto_preview_on_hover and state.auto_preview_active then
+        state.stop_preview()
+        state.auto_preview_active = false
+      end
+    end,
+
+    -- Hover tick: auto-preview after delay
+    on_hover_tick = function(grid, key, elapsed)
+      -- Check if auto-preview is enabled
+      if not state.settings.auto_preview_on_hover then return end
+
+      -- Check if we already triggered preview for this key
+      if state.auto_preview_triggered_key == key then return end
+
+      -- Check if delay has been met
+      local delay = state.settings.auto_preview_delay or 0.3
+      if elapsed < delay then return end
+
+      -- Find the item and start preview
+      local items = get_items()
+      for _, item_data in ipairs(items) do
+        if item_data.uuid == key then
+          state.auto_preview_triggered_key = key
+          state.auto_preview_active = true
+          state.start_preview(item_data.item)
           return
         end
       end

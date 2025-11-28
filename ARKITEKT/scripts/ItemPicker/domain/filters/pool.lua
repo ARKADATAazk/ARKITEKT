@@ -1,6 +1,7 @@
 -- @noindex
--- Pool deduplication utilities
--- Shared logic for filtering pooled item duplicates
+-- ItemPicker/domain/filters/pool.lua
+-- Pool deduplication filtering logic
+-- Handles detection and exclusion of pooled item duplicates
 
 local M = {}
 

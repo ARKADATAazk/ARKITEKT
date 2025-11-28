@@ -36,6 +36,8 @@ M.SETTINGS = {
   enable_tile_fx = true,
   layout_mode = "vertical",
   show_region_tags = false,
+  auto_preview_on_hover = false,
+  auto_preview_delay = 0.3,  -- seconds before preview starts
 }
 
 -- =============================================================================

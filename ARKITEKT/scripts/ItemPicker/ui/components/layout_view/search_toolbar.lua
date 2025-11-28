@@ -4,7 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
-local SearchWithMode = require('ItemPicker.ui.components.search_with_mode')
+local SearchWithMode = require('ItemPicker.ui.components.search')
 
 local M = {}
 

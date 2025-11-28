@@ -1,6 +1,8 @@
 -- @noindex
+-- ItemPicker/domain/preview/manager.lua
 -- Preview management for ItemPicker
 -- Handles audio/MIDI preview playback using SWS extension
+-- @migrated 2024-11-27 from core/preview_manager.lua
 
 local M = {}
 

@@ -1,6 +1,8 @@
 -- @noindex
+-- ItemPicker/data/loader.lua
 -- Incremental project item loader
 -- Processes items in small batches per frame to avoid blocking UI
+-- @migrated 2024-11-27 from data/loaders/incremental_loader.lua
 
 local M = {}
 
@@ -184,7 +186,7 @@ function M.process_batch(loader, state, settings)
       local t2 = time_precise()
       reaper_time = reaper_time + (t2 - t1)
 
-      local utils = require('ItemPicker.services.utils')
+      local utils = require('ItemPicker.domain.items.utils')
       chunk = utils.RemoveKeyFromChunk(chunk, "POSITION")
       chunk = utils.RemoveKeyFromChunk(chunk, "IGUID")
       chunk = utils.RemoveKeyFromChunk(chunk, "IID")

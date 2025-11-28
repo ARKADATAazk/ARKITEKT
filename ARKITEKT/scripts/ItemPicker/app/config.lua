@@ -1,6 +1,7 @@
 -- @noindex
--- ItemPicker/core/config.lua
+-- ItemPicker/app/config.lua
 -- Centralized configuration (re-exports from defs for backward compatibility)
+-- @migrated 2024-11-27 from core/config.lua
 
 local Constants = require('ItemPicker.defs.constants')
 

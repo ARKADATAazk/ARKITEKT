@@ -32,6 +32,18 @@ M.DEFAULT_SHORTCUTS = {
   { key = ImGui.Key_Enter, name = 'enter' },
   { key = ImGui.Key_Escape, name = 'escape' },
 
+  -- Navigation (arrow keys)
+  { key = ImGui.Key_LeftArrow, name = 'nav_left' },
+  { key = ImGui.Key_RightArrow, name = 'nav_right' },
+  { key = ImGui.Key_UpArrow, name = 'nav_up' },
+  { key = ImGui.Key_DownArrow, name = 'nav_down' },
+  { key = ImGui.Key_LeftArrow, shift = true, name = 'nav_left:shift' },
+  { key = ImGui.Key_RightArrow, shift = true, name = 'nav_right:shift' },
+  { key = ImGui.Key_UpArrow, shift = true, name = 'nav_up:shift' },
+  { key = ImGui.Key_DownArrow, shift = true, name = 'nav_down:shift' },
+  { key = ImGui.Key_Home, name = 'nav_home' },
+  { key = ImGui.Key_End, name = 'nav_end' },
+
   -- Selection shortcuts
   { key = ImGui.Key_A, ctrl = true, name = 'select_all' },
   { key = ImGui.Key_D, ctrl = true, name = 'deselect_all' },
@@ -48,6 +60,74 @@ M.DEFAULT_SHORTCUTS = {
 -- Built-in behaviors that work for all grids.
 -- Grids can override by defining their own behavior with the same name.
 -- =============================================================================
+-- =============================================================================
+-- NAVIGATION HELPERS
+-- =============================================================================
+
+-- Get the index of a key in the items array
+local function get_key_index(grid, key)
+  local items = grid.get_items()
+  for i, item in ipairs(items) do
+    if grid.key(item) == key then
+      return i
+    end
+  end
+  return nil
+end
+
+-- Get current focus key (last selected, or first item if none)
+local function get_focus_key(grid)
+  -- Use explicitly tracked focus if available
+  if grid.focus_key then
+    return grid.focus_key
+  end
+  -- Fall back to last clicked in selection
+  if grid.selection.last_clicked then
+    return grid.selection.last_clicked
+  end
+  -- Fall back to first selected
+  local selected = grid.selection:selected_keys()
+  if #selected > 0 then
+    return selected[1]
+  end
+  -- Fall back to first item
+  local items = grid.get_items()
+  if #items > 0 then
+    return grid.key(items[1])
+  end
+  return nil
+end
+
+-- Navigate to a new index, optionally extending selection
+local function navigate_to_index(grid, new_index, extend_selection)
+  local items = grid.get_items()
+  if new_index < 1 or new_index > #items then
+    return -- Out of bounds
+  end
+
+  local new_key = grid.key(items[new_index])
+  local order = {}
+  for _, item in ipairs(items) do
+    order[#order + 1] = grid.key(item)
+  end
+
+  if extend_selection then
+    -- Extend selection from anchor to new position
+    local anchor = grid.selection.last_clicked or new_key
+    grid.selection:range(order, anchor, new_key)
+  else
+    -- Single selection
+    grid.selection:single(new_key)
+  end
+
+  -- Track focus for future navigation
+  grid.focus_key = new_key
+
+  if grid.behaviors and grid.behaviors.on_select then
+    grid.behaviors.on_select(grid, grid.selection:selected_keys())
+  end
+end
+
 M.DEFAULT_BEHAVIORS = {
   select_all = function(grid)
     local items = grid.get_items()
@@ -63,6 +143,7 @@ M.DEFAULT_BEHAVIORS = {
 
   deselect_all = function(grid)
     grid.selection:clear()
+    grid.focus_key = nil
     if grid.behaviors and grid.behaviors.on_select then
       grid.behaviors.on_select(grid, grid.selection:selected_keys())
     end
@@ -78,6 +159,70 @@ M.DEFAULT_BEHAVIORS = {
     if grid.behaviors and grid.behaviors.on_select then
       grid.behaviors.on_select(grid, grid.selection:selected_keys())
     end
+  end,
+
+  -- Navigation behaviors
+  nav_left = function(grid)
+    local focus = get_focus_key(grid)
+    local idx = focus and get_key_index(grid, focus) or 1
+    navigate_to_index(grid, idx - 1, false)
+  end,
+
+  nav_right = function(grid)
+    local focus = get_focus_key(grid)
+    local idx = focus and get_key_index(grid, focus) or 0
+    navigate_to_index(grid, idx + 1, false)
+  end,
+
+  nav_up = function(grid)
+    local focus = get_focus_key(grid)
+    local idx = focus and get_key_index(grid, focus) or 1
+    local cols = grid.last_layout_cols or 1
+    navigate_to_index(grid, idx - cols, false)
+  end,
+
+  nav_down = function(grid)
+    local focus = get_focus_key(grid)
+    local idx = focus and get_key_index(grid, focus) or 0
+    local cols = grid.last_layout_cols or 1
+    navigate_to_index(grid, idx + cols, false)
+  end,
+
+  -- Shift variants (extend selection)
+  ['nav_left:shift'] = function(grid)
+    local focus = get_focus_key(grid)
+    local idx = focus and get_key_index(grid, focus) or 1
+    navigate_to_index(grid, idx - 1, true)
+  end,
+
+  ['nav_right:shift'] = function(grid)
+    local focus = get_focus_key(grid)
+    local idx = focus and get_key_index(grid, focus) or 0
+    navigate_to_index(grid, idx + 1, true)
+  end,
+
+  ['nav_up:shift'] = function(grid)
+    local focus = get_focus_key(grid)
+    local idx = focus and get_key_index(grid, focus) or 1
+    local cols = grid.last_layout_cols or 1
+    navigate_to_index(grid, idx - cols, true)
+  end,
+
+  ['nav_down:shift'] = function(grid)
+    local focus = get_focus_key(grid)
+    local idx = focus and get_key_index(grid, focus) or 0
+    local cols = grid.last_layout_cols or 1
+    navigate_to_index(grid, idx + cols, true)
+  end,
+
+  -- Home/End
+  nav_home = function(grid)
+    navigate_to_index(grid, 1, false)
+  end,
+
+  nav_end = function(grid)
+    local items = grid.get_items()
+    navigate_to_index(grid, #items, false)
   end,
 }
 

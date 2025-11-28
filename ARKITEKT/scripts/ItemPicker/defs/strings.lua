@@ -48,6 +48,7 @@ M.SETTINGS_LABELS = {
   enable_region_tags = "Enable Region Tags",
   split_midi_by_track = "Split MIDI by Track",
   show_on_grid = "Show on Tile Grid",
+  auto_preview_on_hover = "Auto-Preview on Hover",
 }
 
 -- =============================================================================
@@ -130,6 +131,7 @@ M.TOOLTIPS = {
   group_by_name = "Group items with the same name together",
   tile_fx = "Enable visual effects on tiles (hover glow, selection effects)",
   region_tags = "Display region markers as tags on item tiles",
+  auto_preview = "Automatically preview items when hovering over them",
 }
 
 return M

@@ -1,6 +1,6 @@
 -- @noindex
 local M = {}
-local disk_cache = require('ItemPicker.data.disk_cache')
+local disk_cache = require('ItemPicker.data.cache')
 
 function M.new(max_per_frame)
   local queue = {

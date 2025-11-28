@@ -1,10 +1,11 @@
 -- @noindex
+-- ItemPicker/ui/grids/factories/shared.lua
 -- Shared utilities for audio and MIDI grid factories
 -- Extracts common filtering, sorting, and conversion logic
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
-local pool_utils = require('ItemPicker.services.pool_utils')
+local pool_utils = require('ItemPicker.domain.filters.pool')
 
 local M = {}
 

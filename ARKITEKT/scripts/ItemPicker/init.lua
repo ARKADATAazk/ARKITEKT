@@ -1,30 +1,36 @@
 -- @noindex
 -- ItemPicker module loader
+-- @migrated 2024-11-27 - Updated to use new architecture
+
+local App = require('ItemPicker.app.init')
 
 local M = {}
 
--- Core modules
-M.core = {}
-M.core.config = require('ItemPicker.core.config')
-M.core.app_state = require('ItemPicker.core.app_state')
-M.core.controller = require('ItemPicker.core.controller')
+-- ============================================================================
+-- APP LAYER
+-- ============================================================================
+M.app = App
 
--- Data layer
-M.data = {}
-M.data.persistence = require('ItemPicker.data.persistence')
-M.data.reaper_api = require('ItemPicker.data.reaper_api')
-M.data.disk_cache = require('ItemPicker.data.disk_cache')
-M.data.job_queue = require('ItemPicker.data.job_queue')
-M.data.loaders = {}
-M.data.loaders.incremental_loader = require('ItemPicker.data.loaders.incremental_loader')
+-- ============================================================================
+-- DOMAIN LAYER
+-- ============================================================================
+M.domain = {
+  items = App.items,
+  preview = App.preview,
+  filters = App.filters,
+}
 
--- Services
-M.services = {}
-M.services.visualization = require('ItemPicker.services.visualization')
-M.services.utils = require('ItemPicker.services.utils')
+-- ============================================================================
+-- DATA LAYER
+-- ============================================================================
+M.data = App.data
 
--- UI modules
-M.ui = {}
-M.ui.main_window = require('ItemPicker.ui.main_window')
+-- ============================================================================
+-- UI LAYER
+-- ============================================================================
+M.ui = {
+  main_window = App.ui,
+  visualization = App.visualization,
+}
 
 return M
