@@ -1,11 +1,13 @@
 -- @noindex
--- TemplateBrowser/infra/file_ops.lua
+-- TemplateBrowser/data/file_ops.lua
 -- File system operations for templates and folders
 
 local M = {}
 
 -- DEPENDENCIES
+local Logger = require('arkitekt.debug.logger')
 local PathValidation = require('arkitekt.core.path_validation')
+local Constants = require('TemplateBrowser.defs.constants')
 
 -- Get separator for current OS
 local function get_sep()
@@ -33,7 +35,7 @@ end
 local function get_archive_dir()
   local root = get_templates_root()
   local sep = get_sep()
-  local archive_path = root .. sep .. ".archive"
+  local archive_path = root .. sep .. Constants.FOLDERS.ARCHIVE
 
   -- Ensure archive directory exists
   if reaper.RecursiveCreateDirectory then
@@ -106,7 +108,7 @@ function M.archive_file(file_path)
   -- SECURITY: Validate input path
   local ok, err = PathValidation.is_safe_path(file_path)
   if not ok then
-    reaper.ShowConsoleMsg(string.format("ERROR: Invalid file path: %s\n", err))
+    Logger.error("FILEOPS", "Invalid file path: %s", err)
     return false, nil
   end
 
@@ -115,7 +117,7 @@ function M.archive_file(file_path)
 
   local filename = file_path:match("[^/\\]+$")
   if not filename then
-    reaper.ShowConsoleMsg(string.format("ERROR: Cannot determine filename from: %s\n", file_path))
+    Logger.error("FILEOPS", "Cannot determine filename from: %s", file_path)
     return false, nil
   end
 
@@ -139,10 +141,10 @@ function M.archive_file(file_path)
   -- Move file to archive
   local success = os.rename(file_path, archive_path)
   if success then
-    reaper.ShowConsoleMsg(string.format("Archived: %s -> %s\n", file_path, archive_path))
+    Logger.info("FILEOPS", "Archived: %s -> %s", file_path, archive_path)
     return true, archive_path
   else
-    reaper.ShowConsoleMsg(string.format("ERROR: Failed to archive: %s\n", file_path))
+    Logger.error("FILEOPS", "Failed to archive: %s", file_path)
     return false, nil
   end
 end
@@ -152,7 +154,7 @@ function M.rename_template(old_path, new_name)
   -- SECURITY: Validate inputs
   local ok, err = PathValidation.is_safe_path(old_path)
   if not ok then
-    reaper.ShowConsoleMsg(string.format("ERROR: Invalid source path: %s\n", err))
+    Logger.error("FILEOPS", "Invalid source path: %s", err)
     return false, nil
   end
 
@@ -160,7 +162,7 @@ function M.rename_template(old_path, new_name)
   new_name = PathValidation.sanitize_filename(new_name)
   ok, err = PathValidation.is_safe_filename(new_name)
   if not ok then
-    reaper.ShowConsoleMsg(string.format("ERROR: Invalid filename: %s\n", err))
+    Logger.error("FILEOPS", "Invalid filename: %s", err)
     return false, nil
   end
 
@@ -171,10 +173,10 @@ function M.rename_template(old_path, new_name)
 
   local success = os.rename(old_path, new_path)
   if success then
-    reaper.ShowConsoleMsg(string.format("Renamed template: %s -> %s\n", old_path, new_path))
+    Logger.info("FILEOPS", "Renamed template: %s -> %s", old_path, new_path)
     return true, new_path
   else
-    reaper.ShowConsoleMsg(string.format("ERROR: Failed to rename template: %s\n", old_path))
+    Logger.error("FILEOPS", "Failed to rename template: %s", old_path)
     return false, nil
   end
 end
@@ -184,7 +186,7 @@ function M.rename_folder(old_path, new_name)
   -- SECURITY: Validate inputs
   local ok, err = PathValidation.is_safe_path(old_path)
   if not ok then
-    reaper.ShowConsoleMsg(string.format("ERROR: Invalid source path: %s\n", err))
+    Logger.error("FILEOPS", "Invalid source path: %s", err)
     return false, nil
   end
 
@@ -192,7 +194,7 @@ function M.rename_folder(old_path, new_name)
   new_name = PathValidation.sanitize_filename(new_name)
   ok, err = PathValidation.is_safe_filename(new_name)
   if not ok then
-    reaper.ShowConsoleMsg(string.format("ERROR: Invalid folder name: %s\n", err))
+    Logger.error("FILEOPS", "Invalid folder name: %s", err)
     return false, nil
   end
 
@@ -200,7 +202,7 @@ function M.rename_folder(old_path, new_name)
   old_path = normalize_path(old_path)
   local parent = old_path:match("^(.*)[/\\]")
   if not parent then
-    reaper.ShowConsoleMsg(string.format("ERROR: Cannot determine parent for folder: %s\n", old_path))
+    Logger.error("FILEOPS", "Cannot determine parent for folder: %s", old_path)
     return false, nil
   end
 
@@ -208,10 +210,10 @@ function M.rename_folder(old_path, new_name)
 
   local success = os.rename(old_path, new_path)
   if success then
-    reaper.ShowConsoleMsg(string.format("Renamed folder: %s -> %s\n", old_path, new_path))
+    Logger.info("FILEOPS", "Renamed folder: %s -> %s", old_path, new_path)
     return true, new_path
   else
-    reaper.ShowConsoleMsg(string.format("ERROR: Failed to rename folder: %s\n", old_path))
+    Logger.error("FILEOPS", "Failed to rename folder: %s", old_path)
     return false, nil
   end
 end
@@ -223,13 +225,13 @@ function M.move_template(template_path, target_folder_path, conflict_mode)
   -- SECURITY: Validate input paths
   local ok, err = PathValidation.is_safe_path(template_path)
   if not ok then
-    reaper.ShowConsoleMsg(string.format("ERROR: Invalid source path: %s\n", err))
+    Logger.error("FILEOPS", "Invalid source path: %s", err)
     return false, nil, false
   end
 
   ok, err = PathValidation.is_safe_path(target_folder_path)
   if not ok then
-    reaper.ShowConsoleMsg(string.format("ERROR: Invalid target path: %s\n", err))
+    Logger.error("FILEOPS", "Invalid target path: %s", err)
     return false, nil, false
   end
 
@@ -239,7 +241,7 @@ function M.move_template(template_path, target_folder_path, conflict_mode)
 
   local filename = template_path:match("[^/\\]+$")
   if not filename then
-    reaper.ShowConsoleMsg(string.format("ERROR: Cannot determine filename from: %s\n", template_path))
+    Logger.error("FILEOPS", "Cannot determine filename from: %s", template_path)
     return false, nil, false
   end
 
@@ -258,16 +260,16 @@ function M.move_template(template_path, target_folder_path, conflict_mode)
   -- Handle conflict resolution
   if has_conflict then
     if conflict_mode == "cancel" then
-      reaper.ShowConsoleMsg("Move cancelled by user\n")
+      Logger.info("FILEOPS", "Move cancelled by user")
       return false, nil, false
     elseif conflict_mode == "overwrite" then
       -- Archive existing file before overwrite
       local archive_success = M.archive_file(new_path)
       if not archive_success then
-        reaper.ShowConsoleMsg(string.format("ERROR: Failed to archive existing file: %s\n", new_path))
+        Logger.error("FILEOPS", "Failed to archive existing file: %s", new_path)
         return false, nil, false
       end
-      reaper.ShowConsoleMsg(string.format("Archived existing file before overwrite: %s\n", new_path))
+      Logger.info("FILEOPS", "Archived existing file before overwrite: %s", new_path)
     elseif conflict_mode == "keep_both" then
       -- Generate unique name for incoming file
       local name, ext = filename:match("^(.*)(%..+)$")
@@ -278,17 +280,17 @@ function M.move_template(template_path, target_folder_path, conflict_mode)
 
       local unique_filename = generate_unique_name(target_folder_path, name, ext)
       new_path = target_folder_path .. sep .. unique_filename
-      reaper.ShowConsoleMsg(string.format("Keeping both files, renaming to: %s\n", unique_filename))
+      Logger.info("FILEOPS", "Keeping both files, renaming to: %s", unique_filename)
     end
   end
 
   -- Perform the move
   local success = os.rename(template_path, new_path)
   if success then
-    reaper.ShowConsoleMsg(string.format("Moved template: %s -> %s\n", template_path, new_path))
+    Logger.info("FILEOPS", "Moved template: %s -> %s", template_path, new_path)
     return true, new_path, false
   else
-    reaper.ShowConsoleMsg(string.format("ERROR: Failed to move template: %s\n", template_path))
+    Logger.error("FILEOPS", "Failed to move template: %s", template_path)
     return false, nil, false
   end
 end
@@ -298,13 +300,13 @@ function M.move_folder(folder_path, target_parent_path)
   -- SECURITY: Validate input paths
   local ok, err = PathValidation.is_safe_path(folder_path)
   if not ok then
-    reaper.ShowConsoleMsg(string.format("ERROR: Invalid source path: %s\n", err))
+    Logger.error("FILEOPS", "Invalid source path: %s", err)
     return false, nil
   end
 
   ok, err = PathValidation.is_safe_path(target_parent_path)
   if not ok then
-    reaper.ShowConsoleMsg(string.format("ERROR: Invalid target path: %s\n", err))
+    Logger.error("FILEOPS", "Invalid target path: %s", err)
     return false, nil
   end
 
@@ -314,7 +316,7 @@ function M.move_folder(folder_path, target_parent_path)
 
   local folder_name = folder_path:match("[^/\\]+$")
   if not folder_name then
-    reaper.ShowConsoleMsg(string.format("ERROR: Cannot determine folder name from: %s\n", folder_path))
+    Logger.error("FILEOPS", "Cannot determine folder name from: %s", folder_path)
     return false, nil
   end
 
@@ -322,10 +324,10 @@ function M.move_folder(folder_path, target_parent_path)
 
   local success = os.rename(folder_path, new_path)
   if success then
-    reaper.ShowConsoleMsg(string.format("Moved folder: %s -> %s\n", folder_path, new_path))
+    Logger.info("FILEOPS", "Moved folder: %s -> %s", folder_path, new_path)
     return true, new_path
   else
-    reaper.ShowConsoleMsg(string.format("ERROR: Failed to move folder: %s\n", folder_path))
+    Logger.error("FILEOPS", "Failed to move folder: %s", folder_path)
     return false, nil
   end
 end
@@ -335,7 +337,7 @@ function M.create_folder(parent_path, folder_name)
   -- SECURITY: Validate inputs
   local ok, err = PathValidation.is_safe_path(parent_path)
   if not ok then
-    reaper.ShowConsoleMsg(string.format("ERROR: Invalid parent path: %s\n", err))
+    Logger.error("FILEOPS", "Invalid parent path: %s", err)
     return false, nil
   end
 
@@ -343,7 +345,7 @@ function M.create_folder(parent_path, folder_name)
   folder_name = PathValidation.sanitize_filename(folder_name)
   ok, err = PathValidation.is_safe_filename(folder_name)
   if not ok then
-    reaper.ShowConsoleMsg(string.format("ERROR: Invalid folder name: %s\n", err))
+    Logger.error("FILEOPS", "Invalid folder name: %s", err)
     return false, nil
   end
 
@@ -355,15 +357,15 @@ function M.create_folder(parent_path, folder_name)
   if reaper.RecursiveCreateDirectory then
     local success = reaper.RecursiveCreateDirectory(new_path, 0)
     if success then
-      reaper.ShowConsoleMsg(string.format("Created folder: %s\n", new_path))
+      Logger.info("FILEOPS", "Created folder: %s", new_path)
       return true, new_path
     else
-      reaper.ShowConsoleMsg(string.format("ERROR: Failed to create folder: %s\n", new_path))
+      Logger.error("FILEOPS", "Failed to create folder: %s", new_path)
       return false, nil
     end
   else
     -- Fallback for older REAPER versions
-    reaper.ShowConsoleMsg("ERROR: RecursiveCreateDirectory not available\n")
+    Logger.error("FILEOPS", "RecursiveCreateDirectory not available")
     return false, nil
   end
 end
@@ -381,7 +383,7 @@ function M.delete_folder(folder_path)
   -- SECURITY: Validate input path
   local ok, err = PathValidation.is_safe_path(folder_path)
   if not ok then
-    reaper.ShowConsoleMsg(string.format("ERROR: Invalid folder path: %s\n", err))
+    Logger.error("FILEOPS", "Invalid folder path: %s", err)
     return false, nil
   end
 
@@ -390,7 +392,7 @@ function M.delete_folder(folder_path)
 
   local folder_name = folder_path:match("[^/\\]+$")
   if not folder_name then
-    reaper.ShowConsoleMsg(string.format("ERROR: Cannot determine folder name from: %s\n", folder_path))
+    Logger.error("FILEOPS", "Cannot determine folder name from: %s", folder_path)
     return false, nil
   end
 
@@ -408,10 +410,10 @@ function M.delete_folder(folder_path)
   -- Move entire folder to archive
   local success = os.rename(folder_path, archive_path)
   if success then
-    reaper.ShowConsoleMsg(string.format("Archived folder: %s -> %s\n", folder_path, archive_path))
+    Logger.info("FILEOPS", "Archived folder: %s -> %s", folder_path, archive_path)
     return true, archive_path
   else
-    reaper.ShowConsoleMsg(string.format("ERROR: Failed to archive folder: %s\n", folder_path))
+    Logger.error("FILEOPS", "Failed to archive folder: %s", folder_path)
     return false, nil
   end
 end

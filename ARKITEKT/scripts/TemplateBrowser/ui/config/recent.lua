@@ -3,7 +3,7 @@
 -- Panel container configuration for recent/favorites templates
 -- All visual styling comes from library defaults
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local M = {}
 
@@ -25,6 +25,7 @@ function M.create(callbacks, is_overlay_mode)
             enable_sort = false,
             get_value = callbacks.get_quick_access_mode,
             options = {
+              { value = "inbox", label = "Inbox" },
               { value = "recents", label = "Recents" },
               { value = "favorites", label = "Favorites" },
               { value = "most_used", label = "Most Used" },

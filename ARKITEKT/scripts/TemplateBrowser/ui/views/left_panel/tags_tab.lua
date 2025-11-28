@@ -2,13 +2,13 @@
 -- TemplateBrowser/ui/views/left_panel/tags_tab.lua
 -- Tags tab: Full tag management
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
-local Tags = require('TemplateBrowser.domain.tags')
+local Tags = require('TemplateBrowser.domain.tags.service')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
-local UI = require('TemplateBrowser.ui.ui_constants')
+local UI = require('TemplateBrowser.ui.config.constants')
 local Constants = require('TemplateBrowser.defs.constants')
 
 local M = {}
@@ -43,7 +43,7 @@ function M.draw(ctx, state, config, width, height)
     Tags.create_tag(state.metadata, new_tag_name)
 
     -- Save metadata
-    local Persistence = require('TemplateBrowser.domain.persistence')
+    local Persistence = require('TemplateBrowser.data.storage')
     Persistence.save_metadata(state.metadata)
   end
 
@@ -136,7 +136,7 @@ function M.draw(ctx, state, config, width, height)
             if state.rename_buffer ~= "" and state.rename_buffer ~= renaming_tag then
               -- Rename tag
               Tags.rename_tag(state.metadata, renaming_tag, state.rename_buffer)
-              local Persistence = require('TemplateBrowser.domain.persistence')
+              local Persistence = require('TemplateBrowser.data.storage')
               Persistence.save_metadata(state.metadata)
             end
             state.renaming_item = nil

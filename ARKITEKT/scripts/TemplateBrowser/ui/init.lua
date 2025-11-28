@@ -2,19 +2,29 @@
 -- TemplateBrowser/ui/init.lua
 -- Main GUI with three-panel layout
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
-local TemplateOps = require('TemplateBrowser.domain.template_ops')
-local FileOps = require('TemplateBrowser.domain.file_ops')
-local FXQueue = require('TemplateBrowser.domain.fx_queue')
+
+-- Domain services
+local TemplateOps = require('TemplateBrowser.domain.template.operations')
+local FileOps = require('TemplateBrowser.data.file_ops')
+local FXQueue = require('TemplateBrowser.domain.fx.queue')
+local Scanner = require('TemplateBrowser.domain.template.scanner')
+local FuzzySearch = require('TemplateBrowser.domain.search.fuzzy')
+
+-- UI components
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
-local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
-local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_config')
-local RecentPanelConfig = require('TemplateBrowser.ui.recent_panel_config')
-local LeftPanelConfig = require('TemplateBrowser.ui.left_panel_config')
-local ConveniencePanelConfig = require('TemplateBrowser.ui.convenience_panel_config')
-local InfoPanelConfig = require('TemplateBrowser.ui.info_panel_config')
-local Shortcuts = require('TemplateBrowser.core.shortcuts')
+local TemplateGridFactory = require('TemplateBrowser.ui.tiles.factory')
+local GridCallbacks = require('TemplateBrowser.ui.tiles.grid_callbacks')
+local TemplateContainerConfig = require('TemplateBrowser.ui.config.template')
+local RecentPanelConfig = require('TemplateBrowser.ui.config.recent')
+local LeftPanelConfig = require('TemplateBrowser.ui.config.left_panel')
+local ConveniencePanelConfig = require('TemplateBrowser.ui.config.convenience')
+local InfoPanelConfig = require('TemplateBrowser.ui.config.info')
+local Shortcuts = require('TemplateBrowser.ui.shortcuts')
+
+-- Layout constants
+local Layout = require('TemplateBrowser.defs.constants')
 
 -- Import view modules
 local LeftPanelView = require('TemplateBrowser.ui.views.left_panel_view')
@@ -22,6 +32,7 @@ local ConveniencePanelView = require('TemplateBrowser.ui.views.convenience_panel
 local TemplatePanelView = require('TemplateBrowser.ui.views.template_panel_view')
 local InfoPanelView = require('TemplateBrowser.ui.views.info_panel_view')
 local TemplateModalsView = require('TemplateBrowser.ui.views.template_modals_view')
+local StatusBar = require('TemplateBrowser.ui.status')
 
 local M = {}
 local GUI = {}
@@ -52,165 +63,29 @@ function GUI:initialize_once(ctx, is_overlay_mode)
   self.ctx = ctx
   self.is_overlay_mode = is_overlay_mode or false
 
-  -- Create template grid
+  -- Create template grid with unified callbacks
+  local main_grid_callbacks = GridCallbacks.create(
+    self,
+    function() return self.state.filtered_templates end,
+    { is_quick_access = false }
+  )
+
   self.template_grid = TemplateGridFactory.create(
     function() return self.state.filtered_templates end,
     self.state.metadata,
     self.template_animator,
     function()
-      -- Return appropriate tile width based on view mode
       return self.state.template_view_mode == "list"
         and self.state.list_tile_width
         or self.state.grid_tile_width
-    end,  -- get_tile_width
-    function() return self.state.template_view_mode end,  -- get_view_mode
-    -- on_select
-    function(selected_keys)
-      -- Store selected keys for multi-select operations
-      self.state.selected_template_keys = selected_keys or {}
-
-      -- Update selected template from grid selection
-      if selected_keys and #selected_keys > 0 then
-        local key = selected_keys[1]
-        local uuid = key:match("template_(.+)")  -- Keep as string!
-
-        for _, tmpl in ipairs(self.state.filtered_templates) do
-          if tmpl.uuid == uuid then
-            self.state.selected_template = tmpl
-            break
-          end
-        end
-      else
-        self.state.selected_template = nil
-      end
     end,
-    -- on_double_click (receives template object from factory)
-    function(template)
-      if template then
-        -- Check if Ctrl is held for rename, otherwise apply template
-        local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
-        if ctrl_down then
-          -- Start rename
-          self.state.renaming_item = template
-          self.state.renaming_type = "template"
-          self.state.rename_buffer = template.name
-        else
-          -- Apply template to track
-          TemplateOps.apply_to_selected_track(template.path, template.uuid, self.state)
-        end
-      end
-    end,
-    -- on_right_click (receives template and selected_keys from factory)
-    function(template, selected_keys)
-      if template then
-        -- Set context menu template for color picker
-        self.state.context_menu_template = template
-      end
-    end,
-    -- on_star_click (receives template object from factory)
-    function(template)
-      if template then
-        local Persistence = require('TemplateBrowser.domain.persistence')
-        local favorites_id = "__FAVORITES__"
-
-        -- Get favorites folder
-        local favorites = self.state.metadata.virtual_folders[favorites_id]
-        if not favorites then
-          -- This should not happen due to initialization, but handle gracefully
-          self.state.set_status("Favorites folder not found", "error")
-          return
-        end
-
-        -- Check if template is already favorited
-        local is_favorited = false
-        local favorite_index = nil
-        for idx, ref_uuid in ipairs(favorites.template_refs) do
-          if ref_uuid == template.uuid then
-            is_favorited = true
-            favorite_index = idx
-            break
-          end
-        end
-
-        -- Toggle favorite status
-        if is_favorited then
-          -- Remove from favorites
-          table.remove(favorites.template_refs, favorite_index)
-          self.state.set_status("Removed from Favorites: " .. template.name, "success")
-        else
-          -- Add to favorites
-          table.insert(favorites.template_refs, template.uuid)
-          self.state.set_status("Added to Favorites: " .. template.name, "success")
-        end
-
-        -- Save metadata
-        Persistence.save_metadata(self.state.metadata)
-
-        -- If currently viewing Favorites folder, refresh the filter
-        if self.state.selected_folder == favorites_id then
-          local Scanner = require('TemplateBrowser.domain.scanner')
-          Scanner.filter_templates(self.state)
-        end
-      end
-    end,
-    -- on_tag_drop (receives template and tag payload from drag)
-    function(template, payload)
-      if template and payload then
-        local Tags = require('TemplateBrowser.domain.tags')
-        local Persistence = require('TemplateBrowser.domain.persistence')
-
-        -- Get tag name from payload
-        local tag_name = payload.label or payload.id
-        if tag_name then
-          -- Check if dropped template is in selection (array)
-          local template_key = "template_" .. template.uuid
-          local is_selected = false
-          local selected_keys = self.state.selected_template_keys or {}
-
-          for _, key in ipairs(selected_keys) do
-            if key == template_key then
-              is_selected = true
-              break
-            end
-          end
-
-          local tagged_count = 0
-
-          if is_selected and #selected_keys > 1 then
-            -- Apply tag to ALL selected templates
-            for _, key in ipairs(selected_keys) do
-              local uuid = key:match("template_(.+)")
-              if uuid then
-                if Tags.add_tag_to_template(self.state.metadata, uuid, tag_name) then
-                  tagged_count = tagged_count + 1
-                end
-              end
-            end
-          else
-            -- Apply tag only to dropped template
-            if Tags.add_tag_to_template(self.state.metadata, template.uuid, tag_name) then
-              tagged_count = 1
-            end
-          end
-
-          -- Save metadata
-          Persistence.save_metadata(self.state.metadata)
-
-          -- Re-filter if we have tag filters active
-          if next(self.state.filter_tags) then
-            local Scanner = require('TemplateBrowser.domain.scanner')
-            Scanner.filter_templates(self.state)
-          end
-
-          if tagged_count > 1 then
-            self.state.set_status("Tagged " .. tagged_count .. " templates with " .. tag_name, "success")
-          elseif tagged_count == 1 then
-            self.state.set_status("Tagged \"" .. template.name .. "\" with " .. tag_name, "success")
-          end
-        end
-      end
-    end,
-    self  -- Pass GUI reference for fonts access
+    function() return self.state.template_view_mode end,
+    main_grid_callbacks.on_select,
+    main_grid_callbacks.on_double_click,
+    main_grid_callbacks.on_right_click,
+    main_grid_callbacks.on_star_click,
+    main_grid_callbacks.on_tag_drop,
+    self
   )
 
   -- Get quick access templates helper
@@ -232,6 +107,14 @@ function GUI:initialize_once(ctx, is_overlay_mode)
             table.insert(templates, tmpl)
             break
           end
+        end
+      end
+    elseif self.state.quick_access_mode == "inbox" then
+      -- Get templates in _Inbox folder
+      templates = {}
+      for _, tmpl in ipairs(self.state.templates) do
+        if tmpl.relative_path == "_Inbox" then
+          table.insert(templates, tmpl)
         end
       end
     elseif self.state.quick_access_mode == "most_used" then
@@ -265,165 +148,67 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       end
     end
 
-    -- Apply search filter
-    local search_query = (self.state.quick_access_search or ""):lower()
+    -- Apply search filter (fuzzy match)
+    local search_query = self.state.quick_access_search or ""
     if search_query ~= "" then
       local filtered = {}
       for _, tmpl in ipairs(templates) do
-        if tmpl.name:lower():find(search_query, 1, true) then
+        local score = FuzzySearch.score(search_query, tmpl.name)
+        if score > 0 then
+          tmpl._fuzzy_score = score
           table.insert(filtered, tmpl)
         end
       end
-      templates = filtered
-    end
-
-    -- Apply sort
-    local sort_mode = self.state.quick_access_sort or "alphabetical"
-    if sort_mode == "alphabetical" then
-      table.sort(templates, function(a, b) return a.name:lower() < b.name:lower() end)
-    elseif sort_mode == "color" then
-      table.sort(templates, function(a, b)
-        local a_color = (self.state.metadata and self.state.metadata.templates[a.uuid] and self.state.metadata.templates[a.uuid].color) or 0
-        local b_color = (self.state.metadata and self.state.metadata.templates[b.uuid] and self.state.metadata.templates[b.uuid].color) or 0
-        return a_color < b_color
+      -- Sort by fuzzy score when searching
+      table.sort(filtered, function(a, b)
+        local a_score = a._fuzzy_score or 0
+        local b_score = b._fuzzy_score or 0
+        if a_score ~= b_score then
+          return a_score > b_score
+        end
+        return a.name:lower() < b.name:lower()
       end)
+      templates = filtered
+    else
+      -- Apply sort only when not searching
+      local sort_mode = self.state.quick_access_sort or "alphabetical"
+      if sort_mode == "alphabetical" then
+        table.sort(templates, function(a, b) return a.name:lower() < b.name:lower() end)
+      elseif sort_mode == "color" then
+        table.sort(templates, function(a, b)
+          local a_color = (self.state.metadata and self.state.metadata.templates[a.uuid] and self.state.metadata.templates[a.uuid].color) or 0
+          local b_color = (self.state.metadata and self.state.metadata.templates[b.uuid] and self.state.metadata.templates[b.uuid].color) or 0
+          return a_color < b_color
+        end)
+      end
     end
 
     return templates
   end
 
-  -- Create quick access grid (similar to main grid but for quick access)
+  -- Create quick access grid with unified callbacks
+  local quick_access_callbacks = GridCallbacks.create(
+    self,
+    get_quick_access_templates,
+    { is_quick_access = true }
+  )
+
   self.quick_access_grid = TemplateGridFactory.create(
     get_quick_access_templates,
     self.state.metadata,
     self.template_animator,
     function()
-      -- Return appropriate tile width based on view mode
       return self.state.quick_access_view_mode == "list"
         and self.state.list_tile_width
         or self.state.grid_tile_width
-    end,  -- get_tile_width
-    function() return self.state.quick_access_view_mode end,  -- get_view_mode
-    -- on_select
-    function(selected_keys)
-      -- Update selected template from grid selection
-      if selected_keys and #selected_keys > 0 then
-        local key = selected_keys[1]
-        local uuid = key:match("template_(.+)")
-        local templates = get_quick_access_templates()
-        for _, tmpl in ipairs(templates) do
-          if tmpl.uuid == uuid then
-            self.state.selected_template = tmpl
-            break
-          end
-        end
-      else
-        self.state.selected_template = nil
-      end
     end,
-    -- on_double_click
-    function(template)
-      if template then
-        TemplateOps.apply_to_selected_track(template.path, template.uuid, self.state)
-      end
-    end,
-    -- on_right_click
-    function(template, selected_keys)
-      if template then
-        self.state.context_menu_template = template
-      end
-    end,
-    -- on_star_click
-    function(template)
-      if template then
-        local Persistence = require('TemplateBrowser.domain.persistence')
-        local favorites_id = "__FAVORITES__"
-        local favorites = self.state.metadata.virtual_folders[favorites_id]
-        if not favorites then
-          self.state.set_status("Favorites folder not found", "error")
-          return
-        end
-        local is_favorited = false
-        local favorite_index = nil
-        for idx, ref_uuid in ipairs(favorites.template_refs) do
-          if ref_uuid == template.uuid then
-            is_favorited = true
-            favorite_index = idx
-            break
-          end
-        end
-        if is_favorited then
-          table.remove(favorites.template_refs, favorite_index)
-          self.state.set_status("Removed from Favorites: " .. template.name, "success")
-        else
-          table.insert(favorites.template_refs, template.uuid)
-          self.state.set_status("Added to Favorites: " .. template.name, "success")
-        end
-        Persistence.save_metadata(self.state.metadata)
-        if self.state.selected_folder == favorites_id then
-          local Scanner = require('TemplateBrowser.domain.scanner')
-          Scanner.filter_templates(self.state)
-        end
-      end
-    end,
-    -- on_tag_drop (receives template and tag payload from drag)
-    function(template, payload)
-      if template and payload then
-        local Tags = require('TemplateBrowser.domain.tags')
-        local Persistence = require('TemplateBrowser.domain.persistence')
-
-        -- Get tag name from payload
-        local tag_name = payload.label or payload.id
-        if tag_name then
-          -- Check if dropped template is in selection (array)
-          local template_key = "template_" .. template.uuid
-          local is_selected = false
-          local selected_keys = self.state.selected_template_keys or {}
-
-          for _, key in ipairs(selected_keys) do
-            if key == template_key then
-              is_selected = true
-              break
-            end
-          end
-
-          local tagged_count = 0
-
-          if is_selected and #selected_keys > 1 then
-            -- Apply tag to ALL selected templates
-            for _, key in ipairs(selected_keys) do
-              local uuid = key:match("template_(.+)")
-              if uuid then
-                if Tags.add_tag_to_template(self.state.metadata, uuid, tag_name) then
-                  tagged_count = tagged_count + 1
-                end
-              end
-            end
-          else
-            -- Apply tag only to dropped template
-            if Tags.add_tag_to_template(self.state.metadata, template.uuid, tag_name) then
-              tagged_count = 1
-            end
-          end
-
-          -- Save metadata
-          Persistence.save_metadata(self.state.metadata)
-
-          -- Re-filter if we have tag filters active
-          if next(self.state.filter_tags) then
-            local Scanner = require('TemplateBrowser.domain.scanner')
-            Scanner.filter_templates(self.state)
-          end
-
-          if tagged_count > 1 then
-            self.state.set_status("Tagged " .. tagged_count .. " templates with " .. tag_name, "success")
-          elseif tagged_count == 1 then
-            self.state.set_status("Tagged \"" .. template.name .. "\" with " .. tag_name, "success")
-          end
-        end
-      end
-    end,
-    self  -- Pass GUI reference for fonts access
+    function() return self.state.quick_access_view_mode end,
+    quick_access_callbacks.on_select,
+    quick_access_callbacks.on_double_click,
+    quick_access_callbacks.on_right_click,
+    quick_access_callbacks.on_star_click,
+    quick_access_callbacks.on_tag_drop,
+    self
   )
 
   -- Create template container with header controls
@@ -436,7 +221,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end,
     on_search_changed = function(new_query)
       self.state.search_query = new_query
-      local Scanner = require('TemplateBrowser.domain.scanner')
+      
       Scanner.filter_templates(self.state)
     end,
     get_sort_mode = function()
@@ -444,7 +229,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end,
     on_sort_changed = function(new_mode)
       self.state.sort_mode = new_mode
-      local Scanner = require('TemplateBrowser.domain.scanner')
+      
       Scanner.filter_templates(self.state)
     end,
     get_filter_items = function()
@@ -488,7 +273,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       end
 
       -- Re-filter templates
-      local Scanner = require('TemplateBrowser.domain.scanner')
+      
       Scanner.filter_templates(self.state)
     end,
     get_view_mode_label = function()
@@ -639,8 +424,8 @@ function GUI:draw(ctx, shell_state)
     return  -- Don't render main UI until scan is complete
   end
 
-  -- Process background FX parsing queue (5 templates per frame)
-  FXQueue.process_batch(self.state, 5)
+  -- Process background FX parsing queue
+  FXQueue.process_batch(self.state, Layout.FX_QUEUE.BATCH_SIZE)
 
   -- Process conflict resolution if user made a choice
   if self.state.conflict_resolution and self.state.conflict_pending then
@@ -663,7 +448,7 @@ function GUI:draw(ctx, shell_state)
 
       -- Rescan if any succeeded
       if success_count > 0 then
-        local Scanner = require('TemplateBrowser.domain.scanner')
+        
         Scanner.scan_templates(self.state)
 
         -- Success message
@@ -705,7 +490,7 @@ function GUI:draw(ctx, shell_state)
         if success then
           self.state.set_status("Archived: " .. self.state.selected_template.name, "success")
           -- Rescan templates
-          local Scanner = require('TemplateBrowser.domain.scanner')
+          
           Scanner.scan_templates(self.state)
           self.state.selected_template = nil
         else
@@ -752,8 +537,8 @@ function GUI:draw(ctx, shell_state)
     SCREEN_W, SCREEN_H = ImGui.Viewport_GetSize(viewport)
   end
 
-  -- Title (moved up by 15 pixels)
-  local title_y_offset = -15
+  -- Title (moved up for tighter layout)
+  local title_y_offset = -15  -- TODO: Move to Layout.TITLE.Y_OFFSET when added
   ImGui.PushFont(ctx, shell_state.fonts.title, shell_state.fonts.title_size)
   local title = "Template Browser"
   local title_w = ImGui.CalcTextSize(ctx, title)
@@ -787,11 +572,11 @@ function GUI:draw(ctx, shell_state)
   -- Adjust spacing after title
   ImGui.SetCursorPosY(ctx, title_y + 30)
 
-  -- Padding
-  local padding_left = 14
-  local padding_right = 14
-  local padding_bottom = 14
-  local status_bar_height = 24  -- Reserve space for status bar
+  -- Padding (from layout constants)
+  local padding_left = Layout.PADDING.PANEL
+  local padding_right = Layout.PADDING.PANEL
+  local padding_bottom = Layout.PADDING.PANEL
+  local status_bar_height = Layout.STATUS_BAR.HEIGHT
 
   local cursor_y = ImGui.GetCursorPosY(ctx)
   local content_width = SCREEN_W - padding_left - padding_right
@@ -804,9 +589,9 @@ function GUI:draw(ctx, shell_state)
   local window_screen_x = cursor_screen_x
   local window_screen_y = cursor_screen_y - cursor_y
 
-  -- Draggable separator configuration
-  local separator_thickness = 8
-  local min_panel_width = 150
+  -- Draggable separator configuration (from layout constants)
+  local separator_thickness = Layout.SEPARATOR.THICKNESS
+  local min_panel_width = Layout.SEPARATOR.MIN_PANEL_WIDTH
 
   -- Calculate positions based on ratios within content area (window-relative)
   local sep1_x_local = padding_left + (content_width * self.state.separator1_ratio)
@@ -893,7 +678,7 @@ function GUI:draw(ctx, shell_state)
   TemplateModalsView.draw_conflict_resolution_modal(ctx, self.state)
 
   -- Status bar at the bottom
-  local StatusBar = require('TemplateBrowser.ui.status_bar')
+  
   local status_bar_y = SCREEN_H - padding_bottom - status_bar_height
   ImGui.SetCursorPos(ctx, padding_left, status_bar_y)
   StatusBar.draw(ctx, self.state, content_width, status_bar_height)

@@ -4,12 +4,22 @@
 
 local Strings = require('TemplateBrowser.defs.strings')
 local Defaults = require('TemplateBrowser.defs.defaults')
+local TrackParser = require('TemplateBrowser.domain.template.track_parser')
+local Stats = require('TemplateBrowser.domain.template.stats')
 
 local M = {}
 
 -- Re-export from defs for backward compatibility
 M.TOOLTIPS = Strings.TOOLTIPS
 M.CONFIG = Defaults.TOOLTIP
+
+-- Track tree cache (in-memory, keyed by template path)
+local track_tree_cache = {}
+
+-- Clear track tree cache (call when templates are rescanned)
+function M.clear_track_cache()
+  track_tree_cache = {}
+end
 
 -- Show a tooltip if mouse is hovering
 -- Returns: true if tooltip was shown
@@ -47,8 +57,39 @@ function M.show_template_info(ctx, ImGui, template, metadata)
     ImGui.Text(ctx, template.name)
     ImGui.Separator(ctx)
 
+    -- Track tree (lazy-loaded and cached)
+    local track_count = template.track_count or 1
+    if track_count > 0 then
+      -- Get or parse track tree
+      local track_tree = track_tree_cache[template.path]
+      if track_tree == nil then
+        -- Parse on first hover (nil means not yet parsed)
+        track_tree = TrackParser.parse_track_tree(template.path) or false
+        track_tree_cache[template.path] = track_tree
+      end
+
+      if track_tree and #track_tree > 0 then
+        ImGui.Text(ctx, string.format("Tracks: %d", #track_tree))
+        -- Show track tree with indentation (limit to 8 tracks for tooltip)
+        local max_display = 8
+        for i, track in ipairs(track_tree) do
+          if i > max_display then
+            ImGui.TextDisabled(ctx, string.format("  ... +%d more", #track_tree - max_display))
+            break
+          end
+          -- Indent based on depth, add folder icon for folder tracks
+          local indent = string.rep("  ", track.depth)
+          local icon = track.is_folder and "▸ " or "• "
+          ImGui.TextDisabled(ctx, indent .. icon .. track.name)
+        end
+      elseif track_count > 1 then
+        -- Fallback if parsing failed but we know there are multiple tracks
+        ImGui.Text(ctx, string.format("Tracks: %d", track_count))
+      end
+    end
+
     -- Location
-    if template.folder and template.folder ~= "Root" then
+    if template.folder and template.folder ~= "Root" and template.folder ~= "" then
       ImGui.Text(ctx, "Location: " .. template.folder)
     end
 
@@ -71,9 +112,16 @@ function M.show_template_info(ctx, ImGui, template, metadata)
       ImGui.Text(ctx, "Tags: " .. table.concat(tmpl_meta.tags, ", "))
     end
 
-    -- Usage stats
+    -- Usage stats (enhanced with time-based analysis)
     if tmpl_meta then
-      if tmpl_meta.usage_count and tmpl_meta.usage_count > 0 then
+      local usage_history = tmpl_meta.usage_history
+      if usage_history and #usage_history > 0 then
+        -- Use stats module for rich summary
+        local stats = Stats.calculate_stats(usage_history)
+        local summary = Stats.format_summary(stats)
+        ImGui.Text(ctx, "Usage: " .. summary)
+      elseif tmpl_meta.usage_count and tmpl_meta.usage_count > 0 then
+        -- Fallback for old data without history
         ImGui.Text(ctx, string.format("Used: %d times", tmpl_meta.usage_count))
       end
 

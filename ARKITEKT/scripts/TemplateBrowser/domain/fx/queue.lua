@@ -3,7 +3,8 @@
 -- Background FX parsing queue to prevent UI lag
 
 local M = {}
-local FXParser = require('TemplateBrowser.domain.fx_parser')
+local Logger = require('arkitekt.debug.logger')
+local FXParser = require('TemplateBrowser.domain.fx.parser')
 
 -- Initialize parsing queue
 function M.init_queue(state)
@@ -35,10 +36,9 @@ function M.add_to_queue(state, templates)
   state.fx_queue.complete = (added == 0)  -- If nothing to parse, mark as complete
 
   if added > 0 then
-    reaper.ShowConsoleMsg(string.format("FX Queue: Added %d templates for parsing (%d cached)\n",
-                                        added, #templates - added))
+    Logger.debug("FXQUEUE", "Added %d templates for parsing (%d cached)", added, #templates - added)
   else
-    reaper.ShowConsoleMsg("FX Queue: All templates cached, no parsing needed\n")
+    Logger.debug("FXQUEUE", "All templates cached, no parsing needed")
   end
 end
 
@@ -83,16 +83,16 @@ function M.process_batch(state, batch_size)
   -- Check if complete
   if state.fx_queue.index >= state.fx_queue.total then
     state.fx_queue.complete = true
-    reaper.ShowConsoleMsg("FX Queue: Parsing complete!\n")
+    Logger.info("FXQUEUE", "Parsing complete!")
 
     -- Save metadata with updated FX
     if state.metadata then
-      local Persistence = require('TemplateBrowser.domain.persistence')
+      local Persistence = require('TemplateBrowser.data.storage')
       Persistence.save_metadata(state.metadata)
     end
 
     -- Re-filter templates to update FX display
-    local Scanner = require('TemplateBrowser.domain.scanner')
+    local Scanner = require('TemplateBrowser.domain.template.scanner')
     Scanner.filter_templates(state)
   end
 

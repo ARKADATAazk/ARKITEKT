@@ -1,6 +1,10 @@
 -- @noindex
--- TemplateBrowser/domain/template/ops.lua
+-- TemplateBrowser/domain/template/operations.lua
 -- Template apply/insert operations
+
+-- Dependencies (cached at module load per Lua Performance Guide)
+local Logger = require('arkitekt.debug.logger')
+local Persistence = require('TemplateBrowser.data.storage')
 
 local M = {}
 
@@ -9,30 +13,26 @@ function M.apply_to_selected_track(template_path, template_uuid, state)
   local track_count = reaper.CountSelectedTracks(0)
 
   if track_count == 0 then
-    reaper.MB("No track selected. Please select a track first.", "Template Browser", 0)
+    state.set_status("No track selected. Please select a track first.", "warning")
     return false
   end
+
+  -- Read template file
+  local f, err = io.open(template_path, "r")
+  if not f then
+    Logger.error("TEMPLATE", "Failed to read: %s - %s", template_path, err or "unknown")
+    state.set_status("Could not read template file", "error")
+    return false
+  end
+  local chunk = f:read("*all")
+  f:close()
 
   reaper.Undo_BeginBlock()
 
   for i = 0, track_count - 1 do
     local track = reaper.GetSelectedTrack(0, i)
     if track then
-      -- Apply template to track
-      reaper.TrackFX_CopyToTrack(track, 0, track, 0, false)
-
-      -- Use Main_openProject to apply track template
-      -- This is the proper way to apply templates in REAPER
-      local chunk_file = template_path
-      local chunk = ""
-      local f = io.open(chunk_file, "r")
-      if f then
-        chunk = f:read("*all")
-        f:close()
-
-        -- Set track chunk (applies template)
-        reaper.SetTrackStateChunk(track, chunk, false)
-      end
+      reaper.SetTrackStateChunk(track, chunk, false)
     end
   end
 
@@ -40,14 +40,17 @@ function M.apply_to_selected_track(template_path, template_uuid, state)
   reaper.UpdateArrange()
 
   -- Track usage
-  if template_uuid and state and state.metadata then
+  if template_uuid and state.metadata then
     local tmpl_metadata = state.metadata.templates[template_uuid]
     if tmpl_metadata then
+      local now = os.time()
       tmpl_metadata.usage_count = (tmpl_metadata.usage_count or 0) + 1
-      tmpl_metadata.last_used = os.time()
-
-      -- Save metadata
-      local Persistence = require('TemplateBrowser.domain.persistence')
+      tmpl_metadata.last_used = now
+      -- Add to usage history for time-based statistics
+      if not tmpl_metadata.usage_history then
+        tmpl_metadata.usage_history = {}
+      end
+      tmpl_metadata.usage_history[#tmpl_metadata.usage_history + 1] = now
       Persistence.save_metadata(state.metadata)
     end
   end
@@ -57,27 +60,23 @@ end
 
 -- Insert template as new track(s)
 function M.insert_as_new_track(template_path, template_uuid, state)
-  reaper.Undo_BeginBlock()
-
   -- Get insertion point (after selected track, or at end)
   local sel_track = reaper.GetSelectedTrack(0, 0)
-  local insert_idx = 0
-
-  if sel_track then
-    insert_idx = reaper.GetMediaTrackInfo_Value(sel_track, "IP_TRACKNUMBER")
-  else
-    insert_idx = reaper.CountTracks(0)
-  end
+  local insert_idx = sel_track
+    and reaper.GetMediaTrackInfo_Value(sel_track, "IP_TRACKNUMBER")
+    or reaper.CountTracks(0)
 
   -- Read template file
-  local f = io.open(template_path, "r")
+  local f, err = io.open(template_path, "r")
   if not f then
-    reaper.MB("Could not read template file: " .. template_path, "Template Browser", 0)
+    Logger.error("TEMPLATE", "Failed to read: %s - %s", template_path, err or "unknown")
+    state.set_status("Could not read template file", "error")
     return false
   end
-
   local chunk = f:read("*all")
   f:close()
+
+  reaper.Undo_BeginBlock()
 
   -- Count how many tracks are in the template
   local track_count = 0
@@ -87,7 +86,6 @@ function M.insert_as_new_track(template_path, template_uuid, state)
     end
   end
 
-  -- Insert new track(s) and apply template
   if track_count == 0 then track_count = 1 end
 
   -- Insert first track at position
@@ -95,10 +93,7 @@ function M.insert_as_new_track(template_path, template_uuid, state)
   local new_track = reaper.GetTrack(0, insert_idx)
 
   if new_track then
-    -- Apply template chunk to track
     reaper.SetTrackStateChunk(new_track, chunk, false)
-
-    -- Select the new track
     reaper.SetOnlyTrackSelected(new_track)
   end
 
@@ -107,14 +102,17 @@ function M.insert_as_new_track(template_path, template_uuid, state)
   reaper.TrackList_AdjustWindows(false)
 
   -- Track usage
-  if template_uuid and state and state.metadata then
+  if template_uuid and state.metadata then
     local tmpl_metadata = state.metadata.templates[template_uuid]
     if tmpl_metadata then
+      local now = os.time()
       tmpl_metadata.usage_count = (tmpl_metadata.usage_count or 0) + 1
-      tmpl_metadata.last_used = os.time()
-
-      -- Save metadata
-      local Persistence = require('TemplateBrowser.domain.persistence')
+      tmpl_metadata.last_used = now
+      -- Add to usage history for time-based statistics
+      if not tmpl_metadata.usage_history then
+        tmpl_metadata.usage_history = {}
+      end
+      tmpl_metadata.usage_history[#tmpl_metadata.usage_history + 1] = now
       Persistence.save_metadata(state.metadata)
     end
   end

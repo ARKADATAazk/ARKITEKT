@@ -2,13 +2,15 @@
 -- TemplateBrowser/domain/tags/service.lua
 -- Tag management
 
+local Logger = require('arkitekt.debug.logger')
 local ark = require('arkitekt')
+
 local M = {}
 
 -- Create a new tag
 function M.create_tag(metadata, tag_name, color)
   if metadata.tags[tag_name] then
-    reaper.ShowConsoleMsg("Tag already exists: " .. tag_name .. "\n")
+    Logger.warn("TAGS", "Tag already exists: %s", tag_name)
     return false
   end
 
@@ -18,19 +20,19 @@ function M.create_tag(metadata, tag_name, color)
     created = os.time()
   }
 
-  reaper.ShowConsoleMsg("Created tag: " .. tag_name .. "\n")
+  Logger.info("TAGS", "Created tag: %s", tag_name)
   return true
 end
 
 -- Rename a tag
 function M.rename_tag(metadata, old_name, new_name)
   if not metadata.tags[old_name] then
-    reaper.ShowConsoleMsg("Tag not found: " .. old_name .. "\n")
+    Logger.warn("TAGS", "Tag not found: %s", old_name)
     return false
   end
 
   if metadata.tags[new_name] then
-    reaper.ShowConsoleMsg("Tag already exists: " .. new_name .. "\n")
+    Logger.warn("TAGS", "Tag already exists: %s", new_name)
     return false
   end
 
@@ -62,7 +64,7 @@ function M.rename_tag(metadata, old_name, new_name)
     end
   end
 
-  reaper.ShowConsoleMsg("Renamed tag: " .. old_name .. " -> " .. new_name .. "\n")
+  Logger.info("TAGS", "Renamed tag: %s -> %s", old_name, new_name)
   return true
 end
 
@@ -95,7 +97,7 @@ function M.delete_tag(metadata, tag_name)
   end
 
   metadata.tags[tag_name] = nil
-  reaper.ShowConsoleMsg("Deleted tag: " .. tag_name .. "\n")
+  Logger.info("TAGS", "Deleted tag: %s", tag_name)
   return true
 end
 
@@ -103,12 +105,12 @@ end
 function M.add_tag_to_template(metadata, template_uuid, tag_name)
   local tmpl = metadata.templates[template_uuid]
   if not tmpl then
-    reaper.ShowConsoleMsg("Template not found: " .. template_uuid .. "\n")
+    Logger.warn("TAGS", "Template not found: %s", template_uuid)
     return false
   end
 
   if not metadata.tags[tag_name] then
-    reaper.ShowConsoleMsg("Tag not found: " .. tag_name .. "\n")
+    Logger.warn("TAGS", "Tag not found: %s", tag_name)
     return false
   end
 
@@ -124,7 +126,7 @@ function M.add_tag_to_template(metadata, template_uuid, tag_name)
   end
 
   tmpl.tags[#tmpl.tags + 1] = tag_name
-  reaper.ShowConsoleMsg("Added tag '" .. tag_name .. "' to template: " .. tmpl.name .. "\n")
+  Logger.debug("TAGS", "Added tag '%s' to template: %s", tag_name, tmpl.name)
   return true
 end
 
@@ -138,7 +140,7 @@ function M.remove_tag_from_template(metadata, template_uuid, tag_name)
   for i, t in ipairs(tmpl.tags) do
     if t == tag_name then
       table.remove(tmpl.tags, i)
-      reaper.ShowConsoleMsg("Removed tag '" .. tag_name .. "' from template: " .. tmpl.name .. "\n")
+      Logger.debug("TAGS", "Removed tag '%s' from template: %s", tag_name, tmpl.name)
       return true
     end
   end
@@ -169,7 +171,7 @@ function M.add_tag_to_folder(metadata, folder_uuid, tag_name)
   end
 
   fld.tags[#fld.tags + 1] = tag_name
-  reaper.ShowConsoleMsg("Added tag '" .. tag_name .. "' to folder: " .. fld.name .. "\n")
+  Logger.debug("TAGS", "Added tag '%s' to folder: %s", tag_name, fld.name)
   return true
 end
 
@@ -198,7 +200,7 @@ function M.set_template_notes(metadata, template_uuid, notes)
   end
 
   tmpl.notes = notes
-  reaper.ShowConsoleMsg("Updated notes for template: " .. tmpl.name .. "\n")
+  Logger.debug("TAGS", "Updated notes for template: %s", tmpl.name)
   return true
 end
 

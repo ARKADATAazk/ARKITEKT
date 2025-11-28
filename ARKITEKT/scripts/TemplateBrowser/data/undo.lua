@@ -1,6 +1,8 @@
 -- @noindex
--- TemplateBrowser/infra/undo.lua
+-- TemplateBrowser/data/undo.lua
 -- Undo/redo system for file operations
+
+local Logger = require('arkitekt.debug.logger')
 
 local M = {}
 
@@ -34,14 +36,13 @@ function UndoManager:push(operation)
     self.current_index = self.current_index - 1
   end
 
-  reaper.ShowConsoleMsg(string.format("Undo: Added operation '%s' (stack: %d)\n",
-    operation.description, #self.stack))
+  Logger.debug("UNDO", "Added operation '%s' (stack: %d)", operation.description, #self.stack)
 end
 
 -- Undo the last operation
 function UndoManager:undo()
   if self.current_index <= 0 then
-    reaper.ShowConsoleMsg("Undo: Nothing to undo\n")
+    Logger.debug("UNDO", "Nothing to undo")
     return false
   end
 
@@ -50,10 +51,10 @@ function UndoManager:undo()
     local success = operation.undo_fn()
     if success then
       self.current_index = self.current_index - 1
-      reaper.ShowConsoleMsg(string.format("Undo: '%s'\n", operation.description))
+      Logger.info("UNDO", "Undo: '%s'", operation.description)
       return true
     else
-      reaper.ShowConsoleMsg(string.format("Undo FAILED: '%s'\n", operation.description))
+      Logger.error("UNDO", "Undo FAILED: '%s'", operation.description)
       return false
     end
   end
@@ -64,7 +65,7 @@ end
 -- Redo an undone operation
 function UndoManager:redo()
   if self.current_index >= #self.stack then
-    reaper.ShowConsoleMsg("Undo: Nothing to redo\n")
+    Logger.debug("UNDO", "Nothing to redo")
     return false
   end
 
@@ -73,10 +74,10 @@ function UndoManager:redo()
     local success = operation.redo_fn()
     if success then
       self.current_index = self.current_index + 1
-      reaper.ShowConsoleMsg(string.format("Redo: '%s'\n", operation.description))
+      Logger.info("UNDO", "Redo: '%s'", operation.description)
       return true
     else
-      reaper.ShowConsoleMsg(string.format("Redo FAILED: '%s'\n", operation.description))
+      Logger.error("UNDO", "Redo FAILED: '%s'", operation.description)
       return false
     end
   end
@@ -98,7 +99,7 @@ end
 function UndoManager:clear()
   self.stack = {}
   self.current_index = 0
-  reaper.ShowConsoleMsg("Undo: Stack cleared\n")
+  Logger.debug("UNDO", "Stack cleared")
 end
 
 return M

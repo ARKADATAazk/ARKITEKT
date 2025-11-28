@@ -180,4 +180,23 @@ M.DRAG_TYPES = {
   FOLDER = "tb_folder",
 }
 
+-- ============================================================================
+-- SPECIAL FOLDERS
+-- ============================================================================
+M.FOLDERS = {
+  INBOX = "_Inbox",     -- Unsorted templates, pinned at top
+  ARCHIVE = "_Archive", -- Deleted templates
+}
+
+-- ============================================================================
+-- BATCH PROCESSING
+-- ============================================================================
+M.FX_QUEUE = {
+  BATCH_SIZE = 5,  -- Templates per frame for FX parsing
+}
+
+M.SCANNER = {
+  BATCH_SIZE = 50,  -- Files per frame during template scanning
+}
+
 return M

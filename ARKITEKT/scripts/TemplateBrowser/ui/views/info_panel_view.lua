@@ -2,14 +2,15 @@
 -- TemplateBrowser/ui/views/info_panel_view.lua
 -- Right panel view: Template info & tag assignment
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
-local TemplateOps = require('TemplateBrowser.domain.template_ops')
-local Tags = require('TemplateBrowser.domain.tags')
+local TemplateOps = require('TemplateBrowser.domain.template.operations')
+local Tags = require('TemplateBrowser.domain.tags.service')
+local Stats = require('TemplateBrowser.domain.template.stats')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
-local Tooltips = require('TemplateBrowser.core.tooltips')
-local UI = require('TemplateBrowser.ui.ui_constants')
+local Tooltips = require('TemplateBrowser.ui.tooltips')
+local UI = require('TemplateBrowser.ui.config.constants')
 
 local M = {}
 local hexrgb = ark.Colors.hexrgb
@@ -53,6 +54,72 @@ local function draw_info_panel(ctx, gui, width, height)
       ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
       ImGui.Text(ctx, "in " .. tmpl.folder)
       ImGui.PopStyleColor(ctx)
+
+      -- ========================================
+      -- USAGE STATS section
+      -- ========================================
+      local usage_history = tmpl_metadata and tmpl_metadata.usage_history
+      local usage_count = tmpl_metadata and tmpl_metadata.usage_count or 0
+
+      if usage_count > 0 then
+        draw_section_header(ctx, "USAGE")
+
+        -- Calculate stats
+        local stats = Stats.calculate_stats(usage_history)
+        local sparkline = Stats.get_daily_sparkline(usage_history, 14)
+
+        -- Draw mini sparkline (14 days of bars)
+        local dl = ImGui.GetWindowDrawList(ctx)
+        local spark_x, spark_y = ImGui.GetCursorScreenPos(ctx)
+        local spark_w = content_w
+        local spark_h = 20
+        local bar_w = (spark_w - 13) / 14  -- 14 bars with 1px gaps
+        local max_val = math.max(1, math.max(table.unpack(sparkline)))
+
+        -- Draw sparkline bars
+        for i, count in ipairs(sparkline) do
+          local bar_h = (count / max_val) * (spark_h - 2)
+          local bar_x = spark_x + (i - 1) * (bar_w + 1)
+          local bar_y = spark_y + spark_h - bar_h - 1
+
+          -- Bar color: brighter for higher values
+          local intensity = count > 0 and (0.3 + 0.7 * (count / max_val)) or 0.1
+          local bar_color = ark.Colors.with_alpha(hexrgb("#5588FF"), math.floor(255 * intensity))
+
+          if bar_h > 0 then
+            ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + bar_w, spark_y + spark_h - 1, bar_color, 1)
+          else
+            -- Draw a tiny dot for zero days
+            ImGui.DrawList_AddRectFilled(dl, bar_x, spark_y + spark_h - 2, bar_x + bar_w, spark_y + spark_h - 1, hexrgb("#333333"), 0)
+          end
+        end
+
+        ImGui.Dummy(ctx, spark_w, spark_h + 4)
+
+        -- Stats text
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+
+        -- Total and trend
+        local trend_icon = Stats.format_trend(stats.trend)
+        local trend_text = string.format("%d total", stats.total)
+        if trend_icon ~= "" then
+          trend_text = trend_text .. "  " .. trend_icon
+        end
+        ImGui.Text(ctx, trend_text)
+
+        -- Recent activity
+        if stats.last_7_days > 0 then
+          ImGui.SameLine(ctx)
+          ImGui.Text(ctx, string.format("  %d this week", stats.last_7_days))
+        end
+
+        -- Streak
+        if stats.streak_days > 1 then
+          ImGui.Text(ctx, string.format("🔥 %d day streak", stats.streak_days))
+        end
+
+        ImGui.PopStyleColor(ctx)
+      end
 
       -- ========================================
       -- VST/FX LIST section
@@ -99,7 +166,7 @@ local function draw_info_panel(ctx, gui, width, height)
 
       if notes_changed then
         Tags.set_template_notes(state.metadata, tmpl.uuid, new_notes)
-        local Persistence = require('TemplateBrowser.domain.persistence')
+        local Persistence = require('TemplateBrowser.data.storage')
         Persistence.save_metadata(state.metadata)
       end
 
@@ -158,7 +225,7 @@ local function draw_info_panel(ctx, gui, width, height)
             else
               Tags.add_tag_to_template(state.metadata, tmpl.uuid, clicked_id)
             end
-            local Persistence = require('TemplateBrowser.domain.persistence')
+            local Persistence = require('TemplateBrowser.data.storage')
             Persistence.save_metadata(state.metadata)
           end
         else

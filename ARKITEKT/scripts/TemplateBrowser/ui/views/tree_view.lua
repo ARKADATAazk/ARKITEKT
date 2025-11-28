@@ -3,8 +3,18 @@
 -- Template Browser TreeView module for folder tree rendering
 -- Handles Physical and Virtual folder trees
 
+-- Dependencies (cached at module load per Lua Performance Guide)
+local Logger = require('arkitekt.debug.logger')
 local TreeView = require('arkitekt.gui.widgets.navigation.tree_view')
 local PathValidation = require('arkitekt.core.path_validation')
+local ImGui = require('arkitekt.platform.imgui')
+local FileOps = require('TemplateBrowser.data.file_ops')
+local Scanner = require('TemplateBrowser.domain.template.scanner')
+local Persistence = require('TemplateBrowser.data.storage')
+local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
+local Colors = require('arkitekt.core.colors')
+local ColorDefs = require('arkitekt.defs.colors')
+local Constants = require('TemplateBrowser.defs.constants')
 
 local M = {}
 
@@ -64,10 +74,9 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     return virtual_children
   end
 
-  -- Build archive tree from .archive folder
+  -- Build archive tree from _Archive folder
   local function build_archive_tree()
     local archive_children = {}
-    local FileOps = require('TemplateBrowser.domain.file_ops')
     local archive_path = FileOps.get_archive_path()
     local sep = package.config:sub(1,1)
 
@@ -138,6 +147,35 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     return archive_children
   end
 
+  -- Build inbox tree from _Inbox folder (shows templates as leaf nodes)
+  local function build_inbox_tree()
+    local inbox_children = {}
+
+    -- Get templates in _Inbox folder
+    if all_templates then
+      for _, tmpl in ipairs(all_templates) do
+        if tmpl.relative_path == Constants.FOLDERS.INBOX then
+          local template_node = {
+            id = "__INBOX_TMPL__" .. tmpl.uuid,
+            name = tmpl.name,
+            path = tmpl.path,
+            full_path = tmpl.path,
+            uuid = tmpl.uuid,
+            children = {},
+            is_inbox = true,
+            is_template = true,
+          }
+          inbox_children[#inbox_children + 1] = template_node
+        end
+      end
+    end
+
+    -- Sort alphabetically
+    table.sort(inbox_children, function(a, b) return a.name:lower() < b.name:lower() end)
+
+    return inbox_children
+  end
+
   local root_nodes = {}
 
   -- Add Physical Root node
@@ -152,9 +190,14 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   }
 
   -- Add all physical folders as children of Physical Root
+  -- Skip special folders (_Inbox, _Archive) - they have their own sections
   if node.children then
     for _, child in ipairs(node.children) do
-      physical_root.children[#physical_root.children + 1] = convert_physical_node(child)
+      -- Skip _Inbox and _Archive folders
+      if child.name ~= Constants.FOLDERS.INBOX and child.name ~= Constants.FOLDERS.ARCHIVE then
+        local converted = convert_physical_node(child)
+        physical_root.children[#physical_root.children + 1] = converted
+      end
     end
   end
 
@@ -170,6 +213,19 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   }
 
   root_nodes[#root_nodes + 1] = virtual_root
+
+  -- Add Inbox Root node
+  local inbox_children = build_inbox_tree()
+  local inbox_root = {
+    id = "__INBOX_ROOT__",
+    name = "Inbox",
+    path = "__INBOX_ROOT__",
+    children = inbox_children,
+    is_inbox = true,
+    template_count = #inbox_children,  -- Show count badge
+  }
+
+  root_nodes[#root_nodes + 1] = inbox_root
 
   -- Add Archive Root node
   local archive_root = {
@@ -222,6 +278,7 @@ function M.draw_physical_tree(ctx, state, config)
   TreeView.draw(ctx, physical_nodes, tree_state, {
     enable_rename = true,
     show_colors = true,
+    show_template_count = true,  -- Enable template count badges on folders
     enable_drag_drop = true,  -- Enable folder drag-and-drop
     enable_multi_select = true,  -- Enable multi-select with Ctrl/Shift
     context_menu_id = "folder_context_menu",  -- Enable context menu
@@ -245,14 +302,11 @@ function M.draw_physical_tree(ctx, state, config)
       -- For backward compatibility, set selected_folder to the clicked node
       state.selected_folder = node.path
 
-      local Scanner = require('TemplateBrowser.domain.scanner')
       Scanner.filter_templates(state)
     end,
 
     -- Folder drop callback (supports multi-drag)
     on_drop_folder = function(dragged_node_id, target_node)
-      local FileOps = require('TemplateBrowser.domain.file_ops')
-
       -- Find the source node
       local function find_node_by_id(nodes, id)
         for _, n in ipairs(nodes) do
@@ -369,7 +423,6 @@ function M.draw_physical_tree(ctx, state, config)
               end
             end
             if undo_success then
-              local Scanner = require('TemplateBrowser.domain.scanner')
               Scanner.scan_templates(state)
             end
             return undo_success
@@ -388,7 +441,6 @@ function M.draw_physical_tree(ctx, state, config)
               end
             end
             if redo_success then
-              local Scanner = require('TemplateBrowser.domain.scanner')
               Scanner.scan_templates(state)
             end
             return redo_success
@@ -396,7 +448,6 @@ function M.draw_physical_tree(ctx, state, config)
         })
 
         -- Rescan templates
-        local Scanner = require('TemplateBrowser.domain.scanner')
         Scanner.scan_templates(state)
 
         -- Success message
@@ -412,8 +463,6 @@ function M.draw_physical_tree(ctx, state, config)
     -- Template drop callback (supports multi-drag)
     on_drop_template = function(template_payload, target_node)
       if not target_node then return end
-
-      local FileOps = require('TemplateBrowser.domain.file_ops')
 
       -- Parse payload (can be single UUID or newline-separated UUIDs)
       local uuids = {}
@@ -431,8 +480,6 @@ function M.draw_physical_tree(ctx, state, config)
 
       -- Handle virtual folder (add references, don't move files)
       if target_node.is_virtual then
-        local Persistence = require('TemplateBrowser.domain.persistence')
-
         -- Get the virtual folder from metadata
         local vfolder = state.metadata.virtual_folders[target_node.id]
         if not vfolder then
@@ -534,7 +581,6 @@ function M.draw_physical_tree(ctx, state, config)
 
       -- Rescan if any succeeded
       if success_count > 0 then
-        local Scanner = require('TemplateBrowser.domain.scanner')
         Scanner.scan_templates(state)
 
         -- Success message
@@ -553,10 +599,6 @@ function M.draw_physical_tree(ctx, state, config)
 
     -- Context menu renderer (called inline by TreeView)
     render_context_menu = function(ctx_inner, node)
-      local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
-      local Colors = require('arkitekt.core.colors')
-      local ColorDefs = require('arkitekt.defs.colors')
-
       if ContextMenu.begin(ctx_inner, "folder_context_menu") then
         -- Build color options from centralized palette
         local color_options = {{ name = "None", color = nil }}
@@ -569,9 +611,6 @@ function M.draw_physical_tree(ctx, state, config)
 
         for _, color_opt in ipairs(color_options) do
           if ContextMenu.item(ctx_inner, color_opt.name) then
-            local Persistence = require('TemplateBrowser.domain.persistence')
-            local ImGui = require('imgui') '0.10'
-
             if node.is_virtual then
               -- Update virtual folder color
               if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
@@ -579,7 +618,6 @@ function M.draw_physical_tree(ctx, state, config)
                 Persistence.save_metadata(state.metadata)
 
                 -- No need to rescan, just update UI
-                local Scanner = require('TemplateBrowser.domain.scanner')
                 Scanner.scan_templates(state)
               end
             else
@@ -613,7 +651,6 @@ function M.draw_physical_tree(ctx, state, config)
               Persistence.save_metadata(state.metadata)
 
               -- Rescan to update UI
-              local Scanner = require('TemplateBrowser.domain.scanner')
               Scanner.scan_templates(state)
             end
 
@@ -630,9 +667,6 @@ function M.draw_physical_tree(ctx, state, config)
             ContextMenu.separator(ctx_inner)
 
             if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
-              local Persistence = require('TemplateBrowser.domain.persistence')
-              local ImGui = require('imgui') '0.10'
-
               -- Remove from metadata
               if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
                 state.metadata.virtual_folders[node.id] = nil
@@ -645,7 +679,6 @@ function M.draw_physical_tree(ctx, state, config)
                 end
 
                 -- Refresh UI (no need to rescan templates, just rebuild tree)
-                local Scanner = require('TemplateBrowser.domain.scanner')
                 Scanner.filter_templates(state)
 
                 state.set_status("Deleted virtual folder: " .. node.name, "success")
@@ -663,9 +696,6 @@ function M.draw_physical_tree(ctx, state, config)
     -- Rename callback
     on_rename = function(node, new_name)
       if new_name ~= "" and new_name ~= node.name then
-        local Persistence = require('TemplateBrowser.domain.persistence')
-        local FileOps = require('TemplateBrowser.domain.file_ops')
-
         -- Handle virtual folder rename (metadata only, no file operations)
         if node.is_virtual then
           if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
@@ -728,7 +758,6 @@ function M.draw_physical_tree(ctx, state, config)
             undo_fn = function()
               local undo_success = FileOps.rename_folder(new_path, node.name)
               if undo_success then
-                local Scanner = require('TemplateBrowser.domain.scanner')
                 Scanner.scan_templates(state)
               end
               return undo_success
@@ -736,7 +765,6 @@ function M.draw_physical_tree(ctx, state, config)
             redo_fn = function()
               local redo_success = FileOps.rename_folder(old_path, new_name)
               if redo_success then
-                local Scanner = require('TemplateBrowser.domain.scanner')
                 Scanner.scan_templates(state)
               end
               return redo_success
@@ -744,7 +772,6 @@ function M.draw_physical_tree(ctx, state, config)
           })
 
           -- Light rescan: just rebuild folder tree and template list from updated metadata
-          local Scanner = require('TemplateBrowser.domain.scanner')
           Scanner.scan_templates(state)
         end
       end
@@ -756,9 +783,6 @@ function M.draw_physical_tree(ctx, state, config)
       if node.id == "__ROOT__" or node.id == "__VIRTUAL_ROOT__" or node.is_virtual then
         return
       end
-
-      local FileOps = require('TemplateBrowser.domain.file_ops')
-      local Scanner = require('TemplateBrowser.domain.scanner')
 
       -- Count templates in folder and subfolders
       local template_count = 0
@@ -818,7 +842,7 @@ function M.draw_physical_tree(ctx, state, config)
               local src_ok, src_err = PathValidation.is_safe_path(archive_path)
               local dst_ok, dst_err = PathValidation.is_safe_path(node.full_path)
               if not src_ok or not dst_ok then
-                reaper.ShowConsoleMsg(string.format("Undo blocked - invalid path: %s\n", src_err or dst_err or "unknown"))
+                Logger.error("TREEVIEW", "Undo blocked - invalid path: %s", src_err or dst_err or "unknown")
                 return false
               end
               local restore_success = os.rename(archive_path, node.full_path)
@@ -836,7 +860,7 @@ function M.draw_physical_tree(ctx, state, config)
               -- SECURITY: Validate path before redo
               local path_ok, path_err = PathValidation.is_safe_path(node.full_path)
               if not path_ok then
-                reaper.ShowConsoleMsg(string.format("Redo blocked - invalid path: %s\n", path_err or "unknown"))
+                Logger.error("TREEVIEW", "Redo blocked - invalid path: %s", path_err or "unknown")
                 return false
               end
               local redo_success = os.remove(node.full_path)
@@ -927,7 +951,6 @@ function M.draw_virtual_tree(ctx, state, config)
     on_select = function(node, selected_nodes)
       state.selected_folders = selected_nodes
       state.selected_folder = node.path
-      local Scanner = require('TemplateBrowser.domain.scanner')
       Scanner.filter_templates(state)
     end,
 
@@ -938,7 +961,6 @@ function M.draw_virtual_tree(ctx, state, config)
 
     on_drop_template = function(template_payload, target_node)
       if not target_node then return end
-      local FileOps = require('TemplateBrowser.domain.file_ops')
 
       -- Parse payload
       local uuids = {}
@@ -954,7 +976,6 @@ function M.draw_virtual_tree(ctx, state, config)
 
       -- Only handle virtual folder drops (add references)
       if target_node.is_virtual then
-        local Persistence = require('TemplateBrowser.domain.persistence')
         local vfolder = state.metadata.virtual_folders[target_node.id]
         if not vfolder then
           state.set_status("Virtual folder not found", "error")
@@ -1004,10 +1025,6 @@ function M.draw_virtual_tree(ctx, state, config)
     end,
 
     render_context_menu = function(ctx_inner, node)
-      local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
-      local Colors = require('arkitekt.core.colors')
-      local ColorDefs = require('arkitekt.defs.colors')
-
       if ContextMenu.begin(ctx_inner, "folder_context_menu") then
         -- Build color options from centralized palette
         local color_options = {{ name = "None", color = nil }}
@@ -1020,14 +1037,10 @@ function M.draw_virtual_tree(ctx, state, config)
 
         for _, color_opt in ipairs(color_options) do
           if ContextMenu.item(ctx_inner, color_opt.name) then
-            local Persistence = require('TemplateBrowser.domain.persistence')
-            local ImGui = require('imgui') '0.10'
-
             if node.is_virtual then
               if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
                 state.metadata.virtual_folders[node.id].color = color_opt.color
                 Persistence.save_metadata(state.metadata)
-                local Scanner = require('TemplateBrowser.domain.scanner')
                 Scanner.scan_templates(state)
               end
             end
@@ -1044,9 +1057,6 @@ function M.draw_virtual_tree(ctx, state, config)
             ContextMenu.separator(ctx_inner)
 
             if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
-              local Persistence = require('TemplateBrowser.domain.persistence')
-              local ImGui = require('imgui') '0.10'
-
               if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
                 state.metadata.virtual_folders[node.id] = nil
                 Persistence.save_metadata(state.metadata)
@@ -1056,7 +1066,6 @@ function M.draw_virtual_tree(ctx, state, config)
                   state.selected_folders = {}
                 end
 
-                local Scanner = require('TemplateBrowser.domain.scanner')
                 Scanner.filter_templates(state)
 
                 state.set_status("Deleted virtual folder: " .. node.name, "success")
@@ -1073,8 +1082,6 @@ function M.draw_virtual_tree(ctx, state, config)
 
     on_rename = function(node, new_name)
       if new_name ~= "" and new_name ~= node.name then
-        local Persistence = require('TemplateBrowser.domain.persistence')
-
         if node.is_virtual then
           if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
             local vfolder = state.metadata.virtual_folders[node.id]
@@ -1103,6 +1110,74 @@ function M.draw_virtual_tree(ctx, state, config)
   state.last_clicked_folder = tree_state.last_clicked_node
   state.renaming_folder_path = tree_state.renaming_node
   state.rename_buffer = tree_state.rename_buffer
+end
+
+-- Draw inbox tree only (shows templates in _Inbox folder)
+function M.draw_inbox_tree(ctx, state, config)
+  -- Prepare tree nodes from state.folders
+  local all_nodes = prepare_tree_nodes(state.folders, state.metadata, state.templates)
+
+  -- Get inbox root node and extract its children
+  local inbox_nodes = {}
+  local inbox_count = 0
+  for _, node in ipairs(all_nodes) do
+    if node.id == "__INBOX_ROOT__" then
+      inbox_nodes = node.children or {}
+      inbox_count = node.template_count or #inbox_nodes
+      break
+    end
+  end
+
+  -- Always show inbox tree (even if empty - shows "empty" state)
+  -- Ensure INBOX_ROOT node is open by default
+  if state.folder_open_state["__INBOX_ROOT__"] == nil then
+    state.folder_open_state["__INBOX_ROOT__"] = true
+  end
+
+  -- Map state variables to TreeView format
+  local tree_state = {
+    open_nodes = state.folder_open_state,
+    selected_nodes = state.selected_folders,
+    last_clicked_node = state.last_clicked_folder,
+    renaming_node = nil,  -- Inbox items can't be renamed here
+    rename_buffer = "",
+  }
+
+  -- Draw tree with callbacks for inbox
+  TreeView.draw(ctx, inbox_nodes, tree_state, {
+    enable_rename = false,  -- No renaming in inbox tree
+    show_colors = false,
+    show_template_count = false,
+    enable_drag_drop = true,  -- Allow dragging templates out of inbox
+    enable_multi_select = true,
+    context_menu_id = nil,  -- Could add context menu later
+
+    on_select = function(node, selected_nodes)
+      -- Selecting an inbox template should select it in the main grid too
+      if node.is_template and node.uuid then
+        -- Find the template and set it as selected
+        for _, tmpl in ipairs(state.templates) do
+          if tmpl.uuid == node.uuid then
+            state.selected_template = tmpl
+            break
+          end
+        end
+      end
+      state.selected_folders = selected_nodes
+      state.last_clicked_folder = node.path
+    end,
+
+    on_delete = function(node)
+      -- Inbox templates can't be deleted via Delete key in tree
+      -- Use the main grid for template operations
+    end,
+  })
+
+  -- Sync TreeView state back
+  state.selected_folders = tree_state.selected_nodes
+  state.last_clicked_folder = tree_state.last_clicked_node
+
+  return inbox_count
 end
 
 -- Draw archive folder tree only

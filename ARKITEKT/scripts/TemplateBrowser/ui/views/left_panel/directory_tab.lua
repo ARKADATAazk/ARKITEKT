@@ -2,14 +2,14 @@
 -- TemplateBrowser/ui/views/left_panel/directory_tab.lua
 -- Directory tab: Folder tree + folder creation + tags mini-list
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
-local Tags = require('TemplateBrowser.domain.tags')
+local Tags = require('TemplateBrowser.domain.tags.service')
 local Chip = require('arkitekt.gui.widgets.data.chip')
-local FileOps = require('TemplateBrowser.domain.file_ops')
+local FileOps = require('TemplateBrowser.data.file_ops')
 local TreeViewModule = require('TemplateBrowser.ui.views.tree_view')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
-local UI = require('TemplateBrowser.ui.ui_constants')
+local UI = require('TemplateBrowser.ui.config.constants')
 
 local M = {}
 
@@ -93,7 +93,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
     Tags.create_tag(state.metadata, new_tag_name, color)
 
     -- Save metadata
-    local Persistence = require('TemplateBrowser.domain.persistence')
+    local Persistence = require('TemplateBrowser.data.storage')
     Persistence.save_metadata(state.metadata)
   end
 
@@ -134,7 +134,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
           end
 
           -- Re-filter templates
-          local Scanner = require('TemplateBrowser.domain.scanner')
+          local Scanner = require('TemplateBrowser.domain.template.scanner')
           Scanner.filter_templates(state)
         end
 
@@ -244,7 +244,7 @@ function M.draw(ctx, state, config, width, height, gui)
 
     local success, new_path = FileOps.create_folder(parent_path, new_folder_name)
     if success then
-      local Scanner = require('TemplateBrowser.domain.scanner')
+      local Scanner = require('TemplateBrowser.domain.template.scanner')
       Scanner.scan_templates(state)
 
       -- Select the newly created folder
@@ -283,7 +283,7 @@ function M.draw(ctx, state, config, width, height, gui)
     height = UI.BUTTON.HEIGHT_DEFAULT
   }, "folder_virtual") then
     -- Create new virtual folder
-    local Persistence = require('TemplateBrowser.domain.persistence')
+    local Persistence = require('TemplateBrowser.data.storage')
 
     -- Determine parent folder from selection (only virtual folders/root)
     local parent_id = "__VIRTUAL_ROOT__"  -- Default to virtual root
@@ -371,7 +371,7 @@ function M.draw(ctx, state, config, width, height, gui)
 
   if ImGui.Selectable(ctx, "All Templates", is_all_selected) then
     state.selected_folder = ""
-    local Scanner = require('TemplateBrowser.domain.scanner')
+    local Scanner = require('TemplateBrowser.domain.template.scanner')
     Scanner.filter_templates(state)
   end
 
@@ -387,28 +387,31 @@ function M.draw(ctx, state, config, width, height, gui)
   local used_height = UI.HEADER.DEFAULT + UI.PADDING.SEPARATOR_SPACING + 24 + UI.PADDING.SEPARATOR_SPACING
   local total_tree_height = folder_section_height - used_height
 
-  -- Initialize section heights from state (3 sections: Physical, Virtual, Archive)
+  -- Initialize section heights from state (4 sections: Physical, Virtual, Inbox, Archive)
   local separator_height = 3  -- Thin 3-pixel separator line
   local min_section_height = 80
   local header_height = 24  -- Custom collapsible header height
 
   -- Initialize stored section height ratios if not set
-  state.physical_section_height = state.physical_section_height or (total_tree_height * 0.40) // 1
-  state.virtual_section_height = state.virtual_section_height or (total_tree_height * 0.30) // 1
+  state.physical_section_height = state.physical_section_height or (total_tree_height * 0.35) // 1
+  state.virtual_section_height = state.virtual_section_height or (total_tree_height * 0.25) // 1
+  state.inbox_section_height = state.inbox_section_height or (total_tree_height * 0.20) // 1
 
   -- Track section open states (initialize if not set)
   state.physical_section_open = state.physical_section_open == nil and true or state.physical_section_open
   state.virtual_section_open = state.virtual_section_open == nil and true or state.virtual_section_open
+  state.inbox_section_open = state.inbox_section_open == nil and true or state.inbox_section_open
   state.archive_section_open = state.archive_section_open == nil and true or state.archive_section_open
 
   -- Count open sections and calculate available height
   local open_sections = {}
   if state.physical_section_open then open_sections[#open_sections + 1] = "physical" end
   if state.virtual_section_open then open_sections[#open_sections + 1] = "virtual" end
+  if state.inbox_section_open then open_sections[#open_sections + 1] = "inbox" end
   if state.archive_section_open then open_sections[#open_sections + 1] = "archive" end
 
   local num_open = #open_sections
-  local num_closed = 3 - num_open
+  local num_closed = 4 - num_open
   local num_separators = math.max(0, num_open - 1)  -- Separators only between open sections
 
   -- Calculate available height for open sections
@@ -417,55 +420,68 @@ function M.draw(ctx, state, config, width, height, gui)
   local available_height = total_tree_height - closed_headers_height - separators_total_height
 
   -- Distribute available height among open sections based on their stored ratios
-  local physical_actual_height, virtual_actual_height, archive_actual_height
+  local physical_actual_height, virtual_actual_height, inbox_actual_height, archive_actual_height
+
+  -- Calculate archive stored height (remainder after other sections)
+  local archive_stored = total_tree_height - state.physical_section_height - state.virtual_section_height - state.inbox_section_height - separator_height * 3
+  archive_stored = math.max(min_section_height, archive_stored)
 
   if num_open == 0 then
     -- All collapsed
     physical_actual_height = header_height
     virtual_actual_height = header_height
+    inbox_actual_height = header_height
     archive_actual_height = header_height
   elseif num_open == 1 then
     -- One open - takes all available height
     physical_actual_height = state.physical_section_open and available_height or header_height
     virtual_actual_height = state.virtual_section_open and available_height or header_height
+    inbox_actual_height = state.inbox_section_open and available_height or header_height
     archive_actual_height = state.archive_section_open and available_height or header_height
-  elseif num_open == 2 then
-    -- Two open - distribute based on ratios
-    if state.physical_section_open and state.virtual_section_open then
-      local total_ratio = state.physical_section_height + state.virtual_section_height
-      physical_actual_height = (available_height * (state.physical_section_height / total_ratio)) // 1
-      virtual_actual_height = available_height - physical_actual_height
-      archive_actual_height = header_height
-    elseif state.physical_section_open and state.archive_section_open then
-      local archive_stored = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_height * 2
-      local total_ratio = state.physical_section_height + archive_stored
-      physical_actual_height = (available_height * (state.physical_section_height / total_ratio)) // 1
-      archive_actual_height = available_height - physical_actual_height
-      virtual_actual_height = header_height
-    else  -- virtual and archive open
-      local archive_stored = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_height * 2
-      local total_ratio = state.virtual_section_height + archive_stored
-      virtual_actual_height = (available_height * (state.virtual_section_height / total_ratio)) // 1
-      archive_actual_height = available_height - virtual_actual_height
-      physical_actual_height = header_height
-    end
   else
-    -- All three open - use normal distribution
-    state.physical_section_height = math.max(min_section_height, math.min(state.physical_section_height,
-      total_tree_height - min_section_height * 2 - separator_height * 2))
-    state.virtual_section_height = math.max(min_section_height, math.min(state.virtual_section_height,
-      total_tree_height - state.physical_section_height - min_section_height - separator_height * 2))
+    -- Multiple open - distribute proportionally based on stored heights
+    local open_heights = {}
+    local total_stored = 0
 
-    physical_actual_height = state.physical_section_height
-    virtual_actual_height = state.virtual_section_height
-    archive_actual_height = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_height * 2
+    if state.physical_section_open then
+      open_heights.physical = state.physical_section_height
+      total_stored = total_stored + state.physical_section_height
+    end
+    if state.virtual_section_open then
+      open_heights.virtual = state.virtual_section_height
+      total_stored = total_stored + state.virtual_section_height
+    end
+    if state.inbox_section_open then
+      open_heights.inbox = state.inbox_section_height
+      total_stored = total_stored + state.inbox_section_height
+    end
+    if state.archive_section_open then
+      open_heights.archive = archive_stored
+      total_stored = total_stored + archive_stored
+    end
+
+    -- Distribute available height proportionally
+    physical_actual_height = state.physical_section_open
+      and math.max(min_section_height, (available_height * open_heights.physical / total_stored) // 1)
+      or header_height
+    virtual_actual_height = state.virtual_section_open
+      and math.max(min_section_height, (available_height * open_heights.virtual / total_stored) // 1)
+      or header_height
+    inbox_actual_height = state.inbox_section_open
+      and math.max(min_section_height, (available_height * open_heights.inbox / total_stored) // 1)
+      or header_height
+    archive_actual_height = state.archive_section_open
+      and math.max(min_section_height, (available_height * open_heights.archive / total_stored) // 1)
+      or header_height
   end
 
   -- Initialize hover tracking and drag state for separators
   state.sep1_hover_time = state.sep1_hover_time or 0
   state.sep2_hover_time = state.sep2_hover_time or 0
+  state.sep3_hover_time = state.sep3_hover_time or 0
   state.sep1_drag_start_height = state.sep1_drag_start_height or nil
   state.sep2_drag_start_height = state.sep2_drag_start_height or nil
+  state.sep3_drag_start_height = state.sep3_drag_start_height or nil
   local hover_threshold = 1.0  -- 1 second
 
   -- Helper function to draw thin separator line above header
@@ -559,7 +575,7 @@ function M.draw(ctx, state, config, width, height, gui)
     end
   end
 
-  -- === SEPARATOR 2 (before Archive) - only if virtual is open ===
+  -- === SEPARATOR 2 (before Inbox) - only if virtual is open ===
   if virtual_open then
     local sep2_x, sep2_y = ImGui.GetCursorScreenPos(ctx)
     local mx, my = ImGui.GetMousePos(ctx)
@@ -593,12 +609,71 @@ function M.draw(ctx, state, config, width, height, gui)
       state.virtual_section_height = state.sep2_drag_start_height + delta_y
       state.virtual_section_height = math.max(min_section_height,
         math.min(state.virtual_section_height,
-          total_tree_height - state.physical_section_height - min_section_height - separator_height * 2))
+          total_tree_height - state.physical_section_height - min_section_height * 2 - separator_height * 3))
     else
       state.sep2_drag_start_height = nil
     end
 
     ImGui.SetCursorScreenPos(ctx, sep2_x, sep2_y + separator_height)
+  end
+
+  -- === INBOX SECTION ===
+  local inbox_clicked = draw_custom_collapsible_header(ctx, "Inbox", state.inbox_section_open, width, config)
+
+  -- Update open state on click
+  if inbox_clicked then
+    state.inbox_section_open = not state.inbox_section_open
+  end
+  local inbox_open = state.inbox_section_open
+
+  if inbox_open then
+    local scroll_height = inbox_actual_height - header_height
+    if scroll_height > 10 and Helpers.begin_child_compat(ctx, "InboxTreeScroll", 0, scroll_height, false) then
+      TreeViewModule.draw_inbox_tree(ctx, state, config)
+      ImGui.EndChild(ctx)
+    end
+  end
+
+  -- === SEPARATOR 3 (before Archive) - only if inbox is open ===
+  if inbox_open then
+    local sep3_x, sep3_y = ImGui.GetCursorScreenPos(ctx)
+    local mx, my = ImGui.GetMousePos(ctx)
+    local sep3_hovered = mx >= sep3_x and mx < sep3_x + width and
+                         my >= sep3_y and my < sep3_y + separator_height + 4
+
+    -- Track hover time
+    if sep3_hovered then
+      state.sep3_hover_time = state.sep3_hover_time + (1/60)
+    else
+      state.sep3_hover_time = 0
+    end
+
+    -- Draw separator line
+    draw_thin_separator(ctx, dl, sep3_x, sep3_y + separator_height / 2, width, sep3_hovered, state.sep3_hover_time)
+
+    -- Invisible button for drag interaction
+    ImGui.SetCursorScreenPos(ctx, sep3_x, sep3_y - 2)
+    ImGui.InvisibleButton(ctx, "##sep3", width, separator_height + 4)
+
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNS)
+    end
+
+    -- Handle drag with proper initial height tracking (only when multiple sections open)
+    if num_open >= 2 and ImGui.IsItemActive(ctx) then
+      if not state.sep3_drag_start_height then
+        state.sep3_drag_start_height = state.inbox_section_height
+      end
+      local _, delta_y = ImGui.GetMouseDragDelta(ctx, 0, 0)
+      state.inbox_section_height = state.sep3_drag_start_height + delta_y
+      state.inbox_section_height = math.max(min_section_height,
+        math.min(state.inbox_section_height,
+          total_tree_height - state.physical_section_height - state.virtual_section_height - min_section_height - separator_height * 3))
+    else
+      state.sep3_drag_start_height = nil
+    end
+
+    ImGui.SetCursorScreenPos(ctx, sep3_x, sep3_y + separator_height)
   end
 
   -- === ARCHIVE SECTION ===
