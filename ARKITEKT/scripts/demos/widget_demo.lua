@@ -56,12 +56,12 @@ local Settings     = (function() local ok,m=pcall(require,"arkitekt.core.setting
 local okStyle,Style= pcall(require,"arkitekt.gui.style.imgui")
 local ColorBlocks  = require("Arkitekt.gui.widgets.colorblocks")
 local Effects      = require("arkitekt.gui.draw.effects")
+local Math         = require("arkitekt.core.math")
 local hexrgb = Ark.Colors.hexrgb
 
 
 -- Small helpers
 local function log(...) local t={}; for i=1,select("#",...) do t[#t+1]=tostring(select(i,...)) end reaper.ShowConsoleMsg(table.concat(t," ").."\n") end
-local function clamp(x,a,b) if x<a then return a elseif x>b then return b else return x end end
 local function hsv_to_rgba(h,s,v,a)
   local i = (h*6) // 1; local f = h*6 - i
   local p = v*(1-s); local q = v*(1-f*s); local t = v*(1-(1-f)*s)
@@ -73,10 +73,10 @@ local function hsv_to_rgba(h,s,v,a)
   elseif i%6==4 then r,g,b=t,p,v
   else               r,g,b=v,p,q
   end
-  local R = clamp((r*255+0.5) // 1,0,255)
-  local G = clamp((g*255+0.5) // 1,0,255)
-  local B = clamp((b*255+0.5) // 1,0,255)
-  local A = clamp(math.floor((a or 1)*255+0.5),0,255)
+  local R = Math.clamp((r*255+0.5) // 1,0,255)
+  local G = Math.clamp((g*255+0.5) // 1,0,255)
+  local B = Math.clamp((b*255+0.5) // 1,0,255)
+  local A = Math.clamp(math.floor((a or 1)*255+0.5),0,255)
   return (R<<24) | (G<<16) | (B<<8) | A -- 0xRRGGBBAA
 end
 

@@ -6,6 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
+local Math = require('arkitekt.core.math')
 local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
@@ -38,7 +39,7 @@ function M.render(ctx, rect, item, state, view, tab_id)
   M._anim[key] = M._anim[key] or { hover = 0 }
 
   -- CORRECT: Grid passes state.hover and state.selected (not is_hovered/is_selected!)
-  local hover_t = Visuals.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
+  local hover_t = Math.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
   M._anim[key].hover = hover_t
 
   -- Get tab color
@@ -383,7 +384,7 @@ function M.render_group(ctx, rect, item, state, view, tab_id)
   -- Animation state
   local key = "assign_group_" .. tab_id .. "_" .. group_id
   M._anim[key] = M._anim[key] or { hover = 0 }
-  local hover_t = Visuals.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
+  local hover_t = Math.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
   M._anim[key].hover = hover_t
 
   -- Get tab color

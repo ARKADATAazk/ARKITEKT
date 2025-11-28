@@ -5,6 +5,7 @@
 local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
+local Math = require('arkitekt.core.math')
 local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
@@ -30,7 +31,7 @@ function M.render(ctx, rect, item, state, view)
   local key = "template_" .. template_id
   M._anim[key] = M._anim[key] or { hover = 0 }
 
-  local hover_t = Visuals.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
+  local hover_t = Math.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
   M._anim[key].hover = hover_t
 
   -- Color definitions

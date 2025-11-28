@@ -149,9 +149,4 @@ function M.color_lerp(c1, c2, t)
   return (r << 24) | (g << 16) | (b << 8) | a
 end
 
--- Lerp helper
-function M.lerp(a, b, t)
-  return a + (b - a) * math.min(1.0, t)
-end
-
 return M

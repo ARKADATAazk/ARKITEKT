@@ -6,6 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
+local Math = require('arkitekt.core.math')
 local hexrgb = Ark.Colors.hexrgb
 local Logger = require('arkitekt.debug.logger')
 local log = Logger.new("LibraryTile")
@@ -44,7 +45,7 @@ function M.render(ctx, rect, param, state, view)
   M._anim[key] = M._anim[key] or { hover = 0 }
 
   -- CORRECT: Grid passes state.hover and state.selected (not is_hovered/is_selected!)
-  local hover_t = Visuals.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
+  local hover_t = Math.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
   M._anim[key].hover = hover_t
 
   -- Color definitions

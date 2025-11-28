@@ -7,6 +7,7 @@ local Ark = require('arkitekt')
 local hexrgb = Ark.Colors.hexrgb
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
+local Easing = require('arkitekt.gui.animation.easing')
 local M = {}
 
 M.tile_spawn_times = {}
@@ -19,13 +20,6 @@ function M.ensure_min_lightness(color, min_lightness)
   end
   local r, g, b = Ark.Colors.hsl_to_rgb(h, s, l)
   return Ark.Colors.components_to_rgba(r, g, b, 0xFF)
-end
-
--- Easing functions
-local function ease_out_back(t)
-  local c1 = 1.70158
-  local c3 = c1 + 1
-  return 1 + c3 * (t - 1)^3 + c1 * (t - 1)^2
 end
 
 -- Calculate cascade animation factor based on overlay alpha and position
@@ -47,7 +41,7 @@ function M.calculate_cascade_factor(rect, overlay_alpha, config)
   local adjusted_progress = (overlay_alpha - delay) / (1.0 - delay)
   adjusted_progress = math.max(0.0, math.min(1.0, adjusted_progress))
 
-  return ease_out_back(adjusted_progress)
+  return Easing.ease_out_back(adjusted_progress)
 end
 
 -- Truncate text to fit width

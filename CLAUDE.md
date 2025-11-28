@@ -415,12 +415,12 @@ When you need more detail:
 
 ## ImGui Reference Materials
 
-**Location**: `helpers/` (to be moved to `reference/imgui/`)
+**Location**: `references/imgui/`
 
 When implementing widgets or understanding ImGui patterns, consult these official ReaImGui reference files:
 
 ### 1. ReaImGui_Demo.lua
-**Path**: `helpers/ReaImGui_Demo.lua`
+**Path**: `references/imgui/ReaImGui_Demo.lua`
 
 Official ImGui demo ported to Lua. Shows all ImGui widgets, patterns, and real-world usage.
 
@@ -432,20 +432,20 @@ Official ImGui demo ported to Lua. Shows all ImGui widgets, patterns, and real-w
 **Key sections** (search by comment):
 ```bash
 # Menu patterns
-grep -A 20 "BeginMenu\|MenuItem" helpers/ReaImGui_Demo.lua
+grep -A 20 "BeginMenu\|MenuItem" references/imgui/ReaImGui_Demo.lua
 
 # Table API
-grep -A 50 "BeginTable" helpers/ReaImGui_Demo.lua
+grep -A 50 "BeginTable" references/imgui/ReaImGui_Demo.lua
 
 # Popup patterns
-grep -A 30 "BeginPopup" helpers/ReaImGui_Demo.lua
+grep -A 30 "BeginPopup" references/imgui/ReaImGui_Demo.lua
 
 # Widget examples
-grep -A 10 "Button\|Checkbox\|Slider" helpers/ReaImGui_Demo.lua
+grep -A 10 "Button\|Checkbox\|Slider" references/imgui/ReaImGui_Demo.lua
 ```
 
 ### 2. imgui_defs.lua
-**Path**: `helpers/imgui_defs.lua`
+**Path**: `references/imgui/imgui_defs.lua`
 
 LuaCATS type definitions for ReaImGui. Provides autocomplete in LSP-enabled editors.
 
@@ -457,7 +457,7 @@ LuaCATS type definitions for ReaImGui. Provides autocomplete in LSP-enabled edit
 **Example:**
 ```lua
 -- Search for Button signature
-grep -A 5 "function.*Button" helpers/imgui_defs.lua
+grep -A 5 "function.*Button" references/imgui/imgui_defs.lua
 ```
 
 ### How to Use These References
@@ -466,7 +466,7 @@ grep -A 5 "function.*Button" helpers/imgui_defs.lua
 
 1. **Check the demo** for ImGui equivalent:
    ```bash
-   grep -i "yourtargetwidget" helpers/ReaImGui_Demo.lua
+   grep -i "yourtargetwidget" references/imgui/ReaImGui_Demo.lua
    ```
 
 2. **Understand the pattern** (Begin/End? Single call? Return value?)
@@ -480,12 +480,12 @@ grep -A 5 "function.*Button" helpers/imgui_defs.lua
 **Example:**
 ```bash
 # Want to implement a menu bar widget
-grep -A 30 "BeginMenuBar" helpers/ReaImGui_Demo.lua
+grep -A 30 "BeginMenuBar" references/imgui/ReaImGui_Demo.lua
 # See: Uses BeginMenuBar/EndMenuBar pattern
 # Decision: Match this (Begin/End is good for stateful operations)
 
 # Want to implement a button
-grep -A 10 "ImGui\.Button" helpers/ReaImGui_Demo.lua
+grep -A 10 "ImGui\.Button" references/imgui/ReaImGui_Demo.lua
 # See: Returns boolean, positional params
 # Decision: Improve with opts table + result object (see API_DESIGN_PHILOSOPHY.md)
 ```
