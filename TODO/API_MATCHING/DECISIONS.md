@@ -386,7 +386,57 @@ Ark.Button(ctx, "B")  -- Below A
 
 ---
 
-## Decision 12: Ark + ImGui Interop Rules
+## Decision 12: No Animation Toggle (Uniform UX)
+
+### Choice
+Keep animations always enabled. No `animated = false` option.
+
+### Rationale
+- Uniform look/feel across all ARKITEKT scripts in REAPER
+- Overhead is minimal (just alpha lerp per frame)
+- Consistency > customization for this case
+- Users expect polished UX from ARKITEKT apps
+
+### Rejected Alternative
+```lua
+Ark.Button(ctx, {label = "X", animated = false})  -- NOT adding this
+```
+
+---
+
+## Decision 13: Clear Error Messages
+
+### Choice
+Provide helpful error messages for invalid inputs:
+
+```lua
+-- If user passes wrong type:
+Ark.Button(ctx, 123)
+-- Error: "Ark.Button: expected string or table, got number"
+
+-- If user forgets required field:
+Ark.Slider(ctx, {label = "Vol"})  -- missing value, min, max
+-- Error: "Ark.Slider: missing required field 'value'"
+```
+
+### Implementation
+```lua
+function M.draw(ctx, label_or_opts, ...)
+  if type(label_or_opts) ~= "string" and type(label_or_opts) ~= "table" then
+    error("Ark.Button: expected string or table, got " .. type(label_or_opts), 2)
+  end
+  -- ...
+end
+```
+
+### Rationale
+- Catch mistakes early with clear message
+- Better than silent failure or cryptic Lua errors
+- Level 2 error shows caller's line, not widget internals
+
+---
+
+## Decision 14: Ark + ImGui Interop Rules
 
 ### What Works
 ```lua
@@ -423,9 +473,10 @@ Ark.Slider(ctx, "Vol", v, 0, 100)  -- May ignore, use opts.width instead
 | Returns | Boolean | Result object | Result object |
 | Callbacks | None | Available | Available |
 | Internal funcs | Hidden | Exposed | Hidden |
-| Animations | None | Smooth | Smooth |
+| Animations | None | Smooth | Smooth (always, no toggle) |
 | Icons | N/A | UTF-8 + font | UTF-8 + font (+ optional LuaCATS) |
 | Result fields | N/A | Mixed (`.text`, `.value`) | `.value` everywhere |
 | Alignment | Manual calc | Manual calc | `align = "center"/"right"` |
 | Cursor advance | Horizontal | Vertical | Horizontal (match ImGui) |
+| Error messages | Cryptic | Cryptic | Clear, helpful errors |
 | ImGui interop | N/A | Undocumented | SameLine works, SetNext* doesn't |
