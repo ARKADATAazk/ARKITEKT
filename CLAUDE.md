@@ -1,516 +1,195 @@
-# CLAUDE.md - AI Assistant Field Guide for ARKITEKT
+# CLAUDE.md – ARKITEKT Field Guide
 
-> **This is the definitive guide for AI assistants working with ARKITEKT.**
-
----
-
-## Quick Start (30 seconds)
-
-**What is ARKITEKT?**
-A Lua 5.3 framework for building ReaImGui applications in REAPER (audio workstation). It provides reusable widgets, window management, theming, and application scaffolding.
-
-**Critical Rules:**
-1. **Namespace**: `arkitekt.*` for requires, `Ark.*` for lazy-loaded widgets/utilities.
-2. **Bootstrap**: Use `dofile()`, not `require()` for entry points.
-3. **Layer organization**: `core/*` = reusable utilities, `platform/*` = API abstractions. Both can use `reaper.*`/`ImGui.*` (ARKITEKT is REAPER-only).
-4. **No globals**: Everything returns a module table `M`.
-5. **Read before writing**: ALWAYS read existing code before proposing changes.
-
-**Using the Ark.* namespace:**
-```lua
--- Entry point loads Ark namespace
-local Ark = dofile(path .. "loader.lua")
-
--- Lazy-loaded widgets and utilities
-Ark.Button.draw(ctx, {label = "Click"})
-Ark.Panel.draw(ctx, opts)
-Ark.ImGui.Text(ctx, "Hello")  -- ImGui is pre-loaded
-
--- Platform utilities (lazy-loaded)
-local cache = Ark.Images.new({budget = 20})
-cache:draw_thumb(ctx, image_path, 64)
-
--- Direct requires also work
-local Theme = require('arkitekt.core.theme')
-local ImGui = require('arkitekt.platform.imgui')  -- Platform layer
-local Shell = require('arkitekt.app.shell')
-```
+> **Definitive guide for AI assistants working on ARKITEKT.**
+> Be strict with rules, gentle with diffs.
 
 ---
 
-## File Routing Map
+## 1. TL;DR (30 seconds)
 
-| You want to... | Go to... |
-|---------------|----------|
-| Add/modify a **widget** | `arkitekt/gui/widgets/[category]/` |
-| Change **app bootstrap** | `arkitekt/app/` (init/, runtime/, chrome/) |
-| Add **constants/defaults** | `arkitekt/defs/` or app-specific `defs/` |
-| Modify **theming** | `arkitekt/core/theme_manager/` |
-| Work on **animations** | `arkitekt/gui/animation/` |
-| Work on **drawing/rendering** | `arkitekt/gui/draw/` or `arkitekt/gui/renderers/` |
-| Add **interaction handlers** | `arkitekt/gui/interaction/` (drag-drop, selection, reorder) |
-| Add **layout utilities** | `arkitekt/gui/layout/` (responsive grids, stabilizers) |
-| Change **font loading** | `arkitekt/app/chrome/fonts.lua` |
-| Edit a **specific app** | `scripts/[AppName]/` |
-| Add **reusable utilities** | `arkitekt/core/` (fs, json, settings, etc.) |
-| Add **platform abstractions** | `arkitekt/platform/` (ImGui version loader, image cache) |
-| Check **cookbook** | `cookbook/` |
-| Find **actionable tasks** | `TODO/` |
+**What is ARKITEKT?**  
+Lua 5.3 framework for building ReaImGui apps in REAPER. It provides widgets, window management, theming, storage, and app scaffolding.
 
-### Layer Structure (per app/module)
+**Critical rules**
 
-```
-app/        # Application orchestration, wiring
-domain/     # Business logic (no UI dependencies)
-core/       # Reusable utilities (fs, json, settings, math helpers)
-platform/   # API abstractions (ImGui version loader, image cache)
-storage/    # Persistence logic
-ui/         # Views, components
-widgets/    # Reusable UI elements
-defs/       # Constants, configuration
-tests/      # Unit tests
-```
+1. **Namespace**
+   - `arkitekt.*` for `require(...)`
+   - `Ark.*` for lazy-loaded widgets/utilities (via loader bootstrap)
 
-**Dependency flow**: `UI → App → Domain ← Infra`
-**Platform usage**: `UI/App/Widgets → Platform → ImGui/REAPER APIs`
-**NEVER**: UI → Storage directly, or Domain → UI
+2. **Bootstrap**
+   - Entry points **MUST** use `dofile` bootstrap, **not** `require`.
+   - Reason: bootstrap sets `package.path`; `require` before that is a chicken-and-egg failure.
+   - For the full template: see `cookbook/CONVENTIONS.md#bootstrap-pattern`.
+
+3. **Layer responsibilities**
+   - `domain/*` = business logic (**no ImGui**).
+   - `core/*` = reusable utilities (fs/json/settings/math).
+   - `platform/*` = ReaImGui/REAPER abstractions (imgui/images/etc.).
+   - UI layers (`app/ui/views/widgets/gui`) can call both `reaper.*` and `ImGui.*`.
+   - Separation is about **responsibility**, not “purity”.
+
+4. **No globals**
+   - Every module returns a table `M`.
+   - No implicit globals, no side effects at require time (no `reaper.*`, no I/O, no logging at top level).
+
+5. **Edit discipline**
+   - Always read the file (and nearby modules) **before** editing.
+   - Diffs must be **surgical**: no reformatting, no drive-by refactors.
 
 ---
 
-## What NOT To Do (Anti-Patterns)
+## 2. Where to Work – Routing Map
 
-### Critical Violations
+| You want to…                       | Go to…                                           |
+|-----------------------------------|--------------------------------------------------|
+| Add/modify a **widget**           | `arkitekt/gui/widgets/[category]/`              |
+| Change **app bootstrap/runtime**  | `arkitekt/app/` (init/, runtime/, chrome/)      |
+| Add **constants/defaults**        | `arkitekt/defs/` or `scripts/[AppName]/defs/`   |
+| Modify **theming**                | `arkitekt/core/theme_manager/`                  |
+| Work on **animations**            | `arkitekt/gui/animation/`                       |
+| Work on **drawing/rendering**     | `arkitekt/gui/draw/` or `arkitekt/gui/renderers/` |
+| Add **interaction handlers**      | `arkitekt/gui/interaction/` (drag-drop, selection, reorder) |
+| Add **layout utilities**          | `arkitekt/gui/layout/`                          |
+| Change **font loading**           | `arkitekt/app/chrome/fonts.lua`                 |
+| Edit a **specific app**           | `scripts/[AppName]/`                            |
+| Add **reusable utilities**        | `arkitekt/core/` (fs, json, settings, etc.)     |
+| Add **platform abstractions**     | `arkitekt/platform/`                            |
+| Check detailed **guides**         | `cookbook/`                                     |
+| Find **actionable tasks**         | `TODO/`                                         |
 
-| Don't | Do Instead |
-|-------|------------|
-| Add UI logic in `domain/*` | Keep domain focused on business logic, no ImGui calls |
-| Create globals | Return module table `M` |
-| Hardcode magic numbers | Use constants from `arkitekt/defs/` |
-| Create new folders blindly | Check if existing structure fits |
-| Propose changes without reading | ALWAYS read the file first |
-| Touch >12 files in one change | Break into smaller phases |
-| Reformat entire files | Keep diffs surgical |
-| Add features beyond request | Do exactly what was asked |
-| Override default configs | Trust framework defaults (see below) |
+**Layer structure (per app / module)**
 
-### Config Bloat (IMPORTANT)
-
-**NEVER re-declare colors, rounding, padding, or other config values that are already framework defaults.**
-
-The framework provides sensible defaults. Scripts should NOT override them unless explicitly requested.
-
-```lua
--- BAD: Redundant config bloat
-local config = {
-  bg_color = Theme.COLORS.BG_BASE,      -- Already the default!
-  text_color = Theme.COLORS.TEXT_NORMAL, -- Already the default!
-  rounding = 4,                          -- Already the default!
-  padding_x = 10,                        -- Already the default!
-  padding_y = 6,                         -- Already the default!
-}
-
--- GOOD: Only override what's actually different
-local config = {
-  width = 200,  -- App-specific requirement
-}
--- Let framework handle the rest
+```text
+app/      # Orchestration, wiring, runtime
+domain/   # Business logic (no ImGui)
+core/     # Reusable utilities (fs/json/settings/math)
+platform/ # ImGui/REAPER abstractions
+storage/  # Persistence logic
+ui/       # Views, components
+widgets/  # Reusable UI elements
+defs/     # Constants & configuration
+tests/    # Unit tests
 ```
 
-**Rule**: If a value matches the framework default, **don't specify it**. This:
-- Reduces bloat
-- Ensures consistency when defaults change
-- Makes actual customizations visible
-
-**When to override**: Only when the user explicitly asks for custom styling, or the app genuinely needs different values.
-
-### Layer Organization
-
-**ARKITEKT is a REAPER-only framework** - strict "purity" (no `reaper.*`) is unnecessary. All layers can use `reaper.*` APIs since ARKITEKT always runs in REAPER with ReaImGui.
-
-**Reusable utilities** (`core/*`):
-- `core/*` - Filesystem, JSON, settings, math helpers, validation
-- Can freely use `reaper.*` (e.g., `reaper.EnumerateFiles`, `reaper.RecursiveCreateDirectory`)
-- Examples: `core/fs.lua`, `core/json.lua`, `core/settings.lua`
-
-**Platform abstractions** (`platform/*`):
-- `platform/*` - API version compatibility, complex integrations
-- Examples: `platform/imgui.lua` (version loader), `platform/images.lua` (image cache with texture management)
-- Use this for abstractions that hide complexity, NOT for "purity" separation
-
-**Business logic** (`domain/*`):
-- `domain/*` - App-specific business logic
-- Can use `reaper.*` for REAPER-specific operations (theme params, project data, etc.)
-- Should NOT contain ImGui/UI calls - keep UI separate
-
-**UI layers** (may use both `reaper.*` and `ImGui` freely):
-- `app/*` - Application orchestration, bootstrap, runtime
-- `ui/*`, `views/*`, `widgets/*` - UI components
-- `gui/*` - Rendering, drawing, styling
-
-**Key Rule**: Separation is about **responsibility**, not "purity"
-- ✅ OK: `reaper.*` anywhere it makes sense
-- ❌ BAD: ImGui calls in `domain/*` (mixing UI with business logic)
+**Dependency flow**: `UI → app → domain ← infra`  
+**Never**: UI → storage directly, or domain → UI.
 
 ---
 
-## Task Cookbook
+## 3. Task Cookbook (short version)
 
-### Task: Add a New Widget
+For full workflows, see the corresponding sections in `cookbook/`.
 
-1. **Read the API philosophy**: `cookbook/API_DESIGN_PHILOSOPHY.md` - Understand when to match ImGui vs improve
-2. **Read the widget guide**: `cookbook/WIDGETS.md`
-3. **Check existing widgets**: `arkitekt/gui/widgets/[category]/`
-4. **Find similar widget** to use as template
-5. **Decide API pattern**:
-   - Single-frame widget → `M.draw(ctx, opts)` with opts table
-   - Multi-frame stateful → `M.begin_xxx()` / `M.end_xxx()` like ImGui
-   - Keep naming familiar to ImGui users (`same_line` not `nextHorizontal`)
-6. **Follow the widget API contract**:
-   - Signature: `function M.draw(ctx, opts) return result end`
-   - Use `Theme.COLORS` for colors (read every frame!)
-   - Use `Base.get_state(id)` for persistent state
-   - Advance cursor after drawing
-7. **Test in Sandbox**: `scripts/Sandbox/`
+### Add a New Widget
 
-### Task: Fix a Bug
+- Read `cookbook/API_DESIGN_PHILOSOPHY.md` and `cookbook/WIDGETS.md`.
+- Find a similar widget in `arkitekt/gui/widgets/[category]/` and copy its pattern.
+- Single-frame widget → `M.draw(ctx, opts)` returning result.
+- Multi-frame widget → `M.begin_*` / `M.end_*` (ImGui-style).
+- Never hardcode colors/timing; use `arkitekt/defs/*` + `Theme.COLORS`.
 
-1. **Read the file** containing the bug
-2. **Understand the context** - read related files if needed
-3. **Make surgical fix** - change only what's necessary
-4. **Don't refactor** surrounding code unless asked
-5. **Verify layer rules** - did you add ImGui calls to `domain/*`?
+### Fix a Bug
 
-### Task: Add Feature to Existing App
+- Read the entire file containing the bug, plus any obviously related modules.
+- Change only what’s necessary; no refactor unless explicitly requested.
+- Make sure you didn’t introduce ImGui in `domain/*`.
+- If it’s a recurring pattern issue, add a note/task to `TODO/` rather than silently redesigning.
 
-1. **Read app entry point**: `scripts/[AppName]/ARK_[AppName].lua`
-2. **Identify the layer** your feature belongs to:
-   - UI change → `ui/`
-   - Business logic → `domain/` or `core/`
-   - State management → `app/`
-3. **Check existing patterns** in that layer
-4. **Follow conventions** from `cookbook/CONVENTIONS.md`
-5. **Update constants** in `defs/` if adding magic numbers
+### Add a Feature to an Existing App
 
-### Task: Performance Optimization
+- Start at `scripts/[AppName]/ARK_[AppName].lua` to locate app wiring.
+- Decide the layer:
+  - UI change → `ui/` (or `widgets/`).
+  - Business logic → `domain/` or `core/`.
+  - State management / orchestration → `app/`.
+- Follow patterns you see in that layer and the rules in `cookbook/CONVENTIONS.md`.
 
-1. **Check TODO/PERFORMANCE.md** for known issues
-2. **Profile with `reaper.time_precise()`**
-3. **Apply common patterns**:
-   - Use `//1` for integer division
-   - Cache function lookups at module top: `local floor = math.floor`
-   - Avoid string concatenation in hot loops
-   - Pre-allocate tables when size is known
-4. **Reference**: `cookbook/LUA_PERFORMANCE_GUIDE.md`
+### Performance Optimization
 
-### Task: Refactor/Migrate Code
+- Check `TODO/PERFORMANCE.md` + `cookbook/LUA_PERFORMANCE_GUIDE.md`.
+- Use `reaper.time_precise()` profiling.
+- Typical fixes:
+  - Cache function lookups (`local floor = math.floor`).
+  - Avoid string concat in hot loops.
+  - Pre-allocate tables when size is known.
 
-1. **Check if migration plan exists**: `cookbook/MIGRATION_PLANS.md`
-2. **Follow the phased approach**:
-   - Phase 1: Add shims (preserve old API)
-   - Phase 2: Wire up new code
-   - Phase 3: Remove legacy
-3. **Mark deprecated code**:
-   ```lua
-   -- @deprecated TEMP_PARITY_SHIM: old_func() → use new_module.func()
-   -- EXPIRES: YYYY-MM-DD (planned removal: Phase-3)
-   ```
-4. **Update all importers** when moving modules
-5. **Diff budget**: ≤12 files, ≤700 LOC (stricter for core: ≤6/300)
+### Refactor / Migration
 
-### Task: Add Constants/Configuration
-
-1. **Framework constants** → `arkitekt/defs/app.lua`
-2. **App-specific constants** → `scripts/[AppName]/defs/`
-3. **Follow naming**:
-   ```lua
-   -- arkitekt/defs/timing.lua
-   return {
-     ANIMATION = {
-       FADE_FAST = 0.15,
-       FADE_NORMAL = 0.3,
-     },
-   }
-   ```
-4. **Never hardcode** timing, sizes, or colors in widget code
+- Check `cookbook/MIGRATION_PLANS.md`.
+- Use phased approach: shims → new path wired → remove legacy.
+- Mark deprecated shims clearly with expiry notes.
+- Respect diff budget (see below).
 
 ---
 
-## Bootstrap Pattern
+## 4. Edit Hygiene & Diff Budget
 
-**Entry points MUST use dofile (not require)**:
+**Do:**
 
-```lua
-local ARK
-do
-  local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, "S").source:sub(2)
-  local path = src:match("(.*"..sep..")")
-  while path and #path > 3 do
-    local init = path .. "arkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
-    local f = io.open(init, "r")
-    if f then
-      f:close()
-      ARK = dofile(init).bootstrap()
-      break
-    end
-    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
-  end
-  if not ARK then
-    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
-    return
-  end
-end
-```
+- Keep diffs *surgical*.
+- Match existing style/patterns.
+- Use anchor comments when editing large chunks:
 
-**Why?** Bootstrap sets up `package.path` - you can't `require()` until that runs. Chicken-and-egg problem.
+  ```lua
+  -- >>> SECTION_NAME (BEGIN)
+  --   code
+  -- <<< SECTION_NAME (END)
+  ```
+
+**Don’t:**
+
+- Reformat whole files.
+- Rename things that are out of scope.
+- Introduce new globals or implicit state.
+
+**Diff budget (per task):**
+
+- Max **12 files**, **≤700 LOC** changed.
+- For `core/*`: prefer **≤6 files**, **≤300 LOC**.
+- If you must go beyond this, stop and split into multiple phases/tasks.
 
 ---
 
-## Module Pattern Template
+## 5. ImGui / ReaImGui References
 
-```lua
--- @noindex
--- [AppName]/[layer]/[module_name].lua
--- Brief description of what this module does
+Use these as **reference only** (they show ImGui patterns, not ARKITEKT APIs):
 
-local M = {}
+- `references/imgui/ReaImGui_Demo.lua` – official demo with all widgets and patterns.
+- `references/imgui/imgui_defs.lua` – LuaCATS type defs and ImGui constants.
 
--- DEPENDENCIES (at top, after M declaration)
-local Logger = require('arkitekt.debug.logger')
-local SomeOther = require('arkitekt.core.some_other')
+Typical workflow for a new widget:
 
--- CONSTANTS (if module-specific)
-local DEFAULT_VALUE = 100
-local MAX_ITEMS = 50
-
--- PRIVATE FUNCTIONS (prefix with underscore)
-local function _helper(x)
-  return x * 2
-end
-
--- PUBLIC API
-function M.new(opts)
-  opts = opts or {}
-  local self = {
-    value = opts.value or DEFAULT_VALUE,
-  }
-  return setmetatable(self, { __index = M })
-end
-
-function M:do_something()
-  return _helper(self.value)
-end
-
-return M
-```
+1. Grep the ImGui demo for the base widget pattern.
+2. Understand whether it’s Begin/End or single-call.
+3. Decide whether to mirror exactly or “wrap + improve” per `cookbook/API_DESIGN_PHILOSOPHY.md`.
+4. Implement using ARKITEKT’s widget conventions.
 
 ---
 
-## Edit Hygiene
+## 6. Anti-Patterns – Hard No’s
 
-### Surgical Diffs
-- Change **only** what's necessary
-- Don't reformat or reorder unrelated code
-- Don't add comments/docstrings to unchanged code
-- Don't "improve" code that wasn't part of the request
+Never do these:
 
-### Anchor Comments (for large files)
-```lua
--- >>> SECTION_NAME (BEGIN)
--- ... code ...
--- <<< SECTION_NAME (END)
-```
-
-### No Side Effects at Require Time
-Module top-level should ONLY:
-- Define `local M = {}`
-- Define local functions
-- Require dependencies
-- Return `M`
-
-**NEVER** at module top-level:
-- Call `reaper.*` functions
-- Initialize global state
-- Print/log
-- Open files
+- UI / ImGui calls in `domain/*`.
+- New globals or module-level side effects.
+- Hardcoded magic numbers when a `defs/` constant exists.
+- Creating new folders just because “it feels cleaner” – check existing structure first.
+- Touching unrelated files “while you’re here”.
+- Re-declaring default config values (colors, padding, rounding, etc.) just to restate defaults.
+- Overriding core defaults unless explicitly requested.
 
 ---
 
-## Verification Checklist
+## 7. Final Checklist Before You Say “Done”
 
-Before completing any task, verify:
+Make sure:
 
-- [ ] No `require("arkitekt.` (old namespace)
-- [ ] No ImGui calls in `domain/*` (keep UI separate from business logic)
-- [ ] No globals introduced
-- [ ] No files outside task scope modified
-- [ ] Diff is surgical (no formatting changes)
-- [ ] Follows existing patterns in the codebase
-- [ ] Read the file before editing it
+- [ ] No legacy namespaces; only `require('arkitekt.*')` and `Ark.*` for loader utilities.
+- [ ] No UI / ImGui in `domain/*`.
+- [ ] No new globals or top-level side effects.
+- [ ] Only files in scope were touched.
+- [ ] Diff is small and focused.
+- [ ] Code matches existing patterns in that folder.
+- [ ] You actually read the file(s) before editing.
 
----
-
-## Quick Reference
-
-### Naming Conventions
-- **Files/folders**: `snake_case` (`media_grid.lua`)
-- **Modules**: `PascalCase` when required (`local MediaGrid = require(...)`)
-- **Functions**: `snake_case` (`function M.get_items()`)
-- **Constants**: `SCREAMING_SNAKE` (`local MAX_ITEMS = 100`)
-- **Private**: `_underscore_prefix` (`local function _helper()`)
-
-### Common Imports
-```lua
--- Framework
-local Shell = require('arkitekt.app.runtime.shell')
-local Settings = require('arkitekt.core.settings')
-local Logger = require('arkitekt.debug.logger')
-local Constants = require('arkitekt.app.init.constants')
-
--- Core utilities
-local Fs = require('arkitekt.core.fs')
-local JSON = require('arkitekt.core.json')
-
--- Platform (ImGui/REAPER abstractions)
-local ImGui = require('arkitekt.platform.imgui')
-local Images = require('arkitekt.platform.images')
-
--- Widgets
-local Button = require('arkitekt.gui.widgets.primitives.button')
-local Panel = require('arkitekt.gui.widgets.containers.panel')
-```
-
-### App Structure
-```
-scripts/MyApp/
-├── ARK_MyApp.lua          # Entry point (bootstrap + Shell.run)
-├── app/                   # Orchestration
-│   └── state.lua          # App state management
-├── core/                  # Pure logic
-├── defs/                  # Constants
-│   ├── defaults.lua
-│   └── config.lua
-├── ui/                    # Views
-│   └── main_view.lua
-└── tests/                 # Tests
-```
-
----
-
-## Documentation Hierarchy
-
-When you need more detail:
-
-1. **This file** (CLAUDE.md) - Quick reference, task cookbook
-2. **cookbook/API_DESIGN_PHILOSOPHY.md** - When to match ImGui vs when to improve
-3. **cookbook/CONVENTIONS.md** - Detailed coding standards
-4. **cookbook/PROJECT_STRUCTURE.md** - Full architecture guide
-5. **cookbook/WIDGETS.md** - Widget development patterns
-6. **cookbook/THEME_MANAGER.md** - Theming system guide
-7. **cookbook/LUA_PERFORMANCE_GUIDE.md** - Performance optimization
-8. **cookbook/DEPRECATED.md** - Deprecation tracker
-9. **TODO/** - Actionable improvements to work on
-
----
-
-## ImGui Reference Materials
-
-**Location**: `references/imgui/`
-
-When implementing widgets or understanding ImGui patterns, consult these official ReaImGui reference files:
-
-### 1. ReaImGui_Demo.lua
-**Path**: `references/imgui/ReaImGui_Demo.lua`
-
-Official ImGui demo ported to Lua. Shows all ImGui widgets, patterns, and real-world usage.
-
-**When to use:**
-- Implementing a new widget → Search for ImGui equivalent
-- Understanding Begin/End patterns → See real examples
-- Learning ImGui conventions → See how official demo does it
-
-**Key sections** (search by comment):
-```bash
-# Menu patterns
-grep -A 20 "BeginMenu\|MenuItem" references/imgui/ReaImGui_Demo.lua
-
-# Table API
-grep -A 50 "BeginTable" references/imgui/ReaImGui_Demo.lua
-
-# Popup patterns
-grep -A 30 "BeginPopup" references/imgui/ReaImGui_Demo.lua
-
-# Widget examples
-grep -A 10 "Button\|Checkbox\|Slider" references/imgui/ReaImGui_Demo.lua
-```
-
-### 2. imgui_defs.lua
-**Path**: `references/imgui/imgui_defs.lua`
-
-LuaCATS type definitions for ReaImGui. Provides autocomplete in LSP-enabled editors.
-
-**When to use:**
-- Need exact function signature → Check definitions
-- Want to know available flags → See all ImGui constants
-- IDE autocomplete setup → Reference for types
-
-**Example:**
-```lua
--- Search for Button signature
-grep -A 5 "function.*Button" references/imgui/imgui_defs.lua
-```
-
-### How to Use These References
-
-**Workflow when adding a widget:**
-
-1. **Check the demo** for ImGui equivalent:
-   ```bash
-   grep -i "yourtargetwidget" references/imgui/ReaImGui_Demo.lua
-   ```
-
-2. **Understand the pattern** (Begin/End? Single call? Return value?)
-
-3. **Consult API philosophy** (`cookbook/API_DESIGN_PHILOSOPHY.md`):
-   - Should you match this pattern exactly?
-   - Or improve with opts table, result object, etc.?
-
-4. **Implement** following ARKITEKT conventions
-
-**Example:**
-```bash
-# Want to implement a menu bar widget
-grep -A 30 "BeginMenuBar" references/imgui/ReaImGui_Demo.lua
-# See: Uses BeginMenuBar/EndMenuBar pattern
-# Decision: Match this (Begin/End is good for stateful operations)
-
-# Want to implement a button
-grep -A 10 "ImGui\.Button" references/imgui/ReaImGui_Demo.lua
-# See: Returns boolean, positional params
-# Decision: Improve with opts table + result object (see API_DESIGN_PHILOSOPHY.md)
-```
-
-**Remember:** These show **ImGui patterns**, not ARKITEKT patterns. Use them to understand what ImGui users expect, then decide whether to match or improve (see API Design Philosophy).
-
----
-
-## Common Gotchas
-
-| Gotcha | Solution |
-|--------|----------|
-| "Module not found" after bootstrap | Check `package.path` was set up correctly |
-| Fullscreen/overlay not working | Use `OverlayManager`, not old window.lua code |
-| Settings not persisting | Use `Settings.new()` - each app needs own instance |
-| Fonts not loading | Use `arkitekt.app.chrome.fonts` loader |
-| Animation stuttering | Check if you're creating new animation objects every frame |
-| Widget state lost | Make sure state lives in app layer, not recreated each draw |
-
----
-
-## Final Reminders
-
-1. **Read first, write second** - Understand before changing
-2. **Minimal changes** - Do exactly what's asked, nothing more
-3. **Respect layers** - Keep UI out of domain, use core utilities when available
-4. **Follow patterns** - Look at similar code in the codebase
-5. **Use Ark.* namespace** - Prefer `Ark.Button`, `Ark.ImGui` over scattered requires
+If in doubt: **stop, re-read, then adjust.**
