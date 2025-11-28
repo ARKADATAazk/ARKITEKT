@@ -312,9 +312,13 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
   local is_disabled = config.disabled or false
   local is_toggled = config.is_toggled or false
 
-  -- Check hover using IsMouseHoveringRect (ImGui built-in, respects clipping)
-  local is_hovered = not is_disabled and not config.is_blocking and
-                     ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
+  -- Create InvisibleButton FIRST so IsItemHovered works for everything
+  -- (DrawList rendering uses explicit coordinates, doesn't care about cursor)
+  ImGui.SetCursorScreenPos(ctx, x, y)
+  ImGui.InvisibleButton(ctx, "##" .. unique_id, width, height)
+
+  -- Now use IsItemHovered for all hover checks (single source of truth)
+  local is_hovered = not is_disabled and not config.is_blocking and ImGui.IsItemHovered(ctx)
   local is_active = not is_disabled and not config.is_blocking and
                     is_hovered and ImGui.IsMouseDown(ctx, 0)
 
@@ -382,11 +386,7 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
     end
   end
 
-  -- Create InvisibleButton AFTER drawing for click detection
-  ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, "##" .. unique_id, width, height)
-
-  -- Check for clicks
+  -- Check for clicks (InvisibleButton already created at start)
   local clicked = not is_disabled and not config.is_blocking and ImGui.IsItemClicked(ctx, 0)
   local right_clicked = not is_disabled and not config.is_blocking and ImGui.IsItemClicked(ctx, 1)
 
@@ -419,7 +419,7 @@ function M.draw(ctx, opts)
   local width = opts.width or M.measure(ctx, opts)
   local height = opts.height or 24
 
-  -- Render (InvisibleButton is created inside render_button now)
+  -- Render button (InvisibleButton created first, then DrawList rendering)
   local is_hovered, is_active, clicked, right_clicked = render_button(ctx, dl, x, y, width, height, config, instance, unique_id)
 
   -- Handle callbacks
@@ -430,8 +430,8 @@ function M.draw(ctx, opts)
     config.on_right_click()
   end
 
-  -- Handle tooltip (can use manual is_hovered check or IsItemHovered on InvisibleButton)
-  if ImGui.IsItemHovered(ctx) and opts.tooltip then
+  -- Handle tooltip (uses is_hovered from render_button)
+  if is_hovered and opts.tooltip then
     ImGui.SetTooltip(ctx, opts.tooltip)
   end
 
