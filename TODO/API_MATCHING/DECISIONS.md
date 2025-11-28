@@ -324,6 +324,96 @@ r.item  -- Still available for selected item text
 
 ---
 
+## Decision 10: Simple Alignment Option
+
+### Choice
+Add `align` option to widgets for easy centering/right-alignment:
+
+```lua
+Ark.Button(ctx, {label = "Centered", align = "center"})
+Ark.Button(ctx, {label = "Close", align = "right"})
+```
+
+### Implementation
+```lua
+-- ~10 lines, trivial
+if opts.align == "center" then
+  local win_w = ImGui.GetWindowWidth(ctx)
+  x = (win_w - width) * 0.5
+elseif opts.align == "right" then
+  local win_w = ImGui.GetWindowWidth(ctx)
+  x = win_w - width
+end
+```
+
+### Rejected Alternatives
+- Container layouts (Row, flex) - Too complex, low demand
+- Percentage widths - Overengineering
+- CSS-style justify/stretch - Overkill for REAPER scripts
+
+### Rationale
+- Covers 80% use case with minimal code
+- No container system needed
+- Simple mental model
+
+---
+
+## Decision 11: Match ImGui Cursor Advance
+
+### Choice
+Change default `advance` from `"vertical"` to `"horizontal"` to match ImGui:
+
+```lua
+-- Current (different from ImGui):
+Ark.Button(ctx, "A")
+Ark.Button(ctx, "B")  -- Below A (vertical)
+
+-- Target (matches ImGui):
+Ark.Button(ctx, "A")
+Ark.Button(ctx, "B")  -- Next to A (horizontal)
+```
+
+### Keep Option for Override
+```lua
+Ark.Button(ctx, {label = "A", advance = "vertical"})
+Ark.Button(ctx, "B")  -- Below A
+```
+
+### Rationale
+- Matches ImGui default behavior
+- Easier migration from ImGui code
+- Less surprise for ImGui users
+
+---
+
+## Decision 12: Ark + ImGui Interop Rules
+
+### What Works
+```lua
+-- SameLine: WORKS
+Ark.Button(ctx, "A")
+ImGui.SameLine(ctx)
+Ark.Button(ctx, "B")
+
+-- IsItemHovered: WORKS (but redundant)
+Ark.Button(ctx, "X")
+if ImGui.IsItemHovered(ctx) then ... end  -- Works, but use result.hovered instead
+```
+
+### What Doesn't Work
+```lua
+-- SetNextItemWidth: MAY NOT WORK
+ImGui.SetNextItemWidth(ctx, 200)
+Ark.Slider(ctx, "Vol", v, 0, 100)  -- May ignore, use opts.width instead
+```
+
+### Guidance
+- Use `ImGui.SameLine()`, `ImGui.Separator()`, etc. freely between Ark widgets
+- Don't rely on `ImGui.SetNextItem*()` - use opts instead
+- Don't use `ImGui.IsItem*()` - use result object fields
+
+---
+
 ## Summary Table
 
 | Aspect | ImGui | ARKITEKT Current | ARKITEKT Target |
@@ -335,3 +425,7 @@ r.item  -- Still available for selected item text
 | Internal funcs | Hidden | Exposed | Hidden |
 | Animations | None | Smooth | Smooth |
 | Icons | N/A | UTF-8 + font | UTF-8 + font (+ optional LuaCATS) |
+| Result fields | N/A | Mixed (`.text`, `.value`) | `.value` everywhere |
+| Alignment | Manual calc | Manual calc | `align = "center"/"right"` |
+| Cursor advance | Horizontal | Vertical | Horizontal (match ImGui) |
+| ImGui interop | N/A | Undocumented | SameLine works, SetNext* doesn't |
