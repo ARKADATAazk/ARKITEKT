@@ -147,6 +147,35 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     return archive_children
   end
 
+  -- Build inbox tree from _Inbox folder (shows templates as leaf nodes)
+  local function build_inbox_tree()
+    local inbox_children = {}
+
+    -- Get templates in _Inbox folder
+    if all_templates then
+      for _, tmpl in ipairs(all_templates) do
+        if tmpl.relative_path == Constants.FOLDERS.INBOX then
+          local template_node = {
+            id = "__INBOX_TMPL__" .. tmpl.uuid,
+            name = tmpl.name,
+            path = tmpl.path,
+            full_path = tmpl.path,
+            uuid = tmpl.uuid,
+            children = {},
+            is_inbox = true,
+            is_template = true,
+          }
+          inbox_children[#inbox_children + 1] = template_node
+        end
+      end
+    end
+
+    -- Sort alphabetically
+    table.sort(inbox_children, function(a, b) return a.name:lower() < b.name:lower() end)
+
+    return inbox_children
+  end
+
   local root_nodes = {}
 
   -- Add Physical Root node
@@ -184,6 +213,19 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   }
 
   root_nodes[#root_nodes + 1] = virtual_root
+
+  -- Add Inbox Root node
+  local inbox_children = build_inbox_tree()
+  local inbox_root = {
+    id = "__INBOX_ROOT__",
+    name = "Inbox",
+    path = "__INBOX_ROOT__",
+    children = inbox_children,
+    is_inbox = true,
+    template_count = #inbox_children,  -- Show count badge
+  }
+
+  root_nodes[#root_nodes + 1] = inbox_root
 
   -- Add Archive Root node
   local archive_root = {
@@ -1068,6 +1110,74 @@ function M.draw_virtual_tree(ctx, state, config)
   state.last_clicked_folder = tree_state.last_clicked_node
   state.renaming_folder_path = tree_state.renaming_node
   state.rename_buffer = tree_state.rename_buffer
+end
+
+-- Draw inbox tree only (shows templates in _Inbox folder)
+function M.draw_inbox_tree(ctx, state, config)
+  -- Prepare tree nodes from state.folders
+  local all_nodes = prepare_tree_nodes(state.folders, state.metadata, state.templates)
+
+  -- Get inbox root node and extract its children
+  local inbox_nodes = {}
+  local inbox_count = 0
+  for _, node in ipairs(all_nodes) do
+    if node.id == "__INBOX_ROOT__" then
+      inbox_nodes = node.children or {}
+      inbox_count = node.template_count or #inbox_nodes
+      break
+    end
+  end
+
+  -- Always show inbox tree (even if empty - shows "empty" state)
+  -- Ensure INBOX_ROOT node is open by default
+  if state.folder_open_state["__INBOX_ROOT__"] == nil then
+    state.folder_open_state["__INBOX_ROOT__"] = true
+  end
+
+  -- Map state variables to TreeView format
+  local tree_state = {
+    open_nodes = state.folder_open_state,
+    selected_nodes = state.selected_folders,
+    last_clicked_node = state.last_clicked_folder,
+    renaming_node = nil,  -- Inbox items can't be renamed here
+    rename_buffer = "",
+  }
+
+  -- Draw tree with callbacks for inbox
+  TreeView.draw(ctx, inbox_nodes, tree_state, {
+    enable_rename = false,  -- No renaming in inbox tree
+    show_colors = false,
+    show_template_count = false,
+    enable_drag_drop = true,  -- Allow dragging templates out of inbox
+    enable_multi_select = true,
+    context_menu_id = nil,  -- Could add context menu later
+
+    on_select = function(node, selected_nodes)
+      -- Selecting an inbox template should select it in the main grid too
+      if node.is_template and node.uuid then
+        -- Find the template and set it as selected
+        for _, tmpl in ipairs(state.templates) do
+          if tmpl.uuid == node.uuid then
+            state.selected_template = tmpl
+            break
+          end
+        end
+      end
+      state.selected_folders = selected_nodes
+      state.last_clicked_folder = node.path
+    end,
+
+    on_delete = function(node)
+      -- Inbox templates can't be deleted via Delete key in tree
+      -- Use the main grid for template operations
+    end,
+  })
+
+  -- Sync TreeView state back
+  state.selected_folders = tree_state.selected_nodes
+  state.last_clicked_folder = tree_state.last_clicked_node
+
+  return inbox_count
 end
 
 -- Draw archive folder tree only
