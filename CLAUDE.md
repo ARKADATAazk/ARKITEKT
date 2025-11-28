@@ -27,7 +27,7 @@ Ark.Panel.draw(ctx, opts)
 Ark.ImGui.Text(ctx, "Hello")  -- ImGui is pre-loaded
 
 -- Platform utilities (lazy-loaded)
-local cache = ark.Images.new({budget = 20})
+local cache = Ark.Images.new({budget = 20})
 cache:draw_thumb(ctx, image_path, 64)
 
 -- Direct requires also work

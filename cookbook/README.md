@@ -6,7 +6,8 @@
 
 | Guide | Description |
 |-------|-------------|
-| [SCRIPT_LAYERS.md](SCRIPT_LAYERS.md) | **Start here** - Framework vs script architecture |
+| [QUICKSTART.md](QUICKSTART.md) | **Start here** - Create a new app in 5 minutes |
+| [SCRIPT_LAYERS.md](SCRIPT_LAYERS.md) | Framework vs script architecture |
 | [CONVENTIONS.md](CONVENTIONS.md) | Naming conventions, file organization, module patterns |
 | [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) | Clean Architecture layers, canonical folder structure |
 | [API_DESIGN_PHILOSOPHY.md](API_DESIGN_PHILOSOPHY.md) | When to match ImGui vs when to improve |
