@@ -14,7 +14,7 @@
 | **Return values** | Result object | Richer than boolean, still works inline |
 | **Public API** | Minimal | Hide cleanup, measure, internals |
 | **Hover animations** | Keep (strong tables) | Smooth UX, automatic cleanup |
-| **ImGui flags** | Use directly (`ImGui.WindowFlags_*`) | No value in renaming constants |
+| **ImGui flags** | Convert to boolean opts | `password = true` not `InputTextFlags_Password` |
 | **Chrome options** | Positive naming (`titlebar = true`) | Avoid double negatives |
 | **Shell** | Keep & extend | Real value: lifecycle, chrome, themes |
 | **Unified namespace** | `Ark.Theme`, `Ark.Shell` | One namespace for framework |
@@ -50,14 +50,31 @@ local w = ImGui.CalcTextSize(ctx, text)
 
 ## Files in This Folder
 
+### Core Documentation
+
 | File | Description |
 |------|-------------|
-| [DECISIONS.md](DECISIONS.md) | Detailed rationale for each design choice |
-| [SCOPE.md](SCOPE.md) | What gets Ark.* vs stays ImGui.* |
-| [SHELL.md](SHELL.md) | Shell features: what's done vs what to add |
+| [DECISIONS.md](DECISIONS.md) | Detailed rationale for each design choice (19 decisions) |
+| [SCOPE.md](SCOPE.md) | What gets `Ark.*` vs stays `ImGui.*` |
 | [WIDGET_SIGNATURES.md](WIDGET_SIGNATURES.md) | ImGui → Ark signature mappings for each widget |
+| [FLAGS_TO_OPTS.md](FLAGS_TO_OPTS.md) | ImGui bitwise flags → ARKITEKT opts mapping |
+
+### Implementation Guides
+
+| File | Description |
+|------|-------------|
 | [IMPLEMENTATION.md](IMPLEMENTATION.md) | Step-by-step implementation guide |
+| [PHASING.md](PHASING.md) | Phased rollout plan with decision tracking |
+| [GUARDRAILS.md](GUARDRAILS.md) | Panel/Button context injection for auto-styling |
 | [CHECKLIST.md](CHECKLIST.md) | Progress tracker for migration |
+
+### Feature-Specific Reworks
+
+| File | Description |
+|------|-------------|
+| [SHELL.md](SHELL.md) | Shell features: what's done vs what to add |
+| [PANEL_REWORK.md](PANEL_REWORK.md) | Panel callback regions + context injection spec |
+| [GRID_REWORK.md](GRID_REWORK.md) | Grid widget simplification and API alignment |
 
 ---
 
