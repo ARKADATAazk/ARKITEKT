@@ -8,9 +8,11 @@ local hexrgb = Ark.Colors.hexrgb
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local Easing = require('arkitekt.gui.animation.easing')
+local MediaGridBase = require('arkitekt.gui.widgets.media.media_grid.renderers.base')
 local M = {}
 
-M.tile_spawn_times = {}
+-- Reuse tile_spawn_times from MediaGridBase for consistent cascade timing
+M.tile_spawn_times = MediaGridBase.tile_spawn_times
 
 -- Ensure color has minimum lightness for readability
 function M.ensure_min_lightness(color, min_lightness)
@@ -22,26 +24,11 @@ function M.ensure_min_lightness(color, min_lightness)
   return Ark.Colors.components_to_rgba(r, g, b, 0xFF)
 end
 
--- Calculate cascade animation factor based on overlay alpha and position
+-- Calculate cascade animation factor (delegates to MediaGridBase)
 function M.calculate_cascade_factor(rect, overlay_alpha, config)
-  if overlay_alpha >= 0.999 then return 1.0 end
-  if overlay_alpha <= 0.001 then return 0.0 end
-
-  local x1, y1 = rect[1], rect[2]
-  local key = string.format("%.0f_%.0f", x1, y1)
-
-  if not M.tile_spawn_times[key] then
-    local grid_x = (x1 / 150) // 1
-    local grid_y = (y1 / 150) // 1
-    local grid_distance = math.sqrt(grid_x * grid_x + grid_y * grid_y)
-    M.tile_spawn_times[key] = grid_distance * config.TILE_RENDER.cascade.stagger_delay
-  end
-
-  local delay = M.tile_spawn_times[key]
-  local adjusted_progress = (overlay_alpha - delay) / (1.0 - delay)
-  adjusted_progress = math.max(0.0, math.min(1.0, adjusted_progress))
-
-  return Easing.ease_out_back(adjusted_progress)
+  -- Adapt ItemPicker config structure to MediaGridBase format
+  local adapted_config = { cascade = config.TILE_RENDER.cascade }
+  return MediaGridBase.calculate_cascade_factor(rect, overlay_alpha, adapted_config)
 end
 
 -- Truncate text to fit width
