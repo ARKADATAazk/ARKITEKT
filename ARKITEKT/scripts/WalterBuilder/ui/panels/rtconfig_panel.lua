@@ -740,11 +740,12 @@ function Panel:draw(ctx)
   local detail_w = avail_w - self.tree_width - splitter_w
 
   -- Tree panel
-  ImGui.BeginChild(ctx, "rtconfig_tree", self.tree_width, avail_h - 20, 1, 0)
-  self:draw_sections(ctx)
-  self:draw_macros(ctx)
-  self:draw_layouts(ctx)
-  ImGui.EndChild(ctx)
+  if ImGui.BeginChild(ctx, "rtconfig_tree", self.tree_width, avail_h - 20, ImGui.ChildFlags_Borders, 0) then
+    self:draw_sections(ctx)
+    self:draw_macros(ctx)
+    self:draw_layouts(ctx)
+    ImGui.EndChild(ctx)
+  end
 
   ImGui.SameLine(ctx, 0, 0)
 
@@ -776,11 +777,12 @@ function Panel:draw(ctx)
   ImGui.SameLine(ctx, 0, 0)
 
   -- Detail panel
-  ImGui.BeginChild(ctx, "rtconfig_detail", detail_w, avail_h - 20, 1, 0)
-  ImGui.Indent(ctx, 4)
-  self:draw_detail(ctx)
-  ImGui.Unindent(ctx, 4)
-  ImGui.EndChild(ctx)
+  if ImGui.BeginChild(ctx, "rtconfig_detail", detail_w, avail_h - 20, ImGui.ChildFlags_Borders, 0) then
+    ImGui.Indent(ctx, 4)
+    self:draw_detail(ctx)
+    ImGui.Unindent(ctx, 4)
+    ImGui.EndChild(ctx)
+  end
 
   return result
 end

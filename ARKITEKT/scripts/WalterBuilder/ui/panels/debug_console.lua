@@ -104,37 +104,37 @@ function M.draw(ctx)
 
   -- Log area
   local log_h = avail_h - 35
-  ImGui.BeginChild(ctx, "debug_log_area", avail_w, log_h, 1)
+  if ImGui.BeginChild(ctx, "debug_log_area", avail_w, log_h, ImGui.ChildFlags_Borders, 0) then
+    for _, entry in ipairs(logs) do
+      local color = level_colors[entry.level] or "#AAAAAA"
 
-  for _, entry in ipairs(logs) do
-    local color = level_colors[entry.level] or "#AAAAAA"
+      -- Time prefix
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+      ImGui.Text(ctx, entry.time)
+      ImGui.PopStyleColor(ctx)
 
-    -- Time prefix
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
-    ImGui.Text(ctx, entry.time)
-    ImGui.PopStyleColor(ctx)
+      ImGui.SameLine(ctx)
 
-    ImGui.SameLine(ctx)
+      -- Level badge
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb(color))
+      ImGui.Text(ctx, string.format("[%s]", entry.level:upper():sub(1, 4)))
+      ImGui.PopStyleColor(ctx)
 
-    -- Level badge
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb(color))
-    ImGui.Text(ctx, string.format("[%s]", entry.level:upper():sub(1, 4)))
-    ImGui.PopStyleColor(ctx)
+      ImGui.SameLine(ctx)
 
-    ImGui.SameLine(ctx)
+      -- Message
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
+      ImGui.TextWrapped(ctx, entry.message)
+      ImGui.PopStyleColor(ctx)
+    end
 
-    -- Message
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
-    ImGui.TextWrapped(ctx, entry.message)
-    ImGui.PopStyleColor(ctx)
+    -- Auto-scroll to bottom if near bottom
+    if ImGui.GetScrollY(ctx) >= ImGui.GetScrollMaxY(ctx) - 20 then
+      ImGui.SetScrollHereY(ctx, 1.0)
+    end
+
+    ImGui.EndChild(ctx)
   end
-
-  -- Auto-scroll to bottom if near bottom
-  if ImGui.GetScrollY(ctx) >= ImGui.GetScrollMaxY(ctx) - 20 then
-    ImGui.SetScrollHereY(ctx, 1.0)
-  end
-
-  ImGui.EndChild(ctx)
 end
 
 return M

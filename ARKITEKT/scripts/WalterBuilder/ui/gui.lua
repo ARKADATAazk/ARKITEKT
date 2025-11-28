@@ -572,7 +572,7 @@ function GUI:draw(ctx, window, shell_state)
   -- Left panel: Elements
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
 
-  if ImGui.BeginChild(ctx, "left_panel", self.left_panel_width, remaining_h, 1, 0) then
+  if ImGui.BeginChild(ctx, "left_panel", self.left_panel_width, remaining_h, ImGui.ChildFlags_Borders, 0) then
     ImGui.Dummy(ctx, 0, 4)
     ImGui.Indent(ctx, 4)
 
@@ -640,12 +640,12 @@ function GUI:draw(ctx, window, shell_state)
 
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
 
-  ImGui.BeginChild(ctx, "center_panel", canvas_w, remaining_h, 1, 0)
-  ImGui.Dummy(ctx, 0, 4)
-  ImGui.Indent(ctx, 4)
+  if ImGui.BeginChild(ctx, "center_panel", canvas_w, remaining_h, ImGui.ChildFlags_Borders, 0) then
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.Indent(ctx, 4)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
-  ImGui.Text(ctx, "Preview Canvas")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
+    ImGui.Text(ctx, "Preview Canvas")
   ImGui.PopStyleColor(ctx)
 
   ImGui.SameLine(ctx)
@@ -704,8 +704,9 @@ function GUI:draw(ctx, window, shell_state)
     self.State.set_parent_size(cw, ch)
   end
 
-  ImGui.Unindent(ctx, 4)
-  ImGui.EndChild(ctx)
+    ImGui.Unindent(ctx, 4)
+    ImGui.EndChild(ctx)
+  end
   ImGui.PopStyleColor(ctx)
 
   ImGui.SameLine(ctx, 0, 0)
