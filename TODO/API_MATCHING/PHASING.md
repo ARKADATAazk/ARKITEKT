@@ -4,7 +4,7 @@
 
 ---
 
-## Decision Summary (16 Total)
+## Decision Summary (17 Total)
 
 | # | Decision | Status |
 |---|----------|--------|
@@ -24,6 +24,7 @@
 | 14 | Ark + ImGui Interop Rules | Decided |
 | 15 | Presets Only (no raw colors in docs) | Decided |
 | 16 | Hidden State for Complex Widgets | Decided |
+| 17 | Panel Callback Regions + Context Injection | Decided |
 
 ---
 
@@ -93,25 +94,59 @@
 
 ---
 
-## Out of Scope (Separate Work)
+## Phase 4: Panel Rework (OPTIONAL - After App Migrations)
 
-### Panel Refactor
+### Panel API Rework
 
-Panel is a **retained-mode container** with Begin/End pattern - fundamentally different from Grid/widgets.
-It stays retained because user draws arbitrary content between `begin_draw()` and `end_draw()`.
+Panel moves from **declarative config** to **callback-based regions**, consistent with Grid's `render` callback pattern.
 
-**See:** `TODO/PANEL_REFACTOR.md` for separate refactoring plan:
-- Phase 1: Extract TabStrip → `Ark.TabStrip(ctx, opts)` (follows Grid patterns)
-- Phase 2: Remove app-specific code
-- Phase 3: Consolidate small modules
-- Phase 4: Config builder pattern
-- Phase 5: State normalization
+**See:** `TODO/API_MATCHING/PANEL_REWORK.md` for full spec.
 
-**Panel API matching (minimal):**
-- Color migration during app migration (Phase 2) - replace hardcoded colors with Theme.COLORS
-- TabStrip extraction could be parallel with Phase 1 widgets (independent work)
+**Key changes:**
+1. Regions use `draw` callbacks - user calls `Ark.Button` directly
+2. Corner buttons become a region - not special config
+3. Button auto-adapts to context - Panel injects rounding info
+4. CornerButton widget deprecated - Button handles everything
 
-**Panel refactor phases are OPTIONAL and independent from API matching.**
+**New API:**
+```lua
+Ark.Panel(ctx, {
+  id = "my_panel",
+
+  header = {
+    height = 30,
+    draw = function(ctx)
+      Ark.Button(ctx, { label = "Title" })  -- Auto-rounded for header
+    end,
+  },
+
+  corner = {
+    bottom_right = function(ctx)
+      Ark.Button(ctx, { icon = "⚙" })  -- Auto corner-shaped
+    end,
+  },
+
+  draw = function(ctx)
+    -- Main content
+  end,
+})
+```
+
+**Benefits:**
+- No declarative `elements = { type = "button" }` config
+- User calls real widgets in callbacks
+- Panel handles all guardrails (rounding, positioning)
+- Button auto-adapts based on Panel context
+
+**Implementation phases:**
+1. Context injection - Panel injects corner/header context
+2. Corner region - New `corner = {}` config with callbacks
+3. Callback migration - Add `header.draw`, deprecate `elements`
+4. Cleanup - Deprecate CornerButton, remove legacy config
+
+**Related legacy doc:** `TODO/PANEL_REFACTOR.md` (partially superseded)
+- Still valid: Extract TabStrip, remove app-specific code, state normalization
+- Superseded: Config builder pattern (replaced by callbacks)
 
 ---
 
@@ -529,5 +564,7 @@ Grep patterns:
 | Implementation guide | `TODO/API_MATCHING/IMPLEMENTATION.md` |
 | Progress checklist | `TODO/API_MATCHING/CHECKLIST.md` |
 | Grid rework spec | `TODO/API_MATCHING/GRID_REWORK.md` |
+| Panel rework spec | `TODO/API_MATCHING/PANEL_REWORK.md` |
 | Guardrails philosophy | `TODO/API_MATCHING/GUARDRAILS.md` |
 | This phasing guide | `TODO/API_MATCHING/PHASING.md` |
+| Legacy Panel refactor | `TODO/PANEL_REFACTOR.md` (partially superseded) |

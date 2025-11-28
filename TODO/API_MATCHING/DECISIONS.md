@@ -591,6 +591,90 @@ All use the **same pattern** (ID-keyed state), just with different amounts of hi
 
 ---
 
+## Decision 17: Panel Callback Regions + Context Injection
+
+### Problem
+Panel uses **declarative config** for UI elements:
+
+```lua
+-- Current: Declarative (inconsistent with rest of API)
+Panel.new("my_panel", {
+  header = {
+    elements = {
+      { id = "title", type = "button", config = { label = "Title" }},
+    },
+  },
+  corner_buttons = {
+    bottom_right = { icon = "⚙", on_click = fn },
+  },
+})
+```
+
+This creates a duplicate type system (`type = "button"` vs `Ark.Button`), config tunneling, and inconsistency with Grid's `render` callback pattern.
+
+### Choice
+Panel uses **callback-based regions**. User calls real widgets inside callbacks:
+
+```lua
+-- New: Callback regions (consistent with Grid)
+Ark.Panel(ctx, {
+  id = "my_panel",
+
+  header = {
+    height = 30,
+    draw = function(ctx)
+      Ark.Button(ctx, { label = "Title" })
+    end,
+  },
+
+  corner = {
+    bottom_right = function(ctx)
+      Ark.Button(ctx, { icon = "⚙" })  -- Auto corner-shaped!
+    end,
+  },
+
+  draw = function(ctx)
+    -- Main content
+  end,
+})
+```
+
+### Context Injection
+Panel injects rendering context before calling region callbacks. Button reads this and auto-adapts:
+
+- **Header buttons**: Corners auto-rounded based on position (first/middle/last)
+- **Corner buttons**: Asymmetric rounding auto-applied based on which corner
+- **No manual config**: User just calls `Ark.Button`, Panel guardrails everything
+
+```
+Panel                              Button
+  │                                  │
+  ├─ Sets context:                   │
+  │   _corner_position = "br"        │
+  │   _corner_outer = 8              │
+  │   _corner_inner = 3              │
+  │                                  │
+  └─ Calls draw callback ───────────►│
+                                     │
+     Ark.Button(ctx, {icon="⚙"}) ───►│
+                                     │
+                                     ├─ Reads context
+                                     └─ Renders corner-shaped
+```
+
+### CornerButton Deprecation
+`Ark.CornerButton` becomes unnecessary. Button handles all cases via context injection.
+
+### Rationale
+- **Consistent** with Grid's `render` callback pattern
+- **No duplicate type system** - user calls real `Ark.Button`
+- **Panel guardrails everything** - no manual `corner_rounding` config
+- **Simpler user code** - just call widgets, Panel handles the rest
+
+**See:** `TODO/API_MATCHING/PANEL_REWORK.md` for full spec.
+
+---
+
 ## Summary Table
 
 | Aspect | ImGui | ARKITEKT Current | ARKITEKT Target |
@@ -609,3 +693,4 @@ All use the **same pattern** (ID-keyed state), just with different amounts of hi
 | ImGui interop | N/A | Undocumented | SameLine works, SetNext* doesn't |
 | Widget colors | N/A | Raw + presets | Presets only (semantic) |
 | Complex widgets | ID-keyed state | Explicit retained | Hidden state (like ImGui) |
+| Panel regions | N/A | Declarative config | Callback + context injection |
