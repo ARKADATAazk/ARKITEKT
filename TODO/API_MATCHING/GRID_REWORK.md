@@ -254,22 +254,34 @@ Delete `Grid.new()`, keep only `Ark.Grid()`.
 
 ---
 
-## ID Collision Prevention
+## ID Strategy: Explicit Required
 
-### Auto-Generate from Call Location
+**Decision**: `id` is **required**, no auto-generation.
 
 ```lua
-function M.draw(ctx, opts)
-  local id = opts.id
-  if not id then
-    local info = debug.getinfo(2, "Sl")
-    id = info.source .. ":" .. info.currentline
-  end
-  -- ...
-end
+-- REQUIRED - Grid needs explicit ID
+local r = Ark.Grid(ctx, {id = "pool_grid", items = items})
+
+-- ERROR if missing
+Ark.Grid(ctx, {items = items})
+-- → "Ark.Grid: 'id' field is required"
 ```
 
-### Debug Warning
+**Why not auto-generate from call location?**
+
+```lua
+-- Helper function - same line = same ID = COLLISION!
+function make_grid(ctx, items)
+  return Ark.Grid(ctx, {items = items})  -- Always line 10
+end
+
+make_grid(ctx, pool_items)    -- ID = "file.lua:10"
+make_grid(ctx, active_items)  -- ID = "file.lua:10" ⚠️ SHARED STATE!
+```
+
+**Explicit ID avoids surprises.** User thinks about identity upfront.
+
+### Debug Warning (Development Mode)
 
 ```lua
 if DEBUG then
@@ -282,31 +294,124 @@ if DEBUG then
 end
 ```
 
-### Clear Docs
+---
 
-Document that:
-- Each Grid needs unique ID
-- Same ID = shared state (intentional for some use cases)
-- Use `opts.id` to disambiguate if needed
+## Known Gotchas
+
+### 1. Helper Functions Need ID Parameter
+
+```lua
+-- BAD: Caller can't control ID
+function make_grid(ctx, items)
+  return Ark.Grid(ctx, {id = "grid", items = items})
+end
+
+-- GOOD: Caller provides ID
+function make_grid(ctx, id, items)
+  return Ark.Grid(ctx, {id = id, items = items})
+end
+```
+
+### 2. Each Grid Needs Own Opts Table
+
+```lua
+-- BAD: Shared opts, mutations collide
+local base_opts = {render = render_fn}
+
+function draw_pool(ctx, items)
+  base_opts.id = "pool"       -- Mutates shared!
+  base_opts.items = items
+  return Ark.Grid(ctx, base_opts)
+end
+
+-- GOOD: Separate opts per grid
+local pool_opts = {id = "pool", render = render_fn}
+local active_opts = {id = "active", render = render_fn}
+```
+
+### 3. Don't Mutate Items During Render
+
+```lua
+-- BAD: Modify items while Grid is iterating
+local r = Ark.Grid(ctx, {id = "list", items = items})
+if r.delete_clicked then
+  table.remove(items, r.clicked_index)  -- ⚠️ During render!
+end
+
+-- GOOD: Defer mutations
+local pending_delete = nil
+local r = Ark.Grid(ctx, {id = "list", items = items})
+if r.delete_clicked then
+  pending_delete = r.clicked_index
+end
+-- After draw:
+if pending_delete then table.remove(items, pending_delete) end
+```
+
+### 4. Result Object is a Snapshot
+
+```lua
+local last_result = nil
+
+function draw(ctx)
+  last_result = Ark.Grid(ctx, opts)  -- Snapshot at this moment
+end
+
+function elsewhere()
+  -- Safe: last_result is a copy, not live reference
+  local selected = last_result and last_result.selected_keys
+end
+```
+
+Result is copied at draw time. Safe to store and access later.
+
+### 5. 30s State Cleanup
+
+State is cleaned after 30s of no access. For modals that close/reopen:
+
+```lua
+-- If persistence needed, save externally
+local saved_selection = nil
+
+function draw_modal(ctx)
+  local r = Ark.Grid(ctx, {
+    id = "modal_grid",
+    items = items,
+    initial_selection = saved_selection,  -- Restore
+  })
+  if r.selection_changed then
+    saved_selection = r.selected_keys  -- Save
+  end
+end
+```
+
+### 6. Nested Grids Need Explicit IDs
+
+```lua
+Ark.Grid(ctx, {
+  id = "categories",
+  items = categories,
+  render = function(ctx, rect, category)
+    -- Nested grid - MUST have explicit ID
+    Ark.Grid(ctx, {
+      id = "items_" .. category.id,  -- Unique per category!
+      items = category.items,
+    })
+  end,
+})
+```
 
 ---
 
-## Open Questions
+## Resolved Questions
 
-1. **Should Grid auto-cache config by ID?** (Option B above)
-   - Pro: Even simpler API
-   - Con: Magic, config "sticks" unexpectedly
-
-2. **Callback vs polling for events?**
-   - Recommend: Both. Callbacks for convenience, polling always available.
-
-3. **How to access selection state between frames?**
-   - Store last result: `last_result = Ark.Grid(ctx, opts)`
-   - Access: `last_result.selected_keys`
-
-4. **Virtual scrolling API?**
-   - Current: `get_items()` callback, Grid decides what to render
-   - Target: Pass all items, Grid handles virtualization internally
+| Question | Decision |
+|----------|----------|
+| Auto-cache config by ID? | **No** - user caches opts explicitly (Option A) |
+| Callback vs polling? | **Both** - callbacks for convenience, polling always available |
+| Access state between frames? | Store result (it's a snapshot, safe to keep) |
+| Virtual scrolling? | Pass all items, Grid handles virtualization internally |
+| Auto-generate ID? | **No** - explicit ID required, avoids helper function collisions |
 
 ---
 
