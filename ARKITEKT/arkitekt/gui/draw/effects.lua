@@ -7,10 +7,14 @@ local ImGui = require('arkitekt.platform.imgui')
 
 local M = {}
 
+-- Performance: Cache math functions (called every frame for hover/glow effects)
+local sin = math.sin
+local max, min = math.max, math.min
+
 -- Hover Shadow (simple inline effect for basic widgets)
 -- NOTE: For tile rendering, use TileFX.render_tile_complete() instead
 function M.hover_shadow(dl, x1, y1, x2, y2, strength, radius)
-  strength = math.max(0, math.min(1, strength or 1))
+  strength = max(0, min(1, strength or 1))
   radius = radius or 6
   
   if strength < 0.01 then return end
@@ -46,7 +50,7 @@ function M.pulse_glow(dl, x1, y1, x2, y2, color, time, speed, radius)
   speed = speed or 3.0
   radius = radius or 6
   
-  local pulse = (math.sin(time * speed) * 0.5 + 0.5) * 0.6 + 0.4
+  local pulse = (sin(time * speed) * 0.5 + 0.5) * 0.6 + 0.4
   M.soft_glow(dl, x1, y1, x2, y2, color, pulse, radius)
 end
 
