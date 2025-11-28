@@ -1,5 +1,5 @@
 -- @noindex
--- RegionPlaylist/domains/dependency.lua
+-- RegionPlaylist/domain/dependency.lua
 -- Manages playlist dependency graph and circular reference detection
 
 local Logger = require('arkitekt.debug.logger')

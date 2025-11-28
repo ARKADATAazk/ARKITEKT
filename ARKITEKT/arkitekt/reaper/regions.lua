@@ -26,18 +26,36 @@ local function convert_rgba_to_reaper_color(rgba_color)
   return Colors.rgba_to_reaper_native(rgba_color)
 end
 
+-- Get GUID for a marker/region by its enumeration index
+local function get_marker_guid(proj, marker_index)
+  local retval, guid = reaper.GetSetProjectInfo_String(proj, "MARKER_GUID:" .. marker_index, "", false)
+  if retval and guid and guid ~= "" then
+    return guid
+  end
+  return nil
+end
+
+-- Debug: Set to true to log GUID capture
+local DEBUG_GUID = false
+
 function M.scan_project_regions(proj)
   proj = proj or 0
   local regions = {}
   local _, num_markers, num_regions = reaper.CountProjectMarkers(proj)
-  
+
   for i = 0, num_markers + num_regions - 1 do
-    local retval, isrgn, pos, rgnend, name, markrgnindexnumber, color = 
+    local retval, isrgn, pos, rgnend, name, markrgnindexnumber, color =
       reaper.EnumProjectMarkers3(proj, i)
-    
+
     if isrgn then
+      local guid = get_marker_guid(proj, i)
+      if DEBUG_GUID then
+        reaper.ShowConsoleMsg(string.format("Region scan: enum_idx=%d rid=%d name='%s' guid=%s\n",
+          i, markrgnindexnumber, name or "", guid or "NIL"))
+      end
       regions[#regions + 1] = {
         rid = markrgnindexnumber,
+        guid = guid,
         index = i,
         name = name,
         start = pos,
@@ -46,21 +64,22 @@ function M.scan_project_regions(proj)
       }
     end
   end
-  
+
   return regions
 end
 
 function M.get_region_by_rid(proj, target_rid)
   proj = proj or 0
   local _, num_markers, num_regions = reaper.CountProjectMarkers(proj)
-  
+
   for i = 0, num_markers + num_regions - 1 do
-    local retval, isrgn, pos, rgnend, name, markrgnindexnumber, color = 
+    local retval, isrgn, pos, rgnend, name, markrgnindexnumber, color =
       reaper.EnumProjectMarkers3(proj, i)
-    
+
     if isrgn and markrgnindexnumber == target_rid then
       return {
         rid = markrgnindexnumber,
+        guid = get_marker_guid(proj, i),
         index = i,
         name = name,
         start = pos,
@@ -69,7 +88,40 @@ function M.get_region_by_rid(proj, target_rid)
       }
     end
   end
-  
+
+  return nil
+end
+
+--- Get a region by its GUID (stable identifier that survives renumbering)
+--- @param proj number Project (0 for current)
+--- @param target_guid string Region GUID
+--- @return table|nil Region data or nil if not found
+function M.get_region_by_guid(proj, target_guid)
+  proj = proj or 0
+  if not target_guid then return nil end
+
+  local _, num_markers, num_regions = reaper.CountProjectMarkers(proj)
+
+  for i = 0, num_markers + num_regions - 1 do
+    local retval, isrgn, pos, rgnend, name, markrgnindexnumber, color =
+      reaper.EnumProjectMarkers3(proj, i)
+
+    if isrgn then
+      local guid = get_marker_guid(proj, i)
+      if guid == target_guid then
+        return {
+          rid = markrgnindexnumber,
+          guid = guid,
+          index = i,
+          name = name,
+          start = pos,
+          ["end"] = rgnend,
+          color = convert_reaper_color_to_rgba(color),
+        }
+      end
+    end
+  end
+
   return nil
 end
 

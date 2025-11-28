@@ -5,7 +5,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 
-local Config = require('RegionPlaylist.core.config')
+local Config = require('RegionPlaylist.app.config')
 local Render = require('RegionPlaylist.ui.tiles.coordinator_render')
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
 local HeightStabilizer = require('arkitekt.gui.layout.height_stabilizer')
@@ -14,7 +14,7 @@ local ActiveGridFactory = require('RegionPlaylist.ui.tiles.active_grid_factory')
 local PoolGridFactory = require('RegionPlaylist.ui.tiles.pool_grid_factory')
 local GridBridge = require('arkitekt.gui.widgets.containers.grid.grid_bridge')
 local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
-local State = require("RegionPlaylist.core.app_state")
+local State = require("RegionPlaylist.app.state")
 local Logger = require('arkitekt.debug.logger')
 
 local M = {}

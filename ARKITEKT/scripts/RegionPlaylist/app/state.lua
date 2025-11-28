@@ -1,5 +1,5 @@
 -- @noindex
--- RegionPlaylist/core/app_state.lua
+-- RegionPlaylist/app/state.lua
 -- Single-source-of-truth app state (playlist expansion handled lazily)
 --[[
 The app layer is now the authoritative owner of playlist structure. Engine-side
@@ -10,19 +10,19 @@ sync_playlist_to_engine() step and guarantees nested playlists expand exactly
 once per invalidation.
 ]]
 
-local CoordinatorBridge = require("RegionPlaylist.engine.coordinator_bridge")
-local ark = require('arkitekt')
-local RegionState = require("RegionPlaylist.storage.persistence")
+local CoordinatorBridge = require("RegionPlaylist.data.bridge")
+local RegionState = require("RegionPlaylist.data.storage")
 local UndoManager = require("arkitekt.core.undo_manager")
-local UndoBridge = require("RegionPlaylist.storage.undo_bridge")
+local UndoBridge = require("RegionPlaylist.data.undo")
 local Constants = require("RegionPlaylist.defs.constants")
 local ProjectMonitor = require("arkitekt.reaper.project_monitor")
-local Animation = require("RegionPlaylist.domains.animation")
-local Notification = require("RegionPlaylist.domains.notification")
-local UIPreferences = require("RegionPlaylist.domains.ui_preferences")
-local Region = require("RegionPlaylist.domains.region")
-local Dependency = require("RegionPlaylist.domains.dependency")
-local Playlist = require("RegionPlaylist.domains.playlist")
+local Animation = require("RegionPlaylist.ui.state.animation")
+local Notification = require("RegionPlaylist.ui.state.notification")
+local UIPreferences = require("RegionPlaylist.ui.state.preferences")
+local Region = require("RegionPlaylist.domain.region")
+local Dependency = require("RegionPlaylist.domain.dependency")
+local Playlist = require("RegionPlaylist.domain.playlist")
+local PoolQueries = require("RegionPlaylist.app.pool_queries")
 local Logger = require('arkitekt.debug.logger')
 
 local M = {}
@@ -30,21 +30,40 @@ local M = {}
 -- Set to true for verbose app state logging
 local DEBUG_APP_STATE = false
 
-package.loaded["RegionPlaylist.core.app_state"] = M
+package.loaded["RegionPlaylist.app.state"] = M
 
--- Generate a deterministic color from a string (e.g., playlist ID)
--- This ensures the same ID always produces the same color
-local function deterministic_color_from_id(id)
-  local str = tostring(id)
-  local hash = 0
-  for i = 1, #str do
-    hash = (hash * 31 + str:byte(i)) % 2147483647
+-- Build a human-readable status message from undo/redo changes
+local function _build_changes_message(prefix, changes)
+  local parts = {}
+
+  if changes.playlists_count > 0 then
+    parts[#parts + 1] = string.format("%d playlist%s",
+      changes.playlists_count,
+      changes.playlists_count ~= 1 and "s" or "")
   end
-  local hue = (hash % 360) / 360
-  local saturation = 0.65 + ((hash % 100) / 400)  -- 0.65-0.90
-  local lightness = 0.50 + ((hash % 60) / 400)    -- 0.50-0.65
-  local r, g, b = ark.Colors.hsl_to_rgb(hue, saturation, lightness)
-  return ark.Colors.components_to_rgba(r, g, b, 0xFF)
+
+  if changes.items_count > 0 then
+    parts[#parts + 1] = string.format("%d item%s",
+      changes.items_count,
+      changes.items_count ~= 1 and "s" or "")
+  end
+
+  if changes.regions_renamed > 0 then
+    parts[#parts + 1] = string.format("%d region%s renamed",
+      changes.regions_renamed,
+      changes.regions_renamed ~= 1 and "s" or "")
+  end
+
+  if changes.regions_recolored > 0 then
+    parts[#parts + 1] = string.format("%d region%s recolored",
+      changes.regions_recolored,
+      changes.regions_recolored ~= 1 and "s" or "")
+  end
+
+  if #parts > 0 then
+    return prefix .. ": " .. table.concat(parts, ", ")
+  end
+  return prefix
 end
 
 -- Re-export mode constants for backward compatibility
@@ -418,26 +437,7 @@ function M.undo()
   local success, changes = M.restore_snapshot(snapshot)
 
   if success and changes then
-    -- Build status message from changes
-    local parts = {}
-    if changes.playlists_count > 0 then
-      parts[#parts + 1] = string.format("%d playlist%s", changes.playlists_count, changes.playlists_count ~= 1 and "s" or "")
-    end
-    if changes.items_count > 0 then
-      parts[#parts + 1] = string.format("%d item%s", changes.items_count, changes.items_count ~= 1 and "s" or "")
-    end
-    if changes.regions_renamed > 0 then
-      parts[#parts + 1] = string.format("%d region%s renamed", changes.regions_renamed, changes.regions_renamed ~= 1 and "s" or "")
-    end
-    if changes.regions_recolored > 0 then
-      parts[#parts + 1] = string.format("%d region%s recolored", changes.regions_recolored, changes.regions_recolored ~= 1 and "s" or "")
-    end
-
-    if #parts > 0 then
-      M.set_state_change_notification("Undo: " .. table.concat(parts, ", "))
-    else
-      M.set_state_change_notification("Undo")
-    end
+    M.set_state_change_notification(_build_changes_message("Undo", changes))
   end
 
   return success
@@ -452,26 +452,7 @@ function M.redo()
   local success, changes = M.restore_snapshot(snapshot)
 
   if success and changes then
-    -- Build status message from changes
-    local parts = {}
-    if changes.playlists_count > 0 then
-      parts[#parts + 1] = string.format("%d playlist%s", changes.playlists_count, changes.playlists_count ~= 1 and "s" or "")
-    end
-    if changes.items_count > 0 then
-      parts[#parts + 1] = string.format("%d item%s", changes.items_count, changes.items_count ~= 1 and "s" or "")
-    end
-    if changes.regions_renamed > 0 then
-      parts[#parts + 1] = string.format("%d region%s renamed", changes.regions_renamed, changes.regions_renamed ~= 1 and "s" or "")
-    end
-    if changes.regions_recolored > 0 then
-      parts[#parts + 1] = string.format("%d region%s recolored", changes.regions_recolored, changes.regions_recolored ~= 1 and "s" or "")
-    end
-
-    if #parts > 0 then
-      M.set_state_change_notification("Redo: " .. table.concat(parts, ", "))
-    else
-      M.set_state_change_notification("Redo")
-    end
+    M.set_state_change_notification(_build_changes_message("Redo", changes))
   end
 
   return success
@@ -509,131 +490,18 @@ function M.reorder_playlists_by_ids(new_playlist_ids)
   M.persist()
 end
 
-local function compare_by_color(a, b)
-  local color_a = a.color or 0
-  local color_b = b.color or 0
-  return ark.Colors.compare_colors(color_a, color_b)
-end
-
-local function compare_by_index(a, b)
-  return a.rid < b.rid
-end
-
-local function compare_by_alpha(a, b)
-  local name_a = (a.name or ""):lower()
-  local name_b = (b.name or ""):lower()
-  return name_a < name_b
-end
-
-local function compare_by_length(a, b)
-  local len_a = (a["end"] or 0) - (a.start or 0)
-  local len_b = (b["end"] or 0) - (b.start or 0)
-  return len_a < len_b
-end
+-- =============================================================================
+-- POOL QUERIES (delegated to pool_queries module)
+-- =============================================================================
 
 function M.get_filtered_pool_regions()
-  local result = {}
-  local search = M.get_search_filter():lower()
-
-  local region_index = M.get_region_index()
-  for _, rid in ipairs(M.get_pool_order()) do
-    local region = region_index[rid]
-    if region and region.name ~= "__TRANSITION_TRIGGER" and (search == "" or region.name:lower():find(search, 1, true)) then
-      result[#result + 1] = region
-    end
-  end
-
-  local sort_mode = M.get_sort_mode()
-  local sort_dir = M.get_sort_direction() or "asc"
-  
-  -- ONLY sort if there's an active sort mode
-  if sort_mode == "color" then
-    table.sort(result, compare_by_color)
-  elseif sort_mode == "index" then
-    table.sort(result, compare_by_index)
-  elseif sort_mode == "alpha" then
-    table.sort(result, compare_by_alpha)
-  elseif sort_mode == "length" then
-    table.sort(result, compare_by_length)
-  end
-  
-  -- CRITICAL FIX: Only reverse if we have an active sort mode AND direction is desc
-  if sort_mode and sort_mode ~= "" and sort_dir == "desc" then
-    local reversed = {}
-    for i = #result, 1, -1 do
-      reversed[#reversed + 1] = result[i]
-    end
-    result = reversed
-  end
-  
-  return result
-end
-
-
--- Helper: Calculate total duration of all regions in a playlist
-local function calculate_playlist_duration(playlist, region_index)
-  if not playlist or not playlist.items then return 0 end
-  
-  local total_duration = 0
-  
-  for _, item in ipairs(playlist.items) do
-    -- Skip disabled items
-    if item.enabled == false then
-      goto continue
-    end
-    
-    local item_type = item.type or "region"
-    local rid = item.rid
-    
-    if item_type == "region" and rid then
-      local region = region_index[rid]
-      if region then
-        -- region.start and region["end"] are time positions in seconds
-        local duration_seconds = (region["end"] or 0) - (region.start or 0)
-        local repeats = item.reps or 1
-        total_duration = total_duration + (duration_seconds * repeats)
-      end
-    elseif item_type == "playlist" and item.playlist_id then
-      -- For nested playlists, recursively calculate duration
-      local nested_pl = M.get_playlist_by_id(item.playlist_id)
-      if nested_pl then
-        local nested_duration = calculate_playlist_duration(nested_pl, region_index)
-        local repeats = item.reps or 1
-        total_duration = total_duration + (nested_duration * repeats)
-      end
-    end
-    
-    ::continue::
-  end
-  
-  return total_duration
-end
-
--- Playlist comparison functions
-local function compare_playlists_by_alpha(a, b)
-  local name_a = (a.name or ""):lower()
-  local name_b = (b.name or ""):lower()
-  return name_a < name_b
-end
-
-local function compare_playlists_by_item_count(a, b)
-  local count_a = #a.items
-  local count_b = #b.items
-  return count_a < count_b
-end
-
-local function compare_playlists_by_color(a, b)
-  local color_a = a.chip_color or 0
-  local color_b = b.chip_color or 0
-  return ark.Colors.compare_colors(color_a, color_b)
-end
-
-local function compare_playlists_by_index(a, b)
-  return (a.index or 0) < (b.index or 0)
-end
-
-local function compare_playlists_by_duration(a, b)
-  return (a.total_duration or 0) < (b.total_duration or 0)
+  return PoolQueries.get_filtered_pool_regions({
+    pool_order = M.get_pool_order(),
+    region_index = M.get_region_index(),
+    search_filter = M.get_search_filter(),
+    sort_mode = M.get_sort_mode(),
+    sort_dir = M.get_sort_direction(),
+  })
 end
 
 function M.mark_graph_dirty()
@@ -652,157 +520,26 @@ end
 function M.get_playlists_for_pool()
   M.dependency:ensure_fresh(M.playlist:get_all())
 
-  local pool_playlists = {}
-  local active_id = M.playlist:get_active_id()
-  local playlists = M.playlist:get_all()
-
-  -- Build playlist index map for implicit ordering
-  local playlist_index_map = {}
-  for i, pl in ipairs(playlists) do
-    playlist_index_map[pl.id] = i
-  end
-
-  for _, pl in ipairs(playlists) do
-    if pl.id ~= active_id then
-      local is_draggable = M.is_playlist_draggable_to(pl.id, active_id)
-      local total_duration = calculate_playlist_duration(pl, M.get_region_index())
-      
-      pool_playlists[#pool_playlists + 1] = {
-        type = "playlist",  -- Mark as playlist for mixed mode
-        id = pl.id,
-        name = pl.name,
-        items = pl.items,
-        chip_color = pl.chip_color or deterministic_color_from_id(pl.id),
-        is_disabled = not is_draggable,
-        index = playlist_index_map[pl.id] or 0,
-        total_duration = total_duration,
-      }
-    end
-  end
-  
-  local search = M.get_search_filter():lower()
-  if search ~= "" then
-    local filtered = {}
-    for _, pl in ipairs(pool_playlists) do
-      if pl.name:lower():find(search, 1, true) then
-        filtered[#filtered + 1] = pl
-      end
-    end
-    pool_playlists = filtered
-  end
-
-  local sort_mode = M.get_sort_mode()
-  local sort_dir = M.get_sort_direction() or "asc"
-  
-  -- Apply sorting (only if sort_mode is active)
-  if sort_mode == "color" then
-    table.sort(pool_playlists, compare_playlists_by_color)
-  elseif sort_mode == "index" then
-    table.sort(pool_playlists, compare_playlists_by_index)
-  elseif sort_mode == "alpha" then
-    table.sort(pool_playlists, compare_playlists_by_alpha)
-  elseif sort_mode == "length" then
-    -- Length now sorts by total duration instead of item count
-    table.sort(pool_playlists, compare_playlists_by_duration)
-  end
-  
-  -- Reverse if descending (only when sort_mode is active)
-  if sort_mode and sort_dir == "desc" then
-    local reversed = {}
-    for i = #pool_playlists, 1, -1 do
-      reversed[#reversed + 1] = pool_playlists[i]
-    end
-    pool_playlists = reversed
-  end
-  
-  return pool_playlists
+  return PoolQueries.get_playlists_for_pool({
+    playlists = M.playlist:get_all(),
+    active_id = M.playlist:get_active_id(),
+    region_index = M.get_region_index(),
+    search_filter = M.get_search_filter(),
+    sort_mode = M.get_sort_mode(),
+    sort_dir = M.get_sort_direction(),
+    is_draggable_to = M.is_playlist_draggable_to,
+    get_playlist_by_id = M.get_playlist_by_id,
+  })
 end
 
 -- Mixed mode: combine regions and playlists with unified sorting
 function M.get_mixed_pool_sorted()
-  local regions = M.get_filtered_pool_regions()
-  local playlists = M.get_playlists_for_pool()
-
-  local sort_mode = M.get_sort_mode()
-  local sort_dir = M.get_sort_direction() or "asc"
-  
-  -- If no sort mode, return regions first, then playlists (natural order)
-  if not sort_mode then
-    local result = {}
-    for _, region in ipairs(regions) do
-      result[#result + 1] = region
-    end
-    for _, playlist in ipairs(playlists) do
-      result[#result + 1] = playlist
-    end
-    return result
-  end
-  
-  -- Otherwise, combine and sort together
-  local combined = {}
-  
-  -- Add regions (already have type field or can be identified by lack of type)
-  for _, region in ipairs(regions) do
-    if not region.type then
-      region.type = "region"
-    end
-    combined[#combined + 1] = region
-  end
-  
-  -- Add playlists (already marked with type="playlist")
-  for _, playlist in ipairs(playlists) do
-    combined[#combined + 1] = playlist
-  end
-  
-  -- Unified comparison function that works for both regions and playlists
-  local function unified_compare(a, b)
-    if sort_mode == "color" then
-      local color_a = a.chip_color or a.color or 0
-      local color_b = b.chip_color or b.color or 0
-      return ark.Colors.compare_colors(color_a, color_b)
-    elseif sort_mode == "index" then
-      local idx_a = a.index or a.rid or 0
-      local idx_b = b.index or b.rid or 0
-      return idx_a < idx_b
-    elseif sort_mode == "alpha" then
-      local name_a = (a.name or ""):lower()
-      local name_b = (b.name or ""):lower()
-      return name_a < name_b
-    elseif sort_mode == "length" then
-      -- For regions: use end - start
-      -- For playlists: use total_duration
-      local len_a
-      if a.type == "playlist" then
-        len_a = a.total_duration or 0
-      else
-        len_a = (a["end"] or 0) - (a.start or 0)
-      end
-      
-      local len_b
-      if b.type == "playlist" then
-        len_b = b.total_duration or 0
-      else
-        len_b = (b["end"] or 0) - (b.start or 0)
-      end
-      
-      return len_a < len_b
-    end
-    
-    return false
-  end
-  
-  table.sort(combined, unified_compare)
-  
-  -- Reverse if descending
-  if sort_dir == "desc" then
-    local reversed = {}
-    for i = #combined, 1, -1 do
-      reversed[#reversed + 1] = combined[i]
-    end
-    return reversed
-  end
-  
-  return combined
+  return PoolQueries.get_mixed_pool_sorted({
+    regions = M.get_filtered_pool_regions(),
+    playlists = M.get_playlists_for_pool(),
+    sort_mode = M.get_sort_mode(),
+    sort_dir = M.get_sort_direction(),
+  })
 end
 
 function M.detect_circular_reference(target_playlist_id, playlist_id_to_add)
@@ -825,29 +562,79 @@ function M.create_playlist_item(playlist_id, reps)
   }
 end
 
+-- Debug: Set to true to log cleanup resolution
+local DEBUG_CLEANUP = false
+
 function M.cleanup_deleted_regions()
   local removed_any = false
-  local region_index = M.get_region_index()
+  local updated_any = false
   local playlists = M.playlist:get_all()
+
+  if DEBUG_CLEANUP then
+    reaper.ShowConsoleMsg("=== cleanup_deleted_regions() ===\n")
+  end
 
   for _, pl in ipairs(playlists) do
     local i = 1
     while i <= #pl.items do
       local item = pl.items[i]
-      if item.type == "region" and not region_index[item.rid] then
-        table.remove(pl.items, i)
-        removed_any = true
-        M.add_pending_destroy(item.key)
+      if item.type == "region" then
+        -- Try to resolve region: GUID → Name → RID
+        local region = M.region:resolve_region(item.guid, item.rid, item.region_name)
+
+        if DEBUG_CLEANUP then
+          reaper.ShowConsoleMsg(string.format("  Item: rid=%s guid=%s name='%s' -> resolved=%s\n",
+            tostring(item.rid), tostring(item.guid), tostring(item.region_name or ""),
+            region and tostring(region.rid) or "NIL"))
+        end
+
+        if region then
+          -- Region found - update RID if changed (was renumbered)
+          if item.rid ~= region.rid then
+            if DEBUG_CLEANUP then
+              reaper.ShowConsoleMsg(string.format("    UPDATING rid: %d -> %d\n", item.rid, region.rid))
+            end
+            item.rid = region.rid
+            updated_any = true
+          end
+          -- Update GUID if changed or missing (renumbering generates new GUIDs)
+          if region.guid and item.guid ~= region.guid then
+            if DEBUG_CLEANUP then
+              reaper.ShowConsoleMsg(string.format("    UPDATING guid: %s -> %s\n",
+                tostring(item.guid), region.guid))
+            end
+            item.guid = region.guid
+            updated_any = true
+          end
+          -- Update stored name if it changed
+          if region.name and region.name ~= "" and item.region_name ~= region.name then
+            if DEBUG_CLEANUP then
+              reaper.ShowConsoleMsg(string.format("    UPDATING name: '%s' -> '%s'\n",
+                tostring(item.region_name or ""), region.name))
+            end
+            item.region_name = region.name
+            updated_any = true
+          end
+          i = i + 1
+        else
+          -- Region truly deleted - remove from playlist
+          if DEBUG_CLEANUP then
+            reaper.ShowConsoleMsg(string.format("    REMOVING (not found)\n"))
+          end
+          table.remove(pl.items, i)
+          removed_any = true
+          M.add_pending_destroy(item.key)
+        end
       else
         i = i + 1
       end
     end
   end
-  
-  if removed_any then
+
+  if removed_any or updated_any then
     M.persist()
   end
-  
+
   return removed_any
 end
 

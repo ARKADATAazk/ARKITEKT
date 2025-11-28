@@ -37,7 +37,7 @@ end
 local engine_tests = {}
 
 function engine_tests.test_engine_state_scans_regions()
-  local EngineState = require('RegionPlaylist.engine.engine_state')
+  local EngineState = require('RegionPlaylist.domain.playback.state')
   local state = EngineState.new({ proj = 0 })
 
   local region_count = 0
@@ -51,7 +51,7 @@ function engine_tests.test_engine_state_scans_regions()
 end
 
 engine_tests.test_engine_state_detects_changes = skip_if_no_regions(function()
-  local EngineState = require('RegionPlaylist.engine.engine_state')
+  local EngineState = require('RegionPlaylist.domain.playback.state')
   local state = EngineState.new({ proj = 0 })
 
   -- Initial state - no changes
@@ -66,7 +66,7 @@ end)
 local storage_tests = {}
 
 function storage_tests.test_save_and_load_playlists()
-  local Persistence = require('RegionPlaylist.storage.persistence')
+  local Persistence = require('RegionPlaylist.data.storage')
   local ark = require('arkitekt')
 
   -- Create test playlist
@@ -99,7 +99,7 @@ function storage_tests.test_save_and_load_playlists()
 end
 
 function storage_tests.test_save_and_load_settings()
-  local Persistence = require('RegionPlaylist.storage.persistence')
+  local Persistence = require('RegionPlaylist.data.storage')
 
   local test_settings = {
     quantize_mode = "beat",
@@ -117,7 +117,7 @@ function storage_tests.test_save_and_load_settings()
 end
 
 function storage_tests.test_active_playlist_persistence()
-  local Persistence = require('RegionPlaylist.storage.persistence')
+  local Persistence = require('RegionPlaylist.data.storage')
 
   local test_id = "test-active-" .. math.random(1000)
   Persistence.save_active_playlist(test_id, 0)
@@ -133,7 +133,7 @@ end
 local expander_tests = {}
 
 function expander_tests.test_expand_empty_playlist()
-  local SequenceExpander = require('RegionPlaylist.core.sequence_expander')
+  local SequenceExpander = require('RegionPlaylist.domain.playback.expander')
 
   local empty_playlist = { id = "empty", name = "Empty", items = {} }
   local sequence, map = SequenceExpander.expand_playlist(empty_playlist, function() return nil end)
@@ -143,7 +143,7 @@ function expander_tests.test_expand_empty_playlist()
 end
 
 expander_tests.test_expand_playlist_with_regions = skip_if_no_regions(function()
-  local SequenceExpander = require('RegionPlaylist.core.sequence_expander')
+  local SequenceExpander = require('RegionPlaylist.domain.playback.expander')
   local ark = require('arkitekt')
 
   -- Get first region RID
@@ -185,8 +185,8 @@ end)
 local transport_tests = {}
 
 function transport_tests.test_transport_creation()
-  local Transport = require('RegionPlaylist.engine.transport')
-  local EngineState = require('RegionPlaylist.engine.engine_state')
+  local Transport = require('RegionPlaylist.domain.playback.transport')
+  local EngineState = require('RegionPlaylist.domain.playback.state')
 
   local state = EngineState.new({ proj = 0 })
   local transport = Transport.new({
@@ -200,8 +200,8 @@ function transport_tests.test_transport_creation()
 end
 
 function transport_tests.test_transport_settings()
-  local Transport = require('RegionPlaylist.engine.transport')
-  local EngineState = require('RegionPlaylist.engine.engine_state')
+  local Transport = require('RegionPlaylist.domain.playback.transport')
+  local EngineState = require('RegionPlaylist.domain.playback.state')
 
   local state = EngineState.new({ proj = 0 })
   local transport = Transport.new({

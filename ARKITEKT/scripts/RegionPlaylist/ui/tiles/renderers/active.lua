@@ -159,7 +159,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   -- Calculate total duration if playlist has items (in beat positions)
   local total_duration = 0
   if playlist.items and bridge then
-    local State = require("RegionPlaylist.core.app_state")
+    local State = require("RegionPlaylist.app.state")
     -- Calculate duration from region beat positions
     for _, pl_item in ipairs(playlist.items) do
       local item_type = pl_item.type or "region"

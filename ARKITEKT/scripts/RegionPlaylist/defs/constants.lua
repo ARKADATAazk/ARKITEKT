@@ -84,6 +84,25 @@ M.TIMEOUTS = {
 }
 
 -- ============================================================================
+-- PLAYBACK / TRANSITIONS
+-- ============================================================================
+-- Constants for smooth transitions between regions (extracted from engine code)
+M.PLAYBACK = {
+  -- Time threshold for triggering time-based transitions (seconds)
+  TRANSITION_TIME_THRESHOLD = 0.05,
+  TRANSITION_TIME_TOLERANCE = 0.01,
+
+  -- Time threshold for queuing next region seek (seconds before region end)
+  SEEK_QUEUE_THRESHOLD = 0.5,
+
+  -- Threshold for detecting playhead backward jump (seconds)
+  BACKWARD_JUMP_THRESHOLD = 0.1,
+
+  -- Transport seek throttle (minimum time between seeks, seconds)
+  SEEK_THROTTLE = 0.06,
+}
+
+-- ============================================================================
 -- DIMENSIONS
 -- ============================================================================
 

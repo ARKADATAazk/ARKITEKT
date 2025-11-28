@@ -1,5 +1,5 @@
 -- @noindex
--- RegionPlaylist/core/controller.lua
+-- RegionPlaylist/app/controller.lua
 -- Centralized playlist operations with automatic undo/save/sync
 -- Relies on bridge invalidate logic instead of manual engine sync
 
@@ -13,7 +13,7 @@ Controller.__index = Controller
 -- Set to true for verbose controller debugging
 local DEBUG_CONTROLLER = false
 
-package.loaded["RegionPlaylist.core.controller"] = M
+package.loaded["RegionPlaylist.app.controller"] = M
 
 function M.new(state_module, settings, undo_manager)
   local ctrl = setmetatable({
@@ -92,7 +92,7 @@ function Controller:create_playlist(name)
   return self:_with_undo(function()
     local new_id = self:_generate_playlist_id()
 
-    local RegionState = require("RegionPlaylist.storage.persistence")
+    local RegionState = require("RegionPlaylist.data.storage")
 
     -- Generate human-readable default name based on count
     local default_name = "Playlist " .. tostring(#self.state.get_playlists() + 1)
@@ -142,7 +142,7 @@ function Controller:duplicate_playlist(id)
 
   return self:_with_undo(function()
     local new_id = self:_generate_playlist_id()
-    local RegionState = require("RegionPlaylist.storage.persistence")
+    local RegionState = require("RegionPlaylist.data.storage")
 
     -- Deep copy items with proper structure and new keys
     local new_items = {}
@@ -150,10 +150,12 @@ function Controller:duplicate_playlist(id)
       local new_item
 
       if item.type == "region" then
-        -- Region item
+        -- Region item - preserve GUID and name for stable tracking
         new_item = {
           type = "region",
           rid = item.rid,
+          guid = item.guid,  -- Preserve GUID across duplication
+          region_name = item.region_name,  -- Preserve name as fallback
           reps = item.reps or 1,
           enabled = item.enabled ~= false,
           key = self:_generate_item_key(),
@@ -366,10 +368,17 @@ function Controller:add_item(playlist_id, rid, insert_index)
     if not pl then
       error("Playlist not found")
     end
-    
+
+    -- Look up region to get its GUID and name for stable tracking
+    local region = self.state.get_region_by_rid(rid)
+    local guid = region and region.guid or nil
+    local region_name = region and region.name or nil
+
     local new_item = {
       type = "region",
       rid = rid,
+      guid = guid,  -- Store GUID for stable tracking
+      region_name = region_name,  -- Store name as fallback (survives renumbering)
       reps = 1,
       enabled = true,
       key = self:_generate_item_key(),
@@ -413,14 +422,21 @@ function Controller:add_items_batch(playlist_id, rids, insert_index)
     if not pl then
       error("Playlist not found")
     end
-    
+
     local keys = {}
     local idx = insert_index or (#pl.items + 1)
-    
+
     for i, rid in ipairs(rids) do
+      -- Look up region to get its GUID and name for stable tracking
+      local region = self.state.get_region_by_rid(rid)
+      local guid = region and region.guid or nil
+      local region_name = region and region.name or nil
+
       local new_item = {
         type = "region",
         rid = rid,
+        guid = guid,  -- Store GUID for stable tracking
+        region_name = region_name,  -- Store name as fallback (survives renumbering)
         reps = 1,
         enabled = true,
         key = self:_generate_item_key(),
@@ -428,7 +444,7 @@ function Controller:add_items_batch(playlist_id, rids, insert_index)
       table.insert(pl.items, idx + i - 1, new_item)
       keys[#keys + 1] = new_item.key
     end
-    
+
     return keys
   end)
 end
@@ -439,14 +455,27 @@ function Controller:copy_items(playlist_id, items, insert_index)
     if not pl then
       error("Playlist not found")
     end
-    
+
     local keys = {}
     local idx = insert_index or (#pl.items + 1)
-    
+
     for i, item in ipairs(items) do
+      -- Preserve GUID and name from source, or look them up if missing
+      local guid = item.guid
+      local region_name = item.region_name
+      if item.rid then
+        local region = self.state.get_region_by_rid(item.rid)
+        if region then
+          guid = guid or region.guid
+          region_name = region_name or region.name
+        end
+      end
+
       local new_item = {
         type = item.type or "region",
         rid = item.rid,
+        guid = guid,  -- Preserve GUID for stable tracking
+        region_name = region_name,  -- Preserve name as fallback
         playlist_id = item.playlist_id,
         reps = item.reps or 1,
         enabled = item.enabled ~= false,
@@ -455,7 +484,7 @@ function Controller:copy_items(playlist_id, items, insert_index)
       table.insert(pl.items, idx + i - 1, new_item)
       keys[#keys + 1] = new_item.key
     end
-    
+
     return keys
   end)
 end

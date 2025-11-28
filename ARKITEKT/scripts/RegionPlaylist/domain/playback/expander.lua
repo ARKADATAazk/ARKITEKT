@@ -1,5 +1,5 @@
 -- @noindex
--- RegionPlaylist/core/sequence_expander.lua
+-- RegionPlaylist/domain/playback/sequence_expander.lua
 -- Expands nested playlists into a flat playback sequence with loop metadata
 
 local Logger = require('arkitekt.debug.logger')

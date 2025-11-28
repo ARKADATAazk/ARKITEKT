@@ -47,6 +47,8 @@ function M.capture_snapshot(playlists, active_playlist_id)
       local item_copy = {
         type = item.type,
         rid = item.rid,
+        guid = item.guid,  -- Stable tracking (survives some renumbering)
+        region_name = item.region_name,  -- Fallback for renumbering
         reps = item.reps,
         enabled = item.enabled,
         key = item.key,
@@ -115,6 +117,8 @@ function M.restore_snapshot(snapshot, region_index)
         local item_copy = {
           type = item.type,
           rid = item.rid,
+          guid = item.guid,  -- Restore stable tracking
+          region_name = item.region_name,  -- Restore fallback name
           reps = item.reps,
           enabled = item.enabled,
           key = item.key,

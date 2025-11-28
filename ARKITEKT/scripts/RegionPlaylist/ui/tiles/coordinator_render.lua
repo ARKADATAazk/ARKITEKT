@@ -10,13 +10,13 @@ local DragIndicator = Dnd.DragIndicator
 local ActiveTile = require('RegionPlaylist.ui.tiles.renderers.active')
 local PoolTile = require('RegionPlaylist.ui.tiles.renderers.pool')
 local ResponsiveGrid = require('arkitekt.gui.layout.responsive')
-local State = require('RegionPlaylist.core.app_state')
+local State = require('RegionPlaylist.app.state')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
-local SWSImporter = require('RegionPlaylist.storage.sws_importer')
+local SWSImporter = require('RegionPlaylist.data.sws_import')
 local ModalDialog = require('arkitekt.gui.widgets.overlays.overlay.modal_dialog')
 local BatchRenameModal = require('arkitekt.gui.widgets.overlays.batch_rename_modal')
 local ColorPickerMenu = require('arkitekt.gui.widgets.menus.color_picker_menu')
-local Persistence = require('RegionPlaylist.storage.persistence')
+local Persistence = require('RegionPlaylist.data.storage')
 
 local M = {}
 

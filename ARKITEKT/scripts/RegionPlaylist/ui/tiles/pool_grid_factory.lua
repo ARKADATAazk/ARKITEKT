@@ -106,7 +106,7 @@ local function create_behaviors(rt)
             current_name = playlist and playlist.name or "Playlist"
           else
             -- It's a region
-            local State = require("RegionPlaylist.core.app_state")
+            local State = require("RegionPlaylist.app.state")
             local region = State.get_region_by_rid(item.rid)
             current_name = region and region.name or "Region"
           end
@@ -134,7 +134,7 @@ local function create_behaviors(rt)
             if playlist and playlist.items and #playlist.items > 0 then
               local first_item = playlist.items[1]
               if first_item.rid then
-                local State = require("RegionPlaylist.core.app_state")
+                local State = require("RegionPlaylist.app.state")
                 local region = State.get_region_by_rid(first_item.rid)
                 if region and region.start then
                   reaper.SetEditCurPos(region.start, true, true)
@@ -143,7 +143,7 @@ local function create_behaviors(rt)
             end
           else
             -- For regions, seek to region start
-            local State = require("RegionPlaylist.core.app_state")
+            local State = require("RegionPlaylist.app.state")
             local region = State.get_region_by_rid(item.rid)
             if region and region.start then
               reaper.SetEditCurPos(region.start, true, true)
@@ -172,7 +172,7 @@ local function create_behaviors(rt)
               current_name = playlist and playlist.name or "Playlist"
             else
               -- It's a region
-              local State = require("RegionPlaylist.core.app_state")
+              local State = require("RegionPlaylist.app.state")
               local region = State.get_region_by_rid(item.rid)
               current_name = region and region.name or "Region"
             end

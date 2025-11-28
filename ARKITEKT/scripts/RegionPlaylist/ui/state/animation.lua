@@ -1,5 +1,5 @@
 -- @noindex
--- RegionPlaylist/domains/animation.lua
+-- RegionPlaylist/ui/state/animation.lua
 -- Manages UI animation queues (spawn, select, destroy)
 
 local M = {}

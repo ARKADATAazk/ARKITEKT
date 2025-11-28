@@ -9,7 +9,7 @@ local ark = require('arkitekt')
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
-local TileUtil = require('RegionPlaylist.core.tile_utilities')
+local TileUtil = require('RegionPlaylist.ui.tile_utilities')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 
 local M = {}

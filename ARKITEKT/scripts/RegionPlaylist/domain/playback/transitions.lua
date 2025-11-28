@@ -1,5 +1,5 @@
 -- @noindex
--- Arkitekt/features/region_playlist/engine/transitions.lua
+-- RegionPlaylist/domain/playback/transitions.lua
 -- Smooth transition logic between regions - FIXED: Handle same-region repeats with time-based transitions
 -- MODIFIED: Integrated Logger for debug output
 
@@ -166,31 +166,18 @@ function Transitions:handle_smooth_transitions()
     
   else
     if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "Branch 3: Out of bounds, syncing") end
-    local found_idx = self.state:find_index_at_position(playpos)
-    if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "find_index_at_position(%.3f) returned: %d", playpos, found_idx) end
-    
+
+    -- Use current item_key as hint to resolve multi-loop ambiguity
+    local current_key = self.state:get_current_item_key()
+    local found_idx = self.state:find_index_at_position(playpos, current_key)
+    if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "find_index_at_position(%.3f, key=%s) returned: %d", playpos, tostring(current_key), found_idx) end
+
     if found_idx >= 1 then
       local was_uninitialized = (self.state.current_idx == -1)
-      
-      local first_idx_at_pos = found_idx
-      if DEBUG_PLAYPOS then
-        Logger.debug("TRANSITIONS", "Checking for earlier entries with same rid as idx %d (rid=%d)",
-          found_idx, self.state.playlist_order[found_idx])
-      end
 
-      for i = 1, found_idx - 1 do
-        local rid = self.state.playlist_order[i]
-        if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "  idx %d: rid=%d", i, rid) end
-        if rid == self.state.playlist_order[found_idx] then
-          first_idx_at_pos = i
-          if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "Found earlier match! Using idx %d instead of %d", i, found_idx) end
-          break
-        end
-      end
-      
-      self.state.current_idx = first_idx_at_pos
-      self.state.playlist_pointer = first_idx_at_pos
-      local rid = self.state.playlist_order[first_idx_at_pos]
+      self.state.current_idx = found_idx
+      self.state.playlist_pointer = found_idx
+      local rid = self.state.playlist_order[found_idx]
       local region = self.state:get_region_by_rid(rid)
       if region then
         self.state.current_bounds.start_pos = region.start
@@ -198,8 +185,8 @@ function Transitions:handle_smooth_transitions()
       end
       
       local next_candidate
-      if first_idx_at_pos < #self.state.playlist_order then
-        next_candidate = first_idx_at_pos + 1
+      if found_idx < #self.state.playlist_order then
+        next_candidate = found_idx + 1
       elseif self.transport.loop_playlist and #self.state.playlist_order > 0 then
         next_candidate = 1
       else

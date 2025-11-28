@@ -1,5 +1,5 @@
 -- @noindex
--- Arkitekt/features/region_playlist/engine/quantize.lua
+-- RegionPlaylist/domain/playback/quantize.lua
 -- Quantized transitions using trigger region hack
 -- MODIFIED: Integrated Logger for debug output
 

@@ -1,5 +1,5 @@
 -- @noindex
--- RegionPlaylist/core/config.lua
+-- RegionPlaylist/app/config.lua
 -- Config builders using defs (factory functions for dynamic configs)
 
 local TransportIcons = require('RegionPlaylist.ui.views.transport.transport_icons')

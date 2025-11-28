@@ -1,5 +1,5 @@
 -- @noindex
--- RegionPlaylist/storage/persistence.lua
+-- RegionPlaylist/data/persistence.lua
 -- Region Playlist state persistence via Project ExtState
 -- REFACTORED: Now uses arkitekt.reaper.project_state module
 
