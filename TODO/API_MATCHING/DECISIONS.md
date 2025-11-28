@@ -283,6 +283,47 @@ icon = Icons.SAVE  -- IDE shows glyph, autocomplete works
 
 ---
 
+## Decision 9: Result Field Standardization
+
+### Choice
+All value-holding widgets use `.value` for their primary value:
+
+```lua
+-- Consistent pattern
+local r = Ark.Checkbox(ctx, "Enable", checked)
+if r.changed then config.enabled = r.value end
+
+local r = Ark.Slider(ctx, "Volume", vol, 0, 100)
+if r.changed then config.volume = r.value end
+
+local r = Ark.InputText(ctx, "Name", name)
+if r.changed then config.name = r.value end  -- NOT .text
+
+local r = Ark.Combo(ctx, "Theme", idx, items)
+if r.changed then config.theme = r.value end
+r.item  -- Still available for selected item text
+```
+
+### Current State (Inconsistent)
+| Widget | Value field |
+|--------|-------------|
+| Button | N/A |
+| Checkbox | `.value` ✓ |
+| Slider | `.value` ✓ |
+| InputText | `.text` ← fix to `.value` |
+| Combo | `.value` ✓ (+ `.item` for text) |
+
+### Fix
+- InputText: Change `.text` → `.value`
+- Add `.text` as alias for backward compat (temporary)
+
+### Rationale
+- Predictable: "value changed? check `.value`"
+- Muscle memory across widgets
+- Reduces cognitive load
+
+---
+
 ## Summary Table
 
 | Aspect | ImGui | ARKITEKT Current | ARKITEKT Target |

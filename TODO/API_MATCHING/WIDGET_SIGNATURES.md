@@ -281,7 +281,8 @@ Ark.InputText(ctx, {
 
 ### Result Object
 ```lua
-result.text     -- string: current text
+result.value    -- string: current text (standardized)
+result.text     -- string: alias for .value (backward compat, temporary)
 result.changed  -- boolean: did text change?
 result.hovered  -- boolean
 result.active   -- boolean: has focus
