@@ -746,7 +746,6 @@ end
 
 ### Problem
 Opts field names were inconsistent and verbose:
-- `on_click` / `on_right_click` - redundant `on_` prefix
 - `is_toggled` - redundant `is_` prefix
 - `preset_name` - unclear name
 - `width` / `height` - no terse alternative
@@ -769,9 +768,9 @@ Ark.Button(ctx, {
   -- Styling
   style = "success",   -- was: preset_name
 
-  -- Callbacks (no on_ prefix)
-  click = save_file,        -- was: on_click
-  right_click = show_menu,  -- was: on_right_click
+  -- Callbacks (keep on_ prefix for clarity)
+  on_click = save_file,
+  on_right_click = show_menu,
 
   -- Extras
   tooltip = "Save file",
@@ -790,26 +789,31 @@ Ark.Button(ctx, {
 
 | Old | New |
 |-----|-----|
-| `on_click` | `click` |
-| `on_right_click` | `right_click` |
 | `is_toggled` | `toggled` |
 | `preset_name` | `style` |
+
+### Callbacks (keep `on_` prefix)
+
+| Callback | Name |
+|----------|------|
+| Left click | `on_click` |
+| Right click | `on_right_click` |
+| Value changed | `on_change` |
+| Enter pressed | `on_enter` |
 
 ### Implementation
 ```lua
 local w = opts.w or opts.width
 local h = opts.h or opts.height
-local click = opts.click        -- old on_click deprecated
 local toggled = opts.toggled    -- old is_toggled deprecated
 local style = opts.style        -- old preset_name deprecated
 ```
 
 ### Rationale
-- **Shorter**: Less typing, less noise
-- **Flexible**: Verbose or terse, user's choice
-- **Cleaner callbacks**: `click` is obvious in context (it's a function)
+- **Size aliases**: `w`/`h` for terseness, `width`/`height` for clarity
 - **Cleaner state**: `toggled` is simpler than `is_toggled`
 - **Semantic styling**: `style = "danger"` reads better than `preset_name = "danger"`
+- **Keep `on_` for callbacks**: Reads naturally as English ("on click, save file"), universally recognized as event handler, clear distinction from result booleans (`on_click` vs `clicked`)
 
 ---
 

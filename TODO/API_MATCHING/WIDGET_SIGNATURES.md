@@ -93,8 +93,8 @@ Ark.Button(ctx, {
   style = "success",   -- semantic preset
 
   -- Callbacks (optional)
-  click = function() end,
-  right_click = function() end,
+  on_click = function() end,
+  on_right_click = function() end,
 
   -- Extras (optional)
   tooltip = "Save the file",
@@ -152,7 +152,7 @@ Ark.Checkbox(ctx, {
   checked = config.auto_save,
 
   -- Callbacks
-  change = function(new_value)
+  on_change = function(new_value)
     config.auto_save = new_value
   end,
 
@@ -216,7 +216,7 @@ Ark.Slider(ctx, {
   is_integer = true,   -- Force integer
 
   -- Callbacks
-  change = function(new_value)
+  on_change = function(new_value)
     config.volume = new_value
     audio.set_volume(new_value)
   end,
@@ -286,10 +286,10 @@ Ark.InputText(ctx, {
   pattern = "^[a-zA-Z]+$",  -- Optional regex
 
   -- Callbacks
-  change = function(new_text)
+  on_change = function(new_text)
     config.name = new_text
   end,
-  enter = function(text)
+  on_enter = function(text)
     submit_form()
   end,
 
@@ -355,7 +355,7 @@ Ark.Combo(ctx, {
   width = 150,                  -- or: w = 150
 
   -- Callbacks
-  change = function(index, item)
+  on_change = function(index, item)
     config.theme = index
     apply_theme(item)
   end,
@@ -419,7 +419,7 @@ Ark.RadioButton(ctx, {
   active = selected == 1,
 
   -- Callbacks
-  click = function()
+  on_click = function()
     selected = 1
   end,
 
