@@ -407,3 +407,125 @@ flags = Flag_A | Flag_B | Flag_C            →  opt_a = true, opt_b = true, opt
 | **Types** | All integers | bool, string, number |
 
 The translation is mechanical - every flag becomes a boolean opt. Users don't lose power, they gain clarity.
+
+---
+
+## Implementation
+
+### Where It Goes
+
+Each widget module handles its own opts → flags mapping:
+
+```lua
+-- arkitekt/gui/widgets/primitives/input_text.lua
+
+local ImGui = require('arkitekt.platform.imgui')
+
+-- Flag mapping table (easy to extend, AI can generate)
+local FLAG_MAP = {
+  password      = ImGui.InputTextFlags_Password,
+  readonly      = ImGui.InputTextFlags_ReadOnly,
+  allow_tab     = ImGui.InputTextFlags_AllowTabInput,
+  no_undo       = ImGui.InputTextFlags_NoUndoRedo,
+  escape_clears = ImGui.InputTextFlags_EscapeClearsAll,
+  uppercase     = ImGui.InputTextFlags_CharsUppercase,
+  no_blank      = ImGui.InputTextFlags_CharsNoBlank,
+}
+
+-- String enum mappings
+local CHARS_MAP = {
+  decimal = ImGui.InputTextFlags_CharsDecimal,
+  hex     = ImGui.InputTextFlags_CharsHexadecimal,
+}
+
+function M.draw(ctx, label_or_opts, text, width)
+  local opts = parse_opts(label_or_opts, text, width)
+
+  -- Build flags from opts (the conversion)
+  local flags = opts.flags or 0  -- Start with passthrough
+  for opt, flag in pairs(FLAG_MAP) do
+    if opts[opt] then flags = flags | flag end
+  end
+  if opts.chars then
+    flags = flags | (CHARS_MAP[opts.chars] or 0)
+  end
+
+  -- Call ImGui
+  local changed, new_text = ImGui.InputText(ctx, opts.label, opts.text, flags)
+
+  return { changed = changed, value = new_text, hovered = ImGui.IsItemHovered(ctx) }
+end
+```
+
+### Pattern Benefits
+
+| Aspect | Benefit |
+|--------|---------|
+| **FLAG_MAP table** | Easy to read, extend, generate with AI |
+| **String enums** | `chars = "hex"` instead of multiple booleans |
+| **Passthrough first** | `opts.flags or 0` ensures escape hatch works |
+| **Loop over map** | Adding new flags = add one line to table |
+
+### Performance
+
+**The conversion per widget, per frame:**
+
+```lua
+for opt, flag in pairs(FLAG_MAP) do    -- ~10 iterations
+  if opts[opt] then                     -- table lookup + branch
+    flags = flags | flag                -- bitwise OR (1 CPU cycle)
+  end
+end
+```
+
+**Cost analysis:**
+
+| Operation | Time |
+|-----------|------|
+| Table lookup `opts[opt]` | ~10-20 ns |
+| Bitwise OR | ~1 ns |
+| 10 flag checks total | ~200 ns |
+| ImGui widget render | ~10,000-100,000 ns |
+
+**Verdict: Negligible (<1% of widget cost)**
+
+The opts → flags conversion is noise compared to ImGui's actual rendering, layout calculations, and draw list operations. Not worth optimizing.
+
+### Shared Helpers (Optional)
+
+For consistency across widgets, could extract common logic:
+
+```lua
+-- arkitekt/gui/widgets/base/flags.lua
+
+local M = {}
+
+function M.build(opts, flag_map, enum_maps)
+  local flags = opts.flags or 0
+
+  -- Boolean opts
+  for opt, flag in pairs(flag_map) do
+    if opts[opt] then flags = flags | flag end
+  end
+
+  -- String enum opts
+  for opt, map in pairs(enum_maps or {}) do
+    if opts[opt] and map[opts[opt]] then
+      flags = flags | map[opts[opt]]
+    end
+  end
+
+  return flags
+end
+
+return M
+```
+
+Usage:
+```lua
+local Flags = require('arkitekt.gui.widgets.base.flags')
+
+local flags = Flags.build(opts, FLAG_MAP, { chars = CHARS_MAP })
+```
+
+But per-widget inline is fine too - keeps each widget self-contained.
