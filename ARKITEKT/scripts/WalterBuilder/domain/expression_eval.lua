@@ -405,8 +405,10 @@ local function fmt_arr(arr)
 end
 
 -- Evaluate a binary operation on two coordinate arrays
+-- For addition (+), w/h (positions 3,4) come from operand b if it has them,
+-- otherwise preserved from a. This matches WALTER positioning semantics where
+-- base position + offset should use offset's dimensions, not accumulate them.
 local function eval_op(op, a, b)
-  -- Ensure both are arrays of same length
   local result = {}
   local len = math.max(#a, #b)
 
@@ -415,7 +417,16 @@ local function eval_op(op, a, b)
     local bv = b[i] or 0
 
     if op == "+" then
-      result[i] = av + bv
+      if i <= 2 then
+        -- x, y (positions 1,2): always add
+        result[i] = av + bv
+      elseif #b >= i then
+        -- w, h (positions 3,4): use b's value if b has it (template dimensions)
+        result[i] = bv
+      else
+        -- b doesn't have this position, preserve a's value
+        result[i] = av
+      end
     elseif op == "-" then
       result[i] = av - bv
     elseif op == "*" then
