@@ -146,6 +146,12 @@ local DEFAULT_CONTEXT = {
   ["OVR.tcp_fx.width"] = 24,
   ["OVR.tcp_env.width"] = 41,
   ["OVR.tcp_recmode.width"] = 39,
+
+  -- Flow groups as coordinate arrays [x, y, w, h]
+  -- These get updated during flow positioning but need defaults for expressions like fx_group{2}
+  pan_group = { 0, 0, 40, 20 },   -- width = tcp_PanSize default
+  fx_group = { 0, 0, 24, 20 },    -- width = OVR.tcp_fx.width default
+  input_group = { 0, 0, 40, 20 }, -- width = tcp_InSize default
 }
 
 -- Known element context prefixes (these define visual elements, not variables)
@@ -657,6 +663,11 @@ local function calculate_flow_positions(result, eval_context)
       local group_width = coords.w or 0
       Console.info("  Flow group: %s (w=%d) -> children: %s", elem_id, group_width, table.concat(children, ", "))
 
+      -- Store group coordinates in eval_context so dependent elements can reference them
+      -- e.g., tcp.fxbyp uses fx_group{2} (width) to determine its position
+      eval_context[elem_id] = { current_x, current_y, group_width, element_h }
+      Console.info("  Stored %s in context: [%d, %d, %d, %d]", elem_id, current_x, current_y, group_width, element_h)
+
       for _, child_id in ipairs(children) do
         local child_entry = elements_by_id[child_id]
         if child_entry then
@@ -729,6 +740,10 @@ local function calculate_flow_positions(result, eval_context)
         current_x = current_x + elem_width + 2  -- 2px gap between elements
         positioned_count = positioned_count + 1
         Console.info("  Flow positioned: %s at x=%d, y=%d (w=%d)", elem_id, coords.x, coords.y, elem_width)
+
+        -- Store positioned element in eval_context for dependent element lookups
+        -- e.g., tcp.fxbyp references [tcp.fx tcp.fx] and tcp.fx{2} for its position
+        eval_context[elem_id] = { coords.x, coords.y, elem_width, coords.h or element_h }
       end
     end
 

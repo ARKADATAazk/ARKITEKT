@@ -109,6 +109,16 @@ M.DEFAULT_SCALARS = {
   tcp_show_folder_recarm = 0,
   hide_tcp_recmon = 0,  -- Alias used in some themes
 
+  -- Side button visibility (0 = no side buttons, elements show in flow)
+  show_side_buttons = 0,
+  show_side_fx_button = 0,
+  show_side_sends = 0,
+  show_side_fx = 0,
+
+  -- Include flags (1 = include in flow)
+  include_io_fx = 1,
+  hide_io_fx = 0,
+
   -- Theme variant
   theme_version = 1,
   theme_variant = 0,
@@ -598,9 +608,13 @@ local function eval_tokens(tokens, pos, context)
       condition = not condition
     end
 
-    -- Get true branch
+    -- Get true branch (may not exist for standalone boolean negation like !var)
     local true_val, pos_after_true = eval_tokens(tokens, next_pos, context)
-    if not true_val then return nil, pos_after_true end
+    if not true_val then
+      -- No true branch: standalone boolean negation !var
+      -- Return {1} if condition is true (after negation), {0} if false
+      return { condition and 1 or 0 }, next_pos
+    end
 
     -- Get false branch
     local false_val, pos_after_false = eval_tokens(tokens, pos_after_true, context)
