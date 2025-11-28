@@ -838,8 +838,13 @@ local function convert_items(items, context_filter)
     if item.type == RtconfigParser.TOKEN.SET then
       set_count = set_count + 1
 
+      -- Check if this is a flow group (pan_group, fx_group, etc.)
+      -- Flow groups need to be processed as elements, not variables, even though they don't have dots
+      local is_flow_group = item.is_flow_element and FLOW_GROUP_CHILDREN[item.element]
+
       -- Check if this is a variable definition (no dot in name)
-      if is_variable_definition(item.element) then
+      -- Skip this check for flow groups - they should be processed as elements
+      if not is_flow_group and is_variable_definition(item.element) then
         -- Process variable and add to context
         if process_variable_definition(item, eval_context) then
           result.variable_count = result.variable_count + 1
@@ -853,7 +858,7 @@ local function convert_items(items, context_filter)
       if context_filter then
         matches_context = item.element and item.element:match("^" .. context_filter .. "%.")
         -- Also allow flow groups (pan_group, fx_group, input_group) for layout calculation
-        if not matches_context and item.is_flow_element and FLOW_GROUP_CHILDREN[item.element] then
+        if not matches_context and is_flow_group then
           matches_context = true
         end
       end
