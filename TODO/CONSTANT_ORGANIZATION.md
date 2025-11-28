@@ -48,10 +48,10 @@ local value = Constants.QUANTIZE_BY_LABEL[user_input]  -- O(1)
 ```
 
 **Action items:**
-- [ ] Create `arkitekt/core/lookup.lua` helper module
-- [ ] Implement `build_reverse_lookup(array, key_field, value_field)` function
-- [ ] Audit all option arrays in constants files
-- [ ] Add reverse lookups where label→value or name→id conversions happen
+- [x] Create `arkitekt/core/lookup.lua` helper module
+- [x] Implement `build_reverse_lookup(array, key_field, value_field)` function
+- [x] Audit all option arrays in constants files
+- [x] Add reverse lookups where label→value or name→id conversions happen (RegionPlaylist QUANTIZE_OPTIONS)
 - [ ] Document pattern in API_DOCUMENTATION_GUIDE.md
 
 **Estimated effort:** 2 hours
@@ -195,13 +195,14 @@ M.LABEL_TO_VALUE, M.VALUE_TO_LABEL = Lookup.build_bidirectional(
 ```
 
 **Action items:**
-- [ ] Create `arkitekt/core/lookup.lua`
-- [ ] Implement `build_reverse_lookup()` function
-- [ ] Implement `build_index()` function
-- [ ] Implement `build_bidirectional()` function
+- [x] Create `arkitekt/core/lookup.lua`
+- [x] Implement `build_reverse_lookup()` function
+- [x] Implement `build_index()` function
+- [x] Implement `build_bidirectional()` function
+- [x] Implement `build_reverse()` function (bonus: for flat key-value tables)
 - [ ] Add unit tests
 - [ ] Document in API_DOCUMENTATION_GUIDE.md
-- [ ] Add to lazy loading registry in init.lua
+- [x] Add to lazy loading registry in init.lua (registered as Ark.Lookup)
 
 **Estimated effort:** 1.5 hours
 
@@ -252,8 +253,9 @@ local checks = {
 **Action items:**
 
 ### RegionPlaylist
-- [ ] Add `QUANTIZE_BY_LABEL` reverse lookup
-- [ ] Add `QUANTIZE_BY_VALUE` reverse lookup (value → label for display)
+- [x] Add `QUANTIZE_BY_LABEL` reverse lookup
+- [x] Add `QUANTIZE_BY_VALUE` reverse lookup (value → label for display)
+- [x] Add `QUANTIZE_INDEX` full object lookup
 - [ ] Consider transport button reverse lookups
 
 ### ThemeAdjuster
