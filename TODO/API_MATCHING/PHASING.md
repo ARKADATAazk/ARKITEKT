@@ -259,35 +259,30 @@ Depends On: All phases complete
 
 ---
 
-## Parallel Execution Map
+## Parallel Execution Map (Recommended)
 
 ```
 Timeline:   ─────────────────────────────────────────────────────►
 
-Phase 0:    [Foundation - Button Reference]
-            ════════════════
-                            │
-Phase 1:                    ├─► [Branch A: Button+Checkbox]
-(PARALLEL)                  ├─► [Branch B: Slider+Input]
-                            └─► [Branch C: Combo+Radio]
-                                        │
-                                        ▼ (merge)
-Phase 2:                    [Grid Rework - Sequential]
-                            ════════════════════════════
-                                        │
-Phase 3:                                ├─► [Branch A: RegionPlaylist]
-(PARALLEL)                              ├─► [Branch B: ItemPicker]
-                                        └─► [Branch C: ThemeAdjuster]
-                                                    │
-Phase 4:                    [TreeView - Sequential] │
-                            ════════════════════    │
-                                        │           │
-Phase 5:                                └───────────┼─► [Docs - Parallel OK]
-(PARALLEL)                                          │
-                                                    ▼ (merge all)
-Phase 6:                    [Cleanup - Sequential - LAST]
-                            ══════════════════════════════
+Phase 1:    ├─► [Branch A: ALL Simple Widgets]  ─┐
+(PARALLEL)  ├─► [Branch B: Grid Rework]          ├─► merge
+            └─► [Branch C: TreeView Rework]      ─┘
+                                │
+                                ▼
+Phase 2:    ├─► [Branch A: RegionPlaylist]  ─┐
+(PARALLEL)  ├─► [Branch B: ItemPicker]       │
+            ├─► [Branch C: ThemeAdjuster]    ├─► merge
+            └─► [Branch D: Sandbox]          ─┘
+                                │
+                                ▼
+Phase 3:    [Docs + Cleanup - Sequential]
+            ═══════════════════════════════
 ```
+
+**Why this structure:**
+- Phase 1: Widgets together = one mental context, Grid/Tree are independent
+- Phase 2: Apps only start when ALL widgets done (no partial dependencies)
+- Phase 3: Final cleanup after everything merged
 
 ---
 
@@ -296,12 +291,19 @@ Phase 6:                    [Cleanup - Sequential - LAST]
 ```
 claude/<phase>-<scope>-<session_id>
 
-Examples:
-claude/api-button-reference-XXXXX      # Phase 0
-claude/api-slider-input-XXXXX          # Phase 1
-claude/grid-rework-XXXXX               # Phase 2
-claude/migrate-regionplaylist-XXXXX    # Phase 3
-claude/docs-update-XXXXX               # Phase 5
+Phase 1 (3 parallel branches):
+claude/api-simple-widgets-XXXXX        # All 6 simple widgets
+claude/api-grid-rework-XXXXX           # Grid only
+claude/api-treeview-rework-XXXXX       # TreeView only
+
+Phase 2 (4 parallel branches):
+claude/migrate-regionplaylist-XXXXX
+claude/migrate-itempicker-XXXXX
+claude/migrate-themeadjuster-XXXXX
+claude/migrate-sandbox-XXXXX
+
+Phase 3:
+claude/docs-cleanup-XXXXX
 ```
 
 ---
@@ -319,28 +321,68 @@ claude/docs-update-XXXXX               # Phase 5
 
 ## Quick Start for Parallel Branches
 
-### For Widget Work (Phase 1)
+### Branch A: Simple Widgets (Phase 1)
 
 ```markdown
-Task: Implement new API for [Widget Name]
+Task: Implement new API for ALL simple widgets
+
+Widgets (in order):
+1. Button (reference implementation first)
+2. Checkbox
+3. Slider
+4. InputText
+5. Combo
+6. RadioButton
 
 Files to modify:
-- arkitekt/gui/widgets/primitives/[widget].lua
+- arkitekt/gui/widgets/primitives/button.lua
+- arkitekt/gui/widgets/primitives/checkbox.lua
+- arkitekt/gui/widgets/primitives/slider.lua
+- arkitekt/gui/widgets/primitives/inputtext.lua
+- arkitekt/gui/widgets/primitives/combo.lua
+- arkitekt/gui/widgets/primitives/radio_button.lua
 
-Changes:
-1. Add __call metamethod (see button.lua reference)
+Per widget:
+1. Add __call metamethod
 2. Add hybrid parameter detection
 3. Standardize result object (.value)
 4. Hide internal functions (make local)
 5. Add error messages for invalid input
 
-Test:
+Test each:
 - Positional: Ark.[Widget](ctx, ...)
 - Opts: Ark.[Widget](ctx, {...})
 - Old .draw() still works
 ```
 
-### For App Migration (Phase 3)
+### Branch B: Grid Rework (Phase 1)
+
+```markdown
+Task: Implement Ark.Grid(ctx, opts) API
+
+See: TODO/API_MATCHING/GRID_REWORK.md for full spec
+
+Key changes:
+1. Add M.draw(ctx, opts) with ID-keyed state
+2. Require explicit 'id' field
+3. Implement result object (selection, drag, reorder)
+4. Add debug warnings for duplicate IDs
+5. Keep Grid.new() as deprecated shim
+```
+
+### Branch C: TreeView Rework (Phase 1)
+
+```markdown
+Task: Implement Ark.Tree(ctx, opts) API
+
+Follow Grid patterns:
+1. Add M.draw(ctx, opts) with ID-keyed state
+2. Require explicit 'id' field
+3. Implement result object (selection, expanded, renamed)
+4. Keep current API as deprecated shim
+```
+
+### App Migration (Phase 2)
 
 ```markdown
 Task: Migrate [App Name] to new API
@@ -350,13 +392,15 @@ Files to modify:
 
 Changes:
 1. Replace Ark.*.draw( with Ark.*(
-2. Update result field access (.text → .value)
-3. Simplify opts-only to positional where appropriate
-4. Test all app functionality
+2. Replace Grid.new() with Ark.Grid()
+3. Update result field access (.text → .value)
+4. Simplify opts-only to positional where appropriate
+5. Test all app functionality
 
 Grep patterns:
 - Find: Ark\.\w+\.draw\(
-- Find: \.text\b (for InputText)
+- Find: Grid\.new\(
+- Find: \.text\b (for InputText results)
 ```
 
 ---
