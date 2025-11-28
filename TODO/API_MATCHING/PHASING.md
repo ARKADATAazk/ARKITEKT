@@ -4,7 +4,7 @@
 
 ---
 
-## Decision Summary (18 Total)
+## Decision Summary (19 Total)
 
 | # | Decision | Status |
 |---|----------|--------|
@@ -26,6 +26,7 @@
 | 16 | Hidden State for Complex Widgets | Decided |
 | 17 | Panel Callback Regions + Context Injection | Decided |
 | 18 | Single Return (result object only) | Decided |
+| 19 | Opts Naming Conventions (`toggled`, `style`, `w`/`h`) | Decided |
 
 ---
 

@@ -4,6 +4,26 @@
 
 ---
 
+## ⚠️ Applicability Note
+
+**Most ARKITEKT widgets are custom DrawList implementations** - they don't call ImGui widget functions, so ImGui flags don't apply to them.
+
+| Widget | Implementation | ImGui Flags Apply? |
+|--------|----------------|-------------------|
+| **Button** | Custom DrawList + InvisibleButton | ❌ No |
+| **Slider** | Custom DrawList + InvisibleButton | ❌ No |
+| **Checkbox** | Custom DrawList + InvisibleButton | ❌ No |
+| **Combo** | Custom DrawList + InvisibleButton | ❌ No |
+| **InputText** | DrawList frame + `ImGui.InputText()` | ✅ **Yes** |
+
+**Currently, only InputText uses ImGui underneath** - it wraps `ImGui.InputText()` for text editing functionality (cursor, selection, clipboard, undo, IME) while drawing a custom frame.
+
+The flag mappings below are:
+1. **InputTextFlags** - Actually used today
+2. **Other flags** - Reference for if we ever wrap those ImGui widgets, or for raw ImGui usage
+
+---
+
 ## Overview
 
 ImGui uses **bitwise flags** combined with the `|` operator:
