@@ -8,6 +8,9 @@ local Colors = require('arkitekt.core.colors')
 
 local M = {}
 
+-- Performance: Cache frequently-called ImGui functions
+local CalcTextSize = ImGui.CalcTextSize
+
 -- >>> TEXT UTILITIES (BEGIN)
 
 -- Truncate text to fit within max_width, adding ellipsis if needed
@@ -17,12 +20,12 @@ function M.truncate_text(ctx, text, max_width, ellipsis)
 
   if not text or text == "" then return "" end
 
-  local text_w = ImGui.CalcTextSize(ctx, text)
+  local text_w = CalcTextSize(ctx, text)
   if text_w <= max_width then
     return text
   end
 
-  local ellipsis_w = ImGui.CalcTextSize(ctx, ellipsis)
+  local ellipsis_w = CalcTextSize(ctx, ellipsis)
   local target_width = max_width - ellipsis_w
 
   if target_width <= 0 then
@@ -32,9 +35,9 @@ function M.truncate_text(ctx, text, max_width, ellipsis)
   -- Binary search for optimal truncation point
   local low, high = 1, #text
   while low < high do
-    local mid = math.ceil((low + high) / 2)
+    local mid = (low + high + 1) // 2  -- Integer division (faster than math.ceil)
     local test_text = text:sub(1, mid)
-    local test_width = ImGui.CalcTextSize(ctx, test_text)
+    local test_width = CalcTextSize(ctx, test_text)
 
     if test_width <= target_width then
       low = mid
@@ -48,7 +51,7 @@ end
 
 -- Calculate text dimensions for a given string
 function M.measure_text(ctx, text)
-  local w, h = ImGui.CalcTextSize(ctx, text)
+  local w, h = CalcTextSize(ctx, text)
   return { width = w, height = h }
 end
 

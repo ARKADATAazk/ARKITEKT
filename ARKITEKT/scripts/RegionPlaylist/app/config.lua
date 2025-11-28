@@ -2,7 +2,7 @@
 -- RegionPlaylist/app/config.lua
 -- Config builders using defs (factory functions for dynamic configs)
 
-local TransportIcons = require('RegionPlaylist.ui.views.transport.transport_icons')
+local TransportIcons = require('arkitekt.gui.draw.icons')
 local Ark = require('arkitekt')
 local Constants = require('RegionPlaylist.defs.constants')
 local Defaults = require('RegionPlaylist.defs.defaults')

@@ -10,6 +10,9 @@ local CoreMath = require('arkitekt.core.math')
 
 local M = {}
 
+-- Performance: Cache frequently-called ImGui functions
+local CalcTextSize = ImGui.CalcTextSize
+
 -- ============================================================================
 -- CONSTANTS (deprecated - use arkitekt.core.animation instead)
 -- ============================================================================
@@ -50,13 +53,13 @@ end
 --- @return string Truncated text
 function M.truncate_text(ctx, text, max_width, suffix)
   suffix = suffix or "..."
-  local text_w = ImGui.CalcTextSize(ctx, text)
+  local text_w = CalcTextSize(ctx, text)
 
   if text_w <= max_width then
     return text
   end
 
-  local suffix_w = ImGui.CalcTextSize(ctx, suffix)
+  local suffix_w = CalcTextSize(ctx, suffix)
   local available_w = max_width - suffix_w
 
   if available_w <= 0 then
@@ -66,9 +69,9 @@ function M.truncate_text(ctx, text, max_width, suffix)
   -- Binary search for the right length
   local lo, hi = 1, #text
   while lo < hi do
-    local mid = math.ceil((lo + hi) / 2)
+    local mid = (lo + hi + 1) // 2  -- Integer division (faster than math.ceil)
     local substr = text:sub(1, mid)
-    local w = ImGui.CalcTextSize(ctx, substr)
+    local w = CalcTextSize(ctx, substr)
     if w <= available_w then
       lo = mid
     else
@@ -84,7 +87,7 @@ end
 --- @param text string Text to measure
 --- @return number, number width and height
 function M.measure_text(ctx, text)
-  local w = ImGui.CalcTextSize(ctx, text)
+  local w = CalcTextSize(ctx, text)
   local h = ImGui.GetTextLineHeight(ctx)
   return w, h
 end
@@ -443,7 +446,7 @@ end
 --- @param text string Text to draw
 --- @param color number Text color
 function M.draw_centered_text(ctx, dl, x, y, width, height, text, color)
-  local text_w = ImGui.CalcTextSize(ctx, text)
+  local text_w = CalcTextSize(ctx, text)
   local text_h = ImGui.GetTextLineHeight(ctx)
   local text_x = x + (width - text_w) * 0.5
   local text_y = y + (height - text_h) * 0.5

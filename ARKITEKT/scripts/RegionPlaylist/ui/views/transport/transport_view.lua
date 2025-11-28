@@ -7,7 +7,7 @@ local ImGui = require 'imgui' '0.10'
 local Ark = require('arkitekt')
 
 local TransportContainer = require('RegionPlaylist.ui.views.transport.transport_container')
-local TransportIcons = require('RegionPlaylist.ui.views.transport.transport_icons')
+local TransportIcons = require('arkitekt.gui.draw.icons')
 local ButtonWidgets = require('RegionPlaylist.ui.views.transport.button_widgets')
 local DisplayWidget = require('RegionPlaylist.ui.views.transport.display_widget')
 local CoreConfig = require('RegionPlaylist.app.config')
