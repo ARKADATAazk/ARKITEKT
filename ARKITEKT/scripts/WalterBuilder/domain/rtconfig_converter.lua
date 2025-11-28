@@ -536,7 +536,8 @@ local function check_flow_hide_condition(flow_params, eval_context)
   -- Get the variable value from context
   local cond_value = eval_context[hide_cond]
   if cond_value == nil then
-    return false  -- Unknown variable, don't hide
+    -- Variable not set - check DEFAULT_SCALARS or assume 0 (don't hide)
+    cond_value = ExpressionEval.DEFAULT_SCALARS[hide_cond] or 0
   end
 
   -- Get scalar value if it's an array
@@ -544,9 +545,9 @@ local function check_flow_hide_condition(flow_params, eval_context)
     cond_value = cond_value[1] or 0
   end
 
-  -- Compare with hide_val
-  local target_val = tonumber(hide_val) or 0
-  local should_hide = (cond_value == target_val)
+  -- WALTER exclude semantics: hide when the condition variable is truthy (nonzero)
+  -- The second parameter (hide_val/swap) is typically 0 for no swap, not a comparison value
+  local should_hide = (cond_value ~= 0)
 
   if negated then
     should_hide = not should_hide

@@ -103,6 +103,12 @@ M.DEFAULT_SCALARS = {
   hide_volume_group = 0,
   trackpanmode = 6,
 
+  -- Flow layout hide conditions (0 = show, nonzero = hide)
+  hide_folder_recmon = 0,
+  show_side_io_button = 0,  -- Note: this is inverted logic in flow
+  tcp_show_folder_recarm = 0,
+  hide_tcp_recmon = 0,  -- Alias used in some themes
+
   -- Theme variant
   theme_version = 1,
   theme_variant = 0,
