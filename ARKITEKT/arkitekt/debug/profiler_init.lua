@@ -23,9 +23,9 @@ function M.init()
     return true
   end
   
-  -- Check config flag
-  local ok, Config = pcall(require, 'arkitekt.defs.app')
-  if not ok or not Config or not Config.PROFILER_ENABLED then
+  -- Check feature flag
+  local ok, Features = pcall(require, 'arkitekt.defs.features')
+  if not ok or not Features or not Features.PROFILER_ENABLED then
     return false
   end
   

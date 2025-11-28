@@ -113,14 +113,15 @@ return M
 - Platform-specific flags in one place
 
 **Action items:**
-- [ ] Create `arkitekt/defs/features.lua`
-- [ ] Audit codebase for scattered feature flags
-- [ ] Migrate flags to centralized file
-- [ ] Update code to reference `Features.FLAG_NAME`
-- [ ] Add to namespace in `arkitekt/init.lua`
+- [x] Create `arkitekt/defs/features.lua`
+- [x] Audit codebase for scattered feature flags
+- [x] Migrate flags to centralized file
+- [x] Update code to reference `Features.FLAG_NAME`
+- [x] Add to namespace in `arkitekt/init.lua`
 - [ ] Document in NAMESPACE.md
 
 **Estimated effort:** 2 hours
+**Status:** ✅ **COMPLETED** - Feature flags centralized in `arkitekt/defs/features.lua`
 
 ---
 

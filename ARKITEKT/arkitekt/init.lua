@@ -68,6 +68,7 @@ local MODULES = {
   Style = 'arkitekt.gui.style',
   Draw = 'arkitekt.gui.draw.primitives',
   Easing = 'arkitekt.gui.animation.easing',
+  Features = 'arkitekt.defs.features',
   Lookup = 'arkitekt.core.lookup',
   Math = 'arkitekt.core.math',
   UUID = 'arkitekt.core.uuid',

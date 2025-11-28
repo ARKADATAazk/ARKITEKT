@@ -54,10 +54,9 @@ end
 -- ============================================================================
 -- PROFILER
 -- ============================================================================
-M.PROFILER_ENABLED = false
+-- NOTE: PROFILER_ENABLED moved to arkitekt/defs/features.lua for centralization
 
 M.PROFILER = {
-    enabled_by_default = false,
     window_width = 800,
     window_height = 600,
 }
