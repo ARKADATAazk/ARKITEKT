@@ -62,6 +62,9 @@ local MODULES = {
   SlidingZone = 'arkitekt.gui.widgets.containers.sliding_zone',
   TileGroup = 'arkitekt.gui.widgets.containers.tile_group',
 
+  -- Navigation
+  Tree = 'arkitekt.gui.widgets.navigation.tree_view',
+
   -- Utilities (commonly used modules)
   Anim = 'arkitekt.core.animation',
   Colors = 'arkitekt.core.colors',
