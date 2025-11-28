@@ -54,10 +54,11 @@ local w = ImGui.CalcTextSize(ctx, text)
 
 | File | Description |
 |------|-------------|
+| [WHAT_IS_ARKITEKT.md](WHAT_IS_ARKITEKT.md) | Framework identity: UI Toolkit = Framework + Design System + Components |
 | [DECISIONS.md](DECISIONS.md) | Detailed rationale for each design choice (19 decisions) |
 | [SCOPE.md](SCOPE.md) | What gets `Ark.*` vs stays `ImGui.*` |
 | [WIDGET_SIGNATURES.md](WIDGET_SIGNATURES.md) | ImGui → Ark signature mappings for each widget |
-| [FLAGS_TO_OPTS.md](FLAGS_TO_OPTS.md) | ImGui bitwise flags → ARKITEKT opts mapping |
+| [FLAGS_TO_OPTS.md](FLAGS_TO_OPTS.md) | ImGui bitwise flags → ARKITEKT opts mapping (InputText only) |
 
 ### Implementation Guides
 
