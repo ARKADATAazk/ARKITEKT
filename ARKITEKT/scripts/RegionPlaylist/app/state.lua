@@ -562,10 +562,17 @@ function M.create_playlist_item(playlist_id, reps)
   }
 end
 
+-- Debug: Set to true to log cleanup resolution
+local DEBUG_CLEANUP = true
+
 function M.cleanup_deleted_regions()
   local removed_any = false
   local updated_any = false
   local playlists = M.playlist:get_all()
+
+  if DEBUG_CLEANUP then
+    reaper.ShowConsoleMsg("=== cleanup_deleted_regions() ===\n")
+  end
 
   for _, pl in ipairs(playlists) do
     local i = 1
@@ -575,20 +582,34 @@ function M.cleanup_deleted_regions()
         -- Try to resolve region using GUID first (survives renumbering), then RID
         local region = M.region:resolve_region(item.guid, item.rid)
 
+        if DEBUG_CLEANUP then
+          reaper.ShowConsoleMsg(string.format("  Item: rid=%s guid=%s -> resolved=%s\n",
+            tostring(item.rid), tostring(item.guid), region and tostring(region.rid) or "NIL"))
+        end
+
         if region then
           -- Region found - check if RID needs updating (was renumbered)
           if item.rid ~= region.rid then
+            if DEBUG_CLEANUP then
+              reaper.ShowConsoleMsg(string.format("    UPDATING rid: %d -> %d\n", item.rid, region.rid))
+            end
             item.rid = region.rid
             updated_any = true
           end
           -- Also update GUID if it was missing (migration from old data)
           if not item.guid and region.guid then
+            if DEBUG_CLEANUP then
+              reaper.ShowConsoleMsg(string.format("    ADDING guid: %s\n", region.guid))
+            end
             item.guid = region.guid
             updated_any = true
           end
           i = i + 1
         else
           -- Region truly deleted - remove from playlist
+          if DEBUG_CLEANUP then
+            reaper.ShowConsoleMsg(string.format("    REMOVING (not found)\n"))
+          end
           table.remove(pl.items, i)
           removed_any = true
           M.add_pending_destroy(item.key)

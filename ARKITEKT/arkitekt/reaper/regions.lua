@@ -35,6 +35,9 @@ local function get_marker_guid(proj, marker_index)
   return nil
 end
 
+-- Debug: Set to true to log GUID capture
+local DEBUG_GUID = true
+
 function M.scan_project_regions(proj)
   proj = proj or 0
   local regions = {}
@@ -45,9 +48,14 @@ function M.scan_project_regions(proj)
       reaper.EnumProjectMarkers3(proj, i)
 
     if isrgn then
+      local guid = get_marker_guid(proj, i)
+      if DEBUG_GUID then
+        reaper.ShowConsoleMsg(string.format("Region scan: enum_idx=%d rid=%d name='%s' guid=%s\n",
+          i, markrgnindexnumber, name or "", guid or "NIL"))
+      end
       regions[#regions + 1] = {
         rid = markrgnindexnumber,
-        guid = get_marker_guid(proj, i),  -- Stable GUID (survives renumbering)
+        guid = guid,
         index = i,
         name = name,
         start = pos,
