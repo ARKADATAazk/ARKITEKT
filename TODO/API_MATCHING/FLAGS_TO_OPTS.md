@@ -310,21 +310,67 @@ Used by: `Ark.Table`, `Ark.Grid`
 
 ---
 
-## Passthrough Pattern
+## Coverage Tiers
 
-For advanced cases where opts don't cover a specific flag, use `flags` passthrough:
+Not all flags need opts mappings. We use a tiered approach:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  TIER 1: Common Flags → Opts (documented above)         │
+│  ───────────────────────────────────────────────────────│
+│  password, readonly, logarithmic, clamp, default_open,  │
+│  span_width, borders, resizable, etc.                   │
+│  ~40 flags that cover 95% of usage                      │
+│  → Full IDE autocomplete, type safety                   │
+├─────────────────────────────────────────────────────────┤
+│  TIER 2: Rare Flags → Passthrough                       │
+│  ───────────────────────────────────────────────────────│
+│  CallbackCharFilter, CallbackHistory, etc.              │
+│  Power users can use: flags = ImGui.X                   │
+│  → When requested often, promote to Tier 1              │
+├─────────────────────────────────────────────────────────┤
+│  TIER 3: Future Flags → Auto-available                  │
+│  ───────────────────────────────────────────────────────│
+│  New ImGui flags from updates                           │
+│  → Work immediately via passthrough                     │
+│  → Map to opts based on user demand                     │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Passthrough Syntax
+
+For rare/advanced flags not yet mapped to opts:
 
 ```lua
--- Direct flag passthrough (rare, for power users)
+-- Tier 2: Rare flag via passthrough
 Ark.InputText(ctx, {
   label = "Code",
   text = code,
   flags = ImGui.InputTextFlags_CallbackCharFilter,
   callback = filter_fn,
 })
+
+-- Combining opts + passthrough (opts take precedence)
+Ark.InputText(ctx, {
+  label = "Search",
+  text = query,
+  password = true,  -- Tier 1: mapped opt
+  flags = ImGui.InputTextFlags_CallbackCompletion,  -- Tier 2: passthrough
+})
 ```
 
-This allows gradual migration - start with opts, passthrough if needed.
+### Future-Proofing
+
+When ImGui updates add new flags:
+
+1. **Immediately usable** via `flags = ImGui.NewFlag`
+2. **No ARKITEKT update required** for basic functionality
+3. **Opts mapping added** when flag becomes commonly requested
+
+This means:
+- No massive upfront flag database to maintain
+- New ImGui features work on day one
+- Opts grow organically based on real usage
 
 ---
 
