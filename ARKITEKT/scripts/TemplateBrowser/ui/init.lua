@@ -104,7 +104,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       for _, ref_uuid in ipairs(favorites.template_refs) do
         for _, tmpl in ipairs(self.state.templates) do
           if tmpl.uuid == ref_uuid then
-            table.insert(templates, tmpl)
+            templates[#templates + 1] = tmpl
             break
           end
         end
@@ -114,7 +114,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       templates = {}
       for _, tmpl in ipairs(self.state.templates) do
         if tmpl.relative_path == "_Inbox" then
-          table.insert(templates, tmpl)
+          templates[#templates + 1] = tmpl
         end
       end
     elseif self.state.quick_access_mode == "most_used" then
@@ -124,13 +124,13 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         local metadata = self.state.metadata and self.state.metadata.templates[tmpl.uuid]
         local usage_count = metadata and metadata.usage_count or 0
         if usage_count > 0 then
-          table.insert(usage_list, {template = tmpl, usage_count = usage_count})
+          usage_list[#usage_list + 1] = {template = tmpl, usage_count = usage_count}
         end
       end
       table.sort(usage_list, function(a, b) return a.usage_count > b.usage_count end)
       templates = {}
       for i = 1, math.min(100, #usage_list) do
-        table.insert(templates, usage_list[i].template)
+        templates[#templates + 1] = usage_list[i].template
       end
     else
       -- Get recents
@@ -138,13 +138,13 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       for _, tmpl in ipairs(self.state.templates) do
         local metadata = self.state.metadata and self.state.metadata.templates[tmpl.uuid]
         if metadata and metadata.last_used then
-          table.insert(recent, {template = tmpl, last_used = metadata.last_used})
+          recent[#recent + 1] = {template = tmpl, last_used = metadata.last_used}
         end
       end
       table.sort(recent, function(a, b) return a.last_used > b.last_used end)
       templates = {}
       for i = 1, math.min(100, #recent) do
-        table.insert(templates, recent[i].template)
+        templates[#templates + 1] = recent[i].template
       end
     end
 
@@ -156,7 +156,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         local score = FuzzySearch.score(search_query, tmpl.name)
         if score > 0 then
           tmpl._fuzzy_score = score
-          table.insert(filtered, tmpl)
+          filtered[#filtered + 1] = tmpl
         end
       end
       -- Sort by fuzzy score when searching
@@ -240,22 +240,22 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         for tag_name, _ in pairs(self.state.filter_tags) do
           local tag_data = self.state.metadata.tags[tag_name]
           if tag_data then
-            table.insert(items, {
+            items[#items + 1] = {
               id = "tag:" .. tag_name,
               label = tag_name,
               color = tag_data.color,
-            })
+            }
           end
         end
       end
 
       -- Add active FX filters
       for fx_name, _ in pairs(self.state.filter_fx) do
-        table.insert(items, {
+        items[#items + 1] = {
           id = "fx:" .. fx_name,
           label = fx_name,
           color = 0x888888,  -- Gray for FX
-        })
+        }
       end
 
       return items

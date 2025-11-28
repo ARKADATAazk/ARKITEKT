@@ -76,10 +76,10 @@ function StatusBar:render(ctx)
   elseif selected_audio > 0 or selected_midi > 0 then
     local parts = {}
     if selected_audio > 0 then
-      table.insert(parts, string.format(Strings.STATUS.selection_audio, selected_audio))
+      parts[#parts + 1] = string.format(Strings.STATUS.selection_audio, selected_audio)
     end
     if selected_midi > 0 then
-      table.insert(parts, string.format(Strings.STATUS.selection_midi, selected_midi))
+      parts[#parts + 1] = string.format(Strings.STATUS.selection_midi, selected_midi)
     end
     status_text = string.format(Strings.STATUS.selection_combined, table.concat(parts, ", "))
     ImGui.Text(ctx, status_text)

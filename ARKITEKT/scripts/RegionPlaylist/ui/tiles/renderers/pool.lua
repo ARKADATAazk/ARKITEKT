@@ -193,11 +193,11 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   if show_badge then
     local badge_text = string.format("[%d]", item_count)
     local badge_w, _ = ImGui.CalcTextSize(ctx, badge_text)
-    table.insert(right_elements, BaseRenderer.create_element(
+    right_elements[#right_elements + 1] = BaseRenderer.create_element(
       true,
       (badge_w * BaseRenderer.CONFIG.badge_font_scale) + (M.CONFIG.badge_padding_x * 2),
       M.CONFIG.badge_margin
-    ))
+    )
   end
   
   if show_text then
