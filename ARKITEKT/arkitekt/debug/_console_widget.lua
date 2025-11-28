@@ -690,11 +690,11 @@ function M.new(config)
         end
         
         -- Create line with colored segments (no icons)
-        table.insert(lines, {
+        lines[#lines + 1] = {
           segments = {
             {text = msg_str, color = color}
           }
-        })
+        }
       end
     end
     

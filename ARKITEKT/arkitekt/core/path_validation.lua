@@ -110,11 +110,11 @@ function M.validate_paths(paths)
   for i, path in ipairs(paths) do
     local ok, err = M.is_safe_path(path)
     if not ok then
-      table.insert(errors, {
+      errors[#errors + 1] = {
         index = i,
         path = path,
         error = err
-      })
+      }
     end
   end
 
