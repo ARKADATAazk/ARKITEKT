@@ -907,9 +907,11 @@ local function convert_items(items, context_filter)
               Console.info("  REPLACED %s with flow element (w=%d)", item.element, element.coords.w or 0)
             end
           -- Non-flow SET can REPLACE flow elements (e.g., drawTcp overrides calcTcpFlow)
+          -- BUT only if the SET evaluation succeeds (otherwise keep flow position)
           elseif original_entry.is_flow_element then
             local element, is_computed, eval_success = convert_set_item(item, eval_context)
-            if element then
+            if element and (not is_computed or eval_success) then
+              -- Only replace if: simple coords OR expression evaluated successfully
               result.elements[existing_idx] = {
                 element = element,
                 is_computed = is_computed,
@@ -921,6 +923,12 @@ local function convert_items(items, context_filter)
               }
               replaced_count = replaced_count + 1
               Console.info("  REPLACED flow %s with SET statement", item.element)
+            else
+              -- SET evaluation failed, keep flow element
+              duplicate_count = duplicate_count + 1
+              if is_computed and not eval_success then
+                Console.info("  KEPT flow %s (SET expr failed)", item.element)
+              end
             end
           else
             duplicate_count = duplicate_count + 1
