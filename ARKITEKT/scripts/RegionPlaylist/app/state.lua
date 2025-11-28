@@ -579,16 +579,17 @@ function M.cleanup_deleted_regions()
     while i <= #pl.items do
       local item = pl.items[i]
       if item.type == "region" then
-        -- Try to resolve region using GUID first (survives renumbering), then RID
-        local region = M.region:resolve_region(item.guid, item.rid)
+        -- Try to resolve region: GUID → Name → RID
+        local region = M.region:resolve_region(item.guid, item.rid, item.region_name)
 
         if DEBUG_CLEANUP then
-          reaper.ShowConsoleMsg(string.format("  Item: rid=%s guid=%s -> resolved=%s\n",
-            tostring(item.rid), tostring(item.guid), region and tostring(region.rid) or "NIL"))
+          reaper.ShowConsoleMsg(string.format("  Item: rid=%s guid=%s name='%s' -> resolved=%s\n",
+            tostring(item.rid), tostring(item.guid), tostring(item.region_name or ""),
+            region and tostring(region.rid) or "NIL"))
         end
 
         if region then
-          -- Region found - check if RID needs updating (was renumbered)
+          -- Region found - update RID if changed (was renumbered)
           if item.rid ~= region.rid then
             if DEBUG_CLEANUP then
               reaper.ShowConsoleMsg(string.format("    UPDATING rid: %d -> %d\n", item.rid, region.rid))
@@ -596,12 +597,22 @@ function M.cleanup_deleted_regions()
             item.rid = region.rid
             updated_any = true
           end
-          -- Also update GUID if it was missing (migration from old data)
-          if not item.guid and region.guid then
+          -- Update GUID if changed or missing (renumbering generates new GUIDs)
+          if region.guid and item.guid ~= region.guid then
             if DEBUG_CLEANUP then
-              reaper.ShowConsoleMsg(string.format("    ADDING guid: %s\n", region.guid))
+              reaper.ShowConsoleMsg(string.format("    UPDATING guid: %s -> %s\n",
+                tostring(item.guid), region.guid))
             end
             item.guid = region.guid
+            updated_any = true
+          end
+          -- Update stored name if it changed
+          if region.name and region.name ~= "" and item.region_name ~= region.name then
+            if DEBUG_CLEANUP then
+              reaper.ShowConsoleMsg(string.format("    UPDATING name: '%s' -> '%s'\n",
+                tostring(item.region_name or ""), region.name))
+            end
+            item.region_name = region.name
             updated_any = true
           end
           i = i + 1

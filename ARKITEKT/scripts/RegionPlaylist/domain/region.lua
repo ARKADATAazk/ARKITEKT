@@ -15,6 +15,7 @@ function M.new()
   local domain = {
     region_index = {},  -- Map: RID (number) -> region object {rid, guid, name, color, ...}
     guid_index = {},    -- Map: GUID (string) -> region object (for stable lookups)
+    name_index = {},    -- Map: name (string) -> region object (fallback for renumbering)
     pool_order = {},    -- Array of RIDs defining custom pool order
   }
 
@@ -37,17 +38,31 @@ function M.new()
     return self.guid_index[guid]
   end
 
-  --- Resolve a region reference (tries GUID first, falls back to RID)
+  --- Get region by name (fallback for renumbering when GUID changes)
+  --- @param name string Region name
+  --- @return table|nil region Region object or nil if not found
+  function domain:get_region_by_name(name)
+    if not name or name == "" then return nil end
+    return self.name_index[name]
+  end
+
+  --- Resolve a region reference (tries GUID → Name → RID)
   --- @param guid string|nil Region GUID (preferred)
   --- @param rid number|nil Region ID (fallback)
+  --- @param name string|nil Region name (fallback when GUID changes on renumber)
   --- @return table|nil region Region object or nil if not found
-  function domain:resolve_region(guid, rid)
-    -- Try GUID first (stable across renumbering)
+  function domain:resolve_region(guid, rid, name)
+    -- Try GUID first (stable for normal edits, but changes on renumber)
     if guid then
       local region = self.guid_index[guid]
       if region then return region end
     end
-    -- Fall back to RID
+    -- Try name (stable across renumbering if user didn't rename)
+    if name and name ~= "" then
+      local region = self.name_index[name]
+      if region then return region end
+    end
+    -- Fall back to RID (least stable)
     if rid then
       return self.region_index[rid]
     end
@@ -81,14 +96,19 @@ function M.new()
     -- Clear existing data
     self.region_index = {}
     self.guid_index = {}
+    self.name_index = {}
     self.pool_order = {}
 
     -- Rebuild from bridge data
     for _, region in ipairs(regions) do
       self.region_index[region.rid] = region
-      -- Also index by GUID for stable lookups
+      -- Index by GUID for stable lookups
       if region.guid then
         self.guid_index[region.guid] = region
+      end
+      -- Index by name (only if non-empty, first one wins for duplicates)
+      if region.name and region.name ~= "" and not self.name_index[region.name] then
+        self.name_index[region.name] = region
       end
       self.pool_order[#self.pool_order + 1] = region.rid
     end
