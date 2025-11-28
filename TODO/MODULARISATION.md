@@ -56,7 +56,7 @@ Nobody uses these - not even internally:
 |-----------|-----------------|----------|
 | Search/Filter | `core/filter.lua` | All scripts |
 | Search Toolbar | `gui/widgets/search_toolbar.lua` | ItemPicker, TemplateBrowser |
-| **Notification Service** | `core/notification.lua` | WalterBuilder (best), RegionPlaylist, TemplateBrowser |
+| ~~**Notification Service**~~ | ✅ `core/notification.lua` | ~~WalterBuilder, RegionPlaylist, TemplateBrowser~~ **COMPLETED** |
 
 ---
 
@@ -173,15 +173,15 @@ These modules were extracted to framework but RegionPlaylist never migrated to u
   - **Found in**: ItemPicker (search_toolbar.lua), TemplateBrowser
 
 ### Notification/Toast System
-- [ ] **arkitekt/gui/widgets/notification.lua** - Temporary notifications
+- [x] **arkitekt/core/notification.lua** - Temporary notifications ✅ **COMPLETED**
   - Timed auto-dismiss
   - Priority levels (error > warning > info/success)
   - Color based on type
-  - **Implementations found**:
-    - RegionPlaylist: `ui/state/notification.lua` (112 lines) - domain-specific (circular deps, state changes)
-    - WalterBuilder: `domain/notification.lua` (86 lines) - generic (message, type, timeout)
-    - TemplateBrowser: `ui/status.lua` (49 lines) - simple (auto-clear after 10s)
-  - **Common pattern**: message + type + timeout-based auto-clear
+  - **Framework implementation**: Based on WalterBuilder (cleanest), with improvements:
+    - Built-in `get_status()` adapter for status_bar integration
+    - Convenience methods (`:success()`, `:error()`, `:warning()`, `:info()`)
+    - Per-type configurable timeouts (errors stay longer)
+    - Available in Ark namespace: `Ark.Notification`
 
 ### Track Filter (High Value)
 - [ ] **arkitekt/gui/widgets/track_filter.lua** - Hierarchical track tree filter
@@ -253,12 +253,12 @@ These modules were extracted to framework but RegionPlaylist never migrated to u
   - **See**: `TODO/BATCH_PROCESSOR.md` for details
 
 ### Notification Service (High Value)
-- [ ] **arkitekt/core/notification.lua** - Timed status messages with status_bar integration
-  - **Best reference**: WalterBuilder `domain/notification.lua` (86 lines, cleanest)
-  - **Problem**: `app/chrome/status_bar.lua` is UI-only, needs `get_status()` callback
-  - Each script reimplements the domain logic separately
+- [x] **arkitekt/core/notification.lua** - Timed status messages with status_bar integration ✅ **COMPLETED**
+  - **Based on**: WalterBuilder `domain/notification.lua` (86 lines, cleanest)
+  - **Solution**: Framework implementation with built-in status_bar integration
+  - Scripts can now migrate from local implementations to framework
 
-  **Proposed unified API:**
+  **Implemented unified API:**
   ```lua
   local Notification = require('arkitekt.core.notification')
   local notif = Notification.new({

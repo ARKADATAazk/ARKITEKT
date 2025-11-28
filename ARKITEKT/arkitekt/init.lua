@@ -71,6 +71,7 @@ local MODULES = {
   Features = 'arkitekt.defs.features',
   Lookup = 'arkitekt.core.lookup',
   Math = 'arkitekt.core.math',
+  Notification = 'arkitekt.core.notification',
   UUID = 'arkitekt.core.uuid',
 
   -- Platform (REAPER + ImGui specific utilities)
