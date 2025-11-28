@@ -3,7 +3,7 @@
 -- Centralized playlist operations with automatic undo/save/sync
 -- Relies on bridge invalidate logic instead of manual engine sync
 
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Logger = require('arkitekt.debug.logger')
 
 local M = {}
@@ -49,11 +49,11 @@ function Controller:_get_playlist(id)
 end
 
 function Controller:_generate_playlist_id()
-  return ark.UUID.generate()
+  return Ark.UUID.generate()
 end
 
 function Controller:_generate_item_key()
-  return ark.UUID.generate()
+  return Ark.UUID.generate()
 end
 
 function Controller:_generate_unique_name(base_name, exclude_id)

@@ -5,7 +5,7 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
 
 -- ============================================================================
 -- LOAD MODULES
@@ -19,13 +19,13 @@ local GUI = require("ThemeAdjuster.ui.gui")
 local StatusConfig = require("ThemeAdjuster.ui.status")
 local Settings = require("arkitekt.core.settings")
 
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 -- ============================================================================
 -- INITIALIZE SETTINGS
 -- ============================================================================
 
-local data_dir = ark._bootstrap.get_data_dir("ThemeAdjuster")
+local data_dir = Ark._bootstrap.get_data_dir("ThemeAdjuster")
 local settings = Settings.new(data_dir, "settings.json")
 
 State.initialize(settings)

@@ -3,10 +3,10 @@
 -- Renders TCP tracks vertically on the canvas
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local TrackDefaults = require('WalterBuilder.defs.track_defaults')
 
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 local Renderer = {}

@@ -4,7 +4,7 @@
 
 -- Dependencies (cached at module load per Lua Performance Guide)
 local ImGui = require('arkitekt.platform.imgui')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.factory')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Colors = require('arkitekt.core.colors')
@@ -112,7 +112,7 @@ local function draw_template_panel(ctx, gui, width, height)
           style = Chip.STYLE.ACTION,
           label = tag_name,
           bg_color = tag_data.color,
-          text_color = ark.Colors.auto_text_color(tag_data.color),
+          text_color = Ark.Colors.auto_text_color(tag_data.color),
           height = chip_height,
           padding_h = 8,
           rounding = 2,
@@ -143,8 +143,8 @@ local function draw_template_panel(ctx, gui, width, height)
       local clicked = Chip.draw(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
-        bg_color = ark.Colors.hexrgb("#888888"),
-        text_color = ark.Colors.hexrgb("#000000"),
+        bg_color = Ark.Colors.hexrgb("#888888"),
+        text_color = Ark.Colors.hexrgb("#000000"),
         height = chip_height,
         padding_h = 8,
         rounding = 2,
@@ -202,7 +202,7 @@ local function draw_template_panel(ctx, gui, width, height)
 
   -- 4. DRAW DRAGGABLE SEPARATOR
   local sep_y = panel_y + grid_panel_height + separator_gap / 2
-  local sep_result = ark.Splitter.draw(ctx, {
+  local sep_result = Ark.Splitter.draw(ctx, {
     id = "quick_access_separator",
     x = content_x,
     y = sep_y,

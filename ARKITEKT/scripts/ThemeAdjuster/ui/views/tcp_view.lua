@@ -3,16 +3,16 @@
 -- TCP (Track Control Panel) configuration tab
 
 local ImGui = require('arkitekt.platform.imgui')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 local ThemeMapper = require('ThemeAdjuster.domain.theme.mapper')
 local ParamDiscovery = require('ThemeAdjuster.domain.theme.discovery')
 local Strings = require('ThemeAdjuster.defs.strings')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
-local PC = ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
+local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
 local TCPView = {}
@@ -242,7 +242,7 @@ function TCPView:draw_additional_param(ctx, param)
 
   if param.type == "toggle" then
     local is_checked = (param.value ~= 0)
-    if ark.Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "tcp_add_" .. param.index) then
+    if Ark.Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "tcp_add_" .. param.index) then
       changed = true
       new_value = is_checked and 0 or 1
     end
@@ -256,7 +256,7 @@ function TCPView:draw_additional_param(ctx, param)
     local current_idx = math.floor(param.value - param.min + 1)
     current_idx = math.max(1, math.min(current_idx, #values))
 
-    local spinner_result = ark.Spinner.draw(ctx, {
+    local spinner_result = Ark.Spinner.draw(ctx, {
       id = "##tcp_add_spinner_" .. param.index,
       value = current_idx,
       options = values,
@@ -319,7 +319,7 @@ function TCPView:draw(ctx, shell_state)
   -- Default 6.0 params toggle (right-aligned)
   ImGui.SameLine(ctx, avail_w - 180)
   local show_d60 = self.State.get_show_default_60_params()
-  if ark.Checkbox.draw_at_cursor(ctx, "Default 6.0 params", show_d60, nil, "tcp_d60_toggle") then
+  if Ark.Checkbox.draw_at_cursor(ctx, "Default 6.0 params", show_d60, nil, "tcp_d60_toggle") then
     self.State.set_show_default_60_params(not show_d60)
   end
   if ImGui.IsItemHovered(ctx) then
@@ -364,7 +364,7 @@ function TCPView:draw(ctx, shell_state)
 
     for _, layout in ipairs({'A', 'B', 'C'}) do
       local is_active = (self.active_layout == layout)
-      if ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button.draw_at_cursor(ctx, {
         label = layout,
         width = 50,
         height = 24,
@@ -391,7 +391,7 @@ function TCPView:draw(ctx, shell_state)
     ImGui.SameLine(ctx, 120)
 
     for _, size in ipairs({'100%', '150%', '200%'}) do
-      if ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button.draw_at_cursor(ctx, {
         label = size,
         width = 70,
         height = 24,
@@ -422,7 +422,7 @@ function TCPView:draw(ctx, shell_state)
     end
     ImGui.SameLine(ctx, 120)
 
-    if ark.Button.draw_at_cursor(ctx, {
+    if Ark.Button.draw_at_cursor(ctx, {
       label = is_default and ("✓ " .. self.active_layout .. " is Default") or ("Set " .. self.active_layout .. " as Default"),
       width = 200,
       height = 24,
@@ -468,7 +468,7 @@ function TCPView:draw(ctx, shell_state)
 
       -- Spinner (fixed position, fixed width)
       ImGui.SameLine(ctx, 0, 8)
-      local spinner_result = ark.Spinner.draw(ctx, {
+      local spinner_result = Ark.Spinner.draw(ctx, {
         id = id,
         value = idx,
         options = values,

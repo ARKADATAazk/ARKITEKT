@@ -29,7 +29,7 @@ package.path = root_path .. "?.lua;" .. root_path .. "?/init.lua;" .. package.pa
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
 local function dirname(p) return p:match("^(.*)[/\\]") end
 local function join(a,b) local s=package.config:sub(1,1); return (a:sub(-1)==s) and (a..b) or (a..s..b) end
@@ -51,7 +51,7 @@ local SelRect        = require("arkitekt.gui.widgets.data.selection_rectangle")
 
 local SettingsOK, Settings = pcall(require, "arkitekt.core.settings")
 local StyleOK,    Style    = pcall(require, "arkitekt.gui.style.imgui")
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 
 local settings = nil
@@ -220,7 +220,7 @@ local theme = {
 local sel_rect = SelRect.new()
 local grid = PackageGrid.create(pkg, settings, theme)
 
-local container = ark.Panel.new({
+local container = Ark.Panel.new({
   id = "packages_container",
   width = nil,
   height = nil,

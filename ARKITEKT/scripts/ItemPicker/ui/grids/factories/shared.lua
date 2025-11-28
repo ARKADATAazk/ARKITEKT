@@ -4,7 +4,7 @@
 -- Extracts common filtering, sorting, and conversion logic
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local pool_utils = require('ItemPicker.domain.filters.pool')
 
 local M = {}

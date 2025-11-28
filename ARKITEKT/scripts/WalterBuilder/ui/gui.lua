@@ -3,7 +3,7 @@
 -- Main GUI orchestrator - combines all panels
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local State = require('WalterBuilder.app.state')
 local PreviewCanvas = require('WalterBuilder.ui.canvas.preview_canvas')
 local ElementRenderer = require('WalterBuilder.ui.canvas.element_renderer')
@@ -20,7 +20,7 @@ local Notification = require('WalterBuilder.domain.notification')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local WalterSettings = require('WalterBuilder.infra.settings')
 
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 local GUI = {}

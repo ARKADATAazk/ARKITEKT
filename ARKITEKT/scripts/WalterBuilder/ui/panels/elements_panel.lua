@@ -3,13 +3,13 @@
 -- Element palette panel - shows available elements to add to layout
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local TCPElements = require('WalterBuilder.defs.tcp_elements')
 local Colors = require('WalterBuilder.defs.colors')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 local Panel = {}

@@ -3,8 +3,8 @@
 -- Configuration UI for template groups in the templates grid
 
 local ImGui = require('arkitekt.platform.imgui')
-local ark = require('arkitekt')
-local hexrgb = ark.Colors.hexrgb
+local Ark = require('arkitekt')
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 

@@ -38,10 +38,10 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
 
-local ImGui = ark.ImGui
-local script_dir = ark._bootstrap.root_path
+local ImGui = Ark.ImGui
+local script_dir = Ark._bootstrap.root_path
 
 local Shell = require("arkitekt.app.shell")
 local Hub = require("hub.hub")
@@ -51,12 +51,12 @@ local SelRect = require("arkitekt.gui.widgets.data.selection_rectangle")
 
 local SettingsOK, Settings = pcall(require, "arkitekt.core.settings")
 local StyleOK, Style = pcall(require, "arkitekt.gui.style.imgui")
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 
 local settings = nil
 if SettingsOK and type(Settings.new)=="function" then
-  local data_dir = ark._bootstrap.get_data_dir("ARKITEKT")
+  local data_dir = Ark._bootstrap.get_data_dir("ARKITEKT")
   local ok, inst = pcall(Settings.new, data_dir, "settings.json")
   if ok then settings = inst end
 end
@@ -220,7 +220,7 @@ local theme = {
 local sel_rect = SelRect.new()
 local grid = PackageGrid.create(pkg, settings, theme)
 
-local container = ark.Panel.new({
+local container = Ark.Panel.new({
   id = "packages_container",
   width = nil,
   height = nil,

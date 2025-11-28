@@ -3,13 +3,13 @@
 -- Global color controls tab
 
 local ImGui = require('arkitekt.platform.imgui')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 local Strings = require('ThemeAdjuster.defs.strings')
 
-local PC = ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
+local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
 local GlobalView = {}
@@ -199,7 +199,7 @@ function GlobalView:draw(ctx, shell_state)
     local changed, new_gamma_normalized = draw_slider_row(
       "Gamma",
       string.format("%.2f", gamma_display),
-      ark.HueSlider.draw_gamma,
+      Ark.HueSlider.draw_gamma,
       "##gamma",
       ((2000 - self.gamma) / 1500) * 100,  -- Map 500-2000 to 100-0 (reversed)
       {default = 66.67}  -- 1000 is 66.67% of reversed range
@@ -220,7 +220,7 @@ function GlobalView:draw(ctx, shell_state)
     local changed, new_highlights_normalized = draw_slider_row(
       "Highlights",
       string.format("%.2f", highlights_display),
-      ark.HueSlider.draw_gamma,
+      Ark.HueSlider.draw_gamma,
       "##highlights",
       ((self.highlights + 256) / 512) * 100,  -- Map -256-256 to 0-100
       {default = 50}  -- 0 is 50% of range (0.00)
@@ -241,7 +241,7 @@ function GlobalView:draw(ctx, shell_state)
     local changed, new_midtones_normalized = draw_slider_row(
       "Midtones",
       string.format("%.2f", midtones_display),
-      ark.HueSlider.draw_gamma,
+      Ark.HueSlider.draw_gamma,
       "##midtones",
       ((self.midtones + 256) / 512) * 100,  -- Map -256-256 to 0-100
       {default = 50}  -- 0 is 50% of range (0.00)
@@ -262,7 +262,7 @@ function GlobalView:draw(ctx, shell_state)
     local changed, new_shadows_normalized = draw_slider_row(
       "Shadows",
       string.format("%.2f", shadows_display),
-      ark.HueSlider.draw_gamma,
+      Ark.HueSlider.draw_gamma,
       "##shadows",
       ((self.shadows + 256) / 512) * 100,  -- Map -256-256 to 0-100
       {default = 50}  -- 0 is 50% of range (0.00)
@@ -283,7 +283,7 @@ function GlobalView:draw(ctx, shell_state)
     local changed, new_saturation_normalized = draw_slider_row(
       "Saturation",
       string.format("%d%%", saturation_display),
-      function(c, i, v, o) return ark.HueSlider.draw_saturation(c, i, v, 210, o) end,
+      function(c, i, v, o) return Ark.HueSlider.draw_saturation(c, i, v, 210, o) end,
       "##saturation",
       (self.saturation / 512) * 100,  -- Map 0-512 to 0-100
       {default = 50, brightness = 80}  -- 256 is 50% of range
@@ -304,7 +304,7 @@ function GlobalView:draw(ctx, shell_state)
     local changed, new_tint_normalized = draw_slider_row(
       "Tint",
       string.format("%.0f°", tint_degrees),
-      ark.HueSlider.draw_hue,
+      Ark.HueSlider.draw_hue,
       "##tint",
       ((self.tint / 384) * 360),
       {default = 180, saturation = 75, brightness = 80}
@@ -331,7 +331,7 @@ function GlobalView:draw(ctx, shell_state)
     local dl = ImGui.GetWindowDrawList(ctx)
     local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
 
-    if ark.Checkbox.draw_at_cursor(ctx, "Custom color track names", self.custom_track_names, nil, "custom_track_names") then
+    if Ark.Checkbox.draw_at_cursor(ctx, "Custom color track names", self.custom_track_names, nil, "custom_track_names") then
       self.custom_track_names = not self.custom_track_names
       ThemeParams.set_param('glb_track_label_color', self.custom_track_names and 1 or 0, true)
     end
@@ -342,7 +342,7 @@ function GlobalView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 4)
 
-    if ark.Checkbox.draw_at_cursor(ctx, "Also affect project custom colors", self.affect_project_colors, nil, "affect_project_colors") then
+    if Ark.Checkbox.draw_at_cursor(ctx, "Also affect project custom colors", self.affect_project_colors, nil, "affect_project_colors") then
       self.affect_project_colors = not self.affect_project_colors
       self:set_param(-1006, self.affect_project_colors and 1 or 0, true)
     end

@@ -12,7 +12,7 @@
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
 
-local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
 
 -- ============================================================================
 -- LOAD MODULES
@@ -24,13 +24,13 @@ local State = require("WalterBuilder.app.state")
 local Controller = require("WalterBuilder.core.controller")
 local GUI = require("WalterBuilder.ui.gui")
 
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 -- ============================================================================
 -- INITIALIZE SETTINGS AND STATE
 -- ============================================================================
 
-local data_dir = ark._bootstrap.get_data_dir("WalterBuilder")
+local data_dir = Ark._bootstrap.get_data_dir("WalterBuilder")
 local settings = Settings.new(data_dir, "settings.json")
 
 -- Initialize state with settings

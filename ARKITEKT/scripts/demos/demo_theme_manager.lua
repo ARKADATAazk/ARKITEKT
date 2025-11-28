@@ -4,7 +4,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local ThemeManager = require('arkitekt.core.theme_manager')
 local Style = require('arkitekt.gui.style')
 local Colors = require('arkitekt.core.colors')
@@ -34,7 +34,7 @@ local function draw_theme_selector(ctx)
   for _, theme_name in ipairs(themes) do
     local is_current = (theme_name == state.current_theme)
 
-    if ark.Button.draw(ctx, {
+    if Ark.Button.draw(ctx, {
       label = theme_name,
       width = 120,
       preset_name = is_current and "BUTTON_TOGGLE_WHITE" or nil,
@@ -57,7 +57,7 @@ local function draw_reaper_sync(ctx)
   ImGui.Spacing(ctx)
 
   -- Manual sync button
-  if ark.Button.draw(ctx, {
+  if Ark.Button.draw(ctx, {
     label = "Sync with REAPER Theme",
     width = 180,
   }).clicked then
@@ -69,7 +69,7 @@ local function draw_reaper_sync(ctx)
   ImGui.SameLine(ctx)
 
   -- Live sync toggle
-  local live_sync_result = ark.Button.draw(ctx, {
+  local live_sync_result = Ark.Button.draw(ctx, {
     label = "Live Sync",
     width = 100,
     preset_name = "BUTTON_TOGGLE_TEAL",
@@ -95,7 +95,7 @@ local function draw_color_preview(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  if ark.Button.draw(ctx, {
+  if Ark.Button.draw(ctx, {
     label = state.show_color_values and "Hide Color Values" or "Show Color Values",
     width = 160,
   }).clicked then

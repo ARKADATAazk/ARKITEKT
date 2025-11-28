@@ -35,7 +35,7 @@ local state = {
 -- ============================================================================
 
 local function create_alignment_panel()
-  return ark.Panel.new({
+  return Ark.Panel.new({
     id = "alignment_panel",
     width = 850,
     height = 180,
@@ -148,7 +148,7 @@ end
 -- ============================================================================
 
 local function create_bottom_header_panel()
-  return ark.Panel.new({
+  return Ark.Panel.new({
     id = "bottom_panel",
     width = 850,
     height = 150,
@@ -197,7 +197,7 @@ end
 -- ============================================================================
 
 local function create_corner_buttons_panel()
-  return ark.Panel.new({
+  return Ark.Panel.new({
     id = "corner_panel",
     width = 850,
     height = 200,
@@ -260,7 +260,7 @@ end
 -- ============================================================================
 
 local function create_hybrid_panel()
-  return ark.Panel.new({
+  return Ark.Panel.new({
     id = "hybrid_panel",
     width = 850,
     height = 150,
@@ -312,7 +312,7 @@ end
 -- ============================================================================
 
 local function create_sidebar_panel()
-  return ark.Panel.new({
+  return Ark.Panel.new({
     id = "sidebar_panel",
     width = 850,
     height = 200,

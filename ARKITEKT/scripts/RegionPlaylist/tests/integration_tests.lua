@@ -67,12 +67,12 @@ local storage_tests = {}
 
 function storage_tests.test_save_and_load_playlists()
   local Persistence = require('RegionPlaylist.data.storage')
-  local ark = require('arkitekt')
+  local Ark = require('arkitekt')
 
   -- Create test playlist
   local test_playlist = {
     {
-      id = "test-" .. ark.UUID.generate(),
+      id = "test-" .. Ark.UUID.generate(),
       name = "Integration Test Playlist",
       items = {},
       chip_color = Persistence.generate_chip_color(),
@@ -144,7 +144,7 @@ end
 
 expander_tests.test_expand_playlist_with_regions = skip_if_no_regions(function()
   local SequenceExpander = require('RegionPlaylist.domain.playback.expander')
-  local ark = require('arkitekt')
+  local Ark = require('arkitekt')
 
   -- Get first region RID
   local _, _, num_regions = reaper.CountProjectMarkers(0)
@@ -168,7 +168,7 @@ expander_tests.test_expand_playlist_with_regions = skip_if_no_regions(function()
     id = "test",
     name = "Test",
     items = {
-      { type = "region", rid = first_rid, reps = 2, key = ark.UUID.generate() }
+      { type = "region", rid = first_rid, reps = 2, key = Ark.UUID.generate() }
     }
   }
 

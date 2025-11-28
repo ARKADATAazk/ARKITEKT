@@ -3,10 +3,10 @@
 -- Debug tab with theme info and image browser
 
 local ImGui = require('arkitekt.platform.imgui')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Theme = require('ThemeAdjuster.domain.theme.reader')
 local ImageCache = require('arkitekt.platform.images')  -- Use ARKITEKT's central image system
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 local DebugView = {}
@@ -40,7 +40,7 @@ function M.new(State, AppConfig, settings)
 
   -- Create container (Panel) with header
   local container_config = self:create_container_config()
-  self.container = ark.Panel.new({
+  self.container = Ark.Panel.new({
     id = "debug_container",
     config = container_config,
   })

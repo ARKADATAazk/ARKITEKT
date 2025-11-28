@@ -4,7 +4,7 @@
 -- Refactored: Now uses separate modules for settings, search toolbar, and content panels
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local StatusBar = require('ItemPicker.ui.components.status')
 local RegionFilterBar = require('ItemPicker.ui.components.filters.region')
 local Background = require('arkitekt.gui.draw.patterns')
@@ -114,7 +114,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Draw dotted pattern
   local Theme = get_theme()
   local ThemeColors = Theme and Theme.COLORS or {}
-  local pattern_color = ThemeColors.PATTERN_PRIMARY or ark.Colors.hexrgb("#2A2A2A")
+  local pattern_color = ThemeColors.PATTERN_PRIMARY or Ark.Colors.hexrgb("#2A2A2A")
 
   local overlay_pattern_config = {
     enabled = true,
@@ -123,7 +123,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       type = 'dots',
       spacing = 16,
       dot_size = 1.5,
-      color = ark.Colors.with_alpha(pattern_color, math.floor(overlay_alpha * 180)),
+      color = Ark.Colors.with_alpha(pattern_color, math.floor(overlay_alpha * 180)),
       offset_x = 0,
       offset_y = 0,
     }

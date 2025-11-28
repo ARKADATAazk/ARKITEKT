@@ -3,7 +3,7 @@
 -- Template Browser modals and context menus
 
 local ImGui = require('arkitekt.platform.imgui')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local FileOps = require('TemplateBrowser.data.file_ops')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ColorDefs = require('arkitekt.defs.colors')
@@ -14,7 +14,7 @@ local M = {}
 -- Color preset palette from centralized colors
 local PRESET_COLORS = {}
 for i, color in ipairs(ColorDefs.PALETTE) do
-  PRESET_COLORS[i] = ark.Colors.hexrgb(color.hex)
+  PRESET_COLORS[i] = Ark.Colors.hexrgb(color.hex)
 end
 
 -- Draw template context menu (color picker)
@@ -86,7 +86,7 @@ function M.draw_template_context_menu(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Remove color button
-      if ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button.draw_at_cursor(ctx, {
         label = "Remove Color",
         width = -1,
         height = UI.BUTTON.HEIGHT_DEFAULT
@@ -108,7 +108,7 @@ function M.draw_template_context_menu(ctx, state)
           ImGui.Separator(ctx)
           ImGui.Spacing(ctx)
 
-          if ark.Button.draw_at_cursor(ctx, {
+          if Ark.Button.draw_at_cursor(ctx, {
             label = "Remove from " .. vfolder.name,
             width = -1,
             height = UI.BUTTON.HEIGHT_DEFAULT
@@ -158,11 +158,11 @@ function M.draw_template_rename_modal(ctx, state)
     ImGui.Spacing(ctx)
 
     -- Initialize field with current name
-    if ark.InputText.get_text("template_rename_modal") == "" then
-      ark.InputText.set_text("template_rename_modal", state.rename_buffer)
+    if Ark.InputText.get_text("template_rename_modal") == "" then
+      Ark.InputText.set_text("template_rename_modal", state.rename_buffer)
     end
 
-    local changed, new_name = ark.InputText.draw_at_cursor(ctx, {
+    local changed, new_name = Ark.InputText.draw_at_cursor(ctx, {
       width = UI.FIELD.RENAME_WIDTH,
       height = UI.FIELD.RENAME_HEIGHT,
       text = state.rename_buffer,
@@ -182,7 +182,7 @@ function M.draw_template_rename_modal(ctx, state)
     ImGui.Spacing(ctx)
 
     -- Buttons
-    local ok_clicked = ark.Button.draw_at_cursor(ctx, {
+    local ok_clicked = Ark.Button.draw_at_cursor(ctx, {
       label = "OK",
       width = 140,
       height = UI.BUTTON.HEIGHT_DEFAULT
@@ -224,7 +224,7 @@ function M.draw_template_rename_modal(ctx, state)
     end
 
     ImGui.SameLine(ctx)
-    local cancel_clicked = ark.Button.draw_at_cursor(ctx, {
+    local cancel_clicked = Ark.Button.draw_at_cursor(ctx, {
       label = "Cancel",
       width = 140,
       height = UI.BUTTON.HEIGHT_DEFAULT
@@ -303,12 +303,12 @@ function M.draw_tag_context_menu(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Reset to default (dark grey)
-      if ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button.draw_at_cursor(ctx, {
         label = "Reset to Default",
         width = -1,
         height = UI.BUTTON.HEIGHT_DEFAULT
       }, "tag_reset_color") then
-        tag_data.color = ark.Colors.hexrgb("#646464")
+        tag_data.color = Ark.Colors.hexrgb("#646464")
         local Persistence = require('TemplateBrowser.data.storage')
         Persistence.save_metadata(state.metadata)
         state.context_menu_tag = nil
@@ -390,7 +390,7 @@ function M.draw_vst_context_menu(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Reset to default (dark grey)
-      if ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button.draw_at_cursor(ctx, {
         label = "Reset to Default",
         width = -1,
         height = UI.BUTTON.HEIGHT_DEFAULT
@@ -438,7 +438,7 @@ function M.draw_conflict_resolution_modal(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Overwrite button
-      local overwrite_clicked = ark.Button.draw_at_cursor(ctx, {
+      local overwrite_clicked = Ark.Button.draw_at_cursor(ctx, {
         label = "Overwrite (Archives existing)",
         width = UI.MODAL.CONFLICT_WIDTH,
         height = UI.BUTTON.HEIGHT_MODAL
@@ -452,7 +452,7 @@ function M.draw_conflict_resolution_modal(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Keep Both button
-      local keep_both_clicked = ark.Button.draw_at_cursor(ctx, {
+      local keep_both_clicked = Ark.Button.draw_at_cursor(ctx, {
         label = "Keep Both (Rename new)",
         width = UI.MODAL.CONFLICT_WIDTH,
         height = UI.BUTTON.HEIGHT_MODAL
@@ -466,7 +466,7 @@ function M.draw_conflict_resolution_modal(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Cancel button
-      local cancel_clicked = ark.Button.draw_at_cursor(ctx, {
+      local cancel_clicked = Ark.Button.draw_at_cursor(ctx, {
         label = "Cancel",
         width = UI.MODAL.CONFLICT_WIDTH,
         height = UI.BUTTON.HEIGHT_MODAL

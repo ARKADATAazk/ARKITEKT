@@ -3,7 +3,7 @@
 -- Audio tile renderer with waveform visualization
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local BaseRenderer = require('ItemPicker.ui.grids.renderers.base')
 local Shapes = require('arkitekt.gui.draw.shapes')
@@ -86,40 +86,40 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local sat_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_saturation_factor or config.TILE_RENDER.base_fill.saturation_factor
   local bright_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_brightness_factor or config.TILE_RENDER.base_fill.brightness_factor
   local stable_tile_color = base_color
-  stable_tile_color = ark.Colors.desaturate(stable_tile_color, 1.0 - sat_factor)
-  stable_tile_color = ark.Colors.adjust_brightness(stable_tile_color, bright_factor)
+  stable_tile_color = Ark.Colors.desaturate(stable_tile_color, 1.0 - sat_factor)
+  stable_tile_color = Ark.Colors.adjust_brightness(stable_tile_color, bright_factor)
 
   -- Apply muted and disabled state effects
   local render_color = BaseRenderer.apply_state_effects(base_color, muted_factor, enabled_factor, config)
 
   -- Apply base tile fill adjustments (use compact mode values for small tiles)
-  render_color = ark.Colors.desaturate(render_color, 1.0 - sat_factor)
-  render_color = ark.Colors.adjust_brightness(render_color, bright_factor)
+  render_color = Ark.Colors.desaturate(render_color, 1.0 - sat_factor)
+  render_color = Ark.Colors.adjust_brightness(render_color, bright_factor)
 
   -- ABSOLUTE MINIMUM LUMINANCE - NO BLACK TILES ALLOWED
   -- Enforce AFTER base_fill adjustments (which can make tiles very dark)
   -- but BEFORE hover effect (so all tiles meet minimum, not just hovered ones)
   -- Use HSL to set minimum lightness (works even for pure black colors)
   local min_lightness = config.TILE_RENDER.min_lightness
-  local r, g, b, a = ark.Colors.rgba_to_components(render_color)
-  local h, s, l = ark.Colors.rgb_to_hsl(render_color)
+  local r, g, b, a = Ark.Colors.rgba_to_components(render_color)
+  local h, s, l = Ark.Colors.rgb_to_hsl(render_color)
   if l < min_lightness then
     -- Set minimum lightness while preserving hue and saturation
     l = min_lightness
-    local r_new, g_new, b_new = ark.Colors.hsl_to_rgb(h, s, l)
-    render_color = ark.Colors.components_to_rgba(r_new, g_new, b_new, a)
+    local r_new, g_new, b_new = Ark.Colors.hsl_to_rgb(h, s, l)
+    render_color = Ark.Colors.components_to_rgba(r_new, g_new, b_new, a)
   end
 
   -- Apply hover effect (brightness boost)
   if hover_factor > 0.001 then
     local hover_boost = config.TILE_RENDER.hover.brightness_boost * hover_factor
-    render_color = ark.Colors.adjust_brightness(render_color, 1.0 + hover_boost)
+    render_color = Ark.Colors.adjust_brightness(render_color, 1.0 + hover_boost)
   end
 
   -- Apply selection effect (brightness boost for selected tiles)
   if tile_state.selected then
     local selection_boost = config.TILE_RENDER.selection.tile_brightness_boost or 0.35
-    render_color = ark.Colors.adjust_brightness(render_color, 1.0 + selection_boost)
+    render_color = Ark.Colors.adjust_brightness(render_color, 1.0 + selection_boost)
   end
 
   -- Capture animation color BEFORE alpha modification (actual tile appearance color)
@@ -128,7 +128,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Calculate combined alpha with state effects
   local base_alpha = (render_color & 0xFF) / 255
   local combined_alpha, final_alpha = BaseRenderer.calculate_combined_alpha(cascade_factor, enabled_factor, muted_factor, base_alpha, config)
-  render_color = ark.Colors.with_alpha(render_color, ark.Colors.opacity(final_alpha))
+  render_color = Ark.Colors.with_alpha(render_color, Ark.Colors.opacity(final_alpha))
 
   local text_alpha = (0xFF * combined_alpha) // 1
   local text_color = BaseRenderer.get_text_color(muted_factor, config)
@@ -163,7 +163,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Render dark backdrop for disabled items (skip if show_disabled_items = false, animation handles it)
   if enabled_factor < 0.999 and state.settings.show_disabled_items then
     local backdrop_alpha = config.TILE_RENDER.disabled.backdrop_alpha * (1.0 - enabled_factor) * cascade_factor
-    local backdrop_color = ark.Colors.with_alpha(config.TILE_RENDER.disabled.backdrop_color, backdrop_alpha // 1)
+    local backdrop_color = Ark.Colors.with_alpha(config.TILE_RENDER.disabled.backdrop_color, backdrop_alpha // 1)
     ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, backdrop_color, config.TILE.ROUNDING)
   end
 
@@ -202,7 +202,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       waveform_alpha = waveform_alpha * config.TILE_RENDER.small_tile.visualization_alpha
     end
 
-    dark_color = ark.Colors.with_alpha(dark_color, ark.Colors.opacity(waveform_alpha))
+    dark_color = Ark.Colors.with_alpha(dark_color, Ark.Colors.opacity(waveform_alpha))
 
     -- Skip all waveform rendering if skip_visualizations is enabled (fast mode)
     if not state.skip_visualizations then
@@ -250,7 +250,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Render marching ants for selection
   if tile_state.selected and cascade_factor > 0.5 then
     local selection_config = config.TILE_RENDER.selection
-    local ant_color = ark.Colors.same_hue_variant(
+    local ant_color = Ark.Colors.same_hue_variant(
       base_color,
       selection_config.border_saturation,
       selection_config.border_brightness,
@@ -259,11 +259,11 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
     -- Mix with white to make marching ants lighter but still tinted
     local white_mix = 0.40  -- Mix 40% white - lighter but keeps more color
-    local r, g, b, a = ark.Colors.rgba_to_components(ant_color)
+    local r, g, b, a = Ark.Colors.rgba_to_components(ant_color)
     r = r + (255 - r) * white_mix
     g = g + (255 - g) * white_mix
     b = b + (255 - b) * white_mix
-    ant_color = ark.Colors.components_to_rgba(r // 1, g // 1, b // 1, a)
+    ant_color = Ark.Colors.components_to_rgba(r // 1, g // 1, b // 1, a)
 
     local inset = selection_config.ants_inset
     local selection_count = state.audio_selection_count or 1
@@ -284,7 +284,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local is_favorite = state.favorites and state.favorites.audio and state.favorites.audio[item_data.filename]
 
   -- Use light yellow for favorite items (not muted)
-  local favorite_color = ark.Colors.hexrgb("#FFE87C")  -- Light yellow
+  local favorite_color = Ark.Colors.hexrgb("#FFE87C")  -- Light yellow
   local display_text_color = is_favorite and favorite_color or text_color
 
   -- Calculate star badge space - match cycle badge height dynamically
@@ -327,8 +327,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
       ImGui.SetCursorScreenPos(ctx, input_x, input_y)
       ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 2, 2)
-      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, ark.Colors.hexrgb("#1A1A1A"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, ark.Colors.hexrgb("#FFFFFF"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Ark.Colors.hexrgb("#1A1A1A"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, Ark.Colors.hexrgb("#FFFFFF"))
       ImGui.SetNextItemWidth(ctx, input_w)
 
       -- Auto-focus on first frame
@@ -590,7 +590,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
       -- Chip text (region color with minimum lightness for readability)
       local text_color = BaseRenderer.ensure_min_lightness(region_color, chip_cfg.text_min_lightness)
-      local text_alpha_val = ark.Colors.opacity(combined_alpha)
+      local text_alpha_val = Ark.Colors.opacity(combined_alpha)
       text_color = (text_color & 0xFFFFFF00) | text_alpha_val
       local text_x = chip_x + chip_cfg.padding_x
       local text_y = chip_y + (chip_h - text_h) / 2
@@ -637,13 +637,13 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, pool_cfg.rounding)
 
     -- Border using darker tile color
-    local border_color = ark.Colors.adjust_brightness(render_color, pool_cfg.border_darken)
-    border_color = ark.Colors.with_alpha(border_color, pool_cfg.border_alpha)
+    local border_color = Ark.Colors.adjust_brightness(render_color, pool_cfg.border_darken)
+    border_color = Ark.Colors.with_alpha(border_color, pool_cfg.border_alpha)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, border_color, pool_cfg.rounding, 0, 0.5)
 
     -- Pool count text (match cycle badge brightness)
-    local text_color = ark.Colors.hexrgb("#FFFFFFDD")
-    text_color = ark.Colors.with_alpha(text_color, ark.Colors.opacity(combined_alpha))
+    local text_color = Ark.Colors.hexrgb("#FFFFFFDD")
+    text_color = Ark.Colors.with_alpha(text_color, Ark.Colors.opacity(combined_alpha))
     ImGui.DrawList_AddText(dl, badge_x + pool_cfg.padding_x, badge_y + pool_cfg.padding_y, text_color, pool_text)
   end
 
@@ -675,18 +675,18 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local text_y = scaled_y2 - text_h - dt_cfg.margin_y
 
       -- Adaptive color: dark grey with subtle tile coloring for most tiles, light only for very dark
-      local luminance = ark.Colors.luminance(render_color)
+      local luminance = Ark.Colors.luminance(render_color)
       local text_color
       if luminance < dt_cfg.dark_tile_threshold then
         -- Very dark tile only: use light text
-        text_color = ark.Colors.same_hue_variant(render_color, dt_cfg.light_saturation, dt_cfg.light_value, ark.Colors.opacity(combined_alpha))
+        text_color = Ark.Colors.same_hue_variant(render_color, dt_cfg.light_saturation, dt_cfg.light_value, Ark.Colors.opacity(combined_alpha))
       else
         -- All other tiles: dark grey with subtle tile color
-        text_color = ark.Colors.same_hue_variant(render_color, dt_cfg.dark_saturation, dt_cfg.dark_value, ark.Colors.opacity(combined_alpha))
+        text_color = Ark.Colors.same_hue_variant(render_color, dt_cfg.dark_saturation, dt_cfg.dark_value, Ark.Colors.opacity(combined_alpha))
       end
 
       -- Draw duration text
-      ark.Draw.text(dl, text_x, text_y, text_color, duration_text)
+      Ark.Draw.text(dl, text_x, text_y, text_color, duration_text)
     end
   end
 end

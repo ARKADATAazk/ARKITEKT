@@ -1,9 +1,9 @@
 -- ARKITEKT Namespace
 -- Provides ImGui-style access to all widgets via lazy loading
 -- Auto-loads ImGui and bootstrap utilities
--- Usage: local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
---        local ctx = ark.ImGui.CreateContext('My Script')
---        ark.Button.draw(ctx, {label = "Click"})
+-- Usage: local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+--        local ctx = Ark.ImGui.CreateContext('My Script')
+--        Ark.Button.draw(ctx, {label = "Click"})
 
 -- ============================================================================
 -- AUTO-BOOTSTRAP
@@ -27,13 +27,13 @@ if not bootstrap_context then
   error("ARKITEKT bootstrap failed - cannot continue")
 end
 
-local ark = {}
+local Ark = {}
 
 -- Expose ImGui directly (no need to require in every script)
-ark.ImGui = bootstrap_context.ImGui
+Ark.ImGui = bootstrap_context.ImGui
 
 -- Store full bootstrap context for advanced use cases
-ark._bootstrap = bootstrap_context
+Ark._bootstrap = bootstrap_context
 
 -- Module registry - maps names to module paths
 -- Lazy loaded on first access to minimize startup overhead
@@ -78,7 +78,7 @@ local MODULES = {
 
 -- Lazy loading with metatable
 -- Widgets are only loaded when first accessed (like ImGui namespace)
-setmetatable(ark, {
+setmetatable(Ark, {
   __index = function(t, key)
     local module_path = MODULES[key]
     if module_path then
@@ -88,12 +88,12 @@ setmetatable(ark, {
         t[key] = module  -- Cache to avoid future requires
         return module
       else
-        error(string.format("ark.%s: Failed to load module '%s'\n%s",
+        error(string.format("Ark.%s: Failed to load module '%s'\n%s",
                           key, module_path, module), 2)
       end
     end
-    error(string.format("ark.%s is not a valid widget. See MODULES table in arkitekt/init.lua", key), 2)
+    error(string.format("Ark.%s is not a valid widget. See MODULES table in arkitekt/init.lua", key), 2)
   end
 })
 
-return ark
+return Ark

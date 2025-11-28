@@ -3,7 +3,7 @@
 -- Status bar component for displaying messages
 
 local ImGui = require('arkitekt.platform.imgui')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Layout = require('TemplateBrowser.defs.constants')
 
 local M = {}

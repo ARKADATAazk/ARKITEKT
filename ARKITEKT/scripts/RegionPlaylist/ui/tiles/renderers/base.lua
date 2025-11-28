@@ -4,7 +4,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
@@ -13,7 +13,7 @@ local TileUtil = require('RegionPlaylist.ui.tile_utilities')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 
 local M = {}
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 M.CONFIG = {
   rounding = 6,
@@ -168,7 +168,7 @@ end
 
 function M.draw_marching_ants(dl, rect, color, fx_config)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-  local ants_color = ark.Colors.same_hue_variant(color, fx_config.border_saturation, fx_config.border_brightness, fx_config.ants_alpha or 0xFF)
+  local ants_color = Ark.Colors.same_hue_variant(color, fx_config.border_saturation, fx_config.border_brightness, fx_config.ants_alpha or 0xFF)
   local inset = fx_config.ants_inset or 0
   MarchingAnts.draw(dl, x1 + inset, y1 + inset, x2 - inset, y2 - inset, ants_color,
     fx_config.ants_thickness or 1, M.CONFIG.rounding, fx_config.ants_dash, fx_config.ants_gap, fx_config.ants_speed)
@@ -176,8 +176,8 @@ end
 
 function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_bound_x, grid, rect, item_key_override)
   local fx_config = TileFXConfig.get()
-  local accent_color = ark.Colors.with_alpha(ark.Colors.same_hue_variant(base_color, fx_config.index_saturation, fx_config.index_brightness, 0xFF), text_alpha)
-  local name_color = ark.Colors.with_alpha(ark.Colors.adjust_brightness(fx_config.name_base_color, fx_config.name_brightness), text_alpha)
+  local accent_color = Ark.Colors.with_alpha(Ark.Colors.same_hue_variant(base_color, fx_config.index_saturation, fx_config.index_brightness, 0xFF), text_alpha)
+  local name_color = Ark.Colors.with_alpha(Ark.Colors.adjust_brightness(fx_config.name_base_color, fx_config.name_brightness), text_alpha)
 
   local index_str = string.format("%d", region.rid)
   local name_str = region.name or "Unknown"
@@ -193,12 +193,12 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
 
   -- Index shifts RIGHT when it overflows, title shifts by same amount
   local index_start_x = pos.x + overflow + (reserved_width - index_w)
-  ark.Draw.text(dl, index_start_x, pos.y, accent_color, index_str)
+  Ark.Draw.text(dl, index_start_x, pos.y, accent_color, index_str)
 
   -- Separator position: shifts right by overflow amount
   local separator_x = pos.x + reserved_width + M.CONFIG.index_separator_spacing + overflow
-  local separator_color = ark.Colors.with_alpha(ark.Colors.same_hue_variant(base_color, fx_config.separator_saturation, fx_config.separator_brightness, fx_config.separator_alpha), text_alpha)
-  ark.Draw.text(dl, separator_x, pos.y, separator_color, separator)
+  local separator_color = Ark.Colors.with_alpha(Ark.Colors.same_hue_variant(base_color, fx_config.separator_saturation, fx_config.separator_brightness, fx_config.separator_alpha), text_alpha)
+  Ark.Draw.text(dl, separator_x, pos.y, separator_color, separator)
 
   -- Name starts after separator (also shifted by overflow)
   local name_start_x = separator_x + sep_w
@@ -219,7 +219,7 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   end
 
   local truncated_name = truncate_text(ctx, name_str, name_width)
-  ark.Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)
+  Ark.Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)
 
   -- Store text zone bounds in grid for double-click detection
   if grid and rect and item_key_override then
@@ -262,11 +262,11 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
 
   local name_color
   if name_color_override then
-    name_color = ark.Colors.with_alpha(name_color_override, text_alpha)
+    name_color = Ark.Colors.with_alpha(name_color_override, text_alpha)
   else
-    name_color = ark.Colors.with_alpha(ark.Colors.adjust_brightness(fx_config.name_base_color, fx_config.name_brightness), text_alpha)
+    name_color = Ark.Colors.with_alpha(Ark.Colors.adjust_brightness(fx_config.name_base_color, fx_config.name_brightness), text_alpha)
     if state.hover or state.selected then
-      name_color = ark.Colors.with_alpha(hexrgb("#FFFFFF"), text_alpha)
+      name_color = Ark.Colors.with_alpha(hexrgb("#FFFFFF"), text_alpha)
     end
   end
 
@@ -292,7 +292,7 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
   end
 
   local truncated_name = truncate_text(ctx, name_str, name_width)
-  ark.Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)
+  Ark.Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)
 
   -- Store text zone bounds in grid for double-click detection
   if grid and rect and item_key_override then
@@ -319,10 +319,10 @@ function M.draw_length_display(ctx, dl, rect, region, base_color, text_alpha)
   local length_x = x2 - length_w - scaled_margin - M.CONFIG.length_offset_x
   local length_y = y2 - length_h - scaled_margin
 
-  local length_color = ark.Colors.same_hue_variant(base_color, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
-  length_color = ark.Colors.with_alpha(length_color, text_alpha)
+  local length_color = Ark.Colors.same_hue_variant(base_color, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
+  length_color = Ark.Colors.with_alpha(length_color, text_alpha)
 
-  ark.Draw.text(dl, length_x, length_y, length_color, length_str)
+  Ark.Draw.text(dl, length_x, length_y, length_color, length_str)
 end
 
 function M.draw_playlist_length_display(ctx, dl, rect, playlist_data, base_color, text_alpha)
@@ -348,10 +348,10 @@ function M.draw_playlist_length_display(ctx, dl, rect, playlist_data, base_color
 
   -- Use chip color for playlist length display (same as region tiles use region color)
   local color_source = playlist_data.chip_color or base_color
-  local length_color = ark.Colors.same_hue_variant(color_source, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
-  length_color = ark.Colors.with_alpha(length_color, text_alpha)
+  local length_color = Ark.Colors.same_hue_variant(color_source, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
+  length_color = Ark.Colors.with_alpha(length_color, text_alpha)
 
-  ark.Draw.text(dl, length_x, length_y, length_color, length_str)
+  Ark.Draw.text(dl, length_x, length_y, length_color, length_str)
 end
 
 return M

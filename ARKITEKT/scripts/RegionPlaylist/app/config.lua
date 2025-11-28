@@ -3,14 +3,14 @@
 -- Config builders using defs (factory functions for dynamic configs)
 
 local TransportIcons = require('RegionPlaylist.ui.views.transport.transport_icons')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Constants = require('RegionPlaylist.defs.constants')
 local Defaults = require('RegionPlaylist.defs.defaults')
 local Strings = require('RegionPlaylist.defs.strings')
 local Logger = require('arkitekt.debug.logger')
 
 local M = {}
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 -- Re-export constants for backward compatibility during migration
 M.ANIMATION = Constants.ANIMATION

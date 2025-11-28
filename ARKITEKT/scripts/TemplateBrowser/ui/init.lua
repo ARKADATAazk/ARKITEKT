@@ -3,7 +3,7 @@
 -- Main GUI with three-panel layout
 
 local ImGui = require('arkitekt.platform.imgui')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
 -- Domain services
 local TemplateOps = require('TemplateBrowser.domain.template.operations')
@@ -284,7 +284,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end,
   }, self.is_overlay_mode)  -- Pass overlay mode to use transparent backgrounds
 
-  self.template_container = ark.Panel.new({
+  self.template_container = Ark.Panel.new({
     id = "templates_container",
     config = container_config,
   })
@@ -317,7 +317,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end,
   }, self.is_overlay_mode)
 
-  self.recent_container = ark.Panel.new({
+  self.recent_container = Ark.Panel.new({
     id = "recent_container",
     config = recent_config,
   })
@@ -332,7 +332,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end,
   }, self.is_overlay_mode)
 
-  self.left_panel_container = ark.Panel.new({
+  self.left_panel_container = Ark.Panel.new({
     id = "left_panel_container",
     config = left_panel_config,
   })
@@ -347,7 +347,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end,
   }, self.is_overlay_mode)
 
-  self.convenience_panel_container = ark.Panel.new({
+  self.convenience_panel_container = Ark.Panel.new({
     id = "convenience_panel_container",
     config = convenience_panel_config,
   })
@@ -355,7 +355,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
   -- Create info panel container (template details & tags)
   local info_panel_config = InfoPanelConfig.create({}, self.is_overlay_mode)
 
-  self.info_container = ark.Panel.new({
+  self.info_container = Ark.Panel.new({
     id = "info_panel_container",
     config = info_panel_config,
   })
@@ -404,7 +404,7 @@ function GUI:draw(ctx, shell_state)
       local bar_width = 300
 
       -- Progress bar using new widget
-      ark.ProgressBar.draw(ctx, {
+      Ark.ProgressBar.draw(ctx, {
         x = (window_width - bar_width) * 0.5,
         y = window_height * 0.5,
         width = bar_width,
@@ -469,7 +469,7 @@ function GUI:draw(ctx, shell_state)
   local is_editing_markdown = false
   if self.state.selected_template then
     local notes_field_id = "template_notes_" .. self.state.selected_template.uuid
-    is_editing_markdown = ark.MarkdownField.is_editing(notes_field_id)
+    is_editing_markdown = Ark.MarkdownField.is_editing(notes_field_id)
   end
 
   local action = Shortcuts.check_shortcuts(ctx)
@@ -556,7 +556,7 @@ function GUI:draw(ctx, shell_state)
     local status_w = ImGui.CalcTextSize(ctx, status)
 
     ImGui.SetCursorPos(ctx, (SCREEN_W - status_w) * 0.5, status_y)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, ark.Colors.hexrgb("#B3B3B3"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Ark.Colors.hexrgb("#B3B3B3"))
     ImGui.Text(ctx, status)
     ImGui.PopStyleColor(ctx)
 
@@ -603,7 +603,7 @@ function GUI:draw(ctx, shell_state)
   local content_y_screen = window_screen_y + cursor_y
 
   -- Handle separator 1 dragging
-  local sep1_result = ark.Splitter.draw(ctx, {
+  local sep1_result = Ark.Splitter.draw(ctx, {
     id = "template_sep1",
     x = sep1_x_screen,
     y = content_y_screen,
@@ -628,7 +628,7 @@ function GUI:draw(ctx, shell_state)
   end
 
   -- Handle separator 2 dragging
-  local sep2_result = ark.Splitter.draw(ctx, {
+  local sep2_result = Ark.Splitter.draw(ctx, {
     id = "template_sep2",
     x = sep2_x_screen,
     y = content_y_screen,

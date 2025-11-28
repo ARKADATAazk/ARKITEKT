@@ -3,7 +3,7 @@
 -- Item processing utilities
 -- @migrated 2024-11-27 from services/utils.lua
 
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
 local M = {}
 
@@ -26,7 +26,7 @@ function M.RGBvalues(RGB)
 end
 
 function M.Color(ImGui, r, g, b, a)
-  return ark.Colors.components_to_rgba(r*255, g*255, b*255, (a or 1)*255)
+  return Ark.Colors.components_to_rgba(r*255, g*255, b*255, (a or 1)*255)
 end
 
 function M.SampleLimit(spl)

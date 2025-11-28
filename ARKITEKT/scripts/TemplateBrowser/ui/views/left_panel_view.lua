@@ -37,8 +37,8 @@ function M.draw_left_panel(ctx, gui, width, height)
     local sep_y_screen = initial_y + sep_y_local
 
     -- Handle separator dragging
-    local ark = require('arkitekt')
-    local sep_result = ark.Splitter.draw(ctx, {
+    local Ark = require('arkitekt')
+    local sep_result = Ark.Splitter.draw(ctx, {
       id = "left_panel_separator",
       x = initial_x,
       y = sep_y_screen,

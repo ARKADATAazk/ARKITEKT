@@ -3,10 +3,10 @@
 -- Configuration following RegionPlaylist pattern
 
 local Constants = require('ThemeAdjuster.defs.constants')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Defaults = require('ThemeAdjuster.defs.defaults')
 local Strings = require('ThemeAdjuster.defs.strings')
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 

@@ -31,7 +31,7 @@ package.path = root_path .. "?.lua;" .. root_path .. "?/init.lua;" .. package.pa
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
 local function dirname(p) return p:match("^(.*)[/\\]") end
 local function join(a,b) local s=package.config:sub(1,1); return (a:sub(-1)==s) and (a..b) or (a..s..b) end
@@ -51,7 +51,7 @@ local ChipList = require("arkitekt.gui.widgets.data.chip_list")
 local OverlayConfig = require("arkitekt.gui.widgets.overlays.overlay.defaults")
 
 local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui")
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 
 local demo_state = {

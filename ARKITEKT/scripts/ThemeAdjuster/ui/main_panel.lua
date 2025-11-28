@@ -3,7 +3,7 @@
 -- Top-level panel with tab_strip (alternative to Shell menutabs)
 
 local Config = require('ThemeAdjuster.app.config')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
 local M = {}
 
@@ -44,7 +44,7 @@ function M.create_main_panel(State, callbacks)
     },
   }
 
-  local panel = ark.Panel.new({
+  local panel = Ark.Panel.new({
     id = "main_panel",
     config = panel_config,
   })

@@ -3,7 +3,7 @@
 -- Simple layout view for window mode (like RegionPlaylist)
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local max = math.max
 local min = math.min
 
@@ -69,7 +69,7 @@ function LayoutView:draw_vertical(ctx, coordinator, shell_state)
 
   -- Draw separator
   local separator_y = start_y + midi_height + separator_gap / 2
-  local sep_result = ark.Splitter.draw(ctx, {
+  local sep_result = Ark.Splitter.draw(ctx, {
     id = "midi_audio_separator_h",
     x = start_x,
     y = separator_y,
@@ -145,7 +145,7 @@ function LayoutView:draw_horizontal(ctx, coordinator, shell_state)
 
   -- Draw vertical separator
   local separator_x = start_x + midi_width + separator_gap / 2
-  local sep_result = ark.Splitter.draw(ctx, {
+  local sep_result = Ark.Splitter.draw(ctx, {
     id = "midi_audio_separator_v",
     x = separator_x,
     y = start_y,

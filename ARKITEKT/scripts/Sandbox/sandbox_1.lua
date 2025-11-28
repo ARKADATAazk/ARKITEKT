@@ -5,7 +5,7 @@
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local ark
+local Ark
 do
   local sep = package.config:sub(1,1)
   local src = debug.getinfo(1, "S").source:sub(2)
@@ -31,8 +31,8 @@ end
 local Shell = require('arkitekt.app.shell')
 local HatchedFill = require('arkitekt.gui.widgets.effects.hatched_fill')
 
-local ImGui = ark.ImGui
-local hexrgb = ark.Colors.hexrgb
+local ImGui = Ark.ImGui
+local hexrgb = Ark.Colors.hexrgb
 
 -- Demo state
 local demo_state = {

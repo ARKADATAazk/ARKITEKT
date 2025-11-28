@@ -3,7 +3,7 @@
 -- Properties panel for editing selected element coordinates
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Coordinate = require('WalterBuilder.domain.coordinate')
 local Simulator = require('WalterBuilder.domain.simulator')
 local Colors = require('WalterBuilder.defs.colors')
@@ -11,7 +11,7 @@ local Button = require('arkitekt.gui.widgets.primitives.button')
 local Slider = require('arkitekt.gui.widgets.primitives.slider')
 local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
 
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 local Panel = {}

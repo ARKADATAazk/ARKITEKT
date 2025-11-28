@@ -6,8 +6,8 @@
 -- Colors now derive from Theme.COLORS (the same source used by titlebar context menu).
 -- This ensures ItemPicker respects the persisted theme mode.
 
-local ark = require('arkitekt')
-local hexrgb = ark.Colors.hexrgb
+local Ark = require('arkitekt')
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 

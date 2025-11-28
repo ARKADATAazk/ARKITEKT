@@ -3,7 +3,7 @@
 -- Coordinator using TilesContainer panels for Audio and MIDI grids
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
 local AudioGridFactory = require('ItemPicker.ui.grids.factories.audio_grid_factory')
 local MidiGridFactory = require('ItemPicker.ui.grids.factories.midi_grid_factory')
@@ -22,8 +22,8 @@ local function get_audio_container_config(opts)
     header = {
       height = 36,
       padding = 8,
-      bg_color = ark.Colors.hexrgb("#1A1A1A"),
-      border_color = ark.Colors.hexrgb("#2A2A2A"),
+      bg_color = Ark.Colors.hexrgb("#1A1A1A"),
+      border_color = Ark.Colors.hexrgb("#2A2A2A"),
     },
     sort_modes = {
       { id = "none", label = "None" },
@@ -48,8 +48,8 @@ local function get_midi_container_config(opts)
     header = {
       height = 36,
       padding = 8,
-      bg_color = ark.Colors.hexrgb("#1A1A1A"),
-      border_color = ark.Colors.hexrgb("#2A2A2A"),
+      bg_color = Ark.Colors.hexrgb("#1A1A1A"),
+      border_color = Ark.Colors.hexrgb("#2A2A2A"),
     },
     sort_modes = {
       { id = "none", label = "None" },
@@ -85,7 +85,7 @@ function M.new(ctx, config, state, visualization)
   self.midi_grid = MidiGridFactory.create(ctx, config, state, visualization, self.animator)
 
   -- Create TilesContainer for Audio panel
-  self.audio_container = ark.Panel.new({
+  self.audio_container = Ark.Panel.new({
     id = "audio_tiles_container",
     config = get_audio_container_config({
       on_audio_search = function(text)
@@ -101,7 +101,7 @@ function M.new(ctx, config, state, visualization)
   })
 
   -- Create TilesContainer for MIDI panel
-  self.midi_container = ark.Panel.new({
+  self.midi_container = Ark.Panel.new({
     id = "midi_tiles_container",
     config = get_midi_container_config({
       on_midi_search = function(text)

@@ -5,7 +5,7 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
 
 -- Load required modules
 local Shell = require('arkitekt.app.shell')
@@ -17,7 +17,7 @@ local GUI = require('TemplateBrowser.ui.init')
 local Scanner = require('TemplateBrowser.domain.template.scanner')
 local Constants = require('TemplateBrowser.defs.constants')
 
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 -- Initialize state
 State.initialize(Config)

@@ -4,7 +4,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Logger = require('arkitekt.debug.logger')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
@@ -115,7 +115,7 @@ function LayoutView:draw_horizontal(ctx, region_tiles, display_playlist, pool_da
   region_tiles:draw_active(ctx, display_playlist, active_height, shell_state)
 
   local separator_y = start_y + active_height + separator_gap/2
-  local sep_result = ark.Splitter.draw(ctx, {
+  local sep_result = Ark.Splitter.draw(ctx, {
     id = "active_pool_separator_h",
     x = start_x,
     y = separator_y,
@@ -194,7 +194,7 @@ function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data
   end
 
   local separator_x = start_cursor_x + active_width + separator_gap/2
-  local sep_result = ark.Splitter.draw(ctx, {
+  local sep_result = Ark.Splitter.draw(ctx, {
     id = "active_pool_separator_v",
     x = separator_x,
     y = start_cursor_y,

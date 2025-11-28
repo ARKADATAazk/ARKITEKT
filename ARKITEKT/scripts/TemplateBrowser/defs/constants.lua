@@ -3,8 +3,8 @@
 -- Pure value constants: colors, dimensions
 
 local ColorDefs = require('arkitekt.defs.colors')
-local ark = require('arkitekt')
-local hexrgb = ark.Colors.hexrgb
+local Ark = require('arkitekt')
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 

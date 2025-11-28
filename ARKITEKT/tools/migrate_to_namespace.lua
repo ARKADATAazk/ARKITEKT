@@ -1,5 +1,5 @@
 #!/usr/bin/env lua
--- Migrates files from direct requires to ark.* namespace
+-- Migrates files from direct requires to Ark.* namespace
 -- Usage: lua tools/migrate_to_namespace.lua <file>
 
 local function read_file(path)
@@ -80,18 +80,18 @@ local function migrate_file(path)
     content = content:gsub(escaped_line .. "\n", "")
   end
 
-  -- Replace widget usages (e.g., Button.draw -> ark.Button.draw)
+  -- Replace widget usages (e.g., Button.draw -> Ark.Button.draw)
   for var_name, ns_key in pairs(local_names) do
     -- Match widget usage: VarName.method or VarName:method
     content = content:gsub("([^%w_])" .. var_name .. "(%.[%w_]+)", "%1ark." .. ns_key .. "%2")
     content = content:gsub("([^%w_])" .. var_name .. "(:[%w_]+)", "%1ark." .. ns_key .. "%2")
     -- Also handle start of line
-    content = content:gsub("^" .. var_name .. "(%.[%w_]+)", "ark." .. ns_key .. "%1")
-    content = content:gsub("^" .. var_name .. "(:[%w_]+)", "ark." .. ns_key .. "%1")
+    content = content:gsub("^" .. var_name .. "(%.[%w_]+)", "Ark." .. ns_key .. "%1")
+    content = content:gsub("^" .. var_name .. "(:[%w_]+)", "Ark." .. ns_key .. "%1")
   end
 
   -- Add ark namespace require at the top (after ImGui require if present)
-  local ark_require = "local ark = require('arkitekt')\n"
+  local ark_require = "local Ark = require('arkitekt')\n"
 
   -- Check if ark is already required
   if content:match("local%s+ark%s*=%s*require%s*%(?['\"]arkitekt['\"]%)?") then

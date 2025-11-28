@@ -4,7 +4,7 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
@@ -92,7 +92,7 @@ Shell.run({
   draw = function(ctx, state)
     -- Show ImGui debug window when profiling
     if profiler_enabled then
-      ark.ImGui.ShowMetricsWindow(ctx, true)
+      Ark.ImGui.ShowMetricsWindow(ctx, true)
     end
 
     -- Check if should close after drop

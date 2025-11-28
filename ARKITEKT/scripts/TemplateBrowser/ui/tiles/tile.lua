@@ -3,12 +3,12 @@
 -- Template tile renderer using arkitekt design system
 
 local ImGui = require('arkitekt.platform.imgui')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local TileHelpers = require('TemplateBrowser.ui.tiles.helpers')
 
 local M = {}
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 -- Configuration for template tiles
 M.CONFIG = {
@@ -59,15 +59,15 @@ local function draw_stack_layers(ctx, dl, x1, y1, x2, y2, track_count, chip_colo
     local layer_bg = STACK_BASE
     local layer_border = STACK_BORDER
     if chip_color then
-      local cr, cg, cb = ark.Colors.rgba_to_components(chip_color)
-      local br, bg_c, bb = ark.Colors.rgba_to_components(STACK_BASE)
+      local cr, cg, cb = Ark.Colors.rgba_to_components(chip_color)
+      local br, bg_c, bb = Ark.Colors.rgba_to_components(STACK_BASE)
       local blend = 0.05  -- Very subtle tint
       local r = math.floor(br * (1 - blend) + cr * blend)
       local g = math.floor(bg_c * (1 - blend) + cg * blend)
       local b = math.floor(bb * (1 - blend) + cb * blend)
-      layer_bg = ark.Colors.components_to_rgba(r, g, b, math.floor(255 * alpha_factor))
+      layer_bg = Ark.Colors.components_to_rgba(r, g, b, math.floor(255 * alpha_factor))
     else
-      layer_bg = ark.Colors.with_alpha(STACK_BASE, math.floor(255 * alpha_factor))
+      layer_bg = Ark.Colors.with_alpha(STACK_BASE, math.floor(255 * alpha_factor))
     end
 
     -- Draw layer rectangle (offset to bottom-right)
@@ -77,7 +77,7 @@ local function draw_stack_layers(ctx, dl, x1, y1, x2, y2, track_count, chip_colo
     local ly2 = y2 + layer_offset
 
     ImGui.DrawList_AddRectFilled(dl, lx1, ly1, lx2, ly2, layer_bg, rounding)
-    ImGui.DrawList_AddRect(dl, lx1, ly1, lx2, ly2, ark.Colors.with_alpha(layer_border, math.floor(180 * alpha_factor)), rounding, 0, 1)
+    ImGui.DrawList_AddRect(dl, lx1, ly1, lx2, ly2, Ark.Colors.with_alpha(layer_border, math.floor(180 * alpha_factor)), rounding, 0, 1)
   end
 end
 
@@ -128,21 +128,21 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
   -- Apply very subtle color tint if template has color
   if chip_color then
-    local cr, cg, cb = ark.Colors.rgba_to_components(chip_color)
-    local br, bg_c, bb = ark.Colors.rgba_to_components(BG_BASE)
+    local cr, cg, cb = Ark.Colors.rgba_to_components(chip_color)
+    local br, bg_c, bb = Ark.Colors.rgba_to_components(BG_BASE)
     local r = math.floor(br * (1 - color_blend) + cr * color_blend)
     local g = math.floor(bg_c * (1 - color_blend) + cg * color_blend)
     local b = math.floor(bb * (1 - color_blend) + cb * color_blend)
-    bg_color = ark.Colors.components_to_rgba(r, g, b, 255)
+    bg_color = Ark.Colors.components_to_rgba(r, g, b, 255)
   end
 
   if hover_factor > 0.01 then
-    local r1, g1, b1 = ark.Colors.rgba_to_components(bg_color)
-    local r2, g2, b2 = ark.Colors.rgba_to_components(BG_HOVER)
+    local r1, g1, b1 = Ark.Colors.rgba_to_components(bg_color)
+    local r2, g2, b2 = Ark.Colors.rgba_to_components(BG_HOVER)
     local r = math.floor(r1 + (r2 - r1) * hover_factor * 0.5)
     local g = math.floor(g1 + (g2 - g1) * hover_factor * 0.5)
     local b = math.floor(b1 + (b2 - b1) * hover_factor * 0.5)
-    bg_color = ark.Colors.components_to_rgba(r, g, b, 255)
+    bg_color = Ark.Colors.components_to_rgba(r, g, b, 255)
   end
 
   -- Draw background
@@ -154,13 +154,13 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local ant_color
     if chip_color then
       -- Extract RGB from chip color and blend with light grey
-      local cr, cg, cb = ark.Colors.rgba_to_components(chip_color)
+      local cr, cg, cb = Ark.Colors.rgba_to_components(chip_color)
       -- Light grey base (190) with 15% chip color influence
       local blend = 0.15
       local r = math.floor(190 * (1 - blend) + cr * blend)
       local g = math.floor(190 * (1 - blend) + cg * blend)
       local b = math.floor(190 * (1 - blend) + cb * blend)
-      ant_color = ark.Colors.components_to_rgba(r, g, b, 0x99)
+      ant_color = Ark.Colors.components_to_rgba(r, g, b, 0x99)
     else
       ant_color = hexrgb("#C0C0C099")  -- Lighter grey with 60% opacity
     end
@@ -171,21 +171,21 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
     -- Apply subtle color tint to border if template has color
     if chip_color then
-      local cr, cg, cb = ark.Colors.rgba_to_components(chip_color)
-      local br, bg_c, bb = ark.Colors.rgba_to_components(BRD_BASE)
+      local cr, cg, cb = Ark.Colors.rgba_to_components(chip_color)
+      local br, bg_c, bb = Ark.Colors.rgba_to_components(BRD_BASE)
       local r = math.floor(br * (1 - color_blend) + cr * color_blend)
       local g = math.floor(bg_c * (1 - color_blend) + cg * color_blend)
       local b = math.floor(bb * (1 - color_blend) + cb * color_blend)
-      border_color = ark.Colors.components_to_rgba(r, g, b, 255)
+      border_color = Ark.Colors.components_to_rgba(r, g, b, 255)
     end
 
     if hover_factor > 0.01 then
-      local r1, g1, b1 = ark.Colors.rgba_to_components(border_color)
-      local r2, g2, b2 = ark.Colors.rgba_to_components(BRD_HOVER)
+      local r1, g1, b1 = Ark.Colors.rgba_to_components(border_color)
+      local r2, g2, b2 = Ark.Colors.rgba_to_components(BRD_HOVER)
       local r = math.floor(r1 + (r2 - r1) * hover_factor)
       local g = math.floor(g1 + (g2 - g1) * hover_factor)
       local b = math.floor(b1 + (b2 - b1) * hover_factor)
-      border_color = ark.Colors.components_to_rgba(r, g, b, 255)
+      border_color = Ark.Colors.components_to_rgba(r, g, b, 255)
     end
     ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
   end
@@ -205,13 +205,13 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Chip indicator removed - color is shown via diagonal stripes only
 
   -- Template name
-  local name_color = ark.Colors.with_alpha(hexrgb("#CCCCCC"), text_alpha)  -- Match Parameter Library text color
+  local name_color = Ark.Colors.with_alpha(hexrgb("#CCCCCC"), text_alpha)  -- Match Parameter Library text color
   if state.selected or state.hover then
-    name_color = ark.Colors.with_alpha(hexrgb("#FFFFFF"), text_alpha)
+    name_color = Ark.Colors.with_alpha(hexrgb("#FFFFFF"), text_alpha)
   end
 
   local truncated_name = truncate_text(ctx, template.name, content_w)
-  ark.Draw.text(dl, content_x, content_y, name_color, truncated_name)
+  Ark.Draw.text(dl, content_x, content_y, name_color, truncated_name)
 
   -- Show first VST chip below title (where path used to be)
   local first_vst = get_display_vst(template.fx)
@@ -248,20 +248,20 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local text_x = chip_x + (chip_w - text_width) * 0.5
     local text_y = chip_y + math.floor((chip_h - actual_text_height) * 0.5)
     local text_color = hexrgb("#FFFFFF")
-    ark.Draw.text(dl, text_x, text_y, text_color, display_vst)
+    Ark.Draw.text(dl, text_x, text_y, text_color, display_vst)
   end
 
   -- Template path at bottom right (if height allows)
   if tile_h >= M.CONFIG.hide_path_below and template.relative_path ~= "" then
     local path_alpha = math.floor(text_alpha * 0.6)
-    local path_color = ark.Colors.with_alpha(hexrgb("#A0A0A0"), path_alpha)
+    local path_color = Ark.Colors.with_alpha(hexrgb("#A0A0A0"), path_alpha)
     local path_text = "[" .. template.folder .. "]"
     local path_width = ImGui.CalcTextSize(ctx, path_text)
     local truncated_path = truncate_text(ctx, path_text, content_w - 30)  -- Leave room for star
     local actual_path_width = ImGui.CalcTextSize(ctx, truncated_path)
     local path_x = x2 - padding - actual_path_width
     local path_y = y2 - padding - 14  -- 14 is approx text height
-    ark.Draw.text(dl, path_x, path_y, path_color, truncated_path)
+    Ark.Draw.text(dl, path_x, path_y, path_color, truncated_path)
   end
 
   -- Track count badge at bottom left (if multi-track template)
@@ -287,7 +287,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local badge_text_color = hexrgb("#A8A8A8")
     local badge_text_x = badge_x + badge_padding_x
     local badge_text_y = badge_y + badge_padding_y
-    ark.Draw.text(dl, badge_text_x, badge_text_y, badge_text_color, badge_text)
+    Ark.Draw.text(dl, badge_text_x, badge_text_y, badge_text_color, badge_text)
   end
 
   -- Render favorite star in top-right corner using remix icon font
@@ -309,12 +309,12 @@ function M.render(ctx, rect, template, state, metadata, animator)
   else
     -- Darker when disabled, with subtle color influence if tile has color
     if chip_color then
-      local cr, cg, cb = ark.Colors.rgba_to_components(chip_color)
+      local cr, cg, cb = Ark.Colors.rgba_to_components(chip_color)
       local blend = 0.3  -- Color influence
       local r = math.floor(cr * 0.2 * blend + 20 * (1 - blend))
       local g = math.floor(cg * 0.2 * blend + 20 * (1 - blend))
       local b = math.floor(cb * 0.2 * blend + 20 * (1 - blend))
-      star_color = ark.Colors.components_to_rgba(r, g, b, is_star_hovered and 160 or 80)
+      star_color = Ark.Colors.components_to_rgba(r, g, b, is_star_hovered and 160 or 80)
     else
       star_color = is_star_hovered and hexrgb("#282828A0") or hexrgb("#18181850")
     end
@@ -339,7 +339,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local text_w, text_h = ImGui.CalcTextSize(ctx, star_char_fallback)
     local star_text_x = star_x + (star_size - text_w) * 0.5
     local star_text_y = star_y + (star_size - text_h) * 0.5
-    ark.Draw.text(dl, star_text_x, star_text_y, star_color, star_char_fallback)
+    Ark.Draw.text(dl, star_text_x, star_text_y, star_color, star_char_fallback)
   end
 
   -- Handle star click to toggle favorite

@@ -3,7 +3,7 @@
 -- Factory for creating audio items grid
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
 local shared = require('ItemPicker.ui.grids.factories.shared')
@@ -146,9 +146,9 @@ function M.create(ctx, config, state, visualization, animator, disable_animator)
       -- Grays (sat < 0.08) are grouped at the end
       table.sort(filtered, function(a, b)
         if sort_reverse then
-          return ark.Colors.compare_colors(b.color, a.color)
+          return Ark.Colors.compare_colors(b.color, a.color)
         else
-          return ark.Colors.compare_colors(a.color, b.color)
+          return Ark.Colors.compare_colors(a.color, b.color)
         end
       end)
     elseif sort_mode == "name" then

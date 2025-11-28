@@ -2,8 +2,8 @@
 -- ThemeAdjuster/domain/links/manager.lua
 -- Parameter linking and synchronization system (GROUP-BASED)
 
-local ark = require('arkitekt')
-local hexrgb = ark.Colors.hexrgb
+local Ark = require('arkitekt')
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 

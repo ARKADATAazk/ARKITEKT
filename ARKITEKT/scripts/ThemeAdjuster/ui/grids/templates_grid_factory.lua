@@ -3,10 +3,10 @@
 -- Templates grid factory
 
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local TemplateTile = require('ThemeAdjuster.ui.grids.renderers.template_tile')
 local TemplateGroupConfig = require('ThemeAdjuster.ui.grids.renderers.template_group_config')
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 
@@ -79,7 +79,7 @@ end
 local function create_render_tile(view)
   return function(ctx, rect, item, state, grid)
     -- Check if this is a group header
-    if ark.TileGroup.is_group_header(item) then
+    if Ark.TileGroup.is_group_header(item) then
       local ImGui = require('arkitekt.platform.imgui')
       local group_id = item.__group_id
       local group_ref = item.__group_ref
@@ -135,10 +135,10 @@ local function create_render_tile(view)
         end
       else
         -- Render group header normally
-        local clicked = ark.TileGroup.render_header(ctx, rect, item, state)
+        local clicked = Ark.TileGroup.render_header(ctx, rect, item, state)
         if clicked then
           -- Toggle group collapse state
-          ark.TileGroup.toggle_group(item)
+          Ark.TileGroup.toggle_group(item)
 
           -- Persist the collapsed state
           view.template_group_collapsed_states[group_id] = group_ref.collapsed
@@ -178,8 +178,8 @@ local function create_render_tile(view)
       end
     else
       -- Render regular template tile (extract original item if wrapped)
-      local template_item = ark.TileGroup.get_original_item(item)
-      local indent = ark.TileGroup.get_indent(item)
+      local template_item = Ark.TileGroup.get_original_item(item)
+      local indent = Ark.TileGroup.get_indent(item)
 
       -- Apply indent to rect if needed
       if indent > 0 then
@@ -224,12 +224,12 @@ function M.create(view, config)
     get_items = function() return view:get_template_items() end,
     key = function(item)
       -- Handle group headers
-      if ark.TileGroup.is_group_header(item) then
+      if Ark.TileGroup.is_group_header(item) then
         return "template_group_header_" .. item.__group_id
       end
 
       -- Handle regular or grouped template items
-      local template_item = ark.TileGroup.get_original_item(item)
+      local template_item = Ark.TileGroup.get_original_item(item)
       return "template_" .. template_item.id
     end,
 

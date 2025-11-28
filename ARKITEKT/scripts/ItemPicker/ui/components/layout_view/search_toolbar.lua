@@ -3,7 +3,7 @@
 -- Search input, sort buttons, layout toggle, and toolbar controls
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local SearchWithMode = require('ItemPicker.ui.components.search')
 
 local M = {}
@@ -21,7 +21,7 @@ local function draw_track_icon(draw_list, icon_x, icon_y)
     ImGui.DrawList_AddRectFilled(draw_list,
       icon_x, line_y,
       icon_x + line_w, line_y + line_h,
-      ark.Colors.hexrgb("#AAAAAA"), 1)
+      Ark.Colors.hexrgb("#AAAAAA"), 1)
   end
 end
 
@@ -31,7 +31,7 @@ local function draw_layout_icon(draw_list, icon_x, icon_y, is_vertical)
   local gap = 2
   local top_bar_h = 2
   local top_padding = 2
-  local icon_color = ark.Colors.hexrgb("#AAAAAA")
+  local icon_color = Ark.Colors.hexrgb("#AAAAAA")
 
   -- Draw top bar (represents search bar/top panel)
   ImGui.DrawList_AddRectFilled(draw_list, icon_x, icon_y, icon_x + icon_size, icon_y + top_bar_h, icon_color, 0)
@@ -108,7 +108,7 @@ function M.draw(ctx, draw_list, coord_offset_x, search_y, screen_w, search_heigh
   local track_filter_x = current_x
   local track_filter_active = state.show_track_filter or false
 
-  ark.Button.draw(ctx, {
+  Ark.Button.draw(ctx, {
     id = "track_filter_button",
     draw_list = draw_list,
     x = current_x,
@@ -132,7 +132,7 @@ function M.draw(ctx, draw_list, coord_offset_x, search_y, screen_w, search_heigh
 
   -- Content filter button
   current_x = current_x - content_button_width - button_gap
-  ark.Button.draw(ctx, {
+  Ark.Button.draw(ctx, {
     id = "content_filter_button",
     draw_list = draw_list,
     x = current_x,
@@ -165,7 +165,7 @@ function M.draw(ctx, draw_list, coord_offset_x, search_y, screen_w, search_heigh
   local is_vertical = layout_mode == "vertical"
   local is_mixed_mode = content_filter_mode == "MIXED"
 
-  ark.Button.draw(ctx, {
+  Ark.Button.draw(ctx, {
     id = "layout_toggle_button",
     draw_list = draw_list,
     x = current_x,
@@ -198,8 +198,8 @@ function M.draw(ctx, draw_list, coord_offset_x, search_y, screen_w, search_heigh
   local sort_x = search_x + search_width + button_gap
   local sort_label = "Sorting:"
   local sort_label_width = ImGui.CalcTextSize(ctx, sort_label)
-  local sort_label_color = ark.Colors.hexrgb("#AAAAAA")
-  sort_label_color = ark.Colors.with_alpha(sort_label_color, (search_fade * 200) // 1)
+  local sort_label_color = Ark.Colors.hexrgb("#AAAAAA")
+  sort_label_color = Ark.Colors.with_alpha(sort_label_color, (search_fade * 200) // 1)
   ImGui.DrawList_AddText(draw_list, sort_x, search_y + 4, sort_label_color, sort_label)
 
   -- Position sort buttons after label
@@ -208,7 +208,7 @@ function M.draw(ctx, draw_list, coord_offset_x, search_y, screen_w, search_heigh
     local button_w = sort_button_widths[i]
     local is_active = (current_sort == mode.id)
 
-    ark.Button.draw(ctx, {
+    Ark.Button.draw(ctx, {
       id = "sort_button_" .. mode.id,
       draw_list = draw_list,
       x = sort_x,

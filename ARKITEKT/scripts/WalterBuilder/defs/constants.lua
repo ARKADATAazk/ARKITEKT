@@ -2,9 +2,9 @@
 -- WalterBuilder/defs/constants.lua
 -- Pure value constants: modes, states, dimensions, timing
 
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Lookup = require('arkitekt.core.lookup')
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 

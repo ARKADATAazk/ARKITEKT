@@ -3,10 +3,10 @@
 -- Renders parameter tiles in the library
 
 local ImGui = require('arkitekt.platform.imgui')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 local Logger = require('arkitekt.debug.logger')
 local log = Logger.new("LibraryTile")
 
@@ -132,7 +132,7 @@ function M.render(ctx, rect, param, state, view)
 
   if param.type == "toggle" then
     local is_checked = (param.value ~= 0)
-    if ark.Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "lib_" .. param.index) then
+    if Ark.Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "lib_" .. param.index) then
       changed = true
       new_value = is_checked and 0 or 1
     end
@@ -146,7 +146,7 @@ function M.render(ctx, rect, param, state, view)
     local current_idx = math.floor(param.value - param.min + 1)
     current_idx = math.max(1, math.min(current_idx, #values))
 
-    local spinner_result = ark.Spinner.draw(ctx, {
+    local spinner_result = Ark.Spinner.draw(ctx, {
       id = "##lib_spinner_" .. param.index,
       value = current_idx,
       options = values,

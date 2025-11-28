@@ -3,7 +3,7 @@
 -- Mini tags tab for convenience panel
 
 local ImGui = require('arkitekt.platform.imgui')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Tags = require('TemplateBrowser.domain.tags.service')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
@@ -26,7 +26,7 @@ function M.draw(ctx, state, config, width, height)
   local button_x = width - UI.BUTTON.WIDTH_SMALL - 8
   ImGui.SetCursorPosX(ctx, button_x)
 
-  if ark.Button.draw_at_cursor(ctx, {
+  if Ark.Button.draw_at_cursor(ctx, {
     label = "+",
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT

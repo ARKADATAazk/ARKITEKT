@@ -7,11 +7,11 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
 
-local ImGui = ark.ImGui
+local ImGui = Ark.ImGui
 local SRC = debug.getinfo(1,"S").source:sub(2)
-local HERE = ark._bootstrap.dirname(SRC) or "."
+local HERE = Ark._bootstrap.dirname(SRC) or "."
 
 -- Load dependencies
 local Shell = require("arkitekt.app.shell")
@@ -28,7 +28,7 @@ local cache_dir = reaper.GetResourcePath() .. SEP .. "Scripts" .. SEP .. "Arkite
 
 -- Initialize settings and state
 local Settings = require('arkitekt.core.settings')
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 local settings = Settings.open(cache_dir, 'settings.json')
 

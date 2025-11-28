@@ -3,8 +3,8 @@
 -- Base tile renderer with shared functionality
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
-local hexrgb = ark.Colors.hexrgb
+local Ark = require('arkitekt')
+local hexrgb = Ark.Colors.hexrgb
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local M = {}
@@ -13,12 +13,12 @@ M.tile_spawn_times = {}
 
 -- Ensure color has minimum lightness for readability
 function M.ensure_min_lightness(color, min_lightness)
-  local h, s, l = ark.Colors.rgb_to_hsl(color)
+  local h, s, l = Ark.Colors.rgb_to_hsl(color)
   if l < min_lightness then
     l = min_lightness
   end
-  local r, g, b = ark.Colors.hsl_to_rgb(h, s, l)
-  return ark.Colors.components_to_rgba(r, g, b, 0xFF)
+  local r, g, b = Ark.Colors.hsl_to_rgb(h, s, l)
+  return Ark.Colors.components_to_rgba(r, g, b, 0xFF)
 end
 
 -- Easing functions
@@ -113,9 +113,9 @@ function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, c
   local final_alpha
   if is_small_tile then
     -- In small tile mode, alpha is already pre-multiplied by header_alpha in the caller
-    final_alpha = ark.Colors.opacity(alpha)
+    final_alpha = Ark.Colors.opacity(alpha)
   else
-    final_alpha = ark.Colors.opacity(base_header_alpha * alpha)
+    final_alpha = Ark.Colors.opacity(base_header_alpha * alpha)
   end
 
   local header_color = ImGui.ColorConvertDouble4ToU32(r, g, b, final_alpha / 255)
@@ -152,10 +152,10 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
 
   -- Dark spinner color (slightly lighter than background)
   local spinner_alpha = (alpha * 100) // 1
-  local spinner_color = ark.Colors.with_alpha(hexrgb("#808080"), spinner_alpha)
+  local spinner_color = Ark.Colors.with_alpha(hexrgb("#808080"), spinner_alpha)
   local thickness = math.max(2, size * 0.2)
 
-  ark.LoadingSpinner.draw_direct(dl, center_x, center_y, {
+  Ark.LoadingSpinner.draw_direct(dl, center_x, center_y, {
     size = size,
     thickness = thickness,
     color = spinner_color,
@@ -170,15 +170,15 @@ function M.apply_state_effects(base_color, muted_factor, enabled_factor, config)
 
   -- Apply muted state first (lighter effect than disabled)
   if muted_factor > 0.001 then
-    render_color = ark.Colors.desaturate(render_color, config.TILE_RENDER.muted.desaturate * muted_factor)
-    render_color = ark.Colors.adjust_brightness(render_color,
+    render_color = Ark.Colors.desaturate(render_color, config.TILE_RENDER.muted.desaturate * muted_factor)
+    render_color = Ark.Colors.adjust_brightness(render_color,
       1.0 - (1.0 - config.TILE_RENDER.muted.brightness) * muted_factor)
   end
 
   -- Apply disabled state (stronger effect, overrides muted)
   if enabled_factor < 1.0 then
-    render_color = ark.Colors.desaturate(render_color, config.TILE_RENDER.disabled.desaturate * (1.0 - enabled_factor))
-    render_color = ark.Colors.adjust_brightness(render_color,
+    render_color = Ark.Colors.desaturate(render_color, config.TILE_RENDER.disabled.desaturate * (1.0 - enabled_factor))
+    render_color = Ark.Colors.adjust_brightness(render_color,
       1.0 - (1.0 - config.TILE_RENDER.disabled.brightness) * (1.0 - enabled_factor))
   end
 
@@ -246,7 +246,7 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
 
   -- Use custom text color if provided, otherwise use primary color
   local final_text_color = text_color or tile_render.text.primary_color
-  ark.Draw.text(dl, text_x, text_y, ark.Colors.with_alpha(final_text_color, text_alpha), truncated_name)
+  Ark.Draw.text(dl, text_x, text_y, Ark.Colors.with_alpha(final_text_color, text_alpha), truncated_name)
 
   -- Render cycle badge (vertically centered in header)
   if show_badge and total and total > 1 then
@@ -263,7 +263,7 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
     local badge_y = y1 + (header_height - badge_h) / 2
 
     -- Render using modular badge system (clickable)
-    local result = ark.Badge.clickable(ctx, {
+    local result = Ark.Badge.clickable(ctx, {
       draw_list = dl,
       x = badge_x,
       y = badge_y,

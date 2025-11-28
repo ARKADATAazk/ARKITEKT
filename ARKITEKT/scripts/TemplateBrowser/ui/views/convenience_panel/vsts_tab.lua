@@ -3,7 +3,7 @@
 -- Mini VSTs tab for convenience panel
 
 local ImGui = require('arkitekt.platform.imgui')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
 local UI = require('TemplateBrowser.ui.config.constants')
@@ -40,16 +40,16 @@ function M.draw(ctx, state, config, width, height)
       -- Use stored color or default dark grey with 80% transparency
       local bg_color
       if vst_color then
-        bg_color = is_selected and vst_color or ark.Colors.with_opacity(vst_color, 0.8)
+        bg_color = is_selected and vst_color or Ark.Colors.with_opacity(vst_color, 0.8)
       else
-        bg_color = is_selected and ark.Colors.hexrgb("#4A4A4ACC") or ark.Colors.hexrgb("#3A3A3ACC")
+        bg_color = is_selected and Ark.Colors.hexrgb("#4A4A4ACC") or Ark.Colors.hexrgb("#3A3A3ACC")
       end
 
       local clicked, chip_w, chip_h = Chip.draw(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
         bg_color = bg_color,
-        text_color = vst_color and ark.Colors.auto_text_color(vst_color) or ark.Colors.hexrgb("#FFFFFF"),
+        text_color = vst_color and Ark.Colors.auto_text_color(vst_color) or Ark.Colors.hexrgb("#FFFFFF"),
         height = 22,
         padding_h = 8,
         rounding = 2,

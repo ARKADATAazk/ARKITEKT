@@ -3,7 +3,7 @@
 -- Right panel view: Template info & tag assignment
 
 local ImGui = require('arkitekt.platform.imgui')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local TemplateOps = require('TemplateBrowser.domain.template.operations')
 local Tags = require('TemplateBrowser.domain.tags.service')
 local Stats = require('TemplateBrowser.domain.template.stats')
@@ -13,7 +13,7 @@ local Tooltips = require('TemplateBrowser.ui.tooltips')
 local UI = require('TemplateBrowser.ui.config.constants')
 
 local M = {}
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 -- Draw a u-he style section header (dim text, left-aligned)
 local function draw_section_header(ctx, title)
@@ -84,7 +84,7 @@ local function draw_info_panel(ctx, gui, width, height)
 
           -- Bar color: brighter for higher values
           local intensity = count > 0 and (0.3 + 0.7 * (count / max_val)) or 0.1
-          local bar_color = ark.Colors.with_alpha(hexrgb("#5588FF"), math.floor(255 * intensity))
+          local bar_color = Ark.Colors.with_alpha(hexrgb("#5588FF"), math.floor(255 * intensity))
 
           if bar_h > 0 then
             ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + bar_w, spark_y + spark_h - 1, bar_color, 1)
@@ -152,11 +152,11 @@ local function draw_info_panel(ctx, gui, width, height)
 
       -- Initialize markdown field with current notes
       local notes_field_id = "template_notes_" .. tmpl.uuid
-      if ark.MarkdownField.get_text(notes_field_id) ~= notes and not ark.MarkdownField.is_editing(notes_field_id) then
-        ark.MarkdownField.set_text(notes_field_id, notes)
+      if Ark.MarkdownField.get_text(notes_field_id) ~= notes and not Ark.MarkdownField.is_editing(notes_field_id) then
+        Ark.MarkdownField.set_text(notes_field_id, notes)
       end
 
-      local notes_changed, new_notes = ark.MarkdownField.draw_at_cursor(ctx, {
+      local notes_changed, new_notes = Ark.MarkdownField.draw_at_cursor(ctx, {
         width = content_w,
         height = 100,
         text = notes,
@@ -246,7 +246,7 @@ local function draw_info_panel(ctx, gui, width, height)
       draw_section_header(ctx, "ACTIONS")
 
       -- Apply to Selected Track (primary action)
-      if ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button.draw_at_cursor(ctx, {
         label = "Apply to Track",
         width = content_w,
         height = 28,
@@ -261,7 +261,7 @@ local function draw_info_panel(ctx, gui, width, height)
       ImGui.Dummy(ctx, 0, 4)
 
       -- Insert as New Track
-      if ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button.draw_at_cursor(ctx, {
         label = "Insert as New Track",
         width = content_w,
         height = 24,
@@ -273,7 +273,7 @@ local function draw_info_panel(ctx, gui, width, height)
       ImGui.Dummy(ctx, 0, 4)
 
       -- Rename
-      if ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button.draw_at_cursor(ctx, {
         label = "Rename (F2)",
         width = content_w,
         height = 24,

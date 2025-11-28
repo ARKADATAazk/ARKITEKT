@@ -5,12 +5,12 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Style = require('arkitekt.gui.style')
 
 local Panel = require('arkitekt.gui.widgets.containers.panel.init')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -178,15 +178,15 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
       to = get_ready_color()
     end
 
-    local r1, g1, b1, a1 = ark.Colors.rgba_to_components(from)
-    local r2, g2, b2, a2 = ark.Colors.rgba_to_components(to)
+    local r1, g1, b1, a1 = Ark.Colors.rgba_to_components(from)
+    local r2, g2, b2, a2 = Ark.Colors.rgba_to_components(to)
 
     local r = (r1 + (r2 - r1) * t)//1
     local g = (g1 + (g2 - g1) * t)//1
     local b = (b1 + (b2 - b1) * t)//1
     local a = (a1 + (a2 - a1) * t)//1
 
-    return ark.Colors.components_to_rgba(r, g, b, a)
+    return Ark.Colors.components_to_rgba(r, g, b, a)
   end
 
   local lerp_factor = min(1.0, fade_speed * dt)

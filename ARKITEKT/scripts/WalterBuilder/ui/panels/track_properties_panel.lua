@@ -4,13 +4,13 @@
 -- Uses Arkitekt widgets for consistent styling
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local Slider = require('arkitekt.gui.widgets.primitives.slider')
 local TrackDefaults = require('WalterBuilder.defs.track_defaults')
 local Constants = require('WalterBuilder.defs.constants')
 
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 local Panel = {}

@@ -4,8 +4,8 @@
 -- @migrated 2024-11-27 from services/visualization.lua
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
-local hexrgb = ark.Colors.hexrgb
+local Ark = require('arkitekt')
+local hexrgb = Ark.Colors.hexrgb
 
 
 local M = {}
@@ -40,7 +40,7 @@ local function get_waveform_color(base_color)
   v = v * bright_mult
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local col_wave = ark.Colors.components_to_rgba(r*255, g*255, b*255, 255)
+  local col_wave = Ark.Colors.components_to_rgba(r*255, g*255, b*255, 255)
   waveform_color_cache[base_color] = col_wave
   return col_wave
 end

@@ -3,7 +3,7 @@
 -- Tags tab: Full tag management
 
 local ImGui = require('arkitekt.platform.imgui')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Tags = require('TemplateBrowser.domain.tags.service')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
@@ -22,7 +22,7 @@ function M.draw(ctx, state, config, width, height)
   local button_x = width - UI.BUTTON.WIDTH_SMALL - config.PANEL_PADDING * 2
   ImGui.SetCursorPosX(ctx, button_x)
 
-  if ark.Button.draw_at_cursor(ctx, {
+  if Ark.Button.draw_at_cursor(ctx, {
     label = "+",
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
@@ -109,14 +109,14 @@ function M.draw(ctx, state, config, width, height)
         -- Handle rename mode separately (show input field overlay)
         if renaming_tag then
           -- Initialize field with current name
-          if ark.InputText.get_text("tag_rename_" .. renaming_tag) == "" then
-            ark.InputText.set_text("tag_rename_" .. renaming_tag, state.rename_buffer)
+          if Ark.InputText.get_text("tag_rename_" .. renaming_tag) == "" then
+            Ark.InputText.set_text("tag_rename_" .. renaming_tag, state.rename_buffer)
           end
 
           ImGui.Spacing(ctx)
           ImGui.Text(ctx, "Renaming: " .. renaming_tag)
 
-          local changed, new_name = ark.InputText.draw_at_cursor(ctx, {
+          local changed, new_name = Ark.InputText.draw_at_cursor(ctx, {
             width = -1,
             height = UI.CHIP.HEIGHT_SMALL,
             text = state.rename_buffer,

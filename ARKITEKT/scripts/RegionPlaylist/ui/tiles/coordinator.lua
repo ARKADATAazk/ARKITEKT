@@ -3,7 +3,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
 local Config = require('RegionPlaylist.app.config')
 local Render = require('RegionPlaylist.ui.tiles.coordinator_render')
@@ -157,7 +157,7 @@ function M.create(opts)
     end,
   })
   
-  rt.active_container = ark.Panel.new({
+  rt.active_container = Ark.Panel.new({
     id = "active_tiles_container",
     config = active_config,
   })
@@ -238,7 +238,7 @@ function M.create(opts)
     end,
   })
   
-  rt.pool_container = ark.Panel.new({
+  rt.pool_container = Ark.Panel.new({
     id = "pool_tiles_container",
     config = pool_config,
   })

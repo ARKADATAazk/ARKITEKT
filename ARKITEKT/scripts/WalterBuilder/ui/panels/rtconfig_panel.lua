@@ -3,14 +3,14 @@
 -- Panel for viewing parsed rtconfig structure (read-only)
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local RtconfigParser = require('WalterBuilder.domain.rtconfig_parser')
 local RtconfigConverter = require('WalterBuilder.domain.rtconfig_converter')
 local ThemeConnector = require('WalterBuilder.domain.theme_connector')
 local Colors = require('WalterBuilder.defs.colors')
 local WalterSettings = require('WalterBuilder.infra.settings')
 
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 local Panel = {}

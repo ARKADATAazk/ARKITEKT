@@ -2,7 +2,7 @@
 -- Arkitekt/ColorPalette/app/state.lua
 -- State management and color palette calculation
 
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local M = {}
 
 -- Target types for color application
@@ -118,8 +118,8 @@ function M.recalculate_palette()
       end
       
       -- Convert HSL to RGB
-      local r, g, b = ark.Colors.hsl_to_rgb(hue, sat, lum)
-      local color = ark.Colors.components_to_rgba(r, g, b, 0xFF)
+      local r, g, b = Ark.Colors.hsl_to_rgb(hue, sat, lum)
+      local color = Ark.Colors.components_to_rgba(r, g, b, 0xFF)
       
       state.palette_colors[#state.palette_colors + 1] = color
     end

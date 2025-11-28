@@ -3,9 +3,9 @@
 -- Default configuration values
 
 local ColorDefs = require('arkitekt.defs.colors')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Constants = require('RegionPlaylist.defs.constants')
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 -- Helper for glow colors
 local function glow_color(base_hex, alpha)

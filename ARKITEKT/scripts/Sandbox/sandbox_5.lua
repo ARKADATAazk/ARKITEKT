@@ -21,7 +21,7 @@ local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
 local hexrgb = Colors.hexrgb
 
 -- Create namespace for widget modules
-local ark = {
+local Ark = {
   InputText = InputText
 }
 
@@ -908,10 +908,10 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
 
     -- Editing mode only applies to first column
     if is_editing and col_idx == 1 then
-      ark.InputText.set_text("tree_edit_" .. node.id, tree_state.edit_buffer)
+      Ark.InputText.set_text("tree_edit_" .. node.id, tree_state.edit_buffer)
 
       local available_w = col_right - content_x - 6
-      local result = ark.InputText.draw(ctx, {
+      local result = Ark.InputText.draw(ctx, {
         id = "tree_edit_" .. node.id,
         x = content_x,
         y = y_pos + 1,
@@ -919,7 +919,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
         height = item_h - 2,
       })
 
-      tree_state.edit_buffer = ark.InputText.get_text("tree_edit_" .. node.id) or tree_state.edit_buffer
+      tree_state.edit_buffer = Ark.InputText.get_text("tree_edit_" .. node.id) or tree_state.edit_buffer
 
       if not tree_state.edit_focus_set then
         ImGui.SetKeyboardFocusHere(ctx, -1)

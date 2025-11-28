@@ -3,8 +3,8 @@
 -- Drag and drop handler with visual preview
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
-local hexrgb = ark.Colors.hexrgb
+local Ark = require('arkitekt')
+local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 
@@ -51,10 +51,10 @@ local function get_item_data(state, item_index)
     local R = colorref & 255
     local G = (colorref >> 8) & 255
     local B = (colorref >> 16) & 255
-    color = ark.Colors.components_to_rgba(R, G, B, 255)
+    color = Ark.Colors.components_to_rgba(R, G, B, 255)
   else
     -- No color flag: use default grey
-    color = ark.Colors.hexrgb("#555B5B")
+    color = Ark.Colors.hexrgb("#555B5B")
   end
 
   local media_item = item_data[1]  -- MediaItem pointer
@@ -190,7 +190,7 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
   -- Draw insertion preview
   if rect_x1 then
     -- Grey crosshair lines instead of blue
-    local line_color = ark.Colors.hexrgba("#808080", 0.8)
+    local line_color = Ark.Colors.hexrgba("#808080", 0.8)
 
     -- Get the items being dragged
     local dragging_count = (state.dragging_keys and #state.dragging_keys) or 1
@@ -220,10 +220,10 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
             s = s * 0.7  -- Desaturate a bit
             v = v * 0.5  -- Darken for preview
             r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
-            item_color = ark.Colors.with_opacity(ark.Colors.components_to_rgba(r*255, g*255, b*255, 255), 0.8)
+            item_color = Ark.Colors.with_opacity(Ark.Colors.components_to_rgba(r*255, g*255, b*255, 255), 0.8)
           else
             -- Fallback to grey
-            item_color = ark.Colors.hexrgba("#B1B4B4", 0.8)
+            item_color = Ark.Colors.hexrgba("#B1B4B4", 0.8)
           end
 
           -- Draw base rectangle with item color
@@ -241,7 +241,7 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
             s = 0.3
             v = 0.15
             r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
-            local viz_color = ark.Colors.with_opacity(ark.Colors.components_to_rgba(r*255, g*255, b*255, 255), 0.7)
+            local viz_color = Ark.Colors.with_opacity(Ark.Colors.components_to_rgba(r*255, g*255, b*255, 255), 0.7)
 
             if item_data.is_midi then
               -- MIDI visualization
@@ -349,8 +349,8 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       if config and config.TILE_RENDER then
         local sat_factor = config.TILE_RENDER.base_fill.saturation_factor
         local bright_factor = config.TILE_RENDER.base_fill.brightness_factor
-        render_color = ark.Colors.desaturate(render_color, 1.0 - sat_factor)
-        render_color = ark.Colors.adjust_brightness(render_color, bright_factor)
+        render_color = Ark.Colors.desaturate(render_color, 1.0 - sat_factor)
+        render_color = Ark.Colors.adjust_brightness(render_color, bright_factor)
       end
 
       -- Apply opacity to the tile fill color
@@ -395,7 +395,7 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
         s = waveform_sat
         v = waveform_bright
         r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
-        local dark_color = ark.Colors.with_opacity(ark.Colors.components_to_rgba(r*255, g*255, b*255, 255), opacity * waveform_alpha)
+        local dark_color = Ark.Colors.with_opacity(Ark.Colors.components_to_rgba(r*255, g*255, b*255, 255), opacity * waveform_alpha)
 
         if item_data.is_midi then
           -- MIDI visualization from runtime cache
@@ -429,7 +429,7 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
         v = v * config.TILE_RENDER.header.brightness_factor
         r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
         local header_alpha = (config.TILE_RENDER.header.alpha / 255) * opacity
-        header_color = ark.Colors.with_opacity(ark.Colors.components_to_rgba(r*255, g*255, b*255, 255), header_alpha)
+        header_color = Ark.Colors.with_opacity(Ark.Colors.components_to_rgba(r*255, g*255, b*255, 255), header_alpha)
       else
         -- Fallback: dark overlay
         header_color = apply_alpha(hexrgb("#00000040"), opacity)

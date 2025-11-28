@@ -4,12 +4,12 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
 
 local M = {}
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 M.CONFIG = {
   chip_width = 110,
@@ -69,18 +69,18 @@ function Selector:draw(ctx, playlists, active_id, height, on_playlist_changed)
     local hover_factor = self.animator:get(pl.id, 'hover')
     local active_factor = self.animator:get(pl.id, 'active')
     
-    local bg_base = ark.Colors.lerp(cfg.bg_inactive, cfg.bg_active, active_factor)
-    local bg_final = ark.Colors.lerp(bg_base, cfg.bg_hover, hover_factor * 0.5)
+    local bg_base = Ark.Colors.lerp(cfg.bg_inactive, cfg.bg_active, active_factor)
+    local bg_final = Ark.Colors.lerp(bg_base, cfg.bg_hover, hover_factor * 0.5)
     
-    local border_base = ark.Colors.lerp(cfg.border_inactive, cfg.border_active, active_factor)
-    local border_final = ark.Colors.lerp(border_base, cfg.border_active, hover_factor)
+    local border_base = Ark.Colors.lerp(cfg.border_inactive, cfg.border_active, active_factor)
+    local border_final = Ark.Colors.lerp(border_base, cfg.border_active, hover_factor)
     
     ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x2, chip_y2, bg_final, cfg.rounding)
     ImGui.DrawList_AddRect(dl, chip_x + 0.5, chip_y + 0.5, chip_x2 - 0.5, chip_y2 - 0.5,
                           border_final, cfg.rounding, 0, cfg.border_thickness)
     
     local label = "#" .. i .. " " .. pl.name
-    ark.Draw.centered_text(ctx, label, chip_x, chip_y, chip_x2, chip_y2, cfg.text_color)
+    Ark.Draw.centered_text(ctx, label, chip_x, chip_y, chip_x2, chip_y2, cfg.text_color)
     
     ImGui.SetCursorScreenPos(ctx, chip_x, chip_y)
     local _ = ImGui.InvisibleButton(ctx, "##selector_" .. pl.id, cfg.chip_width, cfg.chip_height)

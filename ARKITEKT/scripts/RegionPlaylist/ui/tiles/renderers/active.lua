@@ -4,7 +4,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 local BaseRenderer = require('RegionPlaylist.ui.tiles.renderers.base')
@@ -13,7 +13,7 @@ local BaseRenderer = require('RegionPlaylist.ui.tiles.renderers.base')
 local max = math.max
 
 local M = {}
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 M.CONFIG = {
   bg_base = hexrgb("#1A1A1A"),
@@ -34,10 +34,10 @@ M.CONFIG = {
 }
 
 local function clamp_min_lightness(color, min_l)
-  local lum = ark.Colors.luminance(color)
+  local lum = Ark.Colors.luminance(color)
   if lum < (min_l or 0) then
     local factor = (min_l + 0.001) / max(lum, 0.001)
-    return ark.Colors.adjust_brightness(color, factor)
+    return Ark.Colors.adjust_brightness(color, factor)
   end
   return color
 end
@@ -64,8 +64,8 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
   
   local base_color = region.color or M.CONFIG.bg_base
   if enabled_factor < 1.0 then
-    base_color = ark.Colors.desaturate(base_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
-    base_color = ark.Colors.adjust_brightness(base_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
+    base_color = Ark.Colors.desaturate(base_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
+    base_color = Ark.Colors.adjust_brightness(base_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
     base_color = clamp_min_lightness(base_color, M.CONFIG.disabled.min_lightness or 0.28)
   end
   
@@ -140,8 +140,8 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
     local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | ((((M.CONFIG.badge_bg & 0xFF) * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor)))//1)
     
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, ark.Colors.with_alpha(base_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
-    ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, ark.Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Ark.Colors.with_alpha(base_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
+    Ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Ark.Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
     
     ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
     ImGui.InvisibleButton(ctx, "##badge_" .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
@@ -198,10 +198,10 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   
   -- Apply disabled state to both base and chip color
   if enabled_factor < 1.0 then
-    base_color = ark.Colors.desaturate(base_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
-    base_color = ark.Colors.adjust_brightness(base_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
-    chip_color = ark.Colors.desaturate(chip_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
-    chip_color = ark.Colors.adjust_brightness(chip_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
+    base_color = Ark.Colors.desaturate(base_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
+    base_color = Ark.Colors.adjust_brightness(base_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
+    chip_color = Ark.Colors.desaturate(chip_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
+    chip_color = Ark.Colors.adjust_brightness(chip_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
     local minL = M.CONFIG.disabled.min_lightness or 0.28
     base_color = clamp_min_lightness(base_color, minL)
     chip_color = clamp_min_lightness(chip_color, minL)
@@ -285,8 +285,8 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
     local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | ((((M.CONFIG.badge_bg & 0xFF) * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor)))//1)
 
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, ark.Colors.with_alpha(playlist_data.chip_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
-    ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, ark.Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Ark.Colors.with_alpha(playlist_data.chip_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
+    Ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Ark.Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
     
     ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
     ImGui.InvisibleButton(ctx, "##badge_" .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)

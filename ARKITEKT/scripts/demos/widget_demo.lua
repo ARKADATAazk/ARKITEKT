@@ -31,7 +31,7 @@ package.path = root_path .. "?.lua;" .. root_path .. "?/init.lua;" .. package.pa
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua'
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 
 -- ReaImGui presence check (AFTER loading)
 if not ImGui.CreateContext then
@@ -56,7 +56,7 @@ local Settings     = (function() local ok,m=pcall(require,"arkitekt.core.setting
 local okStyle,Style= pcall(require,"arkitekt.gui.style.imgui")
 local ColorBlocks  = require("Arkitekt.gui.widgets.colorblocks")
 local Effects      = require("arkitekt.gui.draw.effects")
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 
 
 -- Small helpers
@@ -118,15 +118,15 @@ local function render_color_tile(ctx, rect, item, state)
   local x1,y1,x2,y2 = rect[1],rect[2],rect[3],rect[4]
 
   -- swatch
-  ark.Draw.rect_filled(dl, x1, y1, x2, y2, item.color, 6)
-  ark.Draw.rect(dl, x1+0.5, y1+0.5, x2-0.5, y2-0.5, hexrgb("#00000055"), 6, 1)
+  Ark.Draw.rect_filled(dl, x1, y1, x2, y2, item.color, 6)
+  Ark.Draw.rect(dl, x1+0.5, y1+0.5, x2-0.5, y2-0.5, hexrgb("#00000055"), 6, 1)
 
   -- selection / hover
   if state.selected then
     local a = model.ants
     Effects.marching_ants_rounded(dl, x1, y1, x2, y2, a.color_enabled, a.thickness, a.radius, a.dash, a.gap, a.speed)
   elseif state.hover then
-    ark.Draw.rect(dl, x1, y1, x2, y2, hexrgb("#FFFFFF40"), 6, 1)
+    Ark.Draw.rect(dl, x1, y1, x2, y2, hexrgb("#FFFFFF40"), 6, 1)
   end
 
   if model.show_labels then

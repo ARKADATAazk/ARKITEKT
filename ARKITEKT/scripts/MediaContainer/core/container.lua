@@ -3,7 +3,7 @@
 -- Container operations: create, copy, paste, sync
 
 local State = require("MediaContainer.core.app_state")
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local M = {}
 
 -- Create a new container from currently selected items
@@ -72,7 +72,7 @@ function M.create_from_selection()
 
   -- Create container
   local container = {
-    id = ark.UUID.generate(),
+    id = Ark.UUID.generate(),
     name = "Container " .. (#State.containers + 1),
     color = State.generate_container_color(),
     start_time = min_pos,
@@ -243,7 +243,7 @@ function M.paste_container()
 
   -- Create linked container
   local linked_container = {
-    id = ark.UUID.generate(),
+    id = Ark.UUID.generate(),
     name = master.name .. " (linked)",
     color = master.color,
     start_time = cursor_pos,

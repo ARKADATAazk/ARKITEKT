@@ -3,10 +3,10 @@
 -- Pure value constants: colors, dimensions, timing, modes
 
 local ColorDefs = require('arkitekt.defs.colors')
-local ark = require('arkitekt')
+local Ark = require('arkitekt')
 local Unicode = require('arkitekt.core.unicode')
 local Lookup = require('arkitekt.core.lookup')
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Ark.Colors.hexrgb
 local utf8 = Unicode.utf8
 
 local M = {}
