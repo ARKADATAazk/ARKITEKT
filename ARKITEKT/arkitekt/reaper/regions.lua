@@ -36,7 +36,7 @@ local function get_marker_guid(proj, marker_index)
 end
 
 -- Debug: Set to true to log GUID capture
-local DEBUG_GUID = true
+local DEBUG_GUID = false
 
 function M.scan_project_regions(proj)
   proj = proj or 0

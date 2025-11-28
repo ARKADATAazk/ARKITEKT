@@ -563,7 +563,7 @@ function M.create_playlist_item(playlist_id, reps)
 end
 
 -- Debug: Set to true to log cleanup resolution
-local DEBUG_CLEANUP = true
+local DEBUG_CLEANUP = false
 
 function M.cleanup_deleted_regions()
   local removed_any = false
