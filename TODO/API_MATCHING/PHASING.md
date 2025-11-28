@@ -93,6 +93,28 @@
 
 ---
 
+## Out of Scope (Separate Work)
+
+### Panel Refactor
+
+Panel is a **retained-mode container** with Begin/End pattern - fundamentally different from Grid/widgets.
+It stays retained because user draws arbitrary content between `begin_draw()` and `end_draw()`.
+
+**See:** `TODO/PANEL_REFACTOR.md` for separate refactoring plan:
+- Phase 1: Extract TabStrip → `Ark.TabStrip(ctx, opts)` (follows Grid patterns)
+- Phase 2: Remove app-specific code
+- Phase 3: Consolidate small modules
+- Phase 4: Config builder pattern
+- Phase 5: State normalization
+
+**Panel API matching (minimal):**
+- Color migration during app migration (Phase 2) - replace hardcoded colors with Theme.COLORS
+- TabStrip extraction could be parallel with Phase 1 widgets (independent work)
+
+**Panel refactor phases are OPTIONAL and independent from API matching.**
+
+---
+
 ## Work Streams
 
 ### Stream A: Simple Widgets (Can Parallelize)
