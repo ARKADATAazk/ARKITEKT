@@ -3,6 +3,7 @@
 -- JSON persistence for tags, notes, and UUIDs
 
 local Logger = require('arkitekt.debug.logger')
+local UUID = require('arkitekt.core.uuid')
 
 local M = {}
 
@@ -50,16 +51,7 @@ function M.close_log()
   end
 end
 
--- Generate a UUID
-local function generate_uuid()
-  local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-  return string.gsub(template, '[xy]', function (c)
-    local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb)
-    return string.format('%x', v)
-  end)
-end
-
-M.generate_uuid = generate_uuid
+M.generate_uuid = UUID.generate
 
 -- Simple JSON encoder with pretty printing
 local function json_encode(data, indent, current_indent)

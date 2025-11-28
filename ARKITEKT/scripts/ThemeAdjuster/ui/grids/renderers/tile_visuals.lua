@@ -130,23 +130,4 @@ function M.draw_hover_shadow(dl, x1, y1, x2, y2, hover_alpha, rounding)
   end
 end
 
--- Color lerp helper
-function M.color_lerp(c1, c2, t)
-  t = math.min(1.0, math.max(0.0, t))
-
-  local function rgba(c)
-    return (c >> 24) & 0xFF, (c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF
-  end
-
-  local r1, g1, b1, a1 = rgba(c1)
-  local r2, g2, b2, a2 = rgba(c2)
-
-  local r = math.floor(r1 + (r2 - r1) * t)
-  local g = math.floor(g1 + (g2 - g1) * t)
-  local b = math.floor(b1 + (b2 - b1) * t)
-  local a = math.floor(a1 + (a2 - a1) * t)
-
-  return (r << 24) | (g << 16) | (b << 8) | a
-end
-
 return M
