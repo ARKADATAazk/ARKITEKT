@@ -22,17 +22,23 @@ Ark.Widget(ctx, {
   disabled = condition,
 })
 
--- DUAL RETURN: primary boolean + result object (Decision 18)
--- Simple case (matches ImGui):
-if Ark.Button(ctx, "OK") then ... end       -- First return = clicked
-if Ark.Checkbox(ctx, "X", v) then ... end   -- First return = changed
+-- SINGLE RETURN: result object (Decision 18)
+-- All widgets return a result object with consistent fields:
+local r = Ark.Button(ctx, "OK")
+if r.clicked then ... end
 
--- Full access when needed:
-local clicked, r = Ark.Button(ctx, "OK")
-local changed, r = Ark.Slider(ctx, "Vol", v, 0, 1)
-r.value     -- Widget-specific (checked, text, etc.)
+local r = Ark.Slider(ctx, "Vol", v, 0, 1)
+if r.changed then vol = r.value end
+
+-- Result object fields:
+r.clicked   -- Button/RadioButton: was clicked this frame
+r.changed   -- Stateful widgets: value changed this frame
+r.value     -- Current value (checked, text, number, index)
 r.hovered   -- Is mouse over?
 r.active    -- Is being interacted with?
+
+-- Inline form works too:
+if Ark.Button(ctx, "OK").clicked then ... end
 ```
 
 ---
@@ -57,21 +63,23 @@ end
 
 ### ARKITEKT Positional
 ```lua
--- Signature (dual return: clicked, result)
-local clicked = Ark.Button(ctx, label)
-local clicked, r = Ark.Button(ctx, label, width, height)
+-- Signature (single return: result object)
+local r = Ark.Button(ctx, label)
+local r = Ark.Button(ctx, label, width, height)
 
--- Usage (same as ImGui!)
-if Ark.Button(ctx, "Save") then
-  save_file()
-end
+-- Usage
+local r = Ark.Button(ctx, "Save")
+if r.clicked then save_file() end
 
-if Ark.Button(ctx, "OK", 100, 30) then
-  confirm()
-end
+local r = Ark.Button(ctx, "OK", 100, 30)
+if r.clicked then confirm() end
 
--- When you need more info:
-local clicked, r = Ark.Button(ctx, "Save")
+-- Inline form
+if Ark.Button(ctx, "Save").clicked then save_file() end
+
+-- Access hover state
+local r = Ark.Button(ctx, "Save")
+if r.clicked then save_file() end
 if r.hovered then show_tooltip() end
 ```
 
@@ -131,18 +139,17 @@ end
 
 ### ARKITEKT Positional
 ```lua
--- Signature (dual return: changed, result)
-local changed = Ark.Checkbox(ctx, label, checked)
-local changed, r = Ark.Checkbox(ctx, label, checked)
+-- Signature (single return: result object)
+local r = Ark.Checkbox(ctx, label, checked)
 
--- Usage (same as ImGui!)
-if Ark.Checkbox(ctx, "Auto-save", config.auto_save) then
+-- Usage
+local r = Ark.Checkbox(ctx, "Auto-save", config.auto_save)
+if r.changed then config.auto_save = r.value end
+
+-- Inline form
+if Ark.Checkbox(ctx, "Auto-save", config.auto_save).changed then
   config.auto_save = not config.auto_save
 end
-
--- When you need the new value:
-local changed, r = Ark.Checkbox(ctx, "Auto-save", config.auto_save)
-if changed then config.auto_save = r.value end
 ```
 
 ### ARKITEKT Opts
@@ -188,17 +195,16 @@ end
 
 ### ARKITEKT Positional
 ```lua
--- Signature (dual return: changed, result; unified - handles int/float automatically)
-local changed = Ark.Slider(ctx, label, value, min, max)
-local changed, r = Ark.Slider(ctx, label, value, min, max)
+-- Signature (single return: result object; unified - handles int/float automatically)
+local r = Ark.Slider(ctx, label, value, min, max)
 
--- Usage (typical - you need the value)
-local changed, r = Ark.Slider(ctx, "Volume", config.volume, 0, 100)
-if changed then config.volume = r.value end
+-- Usage
+local r = Ark.Slider(ctx, "Volume", config.volume, 0, 100)
+if r.changed then config.volume = r.value end
 
--- Simple check (rare - when you don't need the value)
-if Ark.Slider(ctx, "Volume", config.volume, 0, 100) then
-  trigger_audio_update()  -- Just need to know something changed
+-- Inline form (when you just need to know something changed)
+if Ark.Slider(ctx, "Volume", config.volume, 0, 100).changed then
+  trigger_audio_update()
 end
 ```
 
@@ -255,17 +261,17 @@ end
 
 ### ARKITEKT Positional
 ```lua
--- Signature (dual return: changed, result)
-local changed = Ark.InputText(ctx, label, text)
-local changed, r = Ark.InputText(ctx, label, text, width)
+-- Signature (single return: result object)
+local r = Ark.InputText(ctx, label, text)
+local r = Ark.InputText(ctx, label, text, width)
 
--- Usage (typical - you need the text)
-local changed, r = Ark.InputText(ctx, "Name", config.name)
-if changed then config.name = r.value end
+-- Usage
+local r = Ark.InputText(ctx, "Name", config.name)
+if r.changed then config.name = r.value end
 
--- Simple check (rare - when you don't need the text)
-if Ark.InputText(ctx, "Search", query) then
-  trigger_search()  -- Just need to know something changed
+-- Inline form
+if Ark.InputText(ctx, "Search", query).changed then
+  trigger_search()
 end
 ```
 
@@ -329,17 +335,16 @@ local changed, selected = ImGui.Combo(ctx, "Theme", theme_idx, "Light\0Dark\0Sys
 
 ### ARKITEKT Positional
 ```lua
--- Signature (dual return: changed, result)
-local changed = Ark.Combo(ctx, label, selected_index, items)
-local changed, r = Ark.Combo(ctx, label, selected_index, items)
+-- Signature (single return: result object)
+local r = Ark.Combo(ctx, label, selected_index, items)
 
--- Usage (typical - you need the selected index)
-local changed, r = Ark.Combo(ctx, "Theme", config.theme, {"Light", "Dark", "System"})
-if changed then config.theme = r.value end
+-- Usage
+local r = Ark.Combo(ctx, "Theme", config.theme, {"Light", "Dark", "System"})
+if r.changed then config.theme = r.value end
 
--- Simple check (rare - when you don't need the value)
-if Ark.Combo(ctx, "Theme", config.theme, themes) then
-  mark_settings_dirty()  -- Just need to know something changed
+-- Inline form
+if Ark.Combo(ctx, "Theme", config.theme, themes).changed then
+  mark_settings_dirty()
 end
 ```
 
@@ -395,20 +400,23 @@ end
 
 ### ARKITEKT Positional
 ```lua
--- Signature (dual return: clicked, result)
-local clicked = Ark.RadioButton(ctx, label, active)
-local clicked, r = Ark.RadioButton(ctx, label, active)
+-- Signature (single return: result object)
+local r = Ark.RadioButton(ctx, label, active)
 
--- Usage (same as ImGui!)
-if Ark.RadioButton(ctx, "Option A", selected == 1) then
+-- Usage
+local r = Ark.RadioButton(ctx, "Option A", selected == 1)
+if r.clicked then selected = 1 end
+
+local r = Ark.RadioButton(ctx, "Option B", selected == 2)
+if r.clicked then selected = 2 end
+
+-- Inline form
+if Ark.RadioButton(ctx, "Option A", selected == 1).clicked then
   selected = 1
 end
-if Ark.RadioButton(ctx, "Option B", selected == 2) then
-  selected = 2
-end
 
--- When you need more info:
-local clicked, r = Ark.RadioButton(ctx, "Option A", selected == 1)
+-- Access hover state
+local r = Ark.RadioButton(ctx, "Option A", selected == 1)
 if r.hovered then show_tooltip() end
 ```
 
@@ -456,44 +464,44 @@ All match ImGui's parameter order where applicable.
 ## Migration Cheatsheet
 
 ```lua
--- ImGui → ARKITEKT (dual return - same simplicity!)
+-- ImGui → ARKITEKT (single return: result object)
 
--- Button (clicked)
-if ImGui.Button(ctx, "X") then              →  if Ark.Button(ctx, "X") then
-if ImGui.Button(ctx, "X", 80, 30) then      →  if Ark.Button(ctx, "X", 80, 30) then
--- When you need hover/active info:
-local clicked, r = Ark.Button(ctx, "X")
-if r.hovered then show_tooltip() end
+-- Button
+if ImGui.Button(ctx, "X") then              →  if Ark.Button(ctx, "X").clicked then
+if ImGui.Button(ctx, "X", 80, 30) then      →  if Ark.Button(ctx, "X", 80, 30).clicked then
 
--- RadioButton (clicked)
-if ImGui.RadioButton(ctx, "A", sel==1) then →  if Ark.RadioButton(ctx, "A", sel==1) then
+-- Or with result variable for hover/active:
+                                            →  local r = Ark.Button(ctx, "X")
+                                            →  if r.clicked then ... end
+                                            →  if r.hovered then show_tooltip() end
 
--- Checkbox (changed)
-local c, v = ImGui.Checkbox(ctx, "X", val)  →  local c, r = Ark.Checkbox(ctx, "X", val)
-if c then val = v end                        →  if c then val = r.value end
--- Or even simpler with toggle:
-if Ark.Checkbox(ctx, "X", val) then val = not val end
+-- RadioButton
+if ImGui.RadioButton(ctx, "A", sel==1) then →  if Ark.RadioButton(ctx, "A", sel==1).clicked then
 
--- Slider (changed)
-local c, v = ImGui.SliderInt(ctx, "X", val, 0, 100)  →  local c, r = Ark.Slider(ctx, "X", val, 0, 100)
-if c then val = v end                                 →  if c then val = r.value end
+-- Checkbox
+local c, v = ImGui.Checkbox(ctx, "X", val)  →  local r = Ark.Checkbox(ctx, "X", val)
+if c then val = v end                        →  if r.changed then val = r.value end
 
--- InputText (changed)
-local c, t = ImGui.InputText(ctx, "X", txt)  →  local c, r = Ark.InputText(ctx, "X", txt)
-if c then txt = t end                         →  if c then txt = r.value end
+-- Slider
+local c, v = ImGui.SliderInt(ctx, "X", val, 0, 100)  →  local r = Ark.Slider(ctx, "X", val, 0, 100)
+if c then val = v end                                 →  if r.changed then val = r.value end
 
--- Combo (changed)
-local c, i = ImGui.Combo(ctx, "X", idx, items)  →  local c, r = Ark.Combo(ctx, "X", idx, items_table)
-if c then idx = i end                            →  if c then idx = r.value end
+-- InputText
+local c, t = ImGui.InputText(ctx, "X", txt)  →  local r = Ark.InputText(ctx, "X", txt)
+if c then txt = t end                         →  if r.changed then txt = r.value end
+
+-- Combo
+local c, i = ImGui.Combo(ctx, "X", idx, items)  →  local r = Ark.Combo(ctx, "X", idx, items_table)
+if c then idx = i end                            →  if r.changed then idx = r.value end
 ```
 
-### Primary Return Summary
+### Result Field Summary
 
-| Widget | Primary Return | Matches ImGui |
-|--------|----------------|---------------|
-| Button | `clicked` | ✅ Yes |
-| RadioButton | `clicked` | ✅ Yes |
-| Checkbox | `changed` | ✅ Yes |
-| Slider | `changed` | ✅ Yes |
-| InputText | `changed` | ✅ Yes |
-| Combo | `changed` | ✅ Yes |
+| Widget | Primary Field | Value Field |
+|--------|---------------|-------------|
+| Button | `.clicked` | N/A |
+| RadioButton | `.clicked` | N/A |
+| Checkbox | `.changed` | `.value` (boolean) |
+| Slider | `.changed` | `.value` (number) |
+| InputText | `.changed` | `.value` (string) |
+| Combo | `.changed` | `.value` (index), `.item` (text) |

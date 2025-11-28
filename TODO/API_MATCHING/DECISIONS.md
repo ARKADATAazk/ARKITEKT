@@ -675,47 +675,61 @@ Panel                              Button
 
 ---
 
-## Decision 18: Dual Return for Simple Widgets
+## Decision 18: Single Return (Result Object Only)
 
 ### Problem
-Result objects are powerful but make simple cases verbose:
+Should widgets return dual values (boolean + result) to match ImGui's `if Button() then` pattern?
 
 ```lua
--- ImGui: clean
+-- ImGui pattern
 if ImGui.Button(ctx, "OK") then save() end
+local changed, value = ImGui.Checkbox(ctx, "Enable", val)
+```
 
--- Ark with result only: verbose
+### Analysis
+Dual return only matches ImGui for **Button/RadioButton**. For stateful widgets (Checkbox, Slider, InputText, Combo), you'd still need `r.value` instead of getting the value directly:
+
+```lua
+-- Dual return: mixed patterns
+if Ark.Button(ctx, "OK") then save() end           -- Matches ImGui
+local changed, r = Ark.Checkbox(ctx, "Enable", val)
+if changed then val = r.value end                   -- Doesn't match ImGui (r.value not value)
+```
+
+This creates **two mental models** - one for buttons, another for everything else.
+
+### Choice
+**Single return: result object only.** One consistent pattern for all widgets.
+
+```lua
+-- Button
+local r = Ark.Button(ctx, "OK")
+if r.clicked then save() end
+
+-- Checkbox
+local r = Ark.Checkbox(ctx, "Enable", val)
+if r.changed then val = r.value end
+
+-- Slider
+local r = Ark.Slider(ctx, "Vol", vol, 0, 100)
+if r.changed then vol = r.value end
+
+-- Inline form works too
 if Ark.Button(ctx, "OK").clicked then save() end
 ```
 
-### Choice
-Simple widgets return **two values**: primary boolean + result object.
+### Primary Field by Widget Type
 
-```lua
--- Button: clicked, result
-if Ark.Button(ctx, "OK") then save() end  -- First return = clicked
-local clicked, r = Ark.Button(ctx, "OK")  -- Full access when needed
-
--- Checkbox: changed, result
-if Ark.Checkbox(ctx, "Enable", val) then val = not val end
-local changed, r = Ark.Checkbox(ctx, "Enable", val)
-
--- Slider: changed, result
-if Ark.Slider(ctx, "Vol", vol, 0, 1) then vol = r.value end
-local changed, r = Ark.Slider(ctx, "Vol", vol, 0, 1)
-```
-
-### Primary Return by Widget Type
-
-| Widget | Primary Return | Why |
-|--------|----------------|-----|
-| Button | `clicked` | Action trigger, no state |
-| Checkbox | `changed` | Value changed this frame |
-| Slider | `changed` | Value changed this frame |
-| InputText | `changed` | Text changed this frame |
-| Combo | `changed` | Selection changed this frame |
-| Grid | N/A (result only) | Multiple possible actions |
-| TreeView | N/A (result only) | Multiple possible actions |
+| Widget | Primary Field | Result Contains |
+|--------|---------------|-----------------|
+| Button | `.clicked` | clicked, hovered, active, width, height |
+| Checkbox | `.changed` | changed, value, hovered, active |
+| Slider | `.changed` | changed, value, hovered, active |
+| InputText | `.changed` | changed, value, hovered, active |
+| Combo | `.changed` | changed, value, item, hovered |
+| RadioButton | `.clicked` | clicked, hovered, active |
+| Grid | N/A | selected_keys, dropped, reordered, etc. |
+| TreeView | N/A | selected, expanded, renamed, etc. |
 
 ### Implementation
 
@@ -723,22 +737,29 @@ local changed, r = Ark.Slider(ctx, "Vol", vol, 0, 1)
 function M.draw(ctx, opts)
   -- ... render widget ...
 
-  local result = {
+  return {
     clicked = clicked,  -- or changed for stateful widgets
     value = new_value,
     hovered = hovered,
+    active = active,
     width = width,
     height = height,
   }
-
-  return clicked, result  -- Dual return
 end
 ```
 
 ### Rationale
-- **Matches ImGui simplicity** for simple cases
-- **Full power available** via second return
-- **No reason to use ImGui.Button** - Ark is now just as clean AND has theming/presets
+- **One pattern for everything** - users learn `local r = Ark.Widget()` once
+- **Consistent** - no special case for buttons vs other widgets
+- **Result always accessible** - no "forgot to capture second return"
+- **No Lua gotchas** - dual returns can be silently lost in tables/concatenation
+- **Migration is already non-trivial** - opts tables, result objects, `.value` access mean users are already learning new patterns; `.clicked` doesn't add significant friction
+
+### Rejected Alternative
+Dual return (`clicked, result`) was considered to match ImGui's `if Button() then` pattern, but rejected because:
+1. Only matches ImGui for Button/RadioButton (not Checkbox/Slider/etc.)
+2. Creates two mental models instead of one
+3. Lua multiple-return gotchas (values lost in table constructors, mid-argument positions)
 
 ---
 
@@ -823,7 +844,7 @@ local style = opts.style        -- old preset_name deprecated
 |--------|-------|------------------|-----------------|
 | Namespace | `ImGui.X` | `Ark.X.draw()` | `Ark.X()` |
 | Parameters | Positional only | Opts only | Hybrid |
-| Returns | Boolean | Result object | Dual (bool, result) |
+| Returns | Boolean | Result object | Result object (single) |
 | Callbacks | None | Available | Available |
 | Internal funcs | Hidden | Exposed | Hidden |
 | Animations | None | Smooth | Smooth (always, no toggle) |
