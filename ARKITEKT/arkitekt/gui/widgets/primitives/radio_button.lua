@@ -79,10 +79,30 @@ end
 -- ============================================================================
 
 --- Draw a radio button widget
+--- Supports both positional and opts-based parameters:
+--- - Positional: Ark.RadioButton(ctx, label, active)
+--- - Opts table: Ark.RadioButton(ctx, {label = "...", selected = true, ...})
 --- @param ctx userdata ImGui context
---- @param opts table Widget options
+--- @param label_or_opts string|table Label string or opts table
+--- @param active boolean|nil Active state (positional only)
 --- @return table Result { clicked, width, height, hovered, active }
-function M.draw(ctx, opts)
+function M.draw(ctx, label_or_opts, active)
+  -- Hybrid parameter detection
+  local opts
+  if type(label_or_opts) == "table" then
+    -- Opts table passed directly
+    opts = label_or_opts
+  elseif type(label_or_opts) == "string" then
+    -- Positional params - map to opts
+    opts = {
+      label = label_or_opts,
+      selected = active,
+    }
+  else
+    -- No params or just ctx - empty opts
+    opts = {}
+  end
+
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Resolve unique ID
@@ -212,9 +232,15 @@ function M.draw(ctx, opts)
   })
 end
 
---- Clean up all radio button instances
+--- Clean up all radio button instances (internal - automatic cleanup via Base)
+--- @deprecated Cleanup is automatic, no need to call this
 function M.cleanup()
   Base.cleanup_registry(instances)
 end
 
-return M
+-- Make module callable: Ark.RadioButton(ctx, ...) → M.draw(ctx, ...)
+return setmetatable(M, {
+  __call = function(_, ctx, ...)
+    return M.draw(ctx, ...)
+  end
+})

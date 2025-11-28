@@ -272,10 +272,30 @@ end
 -- ============================================================================
 
 --- Draw a checkbox widget
+--- Supports both positional and opts-based parameters:
+--- - Positional: Ark.Checkbox(ctx, label, checked)
+--- - Opts table: Ark.Checkbox(ctx, {label = "...", checked = true, ...})
 --- @param ctx userdata ImGui context
---- @param opts table Widget options
+--- @param label_or_opts string|table Label string or opts table
+--- @param checked boolean|nil Checked state (positional only)
 --- @return table Result { clicked, changed, value, width, height, hovered, active }
-function M.draw(ctx, opts)
+function M.draw(ctx, label_or_opts, checked)
+  -- Hybrid parameter detection
+  local opts
+  if type(label_or_opts) == "table" then
+    -- Opts table passed directly
+    opts = label_or_opts
+  elseif type(label_or_opts) == "string" then
+    -- Positional params - map to opts
+    opts = {
+      label = label_or_opts,
+      checked = checked,
+    }
+  else
+    -- No params or just ctx - empty opts
+    opts = {}
+  end
+
   opts = Base.parse_opts(opts, DEFAULTS)
   local config = resolve_config(opts)
 
@@ -374,11 +394,11 @@ function M.draw(ctx, opts)
   })
 end
 
---- Measure checkbox width including label
+--- Measure checkbox width including label (internal - use via auto-calculation)
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return number Total width
-function M.measure(ctx, opts)
+local function measure(ctx, opts)
   opts = opts or {}
   local size = opts.size or DEFAULTS.size
   local label = opts.label or ""
@@ -392,12 +412,14 @@ function M.measure(ctx, opts)
   return size + label_spacing + label_width
 end
 
---- Clean up all checkbox instances
+--- Clean up all checkbox instances (internal - automatic cleanup via Base)
+--- @deprecated Cleanup is automatic, no need to call this
 function M.cleanup()
   Base.cleanup_registry(instances)
 end
 
 --- Draw a checkbox at current ImGui cursor position (convenience function)
+--- @deprecated Use M.draw() without x/y instead
 --- @param ctx userdata ImGui context
 --- @param label string Checkbox label
 --- @param checked boolean Current state
@@ -414,4 +436,9 @@ function M.draw_at_cursor(ctx, label, checked, opts, id)
   return result.changed
 end
 
-return M
+-- Make module callable: Ark.Checkbox(ctx, ...) → M.draw(ctx, ...)
+return setmetatable(M, {
+  __call = function(_, ctx, ...)
+    return M.draw(ctx, ...)
+  end
+})

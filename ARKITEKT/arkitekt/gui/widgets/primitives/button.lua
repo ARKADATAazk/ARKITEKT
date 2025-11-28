@@ -399,10 +399,32 @@ end
 -- ============================================================================
 
 --- Draw a button widget
+--- Supports both positional and opts-based parameters:
+--- - Positional: Ark.Button(ctx, label, width, height)
+--- - Opts table: Ark.Button(ctx, {label = "...", width = 100, ...})
 --- @param ctx userdata ImGui context
---- @param opts table Widget options
+--- @param label_or_opts string|table Label string or opts table
+--- @param width number|nil Button width (positional only)
+--- @param height number|nil Button height (positional only)
 --- @return table Result { clicked, right_clicked, width, height, hovered, active }
-function M.draw(ctx, opts)
+function M.draw(ctx, label_or_opts, width, height)
+  -- Hybrid parameter detection
+  local opts
+  if type(label_or_opts) == "table" then
+    -- Opts table passed directly
+    opts = label_or_opts
+  elseif type(label_or_opts) == "string" then
+    -- Positional params - map to opts
+    opts = {
+      label = label_or_opts,
+      width = width,
+      height = height,
+    }
+  else
+    -- No params or just ctx - empty opts
+    opts = {}
+  end
+
   opts = Base.parse_opts(opts, DEFAULTS)
   local config = resolve_config(opts)
 
@@ -417,7 +439,7 @@ function M.draw(ctx, opts)
   local dl = Base.get_draw_list(ctx, opts)
 
   -- Calculate size
-  local width = opts.width or M.measure(ctx, opts)
+  local width = opts.width or measure(ctx, opts)
   local height = opts.height or 24
 
   -- Render button (InvisibleButton created first, then DrawList rendering)
@@ -450,11 +472,11 @@ function M.draw(ctx, opts)
   })
 end
 
---- Measure button width based on content
+--- Measure button width based on content (internal - use via opts.width or auto-calculation)
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return number Calculated width
-function M.measure(ctx, opts)
+local function measure(ctx, opts)
   opts = opts or {}
 
   if opts.width then
@@ -473,6 +495,7 @@ function M.measure(ctx, opts)
 end
 
 --- Draw a button at current ImGui cursor position (convenience function)
+--- @deprecated Use M.draw() without x/y instead
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options (x/y will be set from cursor)
 --- @param id string|nil Optional ID override
@@ -485,9 +508,15 @@ function M.draw_at_cursor(ctx, opts, id)
   return result.clicked
 end
 
---- Clean up all button instances
+--- Clean up all button instances (internal - automatic cleanup via Base)
+--- @deprecated Cleanup is automatic, no need to call this
 function M.cleanup()
   Base.cleanup_registry(instances)
 end
 
-return M
+-- Make module callable: Ark.Button(ctx, ...) → M.draw(ctx, ...)
+return setmetatable(M, {
+  __call = function(_, ctx, ...)
+    return M.draw(ctx, ...)
+  end
+})
