@@ -675,13 +675,80 @@ Panel                              Button
 
 ---
 
+## Decision 18: Dual Return for Simple Widgets
+
+### Problem
+Result objects are powerful but make simple cases verbose:
+
+```lua
+-- ImGui: clean
+if ImGui.Button(ctx, "OK") then save() end
+
+-- Ark with result only: verbose
+if Ark.Button(ctx, "OK").clicked then save() end
+```
+
+### Choice
+Simple widgets return **two values**: primary boolean + result object.
+
+```lua
+-- Button: clicked, result
+if Ark.Button(ctx, "OK") then save() end  -- First return = clicked
+local clicked, r = Ark.Button(ctx, "OK")  -- Full access when needed
+
+-- Checkbox: changed, result
+if Ark.Checkbox(ctx, "Enable", val) then val = not val end
+local changed, r = Ark.Checkbox(ctx, "Enable", val)
+
+-- Slider: changed, result
+if Ark.Slider(ctx, "Vol", vol, 0, 1) then vol = r.value end
+local changed, r = Ark.Slider(ctx, "Vol", vol, 0, 1)
+```
+
+### Primary Return by Widget Type
+
+| Widget | Primary Return | Why |
+|--------|----------------|-----|
+| Button | `clicked` | Action trigger, no state |
+| Checkbox | `changed` | Value changed this frame |
+| Slider | `changed` | Value changed this frame |
+| InputText | `changed` | Text changed this frame |
+| Combo | `changed` | Selection changed this frame |
+| Grid | N/A (result only) | Multiple possible actions |
+| TreeView | N/A (result only) | Multiple possible actions |
+
+### Implementation
+
+```lua
+function M.draw(ctx, opts)
+  -- ... render widget ...
+
+  local result = {
+    clicked = clicked,  -- or changed for stateful widgets
+    value = new_value,
+    hovered = hovered,
+    width = width,
+    height = height,
+  }
+
+  return clicked, result  -- Dual return
+end
+```
+
+### Rationale
+- **Matches ImGui simplicity** for simple cases
+- **Full power available** via second return
+- **No reason to use ImGui.Button** - Ark is now just as clean AND has theming/presets
+
+---
+
 ## Summary Table
 
 | Aspect | ImGui | ARKITEKT Current | ARKITEKT Target |
 |--------|-------|------------------|-----------------|
-| Namespace | `ImGui.X` | `Ark.X.draw()` | `Ark.X()` + `ImGui.X()` |
+| Namespace | `ImGui.X` | `Ark.X.draw()` | `Ark.X()` |
 | Parameters | Positional only | Opts only | Hybrid |
-| Returns | Boolean | Result object | Result object |
+| Returns | Boolean | Result object | Dual (bool, result) |
 | Callbacks | None | Available | Available |
 | Internal funcs | Hidden | Exposed | Hidden |
 | Animations | None | Smooth | Smooth (always, no toggle) |

@@ -4,7 +4,7 @@
 
 ---
 
-## Decision Summary (17 Total)
+## Decision Summary (18 Total)
 
 | # | Decision | Status |
 |---|----------|--------|
@@ -25,6 +25,7 @@
 | 15 | Presets Only (no raw colors in docs) | Decided |
 | 16 | Hidden State for Complex Widgets | Decided |
 | 17 | Panel Callback Regions + Context Injection | Decided |
+| 18 | Dual Return (bool, result) for Simple Widgets | Decided |
 
 ---
 
