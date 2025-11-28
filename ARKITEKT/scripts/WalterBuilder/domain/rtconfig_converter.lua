@@ -400,7 +400,53 @@ local function convert_set_item(item, context)
   local is_computed = not item.is_simple
   local eval_success = false
 
-  if item.is_simple and item.coords then
+  -- Special handling for flow items without a value expression
+  -- These come from 'then' statements where width is in flow_params[1]
+  if item.is_flow_element and (not item.value or item.value == "") and item.flow_params then
+    local width_var = item.flow_params[1]
+    local width = 0
+    if width_var then
+      -- Try to parse as number first
+      width = tonumber(width_var)
+      if not width then
+        -- Try to look up as a simple variable
+        local val = context[width_var]
+        if val then
+          if type(val) == "table" then
+            width = val[1] or 0
+          else
+            width = val
+          end
+        else
+          -- Try to evaluate as an expression (e.g., "* scale 20")
+          local evaluated = evaluate_expression(width_var, context, item.element .. ".width")
+          if evaluated and #evaluated > 0 then
+            width = evaluated[1] or 0
+          end
+        end
+      end
+    end
+    -- Use fallback widths if still 0
+    if width == 0 then
+      local FLOW_WIDTH_FALLBACKS = {
+        pan_group = 40,
+        fx_group = 24,
+        input_group = 40,
+        master_pan_group = 40,
+        master_fx_group = 24,
+      }
+      width = FLOW_WIDTH_FALLBACKS[item.element] or 20
+      Console.info("  Flow item %s: using fallback width=%d", item.element, width)
+    end
+    local element_h = context.element_h or 20
+    if type(element_h) == "table" then element_h = element_h[1] or 20 end
+    coords = Coordinate.new({
+      x = 0, y = 0, w = width, h = element_h,
+      ls = 0, ts = 0, rs = 0, bs = 0,
+    })
+    eval_success = true
+    Console.info("  Flow item %s: w=%d from flow_params[1]='%s'", item.element, width, width_var or "?")
+  elseif item.is_simple and item.coords then
     -- Simple coordinates - direct mapping
     coords = Coordinate.new({
       x = item.coords[1] or 0,
@@ -509,7 +555,7 @@ end
 -- Groups in flow macros contain these tcp.* child elements
 local FLOW_GROUP_CHILDREN = {
   pan_group = { "tcp.pan", "tcp.width" },
-  fx_group = { "tcp.fx" },
+  fx_group = { "tcp.fx", "tcp.fxbyp", "tcp.fxin" },
   input_group = { "tcp.recinput" },
   master_pan_group = { "master.tcp.pan", "master.tcp.width" },
   master_fx_group = { "master.tcp.fx" },
