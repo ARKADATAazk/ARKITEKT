@@ -508,6 +508,89 @@ Raw color options (`bg_color`, `text_color`, etc.) are legacy from pre-theme-man
 
 ---
 
+## Decision 16: Hidden State for Complex Widgets
+
+### Insight
+ImGui itself is NOT purely stateless - it maintains internal state keyed by widget ID:
+
+| ImGui Widget | Hidden Internal State |
+|--------------|----------------------|
+| `InputText` | Cursor position, selection, undo history |
+| `BeginChild` | Scroll position X/Y |
+| `TreeNode` | Open/closed state |
+| `CollapsingHeader` | Collapsed state |
+| `BeginCombo` | Open state, scroll position |
+| `Slider/Drag` | Active drag state |
+
+Users don't see this - they just call `InputText()` and it "just works".
+
+### Choice
+ARKITEKT follows the same pattern - **appear simple, hide complexity**:
+
+```lua
+-- User sees simple API
+local r = Ark.Grid(ctx, {
+  items = playlist.items,
+  render = render_tile,
+  -- Optional complexity:
+  selectable = true,      -- Enables selection state
+  draggable = true,       -- Enables drag state
+  animated = true,        -- Enables animation state (default)
+})
+
+if r.selected then ... end
+if r.dropped then ... end
+```
+
+### Implementation
+```lua
+-- Under the hood (user never sees this)
+function M.draw(ctx, opts)
+  local id = opts.id or ImGui.GetID(ctx, "grid")
+  local state = Base.get_state(id)  -- ID-keyed hash table
+
+  -- State persists between frames
+  state.selection = state.selection or {}
+  state.scroll_y = state.scroll_y or 0
+  state.hover_anim = state.hover_anim or {}
+
+  -- ... use state throughout draw
+end
+```
+
+### Rejected Alternative
+```lua
+-- Explicit retained mode API
+local grid = Ark.Grid.create({items = items})  -- Create once
+grid:draw(ctx)                                  -- Draw each frame
+grid:destroy()                                  -- Manual cleanup
+```
+
+### Rationale
+- **Matches ImGui mental model** - users expect stateless-looking API
+- **Complexity scales with config** - simple config = simple behavior
+- **No lifecycle management** - framework handles cleanup via 30s stale check
+- **Familiar to ImGui users** - just like `InputText()` magically remembers cursor
+
+### The Spectrum
+
+```
+Pure Immediate          ImGui Widgets           Full Retained
+      │                      │                       │
+      ▼                      ▼                       ▼
+   No state           Minimal hidden         Heavy hidden
+   at all             state (ID-keyed)       state (ID-keyed)
+
+   Raw drawing        Button, Slider         Grid, TreeView
+   ImGui.Line()       InputText              Selection state
+                      TreeNode               Drag-drop state
+                                             Animation state
+```
+
+All use the **same pattern** (ID-keyed state), just with different amounts of hidden state.
+
+---
+
 ## Summary Table
 
 | Aspect | ImGui | ARKITEKT Current | ARKITEKT Target |
@@ -525,3 +608,4 @@ Raw color options (`bg_color`, `text_color`, etc.) are legacy from pre-theme-man
 | Error messages | Cryptic | Cryptic | Clear, helpful errors |
 | ImGui interop | N/A | Undocumented | SameLine works, SetNext* doesn't |
 | Widget colors | N/A | Raw + presets | Presets only (semantic) |
+| Complex widgets | ID-keyed state | Explicit retained | Hidden state (like ImGui) |
