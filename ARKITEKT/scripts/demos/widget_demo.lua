@@ -41,8 +41,9 @@ if not ImGui.CreateContext then
 end
 
 -- Paths to resolve require('Arkitekt.*') when this file sits inside Arkitekt/
+local Fs = require('arkitekt.core.fs')
 local function dirname(p) return p:match("^(.*)[/\\]") end
-local function join(a,b) local s=package.config:sub(1,1); return (a:sub(-1)==s) and (a..b) or (a..s..b) end
+local join = Fs.join
 local SRC   = debug.getinfo(1,"S").source:sub(2)
 local HERE  = dirname(SRC) or "."
 local PARENT= dirname(HERE or ".") or "."

@@ -30,10 +30,11 @@ package.path = root_path .. "?.lua;" .. root_path .. "?/init.lua;" .. package.pa
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Ark = require('arkitekt')
+local Fs = require('arkitekt.core.fs')
 
 -- Path setup (assuming standard Arkitekt structure)
 local function dirname(p) return p:match("^(.*)[/\\]") end
-local function join(a,b) local s=package.config:sub(1,1); return (a:sub(-1)==s) and (a..b) or (a..s..b) end
+local join = Fs.join
 local SRC   = debug.getinfo(1,"S").source:sub(2)
 local HERE  = dirname(SRC) or "."
 local PARENT= dirname(HERE or ".") or "."

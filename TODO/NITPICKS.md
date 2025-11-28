@@ -131,20 +131,20 @@ Multiple scripts format `seconds → "HH:MM:SS"`:
 
 Use this when doing cleanup:
 
-- [ ] `ease_out_back` in media_grid/renderers/base.lua
-- [ ] `ease_out_back` in ItemPicker/ui/grids/renderers/base.lua
-- [ ] `generate_uuid` in TemplateBrowser/infra/storage.lua
+- [x] `ease_out_back` in media_grid/renderers/base.lua
+- [x] `ease_out_back` in ItemPicker/ui/grids/renderers/base.lua
+- [x] `generate_uuid` in TemplateBrowser/infra/storage.lua
 - [ ] `json_encode/decode` in TemplateBrowser/infra/storage.lua
-- [ ] `color_lerp` in tile_visuals.lua
-- [ ] `lerp_color` in button_widgets.lua
-- [ ] `lerp_color` in transport_container.lua
-- [ ] `lerp` in tile_visuals.lua (scalar)
-- [ ] `clamp` in widget_demo.lua
-- [ ] `join` in demo.lua
-- [ ] `join` in demo_modal_overlay.lua
-- [ ] `join` in demo2.lua
-- [ ] `join` in demo3.lua
-- [ ] `join` in widget_demo.lua
+- [x] `color_lerp` in tile_visuals.lua
+- [x] `lerp_color` in button_widgets.lua
+- [x] `lerp_color` in transport_container.lua
+- [x] `lerp` in tile_visuals.lua (scalar)
+- [x] `clamp` in widget_demo.lua
+- [x] `join` in demo.lua
+- [x] `join` in demo_modal_overlay.lua
+- [x] `join` in demo2.lua
+- [x] `join` in demo3.lua
+- [x] `join` in widget_demo.lua
 - [ ] `calculate_cascade_factor` consolidation
 - [ ] Duration formatting extraction
 

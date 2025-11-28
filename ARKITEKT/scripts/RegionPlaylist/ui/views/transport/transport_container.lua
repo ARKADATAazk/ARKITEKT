@@ -177,16 +177,7 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
     if not to then
       to = get_ready_color()
     end
-
-    local r1, g1, b1, a1 = Ark.Colors.rgba_to_components(from)
-    local r2, g2, b2, a2 = Ark.Colors.rgba_to_components(to)
-
-    local r = (r1 + (r2 - r1) * t)//1
-    local g = (g1 + (g2 - g1) * t)//1
-    local b = (b1 + (b2 - b1) * t)//1
-    local a = (a1 + (a2 - a1) * t)//1
-
-    return Ark.Colors.components_to_rgba(r, g, b, a)
+    return Ark.Colors.lerp(from, to, t)
   end
 
   local lerp_factor = min(1.0, fade_speed * dt)

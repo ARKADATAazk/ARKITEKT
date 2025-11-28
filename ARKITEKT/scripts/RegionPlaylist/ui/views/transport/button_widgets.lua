@@ -70,8 +70,8 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
 
   -- Use dynamic colors from Style.COLORS
   local C = Style.COLORS
-  local bg = self:lerp_color(cfg.bg_color or C.BG_BASE, cfg.bg_hover or C.BG_HOVER, self.hover_alpha)
-  local border_inner = self:lerp_color(cfg.border_inner or C.BORDER_INNER, cfg.border_hover or C.BORDER_HOVER, self.hover_alpha)
+  local bg = Ark.Colors.lerp(cfg.bg_color or C.BG_BASE, cfg.bg_hover or C.BG_HOVER, self.hover_alpha)
+  local border_inner = Ark.Colors.lerp(cfg.border_inner or C.BORDER_INNER, cfg.border_hover or C.BORDER_HOVER, self.hover_alpha)
   local border_outer = cfg.border_outer or C.BORDER_OUTER
 
   local rounding = cfg.rounding or 4
@@ -109,18 +109,6 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
   end
 
   return btn_size
-end
-
-function ViewModeButton:lerp_color(a, b, t)
-  local ar, ag, ab, aa = (a >> 24) & 0xFF, (a >> 16) & 0xFF, (a >> 8) & 0xFF, a & 0xFF
-  local br, bg, bb, ba = (b >> 24) & 0xFF, (b >> 16) & 0xFF, (b >> 8) & 0xFF, b & 0xFF
-
-  local r = (ar + (br - ar) * t)//1
-  local g = (ag + (bg - ag) * t)//1
-  local b = (ab + (bb - ab) * t)//1
-  local a = (aa + (ba - aa) * t)//1
-
-  return (r << 24) | (g << 16) | (b << 8) | a
 end
 
 M.ViewModeButton = ViewModeButton
