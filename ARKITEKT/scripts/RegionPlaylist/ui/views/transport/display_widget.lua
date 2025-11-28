@@ -6,6 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Ark = require('arkitekt')
 local Style = require('arkitekt.gui.style')
+local Duration = require('arkitekt.core.duration')
 
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
@@ -157,16 +158,7 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
     local time_remaining = bridge_state.time_remaining or 0
 
     -- Format time as H:M:S:ms (using VM floor operation for performance)
-    local hours = (time_remaining / 3600)//1
-    local mins = ((time_remaining % 3600) / 60)//1
-    local secs = (time_remaining % 60)//1
-    local ms = ((time_remaining % 1) * 100)//1  -- centiseconds
-
-    if hours > 0 then
-      time_text = string.format("%d:%02d:%02d:%02d", hours, mins, secs, ms)
-    else
-      time_text = string.format("%02d:%02d:%02d", mins, secs, ms)
-    end
+    time_text = Duration.format_hms_centiseconds(time_remaining)
 
     -- Dynamic playing color from theme (falls back to TEXT_BRIGHT for active time)
     time_color = cfg.time_playing_color or Style.COLORS.TEXT_BRIGHT

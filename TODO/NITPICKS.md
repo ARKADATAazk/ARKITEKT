@@ -146,7 +146,7 @@ Use this when doing cleanup:
 - [x] `join` in demo3.lua
 - [x] `join` in widget_demo.lua
 - [x] `calculate_cascade_factor` consolidation
-- [ ] Duration formatting extraction
+- [x] Duration formatting extraction
 
 ---
 

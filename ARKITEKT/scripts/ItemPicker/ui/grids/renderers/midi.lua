@@ -8,6 +8,7 @@ local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local BaseRenderer = require('ItemPicker.ui.grids.renderers.base')
 local Shapes = require('arkitekt.gui.draw.shapes')
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
+local Duration = require('arkitekt.core.duration')
 
 local M = {}
 
@@ -508,17 +509,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local duration = reaper.GetMediaItemInfo_Value(item_data.item, "D_LENGTH")
       if duration > 0 then
         -- Calculate duration text width (same logic as duration rendering below)
-        local duration_text
-        if duration >= 3600 then
-          local hours = (duration / 3600) // 1
-          local minutes = (duration % 3600) // 60
-          local seconds = (duration % 60) // 1
-          duration_text = string.format("%d:%02d:%02d", hours, minutes, seconds)
-        else
-          local minutes = (duration / 60) // 1
-          local seconds = (duration % 60) // 1
-          duration_text = string.format("%d:%02d", minutes, seconds)
-        end
+        local duration_text = Duration.format_hms(duration)
         local duration_w, _ = ImGui.CalcTextSize(ctx, duration_text)
         local dt_cfg = config.TILE_RENDER.duration_text
         -- Reserve space for duration text + its margin + extra spacing
