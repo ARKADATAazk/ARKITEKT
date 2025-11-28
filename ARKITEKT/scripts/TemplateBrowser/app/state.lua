@@ -2,6 +2,8 @@
 -- TemplateBrowser/app/state.lua
 -- Application state management
 
+local Ark = require('arkitekt')
+
 local M = {}
 
 -- State container
@@ -53,10 +55,8 @@ M.quick_access_separator_position = nil  -- Height of main grid (above quick acc
 -- Undo manager
 M.undo_manager = nil
 
--- Status bar
-M.status_message = ""        -- Current status message
-M.status_type = "info"       -- Message type: "error", "warning", "success", "info"
-M.status_timestamp = 0       -- When message was set (for auto-clear)
+-- Notification service (framework)
+M.notification = nil
 
 -- Keyboard shortcuts
 M.focus_search = false       -- Request to focus search box
@@ -106,10 +106,8 @@ function M.initialize(config)
   M.conflict_pending = nil
   M.conflict_resolution = nil
 
-  -- Status bar
-  M.status_message = ""
-  M.status_type = "info"
-  M.status_timestamp = 0
+  -- Notification service (framework)
+  M.notification = Ark.Notification.new()
 
   -- Keyboard shortcuts
   M.focus_search = false
@@ -139,20 +137,20 @@ function M.request_exit()
   M.exit = true
 end
 
--- Set status bar message
+-- Set status bar message (delegates to framework notification service)
 -- @param message string: Message to display
 -- @param msg_type string: "error", "warning", "success", "info" (default: "info")
 function M.set_status(message, msg_type)
-  M.status_message = message or ""
-  M.status_type = msg_type or "info"
-  M.status_timestamp = reaper.time_precise()
+  if M.notification then
+    M.notification:show(message, msg_type)
+  end
 end
 
--- Clear status bar message
+-- Clear status bar message (delegates to framework notification service)
 function M.clear_status()
-  M.status_message = ""
-  M.status_type = "info"
-  M.status_timestamp = 0
+  if M.notification then
+    M.notification:clear()
+  end
 end
 
 return M
