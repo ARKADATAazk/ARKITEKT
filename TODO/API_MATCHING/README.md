@@ -17,6 +17,8 @@
 | **ImGui flags** | Use directly (`ImGui.WindowFlags_*`) | No value in renaming constants |
 | **Chrome options** | Positive naming (`titlebar = true`) | Avoid double negatives |
 | **Shell** | Keep & extend | Real value: lifecycle, chrome, themes |
+| **Unified namespace** | `Ark.Theme`, `Ark.Shell` | One namespace for framework |
+| **Shell persistence** | ✅ Already implemented | Overrides ImGui .ini, supports maximize |
 
 ---
 
@@ -52,6 +54,7 @@ local w = ImGui.CalcTextSize(ctx, text)
 |------|-------------|
 | [DECISIONS.md](DECISIONS.md) | Detailed rationale for each design choice |
 | [SCOPE.md](SCOPE.md) | What gets Ark.* vs stays ImGui.* |
+| [SHELL.md](SHELL.md) | Shell features: what's done vs what to add |
 | [WIDGET_SIGNATURES.md](WIDGET_SIGNATURES.md) | ImGui → Ark signature mappings for each widget |
 | [IMPLEMENTATION.md](IMPLEMENTATION.md) | Step-by-step implementation guide |
 | [CHECKLIST.md](CHECKLIST.md) | Progress tracker for migration |
