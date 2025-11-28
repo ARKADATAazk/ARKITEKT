@@ -16,7 +16,7 @@ local RtconfigConverter = require('WalterBuilder.domain.rtconfig_converter')
 local DebugConsole = require('WalterBuilder.ui.panels.debug_console')
 local TCPElements = require('WalterBuilder.defs.tcp_elements')
 local Constants = require('WalterBuilder.defs.constants')
-local Notification = require('WalterBuilder.domain.notification')
+-- Notification migrated to framework (was: WalterBuilder.domain.notification)
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local WalterSettings = require('WalterBuilder.infra.settings')
 
@@ -41,8 +41,8 @@ function M.new(state_module, settings, controller)
     code_panel = nil,
     rtconfig_panel = nil,
 
-    -- Notification system
-    notification = Notification.new(),
+    -- Notification system (framework)
+    notification = Ark.Notification.new(),
 
     -- Layout
     left_panel_width = Constants.PANEL.LEFT_WIDTH,
@@ -59,7 +59,7 @@ function M.new(state_module, settings, controller)
   -- Wire up controller callbacks
   if controller then
     controller.on_status = function(message, msg_type)
-      self.notification:set_message(message, msg_type)
+      self.notification:show(message, msg_type)
     end
 
     controller.on_elements_changed = function()
@@ -383,7 +383,7 @@ function GUI:handle_load_from_rtconfig(action)
       msg = msg .. string.format(" (%d computed)", action.stats.computed)
     end
   end
-  self.notification:set_message(msg, "success")
+  self.notification:show(msg, "success")
 end
 
 -- Draw toolbar using Button widget
@@ -535,9 +535,9 @@ function GUI:draw_status_bar(ctx)
   -- Update notification timeouts
   self.notification:update()
 
-  local message, msg_type = self.notification:get_message()
+  local message, msg_type = self.notification:get()
   if message then
-    local color = self.notification:get_message_color()
+    local color = self.notification:get_color()
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, color)
     ImGui.Text(ctx, message)
     ImGui.PopStyleColor(ctx)
