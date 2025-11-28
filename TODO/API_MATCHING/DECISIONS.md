@@ -464,6 +464,50 @@ Ark.Slider(ctx, "Vol", v, 0, 100)  -- May ignore, use opts.width instead
 
 ---
 
+## Decision 15: Presets Only, No Raw Color Overrides
+
+### Choice
+Widget styling uses **semantic presets only**, not raw color values:
+
+```lua
+-- CORRECT: Semantic presets
+Ark.Button(ctx, {label = "Delete", preset = "danger"})
+Ark.Button(ctx, {label = "Save", preset = "success"})
+Ark.Button(ctx, {label = "Toggle", preset = "toggle_white"})
+
+-- DEPRECATED: Raw color overrides (to be removed)
+Ark.Button(ctx, {label = "X", bg_color = 0xFF0000FF})  -- NO
+```
+
+### Available Presets
+- `danger` - Red (destructive actions)
+- `success` - Green (confirmations)
+- `warning` - Amber (caution)
+- `info` - Blue (informational)
+- `toggle_white` - Toggle button variant
+- `toggle_teal` - Toggle button variant
+
+### Theme Customization Levels
+| Level | How | Who |
+|-------|-----|-----|
+| **App-wide** | `Theme.set_mode("dark"/"light"/"adapt")` | User preference |
+| **Custom BG** | `Theme.set_custom(color)` | Power users |
+| **Widget** | `preset = "danger"` | Developer (semantic only) |
+
+### Rationale
+- All ARKITEKT scripts look uniform
+- Auto-adapts to REAPER dark/light themes
+- Semantic meaning ("danger" vs arbitrary red)
+- Prevents inconsistent "Christmas tree" UIs
+- Simpler API surface
+
+### Migration
+Raw color options (`bg_color`, `text_color`, etc.) are legacy from pre-theme-manager code. These will be:
+1. Deprecated (warn in docs)
+2. Eventually removed
+
+---
+
 ## Summary Table
 
 | Aspect | ImGui | ARKITEKT Current | ARKITEKT Target |
@@ -480,3 +524,4 @@ Ark.Slider(ctx, "Vol", v, 0, 100)  -- May ignore, use opts.width instead
 | Cursor advance | Horizontal | Vertical | Horizontal (match ImGui) |
 | Error messages | Cryptic | Cryptic | Clear, helpful errors |
 | ImGui interop | N/A | Undocumented | SameLine works, SetNext* doesn't |
+| Widget colors | N/A | Raw + presets | Presets only (semantic) |
