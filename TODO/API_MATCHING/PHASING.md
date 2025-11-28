@@ -27,6 +27,72 @@
 
 ---
 
+## Complete Work Checklist
+
+### Phase 1 Work Items
+
+**Branch A: Simple Widgets**
+- [ ] Button - callable, hybrid params, result object, error messages
+- [ ] Checkbox - callable, hybrid params, .value standardization
+- [ ] Slider - callable, hybrid params, unify Int/Float
+- [ ] InputText - callable, hybrid params, .text → .value
+- [ ] Combo - callable, hybrid params, .value + .item
+- [ ] RadioButton - callable, hybrid params
+- [ ] Hide internal functions (measure, cleanup, draw_at_cursor)
+- [ ] Add deprecation warnings to .draw() methods
+
+**Branch B: Grid Rework**
+- [ ] Ark.Grid(ctx, opts) API with ID-keyed state
+- [ ] Require explicit 'id' field
+- [ ] Result object (selection, drag, reorder, edit)
+- [ ] Debug warnings for duplicate IDs
+- [ ] Grid.new() deprecation shim
+- [ ] Update loader.lua to register Ark.Grid
+
+**Branch C: TreeView Rework**
+- [ ] Ark.Tree(ctx, opts) API with ID-keyed state
+- [ ] Require explicit 'id' field
+- [ ] Result object (selection, expanded, renamed)
+- [ ] Deprecation shim for old API
+- [ ] Update loader.lua to register Ark.Tree
+
+### Phase 2 Work Items (Per App)
+
+**API Syntax Migration**
+- [ ] Replace Ark.*.draw( with Ark.*(
+- [ ] Replace Grid.new() with Ark.Grid()
+- [ ] Replace TreeView old API with Ark.Tree()
+- [ ] Update result field access (.text → .value)
+
+**Color Migration (Decision 15)**
+- [ ] Replace hexrgb("#...") with Theme.COLORS.*
+- [ ] Replace preset_name = "X" with preset = "x"
+- [ ] Remove raw color overrides (bg_color, text_color)
+- [ ] Add missing colors to theme if needed
+- [ ] Test dark/light/adapt theme modes
+
+**Custom Widget Migration**
+- [ ] Replace custom button classes with Ark.Button
+- [ ] Replace custom toggle classes with Ark.Button + preset
+
+### Phase 3 Work Items
+
+**Documentation**
+- [ ] Update QUICKSTART.md with new API
+- [ ] Update WIDGETS.md with signatures
+- [ ] Update CLAUDE.md quick reference
+- [ ] Create MIGRATION.md ("Coming from ImGui")
+- [ ] Archive/remove old docs (HYBRID_API.md, etc.)
+
+**Cleanup**
+- [ ] Remove .draw() methods (breaking)
+- [ ] Remove Grid.new() shim
+- [ ] Remove TreeView old API
+- [ ] Performance audit (table allocations)
+- [ ] Final grep for old patterns
+
+---
+
 ## Work Streams
 
 ### Stream A: Simple Widgets (Can Parallelize)
@@ -368,6 +434,8 @@ Key changes:
 3. Implement result object (selection, drag, reorder)
 4. Add debug warnings for duplicate IDs
 5. Keep Grid.new() as deprecated shim
+6. Update loader.lua to register Ark.Grid
+7. Add deprecation warning to Grid.new()
 ```
 
 ### Branch C: TreeView Rework (Phase 1)
@@ -380,6 +448,8 @@ Follow Grid patterns:
 2. Require explicit 'id' field
 3. Implement result object (selection, expanded, renamed)
 4. Keep current API as deprecated shim
+5. Update loader.lua to register Ark.Tree
+6. Add deprecation warning to old API
 ```
 
 ### App Migration (Phase 2)
@@ -397,10 +467,19 @@ Changes:
 4. Simplify opts-only to positional where appropriate
 5. Test all app functionality
 
+COLOR MIGRATION (Decision 15):
+6. Replace hardcoded hexrgb("#...") with Theme.COLORS.*
+7. Replace preset_name = "BUTTON_X" with preset = "x"
+8. Remove raw color overrides (bg_color, text_color)
+9. Test dark/light/adapt theme modes
+
 Grep patterns:
 - Find: Ark\.\w+\.draw\(
 - Find: Grid\.new\(
 - Find: \.text\b (for InputText results)
+- Find: hexrgb\("#
+- Find: preset_name
+- Find: bg_color\s*=
 ```
 
 ---
