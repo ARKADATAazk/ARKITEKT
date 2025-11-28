@@ -247,6 +247,42 @@ Ark.Button(ctx, {
 
 ---
 
+## Decision 8: Keep Icons Simple (No Magic)
+
+### Choice
+```lua
+Ark.Button(ctx, {
+  icon = "\xEF\x83\x87",     -- Direct UTF-8 from icon font site
+  icon_font = fonts.icons,   -- User provides font object
+  label = "Save",
+})
+```
+
+### Rejected Alternative
+```lua
+Ark.Button(ctx, {
+  icon = "save",  -- Symbolic name → framework lookup
+  label = "Save",
+  -- Framework auto-switches to icon font
+})
+```
+
+### Rationale
+- Coders copy UTF-8 directly from FontAwesome/RemixIcon/etc websites
+- No framework magic to maintain
+- Works with any icon font (not locked to one)
+- Less runtime overhead (no lookup table)
+- IDE autocomplete via optional LuaCATS definitions (see `TODO/ICON_LUACATS.md`)
+
+### Enhancement
+Optional `helpers/icon_defs.lua` for IDE convenience:
+```lua
+local Icons = require('helpers.icon_defs')
+icon = Icons.SAVE  -- IDE shows glyph, autocomplete works
+```
+
+---
+
 ## Summary Table
 
 | Aspect | ImGui | ARKITEKT Current | ARKITEKT Target |
@@ -257,3 +293,4 @@ Ark.Button(ctx, {
 | Callbacks | None | Available | Available |
 | Internal funcs | Hidden | Exposed | Hidden |
 | Animations | None | Smooth | Smooth |
+| Icons | N/A | UTF-8 + font | UTF-8 + font (+ optional LuaCATS) |
