@@ -4,6 +4,7 @@
 
 local Logger = require('arkitekt.debug.logger')
 local UUID = require('arkitekt.core.uuid')
+local JSON = require('arkitekt.core.json')
 
 local M = {}
 
@@ -53,205 +54,6 @@ end
 
 M.generate_uuid = UUID.generate
 
--- Simple JSON encoder with pretty printing
-local function json_encode(data, indent, current_indent)
-  indent = indent or "  "  -- Default to 2 spaces
-  current_indent = current_indent or ""
-
-  if type(data) == "table" then
-    local is_array = #data > 0
-    local parts = {}
-    local next_indent = current_indent .. indent
-
-    if is_array then
-      -- Array formatting
-      if #data == 0 then
-        return "[]"
-      end
-      for i, v in ipairs(data) do
-        parts[#parts + 1] = next_indent .. json_encode(v, indent, next_indent)
-      end
-      return "[\n" .. table.concat(parts, ",\n") .. "\n" .. current_indent .. "]"
-    else
-      -- Object formatting
-      local count = 0
-      for _ in pairs(data) do count = count + 1 end
-      if count == 0 then
-        return "{}"
-      end
-
-      -- Sort keys for consistent output
-      local sorted_keys = {}
-      for k in pairs(data) do
-        sorted_keys[#sorted_keys + 1] = k
-      end
-      table.sort(sorted_keys)
-
-      for _, k in ipairs(sorted_keys) do
-        local v = data[k]
-        parts[#parts + 1] = next_indent .. '"' .. k .. '": ' .. json_encode(v, indent, next_indent)
-      end
-      return "{\n" .. table.concat(parts, ",\n") .. "\n" .. current_indent .. "}"
-    end
-  elseif type(data) == "string" then
-    -- Basic escaping
-    data = data:gsub('\\', '\\\\'):gsub('"', '\\"'):gsub('\n', '\\n'):gsub('\r', '\\r'):gsub('\t', '\\t')
-    return '"' .. data .. '"'
-  elseif type(data) == "number" then
-    return tostring(data)
-  elseif type(data) == "boolean" then
-    return data and "true" or "false"
-  else
-    return "null"
-  end
-end
-
--- Simple but functional JSON decoder
-local function json_decode(str)
-  if not str or str == "" then return nil end
-
-  local pos = 1
-
-  local function skip_whitespace()
-    while pos <= #str and str:sub(pos, pos):match("%s") do
-      pos = pos + 1
-    end
-  end
-
-  local function decode_value()
-    skip_whitespace()
-    local char = str:sub(pos, pos)
-
-    if char == "{" then
-      -- Object
-      pos = pos + 1
-      local obj = {}
-      skip_whitespace()
-
-      if str:sub(pos, pos) == "}" then
-        pos = pos + 1
-        return obj
-      end
-
-      while true do
-        skip_whitespace()
-
-        -- Read key
-        if str:sub(pos, pos) ~= '"' then break end
-        pos = pos + 1
-        local key_start = pos
-        while pos <= #str and str:sub(pos, pos) ~= '"' do
-          if str:sub(pos, pos) == '\\' then pos = pos + 1 end
-          pos = pos + 1
-        end
-        local key = str:sub(key_start, pos - 1)
-        pos = pos + 1
-
-        skip_whitespace()
-        if str:sub(pos, pos) ~= ":" then break end
-        pos = pos + 1
-
-        -- Read value
-        obj[key] = decode_value()
-
-        skip_whitespace()
-        char = str:sub(pos, pos)
-        if char == "}" then
-          pos = pos + 1
-          return obj
-        elseif char == "," then
-          pos = pos + 1
-        else
-          break
-        end
-      end
-
-      return obj
-
-    elseif char == "[" then
-      -- Array
-      pos = pos + 1
-      local arr = {}
-      skip_whitespace()
-
-      if str:sub(pos, pos) == "]" then
-        pos = pos + 1
-        return arr
-      end
-
-      while true do
-        arr[#arr + 1] = decode_value()
-        skip_whitespace()
-        char = str:sub(pos, pos)
-        if char == "]" then
-          pos = pos + 1
-          return arr
-        elseif char == "," then
-          pos = pos + 1
-        else
-          break
-        end
-      end
-
-      return arr
-
-    elseif char == '"' then
-      -- String
-      pos = pos + 1
-      local str_start = pos
-      while pos <= #str do
-        if str:sub(pos, pos) == '"' then
-          local value = str:sub(str_start, pos - 1)
-          -- Unescape
-          value = value:gsub('\\(.)', function(c)
-            if c == 'n' then return '\n'
-            elseif c == 'r' then return '\r'
-            elseif c == 't' then return '\t'
-            else return c end
-          end)
-          pos = pos + 1
-          return value
-        elseif str:sub(pos, pos) == '\\' then
-          pos = pos + 2
-        else
-          pos = pos + 1
-        end
-      end
-      return ""
-
-    elseif char == "t" and str:sub(pos, pos + 3) == "true" then
-      pos = pos + 4
-      return true
-
-    elseif char == "f" and str:sub(pos, pos + 4) == "false" then
-      pos = pos + 5
-      return false
-
-    elseif char == "n" and str:sub(pos, pos + 3) == "null" then
-      pos = pos + 4
-      return nil
-
-    else
-      -- Number
-      local num_start = pos
-      if char == "-" then pos = pos + 1 end
-      while pos <= #str and str:sub(pos, pos):match("[%d%.]") do
-        pos = pos + 1
-      end
-      local num_str = str:sub(num_start, pos - 1)
-      return tonumber(num_str)
-    end
-  end
-
-  local ok, result = pcall(decode_value)
-  if ok then
-    return result
-  else
-    M.log("ERROR: JSON decode failed: " .. tostring(result))
-    return {}
-  end
-end
-
 -- Save data to JSON file
 function M.save_json(filename, data)
   local data_dir = get_data_dir()
@@ -275,7 +77,7 @@ function M.save_json(filename, data)
     return false
   end
 
-  local json_str = json_encode(data)
+  local json_str = JSON.encode(data, {pretty = true})
   local write_ok, write_err = file:write(json_str)
   if not write_ok then
     Logger.error("STORAGE", "Failed to write data: %s", tostring(write_err))
@@ -304,7 +106,7 @@ function M.load_json(filename)
   local content = file:read("*all")
   file:close()
 
-  local data = json_decode(content)
+  local data = JSON.decode(content)
   Logger.debug("STORAGE", "Loaded: %s", filepath)
   return data
 end

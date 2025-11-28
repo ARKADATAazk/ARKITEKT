@@ -19,7 +19,7 @@ local function is_array(t)
   return true
 end
 
-local function encode_val(v)
+local function encode_val(v, pretty, indent, current_indent)
   local tv = type(v)
   if tv == "string"  then return '"' .. esc_str(v) .. '"'
   elseif tv == "number" then
@@ -29,23 +29,59 @@ local function encode_val(v)
   elseif tv == "nil" then return "null"
   elseif tv == "table" then
     if is_array(v) then
+      if #v == 0 then return "[]" end
       local out = {}
-      for i=1,#v do out[i] = encode_val(v[i]) end
-      return "[" .. table.concat(out, ",") .. "]"
+      if pretty then
+        local next_indent = current_indent .. indent
+        for i=1,#v do
+          out[i] = next_indent .. encode_val(v[i], pretty, indent, next_indent)
+        end
+        return "[\n" .. table.concat(out, ",\n") .. "\n" .. current_indent .. "]"
+      else
+        for i=1,#v do out[i] = encode_val(v[i]) end
+        return "[" .. table.concat(out, ",") .. "]"
+      end
     else
       local out, i = {}, 1
-      for k,val in pairs(v) do
-        out[i] = '"' .. esc_str(tostring(k)) .. '":' .. encode_val(val)
-        i = i + 1
+      if pretty then
+        -- Sort keys for consistent output
+        local sorted_keys = {}
+        for k in pairs(v) do sorted_keys[#sorted_keys + 1] = k end
+        table.sort(sorted_keys)
+
+        local count = 0
+        for _ in pairs(v) do count = count + 1 end
+        if count == 0 then return "{}" end
+
+        local next_indent = current_indent .. indent
+        for _, k in ipairs(sorted_keys) do
+          local val = v[k]
+          out[i] = next_indent .. '"' .. esc_str(tostring(k)) .. '": ' .. encode_val(val, pretty, indent, next_indent)
+          i = i + 1
+        end
+        return "{\n" .. table.concat(out, ",\n") .. "\n" .. current_indent .. "}"
+      else
+        for k,val in pairs(v) do
+          out[i] = '"' .. esc_str(tostring(k)) .. '":' .. encode_val(val)
+          i = i + 1
+        end
+        return "{" .. table.concat(out, ",") .. "}"
       end
-      return "{" .. table.concat(out, ",") .. "}"
     end
   else
     return "null"
   end
 end
 
-function M.encode(t) return encode_val(t) end
+function M.encode(t, opts)
+  opts = opts or {}
+  if opts.pretty then
+    local indent = opts.indent or "  "
+    return encode_val(t, true, indent, "")
+  else
+    return encode_val(t)
+  end
+end
 
 -- ===== DECODE =====
 -- Lightweight recursive descent parser (good enough for settings)
