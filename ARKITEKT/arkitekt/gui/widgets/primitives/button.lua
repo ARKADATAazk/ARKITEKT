@@ -83,11 +83,11 @@ local DEFAULTS = {
 }
 
 -- ============================================================================
--- INSTANCE MANAGEMENT (weak tables - testing if flickering still occurs)
+-- INSTANCE MANAGEMENT (strong tables with access tracking for cleanup)
 -- ============================================================================
 
--- Weak values: instances can be GC'd when not referenced elsewhere
-local instances = setmetatable({}, {__mode = 'v'})
+-- Strong tables required - weak tables cause flickering due to inter-frame GC
+local instances = Base.create_instance_registry()
 
 local Button = {}
 Button.__index = Button
@@ -485,13 +485,9 @@ function M.draw_at_cursor(ctx, opts, id)
   return result.clicked
 end
 
---- Clean up all button instances (no-op with weak tables - GC handles it)
+--- Clean up all button instances
 function M.cleanup()
-  -- With weak tables, GC automatically cleans up unreferenced instances
-  -- Manual cleanup not needed, but clear anyway for immediate release
-  for k in pairs(instances) do
-    instances[k] = nil
-  end
+  Base.cleanup_registry(instances)
 end
 
 return M
