@@ -36,6 +36,29 @@ Lua 5.3 framework for building ReaImGui apps in REAPER. It provides widgets, win
    - Always read the file (and nearby modules) **before** editing.
    - Diffs must be **surgical**: no reformatting, no drive-by refactors.
 
+**Quick examples**
+
+```lua
+-- Button - ImGui-style positional mode
+if Ark.Button(ctx, "Save") then ... end
+if Ark.Button(ctx, "Save", 100) then ... end  -- with width
+
+-- Button - Opts mode with semantic presets
+if Ark.Button(ctx, { label = "Delete", preset = "danger" }) then ... end
+-- Presets: "primary", "danger", "success", "secondary"
+
+-- ID Stack (for loops with multiple widgets)
+for i, track in ipairs(tracks) do
+  Ark.PushID(ctx, i)
+    if Ark.Button(ctx, "M") then ... end  -- ID = "1/M", "2/M", ...
+    if Ark.Button(ctx, "S") then ... end  -- ID = "1/S", "2/S", ...
+    Ark.Grid(ctx, { items = track.items })  -- ID = "1/grid", "2/grid", ...
+  Ark.PopID(ctx)
+end
+```
+
+For full widget API, see `cookbook/QUICKSTART.md` and `cookbook/WIDGETS.md`.
+
 ---
 
 ## 2. Where to Work – Routing Map

@@ -274,13 +274,8 @@ end
 
 -- Draw function receives ctx and shell_state
 function M:draw(ctx, window, shell_state)
-  -- Use Ark widgets
-  local button_result = Ark.Button.draw(ctx, {
-    label = "Click Me",
-    width = 120,
-  })
-
-  if button_result.clicked then
+  -- Use Ark widgets - positional mode (ImGui-style)
+  if Ark.Button(ctx, "Click Me", 120) then
     reaper.ShowConsoleMsg("Button clicked!\n")
   end
 
@@ -347,13 +342,31 @@ return M
 ```lua
 local Ark = require('arkitekt')
 
--- Button
-local result = Ark.Button.draw(ctx, {
-  label = "Save",
-  width = 100,
-  tooltip = "Save changes",
+-- Button - Simple positional mode (ImGui-style)
+if Ark.Button(ctx, "Save") then
+  -- Button was clicked
+end
+
+-- Button - With width
+if Ark.Button(ctx, "Save", 100) then
+  -- Button was clicked
+end
+
+-- Button - Opts mode with semantic presets
+if Ark.Button(ctx, { label = "Delete", preset = "danger" }) then
+  -- Danger-styled button clicked
+end
+
+-- Button - Full opts mode returns result object
+local result = Ark.Button(ctx, {
+  label = "Options",
+  preset = "primary",  -- or "danger", "success", "secondary"
+  tooltip = "Show options",
+  on_click = function() ... end,
+  on_right_click = function() ... end,
 })
 if result.clicked then ... end
+if result.right_clicked then ... end
 
 -- Input text
 local result = Ark.InputText.draw(ctx, {
@@ -400,6 +413,22 @@ panel:end_draw(ctx)
 -- Colors
 local color = Ark.Colors.hexrgb("#FF5500")
 local with_alpha = Ark.Colors.hexrgba("#FF5500", 0.5)
+
+-- ID Stack (ImGui-style PushID/PopID)
+-- Useful for loops with multiple widgets
+for i, track in ipairs(tracks) do
+  Ark.PushID(ctx, i)
+    if Ark.Button(ctx, "M") then ... end  -- ID = "1/M", "2/M", ...
+    if Ark.Button(ctx, "S") then ... end  -- ID = "1/S", "2/S", ...
+    Ark.Grid(ctx, { items = track.items })  -- ID = "1/grid", "2/grid", ...
+  Ark.PopID(ctx)
+end
+
+-- Explicit ID always bypasses stack
+Ark.PushID(ctx, "section")
+  if Ark.Button(ctx, "Auto") then ... end  -- ID = "section/Auto"
+  if Ark.Button(ctx, { id = "fixed", label = "Override" }) then ... end  -- ID = "fixed"
+Ark.PopID(ctx)
 ```
 
 ---
@@ -441,8 +470,7 @@ Shell.run({
   draw = function(ctx, shell_state)
     ImGui.Text(ctx, "Counter: " .. state.counter)
 
-    local result = Ark.Button.draw(ctx, {label = "Increment"})
-    if result.clicked then
+    if Ark.Button(ctx, "Increment") then
       state.counter = state.counter + 1
     end
   end,
