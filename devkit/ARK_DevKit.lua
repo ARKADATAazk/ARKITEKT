@@ -593,18 +593,16 @@ local function draw_sandbox(ctx, shell_state)
     ImGui.SameLine(ctx, 0, 16)
 
     -- Launch button
-    if Ark.Button(ctx, {
+    Ark.Button(ctx, {
       label = "Run",
       width = 60,
       height = 24,
       preset = "primary",
-    }).clicked then
-      dofile(script.full_path)
-    end
-
-    if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, script.full_path)
-    end
+      tooltip = script.full_path,
+      on_click = function()
+        dofile(script.full_path)
+      end
+    })
 
     ImGui.PopID(ctx)
   end
@@ -616,15 +614,16 @@ local function draw_main(ctx, shell_state)
   for i, tab in ipairs(tabs) do
     local is_active = (State.active_tab == tab)
 
-    if Ark.Button(ctx, {
+    Ark.Button(ctx, {
       id = "tab_" .. tab,
       label = tab,
       width = 100,
       height = 28,
       preset = is_active and "primary" or nil,
-    }).clicked then
-      State:set_active_tab(tab)
-    end
+      on_click = function()
+        State:set_active_tab(tab)
+      end
+    })
 
     if i < #tabs then
       ImGui.SameLine(ctx, 0, 4)
