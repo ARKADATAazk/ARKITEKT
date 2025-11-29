@@ -5,9 +5,11 @@
 local M = {}
 
 -- DEPENDENCIES
-local ImGui = require('imgui')('0.10')
-local Colors = require('arkitekt.core.colors')
+local Ark = require('arkitekt')
+local ImGui = Ark.ImGui
+local Colors = Ark.Colors
 local Theme = require('arkitekt.core.theme')
+local Base = require('arkitekt.gui.widgets.base')
 
 -- CONSTANTS
 local PI = math.pi
@@ -34,12 +36,12 @@ function M.draw(ctx, opts)
   local size = opts.size or 64
   local disabled = opts.disabled or false
 
-  -- Colors
-  local bg_color = opts.bg_color or Colors.hexrgb("#1A1A1A")
-  local track_color = opts.track_color or Colors.hexrgb("#383C45")
-  local value_color = opts.value_color or Theme.COLORS.ACCENT or Colors.hexrgb("#4A90D9")
-  local text_color = opts.text_color or Theme.COLORS.TEXT_NORMAL or Colors.hexrgb("#CCCCCC")
-  local dot_color = opts.dot_color or Colors.hexrgb("#FFFFFF")
+  -- Colors (read fresh each frame for theme switching)
+  local bg_color = opts.bg_color or Theme.COLORS.BG_PANEL
+  local track_color = opts.track_color or Theme.COLORS.BG_HOVER
+  local value_color = opts.value_color or Theme.COLORS.ACCENT_PRIMARY
+  local text_color = opts.text_color or Theme.COLORS.TEXT_NORMAL
+  local dot_color = opts.dot_color or Theme.COLORS.TEXT_BRIGHT
 
   if disabled then
     value_color = Colors.with_opacity(value_color, 0.4)
@@ -47,12 +49,8 @@ function M.draw(ctx, opts)
   end
 
   -- State
-  local result = {
-    changed = false,
-    value = value,
-    hovered = false,
-    active = false,
-  }
+  local changed = false
+  local current_value = value
 
   -- Get cursor position
   local x, y = ImGui.GetCursorScreenPos(ctx)
@@ -68,21 +66,18 @@ function M.draw(ctx, opts)
   local hovered = ImGui.IsItemHovered(ctx)
   local active = ImGui.IsItemActive(ctx)
 
-  result.hovered = hovered
-  result.active = active
-
   -- Handle dragging
   if active and not disabled then
     local _, drag_y = ImGui.GetMouseDragDelta(ctx, 0)
     if drag_y ~= 0 then
       -- Vertical drag changes value (drag down = decrease)
       local delta = -drag_y * 0.005 -- Sensitivity
-      local new_value = value + delta * (max_val - min_val)
+      local new_value = current_value + delta * (max_val - min_val)
       new_value = math.max(min_val, math.min(max_val, new_value))
 
-      if new_value ~= value then
-        result.value = new_value
-        result.changed = true
+      if new_value ~= current_value then
+        current_value = new_value
+        changed = true
       end
 
       ImGui.ResetMouseDragDelta(ctx, 0)
@@ -92,9 +87,9 @@ function M.draw(ctx, opts)
   -- Double-click to reset
   if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) and not disabled then
     local default_value = opts.default or min_val
-    if value ~= default_value then
-      result.value = default_value
-      result.changed = true
+    if current_value ~= default_value then
+      current_value = default_value
+      changed = true
     end
   end
 
@@ -110,7 +105,7 @@ function M.draw(ctx, opts)
   ImGui.DrawList_PathStroke(dl, track_color, 0, track_thickness * 2)
 
   -- Value arc (foreground)
-  local normalized = (result.value - min_val) / (max_val - min_val)
+  local normalized = (current_value - min_val) / (max_val - min_val)
   local value_angle = MIN_ANGLE + (normalized * ANGLE_RANGE)
 
   if normalized > 0.001 then
@@ -127,7 +122,7 @@ function M.draw(ctx, opts)
   ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_radius, dot_color, 12)
 
   -- Border circle
-  local border_color = hovered and Colors.hexrgb("#505050") or Colors.hexrgb("#303030")
+  local border_color = hovered and Theme.COLORS.BORDER_HOVER or Theme.COLORS.BORDER_INNER
   ImGui.DrawList_AddCircle(dl, center_x, center_y, radius, border_color, 32, 1)
 
   -- Label below knob
@@ -144,7 +139,7 @@ function M.draw(ctx, opts)
   end
 
   -- Value text (centered in knob)
-  local value_text = string.format("%.2f", result.value)
+  local value_text = string.format("%.2f", current_value)
   local text_w, text_h = ImGui.CalcTextSize(ctx, value_text)
   ImGui.SetCursorScreenPos(ctx, center_x - text_w / 2, center_y - text_h / 2)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
@@ -158,9 +153,18 @@ function M.draw(ctx, opts)
 
   -- Advance cursor (after label)
   local label_height = label and 20 or 0
-  ImGui.SetCursorScreenPos(ctx, x, y + size + label_height)
+  local total_height = size + label_height
+  ImGui.SetCursorScreenPos(ctx, x, y + total_height)
 
-  return result
+  -- Return standard result object
+  return Base.create_result({
+    changed = changed,
+    value = current_value,
+    width = size,
+    height = total_height,
+    hovered = hovered,
+    active = active,
+  })
 end
 
 return M

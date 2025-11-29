@@ -5,10 +5,11 @@
 local M = {}
 
 -- DEPENDENCIES
+local Ark = require('arkitekt')
 local MacroControls = require('scripts.ProductionPanel.ui.views.macro_controls')
 local DrumRack = require('scripts.ProductionPanel.ui.views.drum_rack')
-local ImGui = require('imgui')('0.10')
-local Colors = require('arkitekt.core.colors')
+local ImGui = Ark.ImGui
+local Colors = Ark.Colors
 local Theme = require('arkitekt.core.theme')
 
 -- STATE
@@ -66,7 +67,7 @@ function M.draw(ctx, shell_state)
       ImGui.Separator(ctx)
       ImGui.Spacing(ctx)
 
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#808080"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, Theme.COLORS.TEXT_DARK)
       ImGui.TextWrapped(ctx, "📝 Mockup: This will integrate ItemPicker for samples, TemplateBrowser patterns for FX chains, and track template management.")
       ImGui.Spacing(ctx)
       ImGui.Spacing(ctx)
@@ -90,7 +91,7 @@ function M.draw(ctx, shell_state)
       ImGui.Separator(ctx)
       ImGui.Spacing(ctx)
 
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#808080"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, Theme.COLORS.TEXT_DARK)
       ImGui.TextWrapped(ctx, "📝 Mockup: Settings for MIDI routing, default behaviors, UI preferences, etc.")
       ImGui.Spacing(ctx)
       ImGui.Spacing(ctx)

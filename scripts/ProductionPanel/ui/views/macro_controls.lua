@@ -5,10 +5,11 @@
 local M = {}
 
 -- DEPENDENCIES
+local Ark = require('arkitekt')
 local Knob = require('scripts.ProductionPanel.ui.widgets.knob')
 local Defaults = require('scripts.ProductionPanel.defs.defaults')
-local ImGui = require('imgui')('0.10')
-local Colors = require('arkitekt.core.colors')
+local ImGui = Ark.ImGui
+local Colors = Ark.Colors
 local Theme = require('arkitekt.core.theme')
 
 -- MOCK DATA (for prototype)
@@ -65,7 +66,7 @@ function M.draw(ctx)
   ImGui.Spacing(ctx)
 
   -- Learn mode toggle
-  local button_color = state.learn_mode and Colors.hexrgb("#D94A4A") or Theme.COLORS.BUTTON_BG or Colors.hexrgb("#383C45")
+  local button_color = state.learn_mode and Theme.COLORS.ACCENT_DANGER or Theme.COLORS.BG_HOVER
   ImGui.PushStyleColor(ctx, ImGui.Col_Button, button_color)
   if ImGui.Button(ctx, state.learn_mode and "● LEARN MODE ACTIVE" or "Learn", 150, 28) then
     state.learn_mode = not state.learn_mode
@@ -77,7 +78,7 @@ function M.draw(ctx)
 
   if state.learn_mode then
     ImGui.SameLine(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#D94A4A"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Theme.COLORS.ACCENT_DANGER)
     ImGui.Text(ctx, "Click a macro knob, then touch a parameter to assign")
     ImGui.PopStyleColor(ctx)
   end
@@ -101,7 +102,7 @@ function M.draw(ctx)
 
     -- Highlight if selected in learn mode
     local is_selected = state.learn_mode and state.selected_macro == i
-    local knob_color = is_selected and Colors.hexrgb("#D94A4A") or nil
+    local knob_color = is_selected and Theme.COLORS.ACCENT_DANGER or nil
 
     -- Draw knob
     local result = Knob.draw(ctx, {
@@ -129,7 +130,7 @@ function M.draw(ctx)
     -- Assignment label below knob
     ImGui.SetCursorScreenPos(ctx, x, y + knob_size + 24)
     local assign_text = macro.assigned or "Not assigned"
-    local assign_color = macro.assigned and Colors.hexrgb("#A0A0A0") or Colors.hexrgb("#606060")
+    local assign_color = macro.assigned and Theme.COLORS.TEXT_DIMMED or Theme.COLORS.TEXT_DARK
 
     -- Truncate if too long
     local max_chars = 12
@@ -155,7 +156,7 @@ function M.draw(ctx)
   ImGui.Text(ctx, "Active FX Container: None")
   ImGui.Spacing(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#808080"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, Theme.COLORS.TEXT_DARK)
   ImGui.Text(ctx, "📝 Mockup: Select an FX container to enable macro assignment")
   ImGui.PopStyleColor(ctx)
 end

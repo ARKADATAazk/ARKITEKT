@@ -5,9 +5,10 @@
 local M = {}
 
 -- DEPENDENCIES
+local Ark = require('arkitekt')
 local Defaults = require('scripts.ProductionPanel.defs.defaults')
-local ImGui = require('imgui')('0.10')
-local Colors = require('arkitekt.core.colors')
+local ImGui = Ark.ImGui
+local Colors = Ark.Colors
 local Theme = require('arkitekt.core.theme')
 
 -- MOCK DATA
@@ -63,9 +64,9 @@ local function draw_pad(ctx, index, x, y, size)
   local is_selected = state.selected_pad == index
 
   -- Background color
-  local bg_color = pad.has_sample and pad.color or Colors.hexrgb("#1A1A1A")
-  local border_color = is_selected and Colors.hexrgb("#FFFFFF") or Colors.hexrgb("#303030")
-  local text_color = pad.has_sample and Colors.hexrgb("#FFFFFF") or Colors.hexrgb("#606060")
+  local bg_color = pad.has_sample and pad.color or Theme.COLORS.BG_PANEL
+  local border_color = is_selected and Theme.COLORS.TEXT_BRIGHT or Theme.COLORS.BORDER_INNER
+  local text_color = pad.has_sample and Theme.COLORS.TEXT_BRIGHT or Theme.COLORS.TEXT_DARK
 
   -- Draw pad background
   local dl = ImGui.GetWindowDrawList(ctx)
@@ -83,7 +84,7 @@ local function draw_pad(ctx, index, x, y, size)
     local dot_x = x + size - dot_size - 4
     local dot_y = y + 4
     ImGui.DrawList_AddCircleFilled(dl, dot_x + dot_size/2, dot_y + dot_size/2, dot_size/2,
-      Colors.hexrgb("#FFFFFF"), 12)
+      Theme.COLORS.TEXT_BRIGHT, 12)
   end
 
   -- Pad label
@@ -220,7 +221,7 @@ function M.draw(ctx)
       end
     end
   else
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#808080"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Theme.COLORS.TEXT_DARK)
     ImGui.Text(ctx, "📝 Mockup: Click a pad to select, right-click for options")
     ImGui.PopStyleColor(ctx)
   end
