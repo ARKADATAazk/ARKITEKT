@@ -7,7 +7,7 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+local Ark = dofile(reaper.GetResourcePath() .. '/Scripts/ARKITEKT/loader.lua')
 
 local ImGui = Ark.ImGui
 local SRC = debug.getinfo(1,"S").source:sub(2)
