@@ -1,7 +1,28 @@
 -- @noindex
 -- ARKITEKT vs ImGui Performance Benchmark
 
-local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
+-- Bootstrap ARKITEKT
+local sep = package.config:sub(1,1)
+local src = debug.getinfo(1, "S").source:sub(2)
+local path = src:match("(.*"..sep..")")
+local ark_path
+while path and #path > 3 do
+  local init = path .. "ARKITEKT" .. sep .. "arkitekt" .. sep .. "init.lua"
+  local f = io.open(init, "r")
+  if f then
+    f:close()
+    ark_path = init
+    break
+  end
+  path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
+end
+
+if not ark_path then
+  reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
+  return
+end
+
+local Ark = dofile(ark_path)
 local ImGui = Ark.ImGui
 local Shell = require('arkitekt.app.shell')
 
