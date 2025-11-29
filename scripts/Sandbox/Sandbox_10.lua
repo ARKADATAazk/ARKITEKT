@@ -103,7 +103,7 @@ Shell.run({
     ImGui.Separator(ctx)
 
     -- Run benchmark in scrolling child
-    if ImGui.BeginChild(ctx, "##buttons", -1, -1, ImGui.ChildFlags_Border) then
+    if ImGui.BeginChild(ctx, "##buttons", -1, -1, true) then
       if mode == "imgui" then
         benchmark_imgui(ctx)
       else
