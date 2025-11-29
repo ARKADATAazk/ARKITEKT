@@ -616,27 +616,24 @@ local function draw_sandbox(ctx, shell_state)
 end
 
 local function draw_main(ctx, shell_state)
-  -- Tab bar
-  ImGui.PushStyleColor(ctx, ImGui.Col_TabActive, hexrgb("#FF6600"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_TabHovered, hexrgb("#FF7722"))
-  if ImGui.BeginTabBar(ctx, "##devkit_tabs") then
-    if ImGui.BeginTabItem(ctx, "Apps") then
-      if State.active_tab ~= "Apps" then
-        State:set_active_tab("Apps")
-      end
-      ImGui.EndTabItem(ctx)
+  -- Tab buttons (simple approach instead of TabBar)
+  local tabs = {"Apps", "Sandbox"}
+  for i, tab in ipairs(tabs) do
+    local is_active = (State.active_tab == tab)
+
+    if Ark.Button(ctx, {
+      label = tab,
+      width = 100,
+      height = 28,
+      preset = is_active and "primary" or nil,
+    }) then
+      State:set_active_tab(tab)
     end
 
-    if ImGui.BeginTabItem(ctx, "Sandbox") then
-      if State.active_tab ~= "Sandbox" then
-        State:set_active_tab("Sandbox")
-      end
-      ImGui.EndTabItem(ctx)
+    if i < #tabs then
+      ImGui.SameLine(ctx, 0, 4)
     end
-
-    ImGui.EndTabBar(ctx)
   end
-  ImGui.PopStyleColor(ctx, 2)
 
   ImGui.Dummy(ctx, 0, 8)
 
