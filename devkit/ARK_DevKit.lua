@@ -617,11 +617,12 @@ local function draw_main(ctx, shell_state)
     local is_active = (State.active_tab == tab)
 
     if Ark.Button(ctx, {
+      id = "tab_" .. tab,
       label = tab,
       width = 100,
       height = 28,
       preset = is_active and "primary" or nil,
-    }) then
+    }).clicked then
       State:set_active_tab(tab)
     end
 
