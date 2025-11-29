@@ -364,6 +364,15 @@ function M.darken(color, amount)
   return M.adjust_lightness(color, -amount)
 end
 
+--- Blend two colors (convenience alias for lerp)
+--- @param color_a number First color in RGBA format
+--- @param color_b number Second color in RGBA format
+--- @param t number Blend factor (0.0 = all color_a, 1.0 = all color_b)
+--- @return number Blended color in RGBA format
+function M.blend(color_a, color_b, t)
+  return M.lerp(color_a, color_b, t)
+end
+
 --- Set specific HSL values while preserving others
 --- @param color number Color in RGBA format
 --- @param h_new number|nil New hue (0-1) or nil to keep current
