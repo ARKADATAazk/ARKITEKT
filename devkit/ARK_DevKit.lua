@@ -244,6 +244,8 @@ local State = {
   -- Organized apps: app_name -> { name, instances = { {worktree_idx, full_path}, ... }, selected_wt_idx }
   apps_by_name = {},
   search_query = "",
+  active_tab = "Apps",  -- "Apps" or "Sandbox"
+  sandbox_scripts = {},
 }
 
 function State:initialize()
@@ -262,6 +264,9 @@ function State:initialize()
   -- Build apps_by_name
   self:refresh_apps()
 
+  -- Refresh sandbox scripts
+  self:refresh_sandbox()
+
   -- Restore last selections
   local saved_selections = settings:get('app_worktree_selections') or {}
   for app_name, wt_idx in pairs(saved_selections) do
@@ -269,6 +274,9 @@ function State:initialize()
       self.apps_by_name[app_name].selected_wt_idx = wt_idx
     end
   end
+
+  -- Restore active tab
+  self.active_tab = settings:get('active_tab') or "Apps"
 end
 
 function State:refresh_worktrees()
@@ -339,6 +347,43 @@ function State:launch_app(app_name)
   -- Launch the app
   dofile(instance.full_path)
   return true
+end
+
+function State:refresh_sandbox()
+  self.sandbox_scripts = {}
+
+  -- Look in scripts/Sandbox/ directory
+  for _, wt in ipairs(self.worktrees) do
+    local sandbox_dir
+    if wt.name == "ARKITEKT" then
+      sandbox_dir = normalize(wt.path .. sep .. "scripts" .. sep .. "Sandbox")
+    else
+      sandbox_dir = normalize(wt.path .. sep .. "ARKITEKT" .. sep .. "scripts" .. sep .. "Sandbox")
+    end
+
+    local i = 0
+    while true do
+      local fname = reaper.EnumerateFiles(sandbox_dir, i)
+      if not fname then break end
+      if fname:match("%.lua$") then
+        table.insert(self.sandbox_scripts, {
+          name = fname:gsub("%.lua$", ""),
+          full_path = normalize(sandbox_dir .. sep .. fname),
+          worktree = wt.key,
+        })
+      end
+      i = i + 1
+    end
+  end
+
+  -- Sort alphabetically
+  table.sort(self.sandbox_scripts, function(a, b) return a.name < b.name end)
+end
+
+function State:set_active_tab(tab_name)
+  self.active_tab = tab_name
+  settings:set('active_tab', tab_name)
+  settings:save()
 end
 
 function State:get_filtered_apps()
@@ -498,6 +543,7 @@ local apps_panel = Ark.Panel.new({
             on_click = function()
               State:refresh_worktrees()
               State:refresh_apps()
+              State:refresh_sandbox()
             end,
           }
         },
@@ -524,7 +570,76 @@ local apps_panel = Ark.Panel.new({
   },
 })
 
+local function draw_sandbox(ctx, shell_state)
+  ImGui.Text(ctx, string.format("Found %d sandbox scripts:", #State.sandbox_scripts))
+  ImGui.Separator(ctx)
+  ImGui.Dummy(ctx, 0, 8)
+
+  if #State.sandbox_scripts == 0 then
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+    ImGui.TextWrapped(ctx, "No sandbox scripts found in scripts/Sandbox/")
+    ImGui.PopStyleColor(ctx)
+    return
+  end
+
+  -- List all sandbox scripts with launch buttons
+  for i, script in ipairs(State.sandbox_scripts) do
+    ImGui.PushID(ctx, i)
+
+    -- Script name
+    ImGui.AlignTextToFramePadding(ctx)
+    ImGui.Text(ctx, script.name)
+    ImGui.SameLine(ctx)
+
+    -- Worktree badge
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+    ImGui.Text(ctx, string.format("[%s]", script.worktree))
+    ImGui.PopStyleColor(ctx)
+    ImGui.SameLine(ctx, 0, 16)
+
+    -- Launch button
+    if Ark.Button(ctx, {
+      label = "Run",
+      width = 60,
+      height = 24,
+      preset = "primary",
+    }) then
+      dofile(script.full_path)
+    end
+
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, script.full_path)
+    end
+
+    ImGui.PopID(ctx)
+  end
+end
+
 local function draw_main(ctx, shell_state)
+  -- Tab bar
+  ImGui.PushStyleColor(ctx, ImGui.Col_TabActive, hexrgb("#FF6600"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_TabHovered, hexrgb("#FF7722"))
+  if ImGui.BeginTabBar(ctx, "##devkit_tabs") then
+    if ImGui.BeginTabItem(ctx, "Apps") then
+      if State.active_tab ~= "Apps" then
+        State:set_active_tab("Apps")
+      end
+      ImGui.EndTabItem(ctx)
+    end
+
+    if ImGui.BeginTabItem(ctx, "Sandbox") then
+      if State.active_tab ~= "Sandbox" then
+        State:set_active_tab("Sandbox")
+      end
+      ImGui.EndTabItem(ctx)
+    end
+
+    ImGui.EndTabBar(ctx)
+  end
+  ImGui.PopStyleColor(ctx, 2)
+
+  ImGui.Dummy(ctx, 0, 8)
+
   -- Check for no worktrees outside panel
   if #State.worktrees == 0 then
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FF6666"))
@@ -545,11 +660,18 @@ local function draw_main(ctx, shell_state)
           settings:set('base_dir', State.base_dir)
           State:refresh_worktrees()
           State:refresh_apps()
+          State:refresh_sandbox()
         end
       end
     }).clicked then
     end
 
+    return
+  end
+
+  -- Render active tab content
+  if State.active_tab == "Sandbox" then
+    draw_sandbox(ctx, shell_state)
     return
   end
 
