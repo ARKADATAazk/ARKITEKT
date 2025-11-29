@@ -657,13 +657,27 @@ local function calculate_flow_positions(result, eval_context)
   local meter_sec_x = get_at_index(eval_context.meter_sec, 1, 20)
   local meter_sec_w = get_at_index(eval_context.meter_sec, 3, 84)
   local tcp_padding = get_scalar(eval_context.tcp_padding, 7)
+  local parent_w = get_scalar(eval_context.w, 400)
   local start_x = meter_sec_x + meter_sec_w + tcp_padding
+
+  -- Sanity check: if start_x is beyond parent width, meter_sec calculation went wrong
+  -- This can happen if meterRight flips meter to right side incorrectly
+  if start_x > parent_w - 50 then  -- Need at least 50px for flow elements
+    Console.warn("Flow layout: start_x=%d exceeds parent_w=%d (meter_sec=%s)",
+      start_x, parent_w, fmt_arr(eval_context.meter_sec))
+    Console.warn("  Using safe default: start_x=111 (meter on left)")
+    start_x = 111  -- Safe default: 20 (folder) + 84 (meter) + 7 (padding)
+  end
 
   -- Element dimensions
   local element_h = get_scalar(eval_context.element_h, 20)
   local row_gap = 2  -- Gap between rows
+  local elem_gap = 2  -- Gap between elements horizontally
 
-  -- Track current position (multi-row support)
+  -- Calculate maximum width available for flow (parent width minus margins)
+  local max_flow_width = parent_w - start_x - tcp_padding  -- Available space from start_x to right edge
+
+  -- Track current position (horizontal flow with wrapping)
   local current_x = start_x
   local current_row = 0
   local current_y = tcp_padding
@@ -671,7 +685,12 @@ local function calculate_flow_positions(result, eval_context)
   local positioned_count = 0
   local hidden_count = 0
 
-  Console.info("Flow layout: starting at x=%d, y=%d, %d elements", start_x, current_y, #flow_elements)
+  Console.info("Flow layout: horizontal flow starting at x=%d, y=%d, max_width=%d, %d elements",
+    start_x, current_y, max_flow_width, #flow_elements)
+  Console.info("  meter_sec=%s | parent_w=%d, tcp_padding=%d",
+    fmt_arr(eval_context.meter_sec), parent_w, tcp_padding)
+  Console.info("  calc: start_x = meter_sec.x(%d) + meter_sec.w(%d) + tcp_padding(%d) = %d",
+    meter_sec_x, meter_sec_w, tcp_padding, start_x)
 
   for _, entry in ipairs(flow_elements) do
     local elem = entry.element
@@ -690,20 +709,55 @@ local function calculate_flow_positions(result, eval_context)
       goto continue
     end
 
-    -- Check for row change (row_flag is param 2, row_val is param 3)
-    if flow_params and #flow_params >= 2 then
-      local row_flag = tonumber(flow_params[2]) or 0
-      if row_flag == 1 then
-        -- Move to next row
-        current_row = current_row + 1
-        current_x = start_x  -- Reset X to start
-        current_y = tcp_padding + (current_row * (element_h + row_gap))
-        Console.info("  Flow ROW %d: y=%d", current_row, current_y)
+    -- Get element width for wrapping calculation
+    local elem_width = coords.w or 0
+
+    -- For groups, use group width
+    local children = FLOW_GROUP_CHILDREN[elem_id]
+    if children then
+      -- Group width is already set
+      elem_width = coords.w or 0
+    elseif elem_id:match("^tcp%.") or elem_id:match("^master%.tcp%.") then
+      -- For direct elements, try to get width from flow params
+      if elem_width == 0 and flow_params and flow_params[1] then
+        local FLOW_WIDTH_DEFAULTS = {
+          tcp_LabelSize = 80,
+          tcp_VolSize = 50,
+          tcp_PanSize = 40,
+          tcp_InSize = 40,
+          ["OVR.tcp_recarm.width"] = 20,
+          ["OVR.tcp_recmon.width"] = 15,
+          ["OVR.tcp_io.width"] = 34,
+          ["OVR.tcp_fx.width"] = 24,
+          ["OVR.tcp_env.width"] = 41,
+          ["OVR.tcp_recmode.width"] = 39,
+        }
+
+        local width_var = flow_params[1]
+        local width_val = tonumber(width_var)
+        if not width_val then
+          width_val = get_scalar(eval_context[width_var], 0)
+          if (not width_val or width_val == 0) and FLOW_WIDTH_DEFAULTS[width_var] then
+            width_val = FLOW_WIDTH_DEFAULTS[width_var]
+          end
+        end
+        if width_val and width_val > 0 then
+          elem_width = width_val
+        end
       end
     end
 
-    -- Check if this is a group that should expand to children
-    local children = FLOW_GROUP_CHILDREN[elem_id]
+    -- Check if element fits on current row, wrap if needed
+    if elem_width > 0 and current_x > start_x and (current_x + elem_width) > (start_x + max_flow_width) then
+      -- Wrap to next row
+      current_row = current_row + 1
+      current_x = start_x
+      current_y = tcp_padding + (current_row * (element_h + row_gap))
+      Console.info("  Flow WRAP to row %d at y=%d (element %s with w=%d wouldn't fit)",
+        current_row, current_y, elem_id, elem_width)
+    end
+
+    -- Position groups or direct elements
     if children then
       -- Position each child element at current X
       local group_width = coords.w or 0
@@ -734,7 +788,7 @@ local function calculate_flow_positions(result, eval_context)
 
       -- Advance X by group width
       if group_width > 0 then
-        current_x = current_x + group_width + 2
+        current_x = current_x + group_width + elem_gap
       end
 
     elseif elem_id:match("^tcp%.") or elem_id:match("^master%.tcp%.") then
@@ -745,45 +799,14 @@ local function calculate_flow_positions(result, eval_context)
         coords.h = element_h
       end
 
-      -- Fallback widths for flow elements when variables evaluate to 0
-      local FLOW_WIDTH_DEFAULTS = {
-        tcp_LabelSize = 80,
-        tcp_VolSize = 50,
-        tcp_PanSize = 40,
-        tcp_InSize = 40,
-        ["OVR.tcp_recarm.width"] = 20,
-        ["OVR.tcp_recmon.width"] = 15,
-        ["OVR.tcp_io.width"] = 34,
-        ["OVR.tcp_fx.width"] = 24,
-        ["OVR.tcp_env.width"] = 41,
-        ["OVR.tcp_recmode.width"] = 39,
-      }
-
-      -- Get flow width from flow_params if element width is 0
-      local elem_width = coords.w or 0
-      if elem_width == 0 and flow_params and flow_params[1] then
-        -- Try to evaluate the width from the flow parameter
-        local width_var = flow_params[1]
-        local width_val = tonumber(width_var)
-        if not width_val then
-          -- Try to look up as a variable
-          width_val = get_scalar(eval_context[width_var], 0)
-          -- If still 0, use fallback defaults
-          if (not width_val or width_val == 0) and FLOW_WIDTH_DEFAULTS[width_var] then
-            width_val = FLOW_WIDTH_DEFAULTS[width_var]
-            Console.info("  Flow width fallback: %s = %d", width_var, width_val)
-          end
-        end
-        if width_val and width_val > 0 then
-          coords.w = width_val
-          elem_width = width_val
-          Console.info("  Flow width from param: %s = %d", width_var, elem_width)
-        end
+      -- Apply the calculated width
+      if elem_width > 0 and (coords.w or 0) == 0 then
+        coords.w = elem_width
       end
 
-      -- Advance X by element width (plus small gap)
+      -- Advance X by element width (plus gap)
       if elem_width > 0 then
-        current_x = current_x + elem_width + 2  -- 2px gap between elements
+        current_x = current_x + elem_width + elem_gap
         positioned_count = positioned_count + 1
         Console.info("  Flow positioned: %s at x=%d, y=%d (w=%d)", elem_id, coords.x, coords.y, elem_width)
 
@@ -869,21 +892,56 @@ local function convert_items(items, context_filter)
         -- Check for duplicate element IDs
         local existing_idx = seen_ids[item.element]
         if existing_idx then
+          local original_entry = result.elements[existing_idx]
+
           -- Flow elements REPLACE existing definitions (they have proper widths)
           if item.is_flow_element then
             local element, is_computed, eval_success = convert_set_item(item, eval_context)
             if element then
+              -- Preserve source_line ONLY if replacing another flow element (duplicate in macro)
+              -- Otherwise use the flow element's line number to maintain macro order
+              local use_source_line = item.line  -- Default: use macro line number
+              if original_entry.is_flow_element then
+                -- Replacing flow with flow: preserve first occurrence line
+                use_source_line = original_entry.source_line
+              end
+              -- else: replacing section element with flow: use macro line (item.line)
+
               result.elements[existing_idx] = {
                 element = element,
                 is_computed = is_computed,
                 eval_success = eval_success,
-                source_line = item.line,
+                source_line = use_source_line,
                 raw_value = item.value,
                 is_flow_element = true,
                 flow_params = item.flow_params,
               }
               replaced_count = replaced_count + 1
               Console.info("  REPLACED %s with flow element (w=%d)", item.element, element.coords.w or 0)
+            end
+          -- Non-flow SET can REPLACE flow elements (e.g., drawTcp overrides calcTcpFlow)
+          -- BUT only if the SET evaluation succeeds (otherwise keep flow position)
+          elseif original_entry.is_flow_element then
+            local element, is_computed, eval_success = convert_set_item(item, eval_context)
+            if element and (not is_computed or eval_success) then
+              -- Only replace if: simple coords OR expression evaluated successfully
+              result.elements[existing_idx] = {
+                element = element,
+                is_computed = is_computed,
+                eval_success = eval_success,
+                source_line = item.line,  -- Use new SET line
+                raw_value = item.value,
+                is_flow_element = false,
+                flow_params = nil,
+              }
+              replaced_count = replaced_count + 1
+              Console.info("  REPLACED flow %s with SET statement", item.element)
+            else
+              -- SET evaluation failed, keep flow element
+              duplicate_count = duplicate_count + 1
+              if is_computed and not eval_success then
+                Console.info("  KEPT flow %s (SET expr failed)", item.element)
+              end
             end
           else
             duplicate_count = duplicate_count + 1
