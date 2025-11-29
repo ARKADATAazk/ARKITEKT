@@ -65,9 +65,9 @@ local w = ImGui.CalcTextSize(ctx, text)
 | File | Description |
 |------|-------------|
 | [IMPLEMENTATION.md](IMPLEMENTATION.md) | Step-by-step implementation guide |
-| [PHASING.md](PHASING.md) | Phased rollout plan with decision tracking |
+| [PROGRESS.md](PROGRESS.md) | **Consolidated roadmap + progress tracker** (replaces CHECKLIST + PHASING) |
+| [PHASING.md](PHASING.md) | ~~Old phasing strategy~~ → See PROGRESS.md instead |
 | [GUARDRAILS.md](GUARDRAILS.md) | Panel/Button context injection for auto-styling |
-| [CHECKLIST.md](CHECKLIST.md) | Progress tracker for migration |
 
 ### Feature-Specific Reworks
 

@@ -232,11 +232,26 @@ function M.draw(ctx, label_or_opts, active)
   })
 end
 
---- Clean up all radio button instances (internal - automatic cleanup via Base)
---- @deprecated Cleanup is automatic, no need to call this
-function M.cleanup()
-  Base.cleanup_registry(instances)
+-- ============================================================================
+-- DEPRECATED / REMOVED FUNCTIONS
+-- ============================================================================
+
+--- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
+function M.draw_at_cursor(ctx, opts, id)
+  opts = opts or {}
+  if id then opts.id = id end
+  local result = M.draw(ctx, opts)
+  return result.selected
 end
+
+--- @deprecated Cleanup is automatic via Base, no need to call manually
+function M.cleanup()
+  -- No-op: cleanup happens automatically via Base.cleanup_registry
+end
+
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
 
 -- Make module callable: Ark.RadioButton(ctx, ...) → M.draw(ctx, ...)
 return setmetatable(M, {

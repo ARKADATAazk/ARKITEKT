@@ -146,4 +146,14 @@ function M.new(opts)
   return button
 end
 
-return M
+
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
+
+-- Make module callable
+return setmetatable(M, {
+  __call = function(_, ctx, opts)
+    return M.draw(ctx, opts)
+  end
+})

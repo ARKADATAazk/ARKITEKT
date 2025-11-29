@@ -238,4 +238,14 @@ function Scrollbar:handle_wheel(ctx, wheel_delta, scroll_speed)
   return false
 end
 
-return M
+
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
+
+-- Make module callable
+return setmetatable(M, {
+  __call = function(_, ctx, opts)
+    return M.draw(ctx, opts)
+  end
+})

@@ -219,7 +219,8 @@ end
 --- @param default_prefix string Default ID prefix if none provided
 --- @return string Unique identifier
 function M.resolve_id(opts, default_prefix)
-  local base_id = opts.id or default_prefix
+  -- Priority: explicit id > label > default_prefix
+  local base_id = opts.id or opts.label or default_prefix
 
   -- Panel context: prefix with panel ID
   if opts.panel_state and opts.panel_state._panel_id then

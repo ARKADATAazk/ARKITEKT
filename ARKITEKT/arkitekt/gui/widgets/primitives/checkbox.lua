@@ -412,29 +412,28 @@ local function measure(ctx, opts)
   return size + label_spacing + label_width
 end
 
---- Clean up all checkbox instances (internal - automatic cleanup via Base)
---- @deprecated Cleanup is automatic, no need to call this
-function M.cleanup()
-  Base.cleanup_registry(instances)
+-- ============================================================================
+-- DEPRECATED / REMOVED FUNCTIONS
+-- ============================================================================
+
+--- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
+function M.draw_at_cursor(ctx, opts, id)
+  opts = opts or {}
+  if id then opts.id = id end
+  local result = M.draw(ctx, opts)
+  return result.checked
 end
 
---- Draw a checkbox at current ImGui cursor position (convenience function)
---- @deprecated Use M.draw() without x/y instead
---- @param ctx userdata ImGui context
---- @param label string Checkbox label
---- @param checked boolean Current state
---- @param opts table|nil Additional options
---- @param id string|nil Optional ID override
---- @return boolean changed Whether checkbox state changed
-function M.draw_at_cursor(ctx, label, checked, opts, id)
-  opts = opts or {}
-  opts.label = label
-  opts.checked = checked
-  if id then opts.id = id end
-  -- Don't set x/y so it uses cursor position
-  local result = M.draw(ctx, opts)
-  return result.changed
+--- @deprecated Cleanup is automatic via Base, no need to call manually
+function M.cleanup()
+  -- No-op: cleanup happens automatically via Base.cleanup_registry
 end
+
+-- M.measure() - Already local/internal (not exposed)
+
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
 
 -- Make module callable: Ark.Checkbox(ctx, ...) → M.draw(ctx, ...)
 return setmetatable(M, {

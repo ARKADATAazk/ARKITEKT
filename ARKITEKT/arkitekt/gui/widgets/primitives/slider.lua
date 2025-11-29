@@ -297,13 +297,26 @@ function M.int(ctx, opts)
   return result
 end
 
---- Clean up slider state (internal - automatic cleanup)
---- @deprecated Cleanup is automatic, no need to call this
-function M.cleanup()
-  for k in pairs(slider_locks) do
-    slider_locks[k] = nil
-  end
+-- ============================================================================
+-- DEPRECATED / REMOVED FUNCTIONS
+-- ============================================================================
+
+--- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
+function M.draw_at_cursor(ctx, opts, id)
+  opts = opts or {}
+  if id then opts.id = id end
+  local result = M.draw(ctx, opts)
+  return result.value, result.changed
 end
+
+--- @deprecated Cleanup is automatic, no need to call manually
+function M.cleanup()
+  -- No-op: slider_locks are auto-managed
+end
+
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
 
 -- Make module callable: Ark.Slider(ctx, ...) → M.draw(ctx, ...)
 return setmetatable(M, {
