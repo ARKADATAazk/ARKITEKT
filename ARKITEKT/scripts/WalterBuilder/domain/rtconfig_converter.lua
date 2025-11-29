@@ -657,7 +657,17 @@ local function calculate_flow_positions(result, eval_context)
   local meter_sec_x = get_at_index(eval_context.meter_sec, 1, 20)
   local meter_sec_w = get_at_index(eval_context.meter_sec, 3, 84)
   local tcp_padding = get_scalar(eval_context.tcp_padding, 7)
+  local parent_w = get_scalar(eval_context.w, 400)
   local start_x = meter_sec_x + meter_sec_w + tcp_padding
+
+  -- Sanity check: if start_x is beyond parent width, meter_sec calculation went wrong
+  -- This can happen if meterRight flips meter to right side incorrectly
+  if start_x > parent_w - 50 then  -- Need at least 50px for flow elements
+    Console.warn("Flow layout: start_x=%d exceeds parent_w=%d (meter_sec=%s)",
+      start_x, parent_w, fmt_arr(eval_context.meter_sec))
+    Console.warn("  Using safe default: start_x=111 (meter on left)")
+    start_x = 111  -- Safe default: 20 (folder) + 84 (meter) + 7 (padding)
+  end
 
   -- Element dimensions
   local element_h = get_scalar(eval_context.element_h, 20)
@@ -665,7 +675,6 @@ local function calculate_flow_positions(result, eval_context)
   local elem_gap = 2  -- Gap between elements horizontally
 
   -- Calculate maximum width available for flow (parent width minus margins)
-  local parent_w = get_scalar(eval_context.w, 400)
   local max_flow_width = parent_w - start_x - tcp_padding  -- Available space from start_x to right edge
 
   -- Track current position (horizontal flow with wrapping)
