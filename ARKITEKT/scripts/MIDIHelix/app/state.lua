@@ -1,5 +1,5 @@
 -- @noindex
--- MIDIExMachina/app/state.lua
+-- MIDIHelix/app/state.lua
 -- Application state management
 
 local M = {}

@@ -1,7 +1,7 @@
 --[[
   @noindex
 
-  MIDI Ex Machina (ARKITEKT Edition)
+  MIDI Helix (ARKITEKT Edition)
 
   Euclidean rhythm generator for REAPER's MIDI Editor.
 
@@ -22,39 +22,22 @@
   - Grid-based timing control
 ]]
 
--- Bootstrap ARKITEKT
-local ARK
-do
-  local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, "S").source:sub(2)
-  local path = src:match("(.*"..sep..")")
-  while path and #path > 3 do
-    local init = path .. "arkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
-    local f = io.open(init, "r")
-    if f then
-      f:close()
-      ARK = dofile(init).bootstrap()
-      break
-    end
-    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
-  end
-  if not ARK then
-    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
-    return
-  end
-end
+-- ============================================================================
+-- LOAD ARKITEKT FRAMEWORK
+-- ============================================================================
+local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
 
 -- DEPENDENCIES
-local Shell = require('arkitekt.app.runtime.shell')
-local State = require('scripts.MIDIExMachina.app.state')
-local EuclideanView = require('scripts.MIDIExMachina.ui.euclidean_view')
-local Defaults = require('scripts.MIDIExMachina.defs.defaults')
+local Shell = require('arkitekt.app.shell')
+local State = require('scripts.MIDIHelix.app.state')
+local EuclideanView = require('scripts.MIDIHelix.ui.euclidean_view')
+local Defaults = require('scripts.MIDIHelix.defs.defaults')
 
 -- APP STATE
-local app_state = State.new(ARK)
+local app_state = State.new(Ark)
 
 -- Initialize view with Ark namespace
-EuclideanView.init(ARK)
+EuclideanView.init(Ark)
 
 -- Main draw function
 local function draw(ctx)

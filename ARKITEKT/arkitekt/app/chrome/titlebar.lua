@@ -160,8 +160,14 @@ function M.new(opts)
         local dpi = ImGui.GetWindowDpiScale(ctx) or 1.0
         self.icon_image = Icon.load_image(ctx, "ARKITEKT", dpi)
       end
-      if self.icon_image and Icon.draw_png(ctx, x, y, self.icon_size, self.icon_image) then
-        return
+      if self.icon_image then
+        local success = Icon.draw_png(ctx, x, y, self.icon_size, self.icon_image)
+        if success then
+          return
+        else
+          -- Image became invalid, clear cache so it can be reloaded next frame
+          self.icon_image = nil
+        end
       end
     end
 

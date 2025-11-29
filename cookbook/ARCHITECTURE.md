@@ -520,7 +520,7 @@ Entry points **MUST** use `dofile` bootstrap, **not** `require`.
 -- MyApp
 
 -- Bootstrap framework
-local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
 
 -- Imports
 local Shell = require('arkitekt.app.shell')

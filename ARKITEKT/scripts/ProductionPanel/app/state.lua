@@ -27,7 +27,7 @@ end
 function M.save()
   if state.settings then
     -- TODO: Save macro mappings, drum kit, etc.
-    state.settings:save()
+    state.settings:flush()
   end
 end
 

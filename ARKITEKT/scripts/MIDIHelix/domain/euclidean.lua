@@ -1,5 +1,5 @@
 -- @noindex
--- MIDIExMachina/domain/euclidean.lua
+-- MIDIHelix/domain/euclidean.lua
 -- Bjorklund algorithm for Euclidean rhythm generation
 
 local M = {}
@@ -39,7 +39,7 @@ function M.generate(pulses, steps, rotation)
   local counts = {}
   local remainders = {}
   local divisor = steps - pulses
-  remainders[1] = pulses
+  remainders[0] = pulses
   local level = 0
 
   repeat
@@ -47,7 +47,7 @@ function M.generate(pulses, steps, rotation)
     remainders[level + 1] = divisor % remainders[level]
     divisor = remainders[level]
     level = level + 1
-  until remainders[level] <= 1
+  until remainders[level] and remainders[level] <= 1
 
   counts[level] = divisor
 
@@ -58,10 +58,11 @@ function M.generate(pulses, steps, rotation)
     elseif level_idx == -2 then
       table.insert(pattern, 1)
     else
-      for i = 1, counts[level_idx] do
+      local count = counts[level_idx] or 0
+      for i = 1, count do
         build(level_idx - 1)
       end
-      if remainders[level_idx] ~= 0 then
+      if remainders[level_idx] and remainders[level_idx] ~= 0 then
         build(level_idx - 2)
       end
     end

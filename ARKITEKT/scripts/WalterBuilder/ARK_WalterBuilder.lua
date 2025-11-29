@@ -12,7 +12,7 @@
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
 
-local Ark = dofile(reaper.GetResourcePath() .. '/Scripts/ARKITEKT/loader.lua')
+local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
 
 -- ============================================================================
 -- LOAD MODULES

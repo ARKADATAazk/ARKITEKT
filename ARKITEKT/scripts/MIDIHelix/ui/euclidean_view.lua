@@ -1,13 +1,13 @@
 -- @noindex
--- MIDIExMachina/ui/euclidean_view.lua
+-- MIDIHelix/ui/euclidean_view.lua
 -- Euclidean generator UI view
 
 local M = {}
 
 -- DEPENDENCIES
-local Euclidean = require('scripts.MIDIExMachina.domain.euclidean')
-local MidiWriter = require('scripts.MIDIExMachina.app.midi_writer')
-local Defaults = require('scripts.MIDIExMachina.defs.defaults')
+local Euclidean = require('scripts.MIDIHelix.domain.euclidean')
+local MidiWriter = require('scripts.MIDIHelix.app.midi_writer')
+local Defaults = require('scripts.MIDIHelix.defs.defaults')
 
 -- STATE
 local state = {
@@ -43,12 +43,20 @@ function M.draw(ctx)
   ImGui.Text(ctx, "Pattern:")
   local changed = false
 
-  changed, state.pulses = ImGui.SliderInt(ctx, "Pulses", state.pulses, 0, 32)
-  changed, state.steps = ImGui.SliderInt(ctx, "Steps", state.steps, 1, 32) or changed
-  changed, state.rotation = ImGui.SliderInt(ctx, "Rotation", state.rotation, 0, 31) or changed
+  local c1, p = ImGui.SliderInt(ctx, "Pulses", state.pulses, 0, 32)
+  state.pulses = p
+  changed = changed or c1
+
+  local c2, s = ImGui.SliderInt(ctx, "Steps", state.steps, 1, 32)
+  state.steps = s
+  changed = changed or c2
+
+  local c3, r = ImGui.SliderInt(ctx, "Rotation", state.rotation, 0, 31)
+  state.rotation = r
+  changed = changed or c3
 
   -- Clamp pulses to steps
-  if state.pulses > state.steps then
+  if state.pulses and state.steps and state.pulses > state.steps then
     state.pulses = state.steps
     changed = true
   end

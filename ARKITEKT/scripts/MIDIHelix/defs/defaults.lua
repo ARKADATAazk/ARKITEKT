@@ -1,5 +1,5 @@
 -- @noindex
--- MIDIExMachina/defs/defaults.lua
+-- MIDIHelix/defs/defaults.lua
 -- Default values and configuration
 
 return {
@@ -16,6 +16,6 @@ return {
   WINDOW = {
     WIDTH = 400,
     HEIGHT = 300,
-    TITLE = "MIDI Ex Machina - Euclidean Generator",
+    TITLE = "MIDI Helix - Euclidean Generator",
   },
 }

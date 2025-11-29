@@ -5,7 +5,7 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local Ark = dofile(reaper.GetResourcePath() .. '/Scripts/ARKITEKT/loader.lua')
+local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
@@ -25,17 +25,17 @@ local Settings = require('arkitekt.core.settings')
 local hexrgb = Ark.Colors.hexrgb
 
 -- Load ItemPicker core modules (reuse data layer)
-local Config = require('ItemPicker.core.config')
-local State = require('ItemPicker.core.app_state')
-local Controller = require('ItemPicker.core.controller')
+local Config = require('scripts.ItemPicker.core.config')
+local State = require('scripts.ItemPicker.core.app_state')
+local Controller = require('scripts.ItemPicker.core.controller')
 
 -- Load window-specific GUI module
-local GUI = require('ItemPickerWindow.ui.gui')
+local GUI = require('scripts.ItemPickerWindow.ui.gui')
 
 -- Data and service modules
-local visualization = require('ItemPicker.services.visualization')
-local reaper_interface = require('ItemPicker.data.reaper_api')
-local utils = require('ItemPicker.services.utils')
+local visualization = require('scripts.ItemPicker.services.visualization')
+local reaper_interface = require('scripts.ItemPicker.data.reaper_api')
+local utils = require('scripts.ItemPicker.services.utils')
 
 -- Initialize settings
 local data_dir = Ark._bootstrap.get_data_dir("ItemPickerWindow")

@@ -40,7 +40,7 @@ Create `scripts/MyApp/ARK_MyApp.lua`:
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
 
 -- ============================================================================
 -- IMPORTS
@@ -97,7 +97,7 @@ Based on **ItemPicker** - fullscreen overlay with transparency.
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
 
 -- ============================================================================
 -- IMPORTS
@@ -426,7 +426,7 @@ For simple tools, everything can be in one file:
 -- @noindex
 -- Simple Tool
 
-local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
 local Shell = require('arkitekt.app.shell')
 local ImGui = Ark.ImGui
 

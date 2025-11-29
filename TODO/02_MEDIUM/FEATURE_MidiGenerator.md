@@ -1,4 +1,4 @@
-# MIDI Generator (MIDI Ex Machina++)
+# MIDI Generator (MIDI Helix++)
 
 > **Status:** Proposed
 > **Priority:** High
@@ -9,7 +9,7 @@
 
 ## Overview
 
-A next-generation MIDI pattern generator that extends RobU's MIDI Ex Machina with additional features, while extracting core algorithms into reusable arkitekt modules for use across apps (ItemPicker, TemplateBrowser, etc.).
+A next-generation MIDI pattern generator that extends MIDI Helix with additional features, while extracting core algorithms into reusable arkitekt modules for use across apps (ItemPicker, TemplateBrowser, etc.).
 
 ---
 

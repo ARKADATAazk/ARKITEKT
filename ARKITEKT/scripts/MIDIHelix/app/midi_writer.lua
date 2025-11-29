@@ -1,5 +1,5 @@
 -- @noindex
--- MIDIExMachina/app/midi_writer.lua
+-- MIDIHelix/app/midi_writer.lua
 -- MIDI note writing to REAPER items
 
 local M = {}

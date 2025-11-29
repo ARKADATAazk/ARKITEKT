@@ -57,9 +57,9 @@ function M.draw(ctx)
   local padding = Defaults.UI.SECTION_PADDING
 
   -- Header
-  ImGui.PushFont(ctx, "font_title" or 0)
+  -- ImGui.PushFont(ctx, "font_title" or 0)  -- Font API requires font object + size, disabled for now
   ImGui.Text(ctx, "Macro Controls")
-  ImGui.PopFont(ctx)
+  -- ImGui.PopFont(ctx)
 
   ImGui.Spacing(ctx)
   ImGui.Separator(ctx)

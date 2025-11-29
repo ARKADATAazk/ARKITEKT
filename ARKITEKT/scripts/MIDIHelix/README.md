@@ -1,4 +1,4 @@
-# MIDI Ex Machina (ARKITEKT Edition)
+# MIDI Helix (ARKITEKT Edition)
 
 **Euclidean rhythm generator for REAPER's MIDI Editor**
 
@@ -29,7 +29,7 @@ Euclidean rhythms distribute pulses (hits) as evenly as possible across a given 
 ## Usage
 
 1. Open REAPER's MIDI editor
-2. Run `ARK_MIDIExMachina.lua`
+2. Run `ARK_MIDIHelix.lua`
 3. Adjust sliders to create your pattern
 4. Click "Generate Pattern" to insert notes
 

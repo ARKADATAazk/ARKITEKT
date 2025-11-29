@@ -1,8 +1,8 @@
 -- @noindex
--- MIDIExMachina/tests/test_euclidean.lua
+-- MIDIHelix/tests/test_euclidean.lua
 -- Unit tests for Euclidean rhythm generator
 
-local Euclidean = require('scripts.MIDIExMachina.domain.euclidean')
+local Euclidean = require('scripts.MIDIHelix.domain.euclidean')
 
 local function test_basic_patterns()
   print("Testing basic Euclidean patterns...")

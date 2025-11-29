@@ -119,46 +119,54 @@ function M.draw(ctx, opts)
   -- Check interaction
   local hovered, active = Base.get_interaction_state(ctx, x, y, total_w, total_h, opts)
 
-  -- Update animation
+  -- Update animation (slower fade for smoother effect)
   local dt = ImGui.GetDeltaTime(ctx)
-  Base.update_hover_animation(inst, dt, hovered, active, "hover_alpha")
+  Base.update_hover_animation(inst, dt, hovered, active, "hover_alpha", 6.0)
 
   -- Calculate center of circle
   local center_x = x + outer_radius
   local center_y = y + outer_radius
 
   -- Determine colors
-  local bg_color, inner_color, text_color, border_inner, border_outer
+  local bg_color, inner_color, selected_color, text_color, border_inner, border_outer
+  local white_overlay = hexrgb("#FFFFFF")
+
+  -- Base colors
+  bg_color = opts.bg_color or Theme.COLORS.BG_BASE
+  inner_color = Colors.adjust_brightness(opts.inner_color or Theme.COLORS.BG_BASE, 0.85)
+  selected_color = opts.selected_color or hexrgb("#7e7e7e")
+  text_color = opts.text_color or Theme.COLORS.TEXT_NORMAL
+  border_inner = opts.border_inner_color or Theme.COLORS.BORDER_INNER
+  border_outer = opts.border_outer_color or Theme.COLORS.BORDER_OUTER
 
   if disabled then
-    bg_color = Colors.with_opacity(Colors.desaturate(opts.bg_color or Theme.COLORS.BG_BASE, 0.5), 0.5)
-    inner_color = Colors.with_opacity(Colors.desaturate(opts.inner_color or Theme.COLORS.BG_BASE, 0.5), 0.5)
-    text_color = Colors.with_opacity(Colors.desaturate(opts.text_color or Theme.COLORS.TEXT_NORMAL, 0.5), 0.5)
-    border_inner = Colors.with_opacity(Colors.desaturate(opts.border_inner_color or Theme.COLORS.BORDER_INNER, 0.5), 0.5)
-    border_outer = Colors.with_opacity(Colors.desaturate(opts.border_outer_color or Theme.COLORS.BORDER_OUTER, 0.5), 0.5)
-  elseif active then
-    bg_color = opts.bg_active_color or Theme.COLORS.BG_ACTIVE
-    inner_color = Colors.adjust_brightness(opts.inner_color or Theme.COLORS.BG_BASE, 0.85)
-    text_color = opts.text_hover_color or Theme.COLORS.TEXT_HOVER
-    border_inner = opts.border_inner_color or Theme.COLORS.BORDER_INNER
-    border_outer = opts.border_outer_color or Theme.COLORS.BORDER_OUTER
-  elseif inst.hover_alpha > 0.01 then
-    local hover_bg = opts.bg_hover_color or Theme.COLORS.BG_HOVER
-    bg_color = Colors.lerp(opts.bg_color or Theme.COLORS.BG_BASE, hover_bg, inst.hover_alpha)
-    inner_color = Colors.adjust_brightness(opts.inner_color or Theme.COLORS.BG_BASE, 0.85)
-    text_color = Colors.lerp(
-      opts.text_color or Theme.COLORS.TEXT_NORMAL,
-      opts.text_hover_color or Theme.COLORS.TEXT_HOVER,
-      inst.hover_alpha
-    )
-    border_inner = opts.border_inner_color or Theme.COLORS.BORDER_INNER
-    border_outer = opts.border_outer_color or Theme.COLORS.BORDER_OUTER
+    bg_color = Colors.with_opacity(Colors.desaturate(bg_color, 0.5), 0.5)
+    inner_color = Colors.with_opacity(Colors.desaturate(inner_color, 0.5), 0.5)
+    selected_color = Colors.with_opacity(Colors.desaturate(selected_color, 0.5), 0.5)
+    text_color = Colors.with_opacity(Colors.desaturate(text_color, 0.5), 0.5)
+    border_inner = Colors.with_opacity(Colors.desaturate(border_inner, 0.5), 0.5)
+    border_outer = Colors.with_opacity(Colors.desaturate(border_outer, 0.5), 0.5)
   else
-    bg_color = opts.bg_color or Theme.COLORS.BG_BASE
-    inner_color = Colors.adjust_brightness(opts.inner_color or Theme.COLORS.BG_BASE, 0.85)
-    text_color = opts.text_color or Theme.COLORS.TEXT_NORMAL
-    border_inner = opts.border_inner_color or Theme.COLORS.BORDER_INNER
-    border_outer = opts.border_outer_color or Theme.COLORS.BORDER_OUTER
+    -- Apply hover effects to the visible layer (selected indicator when selected, inner circle when not)
+    if active and hovered then
+      -- Active and hovered: brighten whichever circle is visible
+      if selected then
+        selected_color = Colors.lerp(selected_color, white_overlay, 0.5)
+      else
+        inner_color = Colors.lerp(inner_color, white_overlay, 0.5)
+      end
+      text_color = opts.text_hover_color or Theme.COLORS.TEXT_HOVER
+    elseif active then
+      text_color = opts.text_hover_color or Theme.COLORS.TEXT_HOVER
+    elseif inst.hover_alpha > 0.01 then
+      -- Hover: lighten whichever circle is visible
+      if selected then
+        selected_color = Colors.lerp(selected_color, white_overlay, inst.hover_alpha * 0.4)
+      else
+        inner_color = Colors.lerp(inner_color, white_overlay, inst.hover_alpha * 0.15)
+      end
+      text_color = Colors.lerp(text_color, opts.text_hover_color or Theme.COLORS.TEXT_HOVER, inst.hover_alpha)
+    end
   end
 
   -- Draw outer circle (22x22)
@@ -172,10 +180,6 @@ function M.draw(ctx, opts)
 
   -- Draw selected indicator (10x10)
   if selected then
-    local selected_color = opts.selected_color or hexrgb("#7e7e7e")
-    if disabled then
-      selected_color = Colors.with_opacity(Colors.desaturate(selected_color, 0.5), 0.5)
-    end
     ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, selected_radius, selected_color)
   end
 

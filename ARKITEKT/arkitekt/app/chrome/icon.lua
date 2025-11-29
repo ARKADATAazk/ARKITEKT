@@ -42,8 +42,32 @@ function M.load_image(ctx, base_name, dpi_scale)
 
   dpi_scale = dpi_scale or 1.0
   local cache_key = tostring(ctx) .. "_" .. base_name .. "_" .. tostring(dpi_scale)
+
+  -- Check if cached image exists and is still valid
   if image_cache[cache_key] then
-    return image_cache[cache_key]
+    local cached = image_cache[cache_key]
+    if cached.image and type(cached.image) == "userdata" then
+      -- Validate image pointer if ValidatePtr is available
+      local validate_fn = ImGui.ValidatePtr
+      if validate_fn then
+        local is_valid = false
+        local ok = pcall(function()
+          is_valid = validate_fn(cached.image, 'ImGui_Image*')
+        end)
+        if ok and is_valid then
+          return cached
+        else
+          -- Image pointer is invalid, clear from cache
+          image_cache[cache_key] = nil
+        end
+      else
+        -- No validation available, trust the cache
+        return cached
+      end
+    else
+      -- Not userdata anymore, clear from cache
+      image_cache[cache_key] = nil
+    end
   end
 
   local icons_dir = find_icons_dir()
@@ -110,6 +134,21 @@ end
 -- Draw PNG icon at native size (22×22 logical pixels)
 function M.draw_png(ctx, x, y, size, image_data)
   if not image_data or not image_data.image then return false end
+
+  -- Validate image pointer before using it
+  if type(image_data.image) ~= "userdata" then return false end
+
+  -- Use ValidatePtr if available (ImGui 0.9+)
+  local validate_fn = ImGui.ValidatePtr
+  if validate_fn then
+    local is_valid = false
+    local ok = pcall(function()
+      is_valid = validate_fn(image_data.image, 'ImGui_Image*')
+    end)
+    if not ok or not is_valid then
+      return false
+    end
+  end
 
   local draw_list = ImGui.GetWindowDrawList(ctx)
 
