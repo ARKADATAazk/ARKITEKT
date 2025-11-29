@@ -4,8 +4,7 @@
 -- Marquee selection (LEFT click + drag on background, square corners)
 -- FIXED: Scroll-aware selection maintains origin point
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local M = {}
 

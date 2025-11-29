@@ -2,7 +2,7 @@
 -- ItemPicker/ui/init.lua
 -- GUI orchestrator
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Coordinator = require('ItemPicker.ui.grids.coordinator')
 local LayoutView = require('ItemPicker.ui.components.layout_view')
 local TrackFilter = require('ItemPicker.ui.components.track_filter')

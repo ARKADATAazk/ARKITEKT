@@ -2,8 +2,7 @@
 -- Arkitekt/gui/widgets/nodal/rendering/connection_renderer.lua
 -- Connection rendering with Manhattan routing
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')

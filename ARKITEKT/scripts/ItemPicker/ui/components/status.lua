@@ -2,7 +2,7 @@
 -- ItemPicker/ui/components/status.lua
 -- Status bar showing selection info and tips
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Constants = require('ItemPicker.defs.constants')
 local Strings = require('ItemPicker.defs.strings')
 local Defaults = require('ItemPicker.defs.defaults')

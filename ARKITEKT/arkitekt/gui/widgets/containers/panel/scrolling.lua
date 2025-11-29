@@ -2,8 +2,7 @@
 -- panel/scrolling.lua
 -- Scrollbar management and anti-jitter logic
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Scrollbar = require('arkitekt.gui.widgets.primitives.scrollbar')
 
 local M = {}

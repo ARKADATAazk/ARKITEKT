@@ -2,8 +2,7 @@
 -- Arkitekt/ColorPalette/widgets/color_grid.lua
 -- Simple color button grid widget with drag-to-move support
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 local M = {}

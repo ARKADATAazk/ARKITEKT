@@ -2,8 +2,7 @@
 -- arkitekt/gui/widgets/colored_text_view.lua
 -- Read-only colored text viewer with native selection support
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

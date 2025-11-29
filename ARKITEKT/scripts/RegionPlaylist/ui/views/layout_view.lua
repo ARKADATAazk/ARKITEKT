@@ -2,8 +2,7 @@
 -- RegionPlaylist/ui/views/layout_view.lua
 -- Layout view handling horizontal and vertical split layouts
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Logger = require('arkitekt.debug.logger')
 

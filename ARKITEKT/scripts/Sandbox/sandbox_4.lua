@@ -12,9 +12,8 @@ if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
 
 local arkitekt_path = root_path .. "ARKITEKT/"
 package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. package.path
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
-local ImGui = require('imgui')('0.10')
+local ImGui = require('arkitekt.platform.imgui')
 local Shell = require('arkitekt.app.shell')
 local Colors = require('arkitekt.core.colors')
 local InputText = require('arkitekt.gui.widgets.primitives.inputtext')

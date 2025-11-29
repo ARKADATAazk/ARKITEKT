@@ -2,8 +2,7 @@
 -- panel/rendering.lua
 -- Core panel rendering: backgrounds, borders, per-corner rounding
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local M = {}
 

@@ -2,8 +2,7 @@
 -- Arkitekt/gui/widgets/close_button.lua
 -- Floating close button that appears on hover in top-right corner
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')

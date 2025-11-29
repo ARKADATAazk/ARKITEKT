@@ -2,7 +2,7 @@
 -- ItemPicker/ui/tiles/renderers/base.lua
 -- Base tile renderer with shared functionality
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local hexrgb = Ark.Colors.hexrgb
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')

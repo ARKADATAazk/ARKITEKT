@@ -2,7 +2,7 @@
 -- MediaContainer/ui/overlay.lua
 -- Draw container bounds on arrange view with drag support
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local M = {}
 

@@ -2,8 +2,7 @@
 -- Arkitekt/gui/widgets/overlays/batch_rename_modal.lua
 -- Modal for batch renaming with wildcard support
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.core.theme')
 local Container = require('arkitekt.gui.widgets.overlays.overlay.container')

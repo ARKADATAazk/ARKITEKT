@@ -2,8 +2,7 @@
 -- Arkitekt/gui/widgets/nodal/canvas.lua
 -- Main container for node system with vertical sequencer
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local Config = require('arkitekt.gui.widgets.editors.nodal.defaults')
 local Node = require('arkitekt.gui.widgets.editors.nodal.core.node')

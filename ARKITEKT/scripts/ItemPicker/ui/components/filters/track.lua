@@ -2,7 +2,7 @@
 -- ItemPicker/ui/components/filters/track.lua
 -- Track filter bar - vertical tags on left side to filter items by track
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Cursor = Ark.Cursor
 local M = {}

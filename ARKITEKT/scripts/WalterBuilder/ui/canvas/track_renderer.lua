@@ -2,7 +2,7 @@
 -- WalterBuilder/ui/canvas/track_renderer.lua
 -- Renders TCP tracks vertically on the canvas
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local TrackDefaults = require('WalterBuilder.defs.track_defaults')
 

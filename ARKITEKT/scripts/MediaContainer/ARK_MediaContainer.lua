@@ -18,7 +18,6 @@ do
       f:close()
       -- Set up package path first
       package.path = path .. "?.lua;" .. path .. "?" .. sep .. "init.lua;" .. package.path
-      package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
       ark = require('arkitekt')
       break
     end
@@ -34,7 +33,7 @@ end
 -- LOAD MODULES
 -- ============================================================================
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Shell = require("arkitekt.app.shell")
 local MediaContainer = require("MediaContainer.init")
 local hexrgb = Ark.Colors.hexrgb

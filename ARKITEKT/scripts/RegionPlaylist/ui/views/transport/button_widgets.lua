@@ -2,8 +2,7 @@
 -- RegionPlaylist/ui/views/transport/button_widgets.lua
 -- Transport button widgets (view mode, toggle buttons, jump controls)
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')

@@ -2,8 +2,7 @@
 -- Demo: Colored Button Presets (Algorithmic Hue Variations)
 -- Showcase the new create_colored_button_preset system
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Style = require('arkitekt.gui.style')
 local Colors = require('arkitekt.core.colors')
 local ThemeManager = require('arkitekt.core.theme_manager')

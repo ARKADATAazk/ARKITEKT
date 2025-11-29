@@ -4,8 +4,7 @@
 -- Opens as a draggable, always-on-top window with hue wheel picker
 -- Changes apply instantly to selected items as you adjust the color
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 

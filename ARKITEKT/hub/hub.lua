@@ -2,8 +2,7 @@
 -- Arkitekt/app/hub.lua
 -- Embedded hub for launching apps and managing settings
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local M = {}
 

@@ -2,8 +2,7 @@
 -- RegionPlaylist/ui/tiles/renderers/base.lua
 -- MODIFIED: Dynamic index overflow - reserves space for 2 digits, extends right for 3+
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')

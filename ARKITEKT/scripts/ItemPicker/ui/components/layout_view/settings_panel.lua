@@ -2,7 +2,7 @@
 -- ItemPicker/ui/components/layout_view/settings_panel.lua
 -- Settings panel with checkboxes and waveform quality slider
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 local M = {}

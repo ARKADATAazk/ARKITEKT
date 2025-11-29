@@ -2,8 +2,7 @@
 -- RegionPlaylist/ui/tiles/coordinator_render.lua
 -- Rendering methods for region tiles coordinator
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local Dnd = require('arkitekt.gui.interaction.drag_visual')
 local DragIndicator = Dnd.DragIndicator

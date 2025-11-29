@@ -1,7 +1,6 @@
 -- @noindex
 -- Test overlay toolbar system with regular toolbars
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
 -- Get script directory and navigate to ARKITEKT root
 local script_path = debug.getinfo(1, "S").source:match("@?(.*[\\/])") or ""
@@ -11,7 +10,7 @@ local arkitekt_root = script_path .. "../../"  -- From scripts/Sandbox/ to ARKIT
 package.path = package.path .. ';' .. arkitekt_root .. '?.lua'
 package.path = package.path .. ';' .. arkitekt_root .. '?/init.lua'
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Panel = require('arkitekt.gui.widgets.containers.panel')
 
 -- ============================================================================

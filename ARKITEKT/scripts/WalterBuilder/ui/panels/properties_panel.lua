@@ -2,7 +2,7 @@
 -- WalterBuilder/ui/panels/properties_panel.lua
 -- Properties panel for editing selected element coordinates
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Coordinate = require('WalterBuilder.domain.coordinate')
 local Simulator = require('WalterBuilder.domain.simulator')

@@ -7,8 +7,7 @@
 -- The scrollbar draws on top (later in render pipeline), so scrollbar remains fully interactive.
 -- Sidebar buttons remain clickable on the left side of the scrollbar.
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local ConfigUtil = require('arkitekt.core.config')
 local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')

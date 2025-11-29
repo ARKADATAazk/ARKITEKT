@@ -3,8 +3,7 @@
 -- Input handling for grid widgets - unified shortcut system
 -- FIXED: Tiles outside grid bounds are no longer interactive
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local Draw = require('arkitekt.gui.draw.primitives')
 

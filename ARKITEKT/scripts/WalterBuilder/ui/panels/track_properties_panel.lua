@@ -3,7 +3,7 @@
 -- Properties panel for editing selected track settings
 -- Uses Arkitekt widgets for consistent styling
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local Slider = require('arkitekt.gui.widgets.primitives.slider')

@@ -2,8 +2,7 @@
 -- RegionPlaylist/ui/views/overflow_modal_view.lua
 -- Overflow modal for playlist picker
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 local Container = require('arkitekt.gui.widgets.overlays.overlay.container')

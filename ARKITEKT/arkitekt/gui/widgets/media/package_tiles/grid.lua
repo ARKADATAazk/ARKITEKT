@@ -2,8 +2,7 @@
 -- Arkitekt/gui/widgets/package_tiles/grid.lua
 -- Package grid main logic with 200px height constraint
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local Colors = require('arkitekt.core.colors')

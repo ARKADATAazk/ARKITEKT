@@ -2,8 +2,7 @@
 -- RegionPlaylist/ui/tiles/selector.lua
 -- Playlist selector widget with animated chips
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 local TileAnim = require('arkitekt.gui.animation.tile_animator')

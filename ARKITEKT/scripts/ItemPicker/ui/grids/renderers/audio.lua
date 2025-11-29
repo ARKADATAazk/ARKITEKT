@@ -2,7 +2,7 @@
 -- ItemPicker/ui/tiles/renderers/audio.lua
 -- Audio tile renderer with waveform visualization
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Duration = require('arkitekt.core.duration')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')

@@ -2,8 +2,7 @@
 -- Arkitekt/gui/widgets/panel/header/init.lua
 -- Header coordinator - supports top and bottom positioning
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local Layout = require('arkitekt.gui.widgets.containers.panel.header.layout')
 local Theme = require('arkitekt.core.theme')

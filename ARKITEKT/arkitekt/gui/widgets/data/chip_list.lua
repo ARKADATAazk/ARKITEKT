@@ -2,8 +2,7 @@
 -- Arkitekt/gui/widgets/chip_list/list.lua
 -- Chip list container with multiple layout modes
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Colors = require('arkitekt.core.colors')

@@ -3,8 +3,7 @@
 -- Overlay toolbar system - floating toolbars with auto-hide and animations
 -- All 4 sides supported: top, bottom, left, right
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 -- Delegate to existing renderers for element drawing
 local Header = require('arkitekt.gui.widgets.containers.panel.header')

@@ -2,8 +2,7 @@
 -- Arkitekt/ColorPalette/app/gui.lua
 -- Main GUI orchestrator for Color Palette (Frameless Edition)
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 local ColorGrid = require('ColorPalette.widgets.color_grid')

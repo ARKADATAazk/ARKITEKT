@@ -2,8 +2,7 @@
 -- Demo: Theme Manager
 -- Test the new dynamic theme system with algorithmic palette generation
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local ThemeManager = require('arkitekt.core.theme_manager')
 local Style = require('arkitekt.gui.style')

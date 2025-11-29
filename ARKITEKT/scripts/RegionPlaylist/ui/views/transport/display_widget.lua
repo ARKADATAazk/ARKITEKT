@@ -2,8 +2,7 @@
 -- RegionPlaylist/ui/views/transport/display_widget.lua
 -- Transport display widget showing time, regions, and progress
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Style = require('arkitekt.gui.style')
 local Duration = require('arkitekt.core.duration')

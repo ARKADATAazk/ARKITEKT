@@ -2,8 +2,7 @@
 -- Arkitekt/gui/widgets/nodal/rendering/node_renderer.lua
 -- Node rendering with dropdown-based trigger targeting
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')

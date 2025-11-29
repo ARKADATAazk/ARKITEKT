@@ -2,7 +2,7 @@
 -- ItemPicker/ui/components/search.lua
 -- Custom search field with mode selector using dropdown primitive
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Defaults = require('ItemPicker.defs.defaults')
 local Constants = require('ItemPicker.defs.constants')

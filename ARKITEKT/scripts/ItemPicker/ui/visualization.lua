@@ -3,7 +3,7 @@
 -- Waveform and MIDI thumbnail generation and display
 -- @migrated 2024-11-27 from services/visualization.lua
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local hexrgb = Ark.Colors.hexrgb
 

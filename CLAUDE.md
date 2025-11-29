@@ -115,7 +115,7 @@ For full workflows, see the corresponding sections in `cookbook/`.
 
 ### Refactor / Migration
 
-- Check `cookbook/MIGRATION_PLANS.md`.
+- Check `cookbook/REFACTOR_PLAN.md`.
 - Use phased approach: shims → new path wired → remove legacy.
 - Mark deprecated shims clearly with expiry notes.
 - Respect diff budget (see below).

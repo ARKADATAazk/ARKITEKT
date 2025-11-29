@@ -404,7 +404,6 @@ TestRunner.register("ThemeAdjuster.platform.theme_params", tests)
 
 ## See Also
 
-- [SCRIPT_LAYERS.md](./SCRIPT_LAYERS.md) - Layer purity rules
-- [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) - Script organization
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Layer purity rules and script organization
 - `arkitekt/debug/test_runner.lua` - Test runner source
 - `scripts/RegionPlaylist/tests/` - Reference implementation

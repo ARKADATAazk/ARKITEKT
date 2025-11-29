@@ -2,7 +2,7 @@
 -- WalterBuilder/ui/panels/rtconfig_panel.lua
 -- Panel for viewing parsed rtconfig structure (read-only)
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local RtconfigParser = require('WalterBuilder.domain.rtconfig_parser')
 local RtconfigConverter = require('WalterBuilder.domain.rtconfig_converter')

@@ -5,8 +5,7 @@
 -- FIXED: Tiles outside grid bounds are no longer interactive or rendered
 -- FIXED: Respects parent panel scrollable bounds
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local LayoutGrid = require('arkitekt.gui.widgets.containers.grid.layout')
 local Tracks = require('arkitekt.gui.animation.tracks')

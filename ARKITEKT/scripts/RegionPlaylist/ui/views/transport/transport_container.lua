@@ -3,8 +3,7 @@
 -- Transport panel with bottom header and gradient background
 -- MOVED FROM LIBRARY: Project-specific transport panel (no other scripts use this)
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Style = require('arkitekt.gui.style')
 

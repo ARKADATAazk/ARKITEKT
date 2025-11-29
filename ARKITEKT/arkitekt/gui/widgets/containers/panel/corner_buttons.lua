@@ -2,8 +2,7 @@
 -- panel/corner_buttons.lua
 -- Corner button rendering with asymmetric rounding
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Base = require('arkitekt.gui.widgets.base')
 local CornerButton = require('arkitekt.gui.widgets.primitives.corner_button')
 local ConfigUtil = require('arkitekt.core.config')

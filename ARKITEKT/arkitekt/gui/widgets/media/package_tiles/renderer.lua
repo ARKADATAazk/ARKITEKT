@@ -3,8 +3,7 @@
 -- Package tile rendering module with text truncation support
 -- Theme-aware: uses ThemeAdjuster/defs/colors.lua for script-specific colors
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local Draw = require('arkitekt.gui.draw.primitives')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')

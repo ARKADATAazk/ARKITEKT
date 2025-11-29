@@ -91,7 +91,7 @@ function M.create(config) end
 | **ui/state/** | UI-only state (preferences, animation, NOT business data) |
 | **Keep defs/** | This name is clear and doesn't collide |
 
-> **Note:** Scripts take a pragmatic approach - `domain/` can use `reaper.*` directly since all code runs in REAPER anyway. See [SCRIPT_LAYERS.md](./SCRIPT_LAYERS.md) for the framework vs scripts distinction.
+> **Note:** Scripts take a pragmatic approach - `domain/` can use `reaper.*` directly since all code runs in REAPER anyway. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the framework vs scripts distinction.
 
 ### Forbidden Folder Names
 
@@ -582,7 +582,7 @@ local clamped_pos = max(region.start, min(playpos, region["end"]))
 - [ ] `ui/state/` contains only UI preferences, not business data
 - [ ] No `core/`, `utils/`, or `services/` folders
 
-> See [SCRIPT_LAYERS.md](./SCRIPT_LAYERS.md) for pragmatic vs strict purity guidance.
+> See [ARCHITECTURE.md](./ARCHITECTURE.md) for pragmatic vs strict purity guidance.
 
 ---
 

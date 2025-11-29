@@ -2,7 +2,7 @@
 -- WalterBuilder/ui/gui.lua
 -- Main GUI orchestrator - combines all panels
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local State = require('WalterBuilder.app.state')
 local PreviewCanvas = require('WalterBuilder.ui.canvas.preview_canvas')

@@ -2,7 +2,7 @@
 -- ItemPicker/ui/grids/factories/midi.lua
 -- Factory for creating MIDI items grid
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')

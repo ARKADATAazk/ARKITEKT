@@ -3,7 +3,7 @@
 -- Main layout view with absolute positioning and fade animations
 -- Refactored: Now uses separate modules for settings, search toolbar, and content panels
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local StatusBar = require('ItemPicker.ui.components.status')
 local RegionFilterBar = require('ItemPicker.ui.components.filters.region')

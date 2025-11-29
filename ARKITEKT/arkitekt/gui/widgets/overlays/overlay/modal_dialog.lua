@@ -2,8 +2,7 @@
 -- Arkitekt/gui/widgets/overlay/modal_dialog.lua
 -- Unified modal dialog system using overlay system like overflow modal
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local Sheet = require('arkitekt.gui.widgets.overlays.overlay.sheet')
 local Button = require('arkitekt.gui.widgets.primitives.button')

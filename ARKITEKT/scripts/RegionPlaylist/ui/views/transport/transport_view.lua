@@ -2,8 +2,7 @@
 -- RegionPlaylist/ui/views/transport/transport_view.lua
 -- Transport section view orchestrator
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 local TransportContainer = require('RegionPlaylist.ui.views.transport.transport_container')

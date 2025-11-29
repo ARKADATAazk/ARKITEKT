@@ -28,7 +28,7 @@ local function setup(root_path)
       root_path .. "scripts" .. sep .. "?" .. sep .. "init.lua;" ..
       package.path
 
-  -- Add ReaImGui path
+  -- Add ReaImGui builtin path (required for extension to be found)
   package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
   -- ============================================================================
@@ -58,7 +58,7 @@ local function setup(root_path)
   end
 
   -- Load ImGui with version
-  local ImGui = require('imgui')('0.10')
+  local ImGui = require('arkitekt.platform.imgui')
 
   -- ============================================================================
   -- SWS EXTENSION VALIDATION

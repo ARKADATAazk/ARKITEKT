@@ -2,8 +2,7 @@
 -- Arkitekt/gui/widgets/overlay/sheet.lua
 -- A task-oriented modal "sheet" with visual polish
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local Draw   = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')

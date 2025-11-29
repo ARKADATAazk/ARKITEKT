@@ -29,8 +29,7 @@ root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
 if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
 package.path = root_path .. "?.lua;" .. root_path .. "?/init.lua;" .. package.path
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua'
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 -- ReaImGui presence check (AFTER loading)

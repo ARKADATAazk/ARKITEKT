@@ -3,7 +3,7 @@
 -- Base media tile renderer with shared functionality
 -- Used by ItemPicker and other media browsing components
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 local Draw = require('arkitekt.gui.draw.primitives')

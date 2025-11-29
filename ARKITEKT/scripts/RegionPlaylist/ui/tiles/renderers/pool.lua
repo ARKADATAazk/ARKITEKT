@@ -2,8 +2,7 @@
 -- RegionPlaylist/ui/tiles/renderers/pool.lua
 -- MODIFIED: Using Ark.Colors.hexrgb() for all color definitions
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')

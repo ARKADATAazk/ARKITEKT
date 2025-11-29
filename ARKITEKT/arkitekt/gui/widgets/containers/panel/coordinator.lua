@@ -2,8 +2,7 @@
 -- panel/coordinator.lua
 -- Main panel rendering coordinator - orchestrates all panel subsystems
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 -- Module dependencies
 local Toolbar = require('arkitekt.gui.widgets.containers.panel.toolbar')

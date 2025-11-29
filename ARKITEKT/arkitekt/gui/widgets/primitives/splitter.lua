@@ -3,8 +3,7 @@
 -- Draggable splitter for resizing panels
 -- Uses unified opts-based API
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Base = require('arkitekt.gui.widgets.base')
 
 local M = {}

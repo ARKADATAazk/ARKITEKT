@@ -2,7 +2,7 @@
 -- WalterBuilder/ui/panels/elements_panel.lua
 -- Element palette panel - shows available elements to add to layout
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local TCPElements = require('WalterBuilder.defs.tcp_elements')
 local Colors = require('WalterBuilder.defs.colors')

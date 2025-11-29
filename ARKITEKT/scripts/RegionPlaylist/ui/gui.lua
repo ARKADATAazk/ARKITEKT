@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/gui.lua
 -- Main GUI orchestrator (refactored - view-based architecture)
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local RegionTiles = require("RegionPlaylist.ui.tiles.coordinator")
 local Shortcuts = require("RegionPlaylist.ui.shortcuts")
 local PlaylistController = require("RegionPlaylist.app.controller")

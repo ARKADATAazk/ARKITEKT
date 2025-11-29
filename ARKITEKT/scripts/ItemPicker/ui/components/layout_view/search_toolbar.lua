@@ -2,7 +2,7 @@
 -- ItemPicker/ui/components/layout_view/search_toolbar.lua
 -- Search input, sort buttons, layout toggle, and toolbar controls
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local SearchWithMode = require('ItemPicker.ui.components.search')
 

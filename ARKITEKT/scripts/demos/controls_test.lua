@@ -2,8 +2,7 @@
 -- Arkitekt Controls Test
 -- Tests all refactored base components in both standalone and panel contexts
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 -- Import system

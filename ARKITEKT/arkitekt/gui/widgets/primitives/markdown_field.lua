@@ -2,8 +2,7 @@
 -- arkitekt/gui/widgets/primitives/markdown_field.lua
 -- Markdown field widget with view/edit modes
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb

@@ -3,8 +3,7 @@
 -- Unified toolbar system for all four sides (top, bottom, left, right)
 -- Replaces the confusing header/footer/sidebar terminology with consistent "toolbar" concept
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 -- Delegate to existing specialized renderers
 local Header = require('arkitekt.gui.widgets.containers.panel.header')

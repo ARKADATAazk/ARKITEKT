@@ -2,8 +2,7 @@
 -- Arkitekt/gui/widgets/overlay/container.lua
 -- Reusable dark container pattern for non-blocking modals
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

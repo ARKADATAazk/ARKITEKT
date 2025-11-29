@@ -2,8 +2,7 @@
 -- Arkitekt/gui/fx/marching_ants.lua
 -- Animated marching ants selection border (optimized with polylines)
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 
 local M = {}
 

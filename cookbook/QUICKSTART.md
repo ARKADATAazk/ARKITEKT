@@ -524,7 +524,7 @@ Shell.run({
 2. **Read the guides:**
    - [CONVENTIONS.md](CONVENTIONS.md) - Naming and patterns
    - [WIDGETS.md](WIDGETS.md) - Full widget API
-   - [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Architecture details
+   - [ARCHITECTURE.md](ARCHITECTURE.md) - Architecture details
 
 3. **Use the Ark namespace:**
    - `Ark.Button`, `Ark.Panel`, `Ark.Colors`, etc.

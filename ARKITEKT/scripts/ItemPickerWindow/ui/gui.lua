@@ -2,7 +2,7 @@
 -- ItemPickerWindow/ui/gui.lua
 -- Main GUI orchestrator for window mode
 
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.platform.imgui')
 local Coordinator = require('ItemPickerWindow.ui.coordinator')
 local LayoutView = require('ItemPickerWindow.ui.layout_view')
 local ToolbarView = require('ItemPickerWindow.ui.toolbar_view')
