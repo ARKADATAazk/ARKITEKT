@@ -41,7 +41,8 @@ function M.load_image(ctx, base_name, dpi_scale)
   if not ctx then return nil end
 
   dpi_scale = dpi_scale or 1.0
-  local cache_key = tostring(ctx) .. "_" .. base_name .. "_" .. tostring(dpi_scale)
+  -- Use stable cache key (ctx is always the same context, just use icon name + dpi)
+  local cache_key = base_name .. "_" .. tostring(dpi_scale)
 
   -- Check if cached image exists and is still valid
   if image_cache[cache_key] then
