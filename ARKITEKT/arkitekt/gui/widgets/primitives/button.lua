@@ -40,8 +40,8 @@ local DEFAULTS = {
   -- Style
   rounding = 0,
   padding_x = 10,
-  preset_name = nil,  -- Use a named preset from Theme
-  preset = nil,       -- Use a custom preset table
+  preset_name = nil,  -- Use a named preset from Theme (legacy)
+  preset = nil,       -- Semantic preset: "primary", "danger", "success", "secondary"
 
   -- Colors (nil = use Theme.BUTTON defaults)
   bg_color = nil,
@@ -248,6 +248,41 @@ local function get_corner_flags(corner_rounding)
 end
 
 -- ============================================================================
+-- BUTTON PRESETS (Semantic, Theme-controlled)
+-- ============================================================================
+
+--- Semantic button presets - defined by Theme colors
+--- Provides controlled vocabulary for button variations
+local function get_preset_colors(preset_name)
+  local C = Theme.COLORS
+
+  if preset_name == "primary" then
+    return {
+      bg = C.ACCENT_PRIMARY or C.ACCENT_WHITE,
+      text = C.TEXT_BRIGHT or C.TEXT_NORMAL,
+    }
+  elseif preset_name == "secondary" then
+    return {
+      bg = C.BG_HOVER or C.BG_BASE,
+      text = C.TEXT_NORMAL,
+    }
+  elseif preset_name == "danger" then
+    return {
+      bg = C.DANGER or 0xFF4444FF,  -- Fallback red
+      text = C.TEXT_BRIGHT or C.TEXT_NORMAL,
+    }
+  elseif preset_name == "success" then
+    return {
+      bg = C.SUCCESS or 0x44FF44FF,  -- Fallback green
+      text = C.TEXT_BRIGHT or C.TEXT_NORMAL,
+    }
+  end
+
+  -- Default: no preset
+  return nil
+end
+
+-- ============================================================================
 -- CONFIG RESOLUTION (Dynamic - reads Theme.COLORS each call)
 -- ============================================================================
 
@@ -267,11 +302,21 @@ local function resolve_config(opts)
     end
   end
 
+  -- Handle semantic presets (primary, danger, success, secondary)
+  -- These take priority over legacy preset_name system
+  if opts.preset then
+    local preset_colors = get_preset_colors(opts.preset)
+    if preset_colors then
+      config._use_simple_colors = false
+      config._preset_colors = preset_colors
+    end
+  end
+
   -- Determine if we should use simple (auto-derived) colors or complex preset
   -- Use simple colors when:
-  --   1. No preset_name specified, OR
+  --   1. No preset or preset_name specified, OR
   --   2. Using BUTTON_TOGGLE_WHITE or similar basic toggle preset
-  local use_simple = not opts.preset_name and not opts.preset
+  local use_simple = not opts.preset and not opts.preset_name
   local is_toggle_preset = opts.preset_name and opts.preset_name:find("TOGGLE")
 
   if use_simple or is_toggle_preset then
@@ -326,9 +371,36 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
   local dt = ImGui.GetDeltaTime(ctx)
   instance:update(dt, is_hovered, is_active)
 
-  -- Get colors - use simplified system when marked, otherwise legacy
+  -- Get colors - check for preset colors first, then simplified, then legacy
   local bg_color, border_inner, border_outer, text_color
-  if config._use_simple_colors then
+  if config._preset_colors then
+    -- Semantic preset colors (primary, danger, success, secondary)
+    local preset = config._preset_colors
+    local base_bg = preset.bg
+    local base_text = preset.text
+
+    -- Apply hover/active state modulation
+    if is_disabled then
+      bg_color = Colors.darken(base_bg, 0.3)
+      text_color = Colors.darken(base_text, 0.5)
+    elseif is_active then
+      bg_color = Colors.darken(base_bg, 0.15)
+      text_color = base_text
+    elseif is_hovered then
+      -- Smooth hover blend using instance.hover_alpha
+      local hover_bg = Colors.lighten(base_bg, 0.1)
+      bg_color = Colors.blend(base_bg, hover_bg, instance.hover_alpha)
+      text_color = base_text
+    else
+      bg_color = base_bg
+      text_color = base_text
+    end
+
+    -- Preset buttons have subtle borders
+    border_inner = Colors.lighten(bg_color, 0.15)
+    border_outer = Colors.darken(bg_color, 0.2)
+
+  elseif config._use_simple_colors then
     -- Simplified approach with smooth hover animation (like combo/dropdown)
     bg_color, border_inner, border_outer, text_color =
       get_simple_colors(is_toggled, is_hovered, is_active, is_disabled, config._accent_color, instance.hover_alpha)
@@ -517,8 +589,21 @@ end
 -- ============================================================================
 
 -- Make module callable: Ark.Button(ctx, ...) → M.draw(ctx, ...)
+-- Hybrid return: positional mode returns boolean (ImGui style), opts mode returns result object
 return setmetatable(M, {
-  __call = function(_, ctx, ...)
-    return M.draw(ctx, ...)
+  __call = function(_, ctx, label_or_opts, width, height)
+    -- Detect mode based on first parameter type
+    if type(label_or_opts) == "table" then
+      -- Opts mode: Return full result object for power users
+      return M.draw(ctx, label_or_opts)
+    else
+      -- Positional mode: Return boolean like ImGui for ergonomics
+      local result = M.draw(ctx, {
+        label = label_or_opts,
+        width = width,
+        height = height,
+      })
+      return result.clicked  -- ImGui-compatible return
+    end
   end
 })
