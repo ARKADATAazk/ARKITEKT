@@ -251,6 +251,15 @@ function M.new(opts)
     _begun          = false,
     _titlebar       = nil,
     _was_docked     = false,
+    _last_dock_id   = 0,
+    _pre_dock_pos   = nil,
+    _pre_dock_size  = nil,
+    _stable_pos     = nil,
+    _stable_size    = nil,
+    _drag_start_pos = nil,
+    _drag_start_size = nil,
+    _mouse_was_down = false,
+    _pending_undock = false,
     _bg_color_pushed = false,
     _fullscreen_scrim_pushed = false,
 
@@ -299,6 +308,10 @@ function M.new(opts)
       win._pre_max_pos  = win.settings:get("window.pre_max_pos",  nil)
       win._pre_max_size = win.settings:get("window.pre_max_size", nil)
     end
+
+    -- Load pre-dock position/size if available (for proper undocking)
+    win._pre_dock_pos  = win.settings:get("window.pre_dock_pos",  nil)
+    win._pre_dock_size = win.settings:get("window.pre_dock_size", nil)
   end
 
   -- ============================================================================
@@ -603,6 +616,19 @@ function M.new(opts)
       ImGui.SetNextWindowSize(ctx, self._pre_max_size.w, self._pre_max_size.h, ImGui.Cond_Always)
       self._pending_restore = false
       self._pos_size_set = true
+    elseif self._pending_undock and (self._pre_dock_pos or self._pre_dock_size) then
+      -- Restore position and size to pre-drag state when undocking
+      if self._pre_dock_pos then
+        ImGui.SetNextWindowPos(ctx, self._pre_dock_pos.x, self._pre_dock_pos.y, ImGui.Cond_Always)
+      end
+      if self._pre_dock_size then
+        ImGui.SetNextWindowSize(ctx, self._pre_dock_size.w, self._pre_dock_size.h, ImGui.Cond_Always)
+      end
+      self._pending_undock = false
+      self._pos_size_set = false  -- Allow normal saving to resume
+      -- Clear pre-dock state as it's been applied
+      self._pre_dock_pos = nil
+      self._pre_dock_size = nil
     elseif not self._pos_size_set then
       local pos  = self._saved_pos  or self.initial_pos
       local size = self._saved_size or self.initial_size
@@ -611,7 +637,7 @@ function M.new(opts)
       if size and size.w and size.h then ImGui.SetNextWindowSize(ctx, size.w, size.h, ImGui.Cond_Once) end
       self._pos_size_set = true
     end
-    
+
     if not self.fullscreen.enabled then
       if ImGui.SetNextWindowSizeConstraints and self.min_size then
         ImGui.SetNextWindowSizeConstraints(ctx, self.min_size.w, self.min_size.h, 99999, 99999)
@@ -742,16 +768,74 @@ function M.new(opts)
           self.fullscreen.close_button:update(ctx, bounds, dt)
         end
       else
-        if ImGui.IsWindowDocked then
-          local is_docked = ImGui.IsWindowDocked(ctx)
-          -- Check if we just transitioned to docked state
-          if is_docked and not self._was_docked then
+        if ImGui.GetWindowDockID then
+          local dock_id = ImGui.GetWindowDockID(ctx)
+          local is_docked = (dock_id ~= 0)
+
+          -- Track position when floating to enable seamless undocking
+          if not is_docked then
+            local wx, wy = ImGui.GetWindowPos(ctx)
+            local ww, wh = ImGui.GetWindowSize(ctx)
+            local current_pos = { x = floor(wx), y = floor(wy) }
+            local current_size = { w = floor(ww), h = floor(wh) }
+
+            -- Check if left mouse button is down
+            local mouse_down = ImGui.IsMouseDown and ImGui.IsMouseDown(ctx, ImGui.MouseButton_Left) or false
+
+            -- Capture position at the moment of mouse down (start of drag)
+            if mouse_down and not self._mouse_was_down then
+              self._drag_start_pos = current_pos
+              self._drag_start_size = current_size
+            end
+
+            -- Update stable position when mouse is not down
+            if not mouse_down then
+              self._stable_pos = current_pos
+              self._stable_size = current_size
+            end
+
+            self._mouse_was_down = mouse_down
+          end
+
+          -- Check if we just transitioned to docked state (dock_id changed from 0 to non-zero)
+          if dock_id ~= 0 and self._last_dock_id == 0 then
+            -- Save position from drag start (where window was before drag began)
+            -- Fallback to stable_pos if drag_start not available
+            self._pre_dock_pos = self._drag_start_pos or self._stable_pos
+            self._pre_dock_size = self._drag_start_size or self._stable_size
+
+            -- Clear drag start after using it
+            self._drag_start_pos = nil
+            self._drag_start_size = nil
+
+            -- Persist pre-dock state for seamless undocking after restart
+            if self.settings then
+              self.settings:set("window.pre_dock_pos", self._pre_dock_pos)
+              self.settings:set("window.pre_dock_size", self._pre_dock_size)
+            end
+
             -- Apply REAPER theme without offset when docking (if enabled)
             if Theme and Theme.is_dock_adapt_enabled and Theme.is_dock_adapt_enabled() then
               Theme.sync_with_reaper_no_offset()
             end
           end
+
+          -- Check if we just transitioned to floating state (dock_id changed from non-zero to 0)
+          if dock_id == 0 and self._last_dock_id ~= 0 then
+            -- Mark for restoration on next frame
+            if self._pre_dock_pos or self._pre_dock_size then
+              self._pending_undock = true
+            end
+
+            -- Clear pre-dock state from settings
+            if self.settings then
+              self.settings:set("window.pre_dock_pos", nil)
+              self.settings:set("window.pre_dock_size", nil)
+            end
+          end
+
           self._was_docked = is_docked
+          self._last_dock_id = dock_id
         end
         
         if self._pending_maximize then

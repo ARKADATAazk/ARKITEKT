@@ -501,7 +501,14 @@ function M.new(opts)
         clicked_maximize, clicked_close = self:_draw_buttons_minimal(ctx, bg_color)
       end
     end
-    
+
+    -- Double-click titlebar to maximize (only if no button was clicked)
+    if self.enable_maximize and not clicked_maximize and not clicked_close then
+      if ImGui.IsWindowHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, ImGui.MouseButton_Left) then
+        clicked_maximize = true
+      end
+    end
+
     ImGui.EndChild(ctx)
     ImGui.PopStyleColor(ctx)
     ImGui.PopStyleVar(ctx, 2)

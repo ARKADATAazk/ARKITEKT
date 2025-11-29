@@ -23,10 +23,10 @@
 --   - **JS_ReaScriptAPI** (required)
 --   - **SWS Extension** (required)
 -- @provides
---   [main] scripts/RegionPlaylist/ARK_RegionPlaylist.lua > ARK Region Playlist.lua
---   [main] scripts/ItemPicker/ARK_ItemPicker.lua > ARK Item Picker.lua
---   [main] scripts/TemplateBrowser/ARK_TemplateBrowser.lua > ARK Template Browser.lua
---   [main] scripts/ThemeAdjuster/ARK_ThemeAdjuster.lua > ARK Theme Adjuster.lua
+--   [main] scripts/RegionPlaylist/ARK_RegionPlaylist.lua
+--   [main] scripts/ItemPicker/ARK_ItemPicker.lua 
+--   [main] scripts/TemplateBrowser/ARK_TemplateBrowser.lua
+--   [main] scripts/ThemeAdjuster/ARK_ThemeAdjuster.lua 
 --   [nomain] scripts/RegionPlaylist/*/**/*.lua
 --   [nomain] scripts/ItemPicker/*/**/*.lua
 --   [nomain] scripts/TemplateBrowser/*/**/*.lua
