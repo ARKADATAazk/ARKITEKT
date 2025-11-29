@@ -352,14 +352,9 @@ end
 function State:refresh_sandbox()
   self.sandbox_scripts = {}
 
-  -- Look in scripts/Sandbox/ directory
+  -- Look in scripts/Sandbox/ directory (always at worktree root)
   for _, wt in ipairs(self.worktrees) do
-    local sandbox_dir
-    if wt.name == "ARKITEKT" then
-      sandbox_dir = normalize(wt.path .. sep .. "scripts" .. sep .. "Sandbox")
-    else
-      sandbox_dir = normalize(wt.path .. sep .. "ARKITEKT" .. sep .. "scripts" .. sep .. "Sandbox")
-    end
+    local sandbox_dir = normalize(wt.path .. sep .. "scripts" .. sep .. "Sandbox")
 
     local i = 0
     while true do
