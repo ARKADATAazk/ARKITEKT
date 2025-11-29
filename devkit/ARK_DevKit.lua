@@ -598,7 +598,7 @@ local function draw_sandbox(ctx, shell_state)
       width = 60,
       height = 24,
       preset = "primary",
-    }) then
+    }).clicked then
       dofile(script.full_path)
     end
 
