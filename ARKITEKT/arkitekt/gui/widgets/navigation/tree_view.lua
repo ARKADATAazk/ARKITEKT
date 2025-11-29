@@ -4,6 +4,7 @@
 -- Supports inline rename, multi-select, drag-drop, and folder icons
 
 local ImGui = require('arkitekt.platform.imgui')
+local IdStack = require('arkitekt.core.id_stack')
 local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
@@ -524,13 +525,19 @@ function M.draw(ctx, opts)
     error("Ark.Tree: expected opts table, got " .. type(opts), 2)
   end
 
-  -- Require explicit ID
-  if not opts.id then
-    error("Ark.Tree: 'id' field is required. Explicit ID prevents helper function collisions.", 2)
+  -- Resolve ID: Priority 1 = explicit id (bypasses stack), Priority 2 = stack + fallback
+  local id
+  if opts.id then
+    -- Explicit ID bypasses stack
+    id = opts.id
+  else
+    -- Use stack + fallback
+    local base_id = "tree"
+    id = IdStack.resolve(ctx, base_id)
   end
 
   -- Get or create hidden state
-  local state = get_tree_state(opts.id)
+  local state = get_tree_state(id)
 
   -- Periodic cleanup of stale states
   cleanup_stale_states()

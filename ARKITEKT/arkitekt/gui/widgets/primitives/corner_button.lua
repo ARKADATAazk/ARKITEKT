@@ -193,7 +193,7 @@ function M.draw(ctx, opts)
   end
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(opts, "corner_button")
+  local unique_id = Base.resolve_id(ctx, opts, "corner_button")
 
   -- Get instance for animation
   local inst = get_instance(unique_id)

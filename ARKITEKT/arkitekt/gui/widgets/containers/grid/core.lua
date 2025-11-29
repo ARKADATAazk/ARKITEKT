@@ -7,6 +7,7 @@
 -- API_MATCHING: Added ImGui-style Ark.Grid(ctx, opts) API with hidden state
 
 local ImGui = require('arkitekt.platform.imgui')
+local IdStack = require('arkitekt.core.id_stack')
 
 local LayoutGrid = require('arkitekt.gui.widgets.containers.grid.layout')
 local Tracks = require('arkitekt.gui.animation.tracks')
@@ -1411,12 +1412,18 @@ function M.draw(ctx, opts)
   -- Reset frame tracking
   reset_frame_tracking()
 
-  -- Validate required 'id' field
-  if not opts or not opts.id then
-    error("Ark.Grid: 'id' field is required. Example: Ark.Grid(ctx, {id = 'my_grid', items = {...}})", 2)
-  end
+  opts = opts or {}
 
-  local id = opts.id
+  -- Resolve ID: Priority 1 = explicit id (bypasses stack), Priority 2 = stack + fallback
+  local id
+  if opts.id then
+    -- Explicit ID bypasses stack
+    id = opts.id
+  else
+    -- Use stack + fallback
+    local base_id = "grid"
+    id = IdStack.resolve(ctx, base_id)
+  end
 
   -- Debug: Check for duplicate IDs in same frame
   if DEBUG and _grid_state.frame_ids[id] then

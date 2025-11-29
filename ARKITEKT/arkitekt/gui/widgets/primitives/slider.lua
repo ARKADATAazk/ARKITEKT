@@ -154,7 +154,7 @@ function M.draw(ctx, label_or_opts, value, min, max)
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(opts, "slider")
+  local unique_id = Base.resolve_id(ctx, opts, "slider")
 
   -- Get position and draw list
   local x, y = Base.get_position(ctx, opts)

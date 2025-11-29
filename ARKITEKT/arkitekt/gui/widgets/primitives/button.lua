@@ -451,7 +451,7 @@ function M.draw(ctx, label_or_opts, width, height)
   local config = resolve_config(opts)
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(opts, "button")
+  local unique_id = Base.resolve_id(ctx, opts, "button")
 
   -- Get or create instance
   local instance = Base.get_or_create_instance(instances, unique_id, Button.new)

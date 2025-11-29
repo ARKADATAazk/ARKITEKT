@@ -4,6 +4,7 @@
 -- Provides shared functionality: instance management, state handling, opts parsing
 
 local ImGui = require('arkitekt.platform.imgui')
+local IdStack = require('arkitekt.core.id_stack')
 local Colors = require('arkitekt.core.colors')
 local Anim = require('arkitekt.core.animation')
 local CoreMath = require('arkitekt.core.math')
@@ -214,20 +215,32 @@ function M.parse_opts(opts, defaults)
   return result
 end
 
---- Resolve unique ID from options
+--- Resolve unique ID from options with hybrid stack support
+--- @param ctx userdata ImGui context
 --- @param opts table Options containing id and/or panel_state
 --- @param default_prefix string Default ID prefix if none provided
 --- @return string Unique identifier
-function M.resolve_id(opts, default_prefix)
-  -- Priority: explicit id > label > default_prefix
-  local base_id = opts.id or opts.label or default_prefix
+function M.resolve_id(ctx, opts, default_prefix)
+  -- Priority 1: Explicit ID (bypasses stack)
+  if opts.id then
+    local base_id = opts.id
+    -- Panel context: prefix with panel ID
+    if opts.panel_state and opts.panel_state._panel_id then
+      return string.format("%s_%s", opts.panel_state._panel_id, base_id)
+    end
+    return base_id
+  end
+
+  -- Priority 2: Stack + fallback (label or default_prefix)
+  local base_id = opts.label or default_prefix
+  local id = IdStack.resolve(ctx, base_id)
 
   -- Panel context: prefix with panel ID
   if opts.panel_state and opts.panel_state._panel_id then
-    return string.format("%s_%s", opts.panel_state._panel_id, base_id)
+    return string.format("%s_%s", opts.panel_state._panel_id, id)
   end
 
-  return base_id
+  return id
 end
 
 --- Get draw list from options or window

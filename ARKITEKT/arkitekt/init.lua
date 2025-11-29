@@ -35,6 +35,11 @@ Ark.ImGui = bootstrap_context.ImGui
 -- Store full bootstrap context for advanced use cases
 Ark._bootstrap = bootstrap_context
 
+-- ID Stack for ImGui-style PushID/PopID (loaded eagerly for performance)
+local IdStack = require('arkitekt.core.id_stack')
+Ark.PushID = IdStack.push
+Ark.PopID = IdStack.pop
+
 -- Module registry - maps names to module paths
 -- Lazy loaded on first access to minimize startup overhead
 local MODULES = {

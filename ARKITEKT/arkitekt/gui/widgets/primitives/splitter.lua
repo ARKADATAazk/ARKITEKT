@@ -148,7 +148,7 @@ function M.draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(opts, "splitter")
+  local unique_id = Base.resolve_id(ctx, opts, "splitter")
 
   -- Get or create instance
   local instance = Base.get_or_create_instance(instances, unique_id, Splitter.new)
@@ -206,7 +206,7 @@ end
 --- @return boolean True if dragging
 function M.is_dragging(ctx, opts)
   opts = opts or {}
-  local unique_id = Base.resolve_id(opts, "splitter")
+  local unique_id = Base.resolve_id(ctx, opts, "splitter")
   local instance = instances[unique_id]
   return instance and instance.is_dragging or false
 end

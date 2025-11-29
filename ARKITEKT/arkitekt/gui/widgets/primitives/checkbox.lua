@@ -299,7 +299,7 @@ function M.draw(ctx, label_or_opts, checked)
   local config = resolve_config(opts)
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(opts, "checkbox")
+  local unique_id = Base.resolve_id(ctx, opts, "checkbox")
 
   -- Get or create instance
   local instance = Base.get_or_create_instance(instances, unique_id, Checkbox.new)

@@ -312,7 +312,7 @@ function M.draw(ctx, label_or_opts, text, width)
   local config = resolve_config(opts)
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(opts, "field")
+  local unique_id = Base.resolve_id(ctx, opts, "field")
 
   -- Get or create state
   local state = get_or_create_state(unique_id)

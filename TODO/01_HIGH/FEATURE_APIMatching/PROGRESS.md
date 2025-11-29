@@ -60,6 +60,7 @@
   - Result object with selection/drag/reorder ✅
   - Deprecate `Grid.new()` with shim ✅
   - Registered in `arkitekt/init.lua` ✅
+  - **Hybrid ID System** ✅ - Supports both PushID/PopID stack AND explicit `opts.id`
 
 - ✅ **TreeView** - `Ark.Tree(ctx, opts)` with ID-keyed state
   - Branch: `test/grid-api-matching` (complete)
@@ -67,11 +68,21 @@
   - Result object with selection/expanded/renamed ✅
   - Deprecate old API with shim ✅
   - Registered in `arkitekt/init.lua` ✅
+  - **Hybrid ID System** ✅ - Supports both PushID/PopID stack AND explicit `opts.id`
 
 **Testing**: Both widgets need manual testing in apps
 **Next**: Phase 5 - Script migration (or Phase 4 Panel rework if desired)
 
-**See**: `GRID_REWORK.md` for Grid spec
+**See**:
+- `GRID_REWORK.md` for Grid spec
+- `DECISION_20_HYBRID_ID_SYSTEM.md` for ID system details
+
+**New Features**:
+- ✅ `Ark.PushID(ctx, id)` - Push ID onto stack (ImGui-compatible)
+- ✅ `Ark.PopID(ctx)` - Pop ID from stack (ImGui-compatible)
+- ✅ All widgets support hybrid ID: explicit `opts.id` OR stack-based OR auto from label
+- ✅ `arkitekt/core/id_stack.lua` - ID stack implementation
+- ✅ `Base.resolve_id(ctx, opts, default)` - Updated to support stack resolution
 
 ---
 

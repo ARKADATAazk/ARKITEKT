@@ -603,7 +603,7 @@ function M.draw(ctx, opts)
   end
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(opts, "sliding_zone")
+  local unique_id = Base.resolve_id(ctx, opts, "sliding_zone")
 
   -- Get or create instance
   local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new)
@@ -779,7 +779,7 @@ end
 --- @param opts table Widget options (must include id)
 function M.toggle(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
-  local unique_id = Base.resolve_id(opts, "sliding_zone")
+  local unique_id = Base.resolve_id(ctx, opts, "sliding_zone")
   local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new)
 
   state.is_expanded = not state.is_expanded
@@ -797,7 +797,7 @@ end
 --- @param expanded boolean New expanded state
 function M.set_expanded(ctx, opts, expanded)
   opts = Base.parse_opts(opts, DEFAULTS)
-  local unique_id = Base.resolve_id(opts, "sliding_zone")
+  local unique_id = Base.resolve_id(ctx, opts, "sliding_zone")
   local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new)
 
   local was_expanded = state.is_expanded
@@ -816,7 +816,7 @@ end
 --- @param expanded boolean Target expanded state
 function M.teleport(ctx, opts, expanded)
   opts = Base.parse_opts(opts, DEFAULTS)
-  local unique_id = Base.resolve_id(opts, "sliding_zone")
+  local unique_id = Base.resolve_id(ctx, opts, "sliding_zone")
   local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new)
 
   state.is_expanded = expanded
@@ -835,7 +835,7 @@ end
 --- @return table|nil State or nil if not created
 function M.get_state(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
-  local unique_id = Base.resolve_id(opts, "sliding_zone")
+  local unique_id = Base.resolve_id(ctx, opts, "sliding_zone")
   local registry = instances._instances or instances
   return registry[unique_id]
 end

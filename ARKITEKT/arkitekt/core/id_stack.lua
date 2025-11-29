@@ -1,0 +1,80 @@
+-- @noindex
+-- arkitekt/core/id_stack.lua
+-- ImGui-style PushID/PopID stack for scoping widget IDs
+-- Enables ImGui-familiar ID scoping without requiring explicit IDs everywhere
+
+local M = {}
+
+-- Per-context ID stacks
+-- _stacks[ctx] = { "parent", "child", ... }
+local _stacks = {}
+
+--- Push an ID onto the stack for this context
+-- All widgets drawn until PopID will have this ID prepended
+-- @param ctx ImGui context
+-- @param id string|number - ID to push (converted to string)
+function M.push(ctx, id)
+  if not ctx then
+    error("PushID: ctx is nil", 2)
+  end
+  if not id then
+    error("PushID: id is nil", 2)
+  end
+
+  _stacks[ctx] = _stacks[ctx] or {}
+  table.insert(_stacks[ctx], tostring(id))
+end
+
+--- Pop an ID from the stack for this context
+-- @param ctx ImGui context
+function M.pop(ctx)
+  if not ctx then
+    error("PopID: ctx is nil", 2)
+  end
+
+  local stack = _stacks[ctx]
+  if not stack or #stack == 0 then
+    error("PopID: No matching PushID (stack is empty)", 2)
+  end
+
+  table.remove(stack)
+end
+
+--- Resolve a base ID with the current stack
+-- If stack exists, prepends stack path to base_id
+-- If no stack, returns base_id unchanged
+-- @param ctx ImGui context
+-- @param base_id string - Base ID to resolve
+-- @return string - Resolved ID with stack prefix if applicable
+function M.resolve(ctx, base_id)
+  if not ctx then
+    error("IdStack.resolve: ctx is nil", 2)
+  end
+  if not base_id then
+    error("IdStack.resolve: base_id is nil", 2)
+  end
+
+  local stack = _stacks[ctx]
+  if not stack or #stack == 0 then
+    return base_id  -- No stack active, return as-is
+  end
+
+  -- Prepend stack path: "parent/child/base_id"
+  return table.concat(stack, "/") .. "/" .. base_id
+end
+
+--- Clear the stack for this context (for cleanup/testing)
+-- @param ctx ImGui context
+function M.clear(ctx)
+  _stacks[ctx] = nil
+end
+
+--- Get current stack depth (for debugging)
+-- @param ctx ImGui context
+-- @return number - Current stack depth
+function M.depth(ctx)
+  local stack = _stacks[ctx]
+  return stack and #stack or 0
+end
+
+return M

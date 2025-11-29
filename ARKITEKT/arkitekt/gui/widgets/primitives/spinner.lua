@@ -216,7 +216,7 @@ function M.draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(opts, "spinner")
+  local unique_id = Base.resolve_id(ctx, opts, "spinner")
 
   -- Get instance for animation
   local inst = get_instance(unique_id)
