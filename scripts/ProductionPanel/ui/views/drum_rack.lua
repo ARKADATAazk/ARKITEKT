@@ -37,6 +37,55 @@ local state = {
   selected_pad = nil,
 }
 
+-- HELPER FUNCTIONS
+local function adjust_brightness(color, factor)
+  -- Extract RGBA
+  local r = ((color >> 0) & 0xFF) / 255
+  local g = ((color >> 8) & 0xFF) / 255
+  local b = ((color >> 16) & 0xFF) / 255
+  local a = ((color >> 24) & 0xFF) / 255
+
+  -- Adjust brightness
+  r = math.min(1, r * factor)
+  g = math.min(1, g * factor)
+  b = math.min(1, b * factor)
+
+  -- Pack back to RGBA
+  local ri = math.floor(r * 255 + 0.5)
+  local gi = math.floor(g * 255 + 0.5)
+  local bi = math.floor(b * 255 + 0.5)
+  local ai = math.floor(a * 255 + 0.5)
+
+  return (ai << 24) | (bi << 16) | (gi << 8) | ri
+end
+
+local function lerp_color(color1, color2, t)
+  -- Extract RGBA from both colors
+  local r1 = ((color1 >> 0) & 0xFF) / 255
+  local g1 = ((color1 >> 8) & 0xFF) / 255
+  local b1 = ((color1 >> 16) & 0xFF) / 255
+  local a1 = ((color1 >> 24) & 0xFF) / 255
+
+  local r2 = ((color2 >> 0) & 0xFF) / 255
+  local g2 = ((color2 >> 8) & 0xFF) / 255
+  local b2 = ((color2 >> 16) & 0xFF) / 255
+  local a2 = ((color2 >> 24) & 0xFF) / 255
+
+  -- Lerp each component
+  local r = r1 + (r2 - r1) * t
+  local g = g1 + (g2 - g1) * t
+  local b = b1 + (b2 - b1) * t
+  local a = a1 + (a2 - a1) * t
+
+  -- Pack back to RGBA
+  local ri = math.floor(r * 255 + 0.5)
+  local gi = math.floor(g * 255 + 0.5)
+  local bi = math.floor(b * 255 + 0.5)
+  local ai = math.floor(a * 255 + 0.5)
+
+  return (ai << 24) | (bi << 16) | (gi << 8) | ri
+end
+
 ---Initialize drum rack
 function M.init()
   for i = 1, Defaults.DRUM_RACK.PADS do
@@ -63,54 +112,147 @@ local function draw_pad(ctx, index, x, y, size)
 
   local is_selected = state.selected_pad == index
 
-  -- Background color
-  local bg_color = pad.has_sample and pad.color or Theme.COLORS.BG_PANEL
-  local border_color = is_selected and Theme.COLORS.TEXT_BRIGHT or Theme.COLORS.BORDER_INNER
-  local text_color = pad.has_sample and Theme.COLORS.TEXT_BRIGHT or Theme.COLORS.TEXT_DARK
-
-  -- Draw pad background
-  local dl = ImGui.GetWindowDrawList(ctx)
-  local rounding = 4
-
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + size, y + size, bg_color, rounding)
-
-  -- Border (thicker if selected)
-  local border_thickness = is_selected and 2 or 1
-  ImGui.DrawList_AddRect(dl, x, y, x + size, y + size, border_color, rounding, 0, border_thickness)
-
-  -- Sample indicator (small dot in corner if has sample)
-  if pad.has_sample then
-    local dot_size = 6
-    local dot_x = x + size - dot_size - 4
-    local dot_y = y + 4
-    ImGui.DrawList_AddCircleFilled(dl, dot_x + dot_size/2, dot_y + dot_size/2, dot_size/2,
-      Theme.COLORS.TEXT_BRIGHT, 12)
-  end
-
-  -- Pad label
-  if pad.name and pad.name ~= "" then
-    local label_x = x + 8
-    local label_y = y + 8
-    ImGui.DrawList_AddText(dl, label_x, label_y, text_color, pad.name)
-  end
-
-  -- MIDI note number at bottom
-  local note_text = tostring(pad.note)
-  local note_w, note_h = ImGui.CalcTextSize(ctx, note_text)
-  local note_x = x + size - note_w - 6
-  local note_y = y + size - note_h - 6
-  ImGui.DrawList_AddText(dl, note_x, note_y, Colors.with_opacity(text_color, 0.6), note_text)
-
-  -- Invisible button for interaction
+  -- Invisible button for interaction (must be first)
   ImGui.SetCursorScreenPos(ctx, x, y)
   ImGui.InvisibleButton(ctx, "pad_" .. index, size, size)
 
   local hovered = ImGui.IsItemHovered(ctx)
   local clicked = ImGui.IsItemClicked(ctx, 0)
+  local active = ImGui.IsItemActive(ctx)
 
+  -- Determine colors based on state
+  local bg_color, border_color, text_color
+
+  if pad.has_sample then
+    -- Use pad's custom color
+    bg_color = pad.color
+
+    -- Add brightness boost on hover/active
+    if active then
+      bg_color = adjust_brightness(bg_color, 1.3)
+    elseif hovered then
+      bg_color = adjust_brightness(bg_color, 1.15)
+    end
+
+    text_color = Theme.COLORS.TEXT_BRIGHT
+  else
+    -- Empty pad
+    bg_color = hovered and Theme.COLORS.BG_HOVER or Theme.COLORS.BG_PANEL
+    text_color = Theme.COLORS.TEXT_DARK
+  end
+
+  -- Border color
+  if is_selected then
+    border_color = Theme.COLORS.TEXT_BRIGHT
+  elseif hovered then
+    border_color = Theme.COLORS.BORDER_HOVER
+  else
+    border_color = Theme.COLORS.BORDER_INNER
+  end
+
+  -- Draw pad background
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local rounding = 6
+
+  -- Shadow (if pad has sample)
+  if pad.has_sample and not active then
+    local shadow_offset = 2
+    local shadow_color = Colors.with_opacity(Colors.hexrgb("#000000"), 0.3)
+    ImGui.DrawList_AddRectFilled(dl,
+      x + shadow_offset, y + shadow_offset,
+      x + size + shadow_offset, y + size + shadow_offset,
+      shadow_color, rounding)
+  end
+
+  -- Main pad background with subtle gradient
+  if pad.has_sample then
+    -- Top-to-bottom gradient for depth
+    local top_color = bg_color
+    local bottom_color = adjust_brightness(bg_color, 0.85)
+
+    -- Manual gradient (ImGui doesn't have native gradient, so we approximate)
+    local steps = 4
+    local step_height = size / steps
+    for i = 0, steps - 1 do
+      local t = i / steps
+      local step_color = lerp_color(top_color, bottom_color, t)
+      local y1 = y + (i * step_height)
+      local y2 = y + ((i + 1) * step_height)
+
+      -- Only round corners on first/last steps
+      local step_rounding = 0
+      if i == 0 then step_rounding = rounding end
+      if i == steps - 1 then step_rounding = rounding end
+
+      ImGui.DrawList_AddRectFilled(dl, x, y1, x + size, y2, step_color, step_rounding)
+    end
+  else
+    -- Simple fill for empty pads
+    ImGui.DrawList_AddRectFilled(dl, x, y, x + size, y + size, bg_color, rounding)
+  end
+
+  -- Border (thicker if selected)
+  local border_thickness = is_selected and 3 or 1.5
+  ImGui.DrawList_AddRect(dl, x, y, x + size, y + size, border_color, rounding, 0, border_thickness)
+
+  -- Velocity indicator (subtle bar at bottom if has sample)
+  if pad.has_sample then
+    local bar_height = 4
+    local bar_y = y + size - bar_height - 3
+    local bar_width = (size - 6) * (pad.volume or 1.0)
+
+    -- Background track
+    ImGui.DrawList_AddRectFilled(dl,
+      x + 3, bar_y,
+      x + size - 3, bar_y + bar_height,
+      Colors.with_opacity(Colors.hexrgb("#000000"), 0.3), 2)
+
+    -- Volume level
+    local vol_color = adjust_brightness(bg_color, 1.4)
+    ImGui.DrawList_AddRectFilled(dl,
+      x + 3, bar_y,
+      x + 3 + bar_width, bar_y + bar_height,
+      vol_color, 2)
+  end
+
+  -- Pad label (with shadow for better readability)
+  if pad.name and pad.name ~= "" then
+    local label_x = x + 8
+    local label_y = y + 8
+
+    -- Shadow
+    ImGui.DrawList_AddText(dl, label_x + 1, label_y + 1,
+      Colors.with_opacity(Colors.hexrgb("#000000"), 0.6), pad.name)
+
+    -- Main text
+    ImGui.DrawList_AddText(dl, label_x, label_y, text_color, pad.name)
+  end
+
+  -- MIDI note number (badge style)
+  local note_text = tostring(pad.note)
+  local note_w, note_h = ImGui.CalcTextSize(ctx, note_text)
+  local badge_padding = 4
+  local badge_x = x + size - note_w - badge_padding * 2 - 3
+  local badge_y = y + 3
+  local badge_w = note_w + badge_padding * 2
+  local badge_h = note_h + badge_padding
+
+  -- Note badge background
+  local badge_bg = Colors.with_opacity(Colors.hexrgb("#000000"), 0.5)
+  ImGui.DrawList_AddRectFilled(dl,
+    badge_x, badge_y,
+    badge_x + badge_w, badge_y + badge_h,
+    badge_bg, 3)
+
+  -- Note number text
+  ImGui.DrawList_AddText(dl,
+    badge_x + badge_padding, badge_y + badge_padding / 2,
+    Colors.with_opacity(text_color, 0.9), note_text)
+
+  -- Handle interaction (button was drawn first)
   if clicked then
     state.selected_pad = index
-    -- TODO: Trigger sample
+    -- TODO: Trigger sample preview
   end
 
   -- Right-click menu
