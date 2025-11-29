@@ -606,7 +606,7 @@ function M.draw(ctx, opts)
   local unique_id = Base.resolve_id(ctx, opts, "sliding_zone")
 
   -- Get or create instance
-  local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new)
+  local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new, ctx)
 
   -- Register in group if specified
   register_in_group(opts.group, unique_id)
@@ -780,7 +780,7 @@ end
 function M.toggle(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
   local unique_id = Base.resolve_id(ctx, opts, "sliding_zone")
-  local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new)
+  local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new, ctx)
 
   state.is_expanded = not state.is_expanded
 
@@ -798,7 +798,7 @@ end
 function M.set_expanded(ctx, opts, expanded)
   opts = Base.parse_opts(opts, DEFAULTS)
   local unique_id = Base.resolve_id(ctx, opts, "sliding_zone")
-  local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new)
+  local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new, ctx)
 
   local was_expanded = state.is_expanded
   state.is_expanded = expanded
@@ -817,7 +817,7 @@ end
 function M.teleport(ctx, opts, expanded)
   opts = Base.parse_opts(opts, DEFAULTS)
   local unique_id = Base.resolve_id(ctx, opts, "sliding_zone")
-  local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new)
+  local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new, ctx)
 
   state.is_expanded = expanded
   local slide_distance = opts.slide_distance or 20

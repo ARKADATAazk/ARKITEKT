@@ -526,7 +526,7 @@ function M.draw(ctx, label_or_opts, width, height)
   local unique_id = Base.resolve_id(ctx, opts, "button")
 
   -- Get or create instance
-  local instance = Base.get_or_create_instance(instances, unique_id, Button.new)
+  local instance = Base.get_or_create_instance(instances, unique_id, Button.new, ctx)
 
   -- Get position and draw list
   local x, y = Base.get_position(ctx, opts)

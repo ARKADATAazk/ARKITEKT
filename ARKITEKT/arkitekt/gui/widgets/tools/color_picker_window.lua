@@ -79,7 +79,7 @@ end
 --- @param id string Unique identifier for this picker
 --- @return table Instance state
 local function get_instance(id)
-  return Base.get_or_create_instance(instances, id, create_color_picker_instance)
+  return Base.get_or_create_instance(instances, id, create_color_picker_instance, ctx)
 end
 
 --- Open the color picker window

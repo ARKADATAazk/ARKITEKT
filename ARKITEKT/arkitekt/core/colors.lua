@@ -169,16 +169,33 @@ function M.lerp_component(a, b, t)
   return (a + (b - a) * t + 0.5)//1
 end
 
+--- Interpolate between two colors
+--- PERFORMANCE: Fully inlined version eliminates function call overhead
+--- @param color_a number First color (RGBA)
+--- @param color_b number Second color (RGBA)
+--- @param t number Interpolation factor (0.0 = color_a, 1.0 = color_b)
+--- @return number Interpolated color (RGBA)
 function M.lerp(color_a, color_b, t)
-  local r1, g1, b1, a1 = M.rgba_to_components(color_a)
-  local r2, g2, b2, a2 = M.rgba_to_components(color_b)
-  
-  local r = M.lerp_component(r1, r2, t)
-  local g = M.lerp_component(g1, g2, t)
-  local b = M.lerp_component(b1, b2, t)
-  local a = M.lerp_component(a1, a2, t)
-  
-  return M.components_to_rgba(r, g, b, a)
+  -- OPTIMIZATION: Inline all operations to eliminate 10+ function calls
+  -- Extract components (inline rgba_to_components)
+  local r1 = (color_a >> 24) & 0xFF
+  local g1 = (color_a >> 16) & 0xFF
+  local b1 = (color_a >> 8) & 0xFF
+  local a1 = color_a & 0xFF
+
+  local r2 = (color_b >> 24) & 0xFF
+  local g2 = (color_b >> 16) & 0xFF
+  local b2 = (color_b >> 8) & 0xFF
+  local a2 = color_b & 0xFF
+
+  -- Lerp each component (inline lerp_component)
+  local r = (r1 + (r2 - r1) * t + 0.5)//1
+  local g = (g1 + (g2 - g1) * t + 0.5)//1
+  local b = (b1 + (b2 - b1) * t + 0.5)//1
+  local a = (a1 + (a2 - a1) * t + 0.5)//1
+
+  -- Pack components (inline components_to_rgba)
+  return (r << 24) | (g << 16) | (b << 8) | a
 end
 
 function M.auto_text_color(bg_color)

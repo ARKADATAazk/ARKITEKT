@@ -34,7 +34,7 @@ local function create_corner_button_instance(id)
 end
 
 local function get_instance(id)
-  return Base.get_or_create_instance(instances, id, create_corner_button_instance)
+  return Base.get_or_create_instance(instances, id, create_corner_button_instance, ctx)
 end
 
 -- ============================================================================

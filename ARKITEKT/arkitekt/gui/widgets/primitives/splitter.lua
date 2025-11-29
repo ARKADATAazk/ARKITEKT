@@ -151,7 +151,7 @@ function M.draw(ctx, opts)
   local unique_id = Base.resolve_id(ctx, opts, "splitter")
 
   -- Get or create instance
-  local instance = Base.get_or_create_instance(instances, unique_id, Splitter.new)
+  local instance = Base.get_or_create_instance(instances, unique_id, Splitter.new, ctx)
 
   -- Get position
   local x, y = Base.get_position(ctx, opts)
