@@ -1,7 +1,7 @@
 -- ARKITEKT Namespace
 -- Provides ImGui-style access to all widgets via lazy loading
 -- Auto-loads ImGui and bootstrap utilities
--- Usage: local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+-- Usage: local Ark = dofile(reaper.GetResourcePath() .. '/Scripts/ARKITEKT/loader.lua')
 --        local ctx = Ark.ImGui.CreateContext('My Script')
 --        Ark.Button.draw(ctx, {label = "Click"})
 
