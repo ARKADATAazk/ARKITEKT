@@ -348,6 +348,22 @@ function M.adjust_hue(color, delta)
   return M.components_to_rgba(r, g, b, a)
 end
 
+--- Lighten a color (convenience alias for adjust_lightness with positive delta)
+--- @param color number Color in RGBA format
+--- @param amount number Amount to lighten (0.0 to 1.0, typically 0.1 to 0.3)
+--- @return number Lightened color in RGBA format
+function M.lighten(color, amount)
+  return M.adjust_lightness(color, amount)
+end
+
+--- Darken a color (convenience alias for adjust_lightness with negative delta)
+--- @param color number Color in RGBA format
+--- @param amount number Amount to darken (0.0 to 1.0, typically 0.1 to 0.3)
+--- @return number Darkened color in RGBA format
+function M.darken(color, amount)
+  return M.adjust_lightness(color, -amount)
+end
+
 --- Set specific HSL values while preserving others
 --- @param color number Color in RGBA format
 --- @param h_new number|nil New hue (0-1) or nil to keep current
