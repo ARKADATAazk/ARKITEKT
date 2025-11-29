@@ -383,7 +383,7 @@ end
 function State:set_active_tab(tab_name)
   self.active_tab = tab_name
   settings:set('active_tab', tab_name)
-  settings:save()
+  -- Settings auto-flushes on 0.5s debounce timer
 end
 
 function State:get_filtered_apps()
