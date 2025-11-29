@@ -678,6 +678,10 @@ local function calculate_flow_positions(result, eval_context)
 
   Console.info("Flow layout: horizontal flow starting at x=%d, y=%d, max_width=%d, %d elements",
     start_x, current_y, max_flow_width, #flow_elements)
+  Console.info("  meter_sec=%s | parent_w=%d, tcp_padding=%d",
+    fmt_arr(eval_context.meter_sec), parent_w, tcp_padding)
+  Console.info("  calc: start_x = meter_sec.x(%d) + meter_sec.w(%d) + tcp_padding(%d) = %d",
+    meter_sec_x, meter_sec_w, tcp_padding, start_x)
 
   for _, entry in ipairs(flow_elements) do
     local elem = entry.element
