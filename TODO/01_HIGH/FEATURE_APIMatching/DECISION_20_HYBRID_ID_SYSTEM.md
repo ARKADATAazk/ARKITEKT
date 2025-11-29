@@ -77,12 +77,17 @@ Ark.PopID(ctx)
 ### 1. ID Stack Module (`arkitekt/core/id_stack.lua`)
 
 ```lua
+local ImGui = require('arkitekt.platform.imgui')
 local M = {}
 local _stacks = {}  -- Per-context stacks
 
 function M.push(ctx, id)
+  -- Track in ARKITEKT stack (for instance lookup)
   _stacks[ctx] = _stacks[ctx] or {}
   table.insert(_stacks[ctx], tostring(id))
+
+  -- Sync with ImGui stack (for red square debugging + ImGui widgets)
+  ImGui.PushID(ctx, id)
 end
 
 function M.pop(ctx)
@@ -90,6 +95,9 @@ function M.pop(ctx)
   if stack and #stack > 0 then
     table.remove(stack)
   end
+
+  -- Sync with ImGui stack
+  ImGui.PopID(ctx)
 end
 
 function M.resolve(ctx, base_id)
@@ -150,6 +158,10 @@ return {
 - `Ark.PopID` = `ImGui.PopID` (same API)
 - Familiar to ImGui users
 - No confusion about "why is ARKITEKT different?"
+- **Syncs with ImGui internally** - Red square debugging works! 🔴
+  - `Ark.PushID` calls both `IdStack.push` AND `ImGui.PushID`
+  - ARKITEKT widgets get scoped instance lookup (hover state, animations)
+  - ImGui widgets get scoped ID conflicts (debug overlay highlights them)
 
 ### ✅ Improves on ImGui
 - Explicit `id` field cleaner than `##suffix` syntax

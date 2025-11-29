@@ -231,8 +231,8 @@ function M.resolve_id(ctx, opts, default_prefix)
     return base_id
   end
 
-  -- Priority 2: Stack + fallback (label or default_prefix)
-  local base_id = opts.label or default_prefix
+  -- Priority 2: Stack + fallback (label or default_prefix or "widget")
+  local base_id = opts.label or default_prefix or "widget"
   local id = IdStack.resolve(ctx, base_id)
 
   -- Panel context: prefix with panel ID

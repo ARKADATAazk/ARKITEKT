@@ -2,6 +2,9 @@
 -- arkitekt/core/id_stack.lua
 -- ImGui-style PushID/PopID stack for scoping widget IDs
 -- Enables ImGui-familiar ID scoping without requiring explicit IDs everywhere
+-- Syncs with ImGui's PushID/PopID for red square debugging support
+
+local ImGui = require('arkitekt.platform.imgui')
 
 local M = {}
 
@@ -10,6 +13,7 @@ local M = {}
 local _stacks = {}
 
 --- Push an ID onto the stack for this context
+-- Syncs with ImGui.PushID for red square debugging support
 -- All widgets drawn until PopID will have this ID prepended
 -- @param ctx ImGui context
 -- @param id string|number - ID to push (converted to string)
@@ -21,11 +25,16 @@ function M.push(ctx, id)
     error("PushID: id is nil", 2)
   end
 
+  -- Track in ARKITEKT stack (for instance lookup)
   _stacks[ctx] = _stacks[ctx] or {}
   table.insert(_stacks[ctx], tostring(id))
+
+  -- Sync with ImGui stack (for red square debugging + ImGui widgets)
+  ImGui.PushID(ctx, id)
 end
 
 --- Pop an ID from the stack for this context
+-- Syncs with ImGui.PopID
 -- @param ctx ImGui context
 function M.pop(ctx)
   if not ctx then
@@ -37,7 +46,11 @@ function M.pop(ctx)
     error("PopID: No matching PushID (stack is empty)", 2)
   end
 
+  -- Pop from ARKITEKT stack
   table.remove(stack)
+
+  -- Sync with ImGui stack
+  ImGui.PopID(ctx)
 end
 
 --- Resolve a base ID with the current stack
