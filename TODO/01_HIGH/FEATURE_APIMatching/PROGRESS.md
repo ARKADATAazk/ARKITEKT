@@ -49,22 +49,27 @@
 
 ---
 
-## Phase 3: Complex Widgets (Grid/TreeView) ⏳ **NOT STARTED**
+## Phase 3: Complex Widgets (Grid/TreeView) ✅ **COMPLETE**
 
 **Goal**: Apply callable pattern with hidden state to complex widgets
 
-**Status**: Being worked on in separate branches
-- [ ] **Grid** - `Ark.Grid(ctx, opts)` with ID-keyed state
-  - Branch: `claude/api-matching-phase-1-b-XXXXX` (in progress)
-  - Add callable pattern + hidden state
-  - Result object with selection/drag/reorder
-  - Deprecate `Grid.new()` with shim
+**Status**: Both widgets completed on `test/grid-api-matching` branch
+- ✅ **Grid** - `Ark.Grid(ctx, opts)` with ID-keyed state
+  - Branch: `test/grid-api-matching` (complete)
+  - Callable pattern + hidden state ✅
+  - Result object with selection/drag/reorder ✅
+  - Deprecate `Grid.new()` with shim ✅
+  - Registered in `arkitekt/init.lua` ✅
 
-- [ ] **TreeView** - `Ark.Tree(ctx, opts)` with ID-keyed state
-  - Branch: `claude/api-matching-phase-1-c-XXXXX` (in progress)
-  - Add callable pattern + hidden state
-  - Result object with selection/expanded/renamed
-  - Deprecate old API with shim
+- ✅ **TreeView** - `Ark.Tree(ctx, opts)` with ID-keyed state
+  - Branch: `test/grid-api-matching` (complete)
+  - Callable pattern + hidden state ✅
+  - Result object with selection/expanded/renamed ✅
+  - Deprecate old API with shim ✅
+  - Registered in `arkitekt/init.lua` ✅
+
+**Testing**: Both widgets need manual testing in apps
+**Next**: Phase 5 - Script migration (or Phase 4 Panel rework if desired)
 
 **See**: `GRID_REWORK.md` for Grid spec
 
