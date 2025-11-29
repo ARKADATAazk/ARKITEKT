@@ -326,9 +326,19 @@ function M.draw(ctx, opts)
   })
 end
 
---- Clean up all spinner instances
-function M.cleanup()
-  Base.cleanup_registry(instances)
-end
+-- ============================================================================
+-- DEPRECATED / REMOVED FUNCTIONS
+-- ============================================================================
 
-return M
+-- M.cleanup() - REMOVED (automatic via Base.cleanup_registry, no manual call needed)
+
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
+
+-- Make module callable: Ark.Spinner(ctx, opts) → M.draw(ctx, opts)
+return setmetatable(M, {
+  __call = function(_, ctx, opts)
+    return M.draw(ctx, opts)
+  end
+})

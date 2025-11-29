@@ -78,10 +78,30 @@ end
 -- ============================================================================
 
 --- Draw a radio button widget
+--- Supports both positional and opts-based parameters:
+--- - Positional: Ark.RadioButton(ctx, label, active)
+--- - Opts table: Ark.RadioButton(ctx, {label = "...", selected = true, ...})
 --- @param ctx userdata ImGui context
---- @param opts table Widget options
+--- @param label_or_opts string|table Label string or opts table
+--- @param active boolean|nil Active state (positional only)
 --- @return table Result { clicked, width, height, hovered, active }
-function M.draw(ctx, opts)
+function M.draw(ctx, label_or_opts, active)
+  -- Hybrid parameter detection
+  local opts
+  if type(label_or_opts) == "table" then
+    -- Opts table passed directly
+    opts = label_or_opts
+  elseif type(label_or_opts) == "string" then
+    -- Positional params - map to opts
+    opts = {
+      label = label_or_opts,
+      selected = active,
+    }
+  else
+    -- No params or just ctx - empty opts
+    opts = {}
+  end
+
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Resolve unique ID
@@ -215,9 +235,30 @@ function M.draw(ctx, opts)
   })
 end
 
---- Clean up all radio button instances
-function M.cleanup()
-  Base.cleanup_registry(instances)
+-- ============================================================================
+-- DEPRECATED / REMOVED FUNCTIONS
+-- ============================================================================
+
+--- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
+function M.draw_at_cursor(ctx, opts, id)
+  opts = opts or {}
+  if id then opts.id = id end
+  local result = M.draw(ctx, opts)
+  return result.selected
 end
 
-return M
+--- @deprecated Cleanup is automatic via Base, no need to call manually
+function M.cleanup()
+  -- No-op: cleanup happens automatically via Base.cleanup_registry
+end
+
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
+
+-- Make module callable: Ark.RadioButton(ctx, ...) → M.draw(ctx, ...)
+return setmetatable(M, {
+  __call = function(_, ctx, ...)
+    return M.draw(ctx, ...)
+  end
+})

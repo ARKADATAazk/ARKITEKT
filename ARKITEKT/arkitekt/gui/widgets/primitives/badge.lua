@@ -226,4 +226,14 @@ function M.favorite(ctx, opts)
   return M.icon(ctx, opts)
 end
 
-return M
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
+
+-- Make module callable: Ark.Badge(ctx, opts) → M.text(ctx, opts)
+-- Default to text badge as it's the most common variant
+return setmetatable(M, {
+  __call = function(_, ctx, opts)
+    return M.text(ctx, opts)
+  end
+})

@@ -485,7 +485,33 @@ end
 -- PUBLIC API
 -- ============================================================================
 
-function M.draw(ctx, opts)
+--- Draw a combo widget
+--- Supports both positional and opts-based parameters:
+--- - Positional: Ark.Combo(ctx, label, selected, items)
+--- - Opts table: Ark.Combo(ctx, {label = "...", selected = 1, options = {...}, ...})
+--- @param ctx userdata ImGui context
+--- @param label_or_opts string|table Label string or opts table
+--- @param selected number|nil Selected index (positional only)
+--- @param items table|nil Items array (positional only)
+--- @return table Result { changed, value, item, width, height, hovered, active, open }
+function M.draw(ctx, label_or_opts, selected, items)
+  -- Hybrid parameter detection
+  local opts
+  if type(label_or_opts) == "table" then
+    -- Opts table passed directly
+    opts = label_or_opts
+  elseif type(label_or_opts) == "string" then
+    -- Positional params - map to opts
+    opts = {
+      label = label_or_opts,
+      selected = selected,
+      options = items,
+    }
+  else
+    -- No params or just ctx - empty opts
+    opts = {}
+  end
+
   -- Extract positional parameters from opts
   local x = opts.x
   local y = opts.y
@@ -520,8 +546,24 @@ function M.draw(ctx, opts)
   -- Sync state back
   sync_to_state(instance, state_or_id, context)
 
-  -- Return result as table for consistency with new API
-  return { width = width, changed = changed }
+  -- Get current value and item text
+  local current_value = instance.current_value
+  local current_item = instance:get_display_text()
+
+  -- Get index of current value in options
+  local current_index = instance:get_current_index()
+
+  -- Return standardized result with .value (index) and .item (text)
+  return {
+    changed = changed,
+    value = current_index,        -- Selected index
+    item = current_item,          -- Selected item text
+    width = width,
+    height = height,
+    hovered = instance.hover_alpha > 0.01,
+    active = instance.is_open,
+    open = instance.is_open,
+  }
 end
 
 function M.measure(ctx, user_config)
@@ -560,9 +602,30 @@ function M.set_direction(id, direction)
   end
 end
 
---- Clean up all combo instances
-function M.cleanup()
-  Base.cleanup_registry(instances)
+-- ============================================================================
+-- DEPRECATED / REMOVED FUNCTIONS
+-- ============================================================================
+
+--- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
+function M.draw_at_cursor(ctx, opts, id)
+  opts = opts or {}
+  if id then opts.id = id end
+  local result = M.draw(ctx, opts)
+  return result.value, result.changed
 end
 
-return M
+--- @deprecated Cleanup is automatic via Base, no need to call manually
+function M.cleanup()
+  -- No-op: cleanup happens automatically via Base.cleanup_registry
+end
+
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
+
+-- Make module callable: Ark.Combo(ctx, ...) → M.draw(ctx, ...)
+return setmetatable(M, {
+  __call = function(_, ctx, ...)
+    return M.draw(ctx, ...)
+  end
+})

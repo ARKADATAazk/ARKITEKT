@@ -123,10 +123,34 @@ end
 -- ============================================================================
 
 --- Draw a slider widget
+--- Supports both positional and opts-based parameters:
+--- - Positional: Ark.Slider(ctx, label, value, min, max)
+--- - Opts table: Ark.Slider(ctx, {label = "...", value = 50, min = 0, max = 100, ...})
 --- @param ctx userdata ImGui context
---- @param opts table Widget options
+--- @param label_or_opts string|table Label string or opts table
+--- @param value number|nil Current value (positional only)
+--- @param min number|nil Minimum value (positional only)
+--- @param max number|nil Maximum value (positional only)
 --- @return table Result { changed, value, width, height, hovered, active }
-function M.draw(ctx, opts)
+function M.draw(ctx, label_or_opts, value, min, max)
+  -- Hybrid parameter detection
+  local opts
+  if type(label_or_opts) == "table" then
+    -- Opts table passed directly
+    opts = label_or_opts
+  elseif type(label_or_opts) == "string" then
+    -- Positional params - map to opts
+    opts = {
+      label = label_or_opts,
+      value = value,
+      min = min,
+      max = max,
+    }
+  else
+    -- No params or just ctx - empty opts
+    opts = {}
+  end
+
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Resolve unique ID
@@ -272,11 +296,30 @@ function M.int(ctx, opts)
   return result
 end
 
---- Clean up slider state
-function M.cleanup()
-  for k in pairs(slider_locks) do
-    slider_locks[k] = nil
-  end
+-- ============================================================================
+-- DEPRECATED / REMOVED FUNCTIONS
+-- ============================================================================
+
+--- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
+function M.draw_at_cursor(ctx, opts, id)
+  opts = opts or {}
+  if id then opts.id = id end
+  local result = M.draw(ctx, opts)
+  return result.value, result.changed
 end
 
-return M
+--- @deprecated Cleanup is automatic, no need to call manually
+function M.cleanup()
+  -- No-op: slider_locks are auto-managed
+end
+
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
+
+-- Make module callable: Ark.Slider(ctx, ...) → M.draw(ctx, ...)
+return setmetatable(M, {
+  __call = function(_, ctx, ...)
+    return M.draw(ctx, ...)
+  end
+})

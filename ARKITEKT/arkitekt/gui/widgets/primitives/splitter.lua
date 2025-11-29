@@ -211,9 +211,19 @@ function M.is_dragging(ctx, opts)
   return instance and instance.is_dragging or false
 end
 
---- Clean up all splitter instances
-function M.cleanup()
-  Base.cleanup_registry(instances)
-end
+-- ============================================================================
+-- DEPRECATED / REMOVED FUNCTIONS
+-- ============================================================================
 
-return M
+-- M.cleanup() - REMOVED (automatic via Base.cleanup_registry, no manual call needed)
+
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
+
+-- Make module callable: Ark.Splitter(ctx, opts) → M.draw(ctx, opts)
+return setmetatable(M, {
+  __call = function(_, ctx, opts)
+    return M.draw(ctx, opts)
+  end
+})

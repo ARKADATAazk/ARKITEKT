@@ -282,10 +282,32 @@ end
 -- ============================================================================
 
 --- Draw a text field widget
+--- Supports both positional and opts-based parameters:
+--- - Positional: Ark.InputText(ctx, label, text, width)
+--- - Opts table: Ark.InputText(ctx, {label = "...", text = "...", width = 200, ...})
 --- @param ctx userdata ImGui context
---- @param opts table Widget options
+--- @param label_or_opts string|table Label string or opts table
+--- @param text string|nil Current text (positional only)
+--- @param width number|nil Field width (positional only)
 --- @return table Result { changed, value, width, height, hovered, active }
-function M.draw(ctx, opts)
+function M.draw(ctx, label_or_opts, text, width)
+  -- Hybrid parameter detection
+  local opts
+  if type(label_or_opts) == "table" then
+    -- Opts table passed directly
+    opts = label_or_opts
+  elseif type(label_or_opts) == "string" then
+    -- Positional params - map to opts
+    opts = {
+      label = label_or_opts,
+      text = text,
+      width = width,
+    }
+  else
+    -- No params or just ctx - empty opts
+    opts = {}
+  end
+
   opts = Base.parse_opts(opts, DEFAULTS)
   local config = resolve_config(opts)
 
@@ -377,9 +399,30 @@ function M.clear(id)
   end
 end
 
---- Clean up all field instances
-function M.cleanup()
-  Base.cleanup_registry(field_state)
+-- ============================================================================
+-- DEPRECATED / REMOVED FUNCTIONS
+-- ============================================================================
+
+--- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
+function M.draw_at_cursor(ctx, opts, id)
+  opts = opts or {}
+  if id then opts.id = id end
+  local result = M.draw(ctx, opts)
+  return result.value, result.changed
 end
 
-return M
+--- @deprecated Cleanup is automatic via Base, no need to call manually
+function M.cleanup()
+  -- No-op: cleanup happens automatically via Base.cleanup_registry
+end
+
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
+
+-- Make module callable: Ark.InputText(ctx, ...) → M.draw(ctx, ...)
+return setmetatable(M, {
+  __call = function(_, ctx, ...)
+    return M.draw(ctx, ...)
+  end
+})

@@ -255,4 +255,14 @@ function M.draw_gamma(ctx, id, gamma, opt)
   return draw_slider_base(ctx, id, gamma, 0, 100, opt.default or 50, gradient_fn, tooltip_fn, opt)
 end
 
-return M
+
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
+
+-- Make module callable
+return setmetatable(M, {
+  __call = function(_, ctx, opts)
+    return M.draw(ctx, opts)
+  end
+})

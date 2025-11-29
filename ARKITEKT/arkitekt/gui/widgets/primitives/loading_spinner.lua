@@ -119,4 +119,13 @@ function M.draw_direct(dl, center_x, center_y, opts)
   ImGui.DrawList_PathStroke(dl, color, 0, thickness)
 end
 
-return M
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
+
+-- Make module callable: Ark.LoadingSpinner(ctx, opts) → M.draw(ctx, opts)
+return setmetatable(M, {
+  __call = function(_, ctx, opts)
+    return M.draw(ctx, opts)
+  end
+})

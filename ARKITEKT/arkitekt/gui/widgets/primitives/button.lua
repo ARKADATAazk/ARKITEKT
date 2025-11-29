@@ -393,15 +393,60 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
   return is_hovered, is_active, clicked, right_clicked
 end
 
+--- Measure button width based on content (internal - use via opts.width or auto-calculation)
+--- @param ctx userdata ImGui context
+--- @param opts table Widget options
+--- @return number Calculated width
+local function measure(ctx, opts)
+  opts = opts or {}
+
+  -- Only use explicit width if it's > 0 (width = 0 means auto-calculate)
+  if opts.width and opts.width > 0 then
+    return opts.width
+  end
+
+  local config = resolve_config(opts)
+  local label = config.label or ""
+  local icon = config.icon or ""
+  local display_text = icon .. (icon ~= "" and label ~= "" and " " or "") .. label
+
+  local text_w = ImGui.CalcTextSize(ctx, display_text)
+  local padding = config.padding_x or 10
+
+  return text_w + padding * 2
+end
+
 -- ============================================================================
 -- PUBLIC API (Standardized)
 -- ============================================================================
 
 --- Draw a button widget
+--- Supports both positional and opts-based parameters:
+--- - Positional: Ark.Button(ctx, label, width, height)
+--- - Opts table: Ark.Button(ctx, {label = "...", width = 100, ...})
 --- @param ctx userdata ImGui context
---- @param opts table Widget options
+--- @param label_or_opts string|table Label string or opts table
+--- @param width number|nil Button width (positional only)
+--- @param height number|nil Button height (positional only)
 --- @return table Result { clicked, right_clicked, width, height, hovered, active }
-function M.draw(ctx, opts)
+function M.draw(ctx, label_or_opts, width, height)
+  -- Hybrid parameter detection
+  local opts
+  if type(label_or_opts) == "table" then
+    -- Opts table passed directly
+    opts = label_or_opts
+  elseif type(label_or_opts) == "string" then
+    -- Positional params - map to opts
+    opts = {
+      label = label_or_opts,
+      width = width,
+      height = height,
+    }
+  else
+    -- No params or just ctx - empty opts
+    opts = {}
+  end
+
   opts = Base.parse_opts(opts, DEFAULTS)
   local config = resolve_config(opts)
 
@@ -415,12 +460,12 @@ function M.draw(ctx, opts)
   local x, y = Base.get_position(ctx, opts)
   local dl = Base.get_draw_list(ctx, opts)
 
-  -- Calculate size
-  local width = opts.width or M.measure(ctx, opts)
-  local height = opts.height or 24
+  -- Calculate size (width = 0 means auto-calculate, so check > 0)
+  local final_width = (opts.width and opts.width > 0) and opts.width or measure(ctx, opts)
+  local final_height = (opts.height and opts.height > 0) and opts.height or 24
 
   -- Render button (InvisibleButton created first, then DrawList rendering)
-  local is_hovered, is_active, clicked, right_clicked = render_button(ctx, dl, x, y, width, height, config, instance, unique_id)
+  local is_hovered, is_active, clicked, right_clicked = render_button(ctx, dl, x, y, final_width, final_height, config, instance, unique_id)
 
   -- Handle callbacks
   if clicked and config.on_click then
@@ -436,46 +481,24 @@ function M.draw(ctx, opts)
   end
 
   -- Advance cursor
-  Base.advance_cursor(ctx, x, y, width, height, opts.advance)
+  Base.advance_cursor(ctx, x, y, final_width, final_height, opts.advance)
 
   -- Return standardized result
   return Base.create_result({
     clicked = clicked,
     right_clicked = right_clicked,
-    width = width,
-    height = height,
+    width = final_width,
+    height = final_height,
     hovered = is_hovered,
     active = is_active,
   })
 end
 
---- Measure button width based on content
---- @param ctx userdata ImGui context
---- @param opts table Widget options
---- @return number Calculated width
-function M.measure(ctx, opts)
-  opts = opts or {}
+-- ============================================================================
+-- DEPRECATED FUNCTIONS (Backward Compatibility Shims)
+-- ============================================================================
 
-  if opts.width then
-    return opts.width
-  end
-
-  local config = resolve_config(opts)
-  local label = config.label or ""
-  local icon = config.icon or ""
-  local display_text = icon .. (icon ~= "" and label ~= "" and " " or "") .. label
-
-  local text_w = ImGui.CalcTextSize(ctx, display_text)
-  local padding = config.padding_x or 10
-
-  return text_w + padding * 2
-end
-
---- Draw a button at current ImGui cursor position (convenience function)
---- @param ctx userdata ImGui context
---- @param opts table Widget options (x/y will be set from cursor)
---- @param id string|nil Optional ID override
---- @return boolean clicked Whether button was clicked
+--- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
 function M.draw_at_cursor(ctx, opts, id)
   opts = opts or {}
   if id then opts.id = id end
@@ -484,9 +507,18 @@ function M.draw_at_cursor(ctx, opts, id)
   return result.clicked
 end
 
---- Clean up all button instances
+--- @deprecated Cleanup is automatic via Base, no need to call manually
 function M.cleanup()
-  Base.cleanup_registry(instances)
+  -- No-op: cleanup happens automatically via Base.cleanup_registry
 end
 
-return M
+-- ============================================================================
+-- MODULE EXPORT (Callable)
+-- ============================================================================
+
+-- Make module callable: Ark.Button(ctx, ...) → M.draw(ctx, ...)
+return setmetatable(M, {
+  __call = function(_, ctx, ...)
+    return M.draw(ctx, ...)
+  end
+})
