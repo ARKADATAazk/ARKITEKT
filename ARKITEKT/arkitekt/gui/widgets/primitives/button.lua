@@ -588,6 +588,9 @@ end
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
+-- Reusable opts table for positional mode (eliminates 1 allocation per call)
+local _positional_opts = { label = "", width = nil, height = nil }
+
 -- Make module callable: Ark.Button(ctx, ...) → M.draw(ctx, ...)
 -- Hybrid return: positional mode returns boolean (ImGui style), opts mode returns result object
 return setmetatable(M, {
@@ -598,11 +601,11 @@ return setmetatable(M, {
       return M.draw(ctx, label_or_opts)
     else
       -- Positional mode: Return boolean like ImGui for ergonomics
-      local result = M.draw(ctx, {
-        label = label_or_opts,
-        width = width,
-        height = height,
-      })
+      -- Reuse opts table to avoid allocation (performance optimization)
+      _positional_opts.label = label_or_opts
+      _positional_opts.width = width
+      _positional_opts.height = height
+      local result = M.draw(ctx, _positional_opts)
       return result.clicked  -- ImGui-compatible return
     end
   end
