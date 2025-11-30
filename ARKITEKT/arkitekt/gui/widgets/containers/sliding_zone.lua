@@ -71,7 +71,8 @@ local DEFAULTS = {
   window_bounds = nil,      -- {x, y, w, h} - if provided, enables "exited toward edge" detection
 
   -- Callbacks
-  on_draw = nil,            -- function(ctx, dl, bounds, visibility, state)
+  draw = nil,               -- function(ctx, dl, bounds, visibility) - NEW: preferred name
+  on_draw = nil,            -- function(ctx, dl, bounds, visibility, state) - DEPRECATED: use 'draw'
   on_expand = nil,          -- function(state) - called when expanding
   on_collapse = nil,        -- function(state) - called when collapsing
 
@@ -597,6 +598,9 @@ end
 function M.draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
+  -- Backward compatibility: on_draw → draw
+  opts.draw = opts.draw or opts.on_draw
+
   -- Validate required opts
   if not opts.bounds then
     error("SlidingZone requires 'bounds' option", 2)
@@ -751,8 +755,8 @@ function M.draw(ctx, opts)
   draw_background(dl, content_bounds, opts)
 
   -- Call content draw callback
-  if opts.on_draw then
-    opts.on_draw(ctx, dl, content_bounds, visibility, state)
+  if opts.draw then
+    opts.draw(ctx, dl, content_bounds, visibility)
   end
 
   -- Pop clipping
@@ -903,4 +907,12 @@ function M.cleanup()
   end
 end
 
-return M
+-- ============================================================================
+-- CALLABLE PATTERN
+-- ============================================================================
+
+return setmetatable(M, {
+  __call = function(_, ctx, opts)
+    return M.draw(ctx, opts)
+  end
+})
