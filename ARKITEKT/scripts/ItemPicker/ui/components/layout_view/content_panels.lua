@@ -302,8 +302,8 @@ function M.draw_track_filter_bar(ctx, draw_list, coord_offset_x, panels_start_y,
         directional_delay = true,
         retract_delay_toward = 1.0,
         retract_delay_away = 0.1,
-        hover_extend_inside = 200,
-        hover_extend_outside = 50,
+        hover_extend_inside = 200,  -- Not used in new trigger logic
+        hover_extend_outside = 0,   -- No extension - trigger only on collapsed bar
         hover_padding = 0,
         draw_list = draw_list,
         debug_mouse_tracking = true,
