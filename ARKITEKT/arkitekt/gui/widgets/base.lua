@@ -237,8 +237,10 @@ end
 --- @return string Unique identifier
 function M.resolve_id(ctx, opts, default_prefix)
   -- Priority 1: Explicit ID (bypasses stack)
-  if opts.id then
-    local base_id = opts.id
+  -- Use rawget to check if id was explicitly set (not inherited from defaults via metatable)
+  local explicit_id = rawget(opts, "id")
+  if explicit_id then
+    local base_id = explicit_id
     -- Panel context: prefix with panel ID
     if opts.panel_state and opts.panel_state._panel_id then
       return string.format("%s_%s", opts.panel_state._panel_id, base_id)
@@ -247,7 +249,7 @@ function M.resolve_id(ctx, opts, default_prefix)
   end
 
   -- Priority 2: Stack + fallback (label or default_prefix or "widget")
-  local base_id = opts.label or default_prefix or "widget"
+  local base_id = rawget(opts, "label") or default_prefix or "widget"
   local id = IdStack.resolve(ctx, base_id)
 
   -- Panel context: prefix with panel ID

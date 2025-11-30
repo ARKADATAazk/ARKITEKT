@@ -287,20 +287,9 @@ end
 -- ============================================================================
 
 local function resolve_config(opts)
-  -- Start with defaults merged with opts
-  local config = {}
-
-  -- Copy defaults
-  for k, v in pairs(DEFAULTS) do
-    config[k] = v
-  end
-
-  -- Apply user overrides first (so we know if preset_name is set)
-  for k, v in pairs(opts) do
-    if v ~= nil then
-      config[k] = v
-    end
-  end
+  -- OPTIMIZATION: opts already has metatable fallback to DEFAULTS from Base.parse_opts
+  -- No need to copy everything! Just use opts directly as config
+  local config = opts
 
   -- Handle semantic presets (primary, danger, success, secondary)
   -- These take priority over legacy preset_name system
@@ -588,9 +577,6 @@ end
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Reusable opts table for positional mode (eliminates 1 allocation per call)
-local _positional_opts = { label = "", width = nil, height = nil }
-
 -- Make module callable: Ark.Button(ctx, ...) → M.draw(ctx, ...)
 -- Hybrid return: positional mode returns boolean (ImGui style), opts mode returns result object
 return setmetatable(M, {
@@ -601,11 +587,12 @@ return setmetatable(M, {
       return M.draw(ctx, label_or_opts)
     else
       -- Positional mode: Return boolean like ImGui for ergonomics
-      -- Reuse opts table to avoid allocation (performance optimization)
-      _positional_opts.label = label_or_opts
-      _positional_opts.width = width
-      _positional_opts.height = height
-      local result = M.draw(ctx, _positional_opts)
+      -- Create new opts table (can't reuse - causes ID conflicts)
+      local result = M.draw(ctx, {
+        label = label_or_opts,
+        width = width,
+        height = height,
+      })
       return result.clicked  -- ImGui-compatible return
     end
   end
