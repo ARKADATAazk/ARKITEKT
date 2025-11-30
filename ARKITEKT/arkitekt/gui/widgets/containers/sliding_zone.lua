@@ -58,13 +58,20 @@ local DEFAULTS = {
 
   -- Trigger Zone
   trigger_extension = 8,      -- Pixels beyond collapsed bar to extend trigger zone
+                              -- Can be number (uniform) or table {up=100, down=20, left=8, right=8}
                               -- When collapsed_ratio=0 (fully hidden), this IS the trigger zone
                               -- When collapsed_ratio>0, this extends the visible collapsed bar
+                              -- Directional extensions allow panels to respond to hover above/below/beside them
 
   -- Deprecated (backward compat)
   hover_extend_outside = nil, -- DEPRECATED: Use trigger_extension instead
   hover_extend_inside = nil,  -- DEPRECATED: Removed (dead code)
   hover_padding = 30,         -- Y-axis padding for hover detection (advanced use)
+
+  -- Custom Retraction
+  retract_when = nil,         -- Optional: function(ctx, mx, my, state) -> boolean
+                              -- Return true to force panel retraction
+                              -- Use for custom close conditions (e.g., "close when hovering below")
 
   -- Expansion on hover
   expand_scale = 1.0,       -- Scale multiplier on hover (1.3 = 30% bigger)
@@ -306,66 +313,83 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
   -- Calculate hover zone based on edge
   local padding = opts.hover_padding or 30
 
-  -- TRIGGER ZONE CALCULATION
-  -- When collapsed: trigger only at the collapsed bar edge (narrow)
-  -- When expanded: trigger covers the full expanded panel (wide)
+  -- TRIGGER ZONE CALCULATION (with directional extensions)
+  -- When collapsed: trigger at collapsed bar + directional extensions
+  -- When expanded: trigger covers full panel + directional extensions
 
-  local trigger_threshold
-  if state.is_expanded or state.is_in_hover_zone then
-    -- Expanded: trigger covers the full panel size
-    local size = opts.size or DEFAULTS.size
-    trigger_threshold = size
-  else
-    -- Collapsed: trigger at the VISIBLE collapsed bar edge
-    -- Calculate visible collapsed width (collapsed_ratio * size)
-    local size = opts.size or DEFAULTS.size
-    local collapsed_ratio = opts.collapsed_ratio
-    local collapsed_width = size * collapsed_ratio
-
-    -- Trigger zone = collapsed bar + extension for easier activation
-    local extension = opts.trigger_extension
-    trigger_threshold = collapsed_width + extension
-  end
+  local size = opts.size or DEFAULTS.size
+  local ext = opts.trigger_extension  -- Table {up, down, left, right}
 
   local in_zone = false
   local trigger_line = nil  -- For debug logging
 
-  -- Maximum distance outside bounds before trigger stops working
-  -- Prevents triggering from another monitor
-  local max_outside = opts.hover_extend_outside or 50
-
   if edge == "left" then
-    -- Trigger zone: BETWEEN (bounds.x - max_outside) and (bounds.x + trigger_threshold)
-    -- NOT infinite - stops at max_outside distance
-    trigger_line = bounds.x + trigger_threshold
-    local min_x = bounds.x - max_outside
-    local zone_y1 = content.y - padding
-    local zone_y2 = content.y + content.h + padding
-    in_zone = mx >= min_x and mx < trigger_line and my >= zone_y1 and my <= zone_y2
+    -- Left edge: panel extends from left boundary
+    local collapsed_ratio = opts.collapsed_ratio
+    local collapsed_width = size * collapsed_ratio
+    local base_trigger = state.is_expanded and size or (collapsed_width + ext.right)
+
+    -- X bounds: left edge + trigger threshold
+    local x1 = bounds.x - ext.left  -- Extend left (outside panel)
+    local x2 = bounds.x + base_trigger  -- Extend right (into content)
+    trigger_line = x2
+
+    -- Y bounds: panel height + up/down extensions
+    local y1 = bounds.y - ext.up
+    local y2 = bounds.y + bounds.h + ext.down
+
+    in_zone = mx >= x1 and mx < x2 and my >= y1 and my <= y2
 
   elseif edge == "right" then
-    -- Trigger zone: BETWEEN (bounds.x + bounds.w - trigger_threshold) and (bounds.x + bounds.w + max_outside)
-    trigger_line = bounds.x + bounds.w - trigger_threshold
-    local max_x = bounds.x + bounds.w + max_outside
-    local zone_y1 = content.y - padding
-    local zone_y2 = content.y + content.h + padding
-    in_zone = mx > trigger_line and mx <= max_x and my >= zone_y1 and my <= zone_y2
+    -- Right edge: panel extends from right boundary
+    local collapsed_ratio = opts.collapsed_ratio
+    local collapsed_width = size * collapsed_ratio
+    local base_trigger = state.is_expanded and size or (collapsed_width + ext.left)
+
+    -- X bounds: right edge - trigger threshold
+    local x1 = bounds.x + bounds.w - base_trigger  -- Extend left (into content)
+    local x2 = bounds.x + bounds.w + ext.right  -- Extend right (outside panel)
+    trigger_line = x1
+
+    -- Y bounds: panel height + up/down extensions
+    local y1 = bounds.y - ext.up
+    local y2 = bounds.y + bounds.h + ext.down
+
+    in_zone = mx > x1 and mx <= x2 and my >= y1 and my <= y2
 
   elseif edge == "top" then
-    -- Trigger zone: BETWEEN (bounds.y - max_outside) and (bounds.y + trigger_threshold)
-    trigger_line = bounds.y + trigger_threshold
-    local min_y = bounds.y - max_outside
-    local zone_x1 = content.x - padding
-    local zone_x2 = content.x + content.w + padding
-    in_zone = my >= min_y and my < trigger_line and mx >= zone_x1 and mx <= zone_x2
+    -- Top edge: panel extends from top boundary
+    local collapsed_ratio = opts.collapsed_ratio
+    local collapsed_height = size * collapsed_ratio
+    local base_trigger = state.is_expanded and size or (collapsed_height + ext.down)
+
+    -- Y bounds: top edge + trigger threshold
+    local y1 = bounds.y - ext.up  -- Extend up (outside panel)
+    local y2 = bounds.y + base_trigger  -- Extend down (into content)
+    trigger_line = y2
+
+    -- X bounds: panel width + left/right extensions
+    local x1 = bounds.x - ext.left
+    local x2 = bounds.x + bounds.w + ext.right
+
+    in_zone = my >= y1 and my < y2 and mx >= x1 and mx <= x2
 
   else -- bottom
-    -- Trigger zone: BETWEEN (bounds.y + bounds.h - trigger_threshold) and (bounds.y + bounds.h + max_outside)
-    trigger_line = bounds.y + bounds.h - trigger_threshold
-    local max_y = bounds.y + bounds.h + max_outside
-    local zone_x1 = content.x - padding
-    local zone_x2 = content.x + content.w + padding
-    in_zone = my > trigger_line and my <= max_y and mx >= zone_x1 and mx <= zone_x2
+    -- Bottom edge: panel extends from bottom boundary
+    local collapsed_ratio = opts.collapsed_ratio
+    local collapsed_height = size * collapsed_ratio
+    local base_trigger = state.is_expanded and size or (collapsed_height + ext.up)
+
+    -- Y bounds: bottom edge - trigger threshold
+    local y1 = bounds.y + bounds.h - base_trigger  -- Extend up (into content)
+    local y2 = bounds.y + bounds.h + ext.down  -- Extend down (outside panel)
+    trigger_line = y1
+
+    -- X bounds: panel width + left/right extensions
+    local x1 = bounds.x - ext.left
+    local x2 = bounds.x + bounds.w + ext.right
+
+    in_zone = my > y1 and my <= y2 and mx >= x1 and mx <= x2
   end
 
   -- Debug logging for trigger zone
@@ -566,9 +590,38 @@ function M.draw(ctx, opts)
 
   -- Parameter renames with fallbacks
   opts.collapsed_ratio = opts.collapsed_ratio or opts.min_visible or DEFAULTS.collapsed_ratio
-  opts.trigger_extension = opts.trigger_extension or opts.hover_extend_outside or DEFAULTS.trigger_extension
   opts.fade_speed = opts.fade_speed or opts.animation_speed or DEFAULTS.fade_speed
   opts.expand_speed = opts.expand_speed or opts.scale_speed or DEFAULTS.expand_speed
+
+  -- trigger_extension: support both number and table
+  local trigger_ext = opts.trigger_extension or opts.hover_extend_outside or DEFAULTS.trigger_extension
+  if type(trigger_ext) == "number" then
+    -- Convert number to directional table
+    opts.trigger_extension = {
+      up = trigger_ext,
+      down = trigger_ext,
+      left = trigger_ext,
+      right = trigger_ext,
+    }
+  elseif type(trigger_ext) == "table" then
+    -- Fill in missing directions with default (8)
+    local default = DEFAULTS.trigger_extension
+    opts.trigger_extension = {
+      up = trigger_ext.up or default,
+      down = trigger_ext.down or default,
+      left = trigger_ext.left or default,
+      right = trigger_ext.right or default,
+    }
+  else
+    -- Fallback to uniform default
+    local default = DEFAULTS.trigger_extension
+    opts.trigger_extension = {
+      up = default,
+      down = default,
+      left = default,
+      right = default,
+    }
+  end
 
   -- Auto-calculate reveal offset from collapsed_ratio
   -- Panel slides from collapsed size to full size during reveal
@@ -622,11 +675,23 @@ function M.draw(ctx, opts)
                         my >= win.y and my <= (win.y + win.h)
     end
 
-    -- Check massive trigger zone (like Settings panel's "everything ABOVE Y")
-    -- No need for complex crossing detection - the massive zone catches everything
+    -- Check trigger zone
     local in_zone = is_in_hover_zone(ctx, opts, state, bounds)
 
-    if in_zone then
+    -- Check custom retract condition
+    local force_retract = false
+    if opts.retract_when and type(opts.retract_when) == "function" then
+      force_retract = opts.retract_when(ctx, mx, my, state)
+    end
+
+    if force_retract then
+      -- Force retract immediately
+      state:set_targets(0.0, 0.0, 1.0)
+      state.hover_leave_time = nil
+      state.is_in_hover_zone = false
+      state.is_expanded = false
+
+    elseif in_zone then
       -- Expand immediately
       state:set_targets(1.0, reveal_offset, opts.expand_scale or 1.0)
       state.hover_leave_time = nil
