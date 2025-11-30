@@ -37,9 +37,9 @@ local DEFAULTS = {
 
   -- Animation (uses library defaults)
   slide_distance = 20,      -- How far to slide when revealing
-  animation_speed = nil,    -- nil = use Anim.FADE_SPEED
-  slide_speed = nil,        -- nil = use Anim.SMOOTH_SPEED
-  scale_speed = nil,        -- nil = use Anim.SMOOTH_SPEED
+  animation_speed = 5.0,    -- Visibility fade speed (was: Anim.FADE_SPEED = 8.0, too fast)
+  slide_speed = 6.0,        -- Slide animation speed (was: Anim.SMOOTH_SPEED = 10.0, too fast)
+  scale_speed = 6.0,        -- Scale animation speed (was: Anim.SMOOTH_SPEED = 10.0, too fast)
   snap_epsilon = 0.001,     -- Threshold for considering animation settled
 
   -- Retract delays
@@ -293,21 +293,25 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
   -- Calculate hover zone based on edge
   local padding = opts.hover_padding or 30
 
-  -- MASSIVE TRIGGER ZONE (like Settings panel's "everything ABOVE Y")
-  -- This is more reliable than trying to detect crossing through a thin strip
-  -- For left/right edges: trigger extends far into content area
-  -- For top/bottom edges: trigger extends far into content area
+  -- TRIGGER ZONE CALCULATION
+  -- When collapsed: trigger only at the collapsed bar edge (narrow)
+  -- When expanded: trigger covers the full expanded panel (wide)
 
-  -- When expanded, extend trigger to cover full panel
   local trigger_threshold
   if state.is_expanded or state.is_in_hover_zone then
     -- Expanded: trigger covers the full panel size
     local size = opts.size or 40
     trigger_threshold = size
   else
-    -- Collapsed: MASSIVE trigger zone extends into content
-    -- This makes it easy to trigger even with fast mouse movement
-    trigger_threshold = opts.hover_extend_inside or 200  -- Was 50, now 200 (massive)
+    -- Collapsed: trigger at the VISIBLE collapsed bar edge
+    -- Calculate visible collapsed width (min_visible * size)
+    local size = opts.size or 40
+    local min_visible = opts.min_visible or 0.0
+    local collapsed_width = size * min_visible
+
+    -- Trigger zone = collapsed bar + small extension for easier activation
+    local extension = opts.hover_extend_outside or 30
+    trigger_threshold = collapsed_width + extension
   end
 
   local in_zone = false
