@@ -34,6 +34,13 @@ end
 function Track:update(dt)
   dt = dt or 0.016
   self.current = Math.lerp(self.current, self.target, self.speed * dt)
+
+  -- Snap to target when very close to prevent endless slow approach
+  local epsilon = 0.001
+  if math.abs(self.current - self.target) < epsilon then
+    self.current = self.target
+  end
+
   return self.current
 end
 

@@ -481,55 +481,59 @@ local function calculate_content_bounds(opts, visibility, slide_offset, scale)
   local bounds = normalize_bounds(opts.bounds)
   local edge = opts.edge or "right"
   local size = opts.size or 40
+  local floor = math.floor
 
   -- Apply scale
   local scaled_size = size * scale
 
   -- Apply visibility to size
-  local visible_size = scaled_size * math.max(opts.collapsed_ratio or 0, visibility)
+  local collapsed_ratio = opts.collapsed_ratio or 0
+  local visible_size = scaled_size * math.max(collapsed_ratio, visibility)
+
+  -- IMPORTANT: Couple slide_offset to visibility to prevent jitter
+  -- Original implementation had one progress value controlling both position and size
+  -- Using separate tracks causes them to desync, creating jittery movement
+  local reveal_offset = opts._reveal_offset
+  local coupled_slide = reveal_offset * visibility
 
   if edge == "left" then
     -- Starts clipped outside left edge, slides right
-    local reveal_offset = opts._reveal_offset
     local base_x = bounds.x - reveal_offset
     return {
-      x = base_x + slide_offset,
-      y = bounds.y,
-      w = visible_size,
-      h = bounds.h
+      x = floor(base_x + coupled_slide + 0.5),
+      y = floor(bounds.y + 0.5),
+      w = floor(visible_size + 0.5),
+      h = floor(bounds.h + 0.5)
     }
 
   elseif edge == "right" then
     -- Starts clipped outside right edge, slides left
-    local reveal_offset = opts._reveal_offset
     local base_x = bounds.x + bounds.w + reveal_offset - visible_size
     return {
-      x = base_x - slide_offset,
-      y = bounds.y,
-      w = visible_size,
-      h = bounds.h
+      x = floor(base_x - coupled_slide + 0.5),
+      y = floor(bounds.y + 0.5),
+      w = floor(visible_size + 0.5),
+      h = floor(bounds.h + 0.5)
     }
 
   elseif edge == "top" then
     -- Starts clipped outside top edge, slides down
-    local reveal_offset = opts._reveal_offset
     local base_y = bounds.y - reveal_offset
     return {
-      x = bounds.x,
-      y = base_y + slide_offset,
-      w = bounds.w,
-      h = visible_size
+      x = floor(bounds.x + 0.5),
+      y = floor(base_y + coupled_slide + 0.5),
+      w = floor(bounds.w + 0.5),
+      h = floor(visible_size + 0.5)
     }
 
   else -- bottom
     -- Starts clipped outside bottom edge, slides up
-    local reveal_offset = opts._reveal_offset
     local base_y = bounds.y + bounds.h + reveal_offset - visible_size
     return {
-      x = bounds.x,
-      y = base_y - slide_offset,
-      w = bounds.w,
-      h = visible_size
+      x = floor(bounds.x + 0.5),
+      y = floor(base_y - coupled_slide + 0.5),
+      w = floor(bounds.w + 0.5),
+      h = floor(visible_size + 0.5)
     }
   end
 end
