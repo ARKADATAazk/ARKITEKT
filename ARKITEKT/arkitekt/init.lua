@@ -6,6 +6,24 @@
 --        Ark.Button.draw(ctx, {label = "Click"})
 
 -- ============================================================================
+-- SINGLETON PATTERN
+-- ============================================================================
+-- CRITICAL: Return cached namespace if already loaded to prevent module corruption
+-- when multiple scripts use require('arkitekt')
+-- Entry points use dofile() to get fresh bootstrap, but sub-modules use require()
+if package.loaded['arkitekt'] then
+  return package.loaded['arkitekt']
+end
+
+-- CRITICAL: Clear all arkitekt.* modules from cache to prevent stale modules
+-- when multiple scripts run in same process (e.g., DevKit launches ItemPicker)
+for key in pairs(package.loaded) do
+  if key:match('^arkitekt%.') then
+    package.loaded[key] = nil
+  end
+end
+
+-- ============================================================================
 -- AUTO-BOOTSTRAP
 -- ============================================================================
 -- Run bootstrap to set up package paths and validate dependencies
@@ -106,5 +124,9 @@ setmetatable(Ark, {
     error(string.format("Ark.%s is not a valid widget. See MODULES table in arkitekt/init.lua", key), 2)
   end
 })
+
+-- Cache this namespace so require('arkitekt') from sub-modules returns the same instance
+-- This prevents module corruption when multiple scripts run in the same process
+package.loaded['arkitekt'] = Ark
 
 return Ark
