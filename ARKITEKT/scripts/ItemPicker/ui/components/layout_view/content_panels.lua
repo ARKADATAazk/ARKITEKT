@@ -286,7 +286,7 @@ function M.draw_track_filter_bar(ctx, draw_list, coord_offset_x, panels_start_y,
     if whitelist_count > 0 then
       local panels_left_edge = coord_offset_x + config.LAYOUT.PADDING
 
-      local track_zone_result = Ark.SlidingZone.draw(ctx, {
+      local track_zone_result = Ark.SlidingZone(ctx, {
         id = "track_filter_bar",
         edge = "left",
         bounds = {
@@ -296,18 +296,17 @@ function M.draw_track_filter_bar(ctx, draw_list, coord_offset_x, panels_start_y,
           h = content_height,
         },
         size = track_bar_max_width,
-        min_visible = track_bar_collapsed_width / track_bar_max_width,
-        slide_distance = 0,
+        collapsed_ratio = 0.0,  -- Fully hidden when collapsed
+        -- trigger_extension uses default (8px)
         retract_delay = 0.2,
         directional_delay = true,
         retract_delay_toward = 1.0,
         retract_delay_away = 0.1,
-        -- hover_extend_outside uses default (6px) for easier triggering
         hover_padding = 0,
         draw_list = draw_list,
         debug_mouse_tracking = true,
 
-        on_draw = function(zone_ctx, dl, bounds, visibility, zone_state)
+        draw = function(zone_ctx, dl, bounds, visibility)
           local bar_x = bounds.x
           local bar_y = bounds.y
           local bar_height = bounds.h

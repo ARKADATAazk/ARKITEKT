@@ -31,16 +31,24 @@ local DEFAULTS = {
   -- Bounds (required - defines the container area)
   bounds = nil,             -- {x, y, w, h} or {x1, y1, x2, y2}
 
-  -- Size
-  size = 40,                -- Width (for left/right) or height (for top/bottom)
-  min_visible = 0.0,        -- Minimum visibility when hidden (0.0 = fully hidden)
+  -- Size & Visibility
+  size = 40,                -- Expanded panel width (left/right) or height (top/bottom)
+  collapsed_ratio = 0.0,    -- Collapsed size as ratio of full size (0.0-1.0)
+                            -- 0.0 = fully hidden, 0.08 = 8% visible (e.g., 12px of 150px)
 
-  -- Animation (uses library defaults)
-  slide_distance = 20,      -- How far to slide when revealing
-  animation_speed = 5.0,    -- Visibility fade speed (was: Anim.FADE_SPEED = 8.0, too fast)
-  slide_speed = 6.0,        -- Slide animation speed (was: Anim.SMOOTH_SPEED = 10.0, too fast)
-  scale_speed = 6.0,        -- Scale animation speed (was: Anim.SMOOTH_SPEED = 10.0, too fast)
+  -- Deprecated (backward compat)
+  min_visible = nil,        -- DEPRECATED: Use collapsed_ratio instead
+
+  -- Animation
+  fade_speed = 5.0,         -- Visibility fade in/out speed
+  slide_speed = 6.0,        -- Slide animation speed (panel movement)
+  expand_speed = 6.0,       -- Scale expansion speed (if expand_scale > 1.0)
   snap_epsilon = 0.001,     -- Threshold for considering animation settled
+
+  -- Deprecated (backward compat)
+  animation_speed = nil,    -- DEPRECATED: Use fade_speed instead
+  scale_speed = nil,        -- DEPRECATED: Use expand_speed instead
+  slide_distance = nil,     -- DEPRECATED: Auto-calculated from collapsed_ratio
 
   -- Retract delays
   retract_delay = 0.3,      -- Base delay (used when directional_delay = false)
@@ -48,10 +56,15 @@ local DEFAULTS = {
   retract_delay_toward = 1.0, -- Delay when cursor exits toward panel edge (longer)
   retract_delay_away = 0.1, -- Delay when cursor exits away from panel edge (shorter)
 
-  -- Hover zone
-  hover_extend_outside = 6,   -- Small extension beyond collapsed bar for easier triggering
-  hover_extend_inside = 50,   -- Extend hover zone inside bounds (deprecated, not used)
-  hover_padding = 30,         -- Padding around content area for hover
+  -- Trigger Zone
+  trigger_extension = 8,      -- Pixels beyond collapsed bar to extend trigger zone
+                              -- When collapsed_ratio=0 (fully hidden), this IS the trigger zone
+                              -- When collapsed_ratio>0, this extends the visible collapsed bar
+
+  -- Deprecated (backward compat)
+  hover_extend_outside = nil, -- DEPRECATED: Use trigger_extension instead
+  hover_extend_inside = nil,  -- DEPRECATED: Removed (dead code)
+  hover_padding = 30,         -- Y-axis padding for hover detection (advanced use)
 
   -- Expansion on hover
   expand_scale = 1.0,       -- Scale multiplier on hover (1.3 = 30% bigger)
@@ -156,14 +169,14 @@ end
 
 function SlidingZone:configure_speeds(opts)
   -- Allow per-instance speed overrides
-  if opts.animation_speed then
-    self.visibility_track:set_speed(opts.animation_speed)
+  if opts.fade_speed then
+    self.visibility_track:set_speed(opts.fade_speed)
   end
   if opts.slide_speed then
     self.slide_track:set_speed(opts.slide_speed)
   end
-  if opts.scale_speed then
-    self.scale_track:set_speed(opts.scale_speed)
+  if opts.expand_speed then
+    self.scale_track:set_speed(opts.expand_speed)
   end
 end
 
@@ -300,17 +313,17 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
   local trigger_threshold
   if state.is_expanded or state.is_in_hover_zone then
     -- Expanded: trigger covers the full panel size
-    local size = opts.size or 40
+    local size = opts.size or DEFAULTS.size
     trigger_threshold = size
   else
     -- Collapsed: trigger at the VISIBLE collapsed bar edge
-    -- Calculate visible collapsed width (min_visible * size)
-    local size = opts.size or 40
-    local min_visible = opts.min_visible or 0.0
-    local collapsed_width = size * min_visible
+    -- Calculate visible collapsed width (collapsed_ratio * size)
+    local size = opts.size or DEFAULTS.size
+    local collapsed_ratio = opts.collapsed_ratio
+    local collapsed_width = size * collapsed_ratio
 
-    -- Trigger zone = collapsed bar + small extension for easier activation
-    local extension = opts.hover_extend_outside or 30
+    -- Trigger zone = collapsed bar + extension for easier activation
+    local extension = opts.trigger_extension
     trigger_threshold = collapsed_width + extension
   end
 
@@ -365,67 +378,9 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
   return in_zone
 end
 
---- Detect if cursor moved from content area toward the panel edge (fast movement)
---- This matches the pattern used by ItemPicker's Settings panel - tracks if cursor
---- was in the "content area" (away from edge) and moved toward/past the edge.
---- @param opts table Widget options
---- @param state table Instance state with last_mouse_x/y
---- @param bounds table Normalized bounds
---- @param mx number Current mouse X
---- @param my number Current mouse Y
---- @return boolean True if cursor moved from content toward edge
-local function crossed_toward_edge(opts, state, bounds, mx, my)
-  local prev_x, prev_y = state.last_mouse_x, state.last_mouse_y
-  if not prev_x or not prev_y then return false end
-
-  local edge = opts.edge or "right"
-  local content = opts.content_bounds or bounds
-  local padding = opts.hover_padding or 30
-  local hover_inside = opts.hover_extend_inside or 50
-
-  -- Define "content area" as the area AWAY from the panel edge
-  -- If cursor was in content and moved toward edge, trigger the panel
-  if edge == "left" then
-    -- Content area = right of the trigger zone
-    local content_threshold = bounds.x + hover_inside
-    local edge_threshold = bounds.x
-    -- Was in content area (right of trigger), now at or past edge (left of bounds)
-    local was_in_content = prev_x > content_threshold
-    local now_at_edge = mx <= edge_threshold
-    local in_y_range = my >= (content.y - padding) and my <= (content.y + content.h + padding)
-    return was_in_content and now_at_edge and in_y_range
-
-  elseif edge == "right" then
-    -- Content area = left of the trigger zone
-    local content_threshold = bounds.x + bounds.w - hover_inside
-    local edge_threshold = bounds.x + bounds.w
-    -- Was in content area (left of trigger), now at or past edge (right of bounds)
-    local was_in_content = prev_x < content_threshold
-    local now_at_edge = mx >= edge_threshold
-    local in_y_range = my >= (content.y - padding) and my <= (content.y + content.h + padding)
-    return was_in_content and now_at_edge and in_y_range
-
-  elseif edge == "top" then
-    -- Content area = below the trigger zone
-    local content_threshold = bounds.y + hover_inside
-    local edge_threshold = bounds.y
-    -- Was in content area (below trigger), now at or past edge (above bounds)
-    local was_in_content = prev_y > content_threshold
-    local now_at_edge = my <= edge_threshold
-    local in_x_range = mx >= (content.x - padding) and mx <= (content.x + content.w + padding)
-    return was_in_content and now_at_edge and in_x_range
-
-  else -- bottom
-    -- Content area = above the trigger zone
-    local content_threshold = bounds.y + bounds.h - hover_inside
-    local edge_threshold = bounds.y + bounds.h
-    -- Was in content area (above trigger), now at or past edge (below bounds)
-    local was_in_content = prev_y < content_threshold
-    local now_at_edge = my >= edge_threshold
-    local in_x_range = mx >= (content.x - padding) and mx <= (content.x + content.w + padding)
-    return was_in_content and now_at_edge and in_x_range
-  end
-end
+-- DEAD CODE REMOVED: crossed_toward_edge() function
+-- This function was never called and used the deprecated hover_extend_inside parameter
+-- If fast cursor movement detection is needed in the future, implement it differently
 
 --- Detect if cursor exited the window toward the panel edge (like Settings panel)
 --- This is the most reliable detection - doesn't depend on exact cursor position outside window
@@ -506,12 +461,12 @@ local function calculate_content_bounds(opts, visibility, slide_offset, scale)
   local scaled_size = size * scale
 
   -- Apply visibility to size
-  local visible_size = scaled_size * math.max(opts.min_visible or 0, visibility)
+  local visible_size = scaled_size * math.max(opts.collapsed_ratio or 0, visibility)
 
   if edge == "left" then
     -- Starts clipped outside left edge, slides right
-    local slide_distance = opts.slide_distance or 20
-    local base_x = bounds.x - slide_distance
+    local reveal_offset = opts._reveal_offset
+    local base_x = bounds.x - reveal_offset
     return {
       x = base_x + slide_offset,
       y = bounds.y,
@@ -521,8 +476,8 @@ local function calculate_content_bounds(opts, visibility, slide_offset, scale)
 
   elseif edge == "right" then
     -- Starts clipped outside right edge, slides left
-    local slide_distance = opts.slide_distance or 20
-    local base_x = bounds.x + bounds.w + slide_distance - visible_size
+    local reveal_offset = opts._reveal_offset
+    local base_x = bounds.x + bounds.w + reveal_offset - visible_size
     return {
       x = base_x - slide_offset,
       y = bounds.y,
@@ -532,8 +487,8 @@ local function calculate_content_bounds(opts, visibility, slide_offset, scale)
 
   elseif edge == "top" then
     -- Starts clipped outside top edge, slides down
-    local slide_distance = opts.slide_distance or 20
-    local base_y = bounds.y - slide_distance
+    local reveal_offset = opts._reveal_offset
+    local base_y = bounds.y - reveal_offset
     return {
       x = bounds.x,
       y = base_y + slide_offset,
@@ -543,8 +498,8 @@ local function calculate_content_bounds(opts, visibility, slide_offset, scale)
 
   else -- bottom
     -- Starts clipped outside bottom edge, slides up
-    local slide_distance = opts.slide_distance or 20
-    local base_y = bounds.y + bounds.h + slide_distance - visible_size
+    local reveal_offset = opts._reveal_offset
+    local base_y = bounds.y + bounds.h + reveal_offset - visible_size
     return {
       x = bounds.x,
       y = base_y - slide_offset,
@@ -602,8 +557,25 @@ end
 function M.draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
-  -- Backward compatibility: on_draw → draw
+  -- ============================================================================
+  -- BACKWARD COMPATIBILITY SHIMS
+  -- ============================================================================
+
+  -- Callback rename: on_draw → draw
   opts.draw = opts.draw or opts.on_draw
+
+  -- Parameter renames with fallbacks
+  opts.collapsed_ratio = opts.collapsed_ratio or opts.min_visible or DEFAULTS.collapsed_ratio
+  opts.trigger_extension = opts.trigger_extension or opts.hover_extend_outside or DEFAULTS.trigger_extension
+  opts.fade_speed = opts.fade_speed or opts.animation_speed or DEFAULTS.fade_speed
+  opts.expand_speed = opts.expand_speed or opts.scale_speed or DEFAULTS.expand_speed
+
+  -- Auto-calculate reveal offset from collapsed_ratio
+  -- Panel slides from collapsed size to full size during reveal
+  local size = opts.size or DEFAULTS.size
+  local collapsed_ratio = opts.collapsed_ratio
+  local reveal_offset = opts.slide_distance or (size * (1 - collapsed_ratio))
+  opts._reveal_offset = reveal_offset  -- Store calculated value
 
   -- Validate required opts
   if not opts.bounds then
@@ -632,11 +604,11 @@ function M.draw(ctx, opts)
   -- Handle trigger modes
   local trigger = opts.trigger or "hover"
   local current_time = ImGui.GetTime(ctx)
-  local slide_distance = opts.slide_distance or 20
+  local reveal_offset = opts._reveal_offset
 
   if trigger == "always" then
     -- Always visible
-    state:set_targets(1.0, slide_distance, opts.expand_scale or 1.0)
+    state:set_targets(1.0, reveal_offset, opts.expand_scale or 1.0)
 
   elseif trigger == "hover" then
     -- Get current mouse position (using reaper API for reliability outside window)
@@ -656,7 +628,7 @@ function M.draw(ctx, opts)
 
     if in_zone then
       -- Expand immediately
-      state:set_targets(1.0, slide_distance, opts.expand_scale or 1.0)
+      state:set_targets(1.0, reveal_offset, opts.expand_scale or 1.0)
       state.hover_leave_time = nil
       state.is_in_hover_zone = true
       state.exit_direction = nil
@@ -723,7 +695,7 @@ function M.draw(ctx, opts)
   elseif trigger == "button" then
     -- Toggle state managed externally or via click
     if state.is_expanded then
-      state:set_targets(1.0, slide_distance, opts.expand_scale or 1.0)
+      state:set_targets(1.0, reveal_offset, opts.expand_scale or 1.0)
     else
       state:set_targets(opts.min_visible or 0.0, 0, 1.0)
     end
@@ -828,10 +800,10 @@ function M.teleport(ctx, opts, expanded)
   local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new, ctx)
 
   state.is_expanded = expanded
-  local slide_distance = opts.slide_distance or 20
+  local reveal_offset = opts._reveal_offset
 
   if expanded then
-    state:teleport(1.0, slide_distance, opts.expand_scale or 1.0)
+    state:teleport(1.0, reveal_offset, opts.expand_scale or 1.0)
   else
     state:teleport(opts.min_visible or 0.0, 0, 1.0)
   end
