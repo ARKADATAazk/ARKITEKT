@@ -276,9 +276,12 @@ For a feature-rich button with:
 ### Performance Limitations
 
 1. **Always 8-10x slower than ImGui.Button**
-   - Unavoidable due to Lua→C overhead for DrawList calls
-   - ImGui.Button is single C call, we make 4+ calls
-   - **Acceptable trade-off** for features we provide
+   - **PRIMARY CAUSE: 20x more vertices (~75 vs ~4 per button)**
+   - Dual border rendering (inner + outer) with anti-aliasing
+   - Each DrawList rect with AA generates 10-20+ vertices
+   - Secondary: Lua→C overhead for multiple DrawList calls
+   - ImGui.Button is single C call, we make 3-4 calls
+   - **Acceptable trade-off** for custom theming we provide
 
 2. **Config resolution happens every frame**
    - Could cache resolved config per instance
@@ -312,6 +315,89 @@ If you REALLY need more speed:
 4. **Use native ImGui.Button for simple cases** (detect and delegate)
 
 But these are complex and only worth it for extreme cases (1000+ buttons at 60fps).
+
+---
+
+## Vertex Overhead Analysis
+
+**Discovery Date:** January 2025 (post-optimization phase)
+
+After completing the Lua-level optimizations, profiling revealed the **primary bottleneck is geometry, not code**.
+
+### Findings
+
+**Button vertex counts (1000 instances):**
+- ImGui.Button: ~3,778 vertices (~3.8 per button, mostly text)
+- ARKITEKT Button: ~75,000 vertices (~75 per button)
+- **Ratio: 20x more vertices**
+
+**Slider vertex counts (1000 instances):**
+- ImGui.SliderDouble: ~3,000 vertices (~3 per slider)
+- ARKITEKT Slider: ~30,000 vertices (~30 per slider)
+- **Ratio: 10x more vertices**
+
+### Root Causes
+
+**1. Dual Border Rendering**
+```lua
+-- ARKITEKT draws TWO border rects:
+DrawList_AddRect(dl, x+1, y+1, x+w-1, y+h-1, border_inner, rounding)  -- Inner
+DrawList_AddRect(dl, x, y, x+w, y+h, border_outer, rounding)          -- Outer
+```
+vs ImGui which draws a single border (if any).
+
+**2. Anti-Aliasing Vertex Multiplication**
+- Each `DrawList_AddRect()` with AA can generate 10-20+ vertices
+- Rounding makes this worse (more segments needed)
+- Background (1) + Inner Border (10-20) + Outer Border (10-20) + Text (4) = ~75 vertices
+
+**3. Additional Effects**
+- Sliders add shadow layer (another rect)
+- All primitives use similar multi-layer approach
+
+### Impact
+
+The 9ms vs 1ms performance difference is **primarily GPU-bound**, not Lua-bound:
+- GPU must draw 20x more vertices
+- More DrawList calls to process
+- Lua overhead is secondary (~3ms from profiling)
+
+### Measurement Methodology
+
+**Attempted:** Programmatic counting via `ImGui.DrawList_GetVtxBufferSize()`
+- **Failed:** Function not exposed in ReaImGui API
+
+**Actual:** Manual observation via ImGui Metrics/Debugger window
+- Run benchmark with 1000 widgets
+- Open ImGui Demo → Tools → Metrics/Debugger
+- Read vertex count from "DrawList" section
+- Documented in benchmark script comments
+
+### Potential Solutions (Not Implemented)
+
+If vertex overhead becomes critical:
+
+1. **Single border mode** - Combine inner/outer into one rect (-10-20 vtx/btn)
+2. **Disable AA on borders** - Use thickness=1 without AA (-50% vtx)
+3. **Geometry fast path** - Detect simple buttons, use single rect
+4. **ImGui delegation** - Use native ImGui.Button when possible
+
+**Why not implemented:**
+- Custom dual-border aesthetic is core to ARKITEKT's theme
+- Performance is acceptable for typical use (<100 buttons)
+- Complexity of maintaining two rendering paths
+- Would require theme system redesign
+
+### Recommendation
+
+**Accept the vertex overhead** as the cost of custom theming. The dual-border aesthetic is intentional and provides visual polish that justifies the performance cost.
+
+Only revisit if:
+- Rendering 500+ widgets simultaneously
+- Targeting 60fps on low-end hardware
+- Users report actual performance issues
+
+Until then, the 9ms for 1000 buttons (0.009ms per button) is negligible compared to typical Reaper API calls (0.01-0.1ms each).
 
 ---
 

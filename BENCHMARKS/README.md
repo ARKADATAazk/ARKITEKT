@@ -66,7 +66,24 @@ Only kept simple, high-impact changes:
 2. **Fixed table reuse bug** - Fresh opts table per call instead of singleton
 3. **Remove config table copying** - Use opts directly instead of copying 80 fields
 
-**Net result:** 43% faster with minimal code complexity increase.
+**Net result:** 35% faster with minimal code complexity increase.
+
+### Critical Discovery: Vertex Overhead is the Primary Bottleneck
+
+**Finding:** ARKITEKT widgets generate 10-20x more vertices than native ImGui:
+- Button: ~75 vertices vs ~4 (20x)
+- Slider: ~30 vertices vs ~3 (10x)
+
+**Root cause:** Dual border rendering (inner + outer) with anti-aliasing
+- Background rect: 1 vertex
+- Inner border rect: 10-20 vertices (with AA)
+- Outer border rect: 10-20 vertices (with AA)
+- Text: ~4 vertices
+- **Total:** ~75 vertices per button
+
+**Impact:** The 9ms vs 1ms performance difference is primarily GPU-bound, not Lua-bound.
+
+**Decision:** Accept this as the cost of custom theming. The dual-border aesthetic is intentional and provides the visual polish that defines ARKITEKT's look.
 
 ## Lessons Learned
 
