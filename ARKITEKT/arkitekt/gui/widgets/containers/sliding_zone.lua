@@ -395,8 +395,9 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
   -- Debug logging for trigger zone
   if opts.debug_mouse_tracking then
     local state_str = state.is_expanded and "expanded" or "collapsed"
-    Logger.debug("SlidingZone", "Trigger zone [%s edge, %s]: threshold=%.1f, trigger_line=%.1f, in_zone=%s",
-      edge, state_str, trigger_threshold, trigger_line or 0, tostring(in_zone))
+    local ext = opts.trigger_extension
+    Logger.debug("SlidingZone", "Trigger zone [%s edge, %s]: ext={%d,%d,%d,%d}, in_zone=%s",
+      edge, state_str, ext.up or 0, ext.down or 0, ext.left or 0, ext.right or 0, tostring(in_zone))
   end
 
   return in_zone
