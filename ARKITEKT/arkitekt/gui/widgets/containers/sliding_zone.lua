@@ -49,7 +49,7 @@ local DEFAULTS = {
   retract_delay_away = 0.1, -- Delay when cursor exits away from panel edge (shorter)
 
   -- Hover zone
-  hover_extend_outside = 0,   -- Extend hover zone outside bounds (0 = exact collapsed bar size)
+  hover_extend_outside = 6,   -- Small extension beyond collapsed bar for easier triggering
   hover_extend_inside = 50,   -- Extend hover zone inside bounds (deprecated, not used)
   hover_padding = 30,         -- Padding around content area for hover
 
