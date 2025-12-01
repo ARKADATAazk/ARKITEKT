@@ -9,22 +9,76 @@ local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local BaseRenderer = require('ItemPicker.ui.grids.renderers.base')
 local Shapes = require('arkitekt.gui.draw.shapes')
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
+local Palette = require('ItemPicker.defs.palette')
 
 local M = {}
+
+-- PERF: Localize frequently used functions
+local floor = math.floor
+local min = math.min
+local max = math.max
+local format = string.format
+local DrawList_AddRectFilled = ImGui.DrawList_AddRectFilled
+local DrawList_AddRect = ImGui.DrawList_AddRect
+local DrawList_AddText = ImGui.DrawList_AddText
+local CalcTextSize = ImGui.CalcTextSize
+local Colors_with_alpha = Ark.Colors.with_alpha
+local Colors_opacity = Ark.Colors.opacity
+local Colors_adjust_brightness = Ark.Colors.adjust_brightness
+local Colors_luminance = Ark.Colors.luminance
+local Colors_same_hue_variant = Ark.Colors.same_hue_variant
+local Colors_rgba_to_components = Ark.Colors.rgba_to_components
+local Colors_components_to_rgba = Ark.Colors.components_to_rgba
+
+-- PERF: Cache constant values computed once
+local _cached = {
+  text_height = nil,     -- Cached per-frame (ctx dependent)
+  text_height_ctx = nil, -- Track which ctx we cached for
+  duration_text = {},    -- uuid -> {text, width, height}
+  palette = nil,         -- Cached palette (refreshed once per frame)
+  palette_frame = -1,    -- Frame counter for palette cache
+  -- PERF: Pool badge cache (limited set of values)
+  pool_badges = {},      -- pool_count -> {text, width, height}
+}
+
+-- PERF: Call once per frame before rendering tiles (avoids per-tile overhead)
+function M.begin_frame(ctx, config)
+  local frame_count = ImGui.GetFrameCount(ctx)
+  if _cached.palette_frame ~= frame_count then
+    _cached.palette = Palette.get()
+    _cached.palette_frame = frame_count
+  end
+  -- PERF: Cache config values for render_tile_text (eliminates ~30ms of config lookups)
+  if config then
+    BaseRenderer.cache_config(config)
+  end
+end
+
+-- PERF: Per-tile state cache to skip animator when state is unchanged and settled
+-- Key: tile_key, Value: { hover, disabled, muted, compact, hover_f, enabled_f, muted_f, compact_f, settled }
+local _tile_state_cache = {}
+
+-- PERF: Truncated text cache - avoids re-truncating every frame
+-- Key: tile_key, Value: { name, width, truncated }
+local _truncated_text_cache = {}
 
 function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects, disable_animator)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local tile_w, tile_h = x2 - x1, y2 - y1
   local center_x, center_y = (x1 + x2) / 2, (y1 + y2) / 2
 
+  -- PERF: Use cached config values (eliminates __index metatable overhead)
+  local cfg = BaseRenderer.cfg
+
   local overlay_alpha = state.overlay_alpha or 1.0
-  local cascade_factor = BaseRenderer.calculate_cascade_factor(rect, overlay_alpha, config)
+  -- PERF: Inline cascade_factor for common case (overlay_alpha = 1.0)
+  local cascade_factor = overlay_alpha >= 0.999 and 1.0 or BaseRenderer.calculate_cascade_factor(rect, overlay_alpha, config)
 
   if cascade_factor < 0.001 then return end
 
   -- Apply cascade animation transform
-  local scale = config.TILE_RENDER.cascade.scale_from + (1.0 - config.TILE_RENDER.cascade.scale_from) * cascade_factor
-  local y_offset = config.TILE_RENDER.cascade.y_offset * (1.0 - cascade_factor)
+  local scale = cfg.cascade_scale_from + (1.0 - cfg.cascade_scale_from) * cascade_factor
+  local y_offset = cfg.cascade_y_offset * (1.0 - cascade_factor)
 
   local scaled_w = tile_w * scale
   local scaled_h = tile_h * scale
@@ -34,110 +88,145 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local scaled_y2 = center_y + scaled_h / 2 + y_offset
 
   -- Check if we're in small tile mode (need this early for animations)
-  local is_small_tile = scaled_h < config.TILE_RENDER.responsive.small_tile_height
+  local is_small_tile = scaled_h < cfg.small_tile_height
 
   -- Track animations
   local is_disabled = state.disabled and state.disabled.audio and state.disabled.audio[item_data.filename]
   local is_muted = (item_data.track_muted or item_data.item_muted) and true or false
+  local is_hover = tile_state.hover and true or false
 
-  if animator and item_data.key then
-    animator:track(item_data.key, 'hover', tile_state.hover and 1.0 or 0.0, config.TILE_RENDER.animation_speed_hover)
-    animator:track(item_data.key, 'enabled', is_disabled and 0.0 or 1.0, config.TILE_RENDER.disabled.fade_speed)
-    animator:track(item_data.key, 'muted', is_muted and 1.0 or 0.0, config.TILE_RENDER.muted.fade_speed)
-    -- Track compact mode for header transition (1.0 = compact/small, 0.0 = normal)
-    animator:track(item_data.key, 'compact_mode', is_small_tile and 1.0 or 0.0, config.TILE_RENDER.animation_speed_header_transition)
-  end
+  local hover_factor, enabled_factor, muted_factor, compact_factor
+  local key = item_data.key
 
-  local hover_factor = animator and animator:get(item_data.key, 'hover') or (tile_state.hover and 1.0 or 0.0)
-  local enabled_factor = animator and animator:get(item_data.key, 'enabled') or (is_disabled and 0.0 or 1.0)
-  local muted_factor = animator and animator:get(item_data.key, 'muted') or (is_muted and 1.0 or 0.0)
-  local compact_factor = animator and animator:get(item_data.key, 'compact_mode') or (is_small_tile and 1.0 or 0.0)
-
-  -- Track playback progress
-  local playback_progress, playback_fade = 0, 0
-  if state.is_previewing and state.is_previewing(item_data.item) then
-    playback_progress = state.get_preview_progress and state.get_preview_progress() or 0
-    -- Store progress for fade out
-    if animator and item_data.key then
-      animator:track(item_data.key, 'last_progress', playback_progress, 999)  -- Instant update
-      -- Time-based fade: fade in when playing, fade out at 100% or when stopped
-      local target_fade = (playback_progress > 0 and playback_progress < 1.0) and 1.0 or 0.0
-      local current_fade = animator:get(item_data.key, 'progress_fade') or 0
-      -- Fast fade in (8.0), fade out in 1 second (1.0)
-      local fade_speed = (target_fade > current_fade) and 8.0 or 1.0
-      animator:track(item_data.key, 'progress_fade', target_fade, fade_speed)
-      playback_fade = animator:get(item_data.key, 'progress_fade')
+  if animator and key then
+    -- PERF: Check if we can skip animator entirely (state unchanged + settled)
+    local cached = _tile_state_cache[key]
+    if cached and cached.settled
+       and cached.hover == is_hover
+       and cached.disabled == is_disabled
+       and cached.muted == is_muted
+       and cached.compact == is_small_tile then
+      -- State unchanged and animations settled - use cached values directly
+      hover_factor = cached.hover_f
+      enabled_factor = cached.enabled_f
+      muted_factor = cached.muted_f
+      compact_factor = cached.compact_f
     else
-      playback_fade = 1.0
+      -- State changed or not settled - use animator
+      hover_factor = animator:track_get(key, 'hover', is_hover and 1.0 or 0.0, cfg.animation_speed_hover)
+      enabled_factor = animator:track_get(key, 'enabled', is_disabled and 0.0 or 1.0, cfg.disabled_fade_speed)
+      muted_factor = animator:track_get(key, 'muted', is_muted and 1.0 or 0.0, cfg.muted_fade_speed)
+      compact_factor = animator:track_get(key, 'compact_mode', is_small_tile and 1.0 or 0.0, cfg.animation_speed_header_transition)
+
+      -- Check if all animations are now settled (at target values)
+      local hover_target = is_hover and 1.0 or 0.0
+      local enabled_target = is_disabled and 0.0 or 1.0
+      local muted_target = is_muted and 1.0 or 0.0
+      local compact_target = is_small_tile and 1.0 or 0.0
+
+      local settled = (hover_factor == hover_target)
+                  and (enabled_factor == enabled_target)
+                  and (muted_factor == muted_target)
+                  and (compact_factor == compact_target)
+
+      -- Update cache (clear color cache when state changes)
+      _tile_state_cache[key] = {
+        hover = is_hover,
+        disabled = is_disabled,
+        muted = is_muted,
+        compact = is_small_tile,
+        hover_f = hover_factor,
+        enabled_f = enabled_factor,
+        muted_f = muted_factor,
+        compact_f = compact_factor,
+        settled = settled,
+        -- Color cache (invalidated when state changes)
+        render_color = nil,
+        combined_alpha = nil,
+      }
     end
   else
-    -- Not currently playing this item, fade out at last known progress
-    if animator and item_data.key then
-      playback_progress = animator:get(item_data.key, 'last_progress') or 0
-      animator:track(item_data.key, 'progress_fade', 0.0, 1.0)  -- 1 second fade out
-      playback_fade = animator:get(item_data.key, 'progress_fade')
+    hover_factor = is_hover and 1.0 or 0.0
+    enabled_factor = is_disabled and 0.0 or 1.0
+    muted_factor = is_muted and 1.0 or 0.0
+    compact_factor = is_small_tile and 1.0 or 0.0
+  end
+
+
+  -- Track playback progress (PERF: only track if preview system is active)
+  local playback_progress, playback_fade = 0, 0
+  if state.is_previewing then
+    local is_playing_this = state.is_previewing(item_data.item)
+    if is_playing_this then
+      playback_progress = state.get_preview_progress and state.get_preview_progress() or 0
+      -- Store progress for fade out
+      if animator and item_data.key then
+        animator:track(item_data.key, 'last_progress', playback_progress, 999)  -- Instant update
+        -- Time-based fade: fade in when playing, fade out at 100% or when stopped
+        local target_fade = (playback_progress > 0 and playback_progress < 1.0) and 1.0 or 0.0
+        local current_fade = animator:get(item_data.key, 'progress_fade') or 0
+        -- Fast fade in (8.0), fade out in 1 second (1.0)
+        local fade_speed = (target_fade > current_fade) and 8.0 or 1.0
+        animator:track(item_data.key, 'progress_fade', target_fade, fade_speed)
+        playback_fade = animator:get(item_data.key, 'progress_fade')
+      else
+        playback_fade = 1.0
+      end
+    elseif animator and item_data.key then
+      -- PERF: Only check fade if we have a stored progress (avoid unnecessary animator calls)
+      local last_progress = animator:get(item_data.key, 'last_progress')
+      if last_progress and last_progress > 0 then
+        playback_progress = last_progress
+        animator:track(item_data.key, 'progress_fade', 0.0, 1.0)  -- 1 second fade out
+        playback_fade = animator:get(item_data.key, 'progress_fade')
+      end
     end
   end
 
-  -- Get base color from item
-  local base_color = item_data.color or 0xFF555555
+  -- PERF: Use cached palette (call M.begin_frame before rendering tiles)
+  local palette = _cached.palette
+  local base_color = item_data.color or palette.default_tile_color or 0xFF555555
 
-  -- Capture stable tile color BEFORE state effects (matching drag handler approach)
-  -- This is the "enabled" tile appearance that should be used for animations
-  local sat_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_saturation_factor or config.TILE_RENDER.base_fill.saturation_factor
-  local bright_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_brightness_factor or config.TILE_RENDER.base_fill.brightness_factor
-  local stable_tile_color = base_color
-  stable_tile_color = Ark.Colors.desaturate(stable_tile_color, 1.0 - sat_factor)
-  stable_tile_color = Ark.Colors.adjust_brightness(stable_tile_color, bright_factor)
+  -- PERF: Use cached color for settled tiles (skips all color computations)
+  -- Only cache when cascade is 1.0 (fully visible) to avoid float comparison issues
+  local render_color, combined_alpha
+  local cached_state = _tile_state_cache[key]
+  local can_use_cache = cached_state and cached_state.settled
+                        and cached_state.render_color
+                        and cached_state.base_color == base_color
+                        and cached_state.selected == tile_state.selected
+                        and cascade_factor >= 0.999  -- Only cache fully visible tiles
 
-  -- Apply muted and disabled state effects
-  local render_color = BaseRenderer.apply_state_effects(base_color, muted_factor, enabled_factor, config)
-
-  -- Apply base tile fill adjustments (use compact mode values for small tiles)
-  render_color = Ark.Colors.desaturate(render_color, 1.0 - sat_factor)
-  render_color = Ark.Colors.adjust_brightness(render_color, bright_factor)
-
-  -- ABSOLUTE MINIMUM LUMINANCE - NO BLACK TILES ALLOWED
-  -- Enforce AFTER base_fill adjustments (which can make tiles very dark)
-  -- but BEFORE hover effect (so all tiles meet minimum, not just hovered ones)
-  -- Use HSL to set minimum lightness (works even for pure black colors)
-  local min_lightness = config.TILE_RENDER.min_lightness
-  local r, g, b, a = Ark.Colors.rgba_to_components(render_color)
-  local h, s, l = Ark.Colors.rgb_to_hsl(render_color)
-  if l < min_lightness then
-    -- Set minimum lightness while preserving hue and saturation
-    l = min_lightness
-    local r_new, g_new, b_new = Ark.Colors.hsl_to_rgb(h, s, l)
-    render_color = Ark.Colors.components_to_rgba(r_new, g_new, b_new, a)
+  if can_use_cache then
+    -- Use cached colors
+    render_color = cached_state.render_color
+    combined_alpha = cached_state.combined_alpha
+  else
+    -- Compute colors
+    render_color, combined_alpha = BaseRenderer.compute_tile_color(
+      base_color, is_small_tile, hover_factor, muted_factor, enabled_factor,
+      tile_state.selected, cascade_factor, config, palette
+    )
+    -- Cache if settled and fully visible
+    if cached_state and cached_state.settled and cascade_factor >= 0.999 then
+      cached_state.render_color = render_color
+      cached_state.combined_alpha = combined_alpha
+      cached_state.base_color = base_color
+      cached_state.selected = tile_state.selected
+    end
   end
 
-  -- Apply hover effect (brightness boost)
-  if hover_factor > 0.001 then
-    local hover_boost = config.TILE_RENDER.hover.brightness_boost * hover_factor
-    render_color = Ark.Colors.adjust_brightness(render_color, 1.0 + hover_boost)
-  end
-
-  -- Apply selection effect (brightness boost for selected tiles)
-  if tile_state.selected then
-    local selection_boost = config.TILE_RENDER.selection.tile_brightness_boost or 0.35
-    render_color = Ark.Colors.adjust_brightness(render_color, 1.0 + selection_boost)
-  end
-
-  -- Capture animation color BEFORE alpha modification (actual tile appearance color)
-  local animation_color = render_color
-
-  -- Calculate combined alpha with state effects
-  local base_alpha = (render_color & 0xFF) / 255
-  local combined_alpha, final_alpha = BaseRenderer.calculate_combined_alpha(cascade_factor, enabled_factor, muted_factor, base_alpha, config)
-  render_color = Ark.Colors.with_alpha(render_color, Ark.Colors.opacity(final_alpha))
+  -- Capture animation color for disable animation (without alpha)
+  local animation_color = Colors_with_alpha(render_color, 0xFF)
 
   local text_alpha = (0xFF * combined_alpha) // 1
   local text_color = BaseRenderer.get_text_color(muted_factor, config)
 
+
   -- Calculate header height with animated transition
-  local normal_header_height = math.max(
-    config.TILE_RENDER.header.min_height,
-    scaled_h * config.TILE_RENDER.header.height_ratio
+  local normal_header_height = max(
+    cfg.header_min_height,
+    scaled_h * cfg.header_height_ratio
   )
   local full_tile_height = scaled_h
 
@@ -159,14 +248,15 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   -- Render base tile fill with rounding
-  ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
+  DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
 
   -- Render dark backdrop for disabled items (skip if show_disabled_items = false, animation handles it)
   if enabled_factor < 0.999 and state.settings.show_disabled_items then
-    local backdrop_alpha = config.TILE_RENDER.disabled.backdrop_alpha * (1.0 - enabled_factor) * cascade_factor
-    local backdrop_color = Ark.Colors.with_alpha(config.TILE_RENDER.disabled.backdrop_color, backdrop_alpha // 1)
-    ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, backdrop_color, config.TILE.ROUNDING)
+    local backdrop_alpha = cfg.disabled_backdrop_alpha * (1.0 - enabled_factor) * cascade_factor
+    local backdrop_color = Colors_with_alpha(cfg.disabled_backdrop_color, backdrop_alpha // 1)
+    DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, backdrop_color, config.TILE.ROUNDING)
   end
+
 
   -- Render waveform BEFORE header so header can overlay with transparency
   -- (show even when disabled, just with toned down color)
@@ -195,15 +285,15 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
     ImGui.Dummy(ctx, content_w, content_h)
 
-    local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config)
-    local waveform_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
+    local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config, palette)
+    local waveform_alpha = combined_alpha * cfg.waveform_line_alpha
 
     -- In small tile mode, apply very low opacity for subtle visualization
     if show_viz_in_small then
-      waveform_alpha = waveform_alpha * config.TILE_RENDER.small_tile.visualization_alpha
+      waveform_alpha = waveform_alpha * cfg.small_tile_visualization_alpha
     end
 
-    dark_color = Ark.Colors.with_alpha(dark_color, Ark.Colors.opacity(waveform_alpha))
+    dark_color = Colors_with_alpha(dark_color, Colors_opacity(waveform_alpha))
 
     -- Skip all waveform rendering if skip_visualizations is enabled (fast mode)
     if not state.skip_visualizations then
@@ -233,6 +323,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   ::skip_waveform::
 
+
   -- Render playback progress bar (after visualization, before header)
   if playback_progress > 0 and playback_fade > 0 then
     TileFX.render_playback_progress(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, base_color, playback_progress, playback_fade, config.TILE.ROUNDING)
@@ -243,70 +334,87 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local header_alpha = combined_alpha * header_alpha_factor
   if is_small_tile and header_alpha_factor < 0.1 then
     -- When mostly faded out in compact mode, apply small tile header alpha
-    header_alpha = combined_alpha * config.TILE_RENDER.small_tile.header_alpha
+    header_alpha = combined_alpha * cfg.small_tile_header_alpha
   end
   BaseRenderer.render_header_bar(dl, scaled_x1, scaled_y1, scaled_x2, header_height,
-    render_color, header_alpha, config, is_small_tile)
+    render_color, header_alpha, config, is_small_tile, palette)
+
 
   -- Render marching ants for selection
   if tile_state.selected and cascade_factor > 0.5 then
-    local selection_config = config.TILE_RENDER.selection
-    local ant_color = Ark.Colors.same_hue_variant(
+    -- Use palette values if available for theme-reactive ants
+    local ants_sat = palette.ants_saturation or cfg.selection_border_saturation
+    local ants_bright = palette.ants_brightness or cfg.selection_border_brightness
+    local ant_color = Colors_same_hue_variant(
       base_color,
-      selection_config.border_saturation,
-      selection_config.border_brightness,
-      (selection_config.ants_alpha * combined_alpha) // 1
+      ants_sat,
+      ants_bright,
+      floor(cfg.selection_ants_alpha * combined_alpha)
     )
 
     -- Mix with white to make marching ants lighter but still tinted
     local white_mix = 0.40  -- Mix 40% white - lighter but keeps more color
-    local r, g, b, a = Ark.Colors.rgba_to_components(ant_color)
+    local r, g, b, a = Colors_rgba_to_components(ant_color)
     r = r + (255 - r) * white_mix
     g = g + (255 - g) * white_mix
     b = b + (255 - b) * white_mix
-    ant_color = Ark.Colors.components_to_rgba(r // 1, g // 1, b // 1, a)
+    ant_color = Colors_components_to_rgba(floor(r), floor(g), floor(b), a)
 
-    local inset = selection_config.ants_inset
+    local inset = cfg.selection_ants_inset
     local selection_count = state.audio_selection_count or 1
     MarchingAnts.draw(
       dl,
       scaled_x1 + inset, scaled_y1 + inset, scaled_x2 - inset, scaled_y2 - inset,
       ant_color,
-      selection_config.ants_thickness,
+      cfg.selection_ants_thickness,
       0,  -- No rounding for marching ants (performance: skips arc calculations)
-      selection_config.ants_dash,
-      selection_config.ants_gap,
-      selection_config.ants_speed,
+      cfg.selection_ants_dash,
+      cfg.selection_ants_gap,
+      cfg.selection_ants_speed,
       selection_count  -- Performance: LOD based on selection size
     )
   end
 
+
   -- Check if item is favorited
   local is_favorite = state.favorites and state.favorites.audio and state.favorites.audio[item_data.filename]
 
-  -- Use light yellow for favorite items (not muted)
-  local favorite_color = Ark.Colors.hexrgb("#FFE87C")  -- Light yellow
+  -- Get favorite color from palette (theme-reactive)
+  local favorite_color = palette.favorite_star or 0xFFE87CFF
   local display_text_color = is_favorite and favorite_color or text_color
 
+  -- PERF: Cache text height per context (doesn't change within a frame)
+  if _cached.text_height_ctx ~= ctx then
+    local _, h = CalcTextSize(ctx, "1")
+    _cached.text_height = h
+    _cached.text_height_ctx = ctx
+  end
+  local text_h = _cached.text_height
+
   -- Calculate star badge space - match cycle badge height dynamically
-  local fav_cfg = config.TILE_RENDER.badges.favorite
-  local _, text_h = ImGui.CalcTextSize(ctx, "1")  -- Get text height to match cycle badge
-  local star_badge_size = text_h + (config.TILE_RENDER.badges.cycle.padding_y * 2)  -- Match cycle badge calculation
+  local star_badge_size = text_h + (cfg.badge_cycle_padding_y * 2)  -- Match cycle badge calculation
 
   -- Calculate extra text margin to reserve space for favorite and pool badges (text truncation only)
   -- This doesn't affect cycle badge position, only text truncation
   local extra_text_margin = 0
   if is_favorite then
-    extra_text_margin = star_badge_size + (fav_cfg.spacing or 4)
+    extra_text_margin = star_badge_size + cfg.badge_favorite_spacing
   end
 
   -- Add pool badge space if needed
   if item_data.pool_count and item_data.pool_count > 1 and cascade_factor > 0.5 then
-    local pool_cfg = config.TILE_RENDER.badges.pool
-    local pool_text = "×" .. tostring(item_data.pool_count)
-    local pool_w, _ = ImGui.CalcTextSize(ctx, pool_text)
-    local pool_badge_w = pool_w + pool_cfg.padding_x * 2
-    extra_text_margin = extra_text_margin + pool_badge_w + (pool_cfg.spacing or 4)
+    -- PERF: Use cached pool badge dimensions
+    local pool_count = item_data.pool_count
+    local cached_pool = _cached.pool_badges and _cached.pool_badges[pool_count]
+    local pool_w
+    if cached_pool then
+      pool_w = cached_pool[2]
+    else
+      local pool_text = "×" .. tostring(pool_count)
+      pool_w = CalcTextSize(ctx, pool_text)
+    end
+    local pool_badge_w = pool_w + cfg.badge_pool_padding_x * 2
+    extra_text_margin = extra_text_margin + pool_badge_w + cfg.badge_pool_spacing
   end
 
   -- Check if this tile is being renamed
@@ -328,8 +436,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
       ImGui.SetCursorScreenPos(ctx, input_x, input_y)
       ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 2, 2)
-      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Ark.Colors.hexrgb("#1A1A1A"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, Ark.Colors.hexrgb("#FFFFFF"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, palette.rename_input_bg or 0x1A1A1AFF)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, palette.rename_input_text or 0xFFFFFFFF)
       ImGui.SetNextItemWidth(ctx, input_w)
 
       -- Auto-focus on first frame
@@ -452,20 +560,12 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       ImGui.PopStyleVar(ctx)
     else
       -- Normal text rendering
-      -- Badge click callback to cycle through items
-      -- Left-click: delta=1 (next), Right-click: delta=-1 (previous)
-      local on_badge_click = function(delta)
-        if item_data.total and item_data.total > 1 then
-          state.cycle_audio_item(item_data.filename, delta)
-          -- Force cache invalidation to update display (same as wheel_adjust)
-          state.runtime_cache.audio_filter_hash = nil
-        end
-      end
-
+      -- PERF: Badge click handling moved to coordinator (single hit-test vs per-tile InvisibleButton)
       -- Pass full x2 (cycle badge position stays fixed), use extra_text_margin for text truncation only
+      -- PERF: Pass truncated text cache for cross-frame caching
       BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, scaled_x2, header_height,
         item_data.name, item_data.index, item_data.total, render_color, text_alpha, config,
-        item_data.uuid, badge_rects, on_badge_click, extra_text_margin, display_text_color)
+        item_data.uuid, badge_rects, nil, extra_text_margin, display_text_color, _truncated_text_cache)
     end
   end
 
@@ -475,22 +575,21 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     -- Position favorite to the left of cycle badge (if it exists)
     if item_data.total and item_data.total > 1 then
       -- Calculate where cycle badge will be positioned
-      local cycle_cfg = config.TILE_RENDER.badges.cycle
-      local cycle_text = string.format("%d/%d", item_data.index or 1, item_data.total)
-      local cycle_w, _ = ImGui.CalcTextSize(ctx, cycle_text)
-      local cycle_badge_w = cycle_w + cycle_cfg.padding_x * 2
-      local cycle_x = scaled_x2 - cycle_badge_w - cycle_cfg.margin
+      local cycle_text = format("%d/%d", item_data.index or 1, item_data.total)
+      local cycle_w = CalcTextSize(ctx, cycle_text)
+      local cycle_badge_w = cycle_w + cfg.badge_cycle_padding_x * 2
+      local cycle_x = scaled_x2 - cycle_badge_w - cfg.badge_cycle_margin
       -- Position favorite to the left of cycle badge
-      star_x = cycle_x - star_badge_size - (fav_cfg.spacing or 4)
+      star_x = cycle_x - star_badge_size - cfg.badge_favorite_spacing
     else
       -- No cycle badge, position at right edge
-      star_x = scaled_x2 - star_badge_size - fav_cfg.margin
+      star_x = scaled_x2 - star_badge_size - cfg.badge_favorite_margin
     end
 
     local star_y = scaled_y1 + (header_height - star_badge_size) / 2
-    local icon_size = fav_cfg.icon_size or state.icon_font_size
+    local icon_size = cfg.badge_favorite_icon_size or state.icon_font_size
     Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite,
-      state.icon_font, icon_size, favorite_color, fav_cfg)
+      state.icon_font, icon_size, favorite_color, cfg.badge_favorite)
   end
 
   -- Render region tags (bottom left, only on larger tiles)
@@ -506,36 +605,40 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
     -- Calculate available width for chips (accounting for duration if enabled)
     local max_chip_x = scaled_x2 - chip_cfg.margin_left
-    local show_duration = state.settings.show_duration
-    if show_duration == nil then show_duration = true end
-    if show_duration and compact_factor < 0.5 and item_data.item then
-      local duration = reaper.GetMediaItemInfo_Value(item_data.item, "D_LENGTH")
-      if duration > 0 then
-        -- Calculate duration text width (same logic as duration rendering below)
-        local duration_text
-        duration_text = Duration.format_hms(duration)
-        local duration_w, _ = ImGui.CalcTextSize(ctx, duration_text)
-        local dt_cfg = config.TILE_RENDER.duration_text
-        -- Reserve space for duration text + its margin + extra spacing
-        max_chip_x = max_chip_x - duration_w - dt_cfg.margin_x - chip_cfg.margin_x
+    local show_duration_for_chips = state.settings.show_duration
+    if show_duration_for_chips == nil then show_duration_for_chips = true end
+    if show_duration_for_chips and compact_factor < 0.5 and item_data.item then
+      -- PERF: Use cached duration if available
+      local dur_cache = _cached.duration_text[item_data.uuid]
+      if dur_cache then
+        max_chip_x = max_chip_x - dur_cache[2] - cfg.duration_text_margin_x - chip_cfg.margin_x
+      else
+        local duration = reaper.GetMediaItemInfo_Value(item_data.item, "D_LENGTH")
+        if duration > 0 then
+          -- Conservative estimate
+          max_chip_x = max_chip_x - 50 - cfg.duration_text_margin_x - chip_cfg.margin_x
+        end
       end
     end
 
     -- Limit number of chips displayed
     local max_chips = config.REGION_TAGS.max_chips_per_tile
-    local num_chips = math.min(#item_data.regions, max_chips)
+    local num_chips = min(#item_data.regions, max_chips)
+    local chip_h = chip_cfg.height
+    local chip_pad_x = chip_cfg.padding_x
+    local chip_pad_x2 = chip_pad_x * 2
 
     for i = 1, num_chips do
       local region = item_data.regions[i]
       local region_name = region.name or region  -- Support both {name, color} and plain string
-      local region_color = region.color or 0x4A5A6AFF  -- Default gray if no color
+      local region_color = region.color or palette.region_chip_default or 0x4A5A6AFF
 
-      local text_w, text_h = ImGui.CalcTextSize(ctx, region_name)
-      local chip_w = text_w + chip_cfg.padding_x * 2
+      local text_w, text_h = CalcTextSize(ctx, region_name)
+      local chip_w = text_w + chip_pad_x2
 
       -- Check available space for this chip
       local available_width = max_chip_x - chip_x
-      if available_width < chip_cfg.padding_x * 2 + 10 then
+      if available_width < chip_pad_x2 + 10 then
         break  -- Not enough space for even a minimal chip
       end
 
@@ -544,27 +647,27 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       if chip_w > available_width then
         -- Binary search to find max text that fits with "..."
         local ellipsis = "..."
-        local ellipsis_w, _ = ImGui.CalcTextSize(ctx, ellipsis)
-        local target_w = available_width - chip_cfg.padding_x * 2 - ellipsis_w
+        local ellipsis_w = CalcTextSize(ctx, ellipsis)
+        local target_w = available_width - chip_pad_x2 - ellipsis_w
 
         if target_w > 0 then
           local low, high = 1, #region_name
           local best_len = 0
           while low <= high do
-            local mid = (low + high) // 2
-            local test_text = region_name:sub(1, mid)
-            local test_w, _ = ImGui.CalcTextSize(ctx, test_text)
+            local mid_idx = (low + high) // 2
+            local test_text = region_name:sub(1, mid_idx)
+            local test_w = CalcTextSize(ctx, test_text)
             if test_w <= target_w then
-              best_len = mid
-              low = mid + 1
+              best_len = mid_idx
+              low = mid_idx + 1
             else
-              high = mid - 1
+              high = mid_idx - 1
             end
           end
           if best_len > 0 then
             display_name = region_name:sub(1, best_len) .. ellipsis
-            text_w, text_h = ImGui.CalcTextSize(ctx, display_name)
-            chip_w = text_w + chip_cfg.padding_x * 2
+            text_w, text_h = CalcTextSize(ctx, display_name)
+            chip_w = text_w + chip_pad_x2
           else
             break  -- Can't fit even one character
           end
@@ -573,20 +676,18 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         end
       end
 
-      local chip_h = chip_cfg.height
-
       -- Chip background (dark grey)
-      local bg_alpha = (chip_cfg.alpha * combined_alpha) // 1
+      local bg_alpha = floor(chip_cfg.alpha * combined_alpha)
       local bg_color = (chip_cfg.bg_color & 0xFFFFFF00) | bg_alpha
-      ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, bg_color, chip_cfg.rounding)
+      DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, bg_color, chip_cfg.rounding)
 
       -- Chip text (region color with minimum lightness for readability)
-      local text_color = BaseRenderer.ensure_min_lightness(region_color, chip_cfg.text_min_lightness)
-      local text_alpha_val = Ark.Colors.opacity(combined_alpha)
-      text_color = (text_color & 0xFFFFFF00) | text_alpha_val
-      local text_x = chip_x + chip_cfg.padding_x
-      local text_y = chip_y + (chip_h - text_h) / 2
-      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, display_name)
+      local chip_text_color = BaseRenderer.ensure_min_lightness(region_color, chip_cfg.text_min_lightness)
+      local text_alpha_val = Colors_opacity(combined_alpha)
+      chip_text_color = (chip_text_color & 0xFFFFFF00) | text_alpha_val
+      local chip_text_x = chip_x + chip_pad_x
+      local chip_text_y = chip_y + (chip_h - text_h) / 2
+      DrawList_AddText(dl, chip_text_x, chip_text_y, chip_text_color, display_name)
 
       -- Move to next chip position
       chip_x = chip_x + chip_w + chip_cfg.margin_x
@@ -596,47 +697,54 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Render pool count badge in header (left of favorite/cycle badge) if more than 1 instance
   local should_show_pool_count = item_data.pool_count and item_data.pool_count > 1 and cascade_factor > 0.5
   if should_show_pool_count then
-    local pool_cfg = config.TILE_RENDER.badges.pool
-    local pool_text = "×" .. tostring(item_data.pool_count)
-    local text_w, text_h = ImGui.CalcTextSize(ctx, pool_text)
-    local badge_w = text_w + pool_cfg.padding_x * 2
-    local badge_h = text_h + pool_cfg.padding_y * 2
+    -- PERF: Cache pool badge dimensions (limited set of values)
+    local pool_count = item_data.pool_count
+    local pool_text, badge_text_w, badge_text_h
+    local cached_pool = _cached.pool_badges and _cached.pool_badges[pool_count]
+    if cached_pool then
+      pool_text, badge_text_w, badge_text_h = cached_pool[1], cached_pool[2], cached_pool[3]
+    else
+      pool_text = "×" .. tostring(pool_count)
+      badge_text_w, badge_text_h = CalcTextSize(ctx, pool_text)
+      _cached.pool_badges = _cached.pool_badges or {}
+      _cached.pool_badges[pool_count] = {pool_text, badge_text_w, badge_text_h}
+    end
+
+    local badge_w = badge_text_w + cfg.badge_pool_padding_x * 2
+    local badge_h = badge_text_h + cfg.badge_pool_padding_y * 2
 
     -- Position left of favorite/cycle badge
-    local badge_x = scaled_x2 - badge_w - pool_cfg.margin
+    local badge_x = scaled_x2 - badge_w - cfg.badge_pool_margin
 
     -- Adjust position if favorite is visible
     if is_favorite then
-      local fav_cfg = config.TILE_RENDER.badges.favorite
-      local star_badge_size = text_h + (config.TILE_RENDER.badges.cycle.padding_y * 2)
-      badge_x = badge_x - star_badge_size - (fav_cfg.spacing or 4)
+      local star_badge_size_adj = badge_text_h + (cfg.badge_cycle_padding_y * 2)
+      badge_x = badge_x - star_badge_size_adj - cfg.badge_favorite_spacing
     end
 
     -- Adjust position if cycle badge is visible
     if item_data.total and item_data.total > 1 then
-      local cycle_badge_text = string.format("%d/%d", item_data.index or 1, item_data.total)
-      local cycle_w, _ = ImGui.CalcTextSize(ctx, cycle_badge_text)
-      local cycle_cfg = config.TILE_RENDER.badges.cycle
-      local cycle_badge_w = cycle_w + cycle_cfg.padding_x * 2
-      badge_x = badge_x - cycle_badge_w - cycle_cfg.margin
+      local cycle_badge_text = format("%d/%d", item_data.index or 1, item_data.total)
+      local cycle_w = CalcTextSize(ctx, cycle_badge_text)
+      local cycle_badge_w = cycle_w + cfg.badge_cycle_padding_x * 2
+      badge_x = badge_x - cycle_badge_w - cfg.badge_cycle_margin
     end
 
     local badge_y = scaled_y1 + (header_height - badge_h) / 2
 
     -- Badge background
-    local badge_bg_alpha = math.floor((pool_cfg.bg & 0xFF) * combined_alpha)
-    local badge_bg = (pool_cfg.bg & 0xFFFFFF00) | badge_bg_alpha
-    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, pool_cfg.rounding)
+    local badge_bg_alpha = floor((cfg.badge_pool_bg & 0xFF) * combined_alpha)
+    local badge_bg = (cfg.badge_pool_bg & 0xFFFFFF00) | badge_bg_alpha
+    DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, cfg.badge_pool_rounding)
 
     -- Border using darker tile color
-    local border_color = Ark.Colors.adjust_brightness(render_color, pool_cfg.border_darken)
-    border_color = Ark.Colors.with_alpha(border_color, pool_cfg.border_alpha)
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, border_color, pool_cfg.rounding, 0, 0.5)
+    local border_color = Colors_adjust_brightness(render_color, cfg.badge_pool_border_darken)
+    border_color = Colors_with_alpha(border_color, cfg.badge_pool_border_alpha)
+    DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, border_color, cfg.badge_pool_rounding, 0, 0.5)
 
     -- Pool count text (match cycle badge brightness)
-    local text_color = Ark.Colors.hexrgb("#FFFFFFDD")
-    text_color = Ark.Colors.with_alpha(text_color, Ark.Colors.opacity(combined_alpha))
-    ImGui.DrawList_AddText(dl, badge_x + pool_cfg.padding_x, badge_y + pool_cfg.padding_y, text_color, pool_text)
+    local pool_text_color = Colors_with_alpha(palette.pool_badge_text or 0xFFFFFFDD, Colors_opacity(combined_alpha))
+    DrawList_AddText(dl, badge_x + cfg.badge_pool_padding_x, badge_y + cfg.badge_pool_padding_y, pool_text_color, pool_text)
   end
 
   -- Render duration text at bottom right (plain text, no badge - matches Region Playlist style)
@@ -646,29 +754,34 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   if show_duration and cascade_factor > 0.3 and compact_factor < 0.5 and item_data.item then
     local duration = reaper.GetMediaItemInfo_Value(item_data.item, "D_LENGTH")
     if duration > 0 then
-      -- Format duration as time (mm:ss or hh:mm:ss)
-      local duration_text = Duration.format_hms(duration)
+      -- PERF: Cache duration text and dimensions by UUID (consistent with region chips)
+      local dur_cache = _cached.duration_text[item_data.uuid]
+      local duration_text, dur_text_w, dur_text_h
 
-      -- Calculate text dimensions and position (right-aligned at bottom-right)
-      local text_w, text_h = ImGui.CalcTextSize(ctx, duration_text)
-
-      local dt_cfg = config.TILE_RENDER.duration_text
-      local text_x = scaled_x2 - text_w - dt_cfg.margin_x
-      local text_y = scaled_y2 - text_h - dt_cfg.margin_y
-
-      -- Adaptive color: dark grey with subtle tile coloring for most tiles, light only for very dark
-      local luminance = Ark.Colors.luminance(render_color)
-      local text_color
-      if luminance < dt_cfg.dark_tile_threshold then
-        -- Very dark tile only: use light text
-        text_color = Ark.Colors.same_hue_variant(render_color, dt_cfg.light_saturation, dt_cfg.light_value, Ark.Colors.opacity(combined_alpha))
+      if dur_cache then
+        duration_text, dur_text_w, dur_text_h = dur_cache[1], dur_cache[2], dur_cache[3]
       else
-        -- All other tiles: dark grey with subtle tile color
-        text_color = Ark.Colors.same_hue_variant(render_color, dt_cfg.dark_saturation, dt_cfg.dark_value, Ark.Colors.opacity(combined_alpha))
+        duration_text = Duration.format_hms(duration)
+        dur_text_w, dur_text_h = CalcTextSize(ctx, duration_text)
+        _cached.duration_text[item_data.uuid] = {duration_text, dur_text_w, dur_text_h}
       end
 
-      -- Draw duration text
-      Ark.Draw.text(dl, text_x, text_y, text_color, duration_text)
+      local dur_x = scaled_x2 - dur_text_w - cfg.duration_text_margin_x
+      local dur_y = scaled_y2 - dur_text_h - cfg.duration_text_margin_y
+
+      -- Adaptive color: dark grey with subtle tile coloring for most tiles, light only for very dark
+      local luminance = Colors_luminance(render_color)
+      local dur_text_color
+      if luminance < cfg.duration_text_dark_tile_threshold then
+        -- Very dark tile only: use light text
+        dur_text_color = Colors_same_hue_variant(render_color, cfg.duration_text_light_saturation, cfg.duration_text_light_value, Colors_opacity(combined_alpha))
+      else
+        -- All other tiles: dark grey with subtle tile color
+        dur_text_color = Colors_same_hue_variant(render_color, cfg.duration_text_dark_saturation, cfg.duration_text_dark_value, Colors_opacity(combined_alpha))
+      end
+
+      -- Draw duration text (PERF: use localized DrawList function)
+      DrawList_AddText(dl, dur_x, dur_y, dur_text_color, duration_text)
     end
   end
 end

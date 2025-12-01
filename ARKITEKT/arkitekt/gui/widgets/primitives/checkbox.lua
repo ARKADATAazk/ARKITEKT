@@ -143,14 +143,18 @@ local function resolve_config(opts)
     label_color = Theme.COLORS.TEXT_NORMAL,
     label_hover_color = Theme.COLORS.TEXT_HOVER,
     label_disabled_color = Colors.with_opacity(Theme.COLORS.TEXT_NORMAL, 0.5),
+
   }
 
-  -- Apply user overrides
+  -- Apply user overrides (colors and settings that exist in config)
   for k, v in pairs(opts) do
     if v ~= nil and config[k] ~= nil then
       config[k] = v
     end
   end
+
+  -- Copy callback separately (not in config table by default)
+  config.on_change = opts.on_change
 
   return config
 end
@@ -393,11 +397,12 @@ function M.draw(ctx, label_or_opts, checked)
   })
 end
 
---- Measure checkbox width including label (internal - use via auto-calculation)
+--- Measure checkbox width including label
+--- Used by panel header layout for width calculation
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return number Total width
-local function measure(ctx, opts)
+function M.measure(ctx, opts)
   opts = opts or {}
   local size = opts.size or DEFAULTS.size
   local label = opts.label or ""

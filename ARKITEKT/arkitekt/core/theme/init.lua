@@ -192,6 +192,7 @@ function M.set_mode(mode, persist)
   if success then
     M.current_mode = mode
     Registry.clear_cache()
+    M.invalidate_config_caches()
     if persist then
       Integration.save_mode(mode)
     end
@@ -334,12 +335,34 @@ end
 -- =============================================================================
 -- CONFIG BUILDERS
 -- =============================================================================
--- These build widget configs from Theme.COLORS every call.
--- Enables dynamic theming - colors update automatically.
+-- These build widget configs from Theme.COLORS.
+-- PERF: Configs are cached until theme changes (invalidate_config_caches called).
+-- Theme changes are rare (user action), widget renders happen 40+ times/second.
+
+-- Config caches (invalidated on theme change)
+local _button_config_cache = nil
+local _colored_button_caches = {}  -- keyed by variant
+local _dropdown_config_cache = nil
+local _search_input_config_cache = nil
+local _tooltip_config_cache = nil
+local _panel_colors_cache = nil
+local _action_chip_caches = {}  -- keyed by variant
+
+--- Invalidate all config caches (call on theme change)
+function M.invalidate_config_caches()
+  _button_config_cache = nil
+  _colored_button_caches = {}
+  _dropdown_config_cache = nil
+  _search_input_config_cache = nil
+  _tooltip_config_cache = nil
+  _panel_colors_cache = nil
+  _action_chip_caches = {}
+end
 
 --- Build button config from current Theme.COLORS
 function M.build_button_config()
-  return {
+  if _button_config_cache then return _button_config_cache end
+  _button_config_cache = {
     bg_color = M.COLORS.BG_BASE,
     bg_hover_color = M.COLORS.BG_HOVER,
     bg_active_color = M.COLORS.BG_ACTIVE,
@@ -358,10 +381,12 @@ function M.build_button_config()
     padding_y = 6,
     rounding = 0,
   }
+  return _button_config_cache
 end
 
 --- Build colored button config (danger, success, warning, info)
 function M.build_colored_button_config(variant)
+  if _colored_button_caches[variant] then return _colored_button_caches[variant] end
   local prefix = "BUTTON_" .. string.upper(variant) .. "_"
   local bg = M.COLORS[prefix .. "BG"]
   local hover = M.COLORS[prefix .. "HOVER"]
@@ -370,7 +395,7 @@ function M.build_colored_button_config(variant)
 
   if not bg then return M.build_button_config() end
 
-  return {
+  _colored_button_caches[variant] = {
     bg_color = bg,
     bg_hover_color = hover,
     bg_active_color = active,
@@ -389,11 +414,13 @@ function M.build_colored_button_config(variant)
     padding_y = 6,
     rounding = 0,
   }
+  return _colored_button_caches[variant]
 end
 
 --- Build dropdown config from current Theme.COLORS
 function M.build_dropdown_config()
-  return {
+  if _dropdown_config_cache then return _dropdown_config_cache end
+  _dropdown_config_cache = {
     bg_color = M.COLORS.BG_BASE,
     bg_hover_color = M.COLORS.BG_HOVER,
     bg_active_color = M.COLORS.BG_ACTIVE,
@@ -429,11 +456,13 @@ function M.build_dropdown_config()
       border_thickness = 1,
     },
   }
+  return _dropdown_config_cache
 end
 
 --- Build search input config
 function M.build_search_input_config()
-  return {
+  if _search_input_config_cache then return _search_input_config_cache end
+  _search_input_config_cache = {
     placeholder = "Search...",
     fade_speed = 8.0,
     bg_color = M.COLORS.BG_BASE,
@@ -448,11 +477,13 @@ function M.build_search_input_config()
     rounding = 0,
     tooltip_delay = 0.5,
   }
+  return _search_input_config_cache
 end
 
 --- Build tooltip config
 function M.build_tooltip_config()
-  return {
+  if _tooltip_config_cache then return _tooltip_config_cache end
+  _tooltip_config_cache = {
     bg_color = M.COLORS.BG_HOVER,
     border_color = M.COLORS.BORDER_INNER,
     text_color = M.COLORS.TEXT_BRIGHT,
@@ -462,11 +493,13 @@ function M.build_tooltip_config()
     border_thickness = 1,
     delay = 0.5,
   }
+  return _tooltip_config_cache
 end
 
 --- Build panel colors (for panel widgets)
 function M.build_panel_colors()
-  return {
+  if _panel_colors_cache then return _panel_colors_cache end
+  _panel_colors_cache = {
     bg_panel = M.COLORS.BG_PANEL,
     border_panel = M.COLORS.BORDER_OUTER,
     bg_header = M.COLORS.BG_HEADER,
@@ -487,10 +520,13 @@ function M.build_panel_colors()
     pattern_primary = M.COLORS.PATTERN_PRIMARY,
     pattern_secondary = M.COLORS.PATTERN_SECONDARY,
   }
+  return _panel_colors_cache
 end
 
 --- Build action chip config (for batch rename, etc.)
 function M.build_action_chip_config(variant)
+  if _action_chip_caches[variant] then return _action_chip_caches[variant] end
+
   -- Action chips: colored rectangles with contrasting text
   local configs = {
     wildcard = {
@@ -504,13 +540,14 @@ function M.build_action_chip_config(variant)
   }
 
   local base = configs[variant] or configs.wildcard
-  return {
+  _action_chip_caches[variant] = {
     bg_color = base.bg_color,
     text_color = base.text_color,
     border_color = Colors.with_alpha(hexrgb("#000000"), 100),
     rounding = 2,
     padding_h = 8,
   }
+  return _action_chip_caches[variant]
 end
 
 -- =============================================================================

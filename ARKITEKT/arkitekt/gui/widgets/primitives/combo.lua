@@ -512,12 +512,15 @@ function M.draw(ctx, label_or_opts, selected, items)
     opts = {}
   end
 
-  -- Extract positional parameters from opts
+  -- Extract positional parameters from opts (use cursor if not provided)
   local x = opts.x
   local y = opts.y
+  if not x or not y then
+    x, y = ImGui.GetCursorScreenPos(ctx)
+  end
   local width = opts.width
   local height = opts.height
-  local dl = opts.draw_list
+  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
   local state_or_id = opts.panel_state or opts.id or "combo"
 
   -- Build user_config from remaining opts (excluding the extracted fields)
@@ -545,6 +548,9 @@ function M.draw(ctx, label_or_opts, selected, items)
 
   -- Sync state back
   sync_to_state(instance, state_or_id, context)
+
+  -- Advance cursor
+  Base.advance_cursor(ctx, x, y, width, height, opts.advance)
 
   -- Get current value and item text
   local current_value = instance.current_value

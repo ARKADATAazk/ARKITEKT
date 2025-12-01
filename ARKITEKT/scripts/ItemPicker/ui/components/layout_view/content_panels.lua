@@ -73,7 +73,7 @@ function M.draw_midi_only(ctx, draw_list, title_font, start_x, start_y, content_
   local midi_child_h = content_height - panel_padding
   ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
-  coordinator.midi_grid.block_all_input = state.show_track_filter_modal or false
+  coordinator.midi_grid_opts.block_all_input = state.show_track_filter_modal or false
 
   if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0, ImGui.WindowFlags_NoScrollbar) then
     coordinator:render_midi_grid(ctx, midi_grid_width, midi_child_h, 0)
@@ -96,7 +96,7 @@ function M.draw_audio_only(ctx, draw_list, title_font, start_x, start_y, content
   local audio_child_h = content_height - panel_padding
   ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
-  coordinator.audio_grid.block_all_input = state.show_track_filter_modal or false
+  coordinator.audio_grid_opts.block_all_input = state.show_track_filter_modal or false
 
   if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0, ImGui.WindowFlags_NoScrollbar) then
     coordinator:render_audio_grid(ctx, audio_grid_width, audio_child_h, 0)
@@ -151,7 +151,7 @@ function M.draw_mixed_horizontal(ctx, draw_list, title_font, start_x, start_y, c
   -- Vertical separator
   local separator_x = start_x + midi_width + separator_gap/2
   local Ark = require('arkitekt')
-  local sep_result = Ark.Splitter.draw(ctx, {
+  local sep_result = Ark.Splitter(ctx, {
     id = "midi_audio_sep_h",
     x = separator_x,
     y = start_y,
@@ -161,8 +161,8 @@ function M.draw_mixed_horizontal(ctx, draw_list, title_font, start_x, start_y, c
   })
 
   local block_input = sep_result.dragging or state.show_track_filter_modal
-  if coordinator.midi_grid then coordinator.midi_grid.block_all_input = block_input end
-  if coordinator.audio_grid then coordinator.audio_grid.block_all_input = block_input end
+  if coordinator.midi_grid_opts then coordinator.midi_grid_opts.block_all_input = block_input end
+  if coordinator.audio_grid_opts then coordinator.audio_grid_opts.block_all_input = block_input end
 
   if sep_result.action == "reset" then
     state.set_setting('separator_position_horizontal', 400)
@@ -234,7 +234,7 @@ function M.draw_mixed_vertical(ctx, draw_list, title_font, start_x, start_y, con
   -- Draggable separator
   local separator_y = start_y + header_height + midi_height + separator_gap/2
   local Ark = require('arkitekt')
-  local sep_result = Ark.Splitter.draw(ctx, {
+  local sep_result = Ark.Splitter(ctx, {
     id = "midi_audio_sep_v",
     x = start_x,
     y = separator_y,
@@ -244,8 +244,8 @@ function M.draw_mixed_vertical(ctx, draw_list, title_font, start_x, start_y, con
   })
 
   local block_input = sep_result.dragging or state.show_track_filter_modal
-  if coordinator.midi_grid then coordinator.midi_grid.block_all_input = block_input end
-  if coordinator.audio_grid then coordinator.audio_grid.block_all_input = block_input end
+  if coordinator.midi_grid_opts then coordinator.midi_grid_opts.block_all_input = block_input end
+  if coordinator.audio_grid_opts then coordinator.audio_grid_opts.block_all_input = block_input end
 
   if sep_result.action == "reset" then
     state.set_separator_position(sep_config.default_midi_height)
@@ -286,7 +286,7 @@ function M.draw_track_filter_bar(ctx, draw_list, coord_offset_x, panels_start_y,
     if whitelist_count > 0 then
       local panels_left_edge = coord_offset_x + config.LAYOUT.PADDING
 
-      local track_zone_result = Ark.SlidingZone.draw(ctx, {
+      local track_zone_result = Ark.SlidingZone(ctx, {
         id = "track_filter_bar",
         edge = "left",
         bounds = {
@@ -296,19 +296,17 @@ function M.draw_track_filter_bar(ctx, draw_list, coord_offset_x, panels_start_y,
           h = content_height,
         },
         size = track_bar_max_width,
-        min_visible = track_bar_collapsed_width / track_bar_max_width,
-        slide_distance = 0,
+        collapsed_ratio = 0.0,  -- Fully hidden when collapsed
+        -- trigger_extension uses default (8px)
         retract_delay = 0.2,
         directional_delay = true,
         retract_delay_toward = 1.0,
         retract_delay_away = 0.1,
-        hover_extend_inside = 200,
-        hover_extend_outside = 50,
         hover_padding = 0,
         draw_list = draw_list,
         debug_mouse_tracking = true,
 
-        on_draw = function(zone_ctx, dl, bounds, visibility, zone_state)
+        draw = function(zone_ctx, dl, bounds, visibility)
           local bar_x = bounds.x
           local bar_y = bounds.y
           local bar_height = bounds.h

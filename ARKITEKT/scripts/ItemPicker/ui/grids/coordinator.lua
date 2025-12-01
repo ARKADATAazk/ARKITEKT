@@ -3,10 +3,13 @@
 -- Coordinator for managing audio and MIDI grids
 
 local ImGui = require('arkitekt.platform.imgui')
+local Ark = require('arkitekt')
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
 local Lifecycle = require('arkitekt.gui.animation.lifecycle')
 local AudioGridFactory = require('ItemPicker.ui.grids.factories.audio')
 local MidiGridFactory = require('ItemPicker.ui.grids.factories.midi')
+local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
+local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')
 
 local M = {}
 local Coordinator = {}
@@ -20,8 +23,16 @@ function M.new(ctx, config, state, visualization)
 
     animator = nil,
     disable_animator = nil,
-    audio_grid = nil,
-    midi_grid = nil,
+
+    -- Grid options and result references (new callable API)
+    audio_grid_opts = nil,
+    audio_grid_result_ref = nil,
+    midi_grid_opts = nil,
+    midi_grid_result_ref = nil,
+
+    -- PERF: Badge click handlers (called after grid render, replaces per-tile InvisibleButtons)
+    audio_badge_click_handler = nil,
+    midi_badge_click_handler = nil,
   }, Coordinator)
 
   -- Create animator
@@ -30,9 +41,9 @@ function M.new(ctx, config, state, visualization)
   -- Create disable animator (for when items are disabled AND show_disabled_items = false)
   self.disable_animator = Lifecycle.DisableAnim.new({duration = 0.10})
 
-  -- Create grids
-  self.audio_grid = AudioGridFactory.create(ctx, config, state, visualization, self.animator, self.disable_animator)
-  self.midi_grid = MidiGridFactory.create(ctx, config, state, visualization, self.animator, self.disable_animator)
+  -- Create grid options (factories now return badge click handler as 3rd value)
+  self.audio_grid_opts, self.audio_grid_result_ref, self.audio_badge_click_handler = AudioGridFactory.create_options(config, state, visualization, self.animator, self.disable_animator)
+  self.midi_grid_opts, self.midi_grid_result_ref, self.midi_badge_click_handler = MidiGridFactory.create_options(config, state, visualization, self.animator, self.disable_animator)
 
   return self
 end
@@ -44,6 +55,18 @@ function Coordinator:update_animations(dt)
   if self.disable_animator then
     self.disable_animator:update(dt)
   end
+end
+
+-- Returns true if any grid tiles are actively animating (resizing/repositioning)
+-- Used to throttle expensive operations like waveform/MIDI regeneration during resize
+function Coordinator:is_animating()
+  local audio_result = self.audio_grid_result_ref and self.audio_grid_result_ref.current
+  local midi_result = self.midi_grid_result_ref and self.midi_grid_result_ref.current
+
+  local audio_animating = audio_result and audio_result.is_animating
+  local midi_animating = midi_result and midi_result.is_animating
+
+  return audio_animating or midi_animating
 end
 
 function Coordinator:render_disable_animations(ctx)
@@ -82,22 +105,20 @@ function Coordinator:handle_tile_size_shortcuts(ctx)
     self.state.set_tile_size(new_width, current_h)
   end
 
-  -- Update grids with new size
-  if self.midi_grid then
-    self.midi_grid.min_col_w_fn = function() return self.state.get_tile_width() end
-    self.midi_grid.fixed_tile_h = self.state.get_tile_height()
+  -- Update grid options with new size (functions are already reactive)
+  if self.midi_grid_opts then
+    self.midi_grid_opts.fixed_tile_h = self.state.get_tile_height()
   end
 
-  if self.audio_grid then
-    self.audio_grid.min_col_w_fn = function() return self.state.get_tile_width() end
-    self.audio_grid.fixed_tile_h = self.state.get_tile_height()
+  if self.audio_grid_opts then
+    self.audio_grid_opts.fixed_tile_h = self.state.get_tile_height()
   end
 
   return true
 end
 
 function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
-  if not self.audio_grid then return end
+  if not self.audio_grid_opts then return end
   header_offset = header_offset or 0
 
   if ImGui.BeginChild(ctx, "audio_grid", avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
@@ -120,20 +141,30 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
       local origin_x, origin_y = ImGui.GetCursorScreenPos(ctx)
       local window_x, window_y = ImGui.GetWindowPos(ctx)
       -- Set panel_clip_bounds to constrain grid below header
-      self.audio_grid.panel_clip_bounds = {
+      self.audio_grid_opts.panel_clip_bounds = {
         window_x,
         origin_y + header_offset,  -- Start below header
         window_x + avail_w,
         window_y + avail_h
       }
-      self.audio_grid.clip_rendering = true  -- Enable actual rendering clipping
+      self.audio_grid_opts.clip_rendering = true  -- Enable actual rendering clipping
       ImGui.SetCursorScreenPos(ctx, origin_x, origin_y + header_offset)
     else
-      self.audio_grid.panel_clip_bounds = nil
-      self.audio_grid.clip_rendering = false
+      self.audio_grid_opts.panel_clip_bounds = nil
+      self.audio_grid_opts.clip_rendering = false
     end
 
-    self.audio_grid:draw(ctx)
+    -- PERF: Init renderer cache before drawing tiles
+    AudioRenderer.begin_frame(ctx, self.config)
+
+    -- Call Grid with options and store result
+    local result = Ark.Grid(ctx, self.audio_grid_opts)
+    self.audio_grid_result_ref.current = result
+
+    -- PERF: Handle badge clicks via single hit-test (replaces ~5000 InvisibleButtons)
+    if self.audio_badge_click_handler then
+      self.audio_badge_click_handler(ctx)
+    end
 
     -- Render disable animations on top (after items are drawn)
     self:render_disable_animations(ctx)
@@ -153,7 +184,7 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
 end
 
 function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
-  if not self.midi_grid then return end
+  if not self.midi_grid_opts then return end
   header_offset = header_offset or 0
 
   if ImGui.BeginChild(ctx, "midi_grid", avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
@@ -176,20 +207,30 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
       local origin_x, origin_y = ImGui.GetCursorScreenPos(ctx)
       local window_x, window_y = ImGui.GetWindowPos(ctx)
       -- Set panel_clip_bounds to constrain grid below header
-      self.midi_grid.panel_clip_bounds = {
+      self.midi_grid_opts.panel_clip_bounds = {
         window_x,
         origin_y + header_offset,  -- Start below header
         window_x + avail_w,
         window_y + avail_h
       }
-      self.midi_grid.clip_rendering = true  -- Enable actual rendering clipping
+      self.midi_grid_opts.clip_rendering = true  -- Enable actual rendering clipping
       ImGui.SetCursorScreenPos(ctx, origin_x, origin_y + header_offset)
     else
-      self.midi_grid.panel_clip_bounds = nil
-      self.midi_grid.clip_rendering = false
+      self.midi_grid_opts.panel_clip_bounds = nil
+      self.midi_grid_opts.clip_rendering = false
     end
 
-    self.midi_grid:draw(ctx)
+    -- PERF: Init renderer cache before drawing tiles
+    MidiRenderer.begin_frame(ctx, self.config)
+
+    -- Call Grid with options and store result
+    local result = Ark.Grid(ctx, self.midi_grid_opts)
+    self.midi_grid_result_ref.current = result
+
+    -- PERF: Handle badge clicks via single hit-test (replaces ~5000 InvisibleButtons)
+    if self.midi_badge_click_handler then
+      self.midi_badge_click_handler(ctx)
+    end
 
     -- Render disable animations on top (after items are drawn)
     self:render_disable_animations(ctx)
@@ -210,11 +251,11 @@ end
 
 -- Clear internal drag state from both grids (called after external drop completes)
 function Coordinator:clear_grid_drag_states()
-  if self.audio_grid and self.audio_grid.drag then
-    self.audio_grid.drag:release()
+  if self.audio_grid_result_ref and self.audio_grid_result_ref.current and self.audio_grid_result_ref.current.drag then
+    self.audio_grid_result_ref.current.drag:release()
   end
-  if self.midi_grid and self.midi_grid.drag then
-    self.midi_grid.drag:release()
+  if self.midi_grid_result_ref and self.midi_grid_result_ref.current and self.midi_grid_result_ref.current.drag then
+    self.midi_grid_result_ref.current.drag:release()
   end
 end
 

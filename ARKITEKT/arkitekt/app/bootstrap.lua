@@ -142,6 +142,30 @@ local function setup(root_path)
   end
 
   -- ============================================================================
+  -- LAUNCH ARGUMENTS (from DevKit or other launchers)
+  -- ============================================================================
+
+  -- Read launch arguments from ExtState (set by DevKit before launch)
+  -- These are consumed on first read to prevent stale data
+  local function get_launch_args()
+    local args = {
+      debug = reaper.GetExtState("ARKITEKT_LAUNCH", "debug") == "1",
+      profiler = reaper.GetExtState("ARKITEKT_LAUNCH", "profiler") == "1",
+      script_path = reaper.GetExtState("ARKITEKT_LAUNCH", "script_path"),
+    }
+
+    -- Clear the ExtState after reading (consume once)
+    reaper.DeleteExtState("ARKITEKT_LAUNCH", "debug", false)
+    reaper.DeleteExtState("ARKITEKT_LAUNCH", "profiler", false)
+    reaper.DeleteExtState("ARKITEKT_LAUNCH", "script_path", false)
+
+    return args
+  end
+
+  -- Get launch args immediately so they're available in the context
+  local launch_args = get_launch_args()
+
+  -- ============================================================================
   -- RETURN CONTEXT
   -- ============================================================================
 
@@ -157,6 +181,10 @@ local function setup(root_path)
 
     -- Pre-loaded ImGui
     ImGui = ImGui,
+
+    -- Launch arguments (from DevKit or other launchers)
+    -- Contains: { debug = bool, script_path = string }
+    launch_args = launch_args,
 
     -- Common module loader helper
     require_framework = function(module_name)

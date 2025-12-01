@@ -5,6 +5,7 @@
 local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local TrackFilter = require('ItemPicker.domain.filters.track')
+local Palette = require('ItemPicker.defs.palette')
 
 local M = {}
 
@@ -55,7 +56,7 @@ local is_parent_disabled = TrackFilter.is_parent_disabled
 local get_track_path = TrackFilter.get_track_path
 
 -- Draw a single track tile
-local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selected, is_hovered, depth, is_expanded, has_children, parent_disabled)
+local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selected, is_hovered, depth, is_expanded, has_children, parent_disabled, palette)
   local height = TRACK_TILE.HEIGHT
   local rounding = TRACK_TILE.ROUNDING
   local indent = depth * TRACK_TILE.INDENT
@@ -69,7 +70,7 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
   -- Background
   local bg_alpha = is_selected and 0xCC or (is_hovered and 0x66 or 0x33)
   bg_alpha = (bg_alpha * dim_factor) // 1
-  local bg_color = Ark.Colors.hexrgb("#2A2A2A")
+  local bg_color = palette.panel_bg_alt or 0x2A2A2AFF
   bg_color = Ark.Colors.with_alpha(bg_color, bg_alpha)
 
   ImGui.DrawList_AddRectFilled(draw_list, tile_x, y, tile_x + tile_w, y + height, bg_color, rounding)
@@ -90,7 +91,7 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
     local arrow_x = tile_x + text_offset
     local arrow_y = y + (height - 6) / 2
     local arrow_alpha = (0x88 * dim_factor) // 1
-    local arrow_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#888888"), arrow_alpha)
+    local arrow_color = Ark.Colors.with_alpha(palette.arrow or 0x888888FF, arrow_alpha)
 
     if is_expanded then
       -- Down arrow
@@ -116,7 +117,7 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
 
   local text_alpha = is_selected and 0xFF or 0xAA
   text_alpha = (text_alpha * dim_factor) // 1
-  local text_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#FFFFFF"), text_alpha)
+  local text_color = Ark.Colors.with_alpha(palette.text_primary or 0xFFFFFFFF, text_alpha)
 
   ImGui.DrawList_AddText(draw_list, text_x, text_y, text_color, track_data.name)
 
@@ -125,7 +126,7 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
     local indicator_size = 6
     local indicator_x = tile_x + tile_w - TRACK_TILE.PADDING_X - indicator_size
     local indicator_y = y + (height - indicator_size) / 2
-    local indicator_color = Ark.Colors.hexrgb("#42E896FF")
+    local indicator_color = palette.filter_indicator or 0x42E896FF
 
     ImGui.DrawList_AddCircleFilled(draw_list,
       indicator_x + indicator_size/2, indicator_y + indicator_size/2,
@@ -136,8 +137,9 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
 end
 
 -- Recursive function to draw track tree
-local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth, current_y, visible_tracks_list)
+local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth, current_y, visible_tracks_list, palette)
   depth = depth or 0
+  palette = palette or Palette.get()
   current_y = current_y or y
   visible_tracks_list = visible_tracks_list or {}
 
@@ -245,7 +247,7 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
     local parent_disabled = is_parent_disabled(track, state.track_whitelist or {})
 
     -- Draw tile
-    draw_track_tile(ctx, draw_list, x, tile_y, width, track, is_selected, is_hovered, depth, is_expanded, has_children, parent_disabled)
+    draw_track_tile(ctx, draw_list, x, tile_y, width, track, is_selected, is_hovered, depth, is_expanded, has_children, parent_disabled, palette)
 
     -- Add to visible tracks list for crossing detection (all depths)
     visible_tracks_list[#visible_tracks_list + 1] = {
@@ -263,7 +265,7 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
 
     -- Draw children if expanded
     if has_children and is_expanded then
-      current_y = draw_track_tree(ctx, draw_list, track.children, x, y, width, state, depth + 1, current_y, visible_tracks_list)
+      current_y = draw_track_tree(ctx, draw_list, track.children, x, y, width, state, depth + 1, current_y, visible_tracks_list, palette)
     end
   end
 
@@ -348,13 +350,16 @@ function M.render_modal(ctx, state, bounds)
   if not state.show_track_filter_modal then return false end
   if not state.track_tree then return false end
 
+  -- Get palette for theme-reactive colors
+  local palette = Palette.get()
+
   -- Use foreground draw list to render on top of everything
   local draw_list = ImGui.GetForegroundDrawList(ctx)
   local padding = 16
   local alpha = state.overlay_alpha or 1.0
 
   -- Draw scrim (darkened background)
-  local scrim_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#000000"), (0x80 * alpha) // 1)
+  local scrim_color = Ark.Colors.with_alpha(palette.scrim or 0x000000FF, (0x80 * alpha) // 1)
   ImGui.DrawList_AddRectFilled(draw_list, bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, scrim_color)
 
   -- Calculate modal size
@@ -409,22 +414,22 @@ function M.render_modal(ctx, state, bounds)
   ImGui.InvisibleButton(ctx, "##track_filter_modal_area", modal_width, modal_height)
 
   -- Modal background
-  local bg_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#1A1A1A"), (0xF5 * alpha) // 1)
+  local bg_color = Ark.Colors.with_alpha(palette.panel_bg or 0x1A1A1AFF, (0xF5 * alpha) // 1)
   ImGui.DrawList_AddRectFilled(draw_list, modal_x, modal_y, modal_x + modal_width, modal_y + modal_height, bg_color, 8)
 
   -- Border
-  local border_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#404040"), (0xFF * alpha) // 1)
+  local border_color = Ark.Colors.with_alpha(palette.panel_border or 0x404040FF, (0xFF * alpha) // 1)
   ImGui.DrawList_AddRect(draw_list, modal_x, modal_y, modal_x + modal_width, modal_y + modal_height, border_color, 8)
 
   -- Header
-  local title_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#FFFFFF"), (0xFF * alpha) // 1)
+  local title_color = Ark.Colors.with_alpha(palette.text_primary or 0xFFFFFFFF, (0xFF * alpha) // 1)
   ImGui.DrawList_AddText(draw_list, modal_x + padding, modal_y + padding, title_color, "TRACK FILTER")
 
   -- Track count
   local total_count, selected_count = TrackFilter.count_tracks(state.track_tree, state.track_whitelist)
   local count_text = string.format("%d / %d selected", selected_count, total_count)
   local count_w = ImGui.CalcTextSize(ctx, count_text)
-  local count_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#888888"), (0xFF * alpha) // 1)
+  local count_color = Ark.Colors.with_alpha(palette.text_dimmed or 0x888888FF, (0xFF * alpha) // 1)
   ImGui.DrawList_AddText(draw_list, modal_x + modal_width - padding - count_w, modal_y + padding, count_color, count_text)
 
   -- Depth slider area
@@ -443,7 +448,7 @@ function M.render_modal(ctx, state, bounds)
 
   -- Draw slider label
   local label_text = "Depth:"
-  local label_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#888888"), (0xFF * alpha) // 1)
+  local label_color = Ark.Colors.with_alpha(palette.text_label or 0x888888FF, (0xFF * alpha) // 1)
   ImGui.DrawList_AddText(draw_list, slider_x, slider_y + 2, label_color, label_text)
 
   local label_w = ImGui.CalcTextSize(ctx, label_text) + 8
@@ -451,7 +456,7 @@ function M.render_modal(ctx, state, bounds)
   local track_w = slider_w - label_w - 30  -- Leave space for value
 
   -- Slider track background
-  local track_bg = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#2A2A2A"), (0xCC * alpha) // 1)
+  local track_bg = Ark.Colors.with_alpha(palette.panel_bg_alt or 0x2A2A2AFF, (0xCC * alpha) // 1)
   local track_y = slider_y + 8
   local track_h = 4
   ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + track_w, track_y + track_h, track_bg, 2)
@@ -480,13 +485,13 @@ function M.render_modal(ctx, state, bounds)
   end
 
   -- Draw slider handle
-  local handle_color = is_over_slider and Ark.Colors.hexrgb("#FFFFFF") or Ark.Colors.hexrgb("#CCCCCC")
+  local handle_color = is_over_slider and (palette.slider_thumb_hover or 0xFFFFFFFF) or (palette.text_secondary or 0xCCCCCCFF)
   handle_color = Ark.Colors.with_alpha(handle_color, (0xFF * alpha) // 1)
   ImGui.DrawList_AddCircleFilled(draw_list, handle_x, track_y + track_h / 2, handle_radius, handle_color)
 
   -- Draw current value
   local value_text = tostring(slider_value)
-  local value_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#FFFFFF"), (0xFF * alpha) // 1)
+  local value_color = Ark.Colors.with_alpha(palette.text_primary or 0xFFFFFFFF, (0xFF * alpha) // 1)
   ImGui.DrawList_AddText(draw_list, track_x + track_w + 8, slider_y + 2, value_color, value_text)
 
   -- Content area bounds (below slider)

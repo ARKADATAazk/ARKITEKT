@@ -143,66 +143,72 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local search_height = 28
 
   local settings_area_max_height = self.config.UI_PANELS.settings.max_height
+  local settings_offset = 11  -- Move panel up 11px
 
-  -- Settings panel hover logic
-  if not self.state.settings_slide_progress then
-    self.state.settings_slide_progress = 0
-  end
+  -- Settings panel (using SlidingZone)
+  local settings_result = Ark.SlidingZone(ctx, {
+    id = "settings_panel",
+    edge = "top",
+    bounds = {
+      x = coord_offset_x,
+      y = search_base_y - settings_offset,  -- Position 11px higher
+      w = screen_w,
+      h = settings_area_max_height,
+    },
+    size = settings_area_max_height,
+    collapsed_ratio = 0.0,  -- Fully hidden when collapsed
 
-  local trigger_zone_padding = self.config.UI_PANELS.settings.trigger_above_search
-  local temp_settings_height = settings_area_max_height * self.state.settings_slide_progress
-  local temp_search_y = search_base_y + temp_settings_height
-  local is_in_trigger_zone = mouse_in_window and mouse_y < (temp_search_y - trigger_zone_padding)
+    -- Trigger zone extends upward to window edge only when collapsed
+    trigger_extension = {
+      up = (search_base_y - settings_offset) - coord_offset_y,  -- To window top
+      down = 0,  -- No extension below when collapsed
+      left = 0,
+      right = 0,
+    },
 
-  local crossed_through_top = false
-  if self.state.last_mouse_in_window and not mouse_in_window and mouse_y < coord_offset_y then
-    crossed_through_top = true
-  end
-  self.state.last_mouse_in_window = mouse_in_window
-  is_in_trigger_zone = is_in_trigger_zone or crossed_through_top
+    -- When expanded, extend trigger zone down to cover RegionFilter + search area
+    trigger_extension_expanded = {
+      up = (search_base_y - settings_offset) - coord_offset_y,  -- To window top
+      down = search_height + 100,  -- Extend far down to cover region filter area
+      left = 0,
+      right = 0,
+    },
 
-  local is_below_search = mouse_in_window and mouse_y > (temp_search_y + search_height + self.config.UI_PANELS.settings.close_below_search)
+    -- Custom retract: close when hovering below search bar
+    retract_when = function(ctx, mx, my, state)
+      local current_visibility = state.visibility_track:get()
+      local current_settings_height = settings_area_max_height * current_visibility
+      local current_search_y = search_base_y + current_settings_height
+      local close_threshold = current_search_y + search_height +
+                             self.config.UI_PANELS.settings.close_below_search
+      return mouse_in_window and my > close_threshold
+    end,
 
-  if self.state.settings_sticky_visible == nil then
-    self.state.settings_sticky_visible = false
-  end
+    retract_delay = 1.5,  -- 1.5s delay before retracting
+    window_bounds = {
+      x = coord_offset_x,
+      y = coord_offset_y,
+      w = screen_w,
+      h = screen_h,
+    },
 
-  local close_delay = 1.5
-  if is_in_trigger_zone then
-    self.state.settings_sticky_visible = true
-    self.state.settings_close_timer = nil
-  elseif is_below_search then
-    self.state.settings_sticky_visible = false
-    self.state.settings_close_timer = nil
-  elseif not mouse_in_window then
-    if self.state.settings_sticky_visible then
-      if not self.state.settings_close_timer then
-        self.state.settings_close_timer = reaper.time_precise()
-      elseif reaper.time_precise() - self.state.settings_close_timer >= close_delay then
-        self.state.settings_sticky_visible = false
-        self.state.settings_close_timer = nil
-      end
-    end
-  else
-    self.state.settings_close_timer = nil
-  end
+    draw_list = draw_list,
 
-  local target_slide = self.state.settings_sticky_visible and 1.0 or 0.0
-  local slide_speed = self.config.UI_PANELS.settings.slide_speed
-  self.state.settings_slide_progress = self.state.settings_slide_progress + (target_slide - self.state.settings_slide_progress) * slide_speed
+    draw = function(zone_ctx, dl, bounds, visibility)
+      local settings_height = bounds.h
+      local settings_alpha = visibility * ui_fade
+      local settings_y = bounds.y
+      SettingsPanel.draw(zone_ctx, dl, coord_offset_x, settings_y, settings_height, settings_alpha, self.state, self.config)
+    end,
+  })
 
-  local settings_height = settings_area_max_height * self.state.settings_slide_progress
-  local settings_alpha = self.state.settings_slide_progress * ui_fade
-  local settings_y = search_base_y - settings_area_max_height + settings_height
+  -- Calculate search_y based on settings visibility
+  local settings_height = settings_area_max_height * settings_result.visibility
   local search_y = search_base_y + settings_height
-
-  -- Draw settings panel
-  SettingsPanel.draw(ctx, draw_list, coord_offset_x, settings_y, settings_height, settings_alpha, self.state, self.config)
 
   -- Draw search toolbar
   self.state.focus_search = self.focus_search
-  self.state.draw_list = draw_list
-  SearchToolbar.draw(ctx, draw_list, coord_offset_x, search_y, screen_w, search_height, search_fade, title_font, self.state, self.config)
+  SearchToolbar.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_fade, title_font, self.state, self.config)
   self.focus_search = false
 
   -- Region filter bar
@@ -211,6 +217,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   if enable_region_processing and self.state.all_regions and #self.state.all_regions > 0 then
     local filter_bar_base_y = search_y + search_height + self.config.UI_PANELS.filter.spacing_below_search
 
+    -- Calculate filter bar height based on number of lines
     local chip_cfg = self.config.REGION_TAGS.chip
     local padding_x = 14
     local padding_y = 4
@@ -237,25 +244,50 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
     local filter_bar_max_height = padding_y * 2 + num_lines * chip_height + (num_lines - 1) * line_spacing
 
-    local temp_filter_height = filter_bar_max_height * (self.state.filter_slide_progress or 0)
-    local temp_panels_start_y = search_y + search_height + temp_filter_height + 20
+    -- Region filter using SlidingZone (extends upward to cover SettingsPanel area)
+    local filter_result = Ark.SlidingZone(ctx, {
+      id = "region_filter_bar",
+      edge = "top",
+      bounds = {
+        x = coord_offset_x,
+        y = filter_bar_base_y,
+        w = screen_w,
+        h = filter_bar_max_height,
+      },
+      size = filter_bar_max_height,
+      collapsed_ratio = 0.0,
 
-    local is_hovering_above_panels = mouse_in_window and mouse_y < (temp_panels_start_y + self.config.UI_PANELS.filter.trigger_into_panels)
-    local filters_should_show = is_hovering_above_panels or self.state.settings_sticky_visible
+      -- Extend upward to cover entire SettingsPanel area + search bar
+      trigger_extension = {
+        up = filter_bar_base_y - coord_offset_y,  -- All the way to top of window
+        down = self.config.UI_PANELS.filter.trigger_into_panels,
+        left = 0,
+        right = 0,
+      },
 
-    if not self.state.filter_slide_progress then
-      self.state.filter_slide_progress = 0
-    end
-    local target_filter_slide = filters_should_show and 1.0 or 0.0
-    local filter_slide_speed = self.config.UI_PANELS.settings.slide_speed
-    self.state.filter_slide_progress = self.state.filter_slide_progress + (target_filter_slide - self.state.filter_slide_progress) * filter_slide_speed
+      retract_delay = 0.2,  -- Base delay
+      directional_delay = true,
+      retract_delay_toward = 1.5,  -- When exiting upward (toward panel edge)
+      retract_delay_away = 0.1,    -- When exiting downward (away from panel)
+      window_bounds = {
+        x = coord_offset_x,
+        y = coord_offset_y,
+        w = screen_w,
+        h = screen_h,
+      },
 
-    filter_bar_height = filter_bar_max_height * self.state.filter_slide_progress
-    local filter_alpha = self.state.filter_slide_progress * ui_fade
 
-    if filter_bar_height > 1 then
-      RegionFilterBar.draw(ctx, draw_list, coord_offset_x, filter_bar_base_y, screen_w, self.state, self.config, filter_alpha)
-    end
+      draw_list = draw_list,
+
+      draw = function(zone_ctx, dl, bounds, visibility)
+        local filter_alpha = visibility * ui_fade
+        if filter_alpha > 0.01 then
+          RegionFilterBar.draw(zone_ctx, dl, coord_offset_x, filter_bar_base_y, screen_w, self.state, self.config, filter_alpha)
+        end
+      end,
+    })
+
+    filter_bar_height = filter_bar_max_height * filter_result.visibility
   end
 
   local section_fade = smootherstep(math.max(0, (overlay_alpha - 0.1) / 0.9))

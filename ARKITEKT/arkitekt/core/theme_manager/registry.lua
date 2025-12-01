@@ -64,6 +64,25 @@ function M.unregister_palette(script_name)
   palette_cache[script_name] = nil
 end
 
+--- Patterns for keys that should use normalized transforms (same as engine.lua)
+local NORMALIZE_PATTERNS = {
+  "_[Bb][Rr][Ii][Gg][Hh][Tt][Nn][Ee][Ss][Ss]$",   -- _brightness (any case)
+  "_[Ss][Aa][Tt][Uu][Rr][Aa][Tt][Ii][Oo][Nn]$",   -- _saturation (any case)
+  "[Bb][Rr][Ii][Gg][Hh][Tt][Nn][Ee][Ss][Ss]$",    -- BRIGHTNESS (any case, no underscore)
+  "[Ss][Aa][Tt][Uu][Rr][Aa][Tt][Ii][Oo][Nn]$",    -- SATURATION (any case, no underscore)
+}
+
+--- Check if a key should use normalized transform
+local function should_normalize(key)
+  if not key then return false end
+  for _, pattern in ipairs(NORMALIZE_PATTERNS) do
+    if key:match(pattern) then
+      return true
+    end
+  end
+  return false
+end
+
 --- Get computed palette for a script (computed for current theme)
 --- @param script_name string Name of the script
 --- @param current_t number Current interpolation factor
@@ -106,9 +125,15 @@ function M.get_computed_palette(script_name, current_t)
       if type(resolved) == "string" then
         -- Hex string → convert to RGBA
         computed[key] = Colors.hexrgb(resolved .. "FF")
-      else
-        -- Number → clamp to valid range for key type
+      elseif type(resolved) == "number" then
+        -- Number → apply normalization if key matches pattern
+        if should_normalize(key) then
+          resolved = Engine.normalize_to_multiplier(resolved)
+        end
+        -- Clamp to valid range for key type
         computed[key] = Palette.clamp_value(key, resolved)
+      else
+        computed[key] = resolved
       end
     else
       -- Raw value

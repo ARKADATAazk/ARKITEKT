@@ -57,8 +57,8 @@ local function cleanup_stale_instances()
 end
 
 --- Reset frame tracking (call at start of each frame)
-local function reset_frame_tracking()
-  local frame = ImGui.GetFrameCount and ImGui.GetFrameCount() or reaper.time_precise()
+local function reset_frame_tracking(ctx)
+  local frame = ImGui.GetFrameCount and ImGui.GetFrameCount(ctx) or reaper.time_precise()
   if frame ~= _grid_state.last_frame then
     _grid_state.frame_ids = {}
     _grid_state.last_frame = frame
@@ -161,7 +161,7 @@ function M.new(opts)
     behaviors        = opts.behaviors or {},
     mouse_behaviors  = opts.mouse_behaviors or {},
     custom_shortcuts = opts.shortcuts or {},
-    render_tile      = opts.render_tile or function() end,
+    render_item      = opts.render_item or function() end,
     render_overlays  = opts.render_overlays,
 
     external_drag_check = opts.external_drag_check,
@@ -198,6 +198,7 @@ function M.new(opts)
     }),
     external_drop_target = nil,
     last_window_pos  = nil,
+    last_avail_w     = nil,  -- Track layout width changes to distinguish from window drags
     previous_item_keys = {},
 
     last_layout_cols = 1,
@@ -558,7 +559,7 @@ function Grid:_draw_virtual(ctx, items, num_items)
     end
     state.hover = is_hovered
 
-    self.render_tile(ctx, rect, item, state, self)
+    self.render_item(ctx, rect, item, state, self)
 
     -- Check for double-click on tile
     if bg_double_clicked and Draw.point_in_rect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
@@ -754,6 +755,9 @@ function Grid:draw(ctx)
       end
     end
 
+    -- Track layout width even when empty (for consistent window drag detection)
+    self.last_avail_w = avail_w
+
     return
   end
 
@@ -797,16 +801,29 @@ function Grid:draw(ctx)
   self.animator:handle_spawn(new_keys, self.rect_track)
   self.previous_item_keys = current_keys
 
+  -- Detect if window was dragged/moved (should teleport to avoid animation lag)
+  -- vs layout change (like SlidingZone resize) which should animate smoothly
   local wx, wy = ImGui.GetWindowPos(ctx)
-  local window_moved = false
+  local window_dragged = false
+
   if self.last_window_pos then
-    if wx ~= self.last_window_pos[1] or wy ~= self.last_window_pos[2] then
-      window_moved = true
+    local dx = wx - self.last_window_pos[1]
+    local dy = wy - self.last_window_pos[2]
+
+    -- Check if this is a layout change (avail_w changed) vs actual window drag
+    -- Layout changes: origin moves but relative content structure is preserved
+    -- Window drag: entire window moves uniformly
+    local layout_changed = self.last_avail_w and self.last_avail_w ~= avail_w
+
+    if (dx ~= 0 or dy ~= 0) and not layout_changed then
+      -- Window position changed but layout didn't - this is a window drag
+      window_dragged = true
     end
   end
   self.last_window_pos = {wx, wy}
+  self.last_avail_w = avail_w
 
-  if window_moved then
+  if window_dragged then
     local rect_map = {}
     for i, item in ipairs(items) do rect_map[self.key(item)] = rects[i] end
     self.rect_track:teleport_all(rect_map)
@@ -1011,7 +1028,7 @@ function Grid:draw(ctx)
       end
       state.hover = is_hovered
 
-      self.render_tile(ctx, rect, item, state, self)
+      self.render_item(ctx, rect, item, state, self)
 
       -- ImGui drag-drop source (for external drops)
       if self.drag:is_active() and self.drag_payload_type and self.drag_payload_data then
@@ -1210,6 +1227,7 @@ function Grid:clear()
   self.drag:clear()
   self.external_drop_target = nil
   self.last_window_pos = nil
+  self.last_avail_w = nil
   self.previous_item_keys = {}
   self.last_layout_cols = 1
   self.grid_bounds = nil
@@ -1316,6 +1334,9 @@ local function _build_result(grid)
     -- Hover
     hovered_key = grid.hover_id,
 
+    -- Animation state (useful for throttling expensive operations during resize)
+    is_animating = grid.rect_track:is_animating(),
+
     -- Internal: access to grid instance for advanced use
     _instance = grid,
   }
@@ -1336,14 +1357,33 @@ end
 
 --- Update grid instance with per-frame opts
 local function _update_grid_from_opts(grid, opts)
-  -- Update items getter
-  if opts.items then
+  -- Update items getter (prefer get_items function, fall back to items array)
+  if opts.get_items then
+    grid.get_items = opts.get_items
+  elseif opts.items then
     grid.get_items = function() return opts.items end
   end
 
   -- Update callbacks (these may change per-frame)
-  if opts.render then
-    grid.render_tile = opts.render
+  if opts.render_item then
+    grid.render_item = opts.render_item
+  end
+
+  -- Update behaviors (merge with existing)
+  if opts.behaviors then
+    grid.behaviors = opts.behaviors
+  end
+
+  -- Update layout parameters (may change per-frame for resize shortcuts)
+  if opts.fixed_tile_h ~= nil then
+    grid.fixed_tile_h = opts.fixed_tile_h
+    -- Also update the function version if it's not already a function
+    if type(opts.fixed_tile_h) ~= "function" then
+      grid.fixed_tile_h_fn = function() return grid.fixed_tile_h end
+    end
+  end
+  if opts.min_col_w ~= nil then
+    grid.min_col_w = opts.min_col_w
   end
 
   -- Update feature flags
@@ -1410,7 +1450,7 @@ end
 --- @return table Result object with selection, drag, reorder state
 function M.draw(ctx, opts)
   -- Reset frame tracking
-  reset_frame_tracking()
+  reset_frame_tracking(ctx)
 
   opts = opts or {}
 
@@ -1447,9 +1487,9 @@ function M.draw(ctx, opts)
       min_col_w = opts.min_col_w or opts.tile_width,
       fixed_tile_h = opts.fixed_tile_h or opts.tile_height,
       key = opts.key,
-      render_tile = opts.render,
-      get_items = opts.items and function() return opts.items end or function() return {} end,
-      behaviors = {},
+      render_item = opts.render_item,
+      get_items = opts.get_items or (opts.items and function() return opts.items end) or function() return {} end,
+      behaviors = opts.behaviors or {},
       config = opts.config,
       extend_input_area = opts.extend_input_area or opts.padding,
       clip_rendering = opts.clip_rendering,

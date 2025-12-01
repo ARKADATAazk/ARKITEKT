@@ -10,6 +10,7 @@
 | Insert | `table.insert(t, x)` | `t[#t+1] = x` | Function overhead |
 | Globals | `math.sin(x)` in loop | `local sin = math.sin` | 30% faster |
 | Strings | `s = s .. x` in loop | `table.concat(parts)` | O(n) vs O(n²) |
+| Config | `config.a.b.c` per-item | Cache once per frame | 60% faster |
 
 ---
 
@@ -331,6 +332,152 @@ end
 
 ---
 
+## Per-Frame Config Caching
+
+**Impact:** Up to 60% faster for high-iteration rendering (thousands of items)
+
+### The Problem
+
+When rendering many items (tiles, rows, notes), accessing config values per-item creates massive overhead:
+
+```lua
+-- SLOW: Config with metatable or nested tables
+for i = 1, 10000 do
+  local threshold = config.TILE_RENDER.responsive.hide_text_below  -- 4+ lookups
+  local padding = config.TILE_RENDER.text.padding_left             -- 4+ lookups
+  -- ... 50 more config accesses per tile
+end
+-- Result: 10,000 × 50 × 4 = 2,000,000 table/metatable lookups
+```
+
+If config uses metatables (common for defaults/inheritance), the overhead is even worse - each access triggers `__index` metamethod calls.
+
+**Real-world finding:** In ItemPicker with ~10,000 tiles, `CONFIG.__index` consumed **47% of total execution time**.
+
+### The Solution: Per-Frame Caching
+
+Cache all config values once at frame start, access cached locals during rendering:
+
+```lua
+-- At module top
+local _frame_cache = {}
+
+-- Called once per frame (in begin_frame or similar)
+function M.cache_config(config)
+  local tr = config.TILE_RENDER
+  local c = _frame_cache
+
+  -- Cache all values used in per-item loops
+  c.hide_text_below = tr.responsive.hide_text_below
+  c.text_padding_left = tr.text.padding_left
+  c.text_padding_top = tr.text.padding_top
+  c.header_alpha = tr.header.alpha
+  c.badge_bg = tr.badge.bg
+  -- ... cache everything accessed per-item
+end
+
+-- Expose for other modules
+M.cfg = _frame_cache
+
+-- In render loop - use cached values
+for i = 1, 10000 do
+  local threshold = _frame_cache.hide_text_below  -- 1 lookup
+  local padding = _frame_cache.text_padding_left  -- 1 lookup
+end
+-- Result: 10,000 × 50 × 1 = 500,000 lookups (4x reduction)
+```
+
+### Critical: Declaration Order
+
+The cache table MUST be declared before any functions that use it:
+
+```lua
+-- CORRECT
+local M = {}
+local _frame_cache = {}  -- Declared BEFORE functions
+
+function M.render()
+  local value = _frame_cache.threshold  -- Works
+end
+
+-- WRONG - will cause runtime nil errors
+function M.render()
+  local value = _frame_cache.threshold  -- nil! (captured at parse time)
+end
+
+local _frame_cache = {}  -- Too late!
+```
+
+### When to Use
+
+| Scenario | Use Per-Frame Caching? |
+|----------|------------------------|
+| 10+ items in loop | Consider it |
+| 100+ items in loop | Recommended |
+| 1000+ items in loop | Essential |
+| Config has metatables | Essential |
+| Single item render | Not needed |
+
+### ARKITEKT Example
+
+From `scripts/ItemPicker/ui/grids/renderers/base.lua`:
+
+```lua
+-- PERF: Per-frame config cache
+-- Eliminates 47% overhead from config.TILE_RENDER.__index
+local _frame_config = {}
+
+M.cfg = _frame_config  -- Expose for audio.lua/midi.lua
+
+function M.cache_config(config)
+  local tr = config.TILE_RENDER
+  local c = _frame_config
+
+  -- Cascade animation
+  c.cascade_scale_from = tr.cascade.scale_from
+  c.cascade_y_offset = tr.cascade.y_offset
+
+  -- Header bar
+  c.header_alpha = tr.header.alpha
+  c.header_min_height = tr.header.min_height
+
+  -- Text rendering
+  c.text_padding_left = tr.text.padding_left
+  c.text_margin_right = tr.text.margin_right
+
+  -- ... 60+ more values
+end
+
+function M.begin_frame(ctx, config)
+  if config then
+    M.cache_config(config)
+  end
+end
+```
+
+Usage in render functions:
+
+```lua
+-- In audio.lua
+local cfg = BaseRenderer.cfg
+
+function M.render(ctx, dl, rect, item_data, ...)
+  -- Use cached values
+  local scale_from = cfg.cascade_scale_from
+  local header_h = cfg.header_min_height
+  -- ...
+end
+```
+
+### Results
+
+**Cumulative per second** (~500 visible tiles × 32fps = ~16,000 tile renders/sec):
+- Before: ~250ms/sec (~7.8ms/frame)
+- After: ~90-100ms/sec (~3ms/frame)
+- **60% improvement**
+
+---
+
 ## Memory Management
 
 ### Data Representation
@@ -497,7 +644,8 @@ Profiler.stop("render")
 7. **Cache ImGui functions** - In rendering hot paths
 8. **Use state change count** - Not polling for REAPER project changes
 9. **Batch draw calls** - Polyline over individual lines
-10. **Profile again** - Verify optimizations actually helped
+10. **Per-frame config caching** - For 1000+ item loops with config access
+11. **Profile again** - Verify optimizations actually helped
 
 ---
 

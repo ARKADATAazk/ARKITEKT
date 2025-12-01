@@ -4,15 +4,15 @@
 
 local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
-local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')
 local shared = require('ItemPicker.ui.grids.factories.shared')
 local ItemsService = require('ItemPicker.domain.items.service')
 
 local M = {}
 
-function M.create(ctx, config, state, visualization, animator, disable_animator)
-  local grid  -- Forward declaration for selection cleanup
+function M.create_options(config, state, visualization, animator, disable_animator)
+  -- Stores reference to grid result for selection cleanup
+  local grid_result_ref = { current = nil }
 
   local function get_items()
     if not state.midi_indexes then return {} end
@@ -184,23 +184,23 @@ function M.create(ctx, config, state, visualization, animator, disable_animator)
     state.runtime_cache.midi_filter_hash = filter_hash
 
     -- Smart selection cleanup: deselect items that are no longer accessible
-    if grid and grid.selection then
+    if grid_result_ref.current and grid_result_ref.current.selection then
       local available_keys = {}
       for _, item_data in ipairs(filtered) do
         available_keys[item_data.uuid] = true
       end
 
-      local selected = grid.selection:selected_keys()
+      local selected = grid_result_ref.current.selection:selected_keys()
       local needs_update = false
       for _, key in ipairs(selected) do
         if not available_keys[key] then
-          grid.selection.selected[key] = nil
+          grid_result_ref.current.selection.selected[key] = nil
           needs_update = true
         end
       end
 
-      if needs_update and grid.behaviors and grid.behaviors.on_select then
-        grid.behaviors.on_select(grid, grid.selection:selected_keys())
+      if needs_update and on_select_behavior then
+        on_select_behavior(grid_result_ref.current, grid_result_ref.current.selection:selected_keys())
       end
     end
 
@@ -210,7 +210,36 @@ function M.create(ctx, config, state, visualization, animator, disable_animator)
   -- Store badge rectangles for exclusion zones (tile_key -> rect)
   local badge_rects = {}
 
-  grid = Grid.new({
+  -- Behavior callbacks (forward declared for use in get_items)
+  local on_select_behavior
+
+  -- PERF: Badge click handler - called from coordinator after all tiles rendered
+  -- Returns true if click was consumed
+  local function handle_badge_click(ctx)
+    local left_click = ImGui.IsMouseClicked(ctx, 0)
+    local right_click = ImGui.IsMouseClicked(ctx, 1)
+    if not left_click and not right_click then return false end
+
+    local mx, my = ImGui.GetMousePos(ctx)
+    for uuid, rect in pairs(badge_rects) do
+      if mx >= rect[1] and mx <= rect[3] and my >= rect[2] and my <= rect[4] then
+        -- Find the item to get track_guid
+        local items = get_items()
+        for _, item_data in ipairs(items) do
+          if item_data.uuid == uuid and item_data.total and item_data.total > 1 then
+            local delta = left_click and 1 or -1
+            state.cycle_midi_item(item_data.track_guid, delta)
+            state.runtime_cache.midi_filter_hash = nil
+            return true
+          end
+        end
+      end
+    end
+    return false
+  end
+
+  -- Grid options (returned for callable API)
+  local grid_opts = {
     id = "midi_items",
     gap = config.TILE.GAP,
     min_col_w = function() return state.get_tile_width() end,
@@ -236,14 +265,13 @@ function M.create(ctx, config, state, visualization, animator, disable_animator)
       return badge_rect and {badge_rect} or nil
     end,
 
-    render_tile = function(ctx, rect, item_data, tile_state)
+    render_item = function(ctx, rect, item_data, tile_state)
       local dl = ImGui.GetWindowDrawList(ctx)
       MidiRenderer.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects, disable_animator)
     end,
-  })
 
-  -- Behaviors (using generic shortcut names)
-  grid.behaviors = {
+    -- Behaviors (using generic shortcut names)
+    behaviors = {
     -- Right-click: toggle disabled state
     ['click:right'] = function(grid, key, selected_keys)
       local items = get_items()
@@ -523,9 +551,14 @@ function M.create(ctx, config, state, visualization, animator, disable_animator)
         end
       end
     end,
-  }
+    },  -- end behaviors
+  }  -- end grid_opts
 
-  return grid
+  -- Store on_select for use in get_items cleanup
+  on_select_behavior = grid_opts.behaviors.on_select
+
+  -- Return options table, result reference, and badge click handler
+  return grid_opts, grid_result_ref, handle_badge_click
 end
 
 return M

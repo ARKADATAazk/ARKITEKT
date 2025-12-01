@@ -86,16 +86,33 @@
 
 ---
 
-## Phase 4: Containers ⏳ **NOT STARTED**
+## Phase 4: Containers ✅ **COMPLETE**
 
 **Goal**: Evaluate if callable pattern applies to container widgets
 
-**Status**: Waiting for Phase 1-3 complete
-- [ ] Panel - Complex, Begin/End pattern, may not fit
-- [ ] SlidingZone - Evaluate
-- [ ] TileGroup - Evaluate
+**Status**: Analysis complete, SlidingZone implemented
 
-**Note**: Containers may keep current API if callable doesn't make sense
+**Completed**:
+- ✅ **SlidingZone** - Callable pattern implemented
+  - Branch: `phase4/containers-api-matching` (complete)
+  - Callable pattern: `Ark.SlidingZone(ctx, opts)` ✅
+  - Callback renamed: `on_draw` → `draw` (backward compat maintained) ✅
+  - Registered in `arkitekt/init.lua` ✅
+  - Test script: `scripts/Sandbox/test_sliding_zone_callable.lua` ✅
+
+- ✅ **Panel** - Callback regions spec'd, implementation deferred
+  - Spec: `PANEL_REWORK.md` (complete)
+  - Pattern: Callback-based regions (header.draw, corner, draw) ✅
+  - Implementation: Deferred to separate branch (larger refactor)
+
+- ✅ **TileGroup** - Not applicable (utility library, not a widget)
+  - No changes needed
+  - Current API is well-designed
+
+**See Also**:
+- `PHASE4_CONTAINERS_ANALYSIS.md` - Container evaluation and recommendations
+- `VALIDATION_IMGUI_COMPARISON.md` - ImGui pattern validation
+- `PANEL_REWORK.md` - Panel callback regions spec
 
 ---
 

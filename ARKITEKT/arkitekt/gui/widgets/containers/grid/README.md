@@ -24,7 +24,7 @@ local grid = Grid.new({
 
   get_items = function() return my_items end,
   key = function(item) return item.id end,
-  render_tile = function(ctx, rect, item, state, grid) ... end,
+  render_item = function(ctx, rect, item, state, grid) ... end,
 
   behaviors = {
     space = function(grid, selected_keys)
@@ -220,7 +220,7 @@ Grid.new({
   id = "unique_id",
   get_items = function() return items end,
   key = function(item) return item.id end,
-  render_tile = function(ctx, rect, item, state, grid) end,
+  render_item = function(ctx, rect, item, state, grid) end,
 
   -- Layout
   gap = 8,

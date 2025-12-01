@@ -485,6 +485,11 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
         element_config.label = element_config.label(state)
       end
 
+      -- Evaluate get_value for checkboxes (dynamic checked state)
+      if element.type == "checkbox" and element_config.get_value and type(element_config.get_value) == "function" then
+        element_config.checked = element_config.get_value()
+      end
+
       local element_state = get_or_create_element_state(state, element)
 
       local used_width
