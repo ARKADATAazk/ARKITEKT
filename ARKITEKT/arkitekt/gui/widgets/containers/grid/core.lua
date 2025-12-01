@@ -1397,6 +1397,11 @@ local function _update_grid_from_opts(grid, opts)
     grid._reorderable = opts.reorderable
   end
 
+  -- Update panel clip bounds (for grids inside panels/containers)
+  if opts.clip_bounds ~= nil then
+    grid.panel_clip_bounds = opts.clip_bounds
+  end
+
   -- Update callbacks in behaviors
   if opts.on_select then
     grid.behaviors = grid.behaviors or {}

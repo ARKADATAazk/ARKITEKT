@@ -13,6 +13,7 @@ local ColorsView = require("ThemeAdjuster.ui.views.colors_view")
 local AdditionalView = require("ThemeAdjuster.ui.views.additional_view")
 local DebugView = require("ThemeAdjuster.ui.views.debug_view")
 local Renderer = require("arkitekt.gui.widgets.media.package_tiles.renderer")
+local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 
 local M = {}
 local TabContent = {}
@@ -66,6 +67,9 @@ function TabContent:update(dt)
 end
 
 function TabContent:draw(ctx, tab_id, shell_state)
+  -- PERF: Cache TileFXConfig once per frame before rendering any grids
+  TileFXConfig.begin_frame(ctx)
+
   -- Clear image caches when switching tabs (prevents stale handle errors)
   if self.last_tab_id and self.last_tab_id ~= tab_id then
     -- Clear package renderer cache (for ASSEMBLER tab)

@@ -67,7 +67,7 @@ ARKITEKT-Toolkit/
 
 - [cookbook/WIDGETS.md](../cookbook/WIDGETS.md) - Widget development guide
 - [docs/reference/WIDGET_SELECTION.md](reference/WIDGET_SELECTION.md) - Panel vs Grid vs TileGroup
-- [ARKITEKT/arkitekt/gui/widgets/containers/grid/README.md](../ARKITEKT/arkitekt/gui/widgets/containers/grid/README.md) - Grid system documentation
+- [docs/widgets/grid/README.md](widgets/grid/README.md) - Grid widget guide (API, performance, examples)
 
 ### Theming
 
@@ -127,7 +127,7 @@ ARKITEKT-Toolkit/
 
 | Component | Location | Description |
 |-----------|----------|-------------|
-| Grid system | [grid/README.md](../ARKITEKT/arkitekt/gui/widgets/containers/grid/README.md) | Tile grid with selection, drag-drop |
+| Grid system | [docs/widgets/grid/README.md](widgets/grid/README.md) | Tile grid with selection, drag-drop |
 | MediaGrid | [media_grid/README.md](../ARKITEKT/arkitekt/gui/widgets/media/media_grid/README.md) | Media browser grid |
 | Overlay system | [overlay/README.md](../ARKITEKT/arkitekt/gui/widgets/overlays/overlay/README.md) | Modal overlays |
 | App framework | [app/README.md](../ARKITEKT/arkitekt/app/README.md) | Application bootstrap |

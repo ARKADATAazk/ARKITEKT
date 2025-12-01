@@ -11,6 +11,7 @@
 | Globals | `math.sin(x)` in loop | `local sin = math.sin` | 30% faster |
 | Strings | `s = s .. x` in loop | `table.concat(parts)` | O(n) vs O(n²) |
 | Config | `config.a.b.c` per-item | Cache once per frame | 60% faster |
+| Renderer setup | Per-tile config lookups | cache_config() once per frame | 60% faster |
 
 ---
 

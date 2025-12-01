@@ -2,11 +2,18 @@
 -- Arkitekt/gui/fx/tile_fx_config.lua
 -- Granular tile visual configuration
 -- Theme-aware: reads from ThemeManager.get_current_rules() when available
+--
+-- PERF: Call begin_frame() once per frame before rendering tiles.
+-- The get() function returns cached config to avoid per-tile overhead.
 
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 local M = {}
+
+-- Per-frame cache
+local _cached_config = nil
+local _cached_frame = -1
 
 -- Static defaults (used as fallback when ThemeManager not available)
 M.STATIC_DEFAULTS = {
@@ -78,11 +85,8 @@ M.STATIC_DEFAULTS = {
 -- Legacy alias
 M.DEFAULT = M.STATIC_DEFAULTS
 
---- Get theme-aware tile config
---- Reads tile values from Theme.COLORS (set by ThemeManager.generate_palette)
---- Falls back to STATIC_DEFAULTS if Theme not available
---- @return table Tile config with theme-appropriate values
-function M.get()
+--- Build fresh config from theme (internal, called by begin_frame)
+local function _build_config()
   -- Try to get Theme (may not be loaded yet on first frame)
   local ok, Theme = pcall(require, 'arkitekt.core.theme')
   if not ok or not Theme or not Theme.COLORS then
@@ -110,6 +114,30 @@ function M.get()
   end
 
   return config
+end
+
+--- Cache config for the current frame
+--- Call once per frame before rendering tiles
+--- @param ctx userdata ImGui context (used to get frame count)
+function M.begin_frame(ctx)
+  local ImGui = require('arkitekt.platform.imgui')
+  local frame = ImGui.GetFrameCount(ctx)
+  if frame ~= _cached_frame then
+    _cached_config = _build_config()
+    _cached_frame = frame
+  end
+end
+
+--- Get theme-aware tile config (cached per frame)
+--- Call begin_frame() once per frame before using this
+--- @return table Tile config with theme-appropriate values
+function M.get()
+  -- Return cached config if available, otherwise build fresh
+  -- (This handles first-frame and cases where begin_frame wasn't called)
+  if _cached_config then
+    return _cached_config
+  end
+  return _build_config()
 end
 
 --- Get theme-aware config with custom overrides

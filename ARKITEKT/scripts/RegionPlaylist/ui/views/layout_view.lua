@@ -5,6 +5,7 @@
 local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Logger = require('arkitekt.debug.logger')
+local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -54,6 +55,9 @@ function LayoutView:get_filtered_active_items(playlist)
 end
 
 function LayoutView:draw(ctx, region_tiles, shell_state)
+  -- PERF: Cache TileFXConfig once per frame before rendering grids
+  TileFXConfig.begin_frame(ctx)
+
   local pl = self.state.get_active_playlist()
   local filtered_active_items = self:get_filtered_active_items(pl)
   local display_playlist = {
