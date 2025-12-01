@@ -98,6 +98,7 @@ local MODULES = {
   Cursor = 'arkitekt.core.cursor',
   Style = 'arkitekt.gui.style',
   Draw = 'arkitekt.gui.draw.primitives',
+  Pattern = 'arkitekt.gui.draw.patterns',
   Easing = 'arkitekt.gui.animation.easing',
   Features = 'arkitekt.defs.features',
   Lookup = 'arkitekt.core.lookup',
