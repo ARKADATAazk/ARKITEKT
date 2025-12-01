@@ -119,15 +119,37 @@ end
 function M.merge_safe(base, supplement)
   local result = {}
 
-  -- Copy base completely
+  -- Deep copy helper (2 levels deep to handle options arrays)
+  local function deep_copy_value(v)
+    if type(v) ~= "table" then
+      return v  -- Primitives and functions copied by reference
+    end
+
+    local copy = {}
+    for k2, v2 in pairs(v) do
+      if type(v2) == "table" then
+        -- Copy nested tables (e.g., options = {{value=x, label=y}, ...})
+        local nested = {}
+        for k3, v3 in pairs(v2) do
+          nested[k3] = v3
+        end
+        copy[k2] = nested
+      else
+        copy[k2] = v2
+      end
+    end
+    return copy
+  end
+
+  -- Copy base completely (deep copy to prevent reference pollution)
   for k, v in pairs(base or {}) do
-    result[k] = v
+    result[k] = deep_copy_value(v)
   end
 
   -- Add supplement ONLY if key doesn't exist in base
   for k, v in pairs(supplement or {}) do
     if result[k] == nil then
-      result[k] = v
+      result[k] = deep_copy_value(v)
     end
   end
 

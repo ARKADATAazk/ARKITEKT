@@ -5,7 +5,6 @@
 
 local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
-local Style = require('arkitekt.gui.style')
 
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 local hexrgb = Ark.Colors.hexrgb
@@ -30,7 +29,7 @@ M.DEFAULT_CONFIG = {
   },
   
   border = {
-    -- color: Uses Style.COLORS.BORDER_OUTER dynamically for theme reactivity
+    -- color: Uses Ark.Style.COLORS.BORDER_OUTER dynamically for theme reactivity
     thickness = 1,
   },
   
@@ -42,7 +41,7 @@ M.DEFAULT_CONFIG = {
   
   gradient = {
     fade_speed = 8.0,
-    -- ready_color: Uses Style.COLORS.BG_PANEL dynamically for theme reactivity
+    -- ready_color: Uses Ark.Style.COLORS.BG_PANEL dynamically for theme reactivity
     -- Can be overridden in config if custom color needed
     fill_opacity = 0.18,
     fill_saturation = 0.35,
@@ -51,7 +50,7 @@ M.DEFAULT_CONFIG = {
   
   progress = {
     height = 3,
-    -- track_color: Uses Style.COLORS.BG_PANEL dynamically for theme reactivity
+    -- track_color: Uses Ark.Style.COLORS.BG_PANEL dynamically for theme reactivity
   },
 }
 
@@ -191,7 +190,7 @@ end
 function M.render_border(dl, x1, y1, x2, y2, config)
   local border_cfg = config.border
   -- Dynamic border color from theme
-  local border_color = border_cfg.color or Style.COLORS.BORDER_OUTER
+  local border_color = border_cfg.color or Ark.Style.COLORS.BORDER_OUTER
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, config.rounding, ImGui.DrawFlags_RoundCornersAll, border_cfg.thickness)
 end
 
@@ -220,11 +219,11 @@ function M.render_complete(dl, x1, y1, x2, y2, config, hover_factor, current_reg
   elseif current_region_color then
     color_left = current_region_color
     -- Use ready_color instead of hardcoded black for next color
-    color_right = config.gradient.ready_color or Style.COLORS.BG_PANEL
+    color_right = config.gradient.ready_color or Ark.Style.COLORS.BG_PANEL
   else
     -- Ready/idle state: use theme background directly without brightness reduction
     is_ready_state = true
-    local ready_color = config.gradient.ready_color or Style.COLORS.BG_PANEL
+    local ready_color = config.gradient.ready_color or Ark.Style.COLORS.BG_PANEL
     color_left = ready_color
     color_right = ready_color
   end

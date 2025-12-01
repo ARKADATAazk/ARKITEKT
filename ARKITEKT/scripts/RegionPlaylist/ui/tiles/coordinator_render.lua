@@ -138,7 +138,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
       avail_width = child_w,
       avail_height = child_h,
       base_gap = ActiveTile.CONFIG.gap,
-      min_col_width = ActiveTile.CONFIG.tile_width,
+      min_col_width = self._active_min_col_w_fn(),
       base_tile_height = self.responsive_config.base_tile_height_active,
       min_tile_height = self.responsive_config.min_tile_height,
       responsive_config = self.responsive_config,

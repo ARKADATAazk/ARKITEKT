@@ -418,45 +418,62 @@ function M.build_colored_button_config(variant)
 end
 
 --- Build dropdown config from current Theme.COLORS
+--- Returns a COPY to prevent mutation of cached config
 function M.build_dropdown_config()
-  if _dropdown_config_cache then return _dropdown_config_cache end
-  _dropdown_config_cache = {
-    bg_color = M.COLORS.BG_BASE,
-    bg_hover_color = M.COLORS.BG_HOVER,
-    bg_active_color = M.COLORS.BG_ACTIVE,
-    border_outer_color = M.COLORS.BORDER_OUTER,
-    border_inner_color = M.COLORS.BORDER_INNER,
-    border_hover_color = M.COLORS.BORDER_HOVER,
-    border_active_color = M.COLORS.BORDER_ACTIVE,
-    text_color = M.COLORS.TEXT_NORMAL,
-    text_hover_color = M.COLORS.TEXT_HOVER,
-    text_active_color = M.COLORS.TEXT_ACTIVE,
-    arrow_color = M.COLORS.TEXT_NORMAL,
-    arrow_hover_color = M.COLORS.TEXT_HOVER,
-    rounding = 0,
-    padding_x = 10,
-    padding_y = 6,
-    arrow_size = 6,
-    enable_mousewheel = true,
-    tooltip_delay = 0.5,
-    popup = {
-      bg_color = Colors.adjust_lightness(M.COLORS.BG_BASE, -0.02),
-      border_color = Colors.adjust_lightness(M.COLORS.BORDER_OUTER, -0.05),
-      item_bg_color = M.COLORS.BG_TRANSPARENT,
-      item_hover_color = M.COLORS.BG_HOVER,
-      item_active_color = M.COLORS.BG_ACTIVE,
-      item_text_color = M.COLORS.TEXT_NORMAL,
-      item_text_hover_color = M.COLORS.TEXT_HOVER,
-      item_selected_color = M.COLORS.BG_ACTIVE,
-      item_selected_text_color = M.COLORS.TEXT_BRIGHT,
-      rounding = 2,
-      padding = 6,
-      item_height = 26,
-      item_padding_x = 12,
-      border_thickness = 1,
-    },
-  }
-  return _dropdown_config_cache
+  -- Build cache once
+  if not _dropdown_config_cache then
+    _dropdown_config_cache = {
+      bg_color = M.COLORS.BG_BASE,
+      bg_hover_color = M.COLORS.BG_HOVER,
+      bg_active_color = M.COLORS.BG_ACTIVE,
+      border_outer_color = M.COLORS.BORDER_OUTER,
+      border_inner_color = M.COLORS.BORDER_INNER,
+      border_hover_color = M.COLORS.BORDER_HOVER,
+      border_active_color = M.COLORS.BORDER_ACTIVE,
+      text_color = M.COLORS.TEXT_NORMAL,
+      text_hover_color = M.COLORS.TEXT_HOVER,
+      text_active_color = M.COLORS.TEXT_ACTIVE,
+      arrow_color = M.COLORS.TEXT_NORMAL,
+      arrow_hover_color = M.COLORS.TEXT_HOVER,
+      rounding = 0,
+      padding_x = 10,
+      padding_y = 6,
+      arrow_size = 6,
+      enable_mousewheel = true,
+      tooltip_delay = 0.5,
+      popup = {
+        bg_color = Colors.adjust_lightness(M.COLORS.BG_BASE, -0.02),
+        border_color = Colors.adjust_lightness(M.COLORS.BORDER_OUTER, -0.05),
+        item_bg_color = M.COLORS.BG_TRANSPARENT,
+        item_hover_color = M.COLORS.BG_HOVER,
+        item_active_color = M.COLORS.BG_ACTIVE,
+        item_text_color = M.COLORS.TEXT_NORMAL,
+        item_text_hover_color = M.COLORS.TEXT_HOVER,
+        item_selected_color = M.COLORS.BG_ACTIVE,
+        item_selected_text_color = M.COLORS.TEXT_BRIGHT,
+        rounding = 2,
+        padding = 6,
+        item_height = 26,
+        item_padding_x = 12,
+        border_thickness = 1,
+      },
+    }
+  end
+
+  -- Return a COPY to prevent mutation
+  local copy = {}
+  for k, v in pairs(_dropdown_config_cache) do
+    if type(v) == "table" and k == "popup" then
+      -- Deep copy popup table
+      copy[k] = {}
+      for pk, pv in pairs(v) do
+        copy[k][pk] = pv
+      end
+    else
+      copy[k] = v
+    end
+  end
+  return copy
 end
 
 --- Build search input config

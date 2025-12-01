@@ -5,7 +5,6 @@
 
 local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
-local Style = require('arkitekt.gui.style')
 
 local Panel = require('arkitekt.gui.widgets.containers.panel.init')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
@@ -43,7 +42,11 @@ function M.new(opts)
     config = {
       bg_color = cfg.panel_bg_color or hexrgb("#00000000"),
       border_thickness = 0,
-      rounding = cfg.fx and cfg.fx.rounding or 8,
+      -- Transport panel: top corners square, bottom corners rounded
+      rounding_tl = 0,  -- Top-left: square
+      rounding_tr = 0,  -- Top-right: square
+      rounding_bl = cfg.fx and cfg.fx.rounding or 8,  -- Bottom-left: rounded
+      rounding_br = cfg.fx and cfg.fx.rounding or 8,  -- Bottom-right: rounded
 
       background_pattern = {
         enabled = cfg.background_pattern ~= nil,
@@ -165,7 +168,7 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
   
   -- Helper to get ready color dynamically from theme
   local function get_ready_color()
-    return self.config.fx.gradient.ready_color or Style.COLORS.BG_PANEL
+    return self.config.fx.gradient.ready_color or Ark.Style.COLORS.BG_PANEL
   end
 
   local function lerp_color(from, to, t)

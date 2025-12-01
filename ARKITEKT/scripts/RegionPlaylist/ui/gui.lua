@@ -302,11 +302,13 @@ function M.create(State, AppConfig, settings)
   -- Initialize viewmode button in config (needs state module reference)
   Config.set_viewmode_button(State)
 
-  self.transport_view = TransportView.new(Config.TRANSPORT, State)
-  self.transport_view.config.quantize_lookahead = self.quantize_lookahead
-  -- Pass settings to transport_view for persistence
+  -- Initialize transport view (ImGui-style module function)
+  Config.TRANSPORT.quantize_lookahead = self.quantize_lookahead
+  TransportView.init(Config.TRANSPORT, State)
+  -- Pass settings to State for persistence
   State.settings = settings
-  
+
+  -- TODO: Migrate LayoutView to module function pattern
   self.layout_view = LayoutView.new(Config, State)
   
   self.overflow_modal_view = OverflowModalView.new(self.region_tiles, State, function()
@@ -392,7 +394,7 @@ function GUI:draw(ctx, window, shell_state)
   local transport_start_x, transport_start_y = ImGui.GetCursorScreenPos(ctx)
 
   local is_blocking = self.region_tiles:is_modal_blocking(ctx)
-  self.transport_view:draw(ctx, shell_state, is_blocking)
+  TransportView.draw(ctx, shell_state, is_blocking)  -- Module function, not method
 
   -- Position cursor after transport with separator gap
   local sep_gap = self.Config.SEPARATOR.horizontal.gap
