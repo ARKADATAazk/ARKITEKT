@@ -115,38 +115,35 @@ config = {
 
 ## Integration with Grid System
 
-Works seamlessly with `arkitekt.gui.widgets.grid.core`:
+Works seamlessly with `Ark.Grid()`:
 
 ```lua
-local Grid = require('arkitekt.gui.widgets.grid.core')
+local Ark = require('arkitekt')
 
-local grid = Grid.new({
+local result = Ark.Grid(ctx, {
   id = "media_items",
   gap = 4,
   min_col_w = function() return 120 end,
   fixed_tile_h = 140,
 
-  get_items = function()
-    return media_items
-  end,
+  items = media_items,
 
   key = function(item) return item.key end,
 
-  render_tile = function(ctx, rect, item, tile_state)
+  render_item = function(ctx, rect, item, tile_state)
     -- Use BaseRenderer utilities
     -- Render waveform/MIDI
   end,
-})
 
--- Grid behaviors
-grid.behaviors = {
-  drag_start = function(keys) end,
-  right_click = function(key, selected) end,
-  wheel_adjust = function(keys, delta) end,
-  delete = function(keys) end,
-  play = function(keys) end,
-  on_select = function(keys) end,
-}
+  behaviors = {
+    drag_start = function(keys) end,
+    right_click = function(key, selected) end,
+    wheel_adjust = function(keys, delta) end,
+    delete = function(keys) end,
+    play = function(keys) end,
+    on_select = function(keys) end,
+  },
+})
 ```
 
 ## Used By

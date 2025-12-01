@@ -18,17 +18,17 @@ local function draw_quick_access_panel(ctx, gui, width, height)
   gui.recent_container.width = width
   gui.recent_container.height = height
 
-  -- Update grid layout properties for current view mode
-  TemplateGridFactory.update_for_view_mode(gui.quick_access_grid)
-
   -- Begin panel drawing (includes background, border, header)
   if gui.recent_container:begin_draw(ctx) then
-    -- Set panel clip bounds AFTER begin_draw when visible_bounds is calculated
+    -- Build grid opts and draw
+    local opts = TemplateGridFactory.create_opts(gui.quick_access_grid_deps)
+
+    -- Set clip bounds from container
     if gui.recent_container.visible_bounds then
-      gui.quick_access_grid.panel_clip_bounds = gui.recent_container.visible_bounds
+      opts.clip_bounds = gui.recent_container.visible_bounds
     end
 
-    gui.quick_access_grid:draw(ctx)
+    Ark.Grid(ctx, opts)
     gui.recent_container:end_draw(ctx)
   end
 end
@@ -60,7 +60,6 @@ local function handle_tile_resize(ctx, state, config)
     return true
   elseif ctrl then
     -- CTRL+MouseWheel: reserved for future height adjustment
-    -- Currently tiles have fixed heights, but this can be implemented later
     return true
   end
 
@@ -186,17 +185,17 @@ local function draw_template_panel(ctx, gui, width, height)
   gui.template_container.width = width
   gui.template_container.height = grid_panel_height
 
-  -- Update grid layout properties for current view mode
-  TemplateGridFactory.update_for_view_mode(gui.template_grid)
-
   -- Begin panel drawing
   if gui.template_container:begin_draw(ctx) then
-    -- Set panel clip bounds AFTER begin_draw when visible_bounds is calculated
+    -- Build grid opts and draw
+    local opts = TemplateGridFactory.create_opts(gui.template_grid_deps)
+
+    -- Set clip bounds from container
     if gui.template_container.visible_bounds then
-      gui.template_grid.panel_clip_bounds = gui.template_container.visible_bounds
+      opts.clip_bounds = gui.template_container.visible_bounds
     end
 
-    gui.template_grid:draw(ctx)
+    Ark.Grid(ctx, opts)
     gui.template_container:end_draw(ctx)
   end
 

@@ -29,6 +29,6 @@ local result = Ark.Grid(ctx, {
 })
 ```
 
-## Migration Note
+## API
 
-The instance-based API (`Grid.new()` + `grid:draw()`) is deprecated. Use the opts-based `Ark.Grid(ctx, opts)` API instead. RegionPlaylist and ThemeAdjuster are being migrated.
+The only supported API is `Ark.Grid(ctx, opts)`. This is an ImGui-style per-frame function that manages grid state internally by ID. The legacy instance-based API (`Grid.new()`) has been removed.

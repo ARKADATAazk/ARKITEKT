@@ -1,8 +1,7 @@
 -- @noindex
 -- ThemeAdjuster/ui/grids/templates_grid_factory.lua
--- Templates grid factory
+-- Templates grid factory (opts-based API)
 
-local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local Ark = require('arkitekt')
 local TemplateTile = require('ThemeAdjuster.ui.grids.renderers.template_tile')
 local TemplateGroupConfig = require('ThemeAdjuster.ui.grids.renderers.template_group_config')
@@ -16,9 +15,10 @@ M._group_rename_state = M._group_rename_state or {}
 local function create_behaviors(view)
   return {
     drag_start = function(grid, item_keys)
-      -- Templates and groups can be dragged to assignment grids
-      if view.bridge then
-        return
+      -- With opts-based API, behaviors are replaced each frame, so we need to
+      -- directly call the bridge's on_drag_start here instead of relying on wrapping
+      if view.bridge and view._templates_bridge_config and view._templates_bridge_config.on_drag_start then
+        view._templates_bridge_config.on_drag_start(item_keys)
       end
     end,
 
@@ -191,7 +191,11 @@ local function create_render_tile(view)
   end
 end
 
-function M.create(view, config)
+--- Create grid opts for templates grid (opts-based API)
+--- @param view table AdditionalView instance
+--- @param config table|nil Optional configuration
+--- @return table Grid opts to pass to Ark.Grid()
+function M.create_opts(view, config)
   config = config or {}
 
   local padding = config.padding or 8
@@ -215,13 +219,15 @@ function M.create(view, config)
     opacity = 0.5,
   }
 
-  return Grid.new({
+  return {
     id = "templates",
     gap = 2,
     min_col_w = function() return 400 end,
     fixed_tile_h = 32,
 
-    get_items = function() return view:get_template_items() end,
+    -- Per-frame items from view
+    items = view._templates_items or view:get_template_items(),
+
     key = function(item)
       -- Handle group headers
       if Ark.TileGroup.is_group_header(item) then
@@ -241,7 +247,7 @@ function M.create(view, config)
     accept_external_drops = true,
     on_external_drop = create_external_drop_handler(view),
 
-    render_tile = create_render_tile(view),
+    render_item = create_render_tile(view),
 
     extend_input_area = {
       left = padding,
@@ -256,7 +262,7 @@ function M.create(view, config)
       drop = drop_config,
       drag = { threshold = 6 },
     },
-  })
+  }
 end
 
 return M

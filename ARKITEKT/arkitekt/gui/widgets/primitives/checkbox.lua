@@ -421,11 +421,23 @@ end
 -- ============================================================================
 
 --- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
-function M.draw_at_cursor(ctx, opts, id)
-  opts = opts or {}
-  if id then opts.id = id end
+--- Supports both old signature (ctx, label, is_checked, _, id) and new (ctx, opts, id)
+function M.draw_at_cursor(ctx, label_or_opts, is_checked, _, id)
+  local opts
+  if type(label_or_opts) == "table" then
+    -- New style: (ctx, opts, id)
+    opts = label_or_opts
+    if is_checked then opts.id = is_checked end  -- is_checked is actually id in this case
+  else
+    -- Old style: (ctx, label, is_checked, _, id)
+    opts = {
+      label = label_or_opts or "",
+      checked = is_checked,
+      id = id,
+    }
+  end
   local result = M.draw(ctx, opts)
-  return result.checked
+  return result.changed
 end
 
 --- @deprecated Cleanup is automatic via Base, no need to call manually

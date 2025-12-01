@@ -1,31 +1,30 @@
 -- @noindex
 -- RegionPlaylist/ui/tiles/active_grid_factory.lua
--- UNCHANGED
+-- Opts-based grid factory for active playlist tiles
 
-local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local Ark = require('arkitekt')
 local ActiveTile = require('RegionPlaylist.ui.tiles.renderers.active')
 local hexrgb = Ark.Colors.hexrgb
 
-
 local M = {}
 
-local function handle_unified_delete(rt, item_keys)
+-- Handle delete with destroy animation
+local function handle_unified_delete(grid, rt, item_keys)
   if not item_keys or #item_keys == 0 then return end
-  
-  if rt.active_grid then
-    rt.active_grid:mark_destroyed(item_keys)
+
+  if grid then
+    grid:mark_destroyed(item_keys)
   end
-  
-  if rt.active_grid and rt.active_grid.selection then
+
+  if grid and grid.selection then
     for _, key in ipairs(item_keys) do
-      rt.active_grid.selection.selected[key] = nil
+      grid.selection.selected[key] = nil
     end
-    if rt.active_grid.behaviors and rt.active_grid.behaviors.on_select then
-      rt.active_grid.behaviors.on_select(rt.active_grid, rt.active_grid.selection:selected_keys())
+    if grid.behaviors and grid.behaviors.on_select then
+      grid.behaviors.on_select(grid, grid.selection:selected_keys())
     end
   end
-  
+
   if rt.on_active_delete then
     rt.on_active_delete(item_keys)
   end
@@ -34,6 +33,11 @@ end
 local function create_behaviors(rt)
   return {
     drag_start = function(grid, item_keys)
+      -- With opts-based API, behaviors are replaced each frame, so we need to
+      -- directly call the bridge's on_drag_start here instead of relying on wrapping
+      if rt.bridge and rt._active_grid_bridge_config and rt._active_grid_bridge_config.on_drag_start then
+        rt._active_grid_bridge_config.on_drag_start(item_keys)
+      end
     end,
 
     -- Right-click: toggle enabled state
@@ -41,7 +45,7 @@ local function create_behaviors(rt)
       if not rt.on_active_toggle_enabled then return end
 
       if #selected_keys > 1 then
-        local playlist_items = rt.active_grid.get_items()
+        local playlist_items = grid.get_items()
         local item_map = {}
         for _, item in ipairs(playlist_items) do
           item_map[item.key] = item
@@ -55,7 +59,7 @@ local function create_behaviors(rt)
           end
         end
       else
-        local playlist_items = rt.active_grid.get_items()
+        local playlist_items = grid.get_items()
         for _, item in ipairs(playlist_items) do
           if item.key == key then
             local new_state = not (item.enabled ~= false)
@@ -67,38 +71,38 @@ local function create_behaviors(rt)
     end,
 
     delete = function(grid, item_keys)
-      handle_unified_delete(rt, item_keys)
+      handle_unified_delete(grid, rt, item_keys)
     end,
 
     -- SPACE: empty for now
     space = function(grid, selected_keys)
     end,
-    
+
     reorder = function(grid, new_order)
-      if not rt.active_grid or not rt.active_grid.drag then return end
-      
+      if not grid or not grid.drag then return end
+
       local is_copy_mode = false
       if rt.bridge then
         is_copy_mode = rt.bridge:compute_copy_mode('active')
       end
-      
+
       if is_copy_mode and rt.on_active_copy then
-        local playlist_items = rt.active_grid.get_items()
+        local playlist_items = grid.get_items()
         local items_by_key = {}
         for _, item in ipairs(playlist_items) do
           items_by_key[item.key] = item
         end
-        
-        local dragged_ids = rt.active_grid.drag:get_dragged_ids()
+
+        local dragged_ids = grid.drag:get_dragged_ids()
         local dragged_items = {}
         for _, key in ipairs(dragged_ids) do
           if items_by_key[key] then
             dragged_items[#dragged_items + 1] = items_by_key[key]
           end
         end
-        
+
         if #dragged_items > 0 then
-          rt.on_active_copy(dragged_items, rt.active_grid.drag:get_target_index())
+          rt.on_active_copy(dragged_items, grid.drag:get_target_index())
 
           -- Show copy notification
           if rt.State and rt.State.set_state_change_notification then
@@ -129,12 +133,12 @@ local function create_behaviors(rt)
           end
         end
       elseif rt.on_active_reorder then
-        local playlist_items = rt.active_grid.get_items()
+        local playlist_items = grid.get_items()
         local items_by_key = {}
         for _, item in ipairs(playlist_items) do
           items_by_key[item.key] = item
         end
-        
+
         local new_items = {}
         for _, key in ipairs(new_order) do
           if items_by_key[key] then
@@ -145,8 +149,8 @@ local function create_behaviors(rt)
         rt.on_active_reorder(new_items)
 
         -- Show move notification
-        if rt.State and rt.State.set_state_change_notification and rt.active_grid.drag then
-          local dragged_ids = rt.active_grid.drag:get_dragged_ids()
+        if rt.State and rt.State.set_state_change_notification and grid.drag then
+          local dragged_ids = grid.drag:get_dragged_ids()
           if #dragged_ids > 0 then
             local region_count = 0
             local playlist_count = 0
@@ -179,14 +183,14 @@ local function create_behaviors(rt)
         end
       end
     end,
-    
+
     on_select = function(grid, selected_keys)
       -- Count regions and playlists in active grid selection
       local region_count = 0
       local playlist_count = 0
 
       if selected_keys and #selected_keys > 0 then
-        local playlist_items = rt.active_grid.get_items()
+        local playlist_items = grid.get_items()
         local items_by_key = {}
         for _, item in ipairs(playlist_items) do
           items_by_key[item.key] = item
@@ -231,7 +235,7 @@ local function create_behaviors(rt)
     -- Inline editing: Double-click to edit single tile
     start_inline_edit = function(grid, key)
       local GridInput = require('arkitekt.gui.widgets.containers.grid.input')
-      local playlist_items = rt.active_grid.get_items()
+      local playlist_items = grid.get_items()
       for _, item in ipairs(playlist_items) do
         if item.key == key then
           -- Get current name
@@ -243,7 +247,7 @@ local function create_behaviors(rt)
             local region = rt.get_region_by_rid(item.rid)
             current_name = region and region.name or "Region"
           end
-          GridInput.start_inline_edit(rt.active_grid, key, current_name)
+          GridInput.start_inline_edit(grid, key, current_name)
           break
         end
       end
@@ -258,7 +262,7 @@ local function create_behaviors(rt)
 
     -- Double-click outside text zone: Move cursor and seek to region/playlist
     double_click_seek = function(grid, key)
-      local playlist_items = rt.active_grid.get_items()
+      local playlist_items = grid.get_items()
       for _, item in ipairs(playlist_items) do
         if item.key == key then
           if item.type == "playlist" then
@@ -293,7 +297,7 @@ local function create_behaviors(rt)
       if #selected_keys == 1 then
         local GridInput = require('arkitekt.gui.widgets.containers.grid.input')
         local key = selected_keys[1]
-        local playlist_items = rt.active_grid.get_items()
+        local playlist_items = grid.get_items()
         for _, item in ipairs(playlist_items) do
           if item.key == key then
             local current_name
@@ -304,7 +308,7 @@ local function create_behaviors(rt)
               local region = rt.get_region_by_rid(item.rid)
               current_name = region and region.name or "Region"
             end
-            GridInput.start_inline_edit(rt.active_grid, key, current_name)
+            GridInput.start_inline_edit(grid, key, current_name)
             break
           end
         end
@@ -335,6 +339,10 @@ end
 
 local function create_external_drop_handler(rt)
   return function(insert_index)
+    -- Notify the bridge about the drop
+    if rt.bridge then
+      rt.bridge:handle_drop('active', insert_index)
+    end
   end
 end
 
@@ -365,9 +373,13 @@ local function create_render_tile(rt, tile_config)
   end
 end
 
-function M.create(rt, config)
+--- Create grid opts for active playlist grid
+--- @param rt table RegionTiles coordinator instance
+--- @param config table Grid config
+--- @return table Grid opts for Ark.Grid()
+function M.create_opts(rt, config)
   config = config or {}
-  
+
   local base_tile_height = config.base_tile_height_active or 72
   local tile_config = config.tile_config or { border_thickness = 0.5, rounding = 6 }
   local dim_config = config.dim_config or {
@@ -379,44 +391,46 @@ function M.create(rt, config)
   local drop_config = config.drop_config or {}
   local ghost_config = config.ghost_config or {}
   local padding = config.container and config.container.padding or 8
-  
-  return Grid.new({
+
+  return {
     id = "active_grid",
     gap = ActiveTile.CONFIG.gap,
-    min_col_w = function() return ActiveTile.CONFIG.tile_width end,
-    fixed_tile_h = base_tile_height,
-    get_items = function() return {} end,
+    min_col_w = rt._active_min_col_w_fn or function() return ActiveTile.CONFIG.tile_width end,
+    fixed_tile_h = rt._active_tile_height or base_tile_height,
+    items = rt._active_items or {},
     key = function(item) return item.key end,
-    
+
     external_drag_check = create_external_drag_check(rt),
     is_copy_mode_check = create_copy_mode_check(rt),
-    
+
     behaviors = create_behaviors(rt),
-    
+
     accept_external_drops = true,
     on_external_drop = create_external_drop_handler(rt),
-    
+
     on_destroy_complete = function(key)
       if rt.on_destroy_complete then
         rt.on_destroy_complete(key)
       end
     end,
-    
+
     on_click_empty = function(key)
       if rt.on_repeat_cycle then
         rt.on_repeat_cycle(key)
       end
     end,
 
-    render_tile = create_render_tile(rt, tile_config),
-    
-    extend_input_area = { 
-      left = padding, 
-      right = padding, 
-      top = padding, 
-      bottom = padding 
+    render_item = create_render_tile(rt, tile_config),
+
+    extend_input_area = {
+      left = padding,
+      right = padding,
+      top = padding,
+      bottom = padding
     },
-    
+
+    clip_bounds = rt._active_clip_bounds,
+
     config = {
       spawn = ActiveTile.CONFIG.spawn,
       destroy = { enabled = true },
@@ -425,7 +439,7 @@ function M.create(rt, config)
       drop = drop_config,
       drag = { threshold = 6 },
     },
-  })
+  }
 end
 
 return M

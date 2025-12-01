@@ -133,7 +133,11 @@ function M.render(ctx, rect, param, state, view)
 
   if param.type == "toggle" then
     local is_checked = (param.value ~= 0)
-    if Ark.Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "lib_" .. param.index) then
+    local result = Ark.Checkbox(ctx, {
+      id = "lib_" .. param.index,
+      checked = is_checked,
+    })
+    if result.changed then
       changed = true
       new_value = is_checked and 0 or 1
     end

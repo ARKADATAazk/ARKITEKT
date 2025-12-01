@@ -129,16 +129,23 @@ function M.new(State, Config, settings)
 end
 
 function AdditionalView:create_grids()
-  -- Create library grid
-  self.library_grid = LibraryGridFactory.create(self, {padding = 8})
-
-  -- Create templates grid
-  self.templates_grid = TemplatesGridFactory.create(self, {padding = 8})
-
-  -- Create assignment grids for each tab
+  -- Store factory configs for opts-based API (grids are created per-frame)
+  self._library_grid_config = {padding = 8}
+  self._templates_grid_config = {padding = 8}
+  self._assignment_grid_configs = {}
   for _, tab_config in ipairs(TAB_CONFIGS) do
-    self.assignment_grids[tab_config.id] = AssignmentGridFactory.create(self, tab_config.id, {padding = 8})
+    self._assignment_grid_configs[tab_config.id] = {padding = 8}
   end
+
+  -- Grid instances (set when Ark.Grid returns them)
+  self.library_grid = nil
+  self.templates_grid = nil
+  self.assignment_grids = {}  -- tab_id -> grid
+
+  -- Track which grids have been registered with bridge
+  self._library_grid_registered = false
+  self._templates_grid_registered = false
+  self._assignment_grids_registered = {}  -- tab_id -> true
 
   -- Create GridBridge to coordinate drag-drop
   self.bridge = GridBridge.new({
@@ -240,8 +247,8 @@ function AdditionalView:create_grids()
     end,
   })
 
-  -- Register library grid
-  self.bridge:register_grid('library', self.library_grid, {
+  -- Store bridge configs for lazy registration
+  self._library_bridge_config = {
     accepts_drops_from = {},  -- Library doesn't accept drops
     on_drag_start = function(item_keys)
       -- Extract parameter names from keys
@@ -249,8 +256,15 @@ function AdditionalView:create_grids()
       local param_names = {}
       local params = self:get_library_items()
       local params_by_key = {}
+      local key_fn = function(item)
+        if Ark.TileGroup.is_group_header(item) then
+          return "group_header_" .. item.__group_id
+        end
+        local param = Ark.TileGroup.get_original_item(item)
+        return "lib_" .. tostring(param.index)
+      end
       for _, param in ipairs(params) do
-        params_by_key[self.library_grid.key(param)] = param
+        params_by_key[key_fn(param)] = param
       end
 
       for _, key in ipairs(item_keys) do
@@ -268,10 +282,9 @@ function AdditionalView:create_grids()
         self.bridge:start_drag('library', param_names)
       end
     end,
-  })
+  }
 
-  -- Register templates grid
-  self.bridge:register_grid('templates', self.templates_grid, {
+  self._templates_bridge_config = {
     accepts_drops_from = {'library'},
     on_drag_start = function(item_keys)
       -- Extract template IDs and group IDs from keys
@@ -294,14 +307,13 @@ function AdditionalView:create_grids()
 
       self.bridge:start_drag('templates', payload)
     end,
-  })
+  }
 
-  -- Register assignment grids
+  -- Store assignment bridge configs
+  self._assignment_bridge_configs = {}
   for _, tab_config in ipairs(TAB_CONFIGS) do
     local grid_id = "assign_" .. tab_config.id
-    local grid = self.assignment_grids[tab_config.id]
-
-    self.bridge:register_grid(grid_id, grid, {
+    self._assignment_bridge_configs[tab_config.id] = {
       accepts_drops_from = {'library', 'templates', 'assign_TCP', 'assign_MCP', 'assign_ENVCP', 'assign_TRANS', 'assign_GLOBAL'},
       on_drag_start = function(item_keys)
         -- Extract parameter names from keys
@@ -315,7 +327,7 @@ function AdditionalView:create_grids()
 
         self.bridge:start_drag(grid_id, param_names)
       end,
-    })
+    }
   end
 end
 
@@ -536,10 +548,26 @@ function AdditionalView:draw(ctx, shell_state)
       ImGui.Text(ctx, "No additional parameters found")
       ImGui.PopStyleColor(ctx)
     else
-      self.library_grid:draw(ctx)
+      -- Set per-frame items for opts
+      self._library_items = self:get_library_items()
+
+      -- Draw grid using opts-based API
+      local opts = LibraryGridFactory.create_opts(self, self._library_grid_config)
+      local result = Ark.Grid(ctx, opts)
+
+      -- Store grid reference and register with bridge
+      if result and result.grid then
+        self.library_grid = result.grid
+        if not self._library_grid_registered and self.bridge then
+          self.bridge:register_grid('library', self.library_grid, self._library_bridge_config)
+          self._library_grid_registered = true
+        end
+      end
 
       -- Handle right-click drag selection for library grid
-      self:handle_right_click_selection(ctx, self.library_grid, "library")
+      if self.library_grid then
+        self:handle_right_click_selection(ctx, self.library_grid, "library")
+      end
     end
 
     ImGui.Unindent(ctx, 8)
@@ -581,8 +609,19 @@ function AdditionalView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 8)
 
-    -- Draw templates grid
-    self.templates_grid:draw(ctx)
+    -- Draw templates grid using opts-based API
+    self._templates_items = self:get_template_items()
+    local opts = TemplatesGridFactory.create_opts(self, self._templates_grid_config)
+    local result = Ark.Grid(ctx, opts)
+
+    -- Store grid reference and register with bridge
+    if result and result.grid then
+      self.templates_grid = result.grid
+      if not self._templates_grid_registered and self.bridge then
+        self.bridge:register_grid('templates', self.templates_grid, self._templates_bridge_config)
+        self._templates_grid_registered = true
+      end
+    end
 
     ImGui.Unindent(ctx, 8)
     ImGui.Dummy(ctx, 0, 4)
@@ -623,12 +662,30 @@ function AdditionalView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 8)
 
     -- Draw active assignment grid (ALWAYS draw, even when empty, to accept drops!)
-    local active_grid = self.assignment_grids[self.active_assignment_tab]
-    if active_grid then
-      active_grid:draw(ctx)
+    local tab_id = self.active_assignment_tab
 
-      -- Handle right-click drag selection for assignment grid
-      self:handle_right_click_selection(ctx, active_grid, "assign_" .. self.active_assignment_tab)
+    -- Set per-frame items for opts
+    local items_key = "_assignment_items_" .. tab_id
+    self[items_key] = self:get_assignment_items(tab_id)
+
+    -- Draw grid using opts-based API
+    local opts = AssignmentGridFactory.create_opts(self, tab_id, self._assignment_grid_configs[tab_id])
+    local result = Ark.Grid(ctx, opts)
+
+    -- Store grid reference and register with bridge
+    if result and result.grid then
+      self.assignment_grids[tab_id] = result.grid
+      if not self._assignment_grids_registered[tab_id] and self.bridge then
+        local grid_id = "assign_" .. tab_id
+        self.bridge:register_grid(grid_id, result.grid, self._assignment_bridge_configs[tab_id])
+        self._assignment_grids_registered[tab_id] = true
+      end
+    end
+
+    -- Handle right-click drag selection for assignment grid
+    local active_grid = self.assignment_grids[tab_id]
+    if active_grid then
+      self:handle_right_click_selection(ctx, active_grid, "assign_" .. tab_id)
     end
 
     ImGui.Unindent(ctx, 8)

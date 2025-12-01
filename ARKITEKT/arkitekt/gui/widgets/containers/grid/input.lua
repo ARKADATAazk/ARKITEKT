@@ -18,7 +18,7 @@ local M = {}
 -- =============================================================================
 -- DEFAULT SHORTCUTS
 -- Generic names that describe the input, not the action.
--- Grids can add custom shortcuts via Grid.new({ shortcuts = {...} })
+-- Grids can add custom shortcuts via Ark.Grid(ctx, { shortcuts = {...} })
 -- =============================================================================
 M.DEFAULT_SHORTCUTS = {
   -- Basic keys

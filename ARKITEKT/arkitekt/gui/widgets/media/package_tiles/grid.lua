@@ -1,10 +1,10 @@
 -- @noindex
 -- Arkitekt/gui/widgets/package_tiles/grid.lua
--- Package grid main logic with 200px height constraint
+-- Package grid main logic with 200px height constraint (opts-based API)
 
 local ImGui = require('arkitekt.platform.imgui')
+local Ark = require('arkitekt')
 
-local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local Colors = require('arkitekt.core.colors')
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
 local Renderer = require('arkitekt.gui.widgets.media.package_tiles.renderer')
@@ -66,30 +66,18 @@ local function draw_package_tile(ctx, pkg, theme, P, rect, state, settings, cust
   Renderer.TileRenderer.footer(ctx, dl, pkg, P, x1, y1, tile_w, tile_h)
 end
 
-function M.create(pkg, settings, theme)
-  local custom_state = {
-    checkbox_rects = {},
-    animator = TileAnim.new(Renderer.CONFIG.animation.speed_hover),
-    height_stabilizer = HeightStabilizer.new({
-      stable_frames_required = 2,
-      height_hysteresis = 8,
-    }),
-  }
-  
-  local grid = Grid.new({
-    id = "pkg_grid",
-    gap = 12,
-    min_col_w = function() return pkg.tile or 220 end,
-    
-    get_items = function() return pkg:visible() end,
-    key = function(P) return P.id end,
-    
-    get_exclusion_zones = function(item, rect)
-      local cb_rect = custom_state.checkbox_rects[item.id]
-      return cb_rect and {cb_rect} or nil
-    end,
-    
-    behaviors = {
+--- Create opts for package grid (opts-based API)
+--- @param pkg table Package data provider
+--- @param settings table|nil Settings manager
+--- @param theme table|nil Theme provider
+--- @param wrapper table The wrapper object (for per-frame state)
+--- @return table Grid opts to pass to Ark.Grid()
+local function create_opts(pkg, settings, theme, wrapper)
+  local custom_state = wrapper.custom_state
+  local behavior_overrides = wrapper._behavior_overrides or {}
+
+  -- Build behaviors with overrides
+  local behaviors = {
       delete = function(grid, selected_keys)
         if #selected_keys == 0 then return end
         for _, id in ipairs(selected_keys) do
@@ -176,50 +164,121 @@ function M.create(pkg, settings, theme)
         pkg.tile = new_size
         if settings then settings:set('tile_size', new_size) end
       end,
-    },
-    
-    render_tile = function(ctx, rect, P, state)
+  }
+
+  -- Apply behavior overrides
+  for key, fn in pairs(behavior_overrides) do
+    behaviors[key] = fn
+  end
+
+  return {
+    id = "pkg_grid",
+    gap = 12,
+    min_col_w = function() return pkg.tile or 220 end,
+    fixed_tile_h = wrapper._tile_height or 150,
+
+    -- Per-frame items
+    items = wrapper._items or pkg:visible(),
+
+    key = function(P) return P.id end,
+
+    get_exclusion_zones = function(item, rect)
+      local cb_rect = custom_state.checkbox_rects[item.id]
+      return cb_rect and {cb_rect} or nil
+    end,
+
+    behaviors = behaviors,
+
+    render_item = function(ctx, rect, P, state)
       draw_package_tile(ctx, pkg, theme, P, rect, state, settings, custom_state)
     end,
-  })
-  
-  return {
-    grid = grid,
+  }
+end
+
+function M.create(pkg, settings, theme)
+  local custom_state = {
+    checkbox_rects = {},
+    animator = TileAnim.new(Renderer.CONFIG.animation.speed_hover),
+    height_stabilizer = HeightStabilizer.new({
+      stable_frames_required = 2,
+      height_hysteresis = 8,
+    }),
+  }
+
+  local wrapper = {
+    grid = nil,  -- Set when Ark.Grid returns it
     custom_state = custom_state,
     config = Renderer.CONFIG,
-    
+    _pkg = pkg,
+    _settings = settings,
+    _theme = theme,
+    _items = nil,
+    _tile_height = 150,
+    _behavior_overrides = {},  -- Allow overriding default behaviors
+
+    -- Set a behavior override (e.g., double_click)
+    set_behavior = function(self, name, fn)
+      self._behavior_overrides[name] = fn
+    end,
+
     draw = function(self, ctx)
       self.custom_state.checkbox_rects = {}
       self.custom_state.animator:update(0.016)
-      
+
       local avail_w = ImGui.GetContentRegionAvail(ctx)
-      local min_col_w = pkg.tile or 220
+      local min_col_w = self._pkg.tile or 220
       local raw_height = calculate_clamped_tile_height(avail_w, min_col_w, 12, Renderer.CONFIG.tile.max_height)
       local clamped_height = self.custom_state.height_stabilizer:update(raw_height)
-      
-      self.grid.fixed_tile_h = clamped_height
-      self.grid:draw(ctx)
-    end,
-    
-    get_selected = function(self) return self.grid.selection:selected_keys() end,
-    get_selected_count = function(self) return self.grid.selection:count() end,
-    is_selected = function(self, id) return self.grid.selection:is_selected(id) end,
-    clear_selection = function(self) self.grid.selection:clear() end,
-    select_single = function(self, id) self.grid.selection:single(id) end,
-    toggle_selection = function(self, id) self.grid.selection:toggle(id) end,
-    select_multiple = function(self, ids)
-      self.grid.selection:clear()
-      for _, id in ipairs(ids or {}) do
-        self.grid.selection.selected[id] = true
+
+      -- Set per-frame state
+      self._items = self._pkg:visible()
+      self._tile_height = clamped_height
+
+      -- Draw grid using opts-based API
+      local opts = create_opts(self._pkg, self._settings, self._theme, self)
+      local result = Ark.Grid(ctx, opts)
+
+      -- Store grid reference for selection methods
+      if result and result.grid then
+        self.grid = result.grid
       end
     end,
-    
+
+    get_selected = function(self)
+      return self.grid and self.grid.selection:selected_keys() or {}
+    end,
+    get_selected_count = function(self)
+      return self.grid and self.grid.selection:count() or 0
+    end,
+    is_selected = function(self, id)
+      return self.grid and self.grid.selection:is_selected(id) or false
+    end,
+    clear_selection = function(self)
+      if self.grid then self.grid.selection:clear() end
+    end,
+    select_single = function(self, id)
+      if self.grid then self.grid.selection:single(id) end
+    end,
+    toggle_selection = function(self, id)
+      if self.grid then self.grid.selection:toggle(id) end
+    end,
+    select_multiple = function(self, ids)
+      if self.grid then
+        self.grid.selection:clear()
+        for _, id in ipairs(ids or {}) do
+          self.grid.selection.selected[id] = true
+        end
+      end
+    end,
+
     clear = function(self)
-      self.grid:clear()
+      -- Note: grid state is managed by ID in the grid system now
       self.custom_state.checkbox_rects = {}
       self.custom_state.animator:clear()
     end,
   }
+
+  return wrapper
 end
 
 return M

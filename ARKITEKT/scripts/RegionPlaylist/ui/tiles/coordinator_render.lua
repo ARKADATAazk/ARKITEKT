@@ -3,11 +3,14 @@
 -- Rendering methods for region tiles coordinator
 
 local ImGui = require('arkitekt.platform.imgui')
+local Ark = require('arkitekt')
 
 local Dnd = require('arkitekt.gui.interaction.drag_visual')
 local DragIndicator = Dnd.DragIndicator
 local ActiveTile = require('RegionPlaylist.ui.tiles.renderers.active')
 local PoolTile = require('RegionPlaylist.ui.tiles.renderers.pool')
+local ActiveGridFactory = require('RegionPlaylist.ui.tiles.active_grid_factory')
+local PoolGridFactory = require('RegionPlaylist.ui.tiles.pool_grid_factory')
 local ResponsiveGrid = require('arkitekt.gui.layout.responsive')
 local State = require('RegionPlaylist.app.state')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
@@ -109,13 +112,13 @@ end
 function M.draw_active(self, ctx, playlist, height, shell_state)
   self._imgui_ctx = ctx
   local window = shell_state and shell_state.window
-  
+
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w, _ = ImGui.GetContentRegionAvail(ctx)
-  
+
   self.active_bounds = {cursor_x, cursor_y, cursor_x + avail_w, cursor_y + height}
   self.bridge:update_bounds('active', cursor_x, cursor_y, cursor_x + avail_w, cursor_y + height)
-  
+
   self.active_container.width = avail_w
   self.active_container.height = height
 
@@ -129,8 +132,6 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
 
     local child_w = avail_w - (self.container_config.padding * 2)
     local child_h = (height - header_height) - (self.container_config.padding * 2)
-
-    self.active_grid.get_items = function() return playlist.items end
 
     local raw_height, raw_gap = ResponsiveGrid.calculate_responsive_tile_height({
       item_count = #playlist.items,
@@ -146,8 +147,12 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
     local responsive_height = self.active_height_stabilizer:update(raw_height)
 
     self.current_active_tile_height = responsive_height
-    self.active_grid.fixed_tile_h = responsive_height
-    self.active_grid.gap = raw_gap
+
+    -- Set per-frame state for opts
+    self._active_items = playlist.items
+    self._active_tile_height = responsive_height
+    self._active_gap = raw_gap
+    self._active_clip_bounds = self.active_container.visible_bounds
 
     local wheel_y = ImGui.GetMouseWheel(ctx)
 
@@ -159,7 +164,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
         local shift_held = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
 
         local keys_to_adjust = {}
-        if is_selected and self.active_grid.selection:count() > 0 then
+        if self.active_grid and self.active_grid.selection and is_selected and self.active_grid.selection:count() > 0 then
           keys_to_adjust = self.active_grid.selection:selected_keys()
         else
           keys_to_adjust = {key}
@@ -175,7 +180,20 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
       end
     end
 
-    self.active_grid:draw(ctx)
+    -- Draw grid using opts-based API
+    local opts = ActiveGridFactory.create_opts(self, self.config)
+    opts.gap = raw_gap
+    local result = Ark.Grid(ctx, opts)
+
+    -- Store grid reference for other operations
+    if result and result.grid then
+      -- Register with bridge if not already
+      if not self._active_grid_registered and self.bridge then
+        self.bridge:register_grid('active', result.grid, self._active_grid_bridge_config)
+        self._active_grid_registered = true
+      end
+      self.active_grid = result.grid
+    end
   end
 
   -- CRITICAL: Always call end_draw to balance begin_draw (even if it failed)
@@ -299,8 +317,6 @@ function M.draw_pool(self, ctx, regions, height)
     local child_w = avail_w - (self.container_config.padding * 2)
     local child_h = (height - header_height) - (self.container_config.padding * 2)
 
-    self.pool_grid.get_items = function() return regions end
-
     local raw_height, raw_gap = ResponsiveGrid.calculate_responsive_tile_height({
       item_count = #regions,
       avail_width = child_w,
@@ -315,13 +331,27 @@ function M.draw_pool(self, ctx, regions, height)
     local responsive_height = self.pool_height_stabilizer:update(raw_height)
 
     self.current_pool_tile_height = responsive_height
-    self.pool_grid.fixed_tile_h = responsive_height
-    self.pool_grid.gap = raw_gap
 
-    -- Disable background deselection when action menu is visible
-    self.pool_grid.disable_background_clicks = ImGui.IsPopupOpen(ctx, "PoolActionsMenu")
+    -- Set per-frame state for opts
+    self._pool_items = regions
+    self._pool_tile_height = responsive_height
+    self._pool_gap = raw_gap
+    self._pool_clip_bounds = self.pool_container.visible_bounds
+    self._pool_disable_background_clicks = ImGui.IsPopupOpen(ctx, "PoolActionsMenu")
 
-    self.pool_grid:draw(ctx)
+    -- Draw grid using opts-based API
+    local opts = PoolGridFactory.create_opts(self, self.config)
+    local result = Ark.Grid(ctx, opts)
+
+    -- Store grid reference for other operations
+    if result and result.grid then
+      -- Register with bridge if not already
+      if not self._pool_grid_registered and self.bridge then
+        self.bridge:register_grid('pool', result.grid, self._pool_grid_bridge_config)
+        self._pool_grid_registered = true
+      end
+      self.pool_grid = result.grid
+    end
   end
 
   -- CRITICAL: Always call end_draw to balance begin_draw (even if it failed)

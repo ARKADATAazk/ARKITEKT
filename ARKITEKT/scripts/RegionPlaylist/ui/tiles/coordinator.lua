@@ -12,7 +12,7 @@ local Selector = require('RegionPlaylist.ui.tiles.selector')
 local ActiveGridFactory = require('RegionPlaylist.ui.tiles.active_grid_factory')
 local PoolGridFactory = require('RegionPlaylist.ui.tiles.pool_grid_factory')
 local GridBridge = require('arkitekt.gui.widgets.containers.grid.grid_bridge')
-local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
+local ActiveTile = require('RegionPlaylist.ui.tiles.renderers.active')
 local State = require("RegionPlaylist.app.state")
 local Logger = require('arkitekt.debug.logger')
 
@@ -75,8 +75,8 @@ function M.create(opts)
 
   rt.active_bounds = nil
   rt.pool_bounds = nil
-  rt.active_grid = nil
-  rt.pool_grid = nil
+  rt.active_grid = nil  -- Set by Ark.Grid() result
+  rt.pool_grid = nil    -- Set by Ark.Grid() result
   rt.bridge = nil
   rt.app_bridge = nil
   rt.wheel_consumed_this_frame = false
@@ -93,14 +93,19 @@ function M.create(opts)
   rt.current_active_tile_height = config.responsive_config.base_tile_height_active
   rt.current_pool_tile_height = config.responsive_config.base_tile_height_pool
 
-  rt._original_active_min_col_w = nil
+  -- Default min col width function (can be overridden by layout mode)
+  rt._active_min_col_w_fn = function() return ActiveTile.CONFIG.tile_width end
   rt._imgui_ctx = nil
 
-  -- Create grids after rt is fully initialized
-  rt.active_grid = ActiveGridFactory.create(rt, config)
-  rt._original_active_min_col_w = rt.active_grid.min_col_w_fn
-
-  rt.pool_grid = PoolGridFactory.create(rt, config)
+  -- Per-frame state for opts-based grids (set before Ark.Grid calls)
+  rt._active_items = {}
+  rt._active_tile_height = config.responsive_config.base_tile_height_active
+  rt._active_clip_bounds = nil
+  rt._pool_items = {}
+  rt._pool_tile_height = config.responsive_config.base_tile_height_pool
+  rt._pool_gap = nil
+  rt._pool_clip_bounds = nil
+  rt._pool_disable_background_clicks = false
 
   -- Helper: wrap controller action with auto-refresh on success
   local function controller_action(action_fn)
@@ -349,26 +354,28 @@ function M.create(opts)
           if rt.active_grid and rt.active_grid.selection then
             rt.active_grid.selection:clear()
           end
-          
-          rt.active_grid:mark_spawned(spawned_keys)
-          
-          for _, key in ipairs(spawned_keys) do
-            if rt.active_grid.selection then
-              rt.active_grid.selection.selected[key] = true
+
+          if rt.active_grid then
+            rt.active_grid:mark_spawned(spawned_keys)
+
+            for _, key in ipairs(spawned_keys) do
+              if rt.active_grid.selection then
+                rt.active_grid.selection.selected[key] = true
+              end
             end
-          end
-          
-          if rt.active_grid.selection then
-            rt.active_grid.selection.last_clicked = spawned_keys[#spawned_keys]
-          end
-          
-          if rt.active_grid.behaviors and rt.active_grid.behaviors.on_select and rt.active_grid.selection then
-            rt.active_grid.behaviors.on_select(rt.active_grid, rt.active_grid.selection:selected_keys())
+
+            if rt.active_grid.selection then
+              rt.active_grid.selection.last_clicked = spawned_keys[#spawned_keys]
+            end
+
+            if rt.active_grid.behaviors and rt.active_grid.behaviors.on_select and rt.active_grid.selection then
+              rt.active_grid.behaviors.on_select(rt.active_grid, rt.active_grid.selection:selected_keys())
+            end
           end
         end
       end
     end,
-    
+
     on_drag_canceled = function(cancel_info)
       if cancel_info.source_grid == 'active' and rt.active_grid and rt.active_grid.behaviors and rt.active_grid.behaviors.delete then
         rt.active_grid.behaviors.delete(rt.active_grid, cancel_info.payload or {})
@@ -376,18 +383,20 @@ function M.create(opts)
     end,
   })
   
-  rt.bridge:register_grid('active', rt.active_grid, {
+  -- Grid registration happens lazily when grids are first drawn
+  -- Store registration config for later
+  rt._active_grid_bridge_config = {
     accepts_drops_from = {'pool'},
     on_drag_start = function(item_keys)
       rt.bridge:start_drag('active', item_keys)
     end,
-  })
-  
-  rt.bridge:register_grid('pool', rt.pool_grid, {
+  }
+
+  rt._pool_grid_bridge_config = {
     accepts_drops_from = {},
     on_drag_start = function(item_keys)
       local payload = {}
-      
+
       -- Handle both regions and playlists by checking key pattern
       for _, key in ipairs(item_keys) do
         local playlist_id = key:match("pool_playlist_(.+)")
@@ -411,10 +420,10 @@ function M.create(opts)
           end
         end
       end
-      
+
       rt.bridge:start_drag('pool', payload)
     end,
-  })
+  }
   
   rt:set_layout_mode(rt.layout_mode)
   
@@ -424,9 +433,9 @@ end
 function RegionTiles:set_layout_mode(mode)
   self.layout_mode = mode
   if mode == 'vertical' then
-    self.active_grid.min_col_w_fn = function() return 9999 end
+    self._active_min_col_w_fn = function() return 9999 end
   else
-    self.active_grid.min_col_w_fn = self._original_active_min_col_w
+    self._active_min_col_w_fn = function() return ActiveTile.CONFIG.tile_width end
   end
 end
 
@@ -441,8 +450,12 @@ function RegionTiles:set_pool_mode(mode)
 end
 
 function RegionTiles:_find_hovered_tile(ctx, items)
+  if not self.active_grid or not self.active_grid.rect_track then
+    return nil, nil, false
+  end
+
   local mx, my = ImGui.GetMousePos(ctx)
-  
+
   for _, item in ipairs(items) do
     local key = item.key
     local rect = self.active_grid.rect_track:get(key)
@@ -453,7 +466,7 @@ function RegionTiles:_find_hovered_tile(ctx, items)
       end
     end
   end
-  
+
   return nil, nil, false
 end
 
@@ -484,15 +497,15 @@ end
 
 function RegionTiles:_get_drag_colors()
   local colors = {}
-  
+
   if not self.bridge:is_drag_active() then return nil end
-  
+
   local source = self.bridge:get_source_grid()
   local payload = self.bridge:get_drag_payload()
-  
+
   if source == 'active' then
     local data = payload and payload.data or {}
-    if type(data) == 'table' then
+    if type(data) == 'table' and self.active_grid then
       local playlist_items = self.active_grid.get_items()
       for _, key in ipairs(data) do
         for _, item in ipairs(playlist_items) do
@@ -597,10 +610,6 @@ function RegionTiles:draw_selector(ctx, playlists, active_id, height)
 end
 
 function RegionTiles:draw_active(ctx, playlist, height, shell_state)
-  if self.active_container and self.active_container.visible_bounds then
-    self.active_grid.panel_clip_bounds = self.active_container.visible_bounds
-  end
-
   -- Inject modal blocking state and icon font into corner buttons
   local is_blocking = self:is_modal_blocking(ctx)
   local icons_font = shell_state and shell_state.fonts and shell_state.fonts.icons
@@ -646,10 +655,6 @@ function RegionTiles:draw_active(ctx, playlist, height, shell_state)
 end
 
 function RegionTiles:draw_pool(ctx, regions, height, shell_state)
-  if self.pool_container and self.pool_container.visible_bounds then
-    self.pool_grid.panel_clip_bounds = self.pool_container.visible_bounds
-  end
-
   -- Inject modal blocking state into corner buttons
   local is_blocking = self:is_modal_blocking(ctx)
   if self.pool_container and self.pool_container.config and self.pool_container.config.corner_buttons then

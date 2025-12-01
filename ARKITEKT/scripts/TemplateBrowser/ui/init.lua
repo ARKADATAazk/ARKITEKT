@@ -45,8 +45,9 @@ function M.new(config, state, scanner)
     scanner = scanner,
     initialized = false,
     template_animator = TileAnim.new(16.0),  -- Animation speed
-    template_grid = nil,  -- Initialized in initialize_once
-    quick_access_grid = nil,  -- Initialized in initialize_once
+    -- Grid dependencies (opts built at draw time)
+    template_grid_deps = nil,
+    quick_access_grid_deps = nil,
     fonts = nil,  -- Set from shell_state in draw()
     template_container = nil,  -- Initialized in initialize_once
     recent_container = nil,  -- Initialized in initialize_once
@@ -63,30 +64,31 @@ function GUI:initialize_once(ctx, is_overlay_mode)
   self.ctx = ctx
   self.is_overlay_mode = is_overlay_mode or false
 
-  -- Create template grid with unified callbacks
+  -- Create template grid dependencies (opts built at draw time)
   local main_grid_callbacks = GridCallbacks.create(
     self,
     function() return self.state.filtered_templates end,
     { is_quick_access = false }
   )
 
-  self.template_grid = TemplateGridFactory.create(
-    function() return self.state.filtered_templates end,
-    self.state.metadata,
-    self.template_animator,
-    function()
+  self.template_grid_deps = {
+    id = "template_grid",
+    get_templates = function() return self.state.filtered_templates end,
+    metadata = self.state.metadata,
+    animator = self.template_animator,
+    get_tile_width = function()
       return self.state.template_view_mode == "list"
         and self.state.list_tile_width
         or self.state.grid_tile_width
     end,
-    function() return self.state.template_view_mode end,
-    main_grid_callbacks.on_select,
-    main_grid_callbacks.on_double_click,
-    main_grid_callbacks.on_right_click,
-    main_grid_callbacks.on_star_click,
-    main_grid_callbacks.on_tag_drop,
-    self
-  )
+    get_view_mode = function() return self.state.template_view_mode end,
+    on_select = main_grid_callbacks.on_select,
+    on_double_click = main_grid_callbacks.on_double_click,
+    on_right_click = main_grid_callbacks.on_right_click,
+    on_star_click = main_grid_callbacks.on_star_click,
+    on_tag_drop = main_grid_callbacks.on_tag_drop,
+    gui = self,
+  }
 
   -- Get quick access templates helper
   local function get_quick_access_templates()
@@ -186,30 +188,31 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     return templates
   end
 
-  -- Create quick access grid with unified callbacks
+  -- Create quick access grid dependencies (opts built at draw time)
   local quick_access_callbacks = GridCallbacks.create(
     self,
     get_quick_access_templates,
     { is_quick_access = true }
   )
 
-  self.quick_access_grid = TemplateGridFactory.create(
-    get_quick_access_templates,
-    self.state.metadata,
-    self.template_animator,
-    function()
+  self.quick_access_grid_deps = {
+    id = "quick_access_grid",
+    get_templates = get_quick_access_templates,
+    metadata = self.state.metadata,
+    animator = self.template_animator,
+    get_tile_width = function()
       return self.state.quick_access_view_mode == "list"
         and self.state.list_tile_width
         or self.state.grid_tile_width
     end,
-    function() return self.state.quick_access_view_mode end,
-    quick_access_callbacks.on_select,
-    quick_access_callbacks.on_double_click,
-    quick_access_callbacks.on_right_click,
-    quick_access_callbacks.on_star_click,
-    quick_access_callbacks.on_tag_drop,
-    self
-  )
+    get_view_mode = function() return self.state.quick_access_view_mode end,
+    on_select = quick_access_callbacks.on_select,
+    on_double_click = quick_access_callbacks.on_double_click,
+    on_right_click = quick_access_callbacks.on_right_click,
+    on_star_click = quick_access_callbacks.on_star_click,
+    on_tag_drop = quick_access_callbacks.on_tag_drop,
+    gui = self,
+  }
 
   -- Create template container with header controls
   local container_config = TemplateContainerConfig.create({

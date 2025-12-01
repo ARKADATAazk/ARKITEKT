@@ -1,8 +1,7 @@
 -- @noindex
 -- ThemeAdjuster/ui/grids/assignment_grid_factory.lua
--- Assignment grid factory (for TCP, MCP, ENV, TRANS, GLOBAL tabs)
+-- Assignment grid factory (for TCP, MCP, ENV, TRANS, GLOBAL tabs) - opts-based API
 
-local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local Ark = require('arkitekt')
 local AssignmentTile = require('ThemeAdjuster.ui.grids.renderers.assignment_tile')
 local hexrgb = Ark.Colors.hexrgb
@@ -10,14 +9,17 @@ local hexrgb = Ark.Colors.hexrgb
 local M = {}
 
 local function create_behaviors(view, tab_id)
+  local grid_id = "assign_" .. tab_id
   return {
     drag_start = function(grid, item_keys)
-      -- When GridBridge exists, let it handle the drag coordination
-      if view.bridge then
-        return
+      -- With opts-based API, behaviors are replaced each frame, so we need to
+      -- directly call the bridge's on_drag_start here instead of relying on wrapping
+      if view.bridge and view._assignment_bridge_configs and view._assignment_bridge_configs[tab_id] then
+        local config = view._assignment_bridge_configs[tab_id]
+        if config.on_drag_start then
+          config.on_drag_start(item_keys)
+        end
       end
-
-      -- Fallback: no bridge, handle drag locally (not used in ThemeAdjuster)
     end,
 
     reorder = function(grid, new_order)
@@ -80,7 +82,12 @@ local function create_render_tile(view, tab_id)
   end
 end
 
-function M.create(view, tab_id, config)
+--- Create grid opts for assignment grid (opts-based API)
+--- @param view table AdditionalView instance
+--- @param tab_id string Tab identifier (TCP, MCP, ENVCP, TRANS, GLOBAL)
+--- @param config table|nil Optional configuration
+--- @return table Grid opts to pass to Ark.Grid()
+function M.create_opts(view, tab_id, config)
   config = config or {}
 
   local padding = config.padding or 8
@@ -104,13 +111,19 @@ function M.create(view, tab_id, config)
     opacity = 0.5,
   }
 
-  return Grid.new({
+  -- Get per-frame items from view's cached property or fallback
+  local items_key = "_assignment_items_" .. tab_id
+  local items = view[items_key] or view:get_assignment_items(tab_id)
+
+  return {
     id = "assign_" .. tab_id,
     gap = 2,  -- Compact spacing
     min_col_w = function() return 600 end,  -- Single column layout
     fixed_tile_h = 28,  -- Slightly smaller for assignment tiles
 
-    get_items = function() return view:get_assignment_items(tab_id) end,
+    -- Per-frame items
+    items = items,
+
     key = function(item)
       if item.type == "group" then
         return "assign_group_" .. item.group_id
@@ -127,7 +140,7 @@ function M.create(view, tab_id, config)
     accept_external_drops = true,
     on_external_drop = create_external_drop_handler(view, tab_id),
 
-    render_tile = create_render_tile(view, tab_id),
+    render_item = create_render_tile(view, tab_id),
 
     extend_input_area = {
       left = padding,
@@ -142,7 +155,7 @@ function M.create(view, tab_id, config)
       drop = drop_config,
       drag = { threshold = 6 },
     },
-  })
+  }
 end
 
 return M

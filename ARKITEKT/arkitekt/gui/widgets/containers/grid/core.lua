@@ -1239,35 +1239,18 @@ end
 -- IMGui-STYLE API: Ark.Grid(ctx, opts)
 -- ============================================================================
 
--- Track deprecation warnings to avoid spamming
-local _new_warned = {}
+-- Store internal reference before hiding from public API
+local _internal_new = M.new
 
---- @deprecated Use Ark.Grid(ctx, opts) instead
---- Original Grid.new() - kept for backward compatibility
-local _original_new = M.new
-function M.new(opts)
-  opts = opts or {}
-  local id = opts.id or "grid"
-
-  -- Warn once per unique call site
-  if not _new_warned[id] then
-    _new_warned[id] = true
-    local info = debug.getinfo(2, "Sl")
-    local source = info and info.short_src or "unknown"
-    local line = info and info.currentline or 0
-    reaper.ShowConsoleMsg(string.format(
-      "[ARKITEKT] Grid.new() is deprecated. Use Ark.Grid(ctx, opts) instead.\n  at %s:%d (id='%s')\n",
-      source, line, id
-    ))
-  end
-
-  return _original_new(opts)
-end
-
---- Create a new Grid instance internally (no deprecation warning)
+--- Create a new Grid instance internally
+--- This is the only way to create grid instances - use Ark.Grid(ctx, opts) for the public API
 local function _create_grid_instance(opts)
-  return _original_new(opts)
+  return _internal_new(opts)
 end
+
+-- Hide M.new from public API to prevent direct usage
+-- All grid creation should go through Ark.Grid(ctx, opts)
+M.new = nil
 
 --- Build result object from grid state
 --- @param grid table Grid instance
@@ -1337,8 +1320,8 @@ local function _build_result(grid)
     -- Animation state (useful for throttling expensive operations during resize)
     is_animating = grid.rect_track:is_animating(),
 
-    -- Internal: access to grid instance for advanced use
-    _instance = grid,
+    -- Grid instance for advanced operations (selection, behaviors, etc.)
+    grid = grid,
   }
 end
 

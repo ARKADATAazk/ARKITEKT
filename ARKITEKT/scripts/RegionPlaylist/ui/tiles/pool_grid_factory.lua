@@ -1,14 +1,21 @@
 -- @noindex
 -- RegionPlaylist/ui/tiles/pool_grid_factory.lua
--- UNCHANGED
+-- Opts-based grid factory for pool tiles
 
-local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local Ark = require('arkitekt')
 local PoolTile = require('RegionPlaylist.ui.tiles.renderers.pool')
 local hexrgb = Ark.Colors.hexrgb
 
-
 local M = {}
+
+-- Key function for pool items
+local function pool_key(item)
+  if item.id and item.items then
+    return "pool_playlist_" .. tostring(item.id)
+  else
+    return "pool_" .. tostring(item.rid)
+  end
+end
 
 local function is_item_draggable(rt, key, item)
   if item.id and item.items then
@@ -20,57 +27,20 @@ end
 local function create_behaviors(rt)
   return {
     drag_start = function(grid, item_keys)
-      if rt.bridge then
-        return
+      -- With opts-based API, behaviors are replaced each frame, so we need to
+      -- directly call the bridge's on_drag_start here instead of relying on wrapping
+      if rt.bridge and rt._pool_grid_bridge_config and rt._pool_grid_bridge_config.on_drag_start then
+        rt._pool_grid_bridge_config.on_drag_start(item_keys)
       end
-
-      local pool_items = rt.pool_grid.get_items()
-      local items_by_key = {}
-      for _, item in ipairs(pool_items) do
-        local item_key = rt.pool_grid.key(item)
-        items_by_key[item_key] = item
-      end
-
-      local filtered_keys = {}
-      for _, key in ipairs(item_keys) do
-        local item = items_by_key[key]
-        if item and is_item_draggable(rt, key, item) then
-          filtered_keys[#filtered_keys + 1] = key
-        end
-      end
-
-      if #filtered_keys == 0 then
-        return
-      end
-
-      local payload = {}
-      for _, key in ipairs(filtered_keys) do
-        local item = items_by_key[key]
-        if item then
-          -- Check if it's a playlist (has id and items fields)
-          if item.id and item.items then
-            payload[#payload + 1] = {type = "playlist", id = item.id}
-          else
-            -- It's a region (has rid field)
-            local rid = item.rid
-            if rid then
-              payload[#payload + 1] = rid
-            end
-          end
-        end
-      end
-      rt.drag_state.source = 'pool'
-      rt.drag_state.data = payload
-      rt.drag_state.ctrl_held = false
     end,
-    
+
     reorder = function(grid, new_order)
       if not rt.allow_pool_reorder then return end
-      
+
       -- Extract regions and playlists separately
       local rids = {}
       local playlist_ids = {}
-      
+
       for _, key in ipairs(new_order) do
         local playlist_id = key:match("pool_playlist_(.+)")
         if playlist_id then
@@ -82,23 +52,23 @@ local function create_behaviors(rt)
           end
         end
       end
-      
+
       -- Call appropriate reorder callbacks
       if #rids > 0 and rt.on_pool_reorder then
         rt.on_pool_reorder(rids)
       end
-      
+
       if #playlist_ids > 0 and rt.on_pool_playlist_reorder then
         rt.on_pool_playlist_reorder(playlist_ids)
       end
     end,
-    
+
     -- Inline editing: Double-click to edit single tile
     start_inline_edit = function(grid, key)
       local GridInput = require('arkitekt.gui.widgets.containers.grid.input')
-      local pool_items = rt.pool_grid.get_items()
+      local pool_items = grid.get_items()
       for _, item in ipairs(pool_items) do
-        if rt.pool_grid.key(item) == key then
+        if pool_key(item) == key then
           local current_name
           if item.id and item.items then
             -- It's a playlist
@@ -110,7 +80,7 @@ local function create_behaviors(rt)
             local region = State.get_region_by_rid(item.rid)
             current_name = region and region.name or "Region"
           end
-          GridInput.start_inline_edit(rt.pool_grid, key, current_name)
+          GridInput.start_inline_edit(grid, key, current_name)
           break
         end
       end
@@ -125,9 +95,9 @@ local function create_behaviors(rt)
 
     -- Double-click outside text zone: Move cursor and seek to region/playlist
     double_click_seek = function(grid, key)
-      local pool_items = rt.pool_grid.get_items()
+      local pool_items = grid.get_items()
       for _, item in ipairs(pool_items) do
-        if rt.pool_grid.key(item) == key then
+        if pool_key(item) == key then
           if item.id and item.items then
             -- For playlists, seek to the first item in the playlist
             local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.id)
@@ -162,9 +132,9 @@ local function create_behaviors(rt)
       if #selected_keys == 1 then
         local GridInput = require('arkitekt.gui.widgets.containers.grid.input')
         local key = selected_keys[1]
-        local pool_items = rt.pool_grid.get_items()
+        local pool_items = grid.get_items()
         for _, item in ipairs(pool_items) do
-          if rt.pool_grid.key(item) == key then
+          if pool_key(item) == key then
             local current_name
             if item.id and item.items then
               -- It's a playlist
@@ -176,7 +146,7 @@ local function create_behaviors(rt)
               local region = State.get_region_by_rid(item.rid)
               current_name = region and region.name or "Region"
             end
-            GridInput.start_inline_edit(rt.pool_grid, key, current_name)
+            GridInput.start_inline_edit(grid, key, current_name)
             break
           end
         end
@@ -203,18 +173,18 @@ local function create_behaviors(rt)
       end
     end,
 
-    can_drag_item = function(key)
-      local pool_items = rt.pool_grid.get_items()
+    can_drag_item = function(grid, key)
+      local pool_items = grid.get_items()
       for _, item in ipairs(pool_items) do
-        local item_key = rt.pool_grid.key(item)
+        local item_key = pool_key(item)
         if item_key == key then
           return is_item_draggable(rt, key, item)
         end
       end
       return true
     end,
-    
-    on_select = function(selected_keys)
+
+    on_select = function(grid, selected_keys)
       -- Count regions and playlists in pool grid selection
       local region_count = 0
       local playlist_count = 0
@@ -268,7 +238,7 @@ local function create_behaviors(rt)
       -- If right-clicked item isn't selected, select only it
       if not grid.selection:is_selected(key) then
         grid.selection:clear()
-        grid.selection:single(key)  -- Fixed: Use :single() instead of non-existent :select()
+        grid.selection:single(key)
         selected_keys = {key}
       end
 
@@ -305,9 +275,13 @@ local function create_render_tile(rt, tile_config)
   end
 end
 
-function M.create(rt, config)
+--- Create grid opts for pool grid
+--- @param rt table RegionTiles coordinator instance
+--- @param config table Grid config
+--- @return table Grid opts for Ark.Grid()
+function M.create_opts(rt, config)
   config = config or {}
-  
+
   local base_tile_height = config.base_tile_height_pool or 72
   local tile_config = config.tile_config or { border_thickness = 0.5, rounding = 6 }
   local dim_config = config.dim_config or {
@@ -319,38 +293,35 @@ function M.create(rt, config)
   local drop_config = config.drop_config or {}
   local ghost_config = config.ghost_config or {}
   local padding = config.container and config.container.padding or 8
-  
-  return Grid.new({
+
+  return {
     id = "pool_grid",
-    gap = PoolTile.CONFIG.gap,
+    gap = rt._pool_gap or PoolTile.CONFIG.gap,
     min_col_w = function() return PoolTile.CONFIG.tile_width end,
-    fixed_tile_h = base_tile_height,
-    get_items = function() return {} end,
-    
-    key = function(item)
-      if item.id and item.items then
-        return "pool_playlist_" .. tostring(item.id)
-      else
-        return "pool_" .. tostring(item.rid)
-      end
-    end,
-    
+    fixed_tile_h = rt._pool_tile_height or base_tile_height,
+    items = rt._pool_items or {},
+
+    key = pool_key,
+
     external_drag_check = create_external_drag_check(rt),
     is_copy_mode_check = create_copy_mode_check(rt),
-    
+
     behaviors = create_behaviors(rt),
-    
+
     accept_external_drops = false,
-    
-    render_tile = create_render_tile(rt, tile_config),
-    
-    extend_input_area = { 
-      left = padding, 
-      right = padding, 
-      top = padding, 
-      bottom = padding 
+    disable_background_clicks = rt._pool_disable_background_clicks,
+
+    render_item = create_render_tile(rt, tile_config),
+
+    extend_input_area = {
+      left = padding,
+      right = padding,
+      top = padding,
+      bottom = padding
     },
-    
+
+    clip_bounds = rt._pool_clip_bounds,
+
     config = {
       spawn = PoolTile.CONFIG.spawn,
       ghost = ghost_config,
@@ -358,7 +329,7 @@ function M.create(rt, config)
       drop = drop_config,
       drag = { threshold = 6 },
     },
-  })
+  }
 end
 
 return M
