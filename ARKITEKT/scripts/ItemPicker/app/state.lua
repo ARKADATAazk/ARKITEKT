@@ -6,6 +6,9 @@
 local Persistence = require("ItemPicker.data.storage")
 local Defaults = require("ItemPicker.defs.defaults")
 local PreviewManager = require("ItemPicker.domain.preview.manager")
+local TrackFilterDomain = require("ItemPicker.domain.filters.track")
+local TrackFilterUI = require("ItemPicker.ui.components.track_filter")
+local Palette = require("ItemPicker.defs.palette")
 
 local M = {}
 
@@ -120,6 +123,9 @@ M.config = nil
 function M.initialize(config)
   M.config = config
   M.settings = Persistence.load_settings()
+
+  -- Register ItemPicker color palette with theme system
+  Palette.register()
   local disabled_data = Persistence.load_disabled_items()
   M.disabled = disabled_data or { audio = {}, midi = {} }
   local favorites_data = Persistence.load_favorites()
@@ -140,6 +146,20 @@ function M.initialize(config)
   end
   if track_filter_data.enabled then
     M.track_filters_enabled = track_filter_data.enabled
+  end
+
+  -- Initialize track tree and whitelist on startup (so filter bar works immediately)
+  -- Use UI wrapper which adds display_color for rendering
+  M.track_tree = TrackFilterUI.build_track_tree()
+  if not M.track_whitelist then
+    M.track_whitelist = TrackFilterDomain.init_whitelist(M.track_tree)
+  end
+  -- Initialize enabled state for all whitelisted tracks if not loaded
+  if not M.track_filters_enabled then
+    M.track_filters_enabled = {}
+    for guid, _ in pairs(M.track_whitelist) do
+      M.track_filters_enabled[guid] = true
+    end
   end
 
   -- Initialize preview manager with settings

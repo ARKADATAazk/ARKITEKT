@@ -143,6 +143,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local search_height = 28
 
   local settings_area_max_height = self.config.UI_PANELS.settings.max_height
+  local settings_offset = 11  -- Move panel up 11px
 
   -- Settings panel (using SlidingZone)
   local settings_result = Ark.SlidingZone(ctx, {
@@ -150,24 +151,35 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     edge = "top",
     bounds = {
       x = coord_offset_x,
-      y = search_base_y,  -- Final visible position
+      y = search_base_y - settings_offset,  -- Position 11px higher
       w = screen_w,
       h = settings_area_max_height,
     },
     size = settings_area_max_height,
     collapsed_ratio = 0.0,  -- Fully hidden when collapsed
 
-    -- Trigger zone extends upward to window edge
+    -- Trigger zone extends upward to window edge only when collapsed
     trigger_extension = {
-      up = search_base_y - coord_offset_y,  -- Just to window top, no extra
-      down = 0,
+      up = (search_base_y - settings_offset) - coord_offset_y,  -- To window top
+      down = 0,  -- No extension below when collapsed
+      left = 0,
+      right = 0,
+    },
+
+    -- When expanded, extend trigger zone down to cover RegionFilter + search area
+    trigger_extension_expanded = {
+      up = (search_base_y - settings_offset) - coord_offset_y,  -- To window top
+      down = search_height + 100,  -- Extend far down to cover region filter area
       left = 0,
       right = 0,
     },
 
     -- Custom retract: close when hovering below search bar
-    retract_when = function(ctx, mx, my)
-      local close_threshold = search_base_y + settings_area_max_height + search_height +
+    retract_when = function(ctx, mx, my, state)
+      local current_visibility = state.visibility_track:get()
+      local current_settings_height = settings_area_max_height * current_visibility
+      local current_search_y = search_base_y + current_settings_height
+      local close_threshold = current_search_y + search_height +
                              self.config.UI_PANELS.settings.close_below_search
       return mouse_in_window and my > close_threshold
     end,
@@ -179,7 +191,6 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       w = screen_w,
       h = screen_h,
     },
-
 
     draw_list = draw_list,
 
@@ -197,8 +208,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Draw search toolbar
   self.state.focus_search = self.focus_search
-  self.state.draw_list = draw_list
-  SearchToolbar.draw(ctx, draw_list, coord_offset_x, search_y, screen_w, search_height, search_fade, title_font, self.state, self.config)
+  SearchToolbar.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_fade, title_font, self.state, self.config)
   self.focus_search = false
 
   -- Region filter bar
