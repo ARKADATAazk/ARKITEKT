@@ -633,6 +633,10 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
   end
 end
 
+-- Minimum note dimensions in pixels (notes smaller than this are skipped for performance)
+local MIDI_MIN_NOTE_WIDTH = 1.0
+local MIDI_MIN_NOTE_HEIGHT = 1.0
+
 function M.DisplayMidiItemTransparent(ctx, thumbnail, color, draw_list)
   -- Cache ImGui functions for performance
   local GetItemRectMin = ImGui.GetItemRectMin
@@ -655,16 +659,29 @@ function M.DisplayMidiItemTransparent(ctx, thumbnail, color, draw_list)
   -- Use the color directly - it's already been transformed by get_dark_waveform_color
   local col_note = color
 
+  -- LOD: Calculate minimum note size thresholds in cache coordinates
+  -- Notes smaller than this in screen pixels are skipped
+  local min_width_cache = MIDI_MIN_NOTE_WIDTH / scale_x
+  local min_height_cache = MIDI_MIN_NOTE_HEIGHT / scale_y
+
   -- Use indexed loop instead of pairs() for better performance
   local num_notes = #thumbnail
+  local notes_drawn = 0
   for i = 1, num_notes do
     local note = thumbnail[i]
-    -- Scale note coordinates from cache resolution to display resolution
-    local note_x1 = x1 + (note.x1 * scale_x)
-    local note_x2 = x1 + (note.x2 * scale_x)
-    local note_y1 = y1 + (note.y1 * scale_y)
-    local note_y2 = y1 + (note.y2 * scale_y)
-    DrawList_AddRectFilled(draw_list, note_x1, note_y1, note_x2, note_y2, col_note)
+
+    -- LOD: Skip notes that are too small to see
+    local note_w = note.x2 - note.x1
+    local note_h = note.y2 - note.y1
+    if note_w >= min_width_cache and note_h >= min_height_cache then
+      -- Scale note coordinates from cache resolution to display resolution
+      local note_x1 = x1 + (note.x1 * scale_x)
+      local note_x2 = x1 + (note.x2 * scale_x)
+      local note_y1 = y1 + (note.y1 * scale_y)
+      local note_y2 = y1 + (note.y2 * scale_y)
+      DrawList_AddRectFilled(draw_list, note_x1, note_y1, note_x2, note_y2, col_note)
+      notes_drawn = notes_drawn + 1
+    end
   end
 
   -- Pop clip rect to restore previous clipping state

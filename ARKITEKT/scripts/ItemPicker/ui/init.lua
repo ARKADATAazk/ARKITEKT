@@ -166,19 +166,30 @@ function GUI:draw(ctx, shell_state)
   if not self.state.skip_visualizations and self.state.job_queue and self.state.runtime_cache then
     local job_queue_module = require('ItemPicker.data.job_queue')
 
-    -- Process more jobs during initial loading for faster startup
-    if self.state.is_loading then
+    -- Throttle job processing based on state:
+    -- - During animation: SKIP entirely (tiles are resizing, thumbnails will be wrong size)
+    -- - During loading: aggressive processing for faster startup
+    -- - Normal operation: conservative processing
+    local is_animating = self.coordinator and self.coordinator:is_animating()
+
+    if is_animating then
+      -- Skip job processing while tiles are animating
+      -- Thumbnails generated now would be the wrong size anyway
+      self.state.job_queue.max_per_frame = 0
+    elseif self.state.is_loading then
       self.state.job_queue.max_per_frame = 20 -- Aggressive during loading
     else
       self.state.job_queue.max_per_frame = 5 -- Conservative during normal operation
     end
 
-    job_queue_module.process_jobs(
-      self.state.job_queue,
-      self.visualization,
-      self.state.runtime_cache,
-      ctx
-    )
+    if self.state.job_queue.max_per_frame > 0 then
+      job_queue_module.process_jobs(
+        self.state.job_queue,
+        self.visualization,
+        self.state.runtime_cache,
+        ctx
+      )
+    end
   end
 
   -- Update animations
@@ -486,11 +497,12 @@ function GUI:draw(ctx, shell_state)
         local toggled_any = false
 
         -- Handle audio selections
-        if self.coordinator.audio_grid and self.coordinator.audio_grid.selection then
-          local audio_keys = self.coordinator.audio_grid.selection:selected_keys()
+        local audio_result = self.coordinator.audio_grid_result_ref and self.coordinator.audio_grid_result_ref.current
+        if audio_result and audio_result.selection then
+          local audio_keys = audio_result.selection:selected_keys()
           if audio_keys and #audio_keys > 0 then
             -- Build filename map from current items
-            local items = self.coordinator.audio_grid.items or {}
+            local items = self.coordinator.audio_grid_opts.get_items()
             local filename_map = {}
             for _, data in ipairs(items) do
               if data.uuid then
@@ -525,11 +537,12 @@ function GUI:draw(ctx, shell_state)
         end
 
         -- Handle MIDI selections
-        if self.coordinator.midi_grid and self.coordinator.midi_grid.selection then
-          local midi_keys = self.coordinator.midi_grid.selection:selected_keys()
+        local midi_result = self.coordinator.midi_grid_result_ref and self.coordinator.midi_grid_result_ref.current
+        if midi_result and midi_result.selection then
+          local midi_keys = midi_result.selection:selected_keys()
           if midi_keys and #midi_keys > 0 then
             -- Build track_guid map from current items
-            local items = self.coordinator.midi_grid.items or {}
+            local items = self.coordinator.midi_grid_opts.get_items()
             local guid_map = {}
             for _, data in ipairs(items) do
               if data.uuid then
