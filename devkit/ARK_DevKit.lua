@@ -120,6 +120,49 @@ local function file_exists(path)
   return false
 end
 
+-- Launch a script as a separate REAPER process (not compartmentalized)
+-- opts: { debug = bool, profiler = bool } - optional launch options
+local function launch_script(script_path, opts)
+  opts = opts or {}
+
+  if not file_exists(script_path) then
+    reaper.MB("Script not found: " .. script_path, "DevKit Error", 0)
+    return false
+  end
+
+  -- Pass launch options via ExtState (read by arkitekt bootstrap)
+  -- Using non-persistent ExtState so it's only valid for this launch
+  -- debug = enable metrics/debug mode
+  -- profiler = enable Lua profiler (only relevant if debug is also true)
+  reaper.SetExtState("ARKITEKT_LAUNCH", "debug", opts.debug and "1" or "0", false)
+  reaper.SetExtState("ARKITEKT_LAUNCH", "profiler", opts.profiler and "1" or "0", false)
+  reaper.SetExtState("ARKITEKT_LAUNCH", "script_path", script_path, false)
+
+  -- Register the script as an action temporarily (don't commit to reaper-kb.ini)
+  local section_id = 0  -- Main section
+  local cmd_id = reaper.AddRemoveReaScript(true, section_id, script_path, false)
+
+  if not cmd_id or cmd_id == 0 then
+    reaper.MB("Failed to register script: " .. script_path, "DevKit Error", 0)
+    return false
+  end
+
+  -- Execute the action - wrap in pcall to prevent crashes from killing DevKit
+  local ok, err = pcall(function()
+    reaper.Main_OnCommand(cmd_id, 0)
+  end)
+
+  -- Unregister the action (clean up)
+  reaper.AddRemoveReaScript(false, section_id, script_path, false)
+
+  if not ok then
+    reaper.MB("Script crashed on launch:\n\n" .. tostring(err), "DevKit Error", 0)
+    return false
+  end
+
+  return true
+end
+
 -- ============================================================================
 -- DEVKIT STATE & SETTINGS
 -- ============================================================================
@@ -246,6 +289,7 @@ local State = {
   search_query = "",
   active_tab = "Apps",  -- "Apps" or "Sandbox"
   sandbox_scripts = {},
+  profiler_enabled = false,  -- Add profiler to Debug launches
 }
 
 function State:initialize()
@@ -277,6 +321,14 @@ function State:initialize()
 
   -- Restore active tab
   self.active_tab = settings:get('active_tab') or "Apps"
+
+  -- Restore profiler setting
+  self.profiler_enabled = settings:get('profiler_enabled') or false
+end
+
+function State:set_profiler_enabled(enabled)
+  self.profiler_enabled = enabled
+  settings:set('profiler_enabled', enabled)
 end
 
 function State:refresh_worktrees()
@@ -323,7 +375,13 @@ function State:select_worktree_for_app(app_name, wt_idx)
   end
 end
 
-function State:launch_app(app_name)
+function State:launch_app(app_name, opts)
+  opts = opts or {}
+  -- debug = metrics enabled
+  -- profiler = profiler enabled (only when debug is also true)
+  local debug = opts.debug or false
+  local profiler = debug and (opts.profiler or self.profiler_enabled) or false
+
   local app_data = self.apps_by_name[app_name]
   if not app_data or not app_data.selected_wt_idx then
     reaper.MB("No worktree selected for " .. app_name, "DevKit Error", 0)
@@ -344,8 +402,8 @@ function State:launch_app(app_name)
     return false
   end
 
-  -- Launch the app
-  dofile(instance.full_path)
+  -- Launch the app as separate process
+  launch_script(instance.full_path, { debug = debug, profiler = profiler })
   return true
 end
 
@@ -474,14 +532,37 @@ local function render_app_tile(ctx, app_data, tile_width, shell_state)
     end
   end
 
-  -- RIGHT: Launch button
-  local launch_x = x1 + tile_width - 70 - TILE_PADDING
-  ImGui.SetCursorScreenPos(ctx, launch_x, y1 + (TILE_HEIGHT - 24) / 2)
+  -- RIGHT: Debug + Launch buttons
+  local button_width = 54
+  local button_gap = 4
+  local buttons_total = button_width * 2 + button_gap
+  local buttons_x = x1 + tile_width - buttons_total - TILE_PADDING
+  ImGui.SetCursorScreenPos(ctx, buttons_x, y1 + (TILE_HEIGHT - 24) / 2)
 
-  if Ark.Button(ctx, {
+  -- Debug button (orange)
+  Ark.Button(ctx, {
+    id = "debug_" .. app_data.name,
+    label = "Debug",
+    width = button_width,
+    height = 24,
+    tooltip = "Launch with profiler enabled",
+    on_click = function()
+      State:launch_app(app_data.name, { debug = true })
+    end,
+    colors = {
+      bg = hexrgb("#CC6600"),
+      bg_hover = hexrgb("#DD7711"),
+      bg_active = hexrgb("#BB5500"),
+    }
+  })
+
+  ImGui.SameLine(ctx, 0, button_gap)
+
+  -- Launch button (green)
+  Ark.Button(ctx, {
     id = "launch_" .. app_data.name,
     label = "Launch",
-    width = 70,
+    width = button_width,
     height = 24,
     on_click = function()
       State:launch_app(app_data.name)
@@ -491,8 +572,7 @@ local function render_app_tile(ctx, app_data, tile_width, shell_state)
       bg_hover = hexrgb("#00CC77"),
       bg_active = hexrgb("#009955"),
     }
-  }).clicked then
-  end
+  })
 
   -- Move cursor to below this tile, at the same X where the tile started
   -- This ensures the next tile in the same column will render directly below
@@ -592,7 +672,7 @@ local function draw_sandbox(ctx, shell_state)
     ImGui.PopStyleColor(ctx)
     ImGui.SameLine(ctx, 0, 16)
 
-    -- Launch button
+    -- Launch button (normal, no debug)
     Ark.Button(ctx, {
       label = "Run",
       width = 60,
@@ -600,13 +680,15 @@ local function draw_sandbox(ctx, shell_state)
       preset = "primary",
       tooltip = script.full_path,
       on_click = function()
-        dofile(script.full_path)
+        launch_script(script.full_path, {})
       end
     })
 
     ImGui.PopID(ctx)
   end
 end
+
+local Checkbox = require("arkitekt.gui.widgets.primitives.checkbox")
 
 local function draw_main(ctx, shell_state)
   -- Tab buttons (simple approach instead of TabBar)
@@ -629,6 +711,18 @@ local function draw_main(ctx, shell_state)
       ImGui.SameLine(ctx, 0, 4)
     end
   end
+
+  -- Profiler checkbox (right side of tab row) - only affects Debug button
+  ImGui.SameLine(ctx, 0, 20)
+  local result = Checkbox.draw(ctx, {
+    id = "profiler_checkbox",
+    label = "Profiler",
+    checked = State.profiler_enabled,
+    tooltip = "Also enable Lua profiler when using Debug button",
+    on_change = function(value)
+      State:set_profiler_enabled(value)
+    end,
+  })
 
   ImGui.Dummy(ctx, 0, 8)
 

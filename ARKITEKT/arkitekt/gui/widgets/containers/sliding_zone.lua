@@ -10,6 +10,7 @@ local Tracks = require('arkitekt.gui.animation.tracks')
 local Anim = require('arkitekt.core.animation')
 local Math = require('arkitekt.core.math')
 local Logger = require('arkitekt.debug.logger')
+local Cursor = require('arkitekt.core.cursor')
 
 local M = {}
 
@@ -62,6 +63,11 @@ local DEFAULTS = {
                               -- When collapsed_ratio=0 (fully hidden), this IS the trigger zone
                               -- When collapsed_ratio>0, this extends the visible collapsed bar
                               -- Directional extensions allow panels to respond to hover above/below/beside them
+
+  trigger_extension_expanded = nil, -- Optional: Different trigger extension when expanded
+                              -- If nil, uses trigger_extension for both states
+                              -- If set, uses this when panel is expanded (is_expanded=true)
+                              -- Useful for keeping panel open while hovering below it
 
   -- Deprecated (backward compat)
   hover_extend_outside = nil, -- DEPRECATED: Use trigger_extension instead
@@ -153,9 +159,11 @@ function SlidingZone.new(id)
     id = id,
 
     -- Animation tracks (using library Track class)
-    visibility_track = Tracks.Track.new(0, Anim.FADE_SPEED),
-    slide_track = Tracks.Track.new(0, Anim.SMOOTH_SPEED),
-    scale_track = Tracks.Track.new(1.0, Anim.SMOOTH_SPEED),
+    -- Original used 0.15 lerp per frame @ 60fps
+    -- With dt-based lerp: speed * 0.016 ≈ 0.15, so speed ≈ 9.0
+    visibility_track = Tracks.Track.new(0, 9.0, true),
+    slide_track = Tracks.Track.new(0, 9.0, true),
+    scale_track = Tracks.Track.new(1.0, 9.0, true),
 
     -- State
     is_expanded = false,    -- For button trigger mode
@@ -318,7 +326,14 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
   -- When expanded: trigger covers full panel + directional extensions
 
   local size = opts.size or DEFAULTS.size
-  local ext = opts.trigger_extension  -- Table {up, down, left, right}
+
+  -- Use trigger_extension_expanded when panel is expanded, otherwise use trigger_extension
+  local ext_to_use = opts.trigger_extension
+  if state.is_expanded and opts.trigger_extension_expanded then
+    ext_to_use = opts.trigger_extension_expanded
+  end
+
+  local ext = ext_to_use  -- Table {up, down, left, right}
 
   local in_zone = false
   local trigger_line = nil  -- For debug logging
@@ -481,7 +496,6 @@ local function calculate_content_bounds(opts, visibility, slide_offset, scale)
   local bounds = normalize_bounds(opts.bounds)
   local edge = opts.edge or "right"
   local size = opts.size or 40
-  local floor = math.floor
 
   -- Apply scale
   local scaled_size = size * scale
@@ -496,44 +510,47 @@ local function calculate_content_bounds(opts, visibility, slide_offset, scale)
   local reveal_offset = opts._reveal_offset
   local coupled_slide = reveal_offset * visibility
 
+  -- NOTE: No rounding! ImGui handles sub-pixel positioning smoothly
+  -- Rounding causes 1px jitter when float values continue animating after visual settling
+
   if edge == "left" then
     -- Starts clipped outside left edge, slides right
     local base_x = bounds.x - reveal_offset
     return {
-      x = floor(base_x + coupled_slide + 0.5),
-      y = floor(bounds.y + 0.5),
-      w = floor(visible_size + 0.5),
-      h = floor(bounds.h + 0.5)
+      x = base_x + coupled_slide,
+      y = bounds.y,
+      w = visible_size,
+      h = bounds.h
     }
 
   elseif edge == "right" then
     -- Starts clipped outside right edge, slides left
     local base_x = bounds.x + bounds.w + reveal_offset - visible_size
     return {
-      x = floor(base_x - coupled_slide + 0.5),
-      y = floor(bounds.y + 0.5),
-      w = floor(visible_size + 0.5),
-      h = floor(bounds.h + 0.5)
+      x = base_x - coupled_slide,
+      y = bounds.y,
+      w = visible_size,
+      h = bounds.h
     }
 
   elseif edge == "top" then
     -- Starts clipped outside top edge, slides down
     local base_y = bounds.y - reveal_offset
     return {
-      x = floor(bounds.x + 0.5),
-      y = floor(base_y + coupled_slide + 0.5),
-      w = floor(bounds.w + 0.5),
-      h = floor(visible_size + 0.5)
+      x = bounds.x,
+      y = base_y + coupled_slide,
+      w = bounds.w,
+      h = visible_size
     }
 
   else -- bottom
     -- Starts clipped outside bottom edge, slides up
     local base_y = bounds.y + bounds.h + reveal_offset - visible_size
     return {
-      x = floor(bounds.x + 0.5),
-      y = floor(base_y - coupled_slide + 0.5),
-      w = floor(bounds.w + 0.5),
-      h = floor(visible_size + 0.5)
+      x = bounds.x,
+      y = base_y - coupled_slide,
+      w = bounds.w,
+      h = visible_size
     }
   end
 end
@@ -680,8 +697,25 @@ function M.draw(ctx, opts)
                         my >= win.y and my <= (win.y + win.h)
     end
 
-    -- Check trigger zone
+    -- Check trigger zone (current position)
     local in_zone = is_in_hover_zone(ctx, opts, state, bounds)
+
+    -- Fast movement detection: only check when collapsed and not already in zone
+    -- This catches cases where mouse moves so fast it skips the trigger zone in one frame
+    if not in_zone and not state.is_expanded and state.last_mouse_x and state.last_mouse_y then
+      local crossed = Cursor.crossed_edge(
+        opts.edge or "right",
+        state.last_mouse_x,
+        state.last_mouse_y,
+        mx, my,
+        bounds,
+        opts.hover_padding or 30,  -- Y padding
+        opts.hover_padding or 30   -- X padding
+      )
+      if crossed then
+        in_zone = true  -- Treat crossing as being in zone
+      end
+    end
 
     -- Check custom retract condition
     local force_retract = false

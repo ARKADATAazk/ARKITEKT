@@ -28,9 +28,10 @@ local DEFAULTS = {
 
   -- Content
   label = "",
-  icon = "",
-  icon_font = nil,
-  icon_size = 16,
+  icon = "",           -- Font icon character
+  icon_font = nil,     -- Font for icon
+  icon_size = 16,      -- Font icon size
+  draw_icon = nil,     -- Custom icon callback: function(dl, x, y, w, h, color)
 
   -- State
   disabled = false,
@@ -419,9 +420,19 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
   local icon = config.icon or ""
   local icon_font = config.icon_font
   local icon_size = config.icon_size
+  local draw_icon = config.draw_icon
 
   if config.custom_draw then
     config.custom_draw(ctx, dl, x, y, width, height, is_hovered, is_active, text_color)
+  elseif draw_icon then
+    -- Custom icon drawing callback
+    draw_icon(dl, x, y, width, height, text_color)
+    -- Draw label if present (centered to the right of icon area or below)
+    if label ~= "" then
+      local label_w = ImGui.CalcTextSize(ctx, label)
+      local label_h = ImGui.GetTextLineHeight(ctx)
+      ImGui.DrawList_AddText(dl, x + (width - label_w) * 0.5, y + (height - label_h) * 0.5, text_color, label)
+    end
   elseif icon ~= "" or label ~= "" then
     if icon_font and icon ~= "" then
       ImGui.PushFont(ctx, icon_font, icon_size or 16)
