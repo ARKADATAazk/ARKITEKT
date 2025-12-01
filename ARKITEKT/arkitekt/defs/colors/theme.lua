@@ -111,14 +111,15 @@ M.value_ranges = {
   OFFSET     = { min = -1, max = 1 },
 }
 
---- Infer value range from key name
+--- Infer value range from key name (case-insensitive)
 --- @param key string Palette key name
 --- @return table|nil Range with min/max, or nil for no clamping
 local function get_range_for_key(key)
   if not key then return nil end
-  if key:match("OPACITY") then return M.value_ranges.OPACITY end
-  if key:match("BRIGHTNESS") then return M.value_ranges.BRIGHTNESS end
-  if key:match("SATURATION") then return M.value_ranges.SATURATION end
+  local lower = key:lower()
+  if lower:match("opacity") then return M.value_ranges.OPACITY end
+  if lower:match("brightness") then return M.value_ranges.BRIGHTNESS end
+  if lower:match("saturation") then return M.value_ranges.SATURATION end
   return nil
 end
 
@@ -224,9 +225,10 @@ M.colors = {
   PATTERN_SECONDARY = offset(-0.044, -0.06),
 
   -- === TILES ===
+  -- BRIGHTNESS/SATURATION use normalized scale: 0=off, 0.5=neutral, 1=max (2x)
   TILE_NAME_COLOR      = snap("#DDE3E9", "#1A1A1A"),
-  TILE_FILL_BRIGHTNESS = lerp(0.5, 0.7),   -- Light: darker tiles (was 1.4)
-  TILE_FILL_SATURATION = lerp(0.4, 0.7),   -- Light: more saturated (was 0.5)
+  TILE_FILL_BRIGHTNESS = lerp(0.25, 0.35), -- Normalized: 0.5=1x, so 0.25→0.5x, 0.35→0.7x
+  TILE_FILL_SATURATION = lerp(0.20, 0.35), -- Normalized: 0.5=1x, so 0.20→0.4x, 0.35→0.7x
   TILE_FILL_OPACITY    = lerp(0.4, 0.6),   -- Light: slightly more opaque (was 0.5)
 
   -- === BADGES ===

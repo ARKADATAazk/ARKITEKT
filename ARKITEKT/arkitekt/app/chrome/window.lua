@@ -268,7 +268,7 @@ function M.new(opts)
 
     overlay         = nil,
 
-    show_imgui_metrics = false,
+    show_imgui_metrics = config.show_imgui_metrics or false,
   }
 
   -- Apply additional flags for fullscreen mode if needed

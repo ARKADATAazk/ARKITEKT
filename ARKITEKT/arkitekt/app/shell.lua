@@ -162,6 +162,30 @@ end
 -- ============================================================================
 -- Simplified overlay setup - handles OverlayManager automatically
 local function run_overlay_mode(config)
+  -- ============================================================================
+  -- PROFILER INITIALIZATION (debug mode from DevKit)
+  -- ============================================================================
+  local profiler_enabled = false
+  do
+    local ok, ProfilerInit = pcall(require, 'arkitekt.debug.profiler_init')
+    if ok and ProfilerInit then
+      profiler_enabled = ProfilerInit.init()
+      if profiler_enabled then
+        ProfilerInit.attach_world()
+        ProfilerInit.launch_window()
+      end
+    end
+  end
+
+  -- Check launch args for debug mode (metrics window)
+  local show_metrics = false
+  do
+    local ark_ok, Ark = pcall(require, 'arkitekt')
+    if ark_ok and Ark and Ark.launch_args and Ark.launch_args.debug then
+      show_metrics = true
+    end
+  end
+
   local title = config.title or "ARKITEKT Overlay"
   local draw_fn = config.draw or function(ctx) ImGui.Text(ctx, 'No draw function provided') end
 
@@ -269,6 +293,12 @@ local function run_overlay_mode(config)
     ctx = ctx,
     on_frame = function(ctx)
       overlay_mgr:render(ctx)
+
+      -- Show metrics window if debug mode enabled
+      if show_metrics and ImGui.ShowMetricsWindow then
+        show_metrics = ImGui.ShowMetricsWindow(ctx, true)
+      end
+
       return overlay_mgr:is_active()
     end,
     on_close = function()
@@ -308,6 +338,23 @@ function M.run(opts)
     -- Apply chrome preset if not already specified
     if not opts.chrome then
       config.chrome = config.mode
+    end
+  end
+
+  -- ============================================================================
+  -- PROFILER INITIALIZATION (debug mode from DevKit)
+  -- ============================================================================
+  -- Check if launched with debug flag and initialize profiler if so
+  -- This must happen BEFORE any defer loops or module loads
+  local profiler_enabled = false
+  do
+    local ok, ProfilerInit = pcall(require, 'arkitekt.debug.profiler_init')
+    if ok and ProfilerInit then
+      profiler_enabled = ProfilerInit.init()
+      if profiler_enabled then
+        ProfilerInit.attach_world()
+        ProfilerInit.launch_window()
+      end
     end
   end
 
@@ -358,6 +405,15 @@ function M.run(opts)
     show_icon = config.show_icon
   end
 
+  -- Check launch args for debug mode (metrics window)
+  local show_metrics = false
+  do
+    local ark_ok, Ark = pcall(require, 'arkitekt')
+    if ark_ok and Ark and Ark.launch_args and Ark.launch_args.debug then
+      show_metrics = true
+    end
+  end
+
   local ctx   = ImGui.CreateContext(title)
   local fonts = load_fonts(ctx, config.fonts or config.font_sizes)
 
@@ -403,6 +459,9 @@ function M.run(opts)
     bg_color_floating = config.bg_color_floating,
     bg_color_docked   = config.bg_color_docked,
     topmost         = config.topmost,
+
+    -- Debug mode: show ImGui metrics window
+    show_imgui_metrics = show_metrics,
   })
 
 

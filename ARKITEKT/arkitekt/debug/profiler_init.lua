@@ -22,10 +22,19 @@ function M.init()
     reaper.ShowConsoleMsg("[Profiler] Already initialized\n")
     return true
   end
-  
-  -- Check feature flag
+
+  -- Check feature flag OR launch_args.profiler from DevKit
   local ok, Features = pcall(require, 'arkitekt.defs.features')
-  if not ok or not Features or not Features.PROFILER_ENABLED then
+  local feature_enabled = ok and Features and Features.PROFILER_ENABLED
+
+  -- Also check if launched with profiler flag from DevKit
+  local launch_profiler = false
+  local ark_ok, Ark = pcall(require, 'arkitekt')
+  if ark_ok and Ark and Ark.launch_args then
+    launch_profiler = Ark.launch_args.profiler
+  end
+
+  if not feature_enabled and not launch_profiler then
     return false
   end
   

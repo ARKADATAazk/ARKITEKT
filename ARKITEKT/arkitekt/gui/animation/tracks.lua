@@ -19,11 +19,12 @@ local M = {}
 local Track = {}
 Track.__index = Track
 
-function Track.new(initial_value, speed)
+function Track.new(initial_value, speed, use_dt)
   return setmetatable({
     current = initial_value or 0,
     target = initial_value or 0,
     speed = speed or 14.0,
+    use_dt = use_dt ~= false,  -- Default to true for backward compat
   }, Track)
 end
 
@@ -32,14 +33,18 @@ function Track:to(target)
 end
 
 function Track:update(dt)
-  dt = dt or 0.016
-  self.current = Math.lerp(self.current, self.target, self.speed * dt)
-
-  -- Snap to target when very close to prevent endless slow approach
-  local epsilon = 0.001
-  if math.abs(self.current - self.target) < epsilon then
-    self.current = self.target
+  -- Use delta-time or fixed-step lerp based on use_dt flag
+  local lerp_factor
+  if self.use_dt then
+    dt = dt or 0.016
+    lerp_factor = self.speed * dt
+  else
+    -- Frame-rate independent: use speed directly as lerp factor
+    lerp_factor = self.speed
   end
+
+  -- Simple exponential lerp (same as original implementation)
+  self.current = Math.lerp(self.current, self.target, lerp_factor)
 
   return self.current
 end
@@ -237,6 +242,27 @@ end
 
 function RectTrack:remove(id)
   self.rects[id] = nil
+end
+
+-- Returns true if any rects are currently animating (not settled)
+function RectTrack:is_animating()
+  for id, r in pairs(self.rects) do
+    if not r.settled then
+      return true
+    end
+  end
+  return false
+end
+
+-- Returns count of actively animating rects
+function RectTrack:animating_count()
+  local count = 0
+  for id, r in pairs(self.rects) do
+    if not r.settled then
+      count = count + 1
+    end
+  end
+  return count
 end
 
 -- Export both track types

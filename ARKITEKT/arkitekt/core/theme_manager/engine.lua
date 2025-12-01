@@ -11,6 +11,57 @@ local Palette = require('arkitekt.defs.colors')
 local M = {}
 
 -- =============================================================================
+-- NORMALIZED VALUE TRANSFORMS
+-- =============================================================================
+-- Converts intuitive 0-1 scale to actual operational values:
+--   0.0 = minimum (off/black/grayscale)
+--   0.5 = neutral (no change from original)
+--   1.0 = maximum (full bright/saturated)
+--
+-- This makes palette tuning intuitive and consistent across all scripts.
+
+--- Patterns for keys that should use normalized transforms (case-insensitive)
+local NORMALIZE_PATTERNS = {
+  "_[Bb][Rr][Ii][Gg][Hh][Tt][Nn][Ee][Ss][Ss]$",   -- _brightness (any case)
+  "_[Ss][Aa][Tt][Uu][Rr][Aa][Tt][Ii][Oo][Nn]$",   -- _saturation (any case)
+  "[Bb][Rr][Ii][Gg][Hh][Tt][Nn][Ee][Ss][Ss]$",    -- BRIGHTNESS (any case, no underscore)
+  "[Ss][Aa][Tt][Uu][Rr][Aa][Tt][Ii][Oo][Nn]$",    -- SATURATION (any case, no underscore)
+}
+
+--- Check if a key should use normalized transform
+--- @param key string Palette key name
+--- @return boolean
+local function should_normalize(key)
+  if not key then return false end
+  for _, pattern in ipairs(NORMALIZE_PATTERNS) do
+    if key:match(pattern) then
+      return true
+    end
+  end
+  return false
+end
+
+--- Transform normalized value (0-1 intuitive scale) to operational multiplier
+--- Input:  0.0 = off, 0.5 = neutral (1.0x), 1.0 = maximum
+--- Output: multiplier for HSV operations
+---
+--- The transform uses exponential scaling centered at 0.5:
+---   0.0 → 0.0 (completely off)
+---   0.5 → 1.0 (no change / neutral)
+---   1.0 → 2.0 (double / maximum boost)
+---
+--- @param normalized number Value in 0-1 intuitive scale
+--- @return number Operational multiplier
+function M.normalize_to_multiplier(normalized)
+  -- Clamp input to valid range
+  normalized = math.max(0, math.min(1, normalized))
+
+  -- Linear transform: 0→0, 0.5→1, 1→2
+  -- This gives intuitive control where 0.5 is "default/unchanged"
+  return normalized * 2
+end
+
+-- =============================================================================
 -- T COMPUTATION
 -- =============================================================================
 
@@ -105,9 +156,15 @@ local function derive_entry(base_bg, key, def, t)
   if type(resolved) == "string" then
     -- Hex string → convert to RGBA
     return Colors.hexrgb(resolved .. "FF")
-  else
-    -- Number → clamp to valid range for key type
+  elseif type(resolved) == "number" then
+    -- Number → apply normalization if key matches pattern
+    if should_normalize(key) then
+      resolved = M.normalize_to_multiplier(resolved)
+    end
+    -- Clamp to valid range for key type
     return Palette.clamp_value(key, resolved)
+  else
+    return resolved
   end
 end
 

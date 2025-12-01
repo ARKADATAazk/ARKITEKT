@@ -53,6 +53,10 @@ Ark.ImGui = bootstrap_context.ImGui
 -- Store full bootstrap context for advanced use cases
 Ark._bootstrap = bootstrap_context
 
+-- Expose launch arguments (from DevKit or other launchers)
+-- Contains: { debug = bool, script_path = string }
+Ark.launch_args = bootstrap_context.launch_args
+
 -- ID Stack for ImGui-style PushID/PopID (loaded eagerly for performance)
 local IdStack = require('arkitekt.core.id_stack')
 Ark.PushID = IdStack.push
