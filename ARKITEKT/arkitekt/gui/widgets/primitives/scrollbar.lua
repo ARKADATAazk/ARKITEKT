@@ -15,17 +15,17 @@ local DEFAULTS = {
   width = 12,
   padding = 2,
   min_thumb_height = 30,
-  
-  track_color = hexrgb("#00000000"),
-  track_hover_color = hexrgb("#0F0F0F"),
-  
-  thumb_color = hexrgb("#282828"),
-  thumb_hover_color = hexrgb("#323232"),
-  thumb_active_color = hexrgb("#3C3C3C"),
-  
+
+  track_color = hexrgb('#00000000'),
+  track_hover_color = hexrgb('#0F0F0F'),
+
+  thumb_color = hexrgb('#282828'),
+  thumb_hover_color = hexrgb('#323232'),
+  thumb_active_color = hexrgb('#3C3C3C'),
+
   thumb_rounding = 4,
   track_rounding = 0,
-  
+
   fade_speed = 10.0,
   auto_hide = false,
   auto_hide_delay = 1.0,
@@ -33,22 +33,22 @@ local DEFAULTS = {
 
 function M.new(opts)
   opts = opts or {}
-  
+
   return setmetatable({
-    id = opts.id or "scrollbar",
+    id = opts.id or 'scrollbar',
     config = opts.config or DEFAULTS,
-    
+
     scroll_pos = 0,
     content_height = 0,
     visible_height = 0,
-    
+
     is_dragging = false,
     drag_start_y = 0,
     drag_start_scroll = 0,
-    
+
     hover_alpha = 0.0,
     last_interaction = 0,
-    
+
     on_scroll = opts.on_scroll,
   }, Scrollbar)
 end
@@ -174,9 +174,9 @@ function Scrollbar:draw(ctx, x, y, height)
   
   ImGui.DrawList_AddRectFilled(dl, track_x, thumb_y, track_x + track_w, thumb_y + thumb_h,
                                 thumb_color, cfg.thumb_rounding)
-  
+
   ImGui.SetCursorScreenPos(ctx, track_x, track_y)
-  ImGui.InvisibleButton(ctx, self.id .. "_track", track_w, track_h)
+  ImGui.InvisibleButton(ctx, self.id .. '_track', track_w, track_h)
   
   if ImGui.IsItemActive(ctx) then
     if not self.is_dragging then
