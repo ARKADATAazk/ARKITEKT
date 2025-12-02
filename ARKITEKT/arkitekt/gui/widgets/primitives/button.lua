@@ -16,7 +16,7 @@ local M = {}
 
 local DEFAULTS = {
   -- Identity
-  id = "button",
+  id = 'button',
 
   -- Position (nil = use cursor)
   x = nil,
@@ -27,8 +27,8 @@ local DEFAULTS = {
   height = 24,
 
   -- Content
-  label = "",
-  icon = "",           -- Font icon character
+  label = '',
+  icon = '',           -- Font icon character
   icon_font = nil,     -- Font for icon
   icon_size = 16,      -- Font icon size
   draw_icon = nil,     -- Custom icon callback: function(dl, x, y, w, h, color)
@@ -42,7 +42,7 @@ local DEFAULTS = {
   rounding = 0,
   padding_x = 10,
   preset_name = nil,  -- Use a named preset from Theme (legacy)
-  preset = nil,       -- Semantic preset: "primary", "danger", "success", "secondary"
+  preset = nil,       -- Semantic preset: 'primary', 'danger', 'success', 'secondary'
 
   -- Colors (nil = use Theme.BUTTON defaults)
   bg_color = nil,
@@ -75,7 +75,7 @@ local DEFAULTS = {
   corner_rounding = nil,
 
   -- Cursor control
-  advance = "vertical",
+  advance = 'vertical',
 
   -- Custom rendering
   custom_draw = nil,
@@ -100,7 +100,7 @@ function Button.new(id)
 end
 
 function Button:update(dt, is_hovered, is_active)
-  Base.update_hover_animation(self, dt, is_hovered, is_active, "hover_alpha")
+  Base.update_hover_animation(self, dt, is_hovered, is_active, 'hover_alpha')
 end
 
 -- ============================================================================
@@ -257,22 +257,22 @@ end
 local function get_preset_colors(preset_name)
   local C = Theme.COLORS
 
-  if preset_name == "primary" then
+  if preset_name == 'primary' then
     return {
       bg = C.ACCENT_PRIMARY or C.ACCENT_WHITE,
       text = C.TEXT_BRIGHT or C.TEXT_NORMAL,
     }
-  elseif preset_name == "secondary" then
+  elseif preset_name == 'secondary' then
     return {
       bg = C.BG_HOVER or C.BG_BASE,
       text = C.TEXT_NORMAL,
     }
-  elseif preset_name == "danger" then
+  elseif preset_name == 'danger' then
     return {
       bg = C.DANGER or 0xFF4444FF,  -- Fallback red
       text = C.TEXT_BRIGHT or C.TEXT_NORMAL,
     }
-  elseif preset_name == "success" then
+  elseif preset_name == 'success' then
     return {
       bg = C.SUCCESS or 0x44FF44FF,  -- Fallback green
       text = C.TEXT_BRIGHT or C.TEXT_NORMAL,
@@ -307,7 +307,7 @@ local function resolve_config(opts)
   --   1. No preset or preset_name specified, OR
   --   2. Using BUTTON_TOGGLE_WHITE or similar basic toggle preset
   local use_simple = not opts.preset and not opts.preset_name
-  local is_toggle_preset = opts.preset_name and opts.preset_name:find("TOGGLE")
+  local is_toggle_preset = opts.preset_name and opts.preset_name:find('TOGGLE')
 
   if use_simple or is_toggle_preset then
     -- Mark for simple color derivation (handled in render)
@@ -350,7 +350,7 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
   -- Create InvisibleButton FIRST so IsItemHovered works for everything
   -- (DrawList rendering uses explicit coordinates, doesn't care about cursor)
   ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, "##" .. unique_id, width, height)
+  ImGui.InvisibleButton(ctx, '##' .. unique_id, width, height)
 
   -- Now use IsItemHovered for all hover checks (single source of truth)
   local is_hovered = not is_disabled and not config.is_blocking and ImGui.IsItemHovered(ctx)
@@ -416,8 +416,8 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
   ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, border_outer, inner_rounding, corner_flags, 1)
 
   -- Draw content
-  local label = config.label or ""
-  local icon = config.icon or ""
+  local label = config.label or ''
+  local icon = config.icon or ''
   local icon_font = config.icon_font
   local icon_size = config.icon_size
   local draw_icon = config.draw_icon
@@ -428,31 +428,31 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
     -- Custom icon drawing callback
     draw_icon(dl, x, y, width, height, text_color)
     -- Draw label if present (centered to the right of icon area or below)
-    if label ~= "" then
+    if label ~= '' then
       local label_w = ImGui.CalcTextSize(ctx, label)
       local label_h = ImGui.GetTextLineHeight(ctx)
       ImGui.DrawList_AddText(dl, x + (width - label_w) * 0.5, y + (height - label_h) * 0.5, text_color, label)
     end
-  elseif icon ~= "" or label ~= "" then
-    if icon_font and icon ~= "" then
+  elseif icon ~= '' or label ~= '' then
+    if icon_font and icon ~= '' then
       ImGui.PushFont(ctx, icon_font, icon_size or 16)
       local icon_w, icon_h = ImGui.CalcTextSize(ctx, icon), ImGui.GetTextLineHeight(ctx)
       ImGui.PopFont(ctx)
 
-      local label_w = label ~= "" and ImGui.CalcTextSize(ctx, label) or 0
-      local spacing = (label ~= "") and 4 or 0
+      local label_w = label ~= '' and ImGui.CalcTextSize(ctx, label) or 0
+      local spacing = (label ~= '') and 4 or 0
       local start_x = x + (width - icon_w - spacing - label_w) * 0.5
 
       ImGui.PushFont(ctx, icon_font, icon_size or 16)
       ImGui.DrawList_AddText(dl, start_x, y + (height - icon_h) * 0.5, text_color, icon)
       ImGui.PopFont(ctx)
 
-      if label ~= "" then
+      if label ~= '' then
         local label_h = ImGui.GetTextLineHeight(ctx)
         ImGui.DrawList_AddText(dl, start_x + icon_w + spacing, y + (height - label_h) * 0.5, text_color, label)
       end
     else
-      local display_text = icon .. (icon ~= "" and label ~= "" and " " or "") .. label
+      local display_text = icon .. (icon ~= '' and label ~= '' and ' ' or '') .. label
       local text_w = ImGui.CalcTextSize(ctx, display_text)
       ImGui.DrawList_AddText(dl, x + (width - text_w) * 0.5, y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5, text_color, display_text)
     end
@@ -478,9 +478,9 @@ local function measure(ctx, opts)
   end
 
   local config = resolve_config(opts)
-  local label = config.label or ""
-  local icon = config.icon or ""
-  local display_text = icon .. (icon ~= "" and label ~= "" and " " or "") .. label
+  local label = config.label or ''
+  local icon = config.icon or ''
+  local display_text = icon .. (icon ~= '' and label ~= '' and ' ' or '') .. label
 
   local text_w = ImGui.CalcTextSize(ctx, display_text)
   local padding = config.padding_x or 10
@@ -495,7 +495,7 @@ end
 --- Draw a button widget
 --- Supports both positional and opts-based parameters:
 --- - Positional: Ark.Button(ctx, label, width, height)
---- - Opts table: Ark.Button(ctx, {label = "...", width = 100, ...})
+--- - Opts table: Ark.Button(ctx, {label = '...', width = 100, ...})
 --- @param ctx userdata ImGui context
 --- @param label_or_opts string|table Label string or opts table
 --- @param width number|nil Button width (positional only)
@@ -504,10 +504,10 @@ end
 function M.draw(ctx, label_or_opts, width, height)
   -- Hybrid parameter detection
   local opts
-  if type(label_or_opts) == "table" then
+  if type(label_or_opts) == 'table' then
     -- Opts table passed directly
     opts = label_or_opts
-  elseif type(label_or_opts) == "string" then
+  elseif type(label_or_opts) == 'string' then
     -- Positional params - map to opts
     opts = {
       label = label_or_opts,
@@ -523,7 +523,7 @@ function M.draw(ctx, label_or_opts, width, height)
   local config = resolve_config(opts)
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(ctx, opts, "button")
+  local unique_id = Base.resolve_id(ctx, opts, 'button')
 
   -- Get or create instance
   local instance = Base.get_or_create_instance(instances, unique_id, Button.new, ctx)
@@ -549,7 +549,7 @@ function M.draw(ctx, label_or_opts, width, height)
 
   -- Handle tooltip (uses is_hovered from render_button)
   if is_hovered and opts.tooltip then
-    local tooltip_text = type(opts.tooltip) == "function" and opts.tooltip() or opts.tooltip
+    local tooltip_text = type(opts.tooltip) == 'function' and opts.tooltip() or opts.tooltip
     if tooltip_text then
       ImGui.SetTooltip(ctx, tooltip_text)
     end
@@ -596,7 +596,7 @@ end
 return setmetatable(M, {
   __call = function(_, ctx, label_or_opts, width, height)
     -- Detect mode based on first parameter type
-    if type(label_or_opts) == "table" then
+    if type(label_or_opts) == 'table' then
       -- Opts mode: Return full result object for power users
       return M.draw(ctx, label_or_opts)
     else

@@ -17,7 +17,7 @@ local M = {}
 
 local DEFAULTS = {
   -- Identity
-  id = "checkbox",
+  id = 'checkbox',
 
   -- Position (nil = use cursor)
   x = nil,
@@ -33,7 +33,7 @@ local DEFAULTS = {
   is_blocking = false,
 
   -- Content
-  label = "",
+  label = '',
 
   -- Style
   rounding = 0,
@@ -73,7 +73,7 @@ local DEFAULTS = {
   panel_state = nil,
 
   -- Cursor control
-  advance = "vertical",
+  advance = 'vertical',
 
   -- Draw list
   draw_list = nil,
@@ -98,7 +98,7 @@ end
 
 function Checkbox:update(dt, is_hovered, is_active, is_checked)
   -- Hover animation
-  Base.update_hover_animation(self, dt, is_hovered, is_active, "hover_alpha")
+  Base.update_hover_animation(self, dt, is_hovered, is_active, 'hover_alpha')
 
   -- Check animation
   local target_check = is_checked and 1.0 or 0.0
@@ -129,7 +129,7 @@ local function resolve_config(opts)
     border_hover_color = Theme.COLORS.BORDER_HOVER,
     border_active_color = Theme.COLORS.BORDER_ACTIVE,
 
-    -- ON state colors (neutral, uses hover as "on" state)
+    -- ON state colors (neutral, uses hover as 'on' state)
     bg_on_color = Theme.COLORS.BG_HOVER,
     bg_on_hover_color = Theme.COLORS.BG_HOVER,
     bg_on_active_color = Theme.COLORS.BG_ACTIVE,
@@ -277,7 +277,7 @@ end
 --- Draw a checkbox widget
 --- Supports both positional and opts-based parameters:
 --- - Positional: Ark.Checkbox(ctx, label, checked)
---- - Opts table: Ark.Checkbox(ctx, {label = "...", checked = true, ...})
+--- - Opts table: Ark.Checkbox(ctx, {label = '...', checked = true, ...})
 --- @param ctx userdata ImGui context
 --- @param label_or_opts string|table Label string or opts table
 --- @param checked boolean|nil Checked state (positional only)
@@ -285,10 +285,10 @@ end
 function M.draw(ctx, label_or_opts, checked)
   -- Hybrid parameter detection
   local opts
-  if type(label_or_opts) == "table" then
+  if type(label_or_opts) == 'table' then
     -- Opts table passed directly
     opts = label_or_opts
-  elseif type(label_or_opts) == "string" then
+  elseif type(label_or_opts) == 'string' then
     -- Positional params - map to opts
     opts = {
       label = label_or_opts,
@@ -303,7 +303,7 @@ function M.draw(ctx, label_or_opts, checked)
   local config = resolve_config(opts)
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(ctx, opts, "checkbox")
+  local unique_id = Base.resolve_id(ctx, opts, 'checkbox')
 
   -- Get or create instance
   local instance = Base.get_or_create_instance(instances, unique_id, Checkbox.new, ctx)
@@ -320,10 +320,10 @@ function M.draw(ctx, label_or_opts, checked)
 
   -- Calculate total width (including label) BEFORE rendering
   local size = config.size
-  local label = opts.label or ""
+  local label = opts.label or ''
   local total_width = size
 
-  if label ~= "" then
+  if label ~= '' then
     local label_width = ImGui.CalcTextSize(ctx, label)
     total_width = size + config.label_spacing + label_width
   end
@@ -332,7 +332,7 @@ function M.draw(ctx, label_or_opts, checked)
   local is_hovered, is_active = render_checkbox(ctx, dl, x, y, config, instance, is_checked, total_width)
 
   -- Render label
-  if label ~= "" then
+  if label ~= '' then
     local label_x = x + size + config.label_spacing
     local label_y = y + (size - ImGui.GetTextLineHeight(ctx)) * 0.5
 
@@ -354,7 +354,7 @@ function M.draw(ctx, label_or_opts, checked)
 
   -- Create interaction area
   ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, "##" .. unique_id, total_width, size)
+  ImGui.InvisibleButton(ctx, '##' .. unique_id, total_width, size)
 
   local clicked = false
   local changed = false
@@ -405,10 +405,10 @@ end
 function M.measure(ctx, opts)
   opts = opts or {}
   local size = opts.size or DEFAULTS.size
-  local label = opts.label or ""
+  local label = opts.label or ''
   local label_spacing = opts.label_spacing or DEFAULTS.label_spacing
 
-  if label == "" then
+  if label == '' then
     return size
   end
 
@@ -424,14 +424,14 @@ end
 --- Supports both old signature (ctx, label, is_checked, _, id) and new (ctx, opts, id)
 function M.draw_at_cursor(ctx, label_or_opts, is_checked, _, id)
   local opts
-  if type(label_or_opts) == "table" then
+  if type(label_or_opts) == 'table' then
     -- New style: (ctx, opts, id)
     opts = label_or_opts
     if is_checked then opts.id = is_checked end  -- is_checked is actually id in this case
   else
     -- Old style: (ctx, label, is_checked, _, id)
     opts = {
-      label = label_or_opts or "",
+      label = label_or_opts or '',
       checked = is_checked,
       id = id,
     }

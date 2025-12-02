@@ -18,7 +18,7 @@ local M = {}
 
 local DEFAULTS = {
   -- Identity
-  id = "slider",
+  id = 'slider',
 
   -- Position (nil = use cursor)
   x = nil,
@@ -50,14 +50,14 @@ local DEFAULTS = {
   -- Content
   gradient_fn = nil,   -- Custom gradient rendering function
   tooltip_fn = nil,    -- Custom tooltip function
-  format = "%.1f",     -- Value format string
+  format = '%.1f',     -- Value format string
 
   -- Callbacks
   on_change = nil,
   tooltip = nil,
 
   -- Cursor control
-  advance = "vertical",
+  advance = 'vertical',
 
   -- Draw list
   draw_list = nil,
@@ -74,8 +74,8 @@ local slider_locks = {}  -- Prevents double-click interference with drag
 -- ============================================================================
 
 local function render_slider_background(dl, x, y, w, h, config, gradient_fn)
-  local bg_color = config.bg_color or hexrgb("#1A1A1A")
-  local border_color = config.border_color or hexrgb("#000000")
+  local bg_color = config.bg_color or hexrgb('#1A1A1A')
+  local border_color = config.border_color or hexrgb('#000000')
 
   -- Background
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, bg_color, config.rounding or 0)
@@ -96,26 +96,26 @@ local function render_grab(dl, gx, y, h, grab_w, active, hovered, disabled, conf
   -- Determine grab color
   local grab_color
   if disabled then
-    grab_color = Colors.with_opacity(Colors.desaturate(config.grab_color or hexrgb("#383C45"), 0.5), 0.5)
+    grab_color = Colors.with_opacity(Colors.desaturate(config.grab_color or hexrgb('#383C45'), 0.5), 0.5)
   elseif active then
-    grab_color = config.grab_active_color or hexrgb("#585C65")
+    grab_color = config.grab_active_color or hexrgb('#585C65')
   elseif hovered then
-    grab_color = config.grab_hover_color or hexrgb("#484C55")
+    grab_color = config.grab_hover_color or hexrgb('#484C55')
   else
-    grab_color = config.grab_color or hexrgb("#383C45")
+    grab_color = config.grab_color or hexrgb('#383C45')
   end
 
   -- Shadow
   if not disabled then
     ImGui.DrawList_AddRectFilled(dl, x_left + 1, y + 1, x_right + 1, y + h + 1,
-      hexrgb("#00000050"), 0)
+      hexrgb('#00000050'), 0)
   end
 
   -- Grab body
   ImGui.DrawList_AddRectFilled(dl, x_left, y, x_right, y + h, grab_color, 0)
 
   -- Border
-  ImGui.DrawList_AddRect(dl, x_left, y, x_right, y + h, hexrgb("#000000"), 0, 0, 1)
+  ImGui.DrawList_AddRect(dl, x_left, y, x_right, y + h, hexrgb('#000000'), 0, 0, 1)
 end
 
 -- ============================================================================
@@ -125,7 +125,7 @@ end
 --- Draw a slider widget
 --- Supports both positional and opts-based parameters:
 --- - Positional: Ark.Slider(ctx, label, value, min, max)
---- - Opts table: Ark.Slider(ctx, {label = "...", value = 50, min = 0, max = 100, ...})
+--- - Opts table: Ark.Slider(ctx, {label = '...', value = 50, min = 0, max = 100, ...})
 --- @param ctx userdata ImGui context
 --- @param label_or_opts string|table Label string or opts table
 --- @param value number|nil Current value (positional only)
@@ -135,10 +135,10 @@ end
 function M.draw(ctx, label_or_opts, value, min, max)
   -- Hybrid parameter detection
   local opts
-  if type(label_or_opts) == "table" then
+  if type(label_or_opts) == 'table' then
     -- Opts table passed directly
     opts = label_or_opts
-  elseif type(label_or_opts) == "string" then
+  elseif type(label_or_opts) == 'string' then
     -- Positional params - map to opts
     opts = {
       label = label_or_opts,
@@ -154,7 +154,7 @@ function M.draw(ctx, label_or_opts, value, min, max)
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(ctx, opts, "slider")
+  local unique_id = Base.resolve_id(ctx, opts, 'slider')
 
   -- Get position and draw list
   local x, y = Base.get_position(ctx, opts)
@@ -177,7 +177,7 @@ function M.draw(ctx, label_or_opts, value, min, max)
 
   -- Create invisible button for interaction
   ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, "##" .. unique_id, w, h)
+  ImGui.InvisibleButton(ctx, '##' .. unique_id, w, h)
 
   local hovered = not disabled and ImGui.IsItemHovered(ctx)
   local active = not disabled and ImGui.IsItemActive(ctx)
@@ -239,7 +239,7 @@ function M.draw(ctx, label_or_opts, value, min, max)
     elseif opts.tooltip then
       tooltip_text = opts.tooltip
     else
-      tooltip_text = string.format(opts.format or "%.1f", value)
+      tooltip_text = string.format(opts.format or '%.1f', value)
     end
 
     if ImGui.BeginTooltip(ctx) then
@@ -275,9 +275,9 @@ function M.percent(ctx, opts)
   opts = opts or {}
   opts.min = opts.min or 0
   opts.max = opts.max or 100
-  opts.format = opts.format or "%.0f%%"
+  opts.format = opts.format or '%.0f%%'
   opts.tooltip_fn = opts.tooltip_fn or function(v)
-    return string.format("%.0f%%", v)
+    return string.format('%.0f%%', v)
   end
   return M.draw(ctx, opts)
 end
@@ -289,7 +289,7 @@ end
 function M.int(ctx, opts)
   opts = opts or {}
   opts.step = opts.step or 1
-  opts.format = opts.format or "%.0f"
+  opts.format = opts.format or '%.0f'
 
   local result = M.draw(ctx, opts)
   result.value = (result.value + 0.5) // 1  -- Round to integer

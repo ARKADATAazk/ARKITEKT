@@ -43,13 +43,13 @@ local function resolve_context(config, state_or_id)
   }
   
   -- Check if we're in a panel context
-  if type(state_or_id) == "table" and state_or_id._panel_id then
+  if type(state_or_id) == 'table' and state_or_id._panel_id then
     context.is_panel_context = true
-    context.unique_id = string.format("%s_%s", state_or_id._panel_id, config.id or "dropdown")
+    context.unique_id = string.format('%s_%s', state_or_id._panel_id, config.id or 'dropdown')
     context.corner_rounding = config.corner_rounding
   else
     -- Standalone context
-    context.unique_id = type(state_or_id) == "string" and state_or_id or (config.id or "dropdown")
+    context.unique_id = type(state_or_id) == 'string' and state_or_id or (config.id or 'dropdown')
     context.corner_rounding = nil
   end
   
@@ -65,11 +65,11 @@ end
 local function copy_config(config)
   local copy = {}
   for k, v in pairs(config) do
-    if k == "options" and type(v) == "table" then
+    if k == 'options' and type(v) == 'table' then
       -- Deep copy options array (array of {value, label} tables)
       copy[k] = {}
       for i, opt in ipairs(v) do
-        if type(opt) == "table" then
+        if type(opt) == 'table' then
           copy[k][i] = {}
           for ok, ov in pairs(opt) do
             copy[k][i][ok] = ov
@@ -78,7 +78,7 @@ local function copy_config(config)
           copy[k][i] = opt
         end
       end
-    elseif type(v) == "table" and k ~= "popup" then
+    elseif type(v) == 'table' and k ~= 'popup' then
       -- Shallow copy other tables (popup has its own defaults)
       local nested = {}
       for nk, nv in pairs(v) do
@@ -101,7 +101,7 @@ function Dropdown.new(id, config, initial_value, initial_direction)
     id = id,
     config = copy_config(config),  -- Copy config to prevent sharing
     current_value = initial_value,
-    sort_direction = initial_direction or "asc",
+    sort_direction = initial_direction or 'asc',
     hover_alpha = 0,
     is_open = false,
     popup_hover_index = -1,
@@ -113,10 +113,10 @@ end
 
 function Dropdown:get_current_index()
   if not self.current_value then return 1 end
-  
+
   local options = self.config.options or {}
   for i, opt in ipairs(options) do
-    local value = type(opt) == "table" and opt.value or opt
+    local value = type(opt) == 'table' and opt.value or opt
     if value == self.current_value then
       return i
     end
@@ -134,18 +134,18 @@ function Dropdown:get_display_text()
     if self.config.button_label then
       return self.config.button_label
     end
-    return options[1] and (type(options[1]) == "table" and options[1].label or tostring(options[1])) or ""
+    return options[1] and (type(options[1]) == 'table' and options[1].label or tostring(options[1])) or ''
   end
 
   for _, opt in ipairs(options) do
-    local value = type(opt) == "table" and opt.value or opt
-    local label = type(opt) == "table" and opt.label or tostring(opt)
+    local value = type(opt) == 'table' and opt.value or opt
+    local label = type(opt) == 'table' and opt.label or tostring(opt)
     if value == self.current_value then
       return label
     end
   end
 
-  return ""
+  return ''
 end
 
 function Dropdown:handle_mousewheel(ctx, is_hovered)
@@ -166,7 +166,7 @@ function Dropdown:handle_mousewheel(ctx, is_hovered)
   
   if new_idx ~= current_idx then
     local new_opt = options[new_idx]
-    local new_value = type(new_opt) == "table" and new_opt.value or new_opt
+    local new_value = type(new_opt) == 'table' and new_opt.value or new_opt
     self.current_value = new_value
     
     if self.config.on_change then
@@ -222,9 +222,9 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
   
   -- Draw text
   local display_text = self:get_display_text()
-  local dir_indicator = ""
+  local dir_indicator = ''
   if cfg.enable_sort and self.current_value ~= nil then
-    dir_indicator = (self.sort_direction == "asc") and "↑ " or "↓ "
+    dir_indicator = (self.sort_direction == 'asc') and '↑ ' or '↓ '
   end
   
   local full_text = dir_indicator .. display_text
@@ -247,15 +247,15 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
   
   -- Interaction
   ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.InvisibleButton(ctx, self.id .. "_btn", width, height)
-  
+  ImGui.InvisibleButton(ctx, self.id .. '_btn', width, height)
+
   local clicked = ImGui.IsItemClicked(ctx, 0)
   local right_clicked = ImGui.IsItemClicked(ctx, 1)
   local wheel_changed = self:handle_mousewheel(ctx, is_hovered)
-  
+
   -- Right-click to toggle sort direction (only when enabled)
   if cfg.enable_sort and right_clicked and self.current_value then
-    self.sort_direction = (self.sort_direction == "asc") and "desc" or "asc"
+    self.sort_direction = (self.sort_direction == 'asc') and 'desc' or 'asc'
     if cfg.on_direction_change then
       cfg.on_direction_change(self.sort_direction)
     end
@@ -274,16 +274,16 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
   
   -- Open popup
   if clicked then
-    ImGui.OpenPopup(ctx, self.id .. "_popup")
+    ImGui.OpenPopup(ctx, self.id .. '_popup')
     self.is_open = true
   end
-  
+
   -- Draw popup (using context_menu for consistent shadow/styling)
   local popup_changed = false
   local popup_cfg = cfg.popup
 
   -- Use ContextMenu.begin for popup with shadow effect
-  if ContextMenu.begin(ctx, self.id .. "_popup", {
+  if ContextMenu.begin(ctx, self.id .. '_popup', {
     bg_color = popup_cfg.bg_color,
     border_color = popup_cfg.border_color,
     rounding = popup_cfg.rounding,
@@ -299,7 +299,7 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
     local max_text_width = 0
     local options = cfg.options or {}
     for _, opt in ipairs(options) do
-      local label = type(opt) == "table" and opt.label or tostring(opt)
+      local label = type(opt) == 'table' and opt.label or tostring(opt)
       local text_w, _ = ImGui.CalcTextSize(ctx, label)
       max_text_width = math.max(max_text_width, text_w)
     end
@@ -307,13 +307,13 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
     -- Use larger popup width: 1.5x button width or text-based, whichever is larger
     local min_popup_width = math.max(width * 1.5, 180)
     local popup_width = math.max(min_popup_width, max_text_width + popup_cfg.item_padding_x * 2 + 40)
-    
+
     -- Draw items
     for i, opt in ipairs(options) do
-      local value = type(opt) == "table" and opt.value or opt
-      local label = type(opt) == "table" and opt.label or tostring(opt)
-      local is_checkbox = type(opt) == "table" and opt.checkbox or false
-      local is_checked = type(opt) == "table" and opt.checked or false
+      local value = type(opt) == 'table' and opt.value or opt
+      local label = type(opt) == 'table' and opt.label or tostring(opt)
+      local is_checkbox = type(opt) == 'table' and opt.checkbox or false
+      local is_checked = type(opt) == 'table' and opt.checked or false
 
       local is_selected = value == self.current_value
 
@@ -376,7 +376,7 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
 
       ImGui.DrawList_AddText(popup_dl, text_x, text_y, item_text, label)
 
-      ImGui.InvisibleButton(ctx, self.id .. "_item_" .. i, item_w, item_h)
+      ImGui.InvisibleButton(ctx, self.id .. '_item_' .. i, item_w, item_h)
 
       if ImGui.IsItemClicked(ctx, 0) then
         if is_checkbox then
@@ -394,7 +394,7 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
           end
           -- If sorting is enabled but the selected option is 'No Sort', reset direction to asc
           if cfg.enable_sort and value == nil then
-            self.sort_direction = "asc"
+            self.sort_direction = 'asc'
             if cfg.on_direction_change then
               cfg.on_direction_change(self.sort_direction)
             end
@@ -493,17 +493,17 @@ local function get_or_create_instance(context, config, state_or_id)
   end
   
   -- Defensive: if current_value is accidentally a table, extract the actual value
-  if type(instance.current_value) == "table" then
+  if type(instance.current_value) == 'table' then
     instance.current_value = instance.current_value.value
   end
-  
-  -- Defensive: if current_value is nil ("No Sort"), always force direction to asc
+
+  -- Defensive: if current_value is nil ('No Sort'), always force direction to asc
   if instance.current_value == nil then
-    if instance.sort_direction ~= "asc" then
-      instance.sort_direction = "asc"
+    if instance.sort_direction ~= 'asc' then
+      instance.sort_direction = 'asc'
       -- Trigger callback to update app state
       if config.on_direction_change then
-        config.on_direction_change("asc")
+        config.on_direction_change('asc')
       end
     end
   end
@@ -525,7 +525,7 @@ end
 --- Draw a combo widget
 --- Supports both positional and opts-based parameters:
 --- - Positional: Ark.Combo(ctx, label, selected, items)
---- - Opts table: Ark.Combo(ctx, {label = "...", selected = 1, options = {...}, ...})
+--- - Opts table: Ark.Combo(ctx, {label = '...', selected = 1, options = {...}, ...})
 --- @param ctx userdata ImGui context
 --- @param label_or_opts string|table Label string or opts table
 --- @param selected number|nil Selected index (positional only)
@@ -534,10 +534,10 @@ end
 function M.draw(ctx, label_or_opts, selected, items)
   -- Hybrid parameter detection
   local opts
-  if type(label_or_opts) == "table" then
+  if type(label_or_opts) == 'table' then
     -- Opts table passed directly
     opts = label_or_opts
-  elseif type(label_or_opts) == "string" then
+  elseif type(label_or_opts) == 'string' then
     -- Positional params - map to opts
     opts = {
       label = label_or_opts,
@@ -558,12 +558,12 @@ function M.draw(ctx, label_or_opts, selected, items)
   local width = opts.width
   local height = opts.height
   local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
-  local state_or_id = opts.panel_state or opts.id or "combo"
+  local state_or_id = opts.panel_state or opts.id or 'combo'
 
   -- Build user_config from remaining opts (excluding the extracted fields)
   local user_config = {}
   for k, v in pairs(opts) do
-    if k ~= "x" and k ~= "y" and k ~= "width" and k ~= "height" and k ~= "draw_list" and k ~= "panel_state" then
+    if k ~= 'x' and k ~= 'y' and k ~= 'width' and k ~= 'height' and k ~= 'draw_list' and k ~= 'panel_state' then
       user_config[k] = v
     end
   end
@@ -635,7 +635,7 @@ end
 
 function M.get_direction(id)
   local instance = get_inst(id)
-  return instance and instance.sort_direction or "asc"
+  return instance and instance.sort_direction or 'asc'
 end
 
 function M.set_direction(id, direction)
