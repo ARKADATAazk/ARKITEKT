@@ -98,6 +98,7 @@ local MODULES = {
   MediaItem = 'arkitekt.gui.widgets.experimental.audio.media_item',
   MIDIPianoRoll = 'arkitekt.gui.widgets.experimental.audio.midi_piano_roll',
   Piano = 'arkitekt.gui.widgets.experimental.audio.piano',
+  SpectrumAnalyzer = 'arkitekt.gui.widgets.experimental.spectrum_analyzer',
   VUMeter = 'arkitekt.gui.widgets.experimental.vu_meter',
   Waveform = 'arkitekt.gui.widgets.experimental.audio.waveform',
   XYPad = 'arkitekt.gui.widgets.experimental.xy_pad',

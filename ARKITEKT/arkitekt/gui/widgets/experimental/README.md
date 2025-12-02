@@ -68,6 +68,59 @@ Ark.VUMeter(ctx, {
 
 ---
 
+### SpectrumAnalyzer
+**File**: `spectrum_analyzer.lua`
+**Status**: Prototype
+**Description**: FFT spectrum visualization for frequency domain analysis.
+
+**Features**:
+- Frequency domain visualization (FFT bins)
+- Logarithmic or linear frequency spacing
+- Color gradient zones (green → yellow → orange → red)
+- Single color mode or gradient mode
+- Configurable frequency range (20Hz - 20kHz default)
+- dB scaling with configurable range
+- Optional frequency grid lines
+- Convenience constructors: `standard()`, `bass()`, `midrange()`
+
+**Usage**:
+```lua
+-- Standard spectrum analyzer (20Hz - 20kHz)
+Ark.SpectrumAnalyzer(ctx, {
+  bins = fft_bins,       -- Array of dB values
+  width = 400,
+  height = 150,
+  min_db = -60,
+  max_db = 0,
+  sample_rate = 44100,
+  is_logarithmic = true,  -- Log frequency spacing
+  is_gradient = true,     -- Color gradient
+  show_grid = true,       -- Frequency markers
+})
+
+-- Bass analyzer (20Hz - 500Hz)
+Ark.SpectrumAnalyzer.bass(ctx, {
+  bins = fft_bins,
+  width = 300,
+  height = 100,
+})
+
+-- Single color mode
+Ark.SpectrumAnalyzer(ctx, {
+  bins = fft_bins,
+  is_gradient = false,
+  color = Colors.hexrgb("#33FF66"),
+})
+```
+
+**Known Issues**:
+- Requires pre-computed FFT bins (doesn't compute FFT from audio)
+- Peak hold not implemented yet
+- No frequency labels on grid lines
+- Bar spacing may cause aliasing at low widths
+
+---
+
 ### XYPad
 **File**: `xy_pad.lua`
 **Status**: Prototype

@@ -34,6 +34,9 @@ local state = {
   vu_peak = -6,
   vu_rms = -12,
 
+  -- Spectrum analyzer bins
+  spectrum_bins = nil,
+
   -- MediaItem selection
   media_selected = {false, true, false},
 
@@ -73,8 +76,29 @@ local function generate_midi_notes()
   return notes
 end
 
+-- Generate synthetic spectrum data (simulates FFT bins)
+local function generate_spectrum_bins(num_bins)
+  local bins = {}
+  for i = 1, num_bins do
+    -- Create a realistic spectrum shape with low-frequency emphasis
+    local freq_normalized = (i - 1) / (num_bins - 1)
+
+    -- Base spectrum with 1/f rolloff (pink noise characteristic)
+    local base_level = -10 - (freq_normalized * 35)
+
+    -- Add some peaks (harmonics)
+    local peak1 = math.exp(-((freq_normalized - 0.15) ^ 2) / 0.01) * 15
+    local peak2 = math.exp(-((freq_normalized - 0.35) ^ 2) / 0.008) * 12
+    local peak3 = math.exp(-((freq_normalized - 0.55) ^ 2) / 0.012) * 8
+
+    bins[i] = base_level + peak1 + peak2 + peak3 + math.random() * 2 - 1
+  end
+  return bins
+end
+
 state.peaks = generate_waveform(200)
 state.midi_notes = generate_midi_notes()
+state.spectrum_bins = generate_spectrum_bins(128)
 
 -- ============================================================================
 -- GUI
@@ -193,6 +217,33 @@ local function draw_gui(ctx)
     max_db = 0,
     width = 25,
     height = 150,
+  })
+
+  ImGui.Spacing(ctx)
+
+  -- ========================================================================
+  -- SPECTRUM ANALYZER
+  -- ========================================================================
+  draw_section_header(ctx, "Spectrum Analyzer - Frequency domain visualization")
+
+  -- Animate the spectrum (add some movement)
+  local time = reaper.time_precise()
+  local animated_bins = {}
+  for i = 1, #state.spectrum_bins do
+    local animation = math.sin(time * 1.5 + i * 0.05) * 3
+    animated_bins[i] = state.spectrum_bins[i] + animation
+  end
+
+  Ark.SpectrumAnalyzer(ctx, {
+    bins = animated_bins,
+    width = 400,
+    height = 120,
+    min_db = -60,
+    max_db = 0,
+    sample_rate = 44100,
+    is_logarithmic = true,
+    is_gradient = true,
+    show_grid = true,
   })
 
   ImGui.Spacing(ctx)
