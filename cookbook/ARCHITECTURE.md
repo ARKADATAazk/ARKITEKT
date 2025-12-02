@@ -109,6 +109,8 @@ Scripts can have multiple `domain/` subfolders for different concerns:
 **Files:**
 - `init.lua` - Wire dependencies, return configured app
 - `state.lua` - Hold service references (container only, no logic)
+- `config.lua` - Pure re-exports of constants from `defs/`
+- `config_factory.lua` - Factory functions for dynamic configs (optional)
 
 **Example `app/state.lua`:**
 ```lua
@@ -130,6 +132,47 @@ end
 
 return M
 ```
+
+**Config Organization:**
+
+Split static constants from dynamic factories for clarity:
+
+```lua
+-- app/config.lua (pure re-exports)
+local Constants = require('MyApp.defs.constants')
+local Defaults = require('MyApp.defs.defaults')
+
+local M = {}
+M.ANIMATION = Constants.ANIMATION
+M.TRANSPORT = Defaults.TRANSPORT
+return M
+
+-- app/config_factory.lua (dynamic configs)
+local M = {}
+
+function M.get_transport_config(state_module)
+  return {
+    height = Defaults.TRANSPORT.height,
+    corner_buttons = {
+      bottom_left = create_viewmode_button(state_module), -- Needs state!
+    },
+  }
+end
+
+function M.get_container_config(callbacks)
+  return {
+    header = { ... },
+    on_tab_create = callbacks.on_create, -- Needs callbacks!
+  }
+end
+
+return M
+```
+
+**Why split?**
+- Clarity: Static vs dynamic at a glance
+- Dependency tracking: Factories show runtime deps explicitly
+- Cleaner imports: `config` for constants, `config_factory` for builders
 
 ---
 
@@ -467,7 +510,23 @@ State.initialize({
 | < 200 lines | Excellent | No action |
 | 200-400 lines | Good | Monitor |
 | 400-700 lines | Warning | Consider splitting |
-| > 700 lines | **Must split** | Break into modules |
+| > 700 lines | **Consider splitting** | Break into modules if concerns are separable |
+
+**Exceptions:** Cohesive modules can exceed 700 lines if splitting would harm clarity:
+- Coordinators with rendering methods (1200+ lines acceptable)
+- State machines with many transitions
+- View modules with inline logic
+- Converters/parsers with complex logic
+
+**When to split:**
+- Mixed concerns (e.g., `coordinator.lua` + `coordinator_render.lua` doing identical things)
+- Multiple unrelated responsibilities
+- Hard to navigate/understand
+
+**When NOT to split:**
+- Single cohesive responsibility
+- Artificial separation just to meet line count
+- Would require excessive delegation
 
 ---
 

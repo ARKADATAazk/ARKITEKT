@@ -1,6 +1,44 @@
 -- @noindex
 -- RegionPlaylist/ui/tiles/pool_grid_factory.lua
--- Opts-based grid factory for pool tiles
+-- Pool Grid Configuration Factory
+--
+-- PURPOSE:
+-- Builds opts table configuration for the pool (region/playlist browser) Grid widget.
+-- This is an adapter between app state (coordinator) and ARKITEKT Grid API.
+--
+-- RESPONSIBILITIES:
+--   - Map filtered/sorted pool data to Grid widget parameters
+--   - Wire interaction callbacks (drag, select, double-click, right-click)
+--   - Configure pool-specific behaviors (no reordering by default, drag to active)
+--   - Set up drag payload (regions or playlist objects)
+--   - Handle both region tiles AND playlist tiles (mixed mode)
+--
+-- PATTERN: Factory Function
+-- Similar to active_grid_factory.lua but for the pool (bottom) grid.
+-- Returns fresh opts table each frame for Ark.Grid(ctx, opts).
+--
+-- WHY FACTORY?
+-- - Pool configuration is complex (300+ lines)
+-- - Handles two tile types (regions and playlists) with unified API
+-- - Separates filtering/sorting logic from rendering
+-- - Keeps coordinator.lua readable
+--
+-- FLOW:
+-- coordinator_render.draw_pool()
+--   → PoolGridFactory.create_opts(self, self.config)
+--   → Returns opts table
+--   → Ark.Grid(ctx, opts)
+--   → Grid renders mixed region/playlist tiles
+--
+-- MIXED MODE:
+-- Pool can contain both regions (rid) and playlists (id + items).
+-- Key function distinguishes: "pool_123" (region) vs "pool_playlist_abc" (playlist)
+--
+-- SEE ALSO:
+--   - ui/tiles/coordinator.lua (orchestrator that uses this factory)
+--   - ui/tiles/renderers/pool.lua (tile rendering implementation)
+--   - ui/tiles/active_grid_factory.lua (similar factory for active grid)
+--   - app/pool_queries.lua (filtering and sorting logic)
 
 local Ark = require('arkitekt')
 local PoolTile = require('RegionPlaylist.ui.tiles.renderers.pool')
@@ -270,8 +308,17 @@ end
 local function create_render_tile(rt, tile_config)
   return function(ctx, rect, region, state, grid)
     local tile_height = rect[4] - rect[2]
-    PoolTile.render(ctx, rect, region, state, rt.pool_animator, rt.hover_config,
-                    tile_height, tile_config.border_thickness, grid)
+    PoolTile.render({
+      ctx = ctx,
+      rect = rect,
+      item = region,
+      state = state,
+      animator = rt.pool_animator,
+      hover_config = rt.hover_config,
+      tile_height = tile_height,
+      border_thickness = tile_config.border_thickness,
+      grid = grid,
+    })
   end
 end
 

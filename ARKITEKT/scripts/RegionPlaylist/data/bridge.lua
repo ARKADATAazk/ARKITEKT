@@ -1,6 +1,69 @@
 -- @noindex
 -- RegionPlaylist/data/bridge.lua
--- Sequence-driven coordinator bridge that lazily expands playlists on demand
+-- App ↔ Engine Coordination Bridge
+--
+-- PURPOSE:
+-- Decouples the UI layer (app/state, ui/) from the playback engine (domain/playback).
+-- When playlists are edited in the UI, the Bridge invalidates its cached sequence
+-- and lazily rebuilds on next playback request.
+--
+-- RESPONSIBILITIES:
+--   1. Lazy Sequence Expansion - Flattens nested playlists into linear sequence
+--   2. Cache Invalidation - Rebuilds when playlists change
+--   3. Engine Wrapping - Provides simplified API to UI (play, stop, seek)
+--   4. State Coordination - Keeps UI and engine synchronized
+--
+-- PATTERN: Facade + Lazy Evaluation
+-- - Facade: Hides engine complexity from UI
+-- - Lazy: Only expands playlists when needed (on play, on get_sequence)
+--
+-- WHY IT EXISTS:
+-- - UI mutates playlists frequently (add, remove, reorder, change loops)
+-- - Engine needs flat array: [{rid, key, loops}, {rid, key, loops}, ...]
+-- - Rebuilding sequence on every UI change is expensive
+-- - Solution: Invalidate cache, rebuild lazily when engine needs it
+--
+-- SEQUENCE EXPANSION:
+-- Nested playlists are recursively flattened into array of {rid, key, loops}.
+-- Example:
+--   Active Playlist:
+--     Region 1 (2 reps)
+--     Nested Playlist A (3 reps)
+--       Region 2 (1 rep)
+--       Region 3 (2 reps)
+--
+--   Expanded Sequence:
+--     [Region 1, Region 1,
+--      Region 2, Region 3, Region 3,
+--      Region 2, Region 3, Region 3,
+--      Region 2, Region 3, Region 3]
+--
+-- CACHE INVALIDATION:
+-- When controller.commit() is called after playlist edit:
+--   1. controller:_commit()
+--   2. bridge:invalidate_sequence()
+--   3. Sets sequence_stale = true
+--   4. [User clicks play]
+--   5. bridge:play() checks sequence_stale
+--   6. If stale: rebuild via expander.expand(playlists)
+--   7. Cache sequence for subsequent frames
+--
+-- FLOW DIAGRAM:
+-- UI edits playlist
+--   → controller.add_item(rid, index)
+--   → controller:_commit()
+--   → bridge:invalidate_sequence()
+--   → [User clicks play]
+--   → bridge:play()
+--   → if sequence_stale then rebuild_sequence()
+--   → engine.play(sequence)
+--   → Per frame: engine.update()
+--   → UI polls bridge:get_current_key()
+--
+-- SEE ALSO:
+--   - domain/playback/expander.lua (sequence expansion algorithm)
+--   - domain/playback/controller.lua (playback engine)
+--   - app/controller.lua (calls invalidate_sequence on commits)
 
 local Engine = require("RegionPlaylist.domain.playback.controller")
 local Playback = require("RegionPlaylist.domain.playback.loop")

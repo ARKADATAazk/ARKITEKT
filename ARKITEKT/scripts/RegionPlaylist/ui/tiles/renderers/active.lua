@@ -41,15 +41,44 @@ local function clamp_min_lightness(color, min_l)
   return color
 end
 
-function M.render(ctx, rect, item, state, get_region_by_rid, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, bridge, get_playlist_by_id, grid)
-  if item.type == "playlist" then
-    M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, get_playlist_by_id, bridge, grid)
+--- Render active tile (region or playlist)
+--- @param opts table Render options
+--- @param opts.ctx ImGui_Context ImGui context
+--- @param opts.rect table {x1, y1, x2, y2} Tile bounds
+--- @param opts.item table Item data {type, key, rid?, playlist_id?, enabled?, ...}
+--- @param opts.state table Tile state {hover, pressed, selected}
+--- @param opts.get_region_by_rid function Function(rid) -> region
+--- @param opts.animator table TileAnimator instance
+--- @param opts.on_repeat_cycle function Callback(key, current_loop, total_reps)
+--- @param opts.hover_config table Animation config {animation_speed_hover}
+--- @param opts.tile_height number Tile height in pixels
+--- @param opts.border_thickness number Border thickness
+--- @param opts.bridge table CoordinatorBridge instance
+--- @param opts.get_playlist_by_id function Function(id) -> playlist
+--- @param opts.grid table Grid instance
+function M.render(opts)
+  if opts.item.type == "playlist" then
+    M.render_playlist(opts)
   else
-    M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, bridge, grid)
+    M.render_region(opts)
   end
 end
 
-function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, bridge, grid)
+--- Render region tile
+--- @param opts table Render options (same as M.render)
+function M.render_region(opts)
+  local ctx = opts.ctx
+  local rect = opts.rect
+  local item = opts.item
+  local state = opts.state
+  local get_region_by_rid = opts.get_region_by_rid
+  local animator = opts.animator
+  local on_repeat_cycle = opts.on_repeat_cycle
+  local hover_config = opts.hover_config
+  local tile_height = opts.tile_height
+  local border_thickness = opts.border_thickness
+  local bridge = opts.bridge
+  local grid = opts.grid
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local region = get_region_by_rid(item.rid)
@@ -150,7 +179,22 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
   if show_length then BaseRenderer.draw_length_display(ctx, dl, rect, region, base_color, text_alpha) end
 end
 
-function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, get_playlist_by_id, bridge, grid)
+--- Render playlist tile
+--- @param opts table Render options (same as M.render)
+function M.render_playlist(opts)
+  local ctx = opts.ctx
+  local rect = opts.rect
+  local item = opts.item
+  local state = opts.state
+  local animator = opts.animator
+  local on_repeat_cycle = opts.on_repeat_cycle
+  local hover_config = opts.hover_config
+  local tile_height = opts.tile_height
+  local border_thickness = opts.border_thickness
+  local get_playlist_by_id = opts.get_playlist_by_id
+  local bridge = opts.bridge
+  local grid = opts.grid
+
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local playlist = get_playlist_by_id and get_playlist_by_id(item.playlist_id) or {}
