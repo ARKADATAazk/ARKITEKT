@@ -111,6 +111,9 @@ function M.new(opts)
     on_close        = config.on_close,
     on_maximize     = config.on_maximize,
     on_icon_click   = config.on_icon_click,
+
+    -- Per-app theme overrides
+    app_name        = config.app_name,
   }
   
   function titlebar:_truncate_text(ctx, text, max_width, font, font_size)
@@ -285,6 +288,9 @@ function M.new(opts)
           -- Theme submenu (auto-generated from presets)
           if ThemeManager and ThemeManager.presets then
             if ContextMenu.begin_menu(ctx, "Theme") then
+              -- Get GLOBAL theme mode (for main menu)
+              local global_mode = ThemeManager.load_mode and ThemeManager.load_mode(nil) or nil
+              -- Get CURRENT app's theme mode (for App Override submenu)
               local current_mode = ThemeManager.get_mode and ThemeManager.get_mode() or nil
 
               -- Format preset name: "light_grey" -> "Light Grey"
@@ -301,11 +307,21 @@ function M.new(opts)
               end
               table.sort(preset_names)
 
-              -- Show all presets
+              -- Check if app has override (makes main menu read-only)
+              local has_override = self.app_name and ThemeManager.has_app_override and ThemeManager.has_app_override(self.app_name)
+
+              -- Show info if override is active
+              if has_override then
+                ContextMenu.item(ctx, "(Using App Override)", { enabled = false })
+                ContextMenu.separator(ctx)
+              end
+
+              -- Show all presets (read-only if override active, marked by GLOBAL mode)
               for _, name in ipairs(preset_names) do
                 local display = format_preset_name(name)
-                local label = (current_mode == name) and ("* " .. display) or ("  " .. display)
-                if ContextMenu.item(ctx, label) then
+                local label = (global_mode == name) and ("* " .. display) or ("  " .. display)
+
+                if ContextMenu.item(ctx, label, { enabled = not has_override }) then
                   if ThemeManager.set_mode then
                     ThemeManager.set_mode(name)
                   end
@@ -314,7 +330,7 @@ function M.new(opts)
 
               ContextMenu.separator(ctx)
 
-              -- Custom color picker
+              -- Custom color picker (disabled if override active, marked by GLOBAL mode)
               if ThemeManager.set_custom and ThemeManager.get_custom_color then
                 -- Get current custom color or default (in our format: 0xRRGGBBAA)
                 local custom_color = ThemeManager.get_custom_color()
@@ -331,18 +347,27 @@ function M.new(opts)
                               | ImGui.ColorEditFlags_NoInputs
                               | ImGui.ColorEditFlags_NoLabel
 
+                -- Disable color picker if override active
+                if has_override then
+                  ImGui.BeginDisabled(ctx)
+                end
+
                 -- Color picker widget
                 local changed, new_rgb = ImGui.ColorEdit3(ctx, "##custom_color", rgb_color, flags)
-                if changed then
+                if changed and not has_override then
                   -- Convert back to our format: 0xRRGGBBAA
                   local new_color = (new_rgb << 8) | 0xFF
                   ThemeManager.set_custom(new_color)
                 end
 
-                -- Clickable "Custom" label to apply the custom theme (same line as picker)
+                if has_override then
+                  ImGui.EndDisabled(ctx)
+                end
+
+                -- Clickable "Custom" label to apply the custom theme (same line as picker, marked by GLOBAL mode)
                 ImGui.SameLine(ctx)
-                local custom_label = (current_mode == "custom") and "* Custom" or "  Custom"
-                if ContextMenu.item(ctx, custom_label) then
+                local custom_label = (global_mode == "custom") and "* Custom" or "  Custom"
+                if ContextMenu.item(ctx, custom_label, { enabled = not has_override }) then
                   if ThemeManager.set_mode then
                     ThemeManager.set_mode("custom")
                   end
@@ -351,9 +376,9 @@ function M.new(opts)
 
               ContextMenu.separator(ctx)
 
-              -- Adapt mode (sync with REAPER)
-              local adapt_label = (current_mode == "adapt") and "* Adapt (REAPER)" or "  Adapt (REAPER)"
-              if ContextMenu.item(ctx, adapt_label) then
+              -- Adapt mode (sync with REAPER) - disabled if override active, marked by GLOBAL mode
+              local adapt_label = (global_mode == "adapt") and "* Adapt (REAPER)" or "  Adapt (REAPER)"
+              if ContextMenu.item(ctx, adapt_label, { enabled = not has_override }) then
                 if ThemeManager.set_mode then
                   ThemeManager.set_mode("adapt")
                 end
@@ -365,6 +390,50 @@ function M.new(opts)
                 local dock_adapt_enabled = ThemeManager.is_dock_adapt_enabled()
                 if ContextMenu.checkbox_item(ctx, "Adapt on docking", dock_adapt_enabled) then
                   ThemeManager.set_dock_adapt_enabled(not dock_adapt_enabled)
+                end
+              end
+
+              -- Per-app override submenu
+              if self.app_name and ThemeManager.has_app_override and ThemeManager.clear_app_override and ThemeManager.set_mode then
+                ContextMenu.separator(ctx)
+                local has_override = ThemeManager.has_app_override(self.app_name)
+
+                if ContextMenu.begin_menu(ctx, "App Override") then
+                  -- "None" option (clears override, uses global)
+                  local none_label = not has_override and "* None (use global)" or "  None (use global)"
+                  if ContextMenu.item(ctx, none_label) then
+                    if has_override then
+                      ThemeManager.clear_app_override(self.app_name)
+                      ThemeManager.init("adapt", self.app_name)  -- Reload from global
+                    end
+                  end
+
+                  ContextMenu.separator(ctx)
+
+                  -- Show all presets
+                  for _, name in ipairs(preset_names) do
+                    local display = format_preset_name(name)
+                    local is_current = has_override and (current_mode == name)
+                    local label = is_current and ("* " .. display) or ("  " .. display)
+                    if ContextMenu.item(ctx, label) then
+                      if ThemeManager.set_mode then
+                        ThemeManager.set_mode(name, true, self.app_name)  -- Save as override
+                      end
+                    end
+                  end
+
+                  ContextMenu.separator(ctx)
+
+                  -- Adapt mode
+                  local is_adapt = has_override and (current_mode == "adapt")
+                  local adapt_label = is_adapt and "* Adapt (REAPER)" or "  Adapt (REAPER)"
+                  if ContextMenu.item(ctx, adapt_label) then
+                    if ThemeManager.set_mode then
+                      ThemeManager.set_mode("adapt", true, self.app_name)
+                    end
+                  end
+
+                  ContextMenu.end_submenu(ctx)
                 end
               end
 

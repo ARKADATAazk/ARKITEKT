@@ -139,6 +139,7 @@ function M.generate_and_apply(base_bg)
     M.COLORS[key] = value
   end
   Registry.clear_cache()
+  M.invalidate_config_caches()  -- Invalidate widget config caches (button, combo, etc.)
 end
 
 --- Generate palette without applying
@@ -177,7 +178,8 @@ end
 --- Set theme by mode name
 --- @param mode string "dark", "light", "adapt", or "custom"
 --- @param persist boolean|nil Whether to save preference (default: true)
-function M.set_mode(mode, persist)
+--- @param app_name string|nil App name for per-app storage
+function M.set_mode(mode, persist, app_name)
   if persist == nil then persist = true end
   local success = false
 
@@ -194,7 +196,7 @@ function M.set_mode(mode, persist)
     Registry.clear_cache()
     M.invalidate_config_caches()
     if persist then
-      Integration.save_mode(mode)
+      Integration.save_mode(mode, app_name)
     end
   end
 
@@ -207,9 +209,14 @@ function M.get_mode()
 end
 
 --- Initialize theme from saved preference or default
-function M.init(default_mode)
+--- @param default_mode string|nil Default mode (default: "adapt")
+--- @param app_name string|nil App name for per-app overrides
+--- @return boolean Success
+function M.init(default_mode, app_name)
   default_mode = default_mode or "adapt"
-  local saved_mode = Integration.load_mode()
+
+  -- Load with app fallback (checks app-specific, then global)
+  local saved_mode = Integration.load_mode(app_name)
   local mode_to_apply = saved_mode
 
   -- Validate saved mode (including custom if a custom color exists)
@@ -222,7 +229,10 @@ function M.init(default_mode)
     mode_to_apply = default_mode
   end
 
-  return M.set_mode(mode_to_apply, saved_mode == nil)
+  -- If app_name provided and no saved mode exists, treat default as app override
+  local should_persist = saved_mode == nil
+
+  return M.set_mode(mode_to_apply, should_persist, app_name)
 end
 
 -- =============================================================================
@@ -232,6 +242,7 @@ end
 M.transition_to_palette = Integration.transition_to_palette
 M.transition_to_theme = Integration.transition_to_theme
 M.create_live_sync = Integration.create_live_sync
+M.create_cross_app_sync = Integration.create_cross_app_sync
 
 -- =============================================================================
 -- DOCK ADAPTS TO REAPER
@@ -258,6 +269,13 @@ function M.set_custom(color)
   Integration.set_custom_color(color)
   return M.set_mode("custom")
 end
+
+-- =============================================================================
+-- PER-APP OVERRIDES
+-- =============================================================================
+
+M.clear_app_override = Integration.clear_app_override
+M.has_app_override = Integration.has_app_override
 
 -- =============================================================================
 -- REGISTRY (script palettes)
