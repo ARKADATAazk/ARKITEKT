@@ -35,17 +35,17 @@ end
 
 -- Format version string: extract numbers and dots, prepend "v"
 local function format_version(version)
-  if not version or version == "" then return nil end
+  if not version or version == '' then return nil end
 
   -- Extract only numbers and dots
-  local clean = version:gsub("[^%d%.]", "")
+  local clean = version:gsub('[^%d%.]', '')
 
   -- Remove leading/trailing dots
-  clean = clean:gsub("^%.+", ""):gsub("%.+$", "")
+  clean = clean:gsub('^%.+', ''):gsub('%.+$', '')
 
-  if clean == "" then return nil end
+  if clean == '' then return nil end
 
-  return "v" .. clean
+  return 'v' .. clean
 end
 
 function M.new(opts)
@@ -62,7 +62,7 @@ function M.new(opts)
 
   local titlebar = {
     -- Text content
-    title           = config.title or "Window",
+    title           = config.title or 'Window',
     version         = format_version(config.version),
 
     -- Fonts
@@ -117,23 +117,23 @@ function M.new(opts)
   }
   
   function titlebar:_truncate_text(ctx, text, max_width, font, font_size)
-    if not text then return "" end
+    if not text then return '' end
 
     if font then ImGui.PushFont(ctx, font, font_size) end
     local text_w = ImGui.CalcTextSize(ctx, text)
     if font then ImGui.PopFont(ctx) end
-    
+
     if text_w <= max_width then
       return text
     end
 
-    local ellipsis = "..."
+    local ellipsis = '...'
     if font then ImGui.PushFont(ctx, font, font_size) end
     local ellipsis_w = ImGui.CalcTextSize(ctx, ellipsis)
     if font then ImGui.PopFont(ctx) end
 
     if max_width < ellipsis_w then
-      return ""
+      return ''
     end
 
     for i = #text, 1, -1 do
@@ -141,7 +141,7 @@ function M.new(opts)
       if font then ImGui.PushFont(ctx, font, font_size) end
       local sub_w = ImGui.CalcTextSize(ctx, sub)
       if font then ImGui.PopFont(ctx) end
-      
+
       if sub_w + ellipsis_w <= max_width then
         return sub .. ellipsis
       end
@@ -161,7 +161,7 @@ function M.new(opts)
     if Icon and Icon.load_image and Icon.draw_png then
       if not self.icon_image then
         local dpi = ImGui.GetWindowDpiScale(ctx) or 1.0
-        self.icon_image = Icon.load_image(ctx, "ARKITEKT", dpi)
+        self.icon_image = Icon.load_image(ctx, 'ARKITEKT', dpi)
       end
       if self.icon_image then
         local success = Icon.draw_png(ctx, x, y, self.icon_size, self.icon_image)
@@ -236,7 +236,7 @@ function M.new(opts)
     local titlebar_flags = ImGui.ChildFlags_None
     local window_flags = ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse
     
-    local child_visible = ImGui.BeginChild(ctx, "##titlebar", win_w, self.height, titlebar_flags, window_flags)
+    local child_visible = ImGui.BeginChild(ctx, '##titlebar', win_w, self.height, titlebar_flags, window_flags)
     
     local clicked_maximize = false
     local clicked_close = false
@@ -258,7 +258,7 @@ function M.new(opts)
         local icon_color = self.icon_color or text_color
 
         ImGui.SetCursorPos(ctx, self.pad_h - 12, (self.height - native_icon_size) * 0.5)  -- Move icon 12px left
-        ImGui.InvisibleButton(ctx, "##icon_button", native_icon_size, native_icon_size)
+        ImGui.InvisibleButton(ctx, '##icon_button', native_icon_size, native_icon_size)
 
         local icon_hovered = ImGui.IsItemHovered(ctx)
         local icon_left_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
@@ -266,7 +266,7 @@ function M.new(opts)
 
         -- Both left and right click open context menu
         if icon_left_clicked or icon_right_clicked then
-          ImGui.OpenPopup(ctx, "##icon_context_menu")
+          ImGui.OpenPopup(ctx, '##icon_context_menu')
         end
 
         local draw_color = icon_color
@@ -284,10 +284,10 @@ function M.new(opts)
         self:_draw_icon(ctx, icon_x, icon_y, draw_color)
 
         -- Context menu on left/right click
-        if ContextMenu.begin(ctx, "##icon_context_menu") then
+        if ContextMenu.begin(ctx, '##icon_context_menu') then
           -- Theme submenu (auto-generated from presets)
           if ThemeManager and ThemeManager.presets then
-            if ContextMenu.begin_menu(ctx, "Theme") then
+            if ContextMenu.begin_menu(ctx, 'Theme') then
               -- Get GLOBAL theme mode (for main menu)
               local global_mode = ThemeManager.load_mode and ThemeManager.load_mode(nil) or nil
               -- Get CURRENT app's theme mode (for App Override submenu)
@@ -295,7 +295,7 @@ function M.new(opts)
 
               -- Format preset name: "light_grey" -> "Light Grey"
               local function format_preset_name(name)
-                return name:gsub("_", " "):gsub("(%a)([%w]*)", function(a, b)
+                return name:gsub('_', ' '):gsub('(%a)([%w]*)', function(a, b)
                   return a:upper() .. b
                 end)
               end
@@ -312,14 +312,14 @@ function M.new(opts)
 
               -- Show info if override is active
               if has_override then
-                ContextMenu.item(ctx, "(Using App Override)", { enabled = false })
+                ContextMenu.item(ctx, '(Using App Override)', { enabled = false })
                 ContextMenu.separator(ctx)
               end
 
               -- Show all presets (read-only if override active, marked by GLOBAL mode)
               for _, name in ipairs(preset_names) do
                 local display = format_preset_name(name)
-                local label = (global_mode == name) and ("* " .. display) or ("  " .. display)
+                local label = (global_mode == name) and ('* ' .. display) or ('  ' .. display)
 
                 if ContextMenu.item(ctx, label, { enabled = not has_override }) then
                   if ThemeManager.set_mode then
@@ -336,7 +336,7 @@ function M.new(opts)
                 local custom_color = ThemeManager.get_custom_color()
                 if not custom_color then
                   -- Default to current BG_BASE if no custom color set
-                  custom_color = ThemeManager.COLORS and ThemeManager.COLORS.BG_BASE or hexrgb("#333333")
+                  custom_color = ThemeManager.COLORS and ThemeManager.COLORS.BG_BASE or hexrgb('#333333')
                 end
 
                 -- ColorEdit3 uses plain 0xRRGGBB (24-bit, no alpha)
@@ -353,7 +353,7 @@ function M.new(opts)
                 end
 
                 -- Color picker widget
-                local changed, new_rgb = ImGui.ColorEdit3(ctx, "##custom_color", rgb_color, flags)
+                local changed, new_rgb = ImGui.ColorEdit3(ctx, '##custom_color', rgb_color, flags)
                 if changed and not has_override then
                   -- Convert back to our format: 0xRRGGBBAA
                   local new_color = (new_rgb << 8) | 0xFF
@@ -366,10 +366,10 @@ function M.new(opts)
 
                 -- Clickable "Custom" label to apply the custom theme (same line as picker, marked by GLOBAL mode)
                 ImGui.SameLine(ctx)
-                local custom_label = (global_mode == "custom") and "* Custom" or "  Custom"
+                local custom_label = (global_mode == 'custom') and '* Custom' or '  Custom'
                 if ContextMenu.item(ctx, custom_label, { enabled = not has_override }) then
                   if ThemeManager.set_mode then
-                    ThemeManager.set_mode("custom")
+                    ThemeManager.set_mode('custom')
                   end
                 end
               end
@@ -377,10 +377,10 @@ function M.new(opts)
               ContextMenu.separator(ctx)
 
               -- Adapt mode (sync with REAPER) - disabled if override active, marked by GLOBAL mode
-              local adapt_label = (global_mode == "adapt") and "* Adapt (REAPER)" or "  Adapt (REAPER)"
+              local adapt_label = (global_mode == 'adapt') and '* Adapt (REAPER)' or '  Adapt (REAPER)'
               if ContextMenu.item(ctx, adapt_label, { enabled = not has_override }) then
                 if ThemeManager.set_mode then
-                  ThemeManager.set_mode("adapt")
+                  ThemeManager.set_mode('adapt')
                 end
               end
 
@@ -388,7 +388,7 @@ function M.new(opts)
               if ThemeManager.is_dock_adapt_enabled and ThemeManager.set_dock_adapt_enabled then
                 ContextMenu.separator(ctx)
                 local dock_adapt_enabled = ThemeManager.is_dock_adapt_enabled()
-                if ContextMenu.checkbox_item(ctx, "Adapt on docking", dock_adapt_enabled) then
+                if ContextMenu.checkbox_item(ctx, 'Adapt on docking', dock_adapt_enabled) then
                   ThemeManager.set_dock_adapt_enabled(not dock_adapt_enabled)
                 end
               end
@@ -398,13 +398,13 @@ function M.new(opts)
                 ContextMenu.separator(ctx)
                 local has_override = ThemeManager.has_app_override(self.app_name)
 
-                if ContextMenu.begin_menu(ctx, "App Override") then
+                if ContextMenu.begin_menu(ctx, 'App Override') then
                   -- "None" option (clears override, uses global)
-                  local none_label = not has_override and "* None (use global)" or "  None (use global)"
+                  local none_label = not has_override and '* None (use global)' or '  None (use global)'
                   if ContextMenu.item(ctx, none_label) then
                     if has_override then
                       ThemeManager.clear_app_override(self.app_name)
-                      ThemeManager.init("adapt", self.app_name)  -- Reload from global
+                      ThemeManager.init('adapt', self.app_name)  -- Reload from global
                     end
                   end
 
@@ -414,7 +414,7 @@ function M.new(opts)
                   for _, name in ipairs(preset_names) do
                     local display = format_preset_name(name)
                     local is_current = has_override and (current_mode == name)
-                    local label = is_current and ("* " .. display) or ("  " .. display)
+                    local label = is_current and ('* ' .. display) or ('  ' .. display)
                     if ContextMenu.item(ctx, label) then
                       if ThemeManager.set_mode then
                         ThemeManager.set_mode(name, true, self.app_name)  -- Save as override
@@ -425,11 +425,11 @@ function M.new(opts)
                   ContextMenu.separator(ctx)
 
                   -- Adapt mode
-                  local is_adapt = has_override and (current_mode == "adapt")
-                  local adapt_label = is_adapt and "* Adapt (REAPER)" or "  Adapt (REAPER)"
+                  local is_adapt = has_override and (current_mode == 'adapt')
+                  local adapt_label = is_adapt and '* Adapt (REAPER)' or '  Adapt (REAPER)'
                   if ContextMenu.item(ctx, adapt_label) then
                     if ThemeManager.set_mode then
-                      ThemeManager.set_mode("adapt", true, self.app_name)
+                      ThemeManager.set_mode('adapt', true, self.app_name)
                     end
                   end
 
@@ -443,17 +443,17 @@ function M.new(opts)
             ContextMenu.separator(ctx)
           end
 
-          if ContextMenu.item(ctx, "Open Hub") then
+          if ContextMenu.item(ctx, 'Open Hub') then
             icon_clicked = true
           end
 
-          if ContextMenu.item(ctx, "Show Metrics") then
+          if ContextMenu.item(ctx, 'Show Metrics') then
             icon_shift_clicked = true
           end
 
           ContextMenu.separator(ctx)
 
-          if ContextMenu.item(ctx, "Debug Console") then
+          if ContextMenu.item(ctx, 'Debug Console') then
             local ok, ConsoleWindow = pcall(require, 'arkitekt.debug.console_window')
             if ok and ConsoleWindow and ConsoleWindow.launch then
               ConsoleWindow.launch()
@@ -463,13 +463,13 @@ function M.new(opts)
           -- Theme Debugger (live editor)
           if ThemeManager then
             local is_enabled = ThemeManager.is_debug_enabled and ThemeManager.is_debug_enabled() or false
-            local debug_label = is_enabled and "* Theme Debugger" or "  Theme Debugger"
+            local debug_label = is_enabled and '* Theme Debugger' or '  Theme Debugger'
             if ContextMenu.item(ctx, debug_label) then
               ThemeManager.toggle_debug()
             end
           end
 
-          if ContextMenu.item(ctx, "Lua Profiler") then
+          if ContextMenu.item(ctx, 'Lua Profiler') then
             -- Trigger profiler (originally CTRL+SHIFT+ALT+CLICK)
             -- You can add profiler launch logic here if needed
           end
@@ -488,7 +488,7 @@ function M.new(opts)
       local available_width = (win_w - total_button_width) - title_start_x - self.pad_h
 
       -- Show version only if show_version flag is true and version exists
-      if self.show_version and self.version and self.version ~= "" then
+      if self.show_version and self.version and self.version ~= '' then
         if self.title_font then ImGui.PushFont(ctx, self.title_font, self.title_font_size) end
         local title_w = ImGui.CalcTextSize(ctx, self.title)
         local title_h = ImGui.GetTextLineHeight(ctx)
@@ -526,7 +526,7 @@ function M.new(opts)
         else
           if self.title_font then ImGui.PushFont(ctx, self.title_font, self.title_font_size) end
           ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
-          local display_title = self:_truncate_text(ctx, self.title .. " " .. self.version, available_width, self.title_font, self.title_font_size)
+          local display_title = self:_truncate_text(ctx, self.title .. ' ' .. self.version, available_width, self.title_font, self.title_font_size)
           ImGui.Text(ctx, display_title)
           ImGui.PopStyleColor(ctx)
           if self.title_font then ImGui.PopFont(ctx) end
@@ -570,7 +570,7 @@ function M.new(opts)
 
       ImGui.SetCursorPos(ctx, win_w - total_button_width, 0)
       
-      if self.button_style == "filled" then
+      if self.button_style == 'filled' then
         clicked_maximize, clicked_close = self:_draw_buttons_filled(ctx)
       else
         clicked_maximize, clicked_close = self:_draw_buttons_minimal(ctx, bg_color)
@@ -670,13 +670,13 @@ function M.new(opts)
       ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, Constants.TITLEBAR.button_maximize_hovered)
       ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, Constants.TITLEBAR.button_maximize_active)
 
-      if ImGui.Button(ctx, "##max", self.button_width, self.height) then
+      if ImGui.Button(ctx, '##max', self.button_width, self.height) then
         clicked_maximize = true
       end
-      
+
       local is_hovered = ImGui.IsItemHovered(ctx)
       local is_active = ImGui.IsItemActive(ctx)
-      
+
       local current_button_bg
       if is_active then
         current_button_bg = Constants.TITLEBAR.button_maximize_active
@@ -685,16 +685,16 @@ function M.new(opts)
       else
         current_button_bg = bg_color
       end
-      
+
       local min_x, min_y = ImGui.GetItemRectMin(ctx)
       local max_x, max_y = ImGui.GetItemRectMax(ctx)
-      local icon_type = self.is_maximized and "restore" or "maximize"
+      local icon_type = self.is_maximized and 'restore' or 'maximize'
       self:_draw_button_icon(ctx, min_x, min_y, max_x, max_y, icon_type, icon_color, current_button_bg)
 
       ImGui.PopStyleColor(ctx, 3)
 
       if is_hovered then
-        ImGui.SetTooltip(ctx, self.is_maximized and "Restore" or "Maximize")
+        ImGui.SetTooltip(ctx, self.is_maximized and 'Restore' or 'Maximize')
       end
 
       ImGui.SameLine(ctx)
@@ -704,7 +704,7 @@ function M.new(opts)
     ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, Constants.TITLEBAR.button_close_hovered)
     ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, Constants.TITLEBAR.button_close_active)
 
-    if ImGui.Button(ctx, "##close", self.button_width, self.height) then
+    if ImGui.Button(ctx, '##close', self.button_width, self.height) then
       clicked_close = true
     end
 
@@ -722,13 +722,13 @@ function M.new(opts)
 
     local min_x, min_y = ImGui.GetItemRectMin(ctx)
     local max_x, max_y = ImGui.GetItemRectMax(ctx)
-    self:_draw_button_icon(ctx, min_x, min_y, max_x, max_y, "close", icon_color, current_button_bg)
+    self:_draw_button_icon(ctx, min_x, min_y, max_x, max_y, 'close', icon_color, current_button_bg)
     
     ImGui.PopStyleColor(ctx, 3)
     ImGui.PopStyleVar(ctx, 3)
 
     if is_hovered then
-      ImGui.SetTooltip(ctx, "Close")
+      ImGui.SetTooltip(ctx, 'Close')
     end
 
     return clicked_maximize, clicked_close
@@ -738,43 +738,43 @@ function M.new(opts)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 0, 0)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameRounding, 0)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameBorderSize, 0)
-    
+
     local clicked_maximize = false
     local clicked_close = false
-    
+
     if self.enable_maximize then
-      local icon = self.is_maximized and "⊡" or "▢"
+      local icon = self.is_maximized and '⊡' or '▢'
 
       ImGui.PushStyleColor(ctx, ImGui.Col_Button, Constants.TITLEBAR.button_maximize_filled_normal)
       ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, Constants.TITLEBAR.button_maximize_filled_hovered)
       ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, Constants.TITLEBAR.button_maximize_filled_active)
-      
-      if ImGui.Button(ctx, icon .. "##max", self.button_width, self.height) then
+
+      if ImGui.Button(ctx, icon .. '##max', self.button_width, self.height) then
         clicked_maximize = true
       end
-      
+
       ImGui.PopStyleColor(ctx, 3)
-      
+
       if ImGui.IsItemHovered(ctx) then
-        ImGui.SetTooltip(ctx, self.is_maximized and "Restore" or "Maximize")
+        ImGui.SetTooltip(ctx, self.is_maximized and 'Restore' or 'Maximize')
       end
-      
+
       ImGui.SameLine(ctx)
     end
-    
+
     ImGui.PushStyleColor(ctx, ImGui.Col_Button, Constants.TITLEBAR.button_close_filled_normal)
     ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, Constants.TITLEBAR.button_close_filled_hovered)
     ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, Constants.TITLEBAR.button_close_filled_active)
-    
-    if ImGui.Button(ctx, "X##close", self.button_width, self.height) then
+
+    if ImGui.Button(ctx, 'X##close', self.button_width, self.height) then
       clicked_close = true
     end
-    
+
     ImGui.PopStyleColor(ctx, 3)
     ImGui.PopStyleVar(ctx, 3)
-    
+
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, "Close")
+      ImGui.SetTooltip(ctx, 'Close')
     end
     
     return clicked_maximize, clicked_close

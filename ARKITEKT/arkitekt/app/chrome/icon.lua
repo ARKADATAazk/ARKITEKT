@@ -12,11 +12,11 @@ local image_cache = {}
 -- Find icons directory
 local function find_icons_dir()
   -- Try to find from package path
-  for path in package.path:gmatch("[^;]+") do
-    local dir = path:match("(.-)%?")
+  for path in package.path:gmatch('[^;]+') do
+    local dir = path:match('(.-)%?')
     if dir then
-      local icons_path = dir .. "arkitekt/icons/"
-      local f = io.open(icons_path .. "ARKITEKT.png", "r")
+      local icons_path = dir .. 'arkitekt/icons/'
+      local f = io.open(icons_path .. 'ARKITEKT.png', 'r')
       if f then
         f:close()
         return icons_path
@@ -25,11 +25,11 @@ local function find_icons_dir()
   end
 
   -- Fallback: use script path
-  local info = debug.getinfo(1, "S")
+  local info = debug.getinfo(1, 'S')
   if info and info.source then
-    local path = info.source:match("@?(.+)[/\\]")
+    local path = info.source:match('@?(.+)[/\\]')
     if path then
-      return path:gsub("[/\\]app[/\\]assets$", "") .. "/icons/"
+      return path:gsub('[/\\]app[/\\]assets$', '') .. '/icons/'
     end
   end
 
@@ -42,12 +42,12 @@ function M.load_image(ctx, base_name, dpi_scale)
 
   dpi_scale = dpi_scale or 1.0
   -- Use stable cache key (ctx is always the same context, just use icon name + dpi)
-  local cache_key = base_name .. "_" .. tostring(dpi_scale)
+  local cache_key = base_name .. '_' .. tostring(dpi_scale)
 
   -- Check if cached image exists and is still valid
   if image_cache[cache_key] then
     local cached = image_cache[cache_key]
-    if cached.image and type(cached.image) == "userdata" then
+    if cached.image and type(cached.image) == 'userdata' then
       -- Validate image pointer if ValidatePtr is available
       local validate_fn = ImGui.ValidatePtr
       if validate_fn then
@@ -76,11 +76,11 @@ function M.load_image(ctx, base_name, dpi_scale)
 
   -- Select variant based on DPI scale
   local variant_map = {
-    [16] = "@16x",
-    [8] = "@8x",
-    [4] = "@4x",
-    [2] = "@2x",
-    [1] = "",
+    [16] = '@16x',
+    [8] = '@8x',
+    [4] = '@4x',
+    [2] = '@2x',
+    [1] = '',
   }
 
   -- Round DPI to nearest supported scale
@@ -108,8 +108,8 @@ function M.load_image(ctx, base_name, dpi_scale)
 
   local filename
   for _, suffix in ipairs(try_order) do
-    local try_file = icons_dir .. base_name .. suffix .. ".png"
-    local f = io.open(try_file, "r")
+    local try_file = icons_dir .. base_name .. suffix .. '.png'
+    local f = io.open(try_file, 'r')
     if f then
       f:close()
       filename = try_file
@@ -137,7 +137,7 @@ function M.draw_png(ctx, x, y, size, image_data)
   if not image_data or not image_data.image then return false end
 
   -- Validate image pointer before using it
-  if type(image_data.image) ~= "userdata" then return false end
+  if type(image_data.image) ~= 'userdata' then return false end
 
   -- Use ValidatePtr if available (ImGui 0.9+)
   local validate_fn = ImGui.ValidatePtr

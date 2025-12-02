@@ -17,7 +17,7 @@ local hexrgb = Colors.hexrgb
 
 local function add_text(dl, x, y, col_u32, s)
   if dl and ImGui.DrawList_AddText then
-    ImGui.DrawList_AddText(dl, x, y, col_u32, tostring(s or ""))
+    ImGui.DrawList_AddText(dl, x, y, col_u32, tostring(s or ''))
   end
 end
 
@@ -31,7 +31,7 @@ function M.new(config)
   local RIGHT_PAD = config.right_pad
 
   local get_status  = config.get_status or function() return {} end
-  local right_text  = ""
+  local right_text  = ''
   local popup_state = { open = false, data = nil }
 
   local show_resize_handle   = config.show_resize_handle
@@ -54,15 +54,15 @@ function M.new(config)
       border = C.BORDER_OUTER,
       text = C.TEXT_NORMAL,
       sep = C.TEXT_DIMMED,
-      teal = C.ACCENT_PRIMARY or hexrgb("#41E0A3"),
-      yellow = C.ACCENT_WARNING or hexrgb("#E0B341"),
-      red = C.ACCENT_DANGER or hexrgb("#E04141"),
+      teal = C.ACCENT_PRIMARY or hexrgb('#41E0A3'),
+      yellow = C.ACCENT_WARNING or hexrgb('#E0B341'),
+      red = C.ACCENT_DANGER or hexrgb('#E04141'),
       resize_handle = C.TEXT_DIMMED,
     }
   end
 
   local function set_right_text(text)
-    right_text = text or ""
+    right_text = text or ''
   end
 
   local function apply_pending_resize(ctx)
@@ -73,7 +73,7 @@ function M.new(config)
 
   local function draw_popup(ctx)
     if popup_state.open and popup_state.data then
-      local popup_id = popup_state.data.popup_id or "StatusBarPopup"
+      local popup_id = popup_state.data.popup_id or 'StatusBarPopup'
       if ImGui.BeginPopup(ctx, popup_id) then
         if popup_state.data.draw_content then
           popup_state.data.draw_content(ctx, popup_state)
@@ -113,7 +113,7 @@ function M.new(config)
       drag_start_x, drag_start_y = mx, my
       drag_start_w, drag_start_h = ImGui.GetWindowSize(ctx)
       if DEBUG_RESIZE then
-        Logger.debug("GUI", "Resize grip: DRAG START - w=%d h=%d", drag_start_w, drag_start_h)
+        Logger.debug('GUI', 'Resize grip: DRAG START - w=%d h=%d', drag_start_w, drag_start_h)
       end
     end
 
@@ -125,13 +125,13 @@ function M.new(config)
         pending_resize_w = math.max(200, drag_start_w + delta_x)
         pending_resize_h = math.max(100, drag_start_h + delta_y)
         if DEBUG_RESIZE then
-          Logger.debug("GUI", "Resize grip: DRAGGING - new_w=%d new_h=%d (delta: %d, %d)", pending_resize_w, pending_resize_h, delta_x, delta_y)
+          Logger.debug('GUI', 'Resize grip: DRAGGING - new_w=%d new_h=%d (delta: %d, %d)', pending_resize_w, pending_resize_h, delta_x, delta_y)
         end
       else
         resize_dragging = false
         pending_resize_w, pending_resize_h = nil, nil
         if DEBUG_RESIZE then
-          Logger.debug("GUI", "Resize grip: DRAG END")
+          Logger.debug('GUI', 'Resize grip: DRAG END')
         end
       end
     end
@@ -171,11 +171,11 @@ function M.new(config)
     local x1, y1, x2, y2 = sx, sy, sx + w, sy + h
     local resize_handle_width = show_resize_handle and 30 or 0
 
-    ImGui.Selectable(ctx, "##statusbar_nodrag", false, ImGui.SelectableFlags_Disabled, w - resize_handle_width, h)
+    ImGui.Selectable(ctx, '##statusbar_nodrag', false, ImGui.SelectableFlags_Disabled, w - resize_handle_width, h)
 
     if show_resize_handle and resize_handle_width > 0 then
       ImGui.SetCursorScreenPos(ctx, sx + w - resize_handle_width, sy)
-      ImGui.InvisibleButton(ctx, "##resize_grip_area", resize_handle_width, h)
+      ImGui.InvisibleButton(ctx, '##resize_grip_area', resize_handle_width, h)
     end
 
     ImGui.SetCursorScreenPos(ctx, sx, sy)
@@ -187,7 +187,7 @@ function M.new(config)
     -- Status content
     local status       = get_status()
     local text_color   = status.color or colors.teal
-    local status_text  = status.text  or "READY"
+    local status_text  = status.text  or 'READY'
 
     local center_y = y1 + (h / 2)
 
@@ -206,12 +206,12 @@ function M.new(config)
       for i, btn in ipairs(status.buttons) do
         ImGui.SetCursorScreenPos(ctx, sx + cursor_x, sy + button_y)
         local btn_w = math.max(100, (select(1, ImGui.CalcTextSize(ctx, btn.label)) or 0) + 16)
-        if ImGui.Button(ctx, btn.label .. "##statusbar_" .. i, btn_w, button_height) then
+        if ImGui.Button(ctx, btn.label .. '##statusbar_' .. i, btn_w, button_height) then
           if btn.action then btn.action(ctx) end
           if btn.popup  then
             popup_state.open = true
             popup_state.data = btn.popup
-            ImGui.OpenPopup(ctx, btn.popup.popup_id or "StatusBarPopup")
+            ImGui.OpenPopup(ctx, btn.popup.popup_id or 'StatusBarPopup')
           end
         end
         cursor_x = cursor_x + btn_w + 5
@@ -223,23 +223,23 @@ function M.new(config)
     local resize_handle_width_final = show_resize_handle and 16 or 0
 
     local right_items = {}
-    if right_text and right_text ~= "" then right_items[#right_items + 1] = right_text end
+    if right_text and right_text ~= '' then right_items[#right_items + 1] = right_text end
     if status.right_buttons then
       for _, btn in ipairs(status.right_buttons) do
-        right_items[#right_items + 1] = { type = "button", data = btn }
+        right_items[#right_items + 1] = { type = 'button', data = btn }
       end
     end
 
     local total_right_w, item_widths = 0, {}
     for _, item in ipairs(right_items) do
-      if type(item) == "string" then
+      if type(item) == 'string' then
         local tw = select(1, ImGui.CalcTextSize(ctx, item)) or 0
-        item_widths[#item_widths + 1] = { type = "text", width = tw, content = item }
+        item_widths[#item_widths + 1] = { type = 'text', width = tw, content = item }
         total_right_w = total_right_w + tw + 10
-      elseif type(item) == "table" and item.type == "button" then
+      elseif type(item) == 'table' and item.type == 'button' then
         local btn = item.data
         local bw = btn.width or math.max(80, (select(1, ImGui.CalcTextSize(ctx, btn.label)) or 0) + 16)
-        item_widths[#item_widths + 1] = { type = "button", width = bw, data = btn }
+        item_widths[#item_widths + 1] = { type = 'button', width = bw, data = btn }
         total_right_w = total_right_w + bw + 10
       end
     end
@@ -248,12 +248,12 @@ function M.new(config)
     local right_x = w - RIGHT_PAD - total_right_w - resize_handle_width_final - 8
 
     for i, info in ipairs(item_widths) do
-      if info.type == "text" then
+      if info.type == 'text' then
         local _, rtext_h = ImGui.CalcTextSize(ctx, info.content)
         local rtext_y = center_y - (rtext_h / 2) - 1
         add_text(dl, x1 + right_x, rtext_y, colors.text, info.content)
         right_x = right_x + info.width + 10
-      elseif info.type == "button" then
+      elseif info.type == 'button' then
         if i > 1 then
           local sep_x = right_x - 5
           local sep_y1 = y1 + 4
@@ -262,12 +262,12 @@ function M.new(config)
           right_x = right_x + 10
         end
         ImGui.SetCursorScreenPos(ctx, sx + right_x, sy + button_y)
-        if ImGui.Button(ctx, info.data.label .. "##statusbar_right_" .. i, info.data.width or 80, button_height) then
+        if ImGui.Button(ctx, info.data.label .. '##statusbar_right_' .. i, info.data.width or 80, button_height) then
           if info.data.action then info.data.action(ctx) end
           if info.data.popup  then
             popup_state.open = true
             popup_state.data = info.data.popup
-            ImGui.OpenPopup(ctx, info.data.popup.popup_id or "StatusBarPopup")
+            ImGui.OpenPopup(ctx, info.data.popup.popup_id or 'StatusBarPopup')
           end
         end
         right_x = right_x + info.width + 10

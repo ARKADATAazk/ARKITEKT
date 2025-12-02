@@ -77,7 +77,7 @@ function M.load(ImGui, ctx, opts)
 
   -- Attach all font objects to context
   for _, font in pairs(fonts) do
-    if font and type(font) ~= "number" then
+    if font and type(font) ~= 'number' then
       ImGui.Attach(ctx, font)
     end
   end

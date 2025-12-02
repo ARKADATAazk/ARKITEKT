@@ -300,19 +300,19 @@ function M.new(opts)
   end
 
   if win.settings then
-    win._saved_pos  = win.settings:get("window.pos",  nil)
-    win._saved_size = win.settings:get("window.size", nil)
-    win._is_maximized = win.settings:get("window.maximized", false)
+    win._saved_pos  = win.settings:get('window.pos',  nil)
+    win._saved_size = win.settings:get('window.size', nil)
+    win._is_maximized = win.settings:get('window.maximized', false)
 
     -- Load pre-maximize position/size if available (for proper un-maximize)
     if win._is_maximized then
-      win._pre_max_pos  = win.settings:get("window.pre_max_pos",  nil)
-      win._pre_max_size = win.settings:get("window.pre_max_size", nil)
+      win._pre_max_pos  = win.settings:get('window.pre_max_pos',  nil)
+      win._pre_max_size = win.settings:get('window.pre_max_size', nil)
     end
 
     -- Load pre-dock position/size if available (for proper undocking)
-    win._pre_dock_pos  = win.settings:get("window.pre_dock_pos",  nil)
-    win._pre_dock_size = win.settings:get("window.pre_dock_size", nil)
+    win._pre_dock_pos  = win.settings:get('window.pre_dock_pos',  nil)
+    win._pre_dock_size = win.settings:get('window.pre_dock_size', nil)
   end
 
   -- ============================================================================
@@ -325,7 +325,7 @@ function M.new(opts)
       if ok and StatusBar and StatusBar.new then
         win.status_bar = StatusBar.new({
           height = Constants.STATUS_BAR.height + Constants.STATUS_BAR.compensation,
-          get_status = opts.get_status_func or function() return { text = "READY", color = hexrgb("#41E0A3") } end,
+          get_status = opts.get_status_func or function() return { text = 'READY', color = hexrgb('#41E0A3') } end,
           style = opts.style and { palette = opts.style.palette } or nil
         })
       end
@@ -358,22 +358,22 @@ function M.new(opts)
             if shift_clicked then
               win.show_imgui_metrics = not win.show_imgui_metrics
             else
-              local script_path = debug.getinfo(1, "S").source
-              if script_path:sub(1, 1) == "@" then
+              local script_path = debug.getinfo(1, 'S').source
+              if script_path:sub(1, 1) == '@' then
                 script_path = script_path:sub(2)
               end
 
-              local base_dir = script_path:match("(.+[/\\])")
-              local hub_path = base_dir .. "../../ARKITEKT.lua"
-              hub_path = hub_path:gsub("[/\\]+", "/"):gsub("/+", "/")
-              while hub_path:match("[^/]+/%.%./") do
-                hub_path = hub_path:gsub("[^/]+/%.%./", "")
+              local base_dir = script_path:match('(.+[/\\])')
+              local hub_path = base_dir .. '../../ARKITEKT.lua'
+              hub_path = hub_path:gsub('[/\\]+', '/'):gsub('/+', '/')
+              while hub_path:match('[^/]+/%.%./') do
+                hub_path = hub_path:gsub('[^/]+/%.%./', '')
               end
-              hub_path = hub_path:gsub("/", "\\")
+              hub_path = hub_path:gsub('/', '\\')
 
               if reaper.file_exists(hub_path) then
-                local sanitized = hub_path:gsub("[^%w]", "")
-                local cmd_name = "_RS" .. sanitized
+                local sanitized = hub_path:gsub('[^%w]', '')
+                local cmd_name = '_RS' .. sanitized
                 local cmd_id = reaper.NamedCommandLookup(cmd_name)
 
                 if not cmd_id or cmd_id == 0 then
@@ -384,7 +384,7 @@ function M.new(opts)
                   reaper.Main_OnCommand(cmd_id, 0)
                 end
               else
-                Logger.warn("GUI", "Hub not found: %s", hub_path)
+                Logger.warn('GUI', 'Hub not found: %s', hub_path)
               end
             end
           end
@@ -525,17 +525,17 @@ function M.new(opts)
     end
 
     if self.settings then
-      self.settings:set("window.maximized", self._is_maximized)
+      self.settings:set('window.maximized', self._is_maximized)
 
       -- Save/clear pre-maximize position based on state
       if self._is_maximized and self._pre_max_pos and self._pre_max_size then
         -- Save pre-maximize position so un-maximize works after relaunch
-        self.settings:set("window.pre_max_pos", self._pre_max_pos)
-        self.settings:set("window.pre_max_size", self._pre_max_size)
+        self.settings:set('window.pre_max_pos', self._pre_max_pos)
+        self.settings:set('window.pre_max_size', self._pre_max_size)
       elseif not self._is_maximized then
         -- Clear pre-maximize position when un-maximizing
-        self.settings:set("window.pre_max_pos", nil)
-        self.settings:set("window.pre_max_size", nil)
+        self.settings:set('window.pre_max_pos', nil)
+        self.settings:set('window.pre_max_size', nil)
       end
     end
   end
@@ -661,11 +661,11 @@ function M.new(opts)
 
     if (not self._saved_pos) or pos.x ~= self._saved_pos.x or pos.y ~= self._saved_pos.y then
       self._saved_pos = pos
-      self.settings:set("window.pos", pos)
+      self.settings:set('window.pos', pos)
     end
     if (not self._saved_size) or size.w ~= self._saved_size.w or size.h ~= self._saved_size.h then
       self._saved_size = size
-      self.settings:set("window.size", size)
+      self.settings:set('window.size', size)
     end
   end
 
@@ -729,7 +729,7 @@ function M.new(opts)
       window_flags = window_flags | ImGui.WindowFlags_TopMost
     end
 
-    local visible, open = ImGui.Begin(ctx, self.title .. "##main", true, window_flags)
+    local visible, open = ImGui.Begin(ctx, self.title .. '##main', true, window_flags)
     self._begun = true
 
     if visible then
@@ -752,7 +752,7 @@ function M.new(opts)
         
         if not self.fullscreen.is_closing then
           ImGui.SetCursorScreenPos(ctx, wx, wy)
-          ImGui.InvisibleButton(ctx, "##fullscreen_background", ww, wh)
+          ImGui.InvisibleButton(ctx, '##fullscreen_background', ww, wh)
           
           if self.fullscreen.close_on_background_click and ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right) then
             self.fullscreen.background_clicked = true
@@ -811,8 +811,8 @@ function M.new(opts)
 
             -- Persist pre-dock state for seamless undocking after restart
             if self.settings then
-              self.settings:set("window.pre_dock_pos", self._pre_dock_pos)
-              self.settings:set("window.pre_dock_size", self._pre_dock_size)
+              self.settings:set('window.pre_dock_pos', self._pre_dock_pos)
+              self.settings:set('window.pre_dock_size', self._pre_dock_size)
             end
 
             -- Apply REAPER theme without offset when docking (if enabled)
@@ -830,8 +830,8 @@ function M.new(opts)
 
             -- Clear pre-dock state from settings
             if self.settings then
-              self.settings:set("window.pre_dock_pos", nil)
-              self.settings:set("window.pre_dock_size", nil)
+              self.settings:set('window.pre_dock_pos', nil)
+              self.settings:set('window.pre_dock_size', nil)
             end
           end
 
@@ -888,8 +888,8 @@ function M.new(opts)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, self.content_padding, self.content_padding)
     local child_flags = ImGui.ChildFlags_AlwaysUseWindowPadding or 0
     local window_flags = ImGui.WindowFlags_NoScrollbar
-    
-    local success = ImGui.BeginChild(ctx, "##body", 0, body_h, child_flags, window_flags)
+
+    local success = ImGui.BeginChild(ctx, '##body', 0, body_h, child_flags, window_flags)
     self._body_open = true
     return success
   end
