@@ -133,18 +133,50 @@ Ark.Waveform(ctx, {
 **Known Issues**:
 - Requires pre-extracted peak data (doesn't extract from audio files)
 - Cache grows unbounded (needs cleanup strategy)
-- No MIDI visualization support yet
+
+---
+
+### MIDIPianoRoll
+**File**: `audio/midi_piano_roll.lua`
+**Status**: Prototype
+**Description**: MIDI piano roll visualization from note rectangle data.
+
+**Features**:
+- Displays MIDI notes as rectangles (piano roll view)
+- LOD culling for performance (skips notes < 1px)
+- Scales from cache resolution to display resolution
+- Clip rect prevents overflow
+
+**Usage**:
+```lua
+Ark.MIDIPianoRoll(ctx, {
+  notes = midi_notes,     -- Array of note rectangles: {{x1, y1, x2, y2}, ...}
+  width = 400,
+  height = 200,
+  color = note_color,
+  cache_width = 400,      -- Width notes are normalized to
+  cache_height = 200,     -- Height notes are normalized to
+  is_culling_enabled = true,
+})
+```
+
+**Known Issues**:
+- Requires pre-extracted note data (doesn't parse MIDI files)
+- No note coloring by velocity or channel
+- No piano keyboard guide on left side
 
 ---
 
 ### MediaItem
 **File**: `audio/media_item.lua`
 **Status**: Prototype
-**Description**: Complete media item tile with waveform, header, and badges.
+**Description**: Complete media item tile with waveform/MIDI, header, and badges.
 
 **Features**:
 - Colored background (track/item color)
-- Waveform visualization (uses Waveform widget)
+- Audio visualization (uses Waveform widget)
+- MIDI visualization (uses MIDIPianoRoll widget)
+- Auto-detects visualization type (peaks = audio, midi_notes = MIDI)
 - Header with name/label
 - Duration badge (minutes:seconds)
 - Pool count badge (for pooled items)
@@ -154,17 +186,29 @@ Ark.Waveform(ctx, {
 
 **Usage**:
 ```lua
+-- Audio item
 local result = Ark.MediaItem(ctx, {
   name = "Audio 01.wav",
   duration = 3.5,         -- seconds
   color = track_color,
-  peaks = peak_data,      -- optional
+  peaks = peak_data,      -- for audio
   is_selected = false,
   disabled = false,
   pool_count = 3,         -- optional
   width = 200,
   height = 80,
   on_click = function() ... end,
+})
+
+-- MIDI item
+local result = Ark.MediaItem(ctx, {
+  name = "MIDI Pattern",
+  duration = 4.0,
+  color = track_color,
+  midi_notes = note_data, -- for MIDI
+  is_selected = false,
+  width = 200,
+  height = 80,
 })
 
 if result.clicked then

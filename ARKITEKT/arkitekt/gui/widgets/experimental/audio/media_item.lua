@@ -9,6 +9,7 @@ local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 local Waveform = require('arkitekt.gui.widgets.experimental.audio.waveform')
+local MIDIPianoRoll = require('arkitekt.gui.widgets.experimental.audio.midi_piano_roll')
 
 local M = {}
 
@@ -30,7 +31,10 @@ local DEFAULTS = {
   height = 80,
 
   -- Data
-  peaks = nil,          -- Waveform peak data (optional)
+  peaks = nil,          -- Waveform peak data (optional, for audio items)
+  midi_notes = nil,     -- MIDI note data (optional, for MIDI items) - format: {{x1, y1, x2, y2}, ...}
+  midi_cache_width = 400,   -- Width MIDI notes are normalized to
+  midi_cache_height = 200,  -- Height MIDI notes are normalized to
   duration = 0,         -- Duration in seconds
   color = nil,          -- Item/track color
   pool_count = nil,     -- Number of pool instances (optional badge)
@@ -209,19 +213,36 @@ function M.draw(ctx, opts)
   local content_y = y + header_height
   local content_h = h - header_height
 
-  -- Render waveform in content area
-  if opts.peaks and content_h > 10 then
-    Waveform.draw(ctx, {
-      x = x,
-      y = content_y,
-      width = w,
-      height = content_h,
-      peaks = opts.peaks,
-      color = waveform_color,
-      is_filled = opts.is_waveform_filled,
-      advance = "none",
-      draw_list = dl,
-    })
+  -- Render visualization in content area (waveform or MIDI)
+  if content_h > 10 then
+    if opts.peaks then
+      -- Audio: Render waveform
+      Waveform.draw(ctx, {
+        x = x,
+        y = content_y,
+        width = w,
+        height = content_h,
+        peaks = opts.peaks,
+        color = waveform_color,
+        is_filled = opts.is_waveform_filled,
+        advance = "none",
+        draw_list = dl,
+      })
+    elseif opts.midi_notes then
+      -- MIDI: Render piano roll
+      MIDIPianoRoll.draw(ctx, {
+        x = x,
+        y = content_y,
+        width = w,
+        height = content_h,
+        notes = opts.midi_notes,
+        cache_width = opts.midi_cache_width or 400,
+        cache_height = opts.midi_cache_height or 200,
+        color = waveform_color,  -- Use same color logic
+        advance = "none",
+        draw_list = dl,
+      })
+    end
   end
 
   -- Render header with name
