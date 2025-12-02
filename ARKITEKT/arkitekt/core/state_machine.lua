@@ -181,9 +181,9 @@ function M.new(config)
 
     -- Exit current state
     if state_def and state_def.on_exit then
-      local ok, err = pcall(state_def.on_exit, self.context, action, target, payload)
+      local ok, err = xpcall(state_def.on_exit, debug.traceback, self.context, action, target, payload)
       if not ok then
-        return false, string.format("on_exit error: %s", tostring(err))
+        return false, string.format('on_exit error:\n%s', err)
       end
     end
 
@@ -196,7 +196,7 @@ function M.new(config)
     -- Enter new state
     local new_state_def = self.states[target]
     if new_state_def and new_state_def.on_enter then
-      local ok, err = pcall(new_state_def.on_enter, self.context, action, prev_state, payload)
+      local ok, err = xpcall(new_state_def.on_enter, debug.traceback, self.context, action, prev_state, payload)
       if not ok then
         -- State already changed, log error but don't revert
         -- Logger would go here if we wanted to add dependency
@@ -205,7 +205,7 @@ function M.new(config)
 
     -- Global transition callback
     if self.on_transition then
-      pcall(self.on_transition, prev_state, target, action, payload)
+      xpcall(self.on_transition, debug.traceback, prev_state, target, action, payload)
     end
 
     -- Emit event if bus connected
@@ -232,7 +232,7 @@ function M.new(config)
 
     -- Exit current state
     if state_def and state_def.on_exit then
-      pcall(state_def.on_exit, self.context, "_force", target, payload)
+      xpcall(state_def.on_exit, debug.traceback, self.context, '_force', target, payload)
     end
 
     -- Transition
@@ -244,7 +244,7 @@ function M.new(config)
     -- Enter new state
     local new_state_def = self.states[target]
     if new_state_def and new_state_def.on_enter then
-      pcall(new_state_def.on_enter, self.context, "_force", prev_state, payload)
+      xpcall(new_state_def.on_enter, debug.traceback, self.context, '_force', prev_state, payload)
     end
 
     return true

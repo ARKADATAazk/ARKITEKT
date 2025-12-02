@@ -48,10 +48,10 @@ end
 function M.safe_call_with_log(fn, context, ...)
   if not fn then return nil end
 
-  local ok, result = pcall(fn, ...)
+  local ok, result = xpcall(fn, debug.traceback, ...)
   if not ok then
     local Logger = require('arkitekt.debug.logger')
-    Logger.error("CALLBACK", "%s failed: %s", context or "Function", tostring(result))
+    Logger.error('CALLBACK', '%s failed:\n%s', context or 'Function', result)
     return nil
   end
 
@@ -69,9 +69,9 @@ function M.chain(callbacks, continue_on_error)
 
   for i, callback in ipairs(callbacks) do
     if callback then
-      local ok, err = pcall(callback)
+      local ok, err = xpcall(callback, debug.traceback)
       if not ok then
-        errors[#errors + 1] = string.format("Callback #%d failed: %s", i, tostring(err))
+        errors[#errors + 1] = string.format('Callback #%d failed:\n%s', i, err)
         if not continue_on_error then
           return false, errors
         end
@@ -172,7 +172,7 @@ function M.retry(fn, max_attempts, delay_ms, on_success, on_failure)
     local attempt = 1
 
     local function try_once()
-      local ok, result = pcall(fn, table.unpack(args))
+      local ok, result = xpcall(fn, debug.traceback, table.unpack(args))
       if ok then
         if on_success then on_success(result) end
         return
@@ -211,7 +211,7 @@ function M.combine(...)
     local call_args = {...}
     for i, fn in ipairs(fns) do
       if fn then
-        local ok, result = pcall(fn, table.unpack(call_args))
+        local ok, result = xpcall(fn, debug.traceback, table.unpack(call_args))
         results[i] = ok and result or nil
       end
     end

@@ -117,9 +117,9 @@ function M.new(options)
     local callbacks = self.listeners[event_name]
     if callbacks then
       for _, listener in ipairs(callbacks) do
-        local ok, err = pcall(listener.callback, data)
+        local ok, err = xpcall(listener.callback, debug.traceback, data)
         if not ok then
-          Logger.error("EVENTS", "Error in listener for '%s': %s", event_name, tostring(err))
+          Logger.error('EVENTS', 'Error in listener for \'%s\':\n%s', event_name, err)
         end
       end
     end
@@ -128,9 +128,9 @@ function M.new(options)
     local wildcard_callbacks = self.listeners["*"]
     if wildcard_callbacks then
       for _, listener in ipairs(wildcard_callbacks) do
-        local ok, err = pcall(listener.callback, event_name, data)
+        local ok, err = xpcall(listener.callback, debug.traceback, event_name, data)
         if not ok then
-          Logger.error("EVENTS", "Error in wildcard listener for '%s': %s", event_name, tostring(err))
+          Logger.error('EVENTS', 'Error in wildcard listener for \'%s\':\n%s', event_name, err)
         end
       end
     end
