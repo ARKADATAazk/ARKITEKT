@@ -74,6 +74,7 @@ local MODULES = {
   CornerButton = 'arkitekt.gui.widgets.primitives.corner_button',
   HueSlider = 'arkitekt.gui.widgets.primitives.hue_slider',
   InputText = 'arkitekt.gui.widgets.primitives.inputtext',
+  Knob = 'arkitekt.gui.widgets.primitives.knob',
   LoadingSpinner = 'arkitekt.gui.widgets.primitives.loading_spinner',
   MarkdownField = 'arkitekt.gui.widgets.primitives.markdown_field',
   ProgressBar = 'arkitekt.gui.widgets.primitives.progress_bar',
