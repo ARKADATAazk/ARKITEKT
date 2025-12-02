@@ -29,59 +29,43 @@ HSL vs HSV comparison:
 
 HSL is superior for theme offset operations. The ~50 lines of HSL code is worth keeping.
 
-### ⏳ UNDECIDED: Bytes vs Strings
+### ✅ DECIDED: Bytes Everywhere
 
-Two approaches for color representation in code:
+**Decision:** Use raw bytes (`0xRRGGBBAA`) everywhere for maximum optimization.
 
-#### Option A: Keep Hex Strings
+**Reason:**
+- Zero parsing overhead (not even at load time)
+- VS Code extension provides color preview for byte format
+- Direct integer operations
+- Eliminates need for hexrgb() function entirely
+
+**Format:** `0xRRGGBBAA`
 ```lua
--- In defs/constants.lua (parsed once at load)
-COLORS = {
-    accent = hexrgb("#4A90D9"),
-    danger = hexrgb("#E54545"),
-}
+0xFF0000FF  -- Red (R=FF, G=00, B=00, A=FF)
+0x00FF00FF  -- Green
+0x0000FFFF  -- Blue
+0x242424FF  -- Dark gray (theme base)
+0xFFFFFF80  -- White, 50% opacity
 ```
 
-| Pros | Cons |
-|------|------|
-| VS Code color preview built-in | hexrgb() call overhead at load |
-| Familiar format | String parsing code needed |
-| Easy to read/edit | Must ensure cached, not per-frame |
+**Migration scope:**
+- Widget defaults: Convert hexrgb("#RRGGBB") → 0xRRGGBBAA
+- App constants: Convert all defs/constants.lua files
+- DSL presets: Convert "#RRGGBB" → 0xRRGGBBAA
 
-#### Option B: Use Raw Bytes
+**Exception:** Theme DSL `lerp()` mode currently uses hex strings for interpolation.
+This will need special handling (see Phase 5).
+
 ```lua
--- In defs/constants.lua
-COLORS = {
-    accent = 0x4A90D9FF,
-    danger = 0xE54545FF,
-}
-```
+-- Before (DSL)
+BUTTON_DANGER_BG = lerp("#B91C1C", "#FCA5A5"),
 
-| Pros | Cons |
-|------|------|
-| Zero parsing overhead | Need VS Code extension for preview |
-| Direct integer operations | Less familiar to read |
-| No hexrgb() needed | Alpha byte position may confuse |
-
-#### Option C: Hybrid (Recommended?)
-```lua
--- DSL definitions: Keep hex strings (parsed once at theme load)
-M.presets = {
-    dark = "#242424",
-    light = "#E0E0E0",
-}
-
--- Widget defaults: Use bytes (no parsing)
-local DEFAULTS = {
-    bg = 0x1A1A1AFF,
-    border = 0x000000FF,
-}
+-- After (DSL with bytes)
+BUTTON_DANGER_BG = lerp(0xB91C1CFF, 0xFCA5A5FF),
 
 -- Theme.COLORS at runtime: Always bytes (already computed)
 local bg = Theme.COLORS.BG_BASE  -- 0x242424FF
 ```
-
-**Decision needed:** Which approach for widget defaults and app constants?
 
 ---
 
@@ -213,20 +197,72 @@ local r, g, b, a = Colors.rgba_to_components(color)
 local r, g, b, a = ImGui.ColorConvertU32ToDouble4(color)
 ```
 
+### Phase 5: Convert All Hex Strings to Bytes
+
+**This is the big migration: 1,302 hexrgb() calls across 170 files**
+
+**5a. Widget defaults (44 files):**
+```lua
+-- Before
+local bg_color = config.bg_color or hexrgb("#1A1A1A")
+
+-- After
+local DEFAULTS = { bg = 0x1A1A1AFF }
+local bg_color = config.bg_color or DEFAULTS.bg
+```
+
+**5b. App constants (defs/constants.lua in each app):**
+```lua
+-- Before
+COLORS = {
+    accent = hexrgb("#4A90D9"),
+    danger = hexrgb("#E54545"),
+}
+
+-- After
+COLORS = {
+    accent = 0x4A90D9FF,
+    danger = 0xE54545FF,
+}
+```
+
+**5c. Theme DSL (arkitekt/defs/colors/theme.lua):**
+```lua
+-- Before
+M.presets = {
+    dark = "#242424",
+    light = "#E0E0E0",
+}
+BUTTON_DANGER_BG = lerp("#B91C1C", "#FCA5A5"),
+
+-- After
+M.presets = {
+    dark = 0x242424FF,
+    light = 0xE0E0E0FF,
+}
+BUTTON_DANGER_BG = lerp(0xB91C1CFF, 0xFCA5A5FF),
+```
+
+**5d. Update theme engine to handle bytes:**
+- `engine.lua` currently parses hex strings in lerp mode
+- Update to detect number type and skip parsing
+
+**5e. Delete hexrgb() and related functions**
+
+### Phase 6: Final Cleanup
+
+- Remove all @deprecated shims
+- Update documentation
+- Final testing of all apps
+
 ---
 
 ## Final API Design
 
-### Minimal Core (~200 lines)
+### Minimal Core (~150 lines)
 
 ```lua
 local Colors = {}
-
--- ============================================
--- PARSING (keep if using hex strings)
--- ============================================
-Colors.hex(str)           -- "#RRGGBB" → 0xRRGGBBAA
-Colors.to_hex(color)      -- 0xRRGGBBAA → "#RRGGBB"
 
 -- ============================================
 -- COMPONENTS
@@ -284,11 +320,17 @@ Colors.derive_palette_adaptive(base, preset)
 ### Removed from Core
 
 ```lua
+-- Hex parsing (bytes everywhere, no longer needed):
+hexrgb()                  -- DELETE: Use 0xRRGGBBAA directly
+hexrgba()                 -- DELETE
+to_hexrgb()               -- DELETE (or keep minimal for debug)
+to_hexrgba()              -- DELETE
+
 -- Moved to apps or deleted:
 tile_text_colors()
 tile_meta_color()
 same_hue_variant()
-generate_*()              -- All 5 legacy functions
+generate_*()              -- All 7 legacy functions
 flashy_palette()
 auto_palette()
 
@@ -333,17 +375,14 @@ argb_to_rgba()
 
 ## Open Questions
 
-1. **Bytes vs Strings for widget defaults?**
-   - Need VS Code extension confirmation for byte preview
-   - Performance benefit is real but small (load time only)
+1. ~~**Bytes vs Strings for widget defaults?**~~ → ✅ DECIDED: Bytes everywhere
 
-2. **Keep hexrgb() or remove entirely?**
-   - DSL still uses hex strings in definitions
-   - Could convert DSL to bytes too, but less readable
+2. ~~**Keep hexrgb() or remove entirely?**~~ → ✅ DECIDED: Remove (bytes everywhere)
 
 3. **Keep argb_to_rgba / rgba_to_argb?**
    - Only needed for ImGui Color3 widgets
    - Check if we actually use Color3 anywhere
+   - If not used, delete
 
 4. **derive_*() functions - keep all?**
    - Some may be unused
