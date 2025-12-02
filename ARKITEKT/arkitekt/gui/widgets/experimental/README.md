@@ -121,6 +121,61 @@ Ark.SpectrumAnalyzer(ctx, {
 
 ---
 
+### StepSequencer
+**File**: `step_sequencer.lua`
+**Status**: Prototype
+**Description**: Step sequencer grid for pattern editing in rhythm editors and drum machines.
+
+**Features**:
+- Interactive grid (tracks × steps)
+- Toggle cells on/off with left-click
+- Velocity adjustment with right-click (cycles 33% → 66% → 100%)
+- Velocity-based color visualization
+- Current step highlighting for playback indicator
+- Optional track labels and step numbers
+- Convenience constructors: `standard()`, `mini()`, `extended()`
+
+**Usage**:
+```lua
+-- Create pattern (2D array: pattern[track][step] = velocity)
+local pattern = {
+  {1, 0, 0, 0, 1, 0, 0, 0},  -- Track 1: kick
+  {0, 0, 1, 0, 0, 0, 1, 0},  -- Track 2: snare
+  {1, 1, 1, 1, 1, 1, 1, 1},  -- Track 3: hi-hat
+}
+
+local result = Ark.StepSequencer(ctx, {
+  pattern = pattern,
+  steps = 8,
+  tracks = 3,
+  current_step = playback_position,  -- Highlight current step
+  width = 300,
+  height = 150,
+  is_velocity_colors = true,         -- Color by velocity
+  on_change = function(track, step, velocity)
+    print(string.format("Track %d, Step %d: %s", track, step, velocity))
+  end,
+})
+
+if result.changed then
+  pattern = result.pattern  -- Get updated pattern
+end
+
+-- Mini 8-step sequencer
+Ark.StepSequencer.mini(ctx, { pattern = pattern })
+
+-- Extended 32-step sequencer
+Ark.StepSequencer.extended(ctx, { pattern = pattern })
+```
+
+**Known Issues**:
+- No keyboard navigation (arrow keys, space to toggle)
+- No drag-to-paint multiple cells
+- No copy/paste support
+- Velocity adjustment is discrete (3 levels), not continuous
+
+---
+
 ### XYPad
 **File**: `xy_pad.lua`
 **Status**: Prototype

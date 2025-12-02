@@ -37,6 +37,10 @@ local state = {
   -- Spectrum analyzer bins
   spectrum_bins = nil,
 
+  -- Step sequencer pattern
+  sequencer_pattern = nil,
+  sequencer_step = 1,
+
   -- MediaItem selection
   media_selected = {false, true, false},
 
@@ -96,9 +100,20 @@ local function generate_spectrum_bins(num_bins)
   return bins
 end
 
+-- Generate initial drum pattern
+local function generate_drum_pattern()
+  return {
+    {1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},  -- Kick
+    {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},  -- Snare
+    {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0},  -- Closed HH
+    {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},  -- Open HH
+  }
+end
+
 state.peaks = generate_waveform(200)
 state.midi_notes = generate_midi_notes()
 state.spectrum_bins = generate_spectrum_bins(128)
+state.sequencer_pattern = generate_drum_pattern()
 
 -- ============================================================================
 -- GUI
@@ -245,6 +260,34 @@ local function draw_gui(ctx)
     is_gradient = true,
     show_grid = true,
   })
+
+  ImGui.Spacing(ctx)
+
+  -- ========================================================================
+  -- STEP SEQUENCER
+  -- ========================================================================
+  draw_section_header(ctx, "Step Sequencer - Pattern editor for rhythm/drums")
+
+  -- Animate playback position
+  state.sequencer_step = (math.floor(reaper.time_precise() * 4) % 16) + 1
+
+  local seq = Ark.StepSequencer(ctx, {
+    pattern = state.sequencer_pattern,
+    steps = 16,
+    tracks = 4,
+    current_step = state.sequencer_step,
+    width = 450,
+    height = 120,
+    track_labels = {"Kick", "Snare", "Closed HH", "Open HH"},
+    is_velocity_colors = false,
+    on_change = function(track, step, velocity)
+      -- Pattern is updated automatically
+    end,
+  })
+
+  if seq.changed then
+    state.sequencer_pattern = seq.pattern
+  end
 
   ImGui.Spacing(ctx)
 
