@@ -7,7 +7,8 @@ local RegionTiles = require("RegionPlaylist.ui.tiles.coordinator")
 local Shortcuts = require("RegionPlaylist.ui.shortcuts")
 local PlaylistController = require("RegionPlaylist.app.controller")
 local Config = require('RegionPlaylist.app.config')
-local BatchOperations = require("RegionPlaylist.ui.batch_operations")
+local ConfigFactory = require('RegionPlaylist.app.config_factory')
+local BatchOperations = require("RegionPlaylist.ui.components.batch_operations")
 
 local TransportView = require("RegionPlaylist.ui.views.transport.transport_view")
 local LayoutView = require("RegionPlaylist.ui.views.layout_view")
@@ -57,8 +58,8 @@ function M.create(State, AppConfig, settings)
   
   State.on_repeat_cycle = function(key, current_loop, total_reps)
   end
-  
-  self.region_tiles = RegionTiles.create({
+
+  self.region_tiles = RegionTiles.new({
     State = State,
     controller = self.controller,
 
@@ -79,7 +80,7 @@ function M.create(State, AppConfig, settings)
     tabs = State.get_tabs(),
     active_tab_id = State.get_active_playlist_id(),
     pool_mode = State.get_pool_mode(),
-    config = AppConfig.get_region_tiles_config(State.get_layout_mode()),
+    config = ConfigFactory.get_region_tiles_config(State.get_layout_mode()),
     
     on_playlist_changed = function(new_id)
       State.set_active_playlist(new_id)
@@ -299,14 +300,14 @@ function M.create(State, AppConfig, settings)
   
   State.active_search_filter = ""
 
-  -- Initialize viewmode button in config (needs state module reference)
-  Config.set_viewmode_button(State)
-
-  self.transport_view = TransportView.new(Config.TRANSPORT, State)
-  self.transport_view.config.quantize_lookahead = self.quantize_lookahead
-  -- Pass settings to transport_view for persistence
+  -- Initialize transport view (ImGui-style module function)
+  local transport_config = ConfigFactory.get_transport_config(State)
+  transport_config.quantize_lookahead = self.quantize_lookahead
+  TransportView.init(transport_config, State)
+  -- Pass settings to State for persistence
   State.settings = settings
-  
+
+  -- TODO: Migrate LayoutView to module function pattern
   self.layout_view = LayoutView.new(Config, State)
   
   self.overflow_modal_view = OverflowModalView.new(self.region_tiles, State, function()
@@ -392,7 +393,7 @@ function GUI:draw(ctx, window, shell_state)
   local transport_start_x, transport_start_y = ImGui.GetCursorScreenPos(ctx)
 
   local is_blocking = self.region_tiles:is_modal_blocking(ctx)
-  self.transport_view:draw(ctx, shell_state, is_blocking)
+  TransportView.draw(ctx, shell_state, is_blocking)  -- Module function, not method
 
   -- Position cursor after transport with separator gap
   local sep_gap = self.Config.SEPARATOR.horizontal.gap

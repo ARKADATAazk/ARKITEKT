@@ -139,6 +139,7 @@ function M.generate_and_apply(base_bg)
     M.COLORS[key] = value
   end
   Registry.clear_cache()
+  M.invalidate_config_caches()  -- Invalidate widget config caches (button, combo, etc.)
 end
 
 --- Generate palette without applying
@@ -177,7 +178,8 @@ end
 --- Set theme by mode name
 --- @param mode string "dark", "light", "adapt", or "custom"
 --- @param persist boolean|nil Whether to save preference (default: true)
-function M.set_mode(mode, persist)
+--- @param app_name string|nil App name for per-app storage
+function M.set_mode(mode, persist, app_name)
   if persist == nil then persist = true end
   local success = false
 
@@ -194,7 +196,7 @@ function M.set_mode(mode, persist)
     Registry.clear_cache()
     M.invalidate_config_caches()
     if persist then
-      Integration.save_mode(mode)
+      Integration.save_mode(mode, app_name)
     end
   end
 
@@ -207,9 +209,14 @@ function M.get_mode()
 end
 
 --- Initialize theme from saved preference or default
-function M.init(default_mode)
+--- @param default_mode string|nil Default mode (default: "adapt")
+--- @param app_name string|nil App name for per-app overrides
+--- @return boolean Success
+function M.init(default_mode, app_name)
   default_mode = default_mode or "adapt"
-  local saved_mode = Integration.load_mode()
+
+  -- Load with app fallback (checks app-specific, then global)
+  local saved_mode = Integration.load_mode(app_name)
   local mode_to_apply = saved_mode
 
   -- Validate saved mode (including custom if a custom color exists)
@@ -222,7 +229,10 @@ function M.init(default_mode)
     mode_to_apply = default_mode
   end
 
-  return M.set_mode(mode_to_apply, saved_mode == nil)
+  -- If app_name provided and no saved mode exists, treat default as app override
+  local should_persist = saved_mode == nil
+
+  return M.set_mode(mode_to_apply, should_persist, app_name)
 end
 
 -- =============================================================================
@@ -232,6 +242,7 @@ end
 M.transition_to_palette = Integration.transition_to_palette
 M.transition_to_theme = Integration.transition_to_theme
 M.create_live_sync = Integration.create_live_sync
+M.create_cross_app_sync = Integration.create_cross_app_sync
 
 -- =============================================================================
 -- DOCK ADAPTS TO REAPER
@@ -258,6 +269,13 @@ function M.set_custom(color)
   Integration.set_custom_color(color)
   return M.set_mode("custom")
 end
+
+-- =============================================================================
+-- PER-APP OVERRIDES
+-- =============================================================================
+
+M.clear_app_override = Integration.clear_app_override
+M.has_app_override = Integration.has_app_override
 
 -- =============================================================================
 -- REGISTRY (script palettes)
@@ -418,45 +436,62 @@ function M.build_colored_button_config(variant)
 end
 
 --- Build dropdown config from current Theme.COLORS
+--- Returns a COPY to prevent mutation of cached config
 function M.build_dropdown_config()
-  if _dropdown_config_cache then return _dropdown_config_cache end
-  _dropdown_config_cache = {
-    bg_color = M.COLORS.BG_BASE,
-    bg_hover_color = M.COLORS.BG_HOVER,
-    bg_active_color = M.COLORS.BG_ACTIVE,
-    border_outer_color = M.COLORS.BORDER_OUTER,
-    border_inner_color = M.COLORS.BORDER_INNER,
-    border_hover_color = M.COLORS.BORDER_HOVER,
-    border_active_color = M.COLORS.BORDER_ACTIVE,
-    text_color = M.COLORS.TEXT_NORMAL,
-    text_hover_color = M.COLORS.TEXT_HOVER,
-    text_active_color = M.COLORS.TEXT_ACTIVE,
-    arrow_color = M.COLORS.TEXT_NORMAL,
-    arrow_hover_color = M.COLORS.TEXT_HOVER,
-    rounding = 0,
-    padding_x = 10,
-    padding_y = 6,
-    arrow_size = 6,
-    enable_mousewheel = true,
-    tooltip_delay = 0.5,
-    popup = {
-      bg_color = Colors.adjust_lightness(M.COLORS.BG_BASE, -0.02),
-      border_color = Colors.adjust_lightness(M.COLORS.BORDER_OUTER, -0.05),
-      item_bg_color = M.COLORS.BG_TRANSPARENT,
-      item_hover_color = M.COLORS.BG_HOVER,
-      item_active_color = M.COLORS.BG_ACTIVE,
-      item_text_color = M.COLORS.TEXT_NORMAL,
-      item_text_hover_color = M.COLORS.TEXT_HOVER,
-      item_selected_color = M.COLORS.BG_ACTIVE,
-      item_selected_text_color = M.COLORS.TEXT_BRIGHT,
-      rounding = 2,
-      padding = 6,
-      item_height = 26,
-      item_padding_x = 12,
-      border_thickness = 1,
-    },
-  }
-  return _dropdown_config_cache
+  -- Build cache once
+  if not _dropdown_config_cache then
+    _dropdown_config_cache = {
+      bg_color = M.COLORS.BG_BASE,
+      bg_hover_color = M.COLORS.BG_HOVER,
+      bg_active_color = M.COLORS.BG_ACTIVE,
+      border_outer_color = M.COLORS.BORDER_OUTER,
+      border_inner_color = M.COLORS.BORDER_INNER,
+      border_hover_color = M.COLORS.BORDER_HOVER,
+      border_active_color = M.COLORS.BORDER_ACTIVE,
+      text_color = M.COLORS.TEXT_NORMAL,
+      text_hover_color = M.COLORS.TEXT_HOVER,
+      text_active_color = M.COLORS.TEXT_ACTIVE,
+      arrow_color = M.COLORS.TEXT_NORMAL,
+      arrow_hover_color = M.COLORS.TEXT_HOVER,
+      rounding = 0,
+      padding_x = 10,
+      padding_y = 6,
+      arrow_size = 6,
+      enable_mousewheel = true,
+      tooltip_delay = 0.5,
+      popup = {
+        bg_color = Colors.adjust_lightness(M.COLORS.BG_BASE, -0.02),
+        border_color = Colors.adjust_lightness(M.COLORS.BORDER_OUTER, -0.05),
+        item_bg_color = M.COLORS.BG_TRANSPARENT,
+        item_hover_color = M.COLORS.BG_HOVER,
+        item_active_color = M.COLORS.BG_ACTIVE,
+        item_text_color = M.COLORS.TEXT_NORMAL,
+        item_text_hover_color = M.COLORS.TEXT_HOVER,
+        item_selected_color = M.COLORS.BG_ACTIVE,
+        item_selected_text_color = M.COLORS.TEXT_BRIGHT,
+        rounding = 2,
+        padding = 6,
+        item_height = 26,
+        item_padding_x = 12,
+        border_thickness = 1,
+      },
+    }
+  end
+
+  -- Return a COPY to prevent mutation
+  local copy = {}
+  for k, v in pairs(_dropdown_config_cache) do
+    if type(v) == "table" and k == "popup" then
+      -- Deep copy popup table
+      copy[k] = {}
+      for pk, pv in pairs(v) do
+        copy[k][pk] = pv
+      end
+    else
+      copy[k] = v
+    end
+  end
+  return copy
 end
 
 --- Build search input config

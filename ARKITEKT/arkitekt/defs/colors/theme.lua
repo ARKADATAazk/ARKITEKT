@@ -109,6 +109,10 @@ M.value_ranges = {
   SATURATION = { min = 0, max = 2 },
   -- offset deltas (lightness adjustments)
   OFFSET     = { min = -1, max = 1 },
+
+  -- Base background constraints (prevents extreme themes)
+  BG_LIGHTNESS  = { min = 0.10, max = 0.92 },  -- Clamps pure black/white backgrounds
+  BG_SATURATION = { min = 0.00, max = 0.12 },  -- Clamps overly colored backgrounds
 }
 
 --- Infer value range from key name (case-insensitive)
@@ -146,6 +150,11 @@ M.clamp_value = clamp_value
 --   lerp(dark, light)        - smooth interpolation
 --   offset(dark, [light])    - delta from BG_BASE (light defaults to dark)
 --   bg()                     - use BG_BASE directly
+--
+-- 3-Zone DSL - transitions at t=0.33 and t=0.67 (fixed thirds):
+--   snap3(dark, mid, light)  - discrete zones: dark < 0.33 < mid < 0.67 < light
+--   lerp3(dark, mid, light)  - piecewise interpolation with mid-point
+--   offset3(dark, mid, light) - delta from BG_BASE with 3 zones
 
 local function snap(dark_val, light_val)
   return { mode = "snap", dark = dark_val, light = light_val }
@@ -163,11 +172,27 @@ local function bg()
   return { mode = "bg" }
 end
 
+-- 3-Zone variants (fixed thirds: 0.33, 0.67)
+local function snap3(dark_val, mid_val, light_val)
+  return { mode = "snap3", dark = dark_val, mid = mid_val, light = light_val }
+end
+
+local function lerp3(dark_val, mid_val, light_val)
+  return { mode = "lerp3", dark = dark_val, mid = mid_val, light = light_val }
+end
+
+local function offset3(dark_delta, mid_delta, light_delta)
+  return { mode = "offset3", dark = dark_delta, mid = mid_delta, light = light_delta }
+end
+
 -- Export wrappers
 M.snap = snap
 M.lerp = lerp
 M.offset = offset
 M.bg = bg
+M.snap3 = snap3
+M.lerp3 = lerp3
+M.offset3 = offset3
 
 -- =============================================================================
 -- COLORS (flat structure)

@@ -232,6 +232,7 @@ function M.new(opts)
       show_icon       = chrome.show_icon,
       show_version    = chrome.show_version,
       icon_size       = config.icon_size,
+      app_name        = opts.app_name,  -- For per-app theme overrides
       icon_spacing    = config.icon_spacing,
       icon_color      = config.icon_color,
       icon_draw       = config.icon_draw,

@@ -1,14 +1,60 @@
 -- @noindex
 -- RegionPlaylist/app/state.lua
--- Single-source-of-truth app state (playlist expansion handled lazily)
---[[
-The app layer is now the authoritative owner of playlist structure. Engine-side
-modules request a flattened playback sequence through the coordinator bridge
-whenever they advance, so the UI just needs to mark the cache dirty after any
-mutation. This keeps App ↔ Engine state synchronized without a manual
-sync_playlist_to_engine() step and guarantees nested playlists expand exactly
-once per invalidation.
-]]
+-- Single-Source-of-Truth App State Using Domain Composition Pattern
+--
+-- ARCHITECTURE:
+-- State is decomposed into 6 focused domain modules for testability and clarity:
+--   - animation:       Pending UI animations (spawn/select/destroy queues)
+--   - notification:    Status messages + circular dependency errors
+--   - ui_preferences:  Search, sort, layout, pool mode (UI-only state)
+--   - region:          Region cache + pool order
+--   - dependency:      Circular reference detection for nested playlists
+--   - playlist:        Playlist CRUD operations + active playlist tracking
+--
+-- PATTERN: Domain Composition
+-- Instead of a 1170-line monolithic state module, domains encapsulate
+-- related operations and can be unit tested with mocks.
+--
+-- WHY DECOMPOSE?
+-- - Testability: Mock individual domains without full app context
+-- - Clarity: Each domain has focused responsibility
+-- - Maintainability: Smaller files (150-200 lines vs 1170)
+-- - Separation: UI state (preferences) separate from business logic (playlist)
+--
+-- COORDINATION:
+-- State exposes domain methods via accessor functions for backward
+-- compatibility and provides coordination methods that span domains.
+--
+-- EXAMPLE:
+-- ```lua
+-- -- Direct domain access (simple cases)
+-- local playlists = State.playlist:get_all()
+--
+-- -- Accessor method (backward compatibility or coordination)
+-- function State.get_playlists()
+--   return State.playlist:get_all()
+-- end
+-- ```
+--
+-- LAZY EXPANSION:
+-- The app layer is the authoritative owner of playlist structure. Engine-side
+-- modules request a flattened playback sequence through the coordinator bridge
+-- whenever they advance, so the UI just needs to mark the cache dirty after any
+-- mutation. This keeps App ↔ Engine state synchronized without a manual
+-- sync_playlist_to_engine() step and guarantees nested playlists expand exactly
+-- once per invalidation.
+--
+-- REFACTORING HISTORY:
+-- See REFACTORING.md for migration details from monolithic to domain-composed.
+--
+-- SEE ALSO:
+--   - domain/playlist.lua (playlist CRUD domain)
+--   - domain/region.lua (region cache domain)
+--   - domain/dependency.lua (circular reference detection)
+--   - ui/state/animation.lua (UI animation queue)
+--   - ui/state/notification.lua (status messages)
+--   - ui/state/preferences.lua (UI preferences)
+--   - data/bridge.lua (lazy sequence expansion)
 
 local CoordinatorBridge = require("RegionPlaylist.data.bridge")
 local RegionState = require("RegionPlaylist.data.storage")
