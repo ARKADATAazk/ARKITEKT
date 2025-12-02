@@ -95,7 +95,9 @@ local MODULES = {
 
   -- Experimental Widgets (APIs may change, use with caution)
   Fader = 'arkitekt.gui.widgets.experimental.fader',
+  MediaItem = 'arkitekt.gui.widgets.experimental.audio.media_item',
   VUMeter = 'arkitekt.gui.widgets.experimental.vu_meter',
+  Waveform = 'arkitekt.gui.widgets.experimental.audio.waveform',
   XYPad = 'arkitekt.gui.widgets.experimental.xy_pad',
 
   -- Utilities (commonly used modules)

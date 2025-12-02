@@ -106,6 +106,80 @@ end
 
 ---
 
+### Waveform
+**File**: `audio/waveform.lua`
+**Status**: Prototype
+**Description**: Audio waveform visualization from peak data array.
+
+**Features**:
+- Displays audio waveform from peak data
+- Filled or outline rendering modes
+- Performance-optimized with polyline caching
+- Automatic downsampling for target width
+- Quality multiplier for resolution control
+
+**Usage**:
+```lua
+Ark.Waveform(ctx, {
+  peaks = peak_data,      -- Array of peak values [max1, max2, ..., min1, min2, ...]
+  width = 400,
+  height = 100,
+  color = waveform_color,
+  is_filled = true,       -- Filled polygons vs outline
+  quality = 1.0,          -- Resolution multiplier
+})
+```
+
+**Known Issues**:
+- Requires pre-extracted peak data (doesn't extract from audio files)
+- Cache grows unbounded (needs cleanup strategy)
+- No MIDI visualization support yet
+
+---
+
+### MediaItem
+**File**: `audio/media_item.lua`
+**Status**: Prototype
+**Description**: Complete media item tile with waveform, header, and badges.
+
+**Features**:
+- Colored background (track/item color)
+- Waveform visualization (uses Waveform widget)
+- Header with name/label
+- Duration badge (minutes:seconds)
+- Pool count badge (for pooled items)
+- Selection border
+- Disabled/muted state overlays
+- Click/right-click/double-click callbacks
+
+**Usage**:
+```lua
+local result = Ark.MediaItem(ctx, {
+  name = "Audio 01.wav",
+  duration = 3.5,         -- seconds
+  color = track_color,
+  peaks = peak_data,      -- optional
+  is_selected = false,
+  disabled = false,
+  pool_count = 3,         -- optional
+  width = 200,
+  height = 80,
+  on_click = function() ... end,
+})
+
+if result.clicked then
+  -- Handle click
+end
+```
+
+**Known Issues**:
+- No animation support (hover/selection transitions)
+- Badges are always top-right (not configurable)
+- No marching ants selection indicator yet
+- No playback progress bar support
+
+---
+
 ## Development Guidelines
 
 When adding widgets to this folder:
