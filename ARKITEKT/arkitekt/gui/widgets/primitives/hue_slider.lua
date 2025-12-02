@@ -41,13 +41,13 @@ local function render_slider(dl, x0, y0, x1, y1, gradient_fn, opt)
   local inset = border_thickness
 
   -- Dark base
-  ImGui.DrawList_AddRectFilled(dl, x0, y0, x1, y1, hexrgb("#1A1A1A"), rounding)
+  ImGui.DrawList_AddRectFilled(dl, x0, y0, x1, y1, hexrgb('#1A1A1A'), rounding)
 
   -- Gradient (drawn inset)
   gradient_fn(dl, x0 + inset, y0 + inset, x1 - inset, y1 - inset, opt)
 
   -- Border
-  ImGui.DrawList_AddRect(dl, x0, y0, x1, y1, hexrgb("#000000"), rounding, 0, border_thickness)
+  ImGui.DrawList_AddRect(dl, x0, y0, x1, y1, hexrgb('#000000'), rounding, 0, border_thickness)
 end
 
 -- Render grab handle (FULL RECTANGLE - NO ROUNDING)
@@ -58,14 +58,14 @@ local function render_grab(dl, gx, y0, y1, GRAB_W, active, hovered)
 
   -- Shadow
   ImGui.DrawList_AddRectFilled(dl, x_left + 1, y0 + 1, x_right + 1, y1 + 1,
-    hexrgb("#00000050"), rounding)
+    hexrgb('#00000050'), rounding)
 
   -- Base (darker bluish-greys)
-  local grab_col = active and hexrgb("#585C65") or (hovered and hexrgb("#484C55") or hexrgb("#383C45"))
+  local grab_col = active and hexrgb('#585C65') or (hovered and hexrgb('#484C55') or hexrgb('#383C45'))
   ImGui.DrawList_AddRectFilled(dl, x_left, y0, x_right, y1, grab_col, rounding)
 
   -- Border
-  ImGui.DrawList_AddRect(dl, x_left, y0, x_right, y1, hexrgb("#000000"), rounding, 0, 1.0)
+  ImGui.DrawList_AddRect(dl, x_left, y0, x_right, y1, hexrgb('#000000'), rounding, 0, 1.0)
 end
 
 -- Core slider
@@ -178,7 +178,7 @@ function M.draw_hue(ctx, id, hue, opt)
   end
   
   local tooltip_fn = function(v)
-    return string.format("Hue: %.1f°", v)
+    return string.format('Hue: %.1f°', v)
   end
   
   return draw_slider_base(ctx, id, hue, 0, 359.999, opt.default or 180.0, gradient_fn, tooltip_fn, opt)
@@ -213,7 +213,7 @@ function M.draw_saturation(ctx, id, saturation, base_hue, opt)
   end
   
   local tooltip_fn = function(v)
-    return string.format("Saturation: %.0f%%", v)
+    return string.format('Saturation: %.0f%%', v)
   end
   
   return draw_slider_base(ctx, id, saturation, 0, 100, opt.default or 50, gradient_fn, tooltip_fn, opt)
@@ -249,7 +249,7 @@ function M.draw_gamma(ctx, id, gamma, opt)
   end
   
   local tooltip_fn = function(v)
-    return string.format("Brightness: %.0f%%", v)
+    return string.format('Brightness: %.0f%%', v)
   end
   
   return draw_slider_base(ctx, id, gamma, 0, 100, opt.default or 50, gradient_fn, tooltip_fn, opt)
