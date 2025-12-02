@@ -20,14 +20,14 @@ local M = {}
 
 local DEFAULTS = {
   -- Identity
-  id = "sliding_zone",
+  id = 'sliding_zone',
 
   -- Group coordination (for multiple zones)
   group = nil,              -- Group name - zones in same group coordinate
   exclusive = false,        -- If true, expanding this collapses others in group
 
   -- Edge positioning
-  edge = "right",           -- "top", "bottom", "left", "right"
+  edge = 'right',           -- 'top', 'bottom', 'left', 'right'
 
   -- Bounds (required - defines the container area)
   bounds = nil,             -- {x, y, w, h} or {x1, y1, x2, y2}
@@ -77,13 +77,13 @@ local DEFAULTS = {
   -- Custom Retraction
   retract_when = nil,         -- Optional: function(ctx, mx, my, state) -> boolean
                               -- Return true to force panel retraction
-                              -- Use for custom close conditions (e.g., "close when hovering below")
+                              -- Use for custom close conditions (e.g., 'close when hovering below')
 
   -- Expansion on hover
   expand_scale = 1.0,       -- Scale multiplier on hover (1.3 = 30% bigger)
 
   -- Trigger mode
-  trigger = "hover",        -- "hover", "button", "always"
+  trigger = 'hover',        -- 'hover', 'button', 'always'
 
   -- Style
   bg_color = nil,           -- Optional background color
@@ -94,7 +94,7 @@ local DEFAULTS = {
   content_bounds = nil,     -- Optional: specific area for content (for hover calc)
 
   -- Window bounds (for reliable cursor tracking when cursor leaves window)
-  window_bounds = nil,      -- {x, y, w, h} - if provided, enables "exited toward edge" detection
+  window_bounds = nil,      -- {x, y, w, h} - if provided, enables 'exited toward edge' detection
 
   -- Callbacks
   draw = nil,               -- function(ctx, dl, bounds, visibility) - NEW: preferred name
@@ -173,7 +173,7 @@ function SlidingZone.new(id)
     -- Cursor tracking (for direction-aware retract)
     last_mouse_x = nil,
     last_mouse_y = nil,
-    exit_direction = nil,   -- "toward" or "away"
+    exit_direction = nil,   -- 'toward' or 'away'
 
     -- Window bounds tracking (for reliable edge detection)
     last_mouse_in_window = false,
@@ -256,11 +256,11 @@ local function get_mouse_position(ctx, opts)
 
       -- Only log when there's a difference (to avoid spam)
       if delta_mag > 1 then
-        Logger.debug("SlidingZone", "Mouse pos: REAPER(%.1f, %.1f) vs ImGui(%.1f, %.1f) delta=%.1f",
+        Logger.debug('SlidingZone', 'Mouse pos: REAPER(%.1f, %.1f) vs ImGui(%.1f, %.1f) delta=%.1f',
           reaper_mx, reaper_my, imgui_mx, imgui_my, delta_mag)
       end
     else
-      Logger.debug("SlidingZone", "Mouse pos: ImGui(%.1f, %.1f) [reaper API N/A]", imgui_mx, imgui_my)
+      Logger.debug('SlidingZone', 'Mouse pos: ImGui(%.1f, %.1f) [reaper API N/A]', imgui_mx, imgui_my)
     end
   end
 
@@ -276,34 +276,34 @@ end
 -- EXIT DIRECTION CALCULATION
 -- ============================================================================
 
---- Determine if cursor exit direction is "toward" or "away" from panel edge
---- @param edge string Panel edge ("left", "right", "top", "bottom")
+--- Determine if cursor exit direction is 'toward' or 'away' from panel edge
+--- @param edge string Panel edge ('left', 'right', 'top', 'bottom')
 --- @param prev_x number Previous cursor X
 --- @param prev_y number Previous cursor Y
 --- @param curr_x number Current cursor X
 --- @param curr_y number Current cursor Y
---- @return string "toward" if moving toward edge, "away" otherwise
+--- @return string 'toward' if moving toward edge, 'away' otherwise
 local function calculate_exit_direction(edge, prev_x, prev_y, curr_x, curr_y)
   if not prev_x or not prev_y then
-    return "away"  -- Default to shorter delay if no previous position
+    return 'away'  -- Default to shorter delay if no previous position
   end
 
   local dx = curr_x - prev_x
   local dy = curr_y - prev_y
 
   -- Primary axis movement determines direction
-  if edge == "left" then
+  if edge == 'left' then
     -- Moving left (negative X) = toward left edge
-    return dx < 0 and "toward" or "away"
-  elseif edge == "right" then
+    return dx < 0 and 'toward' or 'away'
+  elseif edge == 'right' then
     -- Moving right (positive X) = toward right edge
-    return dx > 0 and "toward" or "away"
-  elseif edge == "top" then
+    return dx > 0 and 'toward' or 'away'
+  elseif edge == 'top' then
     -- Moving up (negative Y) = toward top edge
-    return dy < 0 and "toward" or "away"
+    return dy < 0 and 'toward' or 'away'
   else -- bottom
     -- Moving down (positive Y) = toward bottom edge
-    return dy > 0 and "toward" or "away"
+    return dy > 0 and 'toward' or 'away'
   end
 end
 
@@ -313,7 +313,7 @@ end
 
 local function is_in_hover_zone(ctx, opts, state, bounds)
   local mx, my = get_mouse_position(ctx, opts)  -- Pass opts for debug logging
-  local edge = opts.edge or "right"
+  local edge = opts.edge or 'right'
 
   -- Get content bounds for hover calculation
   local content = opts.content_bounds or bounds
@@ -338,7 +338,7 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
   local in_zone = false
   local trigger_line = nil  -- For debug logging
 
-  if edge == "left" then
+  if edge == 'left' then
     -- Left edge: panel extends from left boundary
     local collapsed_ratio = opts.collapsed_ratio
     local collapsed_width = size * collapsed_ratio
@@ -355,7 +355,7 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
 
     in_zone = mx >= x1 and mx < x2 and my >= y1 and my <= y2
 
-  elseif edge == "right" then
+  elseif edge == 'right' then
     -- Right edge: panel extends from right boundary
     local collapsed_ratio = opts.collapsed_ratio
     local collapsed_width = size * collapsed_ratio
@@ -372,7 +372,7 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
 
     in_zone = mx > x1 and mx <= x2 and my >= y1 and my <= y2
 
-  elseif edge == "top" then
+  elseif edge == 'top' then
     -- Top edge: panel extends from top boundary
     local collapsed_ratio = opts.collapsed_ratio
     local collapsed_height = size * collapsed_ratio
@@ -409,9 +409,9 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
 
   -- Debug logging for trigger zone
   if opts.debug_mouse_tracking then
-    local state_str = state.is_expanded and "expanded" or "collapsed"
+    local state_str = state.is_expanded and 'expanded' or 'collapsed'
     local ext = opts.trigger_extension
-    Logger.debug("SlidingZone", "Trigger zone [%s edge, %s]: ext={%d,%d,%d,%d}, in_zone=%s",
+    Logger.debug('SlidingZone', 'Trigger zone [%s edge, %s]: ext={%d,%d,%d,%d}, in_zone=%s',
       edge, state_str, ext.up or 0, ext.down or 0, ext.left or 0, ext.right or 0, tostring(in_zone))
   end
 
@@ -436,7 +436,7 @@ local function exited_toward_edge(opts, state, bounds, mx, my, mouse_in_window)
   if not opts.window_bounds then return false end
 
   local win = opts.window_bounds
-  local edge = opts.edge or "right"
+  local edge = opts.edge or 'right'
   local content = opts.content_bounds or bounds
   local padding = opts.hover_padding or 30
 
@@ -446,19 +446,19 @@ local function exited_toward_edge(opts, state, bounds, mx, my, mouse_in_window)
   end
 
   -- Cursor just left the window - check if it exited toward the panel edge
-  if edge == "left" then
+  if edge == 'left' then
     -- Left edge panel: trigger if cursor exited to the LEFT of window
     local exited_left = mx < win.x
     local in_y_range = my >= (content.y - padding) and my <= (content.y + content.h + padding)
     return exited_left and in_y_range
 
-  elseif edge == "right" then
+  elseif edge == 'right' then
     -- Right edge panel: trigger if cursor exited to the RIGHT of window
     local exited_right = mx > (win.x + win.w)
     local in_y_range = my >= (content.y - padding) and my <= (content.y + content.h + padding)
     return exited_right and in_y_range
 
-  elseif edge == "top" then
+  elseif edge == 'top' then
     -- Top edge panel: trigger if cursor exited ABOVE window
     local exited_top = my < win.y
     local in_x_range = mx >= (content.x - padding) and mx <= (content.x + content.w + padding)
@@ -494,7 +494,7 @@ end
 
 local function calculate_content_bounds(opts, visibility, slide_offset, scale)
   local bounds = normalize_bounds(opts.bounds)
-  local edge = opts.edge or "right"
+  local edge = opts.edge or 'right'
   local size = opts.size or 40
 
   -- Apply scale
@@ -513,7 +513,7 @@ local function calculate_content_bounds(opts, visibility, slide_offset, scale)
   -- NOTE: No rounding! ImGui handles sub-pixel positioning smoothly
   -- Rounding causes 1px jitter when float values continue animating after visual settling
 
-  if edge == "left" then
+  if edge == 'left' then
     -- Starts clipped outside left edge, slides right
     local base_x = bounds.x - reveal_offset
     return {
@@ -523,7 +523,7 @@ local function calculate_content_bounds(opts, visibility, slide_offset, scale)
       h = bounds.h
     }
 
-  elseif edge == "right" then
+  elseif edge == 'right' then
     -- Starts clipped outside right edge, slides left
     local base_x = bounds.x + bounds.w + reveal_offset - visible_size
     return {
@@ -533,7 +533,7 @@ local function calculate_content_bounds(opts, visibility, slide_offset, scale)
       h = bounds.h
     }
 
-  elseif edge == "top" then
+  elseif edge == 'top' then
     -- Starts clipped outside top edge, slides down
     local base_y = bounds.y - reveal_offset
     return {
@@ -561,11 +561,11 @@ end
 
 local function get_corner_flags(edge)
   -- Round corners opposite to the edge
-  if edge == "top" then
+  if edge == 'top' then
     return 0xC  -- Bottom corners only
-  elseif edge == "bottom" then
+  elseif edge == 'bottom' then
     return 0x3  -- Top corners only
-  elseif edge == "left" then
+  elseif edge == 'left' then
     return 0xA  -- Right corners only
   else -- right
     return 0x5  -- Left corners only
@@ -579,7 +579,7 @@ end
 local function draw_background(dl, content_bounds, opts)
   if not opts.bg_color then return end
 
-  local corner_flags = get_corner_flags(opts.edge or "right")
+  local corner_flags = get_corner_flags(opts.edge or 'right')
   local rounding = opts.rounding or 0
 
   ImGui.DrawList_AddRectFilled(
@@ -617,7 +617,7 @@ function M.draw(ctx, opts)
 
   -- trigger_extension: support both number and table
   local trigger_ext = opts.trigger_extension or opts.hover_extend_outside or DEFAULTS.trigger_extension
-  if type(trigger_ext) == "number" then
+  if type(trigger_ext) == 'number' then
     -- Convert number to directional table
     opts.trigger_extension = {
       up = trigger_ext,
@@ -625,7 +625,7 @@ function M.draw(ctx, opts)
       left = trigger_ext,
       right = trigger_ext,
     }
-  elseif type(trigger_ext) == "table" then
+  elseif type(trigger_ext) == 'table' then
     -- Fill in missing directions with default (8)
     local default = DEFAULTS.trigger_extension
     opts.trigger_extension = {
@@ -654,11 +654,11 @@ function M.draw(ctx, opts)
 
   -- Validate required opts
   if not opts.bounds then
-    error("SlidingZone requires 'bounds' option", 2)
+    error('SlidingZone requires \'bounds\' option', 2)
   end
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(ctx, opts, "sliding_zone")
+  local unique_id = Base.resolve_id(ctx, opts, 'sliding_zone')
 
   -- Get or create instance
   local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new, ctx)
@@ -677,15 +677,15 @@ function M.draw(ctx, opts)
   local bounds = normalize_bounds(opts.bounds)
 
   -- Handle trigger modes
-  local trigger = opts.trigger or "hover"
+  local trigger = opts.trigger or 'hover'
   local current_time = ImGui.GetTime(ctx)
   local reveal_offset = opts._reveal_offset
 
-  if trigger == "always" then
+  if trigger == 'always' then
     -- Always visible
     state:set_targets(1.0, reveal_offset, opts.expand_scale or 1.0)
 
-  elseif trigger == "hover" then
+  elseif trigger == 'hover' then
     -- Get current mouse position (using reaper API for reliability outside window)
     local mx, my = get_mouse_position(ctx)
 
@@ -704,7 +704,7 @@ function M.draw(ctx, opts)
     -- This catches cases where mouse moves so fast it skips the trigger zone in one frame
     if not in_zone and not state.is_expanded and state.last_mouse_x and state.last_mouse_y then
       local crossed = Cursor.crossed_edge(
-        opts.edge or "right",
+        opts.edge or 'right',
         state.last_mouse_x,
         state.last_mouse_y,
         mx, my,
@@ -719,7 +719,7 @@ function M.draw(ctx, opts)
 
     -- Check custom retract condition
     local force_retract = false
-    if opts.retract_when and type(opts.retract_when) == "function" then
+    if opts.retract_when and type(opts.retract_when) == 'function' then
       force_retract = opts.retract_when(ctx, mx, my, state)
     end
 
@@ -756,7 +756,7 @@ function M.draw(ctx, opts)
         -- Calculate exit direction for directional delays
         if opts.directional_delay then
           state.exit_direction = calculate_exit_direction(
-            opts.edge or "right",
+            opts.edge or 'right',
             state.last_mouse_x, state.last_mouse_y,
             mx, my
           )
@@ -766,7 +766,7 @@ function M.draw(ctx, opts)
       -- Determine delay based on direction
       local delay
       if opts.directional_delay and state.exit_direction then
-        if state.exit_direction == "toward" then
+        if state.exit_direction == 'toward' then
           delay = opts.retract_delay_toward or 1.0
         else
           delay = opts.retract_delay_away or 0.1
@@ -796,7 +796,7 @@ function M.draw(ctx, opts)
     state.last_mouse_y = my
     state.last_mouse_in_window = mouse_in_window
 
-  elseif trigger == "button" then
+  elseif trigger == 'button' then
     -- Toggle state managed externally or via click
     if state.is_expanded then
       state:set_targets(1.0, reveal_offset, opts.expand_scale or 1.0)
@@ -863,7 +863,7 @@ end
 --- @param opts table Widget options (must include id)
 function M.toggle(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
-  local unique_id = Base.resolve_id(ctx, opts, "sliding_zone")
+  local unique_id = Base.resolve_id(ctx, opts, 'sliding_zone')
   local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new, ctx)
 
   state.is_expanded = not state.is_expanded
@@ -881,7 +881,7 @@ end
 --- @param expanded boolean New expanded state
 function M.set_expanded(ctx, opts, expanded)
   opts = Base.parse_opts(opts, DEFAULTS)
-  local unique_id = Base.resolve_id(ctx, opts, "sliding_zone")
+  local unique_id = Base.resolve_id(ctx, opts, 'sliding_zone')
   local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new, ctx)
 
   local was_expanded = state.is_expanded
@@ -900,7 +900,7 @@ end
 --- @param expanded boolean Target expanded state
 function M.teleport(ctx, opts, expanded)
   opts = Base.parse_opts(opts, DEFAULTS)
-  local unique_id = Base.resolve_id(ctx, opts, "sliding_zone")
+  local unique_id = Base.resolve_id(ctx, opts, 'sliding_zone')
   local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new, ctx)
 
   state.is_expanded = expanded
@@ -919,7 +919,7 @@ end
 --- @return table|nil State or nil if not created
 function M.get_state(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
-  local unique_id = Base.resolve_id(ctx, opts, "sliding_zone")
+  local unique_id = Base.resolve_id(ctx, opts, 'sliding_zone')
   local registry = instances._instances or instances
   return registry[unique_id]
 end
