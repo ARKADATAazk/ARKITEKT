@@ -19,7 +19,14 @@ local NODE_PADDING = 8
 local NODE_ROUNDING = 4
 local LINK_THICKNESS = 3
 local GRID_SIZE = 64
-local TITLE_HEIGHT = 24
+local TITLE_HEIGHT = 28
+
+-- Animation state (persistent across frames)
+local node_animations = {}  -- [node_id] = { hover_alpha = 0.0 }
+
+-- Animation constants
+local HOVER_ANIM_SPEED = 8.0
+local SHADOW_OFFSET = 2
 
 -- Performance: Cache ImGui functions
 local DrawList_AddRectFilled = ImGui.DrawList_AddRectFilled
@@ -91,6 +98,7 @@ local DEFAULTS = {
 -- ============================================================================
 
 local editor_state = {}  -- Per-editor state
+local last_frame_time = {}  -- [unique_id] = last frame time
 
 local function get_state(unique_id)
   if not editor_state[unique_id] then
@@ -201,6 +209,142 @@ local function find_pin_at_pos(nodes, sx, sy, pan_x, pan_y, zoom, editor_x, edit
 end
 
 -- ============================================================================
+-- VISUAL EFFECTS
+-- ============================================================================
+
+--- Get or create animation state for a node
+local function get_node_anim_state(node_id)
+  if not node_animations[node_id] then
+    node_animations[node_id] = { hover_alpha = 0.0 }
+  end
+  return node_animations[node_id]
+end
+
+--- Draw hover shadow effect (matches tile_visuals.lua pattern)
+local function draw_hover_shadow(dl, x1, y1, x2, y2, hover_alpha, rounding)
+  if hover_alpha <= 0.01 then return end
+
+  local alpha = math.floor(hover_alpha * 20)
+  local shadow = (0x000000 << 8) | alpha
+
+  -- Draw layered shadow for depth
+  for i = 2, 1, -1 do
+    DrawList_AddRectFilled(dl, x1 - i, y1 - i + SHADOW_OFFSET, x2 + i, y2 + i + SHADOW_OFFSET, shadow, rounding)
+  end
+end
+
+--- Draw marching ants selection border (matches tile_visuals.lua pattern)
+local function draw_marching_ants_rounded(dl, x1, y1, x2, y2, col, thick, radius)
+  if x2 <= x1 or y2 <= y1 then return end
+
+  local w, h = x2 - x1, y2 - y1
+  local r = math.max(0, math.min(radius or 3, math.floor(math.min(w, h) * 0.5)))
+
+  -- Calculate perimeter segments
+  local straight_w = math.max(0, w - 2*r)
+  local straight_h = math.max(0, h - 2*r)
+  local arc_len = (math.pi * r) / 2
+  local total_len = straight_w + arc_len + straight_h + arc_len + straight_w + arc_len + straight_h + arc_len
+
+  if total_len <= 0 then return end
+
+  -- Helper to draw line segment
+  local function line(ax, ay, bx, by, u0, u1)
+    local seg = math.max(1e-6, ((bx-ax)^2 + (by-ay)^2)^0.5)
+    local t0, t1 = u0/seg, u1/seg
+    local sx, sy = ax + (bx-ax)*t0, ay + (by-ay)*t0
+    local ex, ey = ax + (bx-ax)*t1, ay + (by-ay)*t1
+    ImGui.DrawList_AddLine(dl, sx, sy, ex, ey, col, thick)
+  end
+
+  -- Helper to draw arc segment
+  local function arc(cx, cy, rr, a0, a1, u0, u1)
+    local seg = math.max(1e-6, rr * math.abs(a1 - a0))
+    local aa0 = a0 + (a1 - a0) * (u0/seg)
+    local aa1 = a0 + (a1 - a0) * (u1/seg)
+    local steps = math.max(1, math.floor((rr * math.abs(aa1 - aa0)) / 3))
+    local px, py = cx + rr * math.cos(aa0), cy + rr * math.sin(aa0)
+    for i = 1, steps do
+      local t = i / steps
+      local ang = aa0 + (aa1 - aa0) * t
+      local nx, ny = cx + rr * math.cos(ang), cy + rr * math.sin(ang)
+      ImGui.DrawList_AddLine(dl, px, py, nx, ny, col, thick)
+      px, py = nx, ny
+    end
+  end
+
+  -- Animation
+  local dash_len = 8
+  local gap_len = 6
+  local period = dash_len + gap_len
+  local speed = 20  -- pixels per second
+  local phase_px = (reaper.time_precise() * speed) % period
+
+  -- Draw perimeter path with dashes
+  local function subpath(s, e)
+    local pos = 0
+
+    -- Top edge
+    if e > pos and s < pos + straight_w and straight_w > 0 then
+      line(x1+r, y1, x2-r, y1, math.max(0, s-pos), math.min(straight_w, e-pos))
+    end
+    pos = pos + straight_w
+
+    -- Top-right corner
+    if e > pos and s < pos + arc_len and arc_len > 0 then
+      arc(x2-r, y1+r, r, -math.pi/2, 0, math.max(0, s-pos), math.min(arc_len, e-pos))
+    end
+    pos = pos + arc_len
+
+    -- Right edge
+    if e > pos and s < pos + straight_h and straight_h > 0 then
+      line(x2, y1+r, x2, y2-r, math.max(0, s-pos), math.min(straight_h, e-pos))
+    end
+    pos = pos + straight_h
+
+    -- Bottom-right corner
+    if e > pos and s < pos + arc_len and arc_len > 0 then
+      arc(x2-r, y2-r, r, 0, math.pi/2, math.max(0, s-pos), math.min(arc_len, e-pos))
+    end
+    pos = pos + arc_len
+
+    -- Bottom edge
+    if e > pos and s < pos + straight_w and straight_w > 0 then
+      line(x2-r, y2, x1+r, y2, math.max(0, s-pos), math.min(straight_w, e-pos))
+    end
+    pos = pos + straight_w
+
+    -- Bottom-left corner
+    if e > pos and s < pos + arc_len and arc_len > 0 then
+      arc(x1+r, y2-r, r, math.pi/2, math.pi, math.max(0, s-pos), math.min(arc_len, e-pos))
+    end
+    pos = pos + arc_len
+
+    -- Left edge
+    if e > pos and s < pos + straight_h and straight_h > 0 then
+      line(x1, y2-r, x1, y1+r, math.max(0, s-pos), math.min(straight_h, e-pos))
+    end
+    pos = pos + straight_h
+
+    -- Top-left corner
+    if e > pos and s < pos + arc_len and arc_len > 0 then
+      arc(x1+r, y1+r, r, math.pi, 3*math.pi/2, math.max(0, s-pos), math.min(arc_len, e-pos))
+    end
+  end
+
+  -- Draw all dashes
+  local s = -phase_px
+  while s < total_len do
+    local e = s + dash_len
+    local cs, ce = math.max(0, s), math.min(total_len, e)
+    if ce > cs then
+      subpath(cs, ce)
+    end
+    s = s + period
+  end
+end
+
+-- ============================================================================
 -- RENDERING
 -- ============================================================================
 
@@ -228,18 +372,41 @@ local function render_grid(dl, x, y, w, h, pan_x, pan_y, zoom, grid_color)
 end
 
 --- Render single node
-local function render_node(ctx, dl, node, pan_x, pan_y, zoom, editor_x, editor_y, opts, state)
+local function render_node(ctx, dl, node, pan_x, pan_y, zoom, editor_x, editor_y, opts, state, dt)
   -- Transform to screen coordinates
   local sx, sy = canvas_to_screen(node.x, node.y, pan_x, pan_y, zoom, editor_x, editor_y)
   local sw = node.width * zoom
   local sh = node.height * zoom
 
-  -- Colors
-  local bg_color = opts.node_bg_color or Theme.COLORS.BG_BASE
-  local border_color = opts.node_border_color or Theme.COLORS.BORDER_INNER
+  -- Animation state
+  local anim_state = get_node_anim_state(node.id)
+  local is_hovered = (state.hovered_node == node)
+
+  -- Update hover animation
+  local target_hover = is_hovered and 1.0 or 0.0
+  if dt > 0 then
+    local lerp_speed = HOVER_ANIM_SPEED * dt
+    anim_state.hover_alpha = anim_state.hover_alpha + (target_hover - anim_state.hover_alpha) * lerp_speed
+    anim_state.hover_alpha = math.max(0, math.min(1, anim_state.hover_alpha))
+  end
+
+  -- Hover shadow (drawn before node for depth effect)
+  draw_hover_shadow(dl, sx, sy, sx + sw, sy + sh, anim_state.hover_alpha, NODE_ROUNDING)
+
+  -- Base colors
+  local base_bg = opts.node_bg_color or Theme.COLORS.BG_BASE
+  local base_border = opts.node_border_color or Theme.COLORS.BORDER_INNER
   local title_bg_color = opts.node_title_bg_color or Theme.COLORS.ACCENT_PRIMARY
   local pin_color = opts.pin_color or Theme.COLORS.ACCENT_SECONDARY
 
+  -- Lerp colors for hover effect
+  local hover_bg = Colors.adjust_brightness(base_bg, 1.15)
+  local hover_border = Colors.adjust_brightness(base_border, 1.3)
+
+  local bg_color = Colors.lerp(base_bg, hover_bg, anim_state.hover_alpha)
+  local border_color = Colors.lerp(base_border, hover_border, anim_state.hover_alpha)
+
+  -- Selection overrides border
   if node.is_selected then
     border_color = Theme.COLORS.ACCENT_PRIMARY
   end
@@ -292,6 +459,12 @@ local function render_node(ctx, dl, node, pan_x, pan_y, zoom, editor_x, editor_y
       ImGui.SetCursorScreenPos(ctx, spx - label_w - 12 * zoom, spy - 8 * zoom)
       ImGui.Text(ctx, label)
     end
+  end
+
+  -- Marching ants for selected nodes
+  if node.is_selected then
+    local ants_color = Theme.COLORS.ACCENT_PRIMARY
+    draw_marching_ants_rounded(dl, sx, sy, sx + sw, sy + sh, ants_color, 2, NODE_ROUNDING)
   end
 end
 
@@ -363,6 +536,15 @@ function M.draw(ctx, opts)
   local unique_id = Base.resolve_id(ctx, opts, "nodes")
   local state = get_state(unique_id)
 
+  -- Calculate delta time for animations
+  local current_time = reaper.time_precise()
+  local dt = 0.016  -- Default to 60 FPS if no previous frame
+  if last_frame_time[unique_id] then
+    dt = current_time - last_frame_time[unique_id]
+    dt = math.min(dt, 0.1)  -- Cap at 100ms to avoid huge jumps
+  end
+  last_frame_time[unique_id] = current_time
+
   -- Get position and draw list
   local x, y = Base.get_position(ctx, opts)
   local dl = Base.get_draw_list(ctx, opts)
@@ -398,7 +580,7 @@ function M.draw(ctx, opts)
 
   -- Render nodes
   for _, node in ipairs(nodes) do
-    render_node(ctx, dl, node, opts.pan_x, opts.pan_y, opts.zoom, x, y, opts, state)
+    render_node(ctx, dl, node, opts.pan_x, opts.pan_y, opts.zoom, x, y, opts, state, dt)
   end
 
   -- Render link preview (if dragging)
