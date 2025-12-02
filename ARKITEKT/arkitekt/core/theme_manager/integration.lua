@@ -7,6 +7,7 @@
 
 local Colors = require('arkitekt.core.colors')
 local Engine = require('arkitekt.core.theme_manager.engine')
+local Palette = require('arkitekt.defs.colors.theme')
 
 local M = {}
 
@@ -24,6 +25,7 @@ local REAPER_SYNC_OFFSET = -0.012
 
 -- ExtState section for persistence
 local EXTSTATE_SECTION = "ARKITEKT"
+local EXTSTATE_TIMESTAMP_KEY = "theme_update_time"
 
 -- =============================================================================
 -- REAPER COLOR CONVERSION
@@ -88,8 +90,23 @@ function M.sync_with_reaper_no_offset()
     return false
   end
 
+  -- Clamp to safe range (prevents extreme REAPER themes from breaking DSL)
+  local range_l = Palette.value_ranges.BG_LIGHTNESS
+  local range_s = Palette.value_ranges.BG_SATURATION
+  local clamped_bg, was_clamped = Colors.clamp_bg_color(
+    main_bg,
+    range_l.min,
+    range_l.max,
+    range_s.max
+  )
+
+  -- Optional: Warn user if clamping occurred
+  if was_clamped then
+    reaper.ShowConsoleMsg("[ARKITEKT] REAPER theme adjusted for visual clarity\n")
+  end
+
   -- Generate and apply palette WITHOUT offset (exact REAPER color)
-  get_theme().generate_and_apply(main_bg)
+  get_theme().generate_and_apply(clamped_bg)
   return true
 end
 
@@ -118,8 +135,23 @@ function M.sync_with_reaper()
   -- Apply lightness offset for subtle visual separation
   local offset_bg = Colors.adjust_lightness(main_bg, REAPER_SYNC_OFFSET)
 
+  -- Clamp to safe range (prevents extreme REAPER themes from breaking DSL)
+  local range_l = Palette.value_ranges.BG_LIGHTNESS
+  local range_s = Palette.value_ranges.BG_SATURATION
+  local clamped_bg, was_clamped = Colors.clamp_bg_color(
+    offset_bg,
+    range_l.min,
+    range_l.max,
+    range_s.max
+  )
+
+  -- Optional: Warn user if clamping occurred
+  if was_clamped then
+    reaper.ShowConsoleMsg("[ARKITEKT] REAPER theme adjusted for visual clarity\n")
+  end
+
   -- Generate and apply palette (text color derived automatically)
-  get_theme().generate_and_apply(offset_bg)
+  get_theme().generate_and_apply(clamped_bg)
 
   return true
 end
@@ -150,33 +182,120 @@ function M.create_live_sync(interval)
   end
 end
 
+--- Create cross-app sync function (polls for theme changes from other apps)
+--- @param interval number|nil Check interval in seconds (default: 2.0)
+--- @param app_name string|nil App name for override resolution
+--- @return function Function to call in main loop
+function M.create_cross_app_sync(interval, app_name)
+  interval = interval or 2.0
+  local last_check = 0
+  local last_timestamp = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_TIMESTAMP_KEY)
+
+  return function()
+    local now = reaper.time_precise()
+    if now - last_check >= interval then
+      last_check = now
+
+      local current_timestamp = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_TIMESTAMP_KEY)
+
+      -- If timestamp changed, reload theme
+      if current_timestamp ~= last_timestamp and current_timestamp ~= "" then
+        last_timestamp = current_timestamp
+
+        -- Reload with app fallback (respects app override)
+        local mode = M.load_mode(app_name)
+        if mode then
+          get_theme().set_mode(mode, false, app_name)  -- false = don't persist!
+        end
+      end
+    end
+  end
+end
+
 -- =============================================================================
 -- PERSISTENCE (via REAPER ExtState)
 -- =============================================================================
 
 local EXTSTATE_KEY = "theme_mode"
 
+--- Get ExtState section name for an app
+--- @param app_name string|nil App name (nil = global)
+--- @return string ExtState section name
+--- @private
+local function get_extstate_section(app_name)
+  if app_name then
+    return EXTSTATE_SECTION .. "_" .. app_name  -- "ARKITEKT_TemplateBrowser"
+  end
+  return EXTSTATE_SECTION  -- "ARKITEKT"
+end
+
+--- Notify other apps that theme changed (write timestamp)
+--- @private
+local function notify_theme_change()
+  local timestamp = tostring(reaper.time_precise())
+  reaper.SetExtState(EXTSTATE_SECTION, EXTSTATE_TIMESTAMP_KEY, timestamp, false)
+  -- false = not persistent (resets on REAPER restart)
+end
+
 --- Save theme mode to REAPER ExtState (persistent across sessions)
 --- @param mode string Theme mode to save
-function M.save_mode(mode)
-  if mode then
-    reaper.SetExtState(EXTSTATE_SECTION, EXTSTATE_KEY, mode, true)
+--- @param app_name string|nil App name (nil = global)
+function M.save_mode(mode, app_name)
+  if not mode then return end
+
+  local section = get_extstate_section(app_name)
+  reaper.SetExtState(section, EXTSTATE_KEY, mode, true)
+
+  -- Only notify on GLOBAL changes (not app-specific overrides)
+  if not app_name then
+    notify_theme_change()
   end
 end
 
 --- Load saved theme mode from REAPER ExtState
+--- @param app_name string|nil App name (nil = global only)
 --- @return string|nil Saved theme mode or nil if not set
-function M.load_mode()
-  local saved = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_KEY)
-  if saved and saved ~= "" then
-    return saved
+function M.load_mode(app_name)
+  -- Try app-specific override first
+  if app_name then
+    local section = get_extstate_section(app_name)
+    local app_mode = reaper.GetExtState(section, EXTSTATE_KEY)
+    if app_mode and app_mode ~= "" then
+      return app_mode  -- App override exists
+    end
   end
+
+  -- Fallback to global
+  local global_mode = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_KEY)
+  if global_mode and global_mode ~= "" then
+    return global_mode
+  end
+
   return nil
 end
 
 --- Clear saved theme mode
 function M.clear_mode()
   reaper.DeleteExtState(EXTSTATE_SECTION, EXTSTATE_KEY, true)
+end
+
+--- Clear app-specific override (fall back to global)
+--- @param app_name string App name
+function M.clear_app_override(app_name)
+  if not app_name then return end
+  local section = get_extstate_section(app_name)
+  reaper.DeleteExtState(section, EXTSTATE_KEY, true)
+  -- Don't notify globally - this is app-specific action
+end
+
+--- Check if app has a theme override
+--- @param app_name string App name
+--- @return boolean Has override
+function M.has_app_override(app_name)
+  if not app_name then return false end
+  local section = get_extstate_section(app_name)
+  local mode = reaper.GetExtState(section, EXTSTATE_KEY)
+  return mode and mode ~= ""
 end
 
 -- =============================================================================
@@ -212,7 +331,23 @@ function M.apply_custom_color(color)
   if not color then
     return false
   end
-  get_theme().generate_and_apply(color)
+
+  -- Clamp to safe range (guardrail for user-provided colors)
+  local range_l = Palette.value_ranges.BG_LIGHTNESS
+  local range_s = Palette.value_ranges.BG_SATURATION
+  local clamped_color, was_clamped = Colors.clamp_bg_color(
+    color,
+    range_l.min,
+    range_l.max,
+    range_s.max
+  )
+
+  -- Optional: Warn user if clamping occurred
+  if was_clamped then
+    reaper.ShowConsoleMsg("[ARKITEKT] Custom color adjusted for visual clarity\n")
+  end
+
+  get_theme().generate_and_apply(clamped_color)
   return true
 end
 

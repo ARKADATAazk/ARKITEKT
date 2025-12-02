@@ -214,10 +214,19 @@ local function run_overlay_mode(config)
   -- Initialize theme on overlay startup to ensure Theme.COLORS is properly set.
   -- This enables overlays (ItemPicker, Template Browser, etc.) to respect the
   -- persisted theme preference from the titlebar context menu.
+  local reaper_theme_sync, cross_app_theme_sync
   do
     local ok, ThemeManager = pcall(require, 'arkitekt.core.theme_manager')
     if ok and ThemeManager and ThemeManager.init then
-      ThemeManager.init()
+      ThemeManager.init("adapt", config.app_name)
+
+      -- Create live sync functions (polled in main loop)
+      if ThemeManager.create_live_sync then
+        reaper_theme_sync = ThemeManager.create_live_sync(1.0)  -- Poll REAPER theme every 1s
+      end
+      if ThemeManager.create_cross_app_sync then
+        cross_app_theme_sync = ThemeManager.create_cross_app_sync(2.0, config.app_name)  -- Poll other apps every 2s
+      end
     end
   end
 
@@ -309,6 +318,9 @@ local function run_overlay_mode(config)
         config.on_close()
       end
     end,
+    -- Pass theme sync functions
+    reaper_theme_sync = reaper_theme_sync,
+    cross_app_theme_sync = cross_app_theme_sync,
   })
 end
 
@@ -384,11 +396,20 @@ function M.run(opts)
   -- Initialize theme on app startup to ensure Theme.COLORS is properly set
   -- before any UI renders. This prevents the "dark defaults on light theme" bug.
   -- Theme preferences are persisted via REAPER ExtState and restored automatically.
+  local reaper_theme_sync, cross_app_theme_sync
   do
     local ok, ThemeManager = pcall(require, 'arkitekt.core.theme_manager')
     if ok and ThemeManager and ThemeManager.init then
       -- init() loads saved preference or defaults to "adapt" mode
-      ThemeManager.init()
+      ThemeManager.init("adapt", config.app_name)
+
+      -- Create live sync functions (polled in main loop)
+      if ThemeManager.create_live_sync then
+        reaper_theme_sync = ThemeManager.create_live_sync(1.0)  -- Poll REAPER theme every 1s
+      end
+      if ThemeManager.create_cross_app_sync then
+        cross_app_theme_sync = ThemeManager.create_cross_app_sync(2.0, config.app_name)  -- Poll other apps every 2s
+      end
     end
   end
 
@@ -435,6 +456,7 @@ function M.run(opts)
     initial_pos     = config.initial_pos,
     initial_size    = config.initial_size,
     min_size        = config.min_size,
+    app_name        = config.app_name,  -- Pass app name for per-app theme overrides
 
     -- Chrome configuration (new)
     chrome          = config.chrome,
@@ -595,6 +617,10 @@ function M.run(opts)
     Base.periodic_cleanup()
     Logger.prune_stale_live()
 
+    -- Theme live sync (REAPER theme changes + cross-app propagation)
+    if reaper_theme_sync then reaper_theme_sync() end
+    if cross_app_theme_sync then cross_app_theme_sync() end
+
     if runtime.open then
       reaper.defer(frame)
     else
@@ -651,6 +677,8 @@ function M.run_loop(opts)
   local ctx = opts.ctx
   local on_frame = opts.on_frame or function() return true end
   local on_close = opts.on_close
+  local reaper_theme_sync = opts.reaper_theme_sync
+  local cross_app_theme_sync = opts.cross_app_theme_sync
 
   local open = true
   local function frame()
@@ -667,6 +695,10 @@ function M.run_loop(opts)
     -- Periodic cleanup (internally throttled)
     Base.periodic_cleanup()
     Logger.prune_stale_live()
+
+    -- Theme live sync (REAPER theme changes + cross-app propagation)
+    if reaper_theme_sync then reaper_theme_sync() end
+    if cross_app_theme_sync then cross_app_theme_sync() end
 
     if open then
       reaper.defer(frame)

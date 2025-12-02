@@ -99,6 +99,16 @@ local function resolve_value(def, t)
   if mode == "offset" or mode == "snap" then
     return t < 0.5 and def.dark or def.light
 
+  -- snap3/offset3: discrete 3-zone switch (t=0.33, 0.67)
+  elseif mode == "offset3" or mode == "snap3" then
+    if t < 0.33 then
+      return def.dark
+    elseif t < 0.67 then
+      return def.mid
+    else
+      return def.light
+    end
+
   -- lerp: smooth interpolation
   elseif mode == "lerp" then
     local dark_val, light_val = def.dark, def.light
@@ -113,6 +123,36 @@ local function resolve_value(def, t)
       return string.format("#%02X%02X%02X", r, g, b)
     else
       return t < 0.5 and dark_val or light_val
+    end
+
+  -- lerp3: piecewise interpolation (0.0-0.33 dark→mid, 0.33-0.67 mid→light, 0.67-1.0 light)
+  elseif mode == "lerp3" then
+    local dark_val, mid_val, light_val = def.dark, def.mid, def.light
+    local val_a, val_b, local_t
+
+    -- Determine segment and compute local t
+    if t < 0.33 then
+      val_a, val_b = dark_val, mid_val
+      local_t = t / 0.33
+    elseif t < 0.67 then
+      val_a, val_b = mid_val, light_val
+      local_t = (t - 0.33) / 0.34
+    else
+      return light_val  -- Past 0.67, stay at light value
+    end
+
+    -- Interpolate based on type
+    if type(val_a) == "number" and type(val_b) == "number" then
+      return val_a + (val_b - val_a) * local_t
+    elseif type(val_a) == "string" and type(val_b) == "string" then
+      -- RGB color lerp
+      local color_a = Colors.hexrgb(val_a .. (#val_a == 7 and "FF" or ""))
+      local color_b = Colors.hexrgb(val_b .. (#val_b == 7 and "FF" or ""))
+      local lerped = Colors.lerp(color_a, color_b, local_t)
+      local r, g, b = Colors.rgba_to_components(lerped)
+      return string.format("#%02X%02X%02X", r, g, b)
+    else
+      return local_t < 0.5 and val_a or val_b
     end
   end
 
@@ -142,15 +182,15 @@ local function derive_entry(base_bg, key, def, t)
     return base_bg
   end
 
-  -- OFFSET: Apply delta to BG_BASE
-  if mode == "offset" then
+  -- OFFSET/OFFSET3: Apply delta to BG_BASE
+  if mode == "offset" or mode == "offset3" then
     local delta = resolve_value(def, t)
     -- Clamp delta to valid range
     delta = math.max(-1, math.min(1, delta))
     return Colors.adjust_lightness(base_bg, delta)
   end
 
-  -- SNAP or LERP: Check value type
+  -- SNAP/SNAP3/LERP/LERP3: Check value type
   local resolved = resolve_value(def, t)
 
   if type(resolved) == "string" then

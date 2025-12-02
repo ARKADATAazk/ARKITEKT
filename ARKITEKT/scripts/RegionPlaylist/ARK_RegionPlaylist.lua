@@ -73,6 +73,7 @@ load_tests()
 Shell.run({
   title        = "Region Playlist" .. (profiler_enabled and " [Profiling]" or ""),
   version      = "v0.1.0",
+  app_name     = "RegionPlaylist",  -- For per-app theme overrides
   draw         = function(ctx, shell_state) gui:draw(ctx, shell_state.window, shell_state) end,
   settings     = settings,
   initial_pos  = { x = 120, y = 120 },

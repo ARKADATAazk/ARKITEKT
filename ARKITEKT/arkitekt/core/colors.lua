@@ -312,6 +312,38 @@ function M.adjust_lightness(color, delta)
   return M.components_to_rgba(r, g, b, a)
 end
 
+--- Clamp background color to safe lightness and saturation range
+--- Prevents pure black/white backgrounds and overly saturated (colored) themes
+--- @param color number Color in RGBA format
+--- @param min_lightness number|nil Minimum lightness (default: 0.10)
+--- @param max_lightness number|nil Maximum lightness (default: 0.92)
+--- @param max_saturation number|nil Maximum saturation (default: 0.12)
+--- @return number Clamped color in RGBA format
+--- @return boolean Whether clamping was applied
+function M.clamp_bg_color(color, min_lightness, max_lightness, max_saturation)
+  min_lightness = min_lightness or 0.10
+  max_lightness = max_lightness or 0.92
+  max_saturation = max_saturation or 0.12
+
+  local h, s, l = M.rgb_to_hsl(color)
+
+  -- Clamp lightness and saturation
+  local clamped_l = max(min_lightness, min(max_lightness, l))
+  local clamped_s = min(max_saturation, s)  -- Only clamp upper bound
+
+  -- Check if clamping was needed
+  local was_clamped = (clamped_l ~= l) or (clamped_s ~= s)
+
+  if not was_clamped then
+    return color, false
+  end
+
+  -- Apply clamped values
+  local r, g, b = M.hsl_to_rgb(h, clamped_s, clamped_l)
+  local _, _, _, a = M.rgba_to_components(color)
+  return M.components_to_rgba(r, g, b, a), true
+end
+
 --- Set absolute lightness of a color in HSL space
 --- @param color number Color in RGBA format
 --- @param lightness number Target lightness (0.0 to 1.0)
