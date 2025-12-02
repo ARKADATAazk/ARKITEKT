@@ -459,11 +459,11 @@ local function get_or_create_instance(context, config, state_or_id)
   if not instance then
     -- Get initial values from state (if panel context)
     local initial_value = nil
-    local initial_direction = "asc"
+    local initial_direction = 'asc'
 
     if context.is_panel_context then
       initial_value = state_or_id.dropdown_value
-      initial_direction = state_or_id.dropdown_direction or "asc"
+      initial_direction = state_or_id.dropdown_direction or 'asc'
     end
 
     -- Prefer config.current_value over panel state (allows explicit control)
@@ -475,8 +475,11 @@ local function get_or_create_instance(context, config, state_or_id)
     instance = Dropdown.new(context.unique_id, config, initial_value, initial_direction)
     set_inst(context.unique_id, instance)
   else
-    -- ALWAYS replace config with fresh copy (prevents pollution)
-    instance.config = copy_config(config)
+    -- PERFORMANCE: Only update config if reference changed (not every frame)
+    -- Assumes config objects are reused per widget (standard pattern)
+    if instance.config ~= config then
+      instance.config = copy_config(config)
+    end
 
     -- If config provides a current_value, update the instance
     -- This allows external state to control the dropdown value
