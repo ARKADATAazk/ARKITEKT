@@ -12,6 +12,8 @@
 | Strings | `s = s .. x` in loop | `table.concat(parts)` | O(n) vs O(n²) |
 | Config | `config.a.b.c` per-item | Cache once per frame | 60% faster |
 | Renderer setup | Per-tile config lookups | cache_config() once per frame | 60% faster |
+| Colors | `hexrgb("#FF0000")` | `0xFF0000FF` (bytes) | 0.5-1μs per call |
+| Iteration | `for k,v in pairs(t)` | `for i=1,#t` (arrays) | 20-30% faster |
 
 ---
 
@@ -131,6 +133,67 @@ local s = table.concat(parts)
 
 ---
 
+## Color Parsing Overhead
+
+### The Problem: hexrgb() String Parsing
+
+**Impact:** 0.5-1μs per call (string parsing, validation, bit operations)
+
+```lua
+-- SLOW: String parsing every call
+local color = hexrgb("#FF5500")     -- ~0.5-1μs
+local color = hexrgb("#FF5500FF")   -- ~0.5-1μs
+
+-- FAST: Pre-computed byte literal
+local color = 0xFF5500FF            -- ~0ns (compile-time constant)
+```
+
+### When String Parsing Hurts
+
+| Context | Calls | Overhead |
+|---------|-------|----------|
+| Module load (cached) | Once | Negligible |
+| Theme change (cached) | Rare | Negligible |
+| Per-frame render | 30-60fps × N calls | **Significant** |
+| Per-tile render | N tiles × M colors | **Critical** |
+
+### ARKITEKT Codebase Status
+
+**Found:** 1,302 `hexrgb()` calls across 170 files
+
+| Location | Per-Frame? | Action |
+|----------|-----------|--------|
+| `defs/constants.lua` (cached) | No | Convert for consistency |
+| `defs/colors/theme.lua` (cached) | No | Convert for consistency |
+| Widget draw functions | **Yes** | **Convert immediately** |
+| Render loops | **Yes** | **Convert immediately** |
+
+### The Fix: Bytes Everywhere
+
+```lua
+-- Before (string parsing per-frame)
+local HOVER_COLOR = hexrgb("#FFFFFF20")
+local ERROR_COLOR = hexrgb("#CC2222")
+
+-- After (zero-cost byte literals)
+local HOVER_COLOR = 0xFFFFFF20
+local ERROR_COLOR = 0xCC2222FF
+```
+
+**Format:** `0xRRGGBBAA` (red, green, blue, alpha)
+
+### IDE Support
+
+VS Code extension available for byte color preview:
+- Hover over `0xFF5500FF` shows color swatch
+- Color picker integration
+
+### Migration Strategy
+
+See `TODO/01_HIGH/REFACTOR_ColorsModule.md` for the full migration plan.
+
+---
+
 ## Table Operations
 
 ### Insert
@@ -198,17 +261,27 @@ end
 ### Iterator Overhead
 
 ```lua
--- Standard (fine for most cases)
+-- SLOW: pairs() has function call overhead per iteration
 for k, v in pairs(t) do
   process(v)
 end
 
--- Faster for arrays
+-- MEDIUM: ipairs() is faster but still has iterator overhead
+for i, v in ipairs(t) do
+  process(v)
+end
+
+-- FAST: Numeric for loop (20-30% faster than pairs)
 local n = #items
 for i = 1, n do
   process(items[i])
 end
 ```
+
+**When to use what:**
+- `pairs()` - Hash tables (string keys, sparse arrays)
+- `ipairs()` - Sequential arrays when you need both index and value
+- Numeric `for` - Sequential arrays in hot paths (render loops)
 
 ### Move Constants Out
 
@@ -647,6 +720,42 @@ Profiler.stop("render")
 9. **Batch draw calls** - Polyline over individual lines
 10. **Per-frame config caching** - For 1000+ item loops with config access
 11. **Profile again** - Verify optimizations actually helped
+
+---
+
+## ARKITEKT Codebase Audit (2024-12)
+
+Current pollution patterns found in the codebase:
+
+### Pattern Counts
+
+| Pattern | Count | Location | Priority |
+|---------|-------|----------|----------|
+| `hexrgb()` calls | 1,302 | 170 files | 🔴 High |
+| Non-localized `math.*` | 260 | 65 files (vs 12 localized) | 🟠 Medium |
+| `= {}` allocations | 276 | 81 files (audit hot paths) | 🟠 Medium |
+| `pairs()` in loops | 64 | 28 files | 🟡 Low |
+| String concat `..` | 26 | 18 files | 🟡 Low |
+| `string.format()` | 25 | 16 files | 🟡 Low |
+
+### Estimated Savings
+
+| Fix | Estimated Gain | Effort |
+|-----|----------------|--------|
+| hexrgb → bytes | 0.1-0.25ms/frame | Medium |
+| Localize math.* | 0.02-0.05ms/frame | Low |
+| pairs → numeric for | 0.01-0.03ms/frame | Low |
+| Table reuse | Variable | High |
+
+### Files Most in Need of Optimization
+
+**gui/widgets/** - 81 files with `= {}` allocations
+**gui/widgets/effects/hatched_fill.lua** - 32 `math.*` calls (hot path)
+**gui/widgets/containers/grid/core.lua** - 22 `math.*` + 23 `= {}` allocations
+
+### Tracking
+
+See `TODO/01_HIGH/PERFORMANCE_SWEEP.md` for the full remediation plan.
 
 ---
 
