@@ -156,7 +156,7 @@ function DestroyAnim:render(ctx, dl, key, base_rect, base_color, rounding)
   local nx2 = cx + new_w * 0.5
   local ny2 = cy + new_h * 0.5
 
-  local target_red = hexrgb("#AA333388")
+  local target_red = hexrgb('#AA333388')
 
   local r1 = (base_color >> 24) & 0xFF
   local g1 = (base_color >> 16) & 0xFF
@@ -192,7 +192,7 @@ function DestroyAnim:render(ctx, dl, key, base_rect, base_color, rounding)
   end
 
   local cross_alpha = (255 * (1 - Easing.ease_out_quad(t)))//1
-  local cross_color = (hexrgb("#FF4444") & 0xFFFFFF00) | cross_alpha
+  local cross_color = (hexrgb('#FF4444') & 0xFFFFFF00) | cross_alpha
   local cross_thickness = 2.5
 
   local cross_size = 20

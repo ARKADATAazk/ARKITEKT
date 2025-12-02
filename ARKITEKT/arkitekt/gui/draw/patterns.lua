@@ -22,7 +22,7 @@ local MAX_ATTACHMENTS = 64  -- Hard limit on total textures ever created
 -- Generate a unique cache key for a pattern configuration
 -- NOTE: Color is NOT part of the key - we use white textures and apply color as tint
 local function get_pattern_cache_key(pattern_type, spacing, size)
-  return string.format("%s_%d_%.1f", pattern_type, spacing, size)
+  return string.format('%s_%d_%.1f', pattern_type, spacing, size)
 end
 
 

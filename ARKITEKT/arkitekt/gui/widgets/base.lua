@@ -50,10 +50,10 @@ end
 --- @param ctx userdata ImGui context
 --- @param text string Text to truncate
 --- @param max_width number Maximum width in pixels
---- @param suffix string|nil Suffix to add when truncated (default "...")
+--- @param suffix string|nil Suffix to add when truncated (default '...')
 --- @return string Truncated text
 function M.truncate_text(ctx, text, max_width, suffix)
-  suffix = suffix or "..."
+  suffix = suffix or '...'
   local text_w = CalcTextSize(ctx, text)
 
   if text_w <= max_width then
@@ -214,9 +214,9 @@ end
 --- @return table Merged options (metatable-based view, no allocation)
 function M.parse_opts(opts, defaults)
   -- Type check to catch incorrect API usage
-  if opts ~= nil and type(opts) ~= "table" then
-    error("parse_opts: expected table or nil for opts, got " .. type(opts) ..
-          ". Did you use the old API format instead of opts table?", 2)
+  if opts ~= nil and type(opts) ~= 'table' then
+    error('parse_opts: expected table or nil for opts, got ' .. type(opts) ..
+          '. Did you use the old API format instead of opts table?', 2)
   end
 
   -- Fast path: no opts provided, return defaults directly
@@ -238,23 +238,23 @@ end
 function M.resolve_id(ctx, opts, default_prefix)
   -- Priority 1: Explicit ID (bypasses stack)
   -- Use rawget to check if id was explicitly set (not inherited from defaults via metatable)
-  local explicit_id = rawget(opts, "id")
+  local explicit_id = rawget(opts, 'id')
   if explicit_id then
     local base_id = explicit_id
     -- Panel context: prefix with panel ID
     if opts.panel_state and opts.panel_state._panel_id then
-      return string.format("%s_%s", opts.panel_state._panel_id, base_id)
+      return string.format('%s_%s', opts.panel_state._panel_id, base_id)
     end
     return base_id
   end
 
-  -- Priority 2: Stack + fallback (label or default_prefix or "widget")
-  local base_id = rawget(opts, "label") or default_prefix or "widget"
+  -- Priority 2: Stack + fallback (label or default_prefix or 'widget')
+  local base_id = rawget(opts, 'label') or default_prefix or 'widget'
   local id = IdStack.resolve(ctx, base_id)
 
   -- Panel context: prefix with panel ID
   if opts.panel_state and opts.panel_state._panel_id then
-    return string.format("%s_%s", opts.panel_state._panel_id, id)
+    return string.format('%s_%s', opts.panel_state._panel_id, id)
   end
 
   return id
@@ -499,7 +499,7 @@ end
 --- @return boolean, boolean clicked, right_clicked
 function M.create_interaction_area(ctx, id, x, y, width, height, opts)
   ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, "##" .. id, width, height)
+  ImGui.InvisibleButton(ctx, '##' .. id, width, height)
 
   if not M.is_interactive(opts) then
     return false, false
@@ -526,16 +526,16 @@ end
 --- @param y number Original Y position
 --- @param width number Widget width
 --- @param height number Widget height
---- @param advance string|nil Direction: "horizontal", "vertical", or "none"
+--- @param advance string|nil Direction: 'horizontal', 'vertical', or 'none'
 function M.advance_cursor(ctx, x, y, width, height, advance)
-  advance = advance or "vertical"
+  advance = advance or 'vertical'
 
-  if advance == "horizontal" then
+  if advance == 'horizontal' then
     ImGui.SetCursorScreenPos(ctx, x + width, y)
-  elseif advance == "vertical" then
+  elseif advance == 'vertical' then
     ImGui.SetCursorScreenPos(ctx, x, y + height)
   end
-  -- "none" = don't advance
+  -- 'none' = don't advance
 end
 
 -- ============================================================================
@@ -595,7 +595,7 @@ M.DEFAULTS = {
   panel_state = nil,
 
   -- Cursor control
-  advance = "vertical",
+  advance = 'vertical',
 }
 
 return M

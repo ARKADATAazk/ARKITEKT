@@ -23,7 +23,7 @@ local DrawFlags_RoundCornersLeft = ImGui.DrawFlags_RoundCornersLeft
 
 -- Performance: Parse hex colors once at module load (~10-20% faster)
 local hexrgb = Colors.hexrgb
-local BASE_NEUTRAL = hexrgb("#0F0F0F")
+local BASE_NEUTRAL = hexrgb('#0F0F0F')
 
 local M = {}
 

@@ -19,18 +19,18 @@ M.HEADER = {
   icon_spacing = 10,
 
   -- Colors
-  bg_color = hexrgb("#2A2A2AEE"),
-  bg_color_hover = hexrgb("#353535EE"),
-  bg_color_collapsed = hexrgb("#242424EE"),
+  bg_color = hexrgb('#2A2A2AEE'),
+  bg_color_hover = hexrgb('#353535EE'),
+  bg_color_collapsed = hexrgb('#242424EE'),
 
-  border_color = hexrgb("#444444"),
+  border_color = hexrgb('#444444'),
   border_thickness = 1,
 
-  text_color = hexrgb("#EEEEEE"),
-  text_color_secondary = hexrgb("#999999"),
+  text_color = hexrgb('#EEEEEE'),
+  text_color_secondary = hexrgb('#999999'),
 
-  collapse_icon_color = hexrgb("#CCCCCC"),
-  collapse_icon_color_hover = hexrgb("#FFFFFF"),
+  collapse_icon_color = hexrgb('#CCCCCC'),
+  collapse_icon_color_hover = hexrgb('#FFFFFF'),
 
   -- Rounding
   rounding = 4,
@@ -47,8 +47,8 @@ M.CONTENT = {
 
 -- Default collapse/expand icon glyphs
 M.ICONS = {
-  collapsed = "▸",  -- Right-pointing triangle
-  expanded = "▾",   -- Down-pointing triangle
+  collapsed = '▸',  -- Right-pointing triangle
+  expanded = '▾',   -- Down-pointing triangle
 }
 
 return M

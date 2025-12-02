@@ -39,7 +39,7 @@ M.STATIC_DEFAULTS = {
 
   -- Region name text - neutral white/gray (brightness adjusts the base neutral color)
   name_brightness = 1.0,
-  name_base_color = hexrgb("#DDE3E9"),
+  name_base_color = hexrgb('#DDE3E9'),
 
   -- Duration/bars text - region-colored
   duration_saturation = 0.3,

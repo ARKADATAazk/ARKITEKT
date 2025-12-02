@@ -30,10 +30,10 @@ M.FLAGS = {
 
 -- Default colors for drop indicators
 M.COLORS = {
-  POTENTIAL_TARGET = Colors.hexrgb("#FFFFFF30"),  -- Subtle highlight for all potential targets
-  ACTIVE_TARGET = Colors.hexrgb("#FFFFFFAA"),     -- Brighter when hovering
-  ACTIVE_FILL = Colors.hexrgb("#FFFFFF10"),       -- Fill for active target
-  GLOW_COLOR = Colors.hexrgb("#FFFFFF"),          -- White glow
+  POTENTIAL_TARGET = Colors.hexrgb('#FFFFFF30'),  -- Subtle highlight for all potential targets
+  ACTIVE_TARGET = Colors.hexrgb('#FFFFFFAA'),     -- Brighter when hovering
+  ACTIVE_FILL = Colors.hexrgb('#FFFFFF10'),       -- Fill for active target
+  GLOW_COLOR = Colors.hexrgb('#FFFFFF'),          -- White glow
 }
 
 -- Track active drag type globally
@@ -78,7 +78,7 @@ function M.begin_source(ctx, payload_type, payload_data, flags)
 
   if ImGui.BeginDragDropSource(ctx, flags) then
     -- Serialize payload data as string
-    local payload_str = type(payload_data) == "table"
+    local payload_str = type(payload_data) == 'table'
       and M._serialize(payload_data)
       or tostring(payload_data)
 
@@ -113,7 +113,7 @@ function M.accept_drop(ctx, payload_type, flags)
 
   local retval, payload = ImGui.AcceptDragDropPayload(ctx, payload_type, flags)
 
-  if retval and payload and type(payload) == "string" then
+  if retval and payload and type(payload) == 'string' then
     -- Deserialize if it looks like serialized data
     local data = M._deserialize(payload) or payload
     return data
@@ -129,7 +129,7 @@ function M.peek_payload(ctx, payload_type)
   local flags = ImGui.DragDropFlags_AcceptBeforeDelivery | ImGui.DragDropFlags_AcceptNoDrawDefaultRect
   local payload = ImGui.AcceptDragDropPayload(ctx, payload_type, flags)
 
-  if payload and type(payload) == "string" then
+  if payload and type(payload) == 'string' then
     return M._deserialize(payload) or payload
   end
 
@@ -143,14 +143,14 @@ end
 
 -- Draw a simple text preview during drag
 function M.draw_preview_text(ctx, text, color)
-  color = color or Colors.hexrgb("#FFFFFF")
+  color = color or Colors.hexrgb('#FFFFFF')
   ImGui.Text(ctx, text)
 end
 
 -- Draw a chip-style preview during drag
 function M.draw_preview_chip(ctx, label, bg_color, text_color)
-  bg_color = bg_color or Colors.hexrgb("#5B8FB9")
-  text_color = text_color or Colors.hexrgb("#FFFFFF")
+  bg_color = bg_color or Colors.hexrgb('#5B8FB9')
+  text_color = text_color or Colors.hexrgb('#FFFFFF')
 
   local dl = ImGui.GetForegroundDrawList(ctx)
   local text_w, text_h = ImGui.CalcTextSize(ctx, label)
@@ -215,44 +215,44 @@ end
 
 -- Simple serialization for tables (supports strings, numbers, booleans)
 function M._serialize(t)
-  if type(t) ~= "table" then return tostring(t) end
+  if type(t) ~= 'table' then return tostring(t) end
 
   local parts = {}
   for k, v in pairs(t) do
-    local key = type(k) == "string" and k or tostring(k)
-    local val = type(v) == "string" and ('"' .. v:gsub('"', '\\"') .. '"') or tostring(v)
-    parts[#parts + 1] = key .. "=" .. val
+    local key = type(k) == 'string' and k or tostring(k)
+    local val = type(v) == 'string' and ('"' .. v:gsub('"', '\\"') .. '"') or tostring(v)
+    parts[#parts + 1] = key .. '=' .. val
   end
 
-  return "{" .. table.concat(parts, ",") .. "}"
+  return '{' .. table.concat(parts, ',') .. '}'
 end
 
 -- Simple deserialization
 function M._deserialize(str)
   -- Type check first
-  if type(str) ~= "string" then return nil end
-  if str == "" then return nil end
+  if type(str) ~= 'string' then return nil end
+  if str == '' then return nil end
 
   -- If it doesn't look like serialized data, return as-is
-  if str:sub(1, 1) ~= "{" then return str end
+  if str:sub(1, 1) ~= '{' then return str end
 
   -- Parse simple key=value format
   local result = {}
   local content = str:sub(2, -2)  -- Remove { }
 
-  for pair in content:gmatch("[^,]+") do
-    local key, val = pair:match("([^=]+)=(.+)")
+  for pair in content:gmatch('[^,]+') do
+    local key, val = pair:match('([^=]+)=(.+)')
     if key and val then
-      key = key:match("^%s*(.-)%s*$")  -- Trim whitespace
-      val = val:match("^%s*(.-)%s*$")
+      key = key:match('^%s*(.-)%s*$')  -- Trim whitespace
+      val = val:match('^%s*(.-)%s*$')
 
       -- Parse value type
       if val:sub(1, 1) == '"' then
         -- String
         val = val:sub(2, -2):gsub('\\"', '"')
-      elseif val == "true" then
+      elseif val == 'true' then
         val = true
-      elseif val == "false" then
+      elseif val == 'false' then
         val = false
       else
         -- Try number

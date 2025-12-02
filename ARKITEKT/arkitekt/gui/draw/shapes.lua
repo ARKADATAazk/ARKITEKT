@@ -35,11 +35,11 @@ function M.draw_favorite_star(ctx, dl, x, y, size, alpha, is_favorite, icon_font
     star_char = utf8.char(0xF186)
   else
     -- Fallback to Unicode star character for cleaner rendering (no aliasing)
-    star_char = "★"  -- U+2605 BLACK STAR
+    star_char = '★'  -- U+2605 BLACK STAR
   end
 
   -- Default base color if not provided
-  base_color = base_color or Colors.hexrgb("#555555")
+  base_color = base_color or Colors.hexrgb('#555555')
 
   -- Render using modular badge system
   Badge.icon(ctx, {

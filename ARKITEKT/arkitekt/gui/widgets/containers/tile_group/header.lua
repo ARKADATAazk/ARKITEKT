@@ -72,14 +72,14 @@ function M.render(ctx, rect, group, state, config)
 
   -- Draw group name (with better vertical alignment)
   -- Calculate text height for vertical centering
-  local text_size_x, text_size_y = ImGui.CalcTextSize(ctx, group.name or "Unnamed Group")
+  local text_size_x, text_size_y = ImGui.CalcTextSize(ctx, group.name or 'Unnamed Group')
   local text_y = cursor_y + (content_height / 2) - (text_size_y / 2)
 
-  ImGui.DrawList_AddText(dl, cursor_x, text_y, cfg.text_color, group.name or "Unnamed Group")
+  ImGui.DrawList_AddText(dl, cursor_x, text_y, cfg.text_color, group.name or 'Unnamed Group')
 
   -- Draw item count (if available)
   if group.count and group.count > 0 then
-    local count_text = string.format("(%d)", group.count)
+    local count_text = string.format('(%d)', group.count)
     local count_w, count_h = ImGui.CalcTextSize(ctx, count_text)
     local count_x = x2 - cfg.padding_x - count_w
     local count_y = cursor_y + (content_height / 2) - (count_h / 2)

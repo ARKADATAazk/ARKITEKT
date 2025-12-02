@@ -16,9 +16,9 @@ local CalcTextSize = ImGui.CalcTextSize
 -- Truncate text to fit within max_width, adding ellipsis if needed
 -- Previously duplicated in: package_tiles/renderer.lua, media_grid/renderers/base.lua, RegionPlaylist/renderers/base.lua
 function M.truncate_text(ctx, text, max_width, ellipsis)
-  ellipsis = ellipsis or "…"
+  ellipsis = ellipsis or '…'
 
-  if not text or text == "" then return "" end
+  if not text or text == '' then return '' end
 
   local text_w = CalcTextSize(ctx, text)
   if text_w <= max_width then
@@ -117,7 +117,7 @@ function M.calculate_text_position(ctx, rect, config)
   config = config or {}
   local left_padding = config.left_padding or 6
   local right_padding = config.right_padding or 6
-  local vertical_align = config.vertical_align or "center"  -- "center", "top", "bottom"
+  local vertical_align = config.vertical_align or 'center'  -- 'center', 'top', 'bottom'
   local top_padding = config.top_padding or 4
   local bottom_padding = config.bottom_padding or 4
 
@@ -130,11 +130,11 @@ function M.calculate_text_position(ctx, rect, config)
   local available_width = tile_width - left_padding - right_padding
   local text_y
 
-  if vertical_align == "center" then
+  if vertical_align == 'center' then
     text_y = y1 + (tile_height - text_height) / 2
-  elseif vertical_align == "top" then
+  elseif vertical_align == 'top' then
     text_y = y1 + top_padding
-  elseif vertical_align == "bottom" then
+  elseif vertical_align == 'bottom' then
     text_y = y2 - bottom_padding - text_height
   end
 

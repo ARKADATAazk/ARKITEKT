@@ -12,9 +12,9 @@ local style_color_stack = {}
 
 -- Static colors that don't change with theme
 local STATIC = {
-  transparent = hexrgb("#00000000"),
-  black = hexrgb("#000000FF"),
-  white = hexrgb("#FFFFFFFF"),
+  transparent = hexrgb('#00000000'),
+  black = hexrgb('#000000FF'),
+  white = hexrgb('#FFFFFFFF'),
 }
 
 function M.with_alpha(col, a)
@@ -195,8 +195,8 @@ M.palette = setmetatable({}, {
     -- Map palette names to themed colors
     -- Chrome elements (grey_05-08) use BG_CHROME (significantly darker than content)
     local mapping = {
-      white = hexrgb("#FFFFFFFF"),
-      black = hexrgb("#000000FF"),
+      white = hexrgb('#FFFFFFFF'),
+      black = hexrgb('#000000FF'),
       -- Very dark greys map to chrome colors (titlebar/statusbar)
       grey_05 = Colors.adjust_lightness(T.COLORS.BG_CHROME, -0.02),
       grey_06 = Colors.adjust_lightness(T.COLORS.BG_CHROME, -0.01),

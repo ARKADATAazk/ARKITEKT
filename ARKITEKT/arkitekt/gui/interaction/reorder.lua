@@ -18,7 +18,7 @@ end
 -- order_keys: array of all item ids in current order
 -- dragged_keys: array of ids being dragged
 -- target_key: id of the drop target
--- side: "before" or "after"
+-- side: 'before' or 'after'
 -- Returns: new order array
 function M.insert_relative(order_keys, dragged_keys, target_key, side)
   if not order_keys or not dragged_keys or #dragged_keys == 0 or not target_key then
