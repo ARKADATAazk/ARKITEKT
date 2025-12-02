@@ -219,42 +219,33 @@ local function build_jump_button(bridge_state)
       custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
         TransportIcons.draw_jump(dl, bx, by, bw, bh, text_color)
       end,
-      tooltip = function()
-        local bridge = view.state.get_bridge()
-        local engine = bridge and bridge.engine
-        local current_rid = bridge and bridge:get_current_rid()
-
-        if not current_rid or not engine then
-          return Strings.TRANSPORT.jump
-        end
-
-        local current_region = view.state.get_region_by_rid(current_rid)
-        if not current_region then
-          return Strings.TRANSPORT.jump
-        end
-
-        return Strings.TRANSPORT.jump .. "\n" .. current_region.name
-      end,
+      tooltip = Strings.TRANSPORT.jump,
       on_click = function()
         local bridge = view.state.get_bridge()
-        local engine = bridge and bridge.engine
-        local current_rid = bridge and bridge:get_current_rid()
-
-        if not current_rid or not engine then
-          return
+        local target_rid = nil
+        local bridge_state = bridge:get_state()
+        if bridge_state.playlist_order and bridge_state.playlist_pointer then
+          local next_idx = bridge_state.playlist_pointer + 1
+          if next_idx <= #bridge_state.playlist_order then
+            target_rid = bridge_state.playlist_order[next_idx]
+          end
         end
 
-        local current_region = view.state.get_region_by_rid(current_rid)
-        if not current_region then
-          return
+        local success = bridge:jump_to_next_quantized(view.config.quantize_lookahead)
+
+        if success and view.container and target_rid then
+          view.container:trigger_jump_flash(target_rid)
         end
 
-        -- Jump to region start
-        engine:jump_to_region(current_rid)
-
-        -- Flash the jump button if container exists
-        if view.container then
-          view.container:flash_jump_button()
+        if success and view.state.set_state_change_notification then
+          local quantize_mode = bridge_state.quantize_mode or "none"
+          if target_rid then
+            local next_region = view.state.get_region_by_rid and view.state.get_region_by_rid(target_rid)
+            if next_region then
+              local msg = string.format("Jump: Next → '%s' (Quantize: %s)", next_region.name, quantize_mode)
+              view.state.set_state_change_notification(msg)
+            end
+          end
         end
       end,
     },
