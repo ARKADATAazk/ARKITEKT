@@ -144,11 +144,13 @@ local function draw_gui(ctx)
   -- ========================================================================
   -- KNOBS
   -- ========================================================================
-  draw_section_header(ctx, "Knobs - Circular rotary controls")
+  draw_section_header(ctx, "Knobs - Circular rotary controls (7 variants)")
 
+  -- First row: tick, dot, wiper, wiper_only
   local knob1 = Ark.Knob(ctx, {
-    label = "Volume",
+    label = "Tick",
     value = state.knob1,
+    variant = "tick",
     min = 0,
     max = 100,
     size = 60,
@@ -158,27 +160,75 @@ local function draw_gui(ctx)
   ImGui.SameLine(ctx)
 
   local knob2 = Ark.Knob(ctx, {
-    label = "Pan",
+    label = "Dot",
     value = state.knob2,
-    min = -50,
-    max = 50,
-    default = 0,
+    variant = "dot",
+    min = 0,
+    max = 100,
     size = 60,
-    color = Colors.hexrgb("#FF6633"),
   })
   if knob2.changed then state.knob2 = knob2.value end
 
   ImGui.SameLine(ctx)
 
   local knob3 = Ark.Knob(ctx, {
-    label = "Cutoff",
+    label = "Wiper",
     value = state.knob3,
+    variant = "wiper",
     min = 0,
-    max = 127,
+    max = 100,
     size = 60,
-    color = Colors.hexrgb("#33CCFF"),
   })
   if knob3.changed then state.knob3 = knob3.value end
+
+  ImGui.SameLine(ctx)
+
+  local knob4 = Ark.Knob(ctx, {
+    label = "WiperOnly",
+    value = state.knob1,
+    variant = "wiper_only",
+    min = 0,
+    max = 100,
+    size = 60,
+    show_value = false,
+  })
+  if knob4.changed then state.knob1 = knob4.value end
+
+  -- Second row: wiper_dot, stepped, space
+  local knob5 = Ark.Knob(ctx, {
+    label = "WiperDot",
+    value = state.knob2,
+    variant = "wiper_dot",
+    min = 0,
+    max = 100,
+    size = 60,
+  })
+  if knob5.changed then state.knob2 = knob5.value end
+
+  ImGui.SameLine(ctx)
+
+  local knob6 = Ark.Knob(ctx, {
+    label = "Stepped",
+    value = state.knob3,
+    variant = "stepped",
+    steps = 10,
+    min = 0,
+    max = 100,
+    size = 60,
+  })
+  if knob6.changed then state.knob3 = knob6.value end
+
+  ImGui.SameLine(ctx)
+
+  local knob7 = Ark.Knob(ctx, {
+    label = "Space",
+    value = state.knob1,
+    variant = "space",
+    min = 0,
+    max = 100,
+    size = 60,
+  })
+  if knob7.changed then state.knob1 = knob7.value end
 
   ImGui.Spacing(ctx)
 

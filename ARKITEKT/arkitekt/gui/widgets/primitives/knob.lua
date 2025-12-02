@@ -46,10 +46,14 @@ local DEFAULTS = {
   disabled = false,
 
   -- Style
+  variant = "tick",    -- Visual style: "tick", "dot", "wiper", "wiper_only", "wiper_dot", "stepped", "space"
+  steps = 10,          -- Number of steps for "stepped" variant
   bg_color = nil,
   bg_hover_color = nil,
   bg_active_color = nil,
   line_color = nil,
+  track_color = nil,   -- Arc track color (for wiper variants)
+  value_color = nil,   -- Arc value/fill color (for wiper variants)
   inner_color = nil,
   inner_hover_color = nil,
   inner_active_color = nil,
@@ -81,6 +85,254 @@ local DEFAULTS = {
 local knob_locks = {}  -- Prevents double-click interference with drag
 
 -- ============================================================================
+-- VARIANT RENDERING FUNCTIONS
+-- ============================================================================
+
+--- Render tick variant (line indicator from center)
+local function render_tick(ctx, dl, center_x, center_y, radius, angle, opts, hovered, active, disabled)
+  local line_color = opts.line_color or Theme.COLORS.ACCENT_PRIMARY
+  local inner_color = opts.inner_color or Theme.COLORS.BG_HOVER
+
+  if disabled then
+    line_color = Colors.with_opacity(Colors.desaturate(line_color, 0.5), 0.5)
+    inner_color = Colors.with_opacity(Colors.desaturate(inner_color, 0.5), 0.5)
+  elseif active then
+    inner_color = opts.inner_active_color or Colors.adjust_brightness(inner_color, 0.9)
+  elseif hovered then
+    inner_color = opts.inner_hover_color or Colors.adjust_brightness(inner_color, 1.1)
+  end
+
+  local angle_cos, angle_sin = math.cos(angle), math.sin(angle)
+  local radius_inner = radius * 0.4
+  local line_start_x = center_x + angle_cos * radius_inner
+  local line_start_y = center_y + angle_sin * radius_inner
+  local line_end_x = center_x + angle_cos * (radius - 2)
+  local line_end_y = center_y + angle_sin * (radius - 2)
+
+  ImGui.DrawList_AddLine(dl, line_start_x, line_start_y, line_end_x, line_end_y, line_color, 2.0)
+  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, radius_inner, inner_color, 16)
+end
+
+--- Render dot variant (indicator dot on perimeter)
+local function render_dot(ctx, dl, center_x, center_y, radius, angle, opts, hovered, active, disabled)
+  local dot_color = opts.line_color or Theme.COLORS.ACCENT_PRIMARY
+  local inner_color = opts.inner_color or Theme.COLORS.BG_HOVER
+
+  if disabled then
+    dot_color = Colors.with_opacity(Colors.desaturate(dot_color, 0.5), 0.5)
+    inner_color = Colors.with_opacity(Colors.desaturate(inner_color, 0.5), 0.5)
+  elseif active then
+    inner_color = opts.inner_active_color or Colors.adjust_brightness(inner_color, 0.9)
+  elseif hovered then
+    inner_color = opts.inner_hover_color or Colors.adjust_brightness(inner_color, 1.1)
+  end
+
+  local angle_cos, angle_sin = math.cos(angle), math.sin(angle)
+  local radius_inner = radius * 0.4
+  local dot_radius = radius * 0.1
+  local dot_distance = radius - dot_radius - 2
+  local dot_x = center_x + angle_cos * dot_distance
+  local dot_y = center_y + angle_sin * dot_distance
+
+  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, radius_inner, inner_color, 16)
+  ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_radius, dot_color, 12)
+end
+
+--- Render wiper variant (arc fill from min to current value)
+local function render_wiper(ctx, dl, center_x, center_y, radius, angle, t, opts, hovered, active, disabled)
+  local track_color = opts.track_color or Colors.with_opacity(Theme.COLORS.BG_BASE, 0.3)
+  local value_color = opts.value_color or Theme.COLORS.ACCENT_PRIMARY
+  local inner_color = opts.inner_color or Theme.COLORS.BG_HOVER
+
+  if disabled then
+    track_color = Colors.with_opacity(Colors.desaturate(track_color, 0.5), 0.5)
+    value_color = Colors.with_opacity(Colors.desaturate(value_color, 0.5), 0.5)
+    inner_color = Colors.with_opacity(Colors.desaturate(inner_color, 0.5), 0.5)
+  elseif active then
+    inner_color = opts.inner_active_color or Colors.adjust_brightness(inner_color, 0.9)
+  elseif hovered then
+    inner_color = opts.inner_hover_color or Colors.adjust_brightness(inner_color, 1.1)
+  end
+
+  local value_thickness = radius * 0.15
+  local radius_inner = radius * 0.4
+
+  -- Track (full arc)
+  ImGui.DrawList_PathClear(dl)
+  ImGui.DrawList_PathArcTo(dl, center_x, center_y, radius - value_thickness/2, ANGLE_MIN, ANGLE_MAX, 32)
+  ImGui.DrawList_PathStroke(dl, track_color, 0, value_thickness)
+
+  -- Value arc (from min to current)
+  if t > 0.01 then
+    ImGui.DrawList_PathClear(dl)
+    ImGui.DrawList_PathArcTo(dl, center_x, center_y, radius - value_thickness/2, ANGLE_MIN, angle, 32)
+    ImGui.DrawList_PathStroke(dl, value_color, 0, value_thickness)
+  end
+
+  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, radius_inner, inner_color, 16)
+end
+
+--- Render wiper_only variant (just the arc, no background circle)
+local function render_wiper_only(ctx, dl, center_x, center_y, radius, angle, t, opts, hovered, active, disabled)
+  local track_color = opts.track_color or Colors.with_opacity(Theme.COLORS.BG_BASE, 0.3)
+  local value_color = opts.value_color or Theme.COLORS.ACCENT_PRIMARY
+
+  if disabled then
+    track_color = Colors.with_opacity(Colors.desaturate(track_color, 0.5), 0.5)
+    value_color = Colors.with_opacity(Colors.desaturate(value_color, 0.5), 0.5)
+  end
+
+  local value_thickness = radius * 0.2
+
+  -- Track (full arc)
+  ImGui.DrawList_PathClear(dl)
+  ImGui.DrawList_PathArcTo(dl, center_x, center_y, radius - value_thickness/2, ANGLE_MIN, ANGLE_MAX, 32)
+  ImGui.DrawList_PathStroke(dl, track_color, 0, value_thickness)
+
+  -- Value arc (from min to current)
+  if t > 0.01 then
+    ImGui.DrawList_PathClear(dl)
+    ImGui.DrawList_PathArcTo(dl, center_x, center_y, radius - value_thickness/2, ANGLE_MIN, angle, 32)
+    ImGui.DrawList_PathStroke(dl, value_color, 0, value_thickness)
+  end
+end
+
+--- Render wiper_dot variant (arc fill + dot indicator)
+local function render_wiper_dot(ctx, dl, center_x, center_y, radius, angle, t, opts, hovered, active, disabled)
+  local track_color = opts.track_color or Colors.with_opacity(Theme.COLORS.BG_BASE, 0.3)
+  local value_color = opts.value_color or Theme.COLORS.ACCENT_PRIMARY
+  local dot_color = opts.line_color or Theme.COLORS.ACCENT_PRIMARY
+  local inner_color = opts.inner_color or Theme.COLORS.BG_HOVER
+
+  if disabled then
+    track_color = Colors.with_opacity(Colors.desaturate(track_color, 0.5), 0.5)
+    value_color = Colors.with_opacity(Colors.desaturate(value_color, 0.5), 0.5)
+    dot_color = Colors.with_opacity(Colors.desaturate(dot_color, 0.5), 0.5)
+    inner_color = Colors.with_opacity(Colors.desaturate(inner_color, 0.5), 0.5)
+  elseif active then
+    inner_color = opts.inner_active_color or Colors.adjust_brightness(inner_color, 0.9)
+  elseif hovered then
+    inner_color = opts.inner_hover_color or Colors.adjust_brightness(inner_color, 1.1)
+  end
+
+  local value_thickness = radius * 0.12
+  local radius_inner = radius * 0.35
+
+  -- Track (full arc)
+  ImGui.DrawList_PathClear(dl)
+  ImGui.DrawList_PathArcTo(dl, center_x, center_y, radius - value_thickness/2, ANGLE_MIN, ANGLE_MAX, 32)
+  ImGui.DrawList_PathStroke(dl, track_color, 0, value_thickness)
+
+  -- Value arc (from min to current)
+  if t > 0.01 then
+    ImGui.DrawList_PathClear(dl)
+    ImGui.DrawList_PathArcTo(dl, center_x, center_y, radius - value_thickness/2, ANGLE_MIN, angle, 32)
+    ImGui.DrawList_PathStroke(dl, value_color, 0, value_thickness)
+  end
+
+  -- Center circle
+  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, radius_inner, inner_color, 16)
+
+  -- Dot indicator
+  local angle_cos, angle_sin = math.cos(angle), math.sin(angle)
+  local dot_radius = radius * 0.08
+  local dot_distance = radius - value_thickness - dot_radius - 2
+  local dot_x = center_x + angle_cos * dot_distance
+  local dot_y = center_y + angle_sin * dot_distance
+  ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_radius, dot_color, 12)
+end
+
+--- Render stepped variant (discrete tick marks around perimeter)
+local function render_stepped(ctx, dl, center_x, center_y, radius, angle, t, opts, hovered, active, disabled)
+  local tick_color = opts.track_color or Colors.with_opacity(Theme.COLORS.TEXT_NORMAL, 0.3)
+  local active_tick_color = opts.value_color or Theme.COLORS.ACCENT_PRIMARY
+  local dot_color = opts.line_color or Theme.COLORS.ACCENT_PRIMARY
+  local inner_color = opts.inner_color or Theme.COLORS.BG_HOVER
+
+  if disabled then
+    tick_color = Colors.with_opacity(Colors.desaturate(tick_color, 0.5), 0.5)
+    active_tick_color = Colors.with_opacity(Colors.desaturate(active_tick_color, 0.5), 0.5)
+    dot_color = Colors.with_opacity(Colors.desaturate(dot_color, 0.5), 0.5)
+    inner_color = Colors.with_opacity(Colors.desaturate(inner_color, 0.5), 0.5)
+  elseif active then
+    inner_color = opts.inner_active_color or Colors.adjust_brightness(inner_color, 0.9)
+  elseif hovered then
+    inner_color = opts.inner_hover_color or Colors.adjust_brightness(inner_color, 1.1)
+  end
+
+  local steps = opts.steps or 10
+  local radius_inner = radius * 0.35
+
+  -- Draw tick marks
+  for i = 0, steps do
+    local step_t = i / steps
+    local step_angle = ANGLE_MIN + (ANGLE_MAX - ANGLE_MIN) * step_t
+    local step_cos, step_sin = math.cos(step_angle), math.sin(step_angle)
+
+    local is_active = step_t <= t
+    local tick_length = radius * 0.15
+    local tick_start = radius - tick_length - 2
+    local tick_end = radius - 2
+
+    local x1 = center_x + step_cos * tick_start
+    local y1 = center_y + step_sin * tick_start
+    local x2 = center_x + step_cos * tick_end
+    local y2 = center_y + step_sin * tick_end
+
+    local color = is_active and active_tick_color or tick_color
+    ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, color, 2)
+  end
+
+  -- Center circle
+  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, radius_inner, inner_color, 16)
+
+  -- Dot indicator
+  local angle_cos, angle_sin = math.cos(angle), math.sin(angle)
+  local dot_radius = radius * 0.08
+  local dot_distance = radius_inner
+  local dot_x = center_x + angle_cos * dot_distance
+  local dot_y = center_y + angle_sin * dot_distance
+  ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_radius, dot_color, 12)
+end
+
+--- Render space variant (futuristic concentric arcs)
+local function render_space(ctx, dl, center_x, center_y, radius, angle, t, opts, hovered, active, disabled)
+  local arc_color = opts.line_color or Theme.COLORS.ACCENT_PRIMARY
+  local inner_color = opts.inner_color or Theme.COLORS.BG_HOVER
+
+  if disabled then
+    arc_color = Colors.with_opacity(Colors.desaturate(arc_color, 0.5), 0.5)
+    inner_color = Colors.with_opacity(Colors.desaturate(inner_color, 0.5), 0.5)
+  elseif active then
+    inner_color = opts.inner_active_color or Colors.adjust_brightness(inner_color, 0.9)
+    arc_color = Colors.adjust_brightness(arc_color, 1.2)
+  elseif hovered then
+    inner_color = opts.inner_hover_color or Colors.adjust_brightness(inner_color, 1.1)
+    arc_color = Colors.adjust_brightness(arc_color, 1.1)
+  end
+
+  -- Center circle (shrinks based on value)
+  local radius_inner = radius * (0.2 + t * 0.15)
+  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, radius_inner, inner_color, 16)
+
+  -- Concentric arcs with angular offset
+  local num_arcs = 3
+  for i = 1, num_arcs do
+    local arc_radius = radius * (0.5 + i * 0.15)
+    local arc_thickness = 2
+    local arc_length = (PI * 0.3) + (t * PI * 0.4)
+    local arc_offset = angle - arc_length / 2 + (i * PI * 0.2)
+
+    local opacity = 0.3 + (t * 0.4) + (i * 0.1)
+    local color = Colors.with_opacity(arc_color, opacity)
+
+    ImGui.DrawList_PathClear(dl)
+    ImGui.DrawList_PathArcTo(dl, center_x, center_y, arc_radius, arc_offset, arc_offset + arc_length, 24)
+    ImGui.DrawList_PathStroke(dl, color, 0, arc_thickness)
+  end
+end
+
+-- ============================================================================
 -- RENDERING
 -- ============================================================================
 
@@ -89,47 +341,54 @@ local function render_knob(ctx, dl, x, y, size, radius, value, min_val, max_val,
   local center_y = y + size / 2
   local disabled = opts.disabled
 
-  -- Calculate angle based on value
+  -- Calculate angle and normalized value based on value
   local t = (value - min_val) / (max_val - min_val)
   local angle = ANGLE_MIN + (ANGLE_MAX - ANGLE_MIN) * t
-  local angle_cos, angle_sin = math.cos(angle), math.sin(angle)
 
-  -- Colors
+  -- Colors for background and border
   local bg_color = opts.bg_color or Theme.COLORS.BG_BASE
-  local inner_color = opts.inner_color or Theme.COLORS.BG_HOVER
-  local line_color = opts.line_color or Theme.COLORS.ACCENT_PRIMARY
   local border_color = opts.border_color or Theme.COLORS.BORDER_INNER
 
   if disabled then
     bg_color = Colors.with_opacity(Colors.desaturate(bg_color, 0.5), 0.5)
-    inner_color = Colors.with_opacity(Colors.desaturate(inner_color, 0.5), 0.5)
-    line_color = Colors.with_opacity(Colors.desaturate(line_color, 0.5), 0.5)
     border_color = Colors.with_opacity(Colors.desaturate(border_color, 0.5), 0.5)
   elseif active then
     bg_color = opts.bg_active_color or Colors.adjust_brightness(bg_color, 0.9)
-    inner_color = opts.inner_active_color or Colors.adjust_brightness(inner_color, 0.9)
   elseif hovered then
     bg_color = opts.bg_hover_color or Colors.adjust_brightness(bg_color, 1.1)
-    inner_color = opts.inner_hover_color or Colors.adjust_brightness(inner_color, 1.1)
     border_color = opts.border_hover_color or Theme.COLORS.BORDER_HOVER
   end
 
-  -- Outer circle (background)
-  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, radius, bg_color, 32)
+  -- Outer circle (background) - not drawn for wiper_only variant
+  local variant = opts.variant or "tick"
+  if variant ~= "wiper_only" then
+    ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, radius, bg_color, 32)
+  end
 
-  -- Value indicator line
-  local radius_inner = radius * 0.4
-  local line_start_x = center_x + angle_cos * radius_inner
-  local line_start_y = center_y + angle_sin * radius_inner
-  local line_end_x = center_x + angle_cos * (radius - 2)
-  local line_end_y = center_y + angle_sin * (radius - 2)
-  ImGui.DrawList_AddLine(dl, line_start_x, line_start_y, line_end_x, line_end_y, line_color, 2.0)
+  -- Dispatch to variant-specific renderer
+  if variant == "tick" then
+    render_tick(ctx, dl, center_x, center_y, radius, angle, opts, hovered, active, disabled)
+  elseif variant == "dot" then
+    render_dot(ctx, dl, center_x, center_y, radius, angle, opts, hovered, active, disabled)
+  elseif variant == "wiper" then
+    render_wiper(ctx, dl, center_x, center_y, radius, angle, t, opts, hovered, active, disabled)
+  elseif variant == "wiper_only" then
+    render_wiper_only(ctx, dl, center_x, center_y, radius, angle, t, opts, hovered, active, disabled)
+  elseif variant == "wiper_dot" then
+    render_wiper_dot(ctx, dl, center_x, center_y, radius, angle, t, opts, hovered, active, disabled)
+  elseif variant == "stepped" then
+    render_stepped(ctx, dl, center_x, center_y, radius, angle, t, opts, hovered, active, disabled)
+  elseif variant == "space" then
+    render_space(ctx, dl, center_x, center_y, radius, angle, t, opts, hovered, active, disabled)
+  else
+    -- Fallback to tick
+    render_tick(ctx, dl, center_x, center_y, radius, angle, opts, hovered, active, disabled)
+  end
 
-  -- Inner circle (center)
-  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, radius_inner, inner_color, 16)
-
-  -- Border
-  ImGui.DrawList_AddCircle(dl, center_x, center_y, radius, border_color, 32, 1)
+  -- Border (drawn for all except wiper_only)
+  if variant ~= "wiper_only" and variant ~= "space" then
+    ImGui.DrawList_AddCircle(dl, center_x, center_y, radius, border_color, 32, 1)
+  end
 
   -- Value text (centered in knob)
   if opts.show_value and not disabled then
