@@ -60,13 +60,46 @@ end
 -- INSTANCE MANAGEMENT
 -- ============================================================================
 
+-- Deep copy config to prevent state pollution between instances
+-- Special handling for options array (array of tables)
+local function copy_config(config)
+  local copy = {}
+  for k, v in pairs(config) do
+    if k == "options" and type(v) == "table" then
+      -- Deep copy options array (array of {value, label} tables)
+      copy[k] = {}
+      for i, opt in ipairs(v) do
+        if type(opt) == "table" then
+          copy[k][i] = {}
+          for ok, ov in pairs(opt) do
+            copy[k][i][ok] = ov
+          end
+        else
+          copy[k][i] = opt
+        end
+      end
+    elseif type(v) == "table" and k ~= "popup" then
+      -- Shallow copy other tables (popup has its own defaults)
+      local nested = {}
+      for nk, nv in pairs(v) do
+        nested[nk] = nv
+      end
+      copy[k] = nested
+    else
+      -- Copy primitives and functions by reference
+      copy[k] = v
+    end
+  end
+  return copy
+end
+
 local Dropdown = {}
 Dropdown.__index = Dropdown
 
 function Dropdown.new(id, config, initial_value, initial_direction)
   local instance = setmetatable({
     id = id,
-    config = config,
+    config = copy_config(config),  -- Copy config to prevent sharing
     current_value = initial_value,
     sort_direction = initial_direction or "asc",
     hover_alpha = 0,
@@ -74,7 +107,7 @@ function Dropdown.new(id, config, initial_value, initial_direction)
     popup_hover_index = -1,
     footer_interacting = false,  -- Track if user is interacting with footer
   }, Dropdown)
-  
+
   return instance
 end
 
@@ -438,11 +471,12 @@ local function get_or_create_instance(context, config, state_or_id)
       initial_value = config.current_value
     end
 
+    -- Create instance with config (will be copied in Dropdown.new)
     instance = Dropdown.new(context.unique_id, config, initial_value, initial_direction)
     set_inst(context.unique_id, instance)
   else
-    -- Update config
-    instance.config = config
+    -- ALWAYS replace config with fresh copy (prevents pollution)
+    instance.config = copy_config(config)
 
     -- If config provides a current_value, update the instance
     -- This allows external state to control the dropdown value

@@ -76,7 +76,13 @@ function LayoutView:draw(ctx, region_tiles, shell_state)
     pool_data = self.state.get_filtered_pool_regions()
   end
 
-  if self.state.get_layout_mode() == 'horizontal' then
+  -- Sync layout_mode from State to region_tiles if changed (handles mid-frame updates)
+  local current_layout_mode = self.state.get_layout_mode()
+  if current_layout_mode ~= region_tiles.layout_mode then
+    region_tiles:set_layout_mode(current_layout_mode)
+  end
+
+  if current_layout_mode == 'horizontal' then
     self:draw_horizontal(ctx, region_tiles, display_playlist, pool_data, shell_state)
   else
     self:draw_vertical(ctx, region_tiles, display_playlist, pool_data, shell_state)
@@ -118,7 +124,7 @@ function LayoutView:draw_horizontal(ctx, region_tiles, display_playlist, pool_da
   region_tiles:draw_active(ctx, display_playlist, active_height, shell_state)
 
   local separator_y = start_y + active_height + separator_gap/2
-  local sep_result = Ark.Splitter.draw(ctx, {
+  local sep_result = Ark.Splitter(ctx, {
     id = "active_pool_separator_h",
     x = start_x,
     y = separator_y,
@@ -197,7 +203,7 @@ function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data
   end
 
   local separator_x = start_cursor_x + active_width + separator_gap/2
-  local sep_result = Ark.Splitter.draw(ctx, {
+  local sep_result = Ark.Splitter(ctx, {
     id = "active_pool_separator_v",
     x = separator_x,
     y = start_cursor_y,

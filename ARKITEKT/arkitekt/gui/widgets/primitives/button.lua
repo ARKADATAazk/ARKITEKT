@@ -549,7 +549,10 @@ function M.draw(ctx, label_or_opts, width, height)
 
   -- Handle tooltip (uses is_hovered from render_button)
   if is_hovered and opts.tooltip then
-    ImGui.SetTooltip(ctx, opts.tooltip)
+    local tooltip_text = type(opts.tooltip) == "function" and opts.tooltip() or opts.tooltip
+    if tooltip_text then
+      ImGui.SetTooltip(ctx, tooltip_text)
+    end
   end
 
   -- Advance cursor

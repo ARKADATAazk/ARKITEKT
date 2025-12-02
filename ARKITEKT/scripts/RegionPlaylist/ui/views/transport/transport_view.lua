@@ -1,6 +1,6 @@
 -- @noindex
 -- RegionPlaylist/ui/views/transport/transport_view.lua
--- Transport section view orchestrator
+-- Transport section view orchestrator (ImGui-style module functions)
 
 local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
@@ -11,23 +11,35 @@ local ButtonWidgets = require('RegionPlaylist.ui.views.transport.button_widgets'
 local DisplayWidget = require('RegionPlaylist.ui.views.transport.display_widget')
 local CoreConfig = require('RegionPlaylist.app.config')
 local Strings = require('RegionPlaylist.defs.strings')
-local Style = require('arkitekt.gui.style')
 local hexrgb = Ark.Colors.hexrgb
 
 local M = {}
 
-local TransportView = {}
-TransportView.__index = TransportView
+-- ============================================================================
+-- MODULE-LEVEL STATE (ImGui-style)
+-- ============================================================================
 
-function M.new(config, state_module)
-  local self = setmetatable({
-    config = config,
-    state = state_module,
-    container = nil,
-    transport_display = DisplayWidget.new(config.display),
-  }, TransportView)
-  
-  self.container = TransportContainer.new({
+-- Private state (like ImGui demo.* tables)
+local view = {
+  config = nil,
+  state = nil,
+  container = nil,
+  transport_display = nil,
+}
+
+-- ============================================================================
+-- INITIALIZATION (Called once at app startup)
+-- ============================================================================
+
+--- Initialize the transport view with configuration and state
+--- @param config table View configuration
+--- @param state_module table State module reference
+function M.init(config, state_module)
+  view.config = config
+  view.state = state_module
+  view.transport_display = DisplayWidget.new(config.display)
+
+  view.container = TransportContainer.new({
     id = "region_playlist_transport",
     height = config.height,
     button_height = 30,
@@ -39,37 +51,39 @@ function M.new(config, state_module)
       corner_buttons = config.corner_buttons,
     },
   })
-  
-  return self
 end
 
-function TransportView:get_region_colors()
-  local bridge = self.state.get_bridge()
+-- ============================================================================
+-- PRIVATE HELPERS (Access view.* directly)
+-- ============================================================================
+
+local function get_region_colors()
+  local bridge = view.state.get_bridge()
   if not bridge then return {} end
-  
+
   local bridge_state = bridge:get_state()
   if not bridge_state.is_playing then
     return {}
   end
-  
+
   local current_rid = bridge:get_current_rid()
   if not current_rid then
     return {}
   end
-  
-  local current_region = self.state.get_region_by_rid(current_rid)
+
+  local current_region = view.state.get_region_by_rid(current_rid)
   local current_color = current_region and current_region.color or nil
-  
+
   local sequence = bridge:get_sequence()
   if not sequence or #sequence == 0 then
     return { current = current_color }
   end
-  
+
   local current_idx = bridge:get_state().playlist_pointer
   if not current_idx or current_idx < 1 then
     return { current = current_color }
   end
-  
+
   local next_rid = nil
   for i = current_idx + 1, #sequence do
     local entry = sequence[i]
@@ -78,21 +92,21 @@ function TransportView:get_region_colors()
       break
     end
   end
-  
+
   if not next_rid then
     return { current = current_color }
   end
-  
-  local next_region = self.state.get_region_by_rid(next_rid)
+
+  local next_region = view.state.get_region_by_rid(next_rid)
   local next_color = next_region and next_region.color or nil
-  
+
   return { current = current_color, next = next_color }
 end
 
 -- >>> MODULAR BUTTON BUILDERS (BEGIN)
 -- These functions build individual button elements using config as single source of truth
 
-function TransportView:build_play_button(bridge_state)
+local function build_play_button(bridge_state)
   return {
     type = "button",
     id = "transport_play",
@@ -106,12 +120,12 @@ function TransportView:build_play_button(bridge_state)
       end,
       tooltip = Strings.TRANSPORT.play,
       on_click = function()
-        local bridge = self.state.get_bridge()
+        local bridge = view.state.get_bridge()
         local is_playing = bridge:get_state().is_playing
         if is_playing then
           bridge:stop()
-          if self.container then
-            self.container:cancel_jump_flash()
+          if view.container then
+            view.container:cancel_jump_flash()
           end
         else
           bridge:play()
@@ -121,7 +135,7 @@ function TransportView:build_play_button(bridge_state)
   }
 end
 
-function TransportView:build_stop_button()
+local function build_stop_button()
   return {
     type = "button",
     id = "transport_stop",
@@ -133,18 +147,18 @@ function TransportView:build_stop_button()
       end,
       tooltip = Strings.TRANSPORT.stop,
       on_click = function()
-        self.state.get_bridge():stop()
-        if self.container then
-          self.container:cancel_jump_flash()
+        view.state.get_bridge():stop()
+        if view.container then
+          view.container:cancel_jump_flash()
         end
       end,
     },
   }
 end
 
-function TransportView:build_pause_button(bridge_state)
+local function build_pause_button(bridge_state)
   -- Get paused state from bridge
-  local bridge = self.state.get_bridge()
+  local bridge = view.state.get_bridge()
   local is_paused = bridge and bridge.engine and bridge.engine.transport.is_paused or false
 
   return {
@@ -160,7 +174,7 @@ function TransportView:build_pause_button(bridge_state)
       end,
       tooltip = Strings.TRANSPORT.pause,
       on_click = function()
-        local bridge = self.state.get_bridge()
+        local bridge = view.state.get_bridge()
         -- If already paused, resume by calling play instead
         if bridge and bridge.engine and bridge.engine.transport.is_paused then
           bridge:play()
@@ -172,7 +186,7 @@ function TransportView:build_pause_button(bridge_state)
   }
 end
 
-function TransportView:build_loop_button(bridge_state)
+local function build_loop_button(bridge_state)
   return {
     type = "button",
     id = "transport_loop",
@@ -186,7 +200,7 @@ function TransportView:build_loop_button(bridge_state)
       end,
       tooltip = Strings.TRANSPORT.loop,
       on_click = function()
-        local bridge = self.state.get_bridge()
+        local bridge = view.state.get_bridge()
         local current_state = bridge:get_loop_playlist()
         bridge:set_loop_playlist(not current_state)
       end,
@@ -194,50 +208,60 @@ function TransportView:build_loop_button(bridge_state)
   }
 end
 
-function TransportView:build_jump_button(bridge_state)
+local function build_jump_button(bridge_state)
   return {
     type = "button",
     id = "transport_jump",
     align = "center",
     width = CoreConfig.TRANSPORT_BUTTONS.jump.width,
     config = {
+      preset_name = "BUTTON_DEFAULT",
       custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
         TransportIcons.draw_jump(dl, bx, by, bw, bh, text_color)
       end,
-      tooltip = Strings.TRANSPORT.jump,
+      tooltip = function()
+        local bridge = view.state.get_bridge()
+        local engine = bridge and bridge.engine
+        local current_rid = bridge and bridge:get_current_rid()
+
+        if not current_rid or not engine then
+          return Strings.TRANSPORT.jump
+        end
+
+        local current_region = view.state.get_region_by_rid(current_rid)
+        if not current_region then
+          return Strings.TRANSPORT.jump
+        end
+
+        return Strings.TRANSPORT.jump .. "\n" .. current_region.name
+      end,
       on_click = function()
-        local bridge = self.state.get_bridge()
-        local target_rid = nil
-        local bridge_state = bridge:get_state()
-        if bridge_state.playlist_order and bridge_state.playlist_pointer then
-          local next_idx = bridge_state.playlist_pointer + 1
-          if next_idx <= #bridge_state.playlist_order then
-            target_rid = bridge_state.playlist_order[next_idx]
-          end
+        local bridge = view.state.get_bridge()
+        local engine = bridge and bridge.engine
+        local current_rid = bridge and bridge:get_current_rid()
+
+        if not current_rid or not engine then
+          return
         end
 
-        local success = bridge:jump_to_next_quantized(self.config.quantize_lookahead)
-
-        if success and self.container and target_rid then
-          self.container:trigger_jump_flash(target_rid)
+        local current_region = view.state.get_region_by_rid(current_rid)
+        if not current_region then
+          return
         end
 
-        if success and self.state.set_state_change_notification then
-          local quantize_mode = bridge_state.quantize_mode or "none"
-          if target_rid then
-            local next_region = self.state.get_region_by_rid and self.state.get_region_by_rid(target_rid)
-            if next_region then
-              local msg = string.format("Jump: Next → '%s' (Quantize: %s)", next_region.name, quantize_mode)
-              self.state.set_state_change_notification(msg)
-            end
-          end
+        -- Jump to region start
+        engine:jump_to_region(current_rid)
+
+        -- Flash the jump button if container exists
+        if view.container then
+          view.container:flash_jump_button()
         end
       end,
     },
   }
 end
 
-function TransportView:build_quantize_dropdown(bridge_state)
+local function build_quantize_dropdown(bridge_state)
   return {
     type = "combo",
     id = "transport_quantize",
@@ -248,8 +272,9 @@ function TransportView:build_quantize_dropdown(bridge_state)
       current_value = bridge_state.quantize_mode,
       options = CoreConfig.QUANTIZE.options,
       enable_mousewheel = true,
+      enable_sort = false,
       on_change = function(new_value)
-        self.state.get_bridge():set_quantize_mode(new_value)
+        view.state.get_bridge():set_quantize_mode(new_value)
       end,
       footer_content = function(footer_ctx)
         local ctx = footer_ctx.ctx
@@ -257,8 +282,10 @@ function TransportView:build_quantize_dropdown(bridge_state)
         local width = footer_ctx.width
         local padding = footer_ctx.padding
 
-        -- Use dynamic colors from Style.COLORS
-        local C = Style.COLORS
+        -- Get theme colors
+        local Theme = require('arkitekt.core.theme')
+        local C = Theme.COLORS
+
         local label = "Jump Lookahead"
         local label_x, label_y = ImGui.GetCursorScreenPos(ctx)
         ImGui.DrawList_AddText(dl, label_x + padding, label_y, C.TEXT_BRIGHT, label)
@@ -277,16 +304,16 @@ function TransportView:build_quantize_dropdown(bridge_state)
         ImGui.SetCursorScreenPos(ctx, slider_x + padding, slider_y)
         ImGui.SetNextItemWidth(ctx, width - padding * 2)
 
-        local lookahead_ms = self.config.quantize_lookahead * 1000
-        local changed, new_val = ImGui.SliderDouble(ctx, "##quantize_lookahead", lookahead_ms, 200, 1000, "%.0fms")
+        local lookahead_ms = view.config.quantize_lookahead * 1000
+        local changed, new_val = ImGui.SliderDouble(ctx, "##transport_quantize_lookahead", lookahead_ms, 200, 1000, "%.0fms")
 
         ImGui.PopStyleVar(ctx, 3)
         ImGui.PopStyleColor(ctx, 5)
 
         if changed then
-          self.config.quantize_lookahead = new_val / 1000
-          if self.state.settings then
-            self.state.settings:set('quantize_lookahead', self.config.quantize_lookahead)
+          view.config.quantize_lookahead = new_val / 1000
+          if view.state.settings then
+            view.state.settings:set('quantize_lookahead', view.config.quantize_lookahead)
           end
         end
 
@@ -296,167 +323,138 @@ function TransportView:build_quantize_dropdown(bridge_state)
   }
 end
 
-function TransportView:build_playback_dropdown(bridge_state)
-  local current_shuffle_mode = bridge_state.shuffle_mode or "true_shuffle"
+local function build_playback_dropdown(bridge_state)
+  local label = "PB"
+  local icon_draw = nil
+
+  -- Check override state
+  if bridge_state.override_enabled then
+    label = "PB:OVR"
+    icon_draw = function(ctx, dl, x, y, w, h, text_color)
+      TransportIcons.draw_override_icon(dl, x, y, w, h, text_color)
+    end
+  elseif bridge_state.shuffle_enabled then
+    label = "PB:SHF"
+    icon_draw = function(ctx, dl, x, y, w, h, text_color)
+      TransportIcons.draw_shuffle_icon(dl, x, y, w, h, text_color)
+    end
+  else
+    label = "PB:SEQ"
+    icon_draw = function(ctx, dl, x, y, w, h, text_color)
+      TransportIcons.draw_sequential_icon(dl, x, y, w, h, text_color)
+    end
+  end
+
+  local items = {
+    { id = "sequential", label = "Sequential", icon_draw = function(ctx, dl, x, y, w, h, text_color)
+        TransportIcons.draw_sequential_icon(dl, x, y, w, h, text_color)
+      end
+    },
+    { id = "shuffle", label = "Shuffle", icon_draw = function(ctx, dl, x, y, w, h, text_color)
+        TransportIcons.draw_shuffle_icon(dl, x, y, w, h, text_color)
+      end
+    },
+    { id = "override", label = "Override", icon_draw = function(ctx, dl, x, y, w, h, text_color)
+        TransportIcons.draw_override_icon(dl, x, y, w, h, text_color)
+      end
+    },
+  }
+
+  -- Determine selected based on current state
+  local selected = "sequential"
+  if bridge_state.override_enabled then
+    selected = "override"
+  elseif bridge_state.shuffle_enabled then
+    selected = "shuffle"
+  end
 
   return {
     type = "combo",
-    id = "transport_playback",
+    id = "transport_playback_mode",
     align = "center",
-    width = CoreConfig.TRANSPORT_BUTTONS.playback.width_dropdown,
+    width = CoreConfig.TRANSPORT_BUTTONS.playback_mode.width,
     config = {
-      tooltip = "Playback Options",
-      current_value = nil,
-      button_label = "Playback",  -- Label shown on button (not in dropdown menu)
-      options = {
-        {
-          value = "shuffle",
-          label = "Shuffle",
-          checkbox = true,
-          checked = bridge_state.shuffle_enabled or false,
-        },
-        {
-          value = "true_shuffle",
-          label = "  True Shuffle",
-          checkbox = true,
-          checked = current_shuffle_mode == "true_shuffle",
-        },
-        {
-          value = "random",
-          label = "  Random",
-          checkbox = true,
-          checked = current_shuffle_mode == "random",
-        },
-        {
-          value = "reshuffle_now",
-          label = "  Re-shuffle Now",
-          checkbox = false,
-        },
-        { value = nil, label = "", separator = true },
-        {
-          value = "hijack_transport",
-          label = "Override Transport",
-          checkbox = true,
-          checked = bridge_state.override_enabled or false,
-        },
-        {
-          value = "follow_viewport",
-          label = "Follow Viewport",
-          checkbox = true,
-          checked = bridge_state.follow_viewport or false,
-        },
-      },
-      on_change = function(value)
-        local bridge = self.state.get_bridge()
-        if value == "reshuffle_now" then
-          local engine = bridge.engine
-          if engine and engine:get_shuffle_enabled() then
-            engine:set_shuffle_enabled(false)
-            engine:set_shuffle_enabled(true)
-          end
-        elseif value == "true_shuffle" or value == "random" then
-          bridge:set_shuffle_mode(value)
-        end
-      end,
-      on_checkbox_change = function(value, new_checked)
-        local bridge = self.state.get_bridge()
-        if not bridge then return end
+      label = label,
+      icon_draw = icon_draw,
+      items = items,
+      selected = selected,
+      on_select = function(item)
+        local bridge = view.state.get_bridge()
+        local engine = bridge and bridge.engine
+        if not engine then return end
 
-        if value == "shuffle" then
-          bridge:set_shuffle_enabled(new_checked)
-        elseif value == "hijack_transport" then
-          bridge:set_transport_override(new_checked)
-        elseif value == "follow_viewport" then
-          bridge:set_follow_viewport(new_checked)
+        -- Clear all modes first
+        engine:set_transport_override(false)
+        engine:set_shuffle_enabled(false)
+
+        -- Then set the selected mode
+        if item.id == "override" then
+          engine:set_transport_override(true)
+        elseif item.id == "shuffle" then
+          engine:set_shuffle_enabled(true)
         end
+        -- sequential is the default (both false)
       end,
+      tooltip = Strings.TRANSPORT.playback_mode,
+      preset_name = "COMBO_DEFAULT",
     },
   }
 end
 
--- Helper function to draw shuffle context menu
-function TransportView:draw_shuffle_context_menu(ctx)
-  local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
-  local bridge = self.state.get_bridge()
+-- Build shuffle dropdown menu (context menu style)
+local function draw_shuffle_context_menu(ctx)
+  if not ImGui.BeginPopup(ctx, "transport_shuffle_menu") then
+    return
+  end
+
+  ImGui.Text(ctx, "Shuffle Options")
+  ImGui.Separator(ctx)
+
+  local bridge = view.state.get_bridge()
   local engine = bridge and bridge.engine
 
-  if ContextMenu.begin(ctx, "shuffle_context_menu") then
-    local current_mode = engine and engine:get_shuffle_mode() or "true_shuffle"
-
-    -- Shuffle mode selection (mutually exclusive checkboxes)
-    if ContextMenu.checkbox_item(ctx, "True Shuffle", current_mode == "true_shuffle") then
-      if bridge then
-        bridge:set_shuffle_mode("true_shuffle")
-      end
-    end
-
-    if ContextMenu.checkbox_item(ctx, "Random", current_mode == "random") then
-      if bridge then
-        bridge:set_shuffle_mode("random")
-      end
-    end
-
-    ContextMenu.separator(ctx)
-
-    -- Re-shuffle Now
-    if ContextMenu.item(ctx, "Re-shuffle Now") then
-      if engine and engine:get_shuffle_enabled() then
-        engine:set_shuffle_enabled(false)
-        engine:set_shuffle_enabled(true)
-      end
-    end
-
-    ContextMenu.end_menu(ctx)
+  if not engine then
+    ImGui.Text(ctx, "Engine not available")
+    ImGui.EndPopup(ctx)
+    return
   end
+
+  local shuffle_enabled = engine:get_shuffle_enabled() or false
+
+  -- Toggle shuffle
+  if ImGui.MenuItem(ctx, shuffle_enabled and "Disable Shuffle" or "Enable Shuffle") then
+    engine:set_shuffle_enabled(not shuffle_enabled)
+  end
+
+  ImGui.EndPopup(ctx)
 end
 
-function TransportView:build_playback_buttons(bridge_state, shell_state)
+-- Build playback mode buttons (shuffle, hijack, follow) for non-compact mode
+local function build_playback_buttons(bridge_state, shell_state)
   -- Get icon font from shell_state
   local icon_font = shell_state and shell_state.fonts and shell_state.fonts.icons
-  local icon_size = 16  -- Size for button icons
+  local icon_size = 16
 
   return {
     {
-      type = "custom",
+      type = "button",
       id = "transport_shuffle",
       align = "center",
       width = 34,
       config = {
-        on_draw = function(ctx, dl, x, y, width, height, state)
-          local Button = require('arkitekt.gui.widgets.primitives.button')
-          local bridge = self.state.get_bridge()
-          local engine = bridge and bridge.engine
-
-          -- Draw button
-          Button.draw(ctx, {
-            id = "transport_shuffle_btn",
-            draw_list = dl,
-            x = x,
-            y = y,
-            width = width,
-            height = height,
-            icon = CoreConfig.REMIX_ICONS.shuffle,
-            icon_font = icon_font,
-            icon_size = icon_size,
-            label = "",
-            is_toggled = bridge_state.shuffle_enabled or false,
-            preset_name = "BUTTON_TOGGLE_WHITE",
-            tooltip = Strings.TRANSPORT.shuffle,
-            on_click = function()
-              local bridge = self.state.get_bridge()
-              if bridge then
-                local current_state = bridge:get_shuffle_enabled()
-                bridge:set_shuffle_enabled(not current_state)
-              end
-            end,
-            on_right_click = function()
-              ImGui.OpenPopup(ctx, "shuffle_context_menu")
-            end,
-            panel_state = state,
-          })
-
-          -- Draw context menu
-          self:draw_shuffle_context_menu(ctx)
+        icon = CoreConfig.REMIX_ICONS.shuffle,
+        icon_font = icon_font,
+        icon_size = icon_size,
+        label = "",
+        is_toggled = bridge_state.shuffle_enabled or false,
+        preset_name = "BUTTON_TOGGLE_WHITE",
+        tooltip = Strings.TRANSPORT.shuffle,
+        on_click = function()
+          local bridge = view.state.get_bridge()
+          if bridge then
+            local current_state = bridge:get_shuffle_enabled()
+            bridge:set_shuffle_enabled(not current_state)
+          end
         end,
       },
     },
@@ -474,17 +472,10 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
         preset_name = "BUTTON_TOGGLE_WHITE",
         tooltip = Strings.TRANSPORT.hijack_transport,
         on_click = function()
-          local bridge = self.state.get_bridge()
+          local bridge = view.state.get_bridge()
           if bridge then
             local current_state = bridge:get_transport_override()
-            local new_state = not current_state
-            bridge:set_transport_override(new_state)
-
-            -- Show status message
-            if self.state.set_state_change_notification then
-              local msg = new_state and Strings.STATUS.override_enabled or Strings.STATUS.override_disabled
-              self.state.set_state_change_notification(msg)
-            end
+            bridge:set_transport_override(not current_state)
           end
         end,
       },
@@ -493,7 +484,7 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
       type = "button",
       id = "transport_follow",
       align = "center",
-      width = 26,  -- Reduced to compensate for layout spacing
+      width = 26,
       config = {
         icon = CoreConfig.REMIX_ICONS.follow_viewport,
         icon_font = icon_font,
@@ -503,17 +494,10 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
         preset_name = "BUTTON_TOGGLE_WHITE",
         tooltip = Strings.TRANSPORT.follow_viewport,
         on_click = function()
-          local bridge = self.state.get_bridge()
+          local bridge = view.state.get_bridge()
           if bridge then
             local current_state = bridge:get_follow_viewport()
-            local new_state = not current_state
-            bridge:set_follow_viewport(new_state)
-
-            -- Show status message
-            if self.state.set_state_change_notification then
-              local msg = new_state and Strings.STATUS.follow_viewport_enabled or Strings.STATUS.follow_viewport_disabled
-              self.state.set_state_change_notification(msg)
-            end
+            bridge:set_follow_viewport(not current_state)
           end
         end,
       },
@@ -521,9 +505,8 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
   }
 end
 
--- <<< MODULAR BUTTON BUILDERS (END)
-
-function TransportView:build_header_elements(bridge_state, available_width, shell_state)
+-- Build header elements with responsive layout
+local function build_header_elements(bridge_state, available_width, shell_state)
   bridge_state = bridge_state or {}
   available_width = available_width or math.huge
 
@@ -537,18 +520,16 @@ function TransportView:build_header_elements(bridge_state, available_width, shel
   -- Ultra-compact mode: Only Play, Jump, and combined PB dropdown
   if ultra_compact then
     return {
-      self:build_play_button(bridge_state),
-      self:build_jump_button(bridge_state),
-      self:build_combined_pb_dropdown(bridge_state),
+      build_play_button(bridge_state),
+      build_jump_button(bridge_state),
+      build_combined_pb_dropdown(bridge_state),
     }
   end
 
-  -- Calculate which buttons to show based on priority
-  -- Always show: Play (1), Jump (2)
+  -- Calculate which buttons to show based on priority and available width
   local always_width = BTN.play.width + BTN.jump.width
   local remaining_width = available_width - always_width
 
-  -- Determine which optional buttons fit (by priority: lower number = higher priority)
   local show_quantize = false
   local show_playback = false
   local show_loop = false
@@ -556,8 +537,6 @@ function TransportView:build_header_elements(bridge_state, available_width, shel
   local show_stop = false
 
   local playback_width = compact and BTN.playback.width_dropdown or BTN.playback.width_buttons
-
-  -- Check each priority level
   local budget = remaining_width
 
   -- Priority 3: Quantize
@@ -590,35 +569,34 @@ function TransportView:build_header_elements(bridge_state, available_width, shel
     budget = budget - BTN.stop.width
   end
 
-  -- Build elements array in VISUAL ORDER (not priority order)
-  -- Visual order: Play, Stop, Pause, Loop, Jump, Quantize, Playback
+  -- Build elements in visual order: Play, Stop, Pause, Loop, Jump, Quantize, Playback
   local elements = {}
 
-  elements[#elements + 1] = self:build_play_button(bridge_state)
+  elements[#elements + 1] = build_play_button(bridge_state)
 
   if show_stop then
-    elements[#elements + 1] = self:build_stop_button()
+    elements[#elements + 1] = build_stop_button()
   end
 
   if show_pause then
-    elements[#elements + 1] = self:build_pause_button(bridge_state)
+    elements[#elements + 1] = build_pause_button(bridge_state)
   end
 
   if show_loop then
-    elements[#elements + 1] = self:build_loop_button(bridge_state)
+    elements[#elements + 1] = build_loop_button(bridge_state)
   end
 
-  elements[#elements + 1] = self:build_jump_button(bridge_state)
+  elements[#elements + 1] = build_jump_button(bridge_state)
 
   if show_quantize then
-    elements[#elements + 1] = self:build_quantize_dropdown(bridge_state)
+    elements[#elements + 1] = build_quantize_dropdown(bridge_state)
   end
 
   if show_playback then
     if compact then
-      elements[#elements + 1] = self:build_playback_dropdown(bridge_state)
+      elements[#elements + 1] = build_playback_dropdown(bridge_state)
     else
-      local buttons = self:build_playback_buttons(bridge_state, shell_state)
+      local buttons = build_playback_buttons(bridge_state, shell_state)
       for _, btn in ipairs(buttons) do
         elements[#elements + 1] = btn
       end
@@ -628,145 +606,134 @@ function TransportView:build_header_elements(bridge_state, available_width, shel
   return elements
 end
 
--- Build combined "PB" dropdown for ultra-compact mode
-function TransportView:build_combined_pb_dropdown(bridge_state)
-  -- Combine quantize options and playback checkboxes into single dropdown
-  local options = {}
-  local current_shuffle_mode = bridge_state.shuffle_mode or "true_shuffle"
+-- Build combined playback dropdown (combines multiple modes)
+local function build_combined_pb_dropdown(bridge_state)
+  -- Determine current mode label and icon
+  local label = "PB"
+  local icon_draw = nil
+  local tooltip = "Playback Mode"
 
-  -- Add quantize separator and options
-  options[#options + 1] = { value = nil, label = "", separator = "Quantize" }
-  for _, opt in ipairs(CoreConfig.QUANTIZE.options) do
-    options[#options + 1] = opt
+  if bridge_state.override_enabled then
+    label = "OVR"
+    tooltip = "Override Mode (Transport controls override playlist)"
+    icon_draw = function(ctx, dl, x, y, w, h, text_color)
+      TransportIcons.draw_override_icon(dl, x, y, w, h, text_color)
+    end
+  elseif bridge_state.shuffle_enabled then
+    label = "SHF"
+    tooltip = "Shuffle Mode"
+    icon_draw = function(ctx, dl, x, y, w, h, text_color)
+      TransportIcons.draw_shuffle_icon(dl, x, y, w, h, text_color)
+    end
+  elseif bridge_state.follow_viewport then
+    label = "FLW"
+    tooltip = "Follow Viewport Mode"
+    icon_draw = function(ctx, dl, x, y, w, h, text_color)
+      TransportIcons.draw_follow_icon(dl, x, y, w, h, text_color)
+    end
+  else
+    label = "SEQ"
+    tooltip = "Sequential Mode"
+    icon_draw = function(ctx, dl, x, y, w, h, text_color)
+      TransportIcons.draw_sequential_icon(dl, x, y, w, h, text_color)
+    end
   end
 
-  -- Add playback separator and options
-  options[#options + 1] = { value = nil, label = "", separator = "Playback" }
-  options[#options + 1] = {
-    value = "shuffle",
-    label = "Shuffle",
-    checkbox = true,
-    checked = bridge_state.shuffle_enabled or false,
+  -- Build items list
+  local items = {
+    {
+      id = "sequential",
+      label = "Sequential",
+      description = "Play playlist in order",
+      icon_draw = function(ctx, dl, x, y, w, h, text_color)
+        TransportIcons.draw_sequential_icon(dl, x, y, w, h, text_color)
+      end,
+    },
+    {
+      id = "shuffle",
+      label = "Shuffle",
+      description = "Random playlist order",
+      icon_draw = function(ctx, dl, x, y, w, h, text_color)
+        TransportIcons.draw_shuffle_icon(dl, x, y, w, h, text_color)
+      end,
+    },
+    {
+      id = "follow",
+      label = "Follow Viewport",
+      description = "Play region under edit cursor",
+      icon_draw = function(ctx, dl, x, y, w, h, text_color)
+        TransportIcons.draw_follow_icon(dl, x, y, w, h, text_color)
+      end,
+    },
+    {
+      id = "override",
+      label = "Transport Override",
+      description = "Manual transport control",
+      icon_draw = function(ctx, dl, x, y, w, h, text_color)
+        TransportIcons.draw_override_icon(dl, x, y, w, h, text_color)
+      end,
+    },
   }
-  options[#options + 1] = {
-    value = "true_shuffle",
-    label = "  True Shuffle",
-    checkbox = true,
-    checked = current_shuffle_mode == "true_shuffle",
-  }
-  options[#options + 1] = {
-    value = "random",
-    label = "  Random",
-    checkbox = true,
-    checked = current_shuffle_mode == "random",
-  }
-  options[#options + 1] = {
-    value = "reshuffle_now",
-    label = "  Re-shuffle Now",
-    checkbox = false,
-  }
-  options[#options + 1] = {
-    value = "hijack_transport",
-    label = "Override Transport",
-    checkbox = true,
-    checked = bridge_state.override_enabled or false,
-  }
-  options[#options + 1] = {
-    value = "follow_viewport",
-    label = "Follow Viewport",
-    checkbox = true,
-    checked = bridge_state.follow_viewport or false,
-  }
+
+  -- Determine selected item
+  local selected = "sequential"
+  if bridge_state.override_enabled then
+    selected = "override"
+  elseif bridge_state.shuffle_enabled then
+    selected = "shuffle"
+  elseif bridge_state.follow_viewport then
+    selected = "follow"
+  end
 
   return {
     type = "combo",
-    id = "transport_pb_combined",
+    id = "transport_playback_combined",
     align = "center",
-    width = 60,  -- Compact "PB" label
+    width = CoreConfig.TRANSPORT_BUTTONS.playback_mode.width or 60,
     config = {
-      tooltip = "Playback & Quantize Settings",
-      button_label = "PB",  -- Label shown on button (not in dropdown menu)
-      current_value = bridge_state.quantize_mode,
-      options = options,
-      enable_mousewheel = true,
-      on_change = function(new_value)
-        local bridge = self.state.get_bridge()
-        -- Handle Re-shuffle Now
-        if new_value == "reshuffle_now" then
-          local engine = bridge.engine
-          if engine and engine:get_shuffle_enabled() then
-            engine:set_shuffle_enabled(false)
-            engine:set_shuffle_enabled(true)
-          end
-        -- Handle shuffle mode changes
-        elseif new_value == "true_shuffle" or new_value == "random" then
-          bridge:set_shuffle_mode(new_value)
-        -- Handle quantize mode changes
-        elseif new_value and new_value ~= "shuffle" and new_value ~= "hijack_transport" and new_value ~= "follow_viewport" then
-          bridge:set_quantize_mode(new_value)
+      label = label,
+      icon_draw = icon_draw,
+      items = items,
+      selected = selected,
+      on_select = function(item)
+        local bridge = view.state.get_bridge()
+        local engine = bridge and bridge.engine
+        if not engine then return end
+
+        -- Clear all modes first
+        engine:set_transport_override(false)
+        engine:set_shuffle_enabled(false)
+        engine:set_follow_viewport(false)
+
+        -- Set selected mode
+        if item.id == "override" then
+          engine:set_transport_override(true)
+        elseif item.id == "shuffle" then
+          engine:set_shuffle_enabled(true)
+        elseif item.id == "follow" then
+          engine:set_follow_viewport(true)
         end
+        -- sequential is default (all false)
       end,
-      on_checkbox_change = function(value, new_checked)
-        local bridge = self.state.get_bridge()
-        if not bridge then return end
-
-        if value == "shuffle" then
-          bridge:set_shuffle_enabled(new_checked)
-        elseif value == "hijack_transport" then
-          bridge:set_transport_override(new_checked)
-        elseif value == "follow_viewport" then
-          bridge:set_follow_viewport(new_checked)
-        end
-      end,
-      footer_content = function(footer_ctx)
-        local ctx = footer_ctx.ctx
-        local dl = footer_ctx.dl
-        local width = footer_ctx.width
-        local padding = footer_ctx.padding
-
-        -- Use dynamic colors from Style.COLORS
-        local C = Style.COLORS
-        local label = "Jump Lookahead"
-        local label_x, label_y = ImGui.GetCursorScreenPos(ctx)
-        ImGui.DrawList_AddText(dl, label_x + padding, label_y, C.TEXT_BRIGHT, label)
-        ImGui.Dummy(ctx, width, 20)
-
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, C.BG_PANEL)
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, C.BG_BASE)
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, C.BG_HOVER)
-        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, C.BORDER_HOVER)
-        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, C.BORDER_FOCUS)
-        ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabMinSize, 14)
-        ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 4, 6)
-        ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabRounding, 0)
-
-        local slider_x, slider_y = ImGui.GetCursorScreenPos(ctx)
-        ImGui.SetCursorScreenPos(ctx, slider_x + padding, slider_y)
-        ImGui.SetNextItemWidth(ctx, width - padding * 2)
-
-        local lookahead_ms = self.config.quantize_lookahead * 1000
-        local changed, new_val = ImGui.SliderDouble(ctx, "##quantize_lookahead_pb", lookahead_ms, 200, 1000, "%.0fms")
-
-        ImGui.PopStyleVar(ctx, 3)
-        ImGui.PopStyleColor(ctx, 5)
-
-        if changed then
-          self.config.quantize_lookahead = new_val / 1000
-          if self.state.settings then
-            self.state.settings:set('quantize_lookahead', self.config.quantize_lookahead)
-          end
-        end
-
-        ImGui.Dummy(ctx, width, 6)
-      end,
+      tooltip = tooltip,
+      preset_name = "COMBO_DEFAULT",
     },
   }
 end
 
+-- <<< MODULAR BUTTON BUILDERS (END)
 
-function TransportView:draw(ctx, shell_state, is_blocking)
+-- ============================================================================
+-- PUBLIC DRAW FUNCTION (Called every frame)
+-- ============================================================================
+
+--- Draw the transport view
+--- @param ctx ImGui_Context
+--- @param shell_state table Shell state with fonts, etc.
+--- @param is_blocking boolean Whether UI should be blocked
+function M.draw(ctx, shell_state, is_blocking)
   is_blocking = is_blocking or false
-  local bridge = self.state.get_bridge()
+  local bridge = view.state.get_bridge()
   local engine = bridge.engine
 
   local bridge_state = {
@@ -783,8 +750,8 @@ function TransportView:draw(ctx, shell_state, is_blocking)
   -- Inject icon font, size, and blocking state into corner buttons
   local icons_font = shell_state and shell_state.fonts and shell_state.fonts.icons
   local icons_size = shell_state and shell_state.fonts and shell_state.fonts.icons_size
-  if self.container.panel.config.corner_buttons then
-    local cb = self.container.panel.config.corner_buttons
+  if view.container.panel.config.corner_buttons then
+    local cb = view.container.panel.config.corner_buttons
     if cb.top_right then
       if icons_font then
         cb.top_right.icon_font = icons_font
@@ -817,14 +784,14 @@ function TransportView:draw(ctx, shell_state, is_blocking)
 
   -- Get available width for responsive header layout
   local available_width = ImGui.GetContentRegionAvail(ctx)
-  self.container:set_header_elements(self:build_header_elements(bridge_state, available_width, shell_state))
-  
-  local spacing = self.config.spacing
-  local transport_height = self.config.height
-  
+  view.container:set_header_elements(build_header_elements(bridge_state, available_width, shell_state))
+
+  local spacing = view.config.spacing
+  local transport_height = view.config.height
+
   local transport_start_x, transport_start_y = ImGui.GetCursorScreenPos(ctx)
-  
-  local region_colors = self:get_region_colors()
+
+  local region_colors = get_region_colors()
 
   -- Get current region ID for jump flash tracking
   local current_rid = nil
@@ -832,16 +799,16 @@ function TransportView:draw(ctx, shell_state, is_blocking)
     current_rid = bridge:get_current_rid()
   end
 
-  local content_w, content_h = self.container:begin_draw(ctx, region_colors, current_rid)
-  
+  local content_w, content_h = view.container:begin_draw(ctx, region_colors, current_rid)
+
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
 
   -- Show the playing playlist when playback is active, otherwise show the selected playlist
-  local playlist_to_display = self.state.get_active_playlist()
+  local playlist_to_display = view.state.get_active_playlist()
   if bridge and bridge_state.is_playing then
     local playing_playlist_id = bridge:get_playing_playlist_id()
     if playing_playlist_id then
-      local playing_playlist = self.state.get_playlist_by_id(playing_playlist_id)
+      local playing_playlist = view.state.get_playlist_by_id(playing_playlist_id)
       if playing_playlist then
         playlist_to_display = playing_playlist
       end
@@ -855,12 +822,12 @@ function TransportView:draw(ctx, shell_state, is_blocking)
 
   local current_region = nil
   local next_region = nil
-  
+
   if bridge then
     local current_rid = bridge:get_current_rid()
     if current_rid then
-      current_region = self.state.get_region_by_rid(current_rid)
-      
+      current_region = view.state.get_region_by_rid(current_rid)
+
       local sequence = bridge:get_sequence()
       if sequence and #sequence > 0 then
         local current_idx = bridge:get_state().playlist_pointer
@@ -868,7 +835,7 @@ function TransportView:draw(ctx, shell_state, is_blocking)
           for i = current_idx + 1, #sequence do
             local entry = sequence[i]
             if entry and entry.rid and entry.rid ~= current_rid then
-              next_region = self.state.get_region_by_rid(entry.rid)
+              next_region = view.state.get_region_by_rid(entry.rid)
               break
             end
           end
@@ -876,17 +843,17 @@ function TransportView:draw(ctx, shell_state, is_blocking)
       end
     end
   end
-  
+
   local display_x = cursor_x
   local display_w = content_w
   local display_y = cursor_y
   local display_h = content_h
-  
+
   local time_font = shell_state and shell_state.fonts and shell_state.fonts.time_display or nil
-  self.transport_display:draw(ctx, display_x, display_y, display_w, display_h,
+  view.transport_display:draw(ctx, display_x, display_y, display_w, display_h,
     bridge_state, current_region, next_region, playlist_data, region_colors, time_font)
 
-  self.container:end_draw(ctx)
+  view.container:end_draw(ctx)
 
   ImGui.SetCursorScreenPos(ctx, transport_start_x, transport_start_y + transport_height)
 end

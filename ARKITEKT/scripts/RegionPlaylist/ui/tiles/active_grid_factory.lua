@@ -1,6 +1,40 @@
 -- @noindex
 -- RegionPlaylist/ui/tiles/active_grid_factory.lua
--- Opts-based grid factory for active playlist tiles
+-- Active Grid Configuration Factory
+--
+-- PURPOSE:
+-- Builds opts table configuration for the active playlist Grid widget.
+-- This is an adapter between app state (coordinator) and ARKITEKT Grid API.
+--
+-- RESPONSIBILITIES:
+--   - Map app state to Grid widget parameters (items, height, column width)
+--   - Wire interaction callbacks (drag, drop, reorder, select, delete)
+--   - Configure animations (spawn, destroy, hover)
+--   - Set up external drag handling (from pool grid)
+--   - Configure visual effects (dim, ghost, drop indicators)
+--
+-- PATTERN: Factory Function
+-- Instead of a Grid subclass, this module exports create_opts(rt, config)
+-- which returns a fresh opts table each frame. The coordinator calls this
+-- per frame and passes opts to Ark.Grid(ctx, opts).
+--
+-- WHY FACTORY?
+-- - Grid configuration is complex (400+ lines)
+-- - Separates concerns: state management (coordinator) vs widget config (factory)
+-- - Keeps coordinator.lua readable
+-- - Follows ARKITEKT opts-based API pattern
+--
+-- FLOW:
+-- coordinator_render.draw_active()
+--   → ActiveGridFactory.create_opts(self, self.config)
+--   → Returns opts table
+--   → Ark.Grid(ctx, opts)
+--   → Grid renders with behaviors, animations, etc.
+--
+-- SEE ALSO:
+--   - ui/tiles/coordinator.lua (orchestrator that uses this factory)
+--   - ui/tiles/renderers/active.lua (tile rendering implementation)
+--   - ui/tiles/pool_grid_factory.lua (similar factory for pool grid)
 
 local Ark = require('arkitekt')
 local ActiveTile = require('RegionPlaylist.ui.tiles.renderers.active')
@@ -367,9 +401,21 @@ end
 local function create_render_tile(rt, tile_config)
   return function(ctx, rect, item, state, grid)
     local tile_height = rect[4] - rect[2]
-    ActiveTile.render(ctx, rect, item, state, rt.get_region_by_rid, rt.active_animator,
-                    rt.on_repeat_cycle, rt.hover_config, tile_height, tile_config.border_thickness,
-                    rt.app_bridge, rt.get_playlist_by_id, grid)
+    ActiveTile.render({
+      ctx = ctx,
+      rect = rect,
+      item = item,
+      state = state,
+      get_region_by_rid = rt.get_region_by_rid,
+      animator = rt.active_animator,
+      on_repeat_cycle = rt.on_repeat_cycle,
+      hover_config = rt.hover_config,
+      tile_height = tile_height,
+      border_thickness = tile_config.border_thickness,
+      bridge = rt.app_bridge,
+      get_playlist_by_id = rt.get_playlist_by_id,
+      grid = grid,
+    })
   end
 end
 

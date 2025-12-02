@@ -102,15 +102,37 @@ local function draw_lock_icon(dl, cx, cy, config, color)
   ImGui.DrawList_AddRectFilled(dl, top_x1, top_y1, top_x2, top_y2, color, 0)
 end
 
-function M.render(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness, grid)
-  if item.id and item.items then
-    M.render_playlist(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness, grid)
+--- Render pool tile (region or playlist)
+--- @param opts table Render options
+--- @param opts.ctx ImGui_Context ImGui context
+--- @param opts.rect table {x1, y1, x2, y2} Tile bounds
+--- @param opts.item table Item data {rid, id?, items?, color?, ...}
+--- @param opts.state table Tile state {hover, pressed, selected}
+--- @param opts.animator table TileAnimator instance
+--- @param opts.hover_config table Animation config {animation_speed_hover}
+--- @param opts.tile_height number Tile height in pixels
+--- @param opts.border_thickness number Border thickness
+--- @param opts.grid table Grid instance
+function M.render(opts)
+  if opts.item.id and opts.item.items then
+    M.render_playlist(opts)
   else
-    M.render_region(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness, grid)
+    M.render_region(opts)
   end
 end
 
-function M.render_region(ctx, rect, region, state, animator, hover_config, tile_height, border_thickness, grid)
+--- Render pool region tile
+--- @param opts table Render options (same as M.render)
+function M.render_region(opts)
+  local ctx = opts.ctx
+  local rect = opts.rect
+  local region = opts.item
+  local state = opts.state
+  local animator = opts.animator
+  local hover_config = opts.hover_config
+  local tile_height = opts.tile_height
+  local border_thickness = opts.border_thickness
+  local grid = opts.grid
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local key = "pool_" .. tostring(region.rid)
@@ -138,7 +160,18 @@ function M.render_region(ctx, rect, region, state, animator, hover_config, tile_
   if show_length then BaseRenderer.draw_length_display(ctx, dl, rect, region, base_color, 0xFF) end
 end
 
-function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness, grid)
+--- Render pool playlist tile
+--- @param opts table Render options (same as M.render)
+function M.render_playlist(opts)
+  local ctx = opts.ctx
+  local rect = opts.rect
+  local playlist = opts.item
+  local state = opts.state
+  local animator = opts.animator
+  local hover_config = opts.hover_config
+  local tile_height = opts.tile_height
+  local border_thickness = opts.border_thickness
+  local grid = opts.grid
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local key = "pool_playlist_" .. tostring(playlist.id)
@@ -146,7 +179,7 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
 
   -- Special rendering for circular reference tiles
   if is_disabled then
-    M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness, grid)
+    M.render_circular_playlist(opts)
     return
   end
   
@@ -253,7 +286,19 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   end
 end
 
-function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness, grid)
+--- Render circular reference playlist tile (disabled with warning pattern)
+--- @param opts table Render options (same as M.render)
+function M.render_circular_playlist(opts)
+  local ctx = opts.ctx
+  local rect = opts.rect
+  local playlist = opts.item
+  local state = opts.state
+  local animator = opts.animator
+  local hover_config = opts.hover_config
+  local tile_height = opts.tile_height
+  local border_thickness = opts.border_thickness
+  local grid = opts.grid
+
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local key = "pool_playlist_" .. tostring(playlist.id)

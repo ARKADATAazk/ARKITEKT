@@ -6,7 +6,6 @@ local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')
-local Style = require('arkitekt.gui.style')
 local hexrgb = Ark.Colors.hexrgb
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
@@ -26,7 +25,7 @@ function M.ViewModeButton_new(config)
 end
 
 function ViewModeButton:draw_icon(ctx, dl, x, y, mode)
-  local color = self.config.icon_color or Style.COLORS.TEXT_DIMMED
+  local color = self.config.icon_color or Ark.Style.COLORS.TEXT_DIMMED
   local icon_size = 16  -- Smaller icon for 30px button (was 20px for 32px button)
 
   if mode == 'vertical' then
@@ -67,8 +66,8 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
     self.hover_alpha = max(0, min(1, self.hover_alpha))
   end
 
-  -- Use dynamic colors from Style.COLORS
-  local C = Style.COLORS
+  -- Use dynamic colors from Ark.Style.COLORS
+  local C = Ark.Style.COLORS
   local bg = Ark.Colors.lerp(cfg.bg_color or C.BG_BASE, cfg.bg_hover or C.BG_HOVER, self.hover_alpha)
   local border_inner = Ark.Colors.lerp(cfg.border_inner or C.BORDER_INNER, cfg.border_hover or C.BORDER_HOVER, self.hover_alpha)
   local border_outer = cfg.border_outer or C.BORDER_OUTER
@@ -138,8 +137,8 @@ function SimpleToggleButton:draw(ctx, x, y, state, on_click, color)
   self.hover_alpha = self.hover_alpha + (target - self.hover_alpha) * 12.0 * dt
   self.hover_alpha = max(0, min(1, self.hover_alpha))
 
-  -- Use dynamic colors from Style.COLORS
-  local C = Style.COLORS
+  -- Use dynamic colors from Ark.Style.COLORS
+  local C = Ark.Style.COLORS
   local bg_off = C.BG_BASE
   local bg_off_hover = C.BG_HOVER
   local accent = color or C.ACCENT_PRIMARY

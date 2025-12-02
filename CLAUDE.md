@@ -36,6 +36,11 @@ Lua 5.3 framework for building ReaImGui apps in REAPER. It provides widgets, win
    - Always read the file (and nearby modules) **before** editing.
    - Diffs must be **surgical**: no reformatting, no drive-by refactors.
 
+6. **Naming standards**
+   - Constructors: `M.new(opts)` preferred (extensible), `M.new(config)` or `M.new()` valid
+   - Local vars: `cfg` (not `config`), `state` (never `st`), `ctx`, `opts`
+   - See `cookbook/CONVENTIONS.md` for full standards
+
 **Quick examples**
 
 ```lua
@@ -203,7 +208,7 @@ Never do these:
 
 ---
 
-## 7. Final Checklist Before You Say “Done”
+## 7. Final Checklist Before You Say "Done"
 
 Make sure:
 
@@ -214,5 +219,6 @@ Make sure:
 - [ ] Diff is small and focused.
 - [ ] Code matches existing patterns in that folder.
 - [ ] You actually read the file(s) before editing.
+- [ ] Naming follows standards: `M.new(opts)`, `cfg` locals, `state` never `st`
 
 If in doubt: **stop, re-read, then adjust.**
