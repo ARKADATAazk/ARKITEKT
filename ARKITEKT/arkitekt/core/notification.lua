@@ -14,18 +14,18 @@ local M = {}
 
 -- Message types
 M.TYPE = {
-  INFO = "info",
-  SUCCESS = "success",
-  WARNING = "warning",
-  ERROR = "error",
+  INFO = 'info',
+  SUCCESS = 'success',
+  WARNING = 'warning',
+  ERROR = 'error',
 }
 
 -- Default colors by message type
 M.DEFAULT_COLORS = {
-  info = hexrgb("#CCCCCC"),
-  success = hexrgb("#41E0A3"),
-  warning = hexrgb("#E0B341"),
-  error = hexrgb("#E04141"),
+  info = hexrgb('#CCCCCC'),
+  success = hexrgb('#41E0A3'),
+  warning = hexrgb('#E0B341'),
+  error = hexrgb('#E04141'),
 }
 
 -- Default timeouts (seconds) by message type
@@ -146,7 +146,7 @@ function M.new(opts)
 
   --- Get status for status_bar integration
   --- Returns {text, color} format expected by status_bar.lua
-  --- @return table|nil status {text="...", color=0xRRGGBBAA} or nil if no message
+  --- @return table|nil status {text='...', color=0xRRGGBBAA} or nil if no message
   function self:get_status()
     if not self.current_message then
       return nil
@@ -176,10 +176,10 @@ function main_loop()
   -- ... your code ...
 
   -- Show messages:
-  notif:success("File saved successfully")
-  notif:warning("No items selected")
-  notif:error("Failed to load file")
-  notif:info("Processing...")
+  notif:success('File saved successfully')
+  notif:warning('No items selected')
+  notif:error('Failed to load file')
+  notif:info('Processing...')
 end
 
 -- Status bar integration:
