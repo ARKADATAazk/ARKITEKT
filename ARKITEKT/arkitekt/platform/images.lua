@@ -61,16 +61,16 @@ local function load_metadata()
   
   local SEP = package.config:sub(1,1)
   local src = debug.getinfo(1,'S').source:sub(2)
-  local dir = src:match("(.*"..SEP..")") or ("."..SEP)
-  local meta_path = dir:gsub("core"..SEP.."$", "") .. "reaper_img_metadata.json"
-  
-  local file = io.open(meta_path, "r")
+  local dir = src:match('(.*'..SEP..')') or ('.'..SEP)
+  local meta_path = dir:gsub('core'..SEP..'$', '') .. 'reaper_img_metadata.json'
+
+  local file = io.open(meta_path, 'r')
   if not file then
     metadata = { images = {} }
     return metadata
   end
-  
-  local content = file:read("*a")
+
+  local content = file:read('*a')
   file:close()
 
   -- SECURITY: Check if file read succeeded before attempting to parse
@@ -96,8 +96,8 @@ local function load_metadata()
     if start_pos then
       local images_content = content:sub(start_pos)
       for img_name, is_3state_str in images_content:gmatch('"([^"]+)"%s*:%s*{[^}]*"is_3state"%s*:%s*(%a+)') do
-        if img_name ~= "_comment" then
-          metadata.images[img_name] = { is_3state = (is_3state_str == "true") }
+        if img_name ~= '_comment' then
+          metadata.images[img_name] = { is_3state = (is_3state_str == 'true') }
         end
       end
     end
@@ -145,8 +145,8 @@ end
 
 local function get_image_name(path)
   if not path then return nil end
-  local name = path:match("[^\\/]+$") or path
-  return name:gsub("%.png$", ""):gsub("%.PNG$", "")
+  local name = path:match('[^\\/]+$') or path
+  return name:gsub('%.png$', ''):gsub('%.PNG$', '')
 end
 
 local function is_three_state_from_metadata(path)
@@ -212,7 +212,7 @@ function Cache:set_no_crop(b)
 end
 
 local function ensure_record(self, path)
-  if not path or path == "" then return nil end
+  if not path or path == '' then return nil end
 
   local rec = self._cache[path]
   if rec == false then return nil end
@@ -272,7 +272,7 @@ local function validate_record(self, path, rec)
   end
 
   -- Check if userdata is still valid type
-  if type(rec.img) ~= "userdata" then
+  if type(rec.img) ~= 'userdata' then
     self._cache[path] = nil
     remove_from_cache_order(self, path)
     return ensure_record(self, path)
@@ -330,7 +330,7 @@ end
 -- Returns: table { img, w, h, src_x, src_y, src_w, src_h } or nil
 -- This is the RECOMMENDED way to access cached images for custom rendering
 function Cache:get_validated(path)
-  if not path or path == "" then return nil end
+  if not path or path == '' then return nil end
 
   local rec = self._cache[path]
 
@@ -342,7 +342,7 @@ end
 
 -- Check if an image is cached (without triggering load)
 function Cache:is_cached(path)
-  if not path or path == "" then return false end
+  if not path or path == '' then return false end
   local rec = self._cache[path]
   return rec ~= nil and rec ~= false
 end
@@ -374,7 +374,7 @@ end
 -- ============================================================================
 
 function Cache:draw_original(ctx, path)
-  if not path or path == "" then
+  if not path or path == '' then
     ImGui.Dummy(ctx, 16, 16)
     return false
   end
@@ -399,7 +399,7 @@ end
 
 function Cache:draw_thumb(ctx, path, cell)
   cell = math.max(1, (tonumber(cell) or 1) // 1)
-  if not path or path == "" then
+  if not path or path == '' then
     ImGui.Dummy(ctx, cell, cell)
     return false
   end
@@ -433,7 +433,7 @@ end
 function Cache:draw_fit(ctx, path, w, h)
   w = math.max(1, (tonumber(w) or 1) // 1)
   h = math.max(1, (tonumber(h) or 1) // 1)
-  if not path or path == "" then
+  if not path or path == '' then
     ImGui.Dummy(ctx, w, h)
     return false
   end
