@@ -143,12 +143,27 @@ local function draw_gui(ctx)
     pan_y = state.pan_y,
     zoom = state.zoom,
     show_grid = true,
+    on_node_move = function(node_id, x, y)
+      -- Node position updated automatically
+    end,
+    on_link_create = function(from_node, from_pin, to_node, to_pin)
+      -- Link created automatically
+    end,
   })
+
+  -- Update state from result
+  if result.changed then
+    state.nodes = result.nodes
+    state.links = result.links
+    state.pan_x = result.pan_x
+    state.pan_y = result.pan_y
+    state.zoom = result.zoom
+  end
 
   ImGui.Spacing(ctx)
   ImGui.Separator(ctx)
-  ImGui.Text(ctx, "Note: Full interaction (drag, link creation) coming soon!")
-  ImGui.Text(ctx, string.format("Nodes: %d  |  Links: %d", #state.nodes, #state.links))
+  ImGui.Text(ctx, "Controls: Drag nodes  |  Drag pins to create links  |  Middle-mouse to pan  |  Scroll to zoom")
+  ImGui.Text(ctx, string.format("Nodes: %d  |  Links: %d  |  Zoom: %.1fx", #state.nodes, #state.links, state.zoom))
 end
 
 -- ============================================================================
