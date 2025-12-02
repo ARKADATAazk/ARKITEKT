@@ -484,6 +484,74 @@ end
 
 ---
 
+### Nodes
+**File**: `nodes.lua`
+**Status**: Prototype (rendering complete, interaction in progress)
+**Description**: General-purpose node editor for visual programming and patching interfaces.
+
+**Features**:
+- Node rendering with title bars and pins (inputs/outputs)
+- Bezier curve links between pins
+- Grid background with pan/zoom support
+- Clean data-driven API (nodes array + links array)
+- Inspired by imnodes but using ARKITEKT conventions
+
+**Usage**:
+```lua
+local nodes = {
+  {
+    id = "osc",
+    label = "Oscillator",
+    x = 50, y = 50,
+    width = 140, height = 120,
+    inputs = {
+      {id = "freq", label = "Frequency", type = "float"},
+    },
+    outputs = {
+      {id = "out", label = "Audio Out", type = "audio"},
+    },
+  },
+  -- ... more nodes
+}
+
+local links = {
+  {
+    id = "link1",
+    from_node = "osc",
+    from_pin = "out",
+    to_node = "filter",
+    to_pin = "in",
+  },
+}
+
+Ark.Nodes(ctx, {
+  width = 800,
+  height = 600,
+  nodes = nodes,
+  links = links,
+  pan_x = state.pan_x,
+  pan_y = state.pan_y,
+  zoom = 1.0,
+  show_grid = true,
+})
+```
+
+**Known Issues**:
+- Drag nodes not implemented yet
+- Create/delete links not implemented yet
+- Canvas pan/zoom interaction not implemented yet
+- No minimap
+- No multi-select
+- See demo: `scripts/demos/ARK_NodeEditor.lua`
+
+**Use Cases**:
+- Audio patching interfaces
+- Visual scripting tools
+- State machine editors
+- Data flow graphs
+
+---
+
 ## Development Guidelines
 
 When adding widgets to this folder:
@@ -504,18 +572,44 @@ A widget moves from `experimental/` to `primitives/` when:
 - [ ] Documentation is complete (cookbook entry)
 - [ ] Used successfully in at least one production script
 
-## Future Candidates
+## Future Ideas
 
-Widgets being considered for experimental:
+### ImGui Extensions Worth Considering
 
-- **Waveform Display** - Zoomable audio waveform viewer
-- **Spectrum Analyzer** - FFT visualization
-- **Envelope Editor** - ADSR curve editor
-- **Piano Roll Grid** - MIDI note grid
-- **Step Sequencer** - Grid-based step programming
-- **Channel Strip** - Composite widget (fader + pan + buttons)
-- **Transport Controls** - Play/stop/record button group
-- **Rotary Encoder** - Continuous rotation knob (no min/max)
+**ImGuiFileDialog** ([GitHub](https://github.com/aiekick/ImGuiFileDialog))
+- Rich file browser with thumbnails, bookmarks, multi-select
+- Could be useful for sample browsers, preset managers, media libraries
+- Note: REAPER has native file dialogs (`reaper.GetUserFileNameForRead`), so priority is lower
+- Best use case: Embedded file browser in custom UIs (not modal dialogs)
+
+**ImPlot** ([GitHub](https://github.com/epezent/implot))
+- Professional 2D plotting library
+- Could enhance Waveform/Spectrum widgets with zoom, pan, axis labels, legends
+- Would enable scientific-grade data visualization
+- High value for analysis tools
+
+**ImGuizmo** ([GitHub](https://github.com/CedricGuillemet/ImGuizmo))
+- 3D gizmos and transformation widgets
+- Lower priority for REAPER (mostly 2D workflows)
+
+### Widget Ideas
+
+**Already Implemented** ✅
+- ~~Waveform Display~~ → `Waveform.lua`
+- ~~Spectrum Analyzer~~ → `SpectrumAnalyzer.lua`
+- ~~Piano Roll Grid~~ → `MIDIPianoRoll.lua`
+- ~~Step Sequencer~~ → `StepSequencer.lua`
+- ~~Transport Controls~~ → `Transport.lua`
+- ~~Rotary Encoder~~ → `Encoder.lua`
+- ~~Node Editor~~ → `Nodes.lua`
+
+**Under Consideration**
+- **Envelope Editor** - ADSR/multi-point envelope editor (complex interaction model)
+- **Channel Strip** - Composite widget (can be built from Fader + Button + VUMeter)
+- **Interactive Piano Roll** - Full MIDI editing (very complex, may not be worth it)
+- **LED Indicator** - Simple on/off status light
+- **7-Segment Display** - Retro numeric display for timecode/BPM
+- **Minimap** - Thumbnail overview for canvas navigation
 
 ---
 
