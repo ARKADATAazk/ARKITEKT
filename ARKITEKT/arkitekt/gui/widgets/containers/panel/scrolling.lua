@@ -50,7 +50,7 @@ function M.create_scrollbar(panel_id, config)
   end
 
   return Scrollbar.new({
-    id = panel_id .. "_scrollbar",
+    id = panel_id .. '_scrollbar',
     config = config.scroll.scrollbar_config,
     on_scroll = function(scroll_pos)
       -- Callback handled in panel update

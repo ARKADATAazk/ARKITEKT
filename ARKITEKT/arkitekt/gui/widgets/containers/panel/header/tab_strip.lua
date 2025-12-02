@@ -19,8 +19,8 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   config = config or {}
   state = state or {}
 
-  local element_id = state.id or "tabstrip"
-  local unique_id = string.format("%s_%s", tostring(state._panel_id or "unknown"), element_id)
+  local element_id = state.id or 'tabstrip'
+  local unique_id = string.format('%s_%s', tostring(state._panel_id or 'unknown'), element_id)
 
   local tabs = state.tabs or {}
   local active_tab_id = state.active_tab_id

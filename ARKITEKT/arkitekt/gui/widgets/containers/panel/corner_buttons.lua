@@ -108,7 +108,7 @@ function M.draw(ctx, x, y, w, h, config, panel_id)
                        ImGui.WindowFlags_NoScrollWithMouse |
                        ImGui.WindowFlags_NoBackground
 
-    local child_id = panel_id .. "_corner_" .. position_key
+    local child_id = panel_id .. '_corner_' .. position_key
     if ImGui.BeginChild(ctx, child_id, size, size, ImGui.ChildFlags_None, child_flags) then
       local child_dl = ImGui.GetWindowDrawList(ctx)
 
@@ -132,10 +132,10 @@ function M.draw(ctx, x, y, w, h, config, panel_id)
   end
 
   -- Draw all corner buttons
-  if cb_config.top_left then create_button_child(cb_config.top_left, "tl") end
-  if cb_config.top_right then create_button_child(cb_config.top_right, "tr") end
-  if cb_config.bottom_left then create_button_child(cb_config.bottom_left, "bl") end
-  if cb_config.bottom_right then create_button_child(cb_config.bottom_right, "br") end
+  if cb_config.top_left then create_button_child(cb_config.top_left, 'tl') end
+  if cb_config.top_right then create_button_child(cb_config.top_right, 'tr') end
+  if cb_config.bottom_left then create_button_child(cb_config.bottom_left, 'bl') end
+  if cb_config.bottom_right then create_button_child(cb_config.bottom_right, 'br') end
 
   -- Draw edge borders for buttons extending beyond panel
   local border_color = 0x000000FF

@@ -234,7 +234,7 @@ function M.draw_plus_button(ctx, dl, x, y, width, height, config, unique_id, cor
     icon_color)
 
   ImGui.SetCursorScreenPos(ctx, x, y)
-  local clicked = ImGui.InvisibleButton(ctx, "##plus_" .. unique_id, width, height)
+  local clicked = ImGui.InvisibleButton(ctx, '##plus_' .. unique_id, width, height)
 
   return clicked, width
 end
@@ -247,7 +247,7 @@ function M.draw_overflow_button(ctx, dl, x, y, width, height, config, hidden_cou
     if btn_cfg[k] == nil then btn_cfg[k] = v end
   end
 
-  local display_text = (hidden_count > 0) and tostring(hidden_count) or "⋮"
+  local display_text = (hidden_count > 0) and tostring(hidden_count) or '⋮'
 
   local is_hovered = InteractionBlocking.is_mouse_hovering_rect_unblocked(ctx, x, y, x + width, y + height)
   local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
@@ -280,7 +280,7 @@ function M.draw_overflow_button(ctx, dl, x, y, width, height, config, hidden_cou
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, display_text)
 
   ImGui.SetCursorScreenPos(ctx, x, y)
-  local clicked = ImGui.InvisibleButton(ctx, "##overflow_" .. unique_id, width, height)
+  local clicked = ImGui.InvisibleButton(ctx, '##overflow_' .. unique_id, width, height)
 
   return clicked
 end
@@ -325,7 +325,7 @@ function M.draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, height
     if config[k] == nil then config[k] = v end
   end
 
-  local label = tab_data.label or "Tab"
+  local label = tab_data.label or 'Tab'
   local id = tab_data.id
   local chip_color = tab_data.chip_color
   local has_chip = chip_color ~= nil
@@ -455,7 +455,7 @@ function M.draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, height
   end
 
   ImGui.SetCursorScreenPos(ctx, render_x, render_y)
-  ImGui.InvisibleButton(ctx, "##tab_" .. id .. "_" .. unique_id, render_w, render_h)
+  ImGui.InvisibleButton(ctx, '##tab_' .. id .. '_' .. unique_id, render_w, render_h)
 
   local clicked = ImGui.IsItemClicked(ctx, 0)
   local double_clicked = ImGui.IsItemClicked(ctx, 0) and ImGui.IsMouseDoubleClicked(ctx, 0)
@@ -496,11 +496,11 @@ function M.draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, height
   end
 
   if right_clicked then
-    ImGui.OpenPopup(ctx, "##tab_context_" .. id .. "_" .. unique_id)
+    ImGui.OpenPopup(ctx, '##tab_context_' .. id .. '_' .. unique_id)
   end
 
-  if ContextMenu.begin(ctx, "##tab_context_" .. id .. "_" .. unique_id, config.context_menu) then
-    if ContextMenu.item(ctx, "Duplicate Playlist", config.context_menu) then
+  if ContextMenu.begin(ctx, '##tab_context_' .. id .. '_' .. unique_id, config.context_menu) then
+    if ContextMenu.item(ctx, 'Duplicate Playlist', config.context_menu) then
       if config.on_tab_duplicate then
         config.on_tab_duplicate(id)
       end
@@ -509,7 +509,7 @@ function M.draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, height
 
     ImGui.Separator(ctx)
 
-    if ContextMenu.item(ctx, "Delete Playlist", config.context_menu) then
+    if ContextMenu.item(ctx, 'Delete Playlist', config.context_menu) then
       delete_requested = true
     end
 

@@ -16,7 +16,7 @@ local M = {}
 -- ============================================================================
 
 --- Create animation state for an overlay toolbar
---- @param position string Position ("top", "bottom", "left", "right")
+--- @param position string Position ('top', 'bottom', 'left', 'right')
 --- @param config table Overlay toolbar configuration
 --- @return table Animation state
 function M.create_animation_state(position, config)
@@ -96,12 +96,12 @@ function M.update_hover_state(anim_state, config, is_hovering, button_clicked)
 
   anim_state.is_hovering = is_hovering
 
-  if auto_hide_cfg.trigger == "always_visible" then
+  if auto_hide_cfg.trigger == 'always_visible' then
     anim_state.target = 1.0
-  elseif auto_hide_cfg.trigger == "hover" then
+  elseif auto_hide_cfg.trigger == 'hover' then
     local visible_amount = auto_hide_cfg.visible_amount or 0.2
     anim_state.target = is_hovering and 1.0 or visible_amount
-  elseif auto_hide_cfg.trigger == "button" then
+  elseif auto_hide_cfg.trigger == 'button' then
     -- Toggle on button click
     if button_clicked then
       anim_state.is_expanded = not anim_state.is_expanded
@@ -116,14 +116,14 @@ end
 -- ============================================================================
 
 --- Get orientation for a position
---- @param position string Position ("top", "bottom", "left", "right")
---- @return string "horizontal" or "vertical"
+--- @param position string Position ('top', 'bottom', 'left', 'right')
+--- @return string 'horizontal' or 'vertical'
 local function get_orientation(position)
-  return (position == "top" or position == "bottom") and "horizontal" or "vertical"
+  return (position == 'top' or position == 'bottom') and 'horizontal' or 'vertical'
 end
 
 --- Calculate overlay bounds based on regular toolbar presence
---- @param position string Position ("top", "bottom", "left", "right")
+--- @param position string Position ('top', 'bottom', 'left', 'right')
 --- @param panel_bounds table {x1, y1, x2, y2} Panel bounds
 --- @param regular_toolbar_bounds table|nil Regular toolbar bounds on same side (if exists)
 --- @param config table Overlay toolbar configuration
@@ -138,7 +138,7 @@ function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, conf
   -- Apply width scale (default 1.0)
   width_scale = width_scale or 1.0
 
-  local size = orientation == "horizontal" and (config.height or 40) or (config.width or 200)
+  local size = orientation == 'horizontal' and (config.height or 40) or (config.width or 200)
   size = size * width_scale  -- Apply width/height scaling
   local visible_size = size * visibility
 
@@ -148,7 +148,7 @@ function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, conf
   -- Apply slide offset for edge animations (default 0)
   slide_offset = slide_offset or 0
 
-  if position == "top" then
+  if position == 'top' then
     -- If there's a regular toolbar, start after it; otherwise start at panel edge
     local start_y = regular_toolbar_bounds and regular_toolbar_bounds.y2 or y1
 
@@ -162,7 +162,7 @@ function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, conf
       w = x2 - x1,
       h = visible_size
     }
-  elseif position == "bottom" then
+  elseif position == 'bottom' then
     -- If there's a regular toolbar, start before it; otherwise start at panel edge
     local end_y = regular_toolbar_bounds and regular_toolbar_bounds.y1 or y2
 
@@ -176,7 +176,7 @@ function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, conf
       w = x2 - x1,
       h = visible_size
     }
-  elseif position == "left" then
+  elseif position == 'left' then
     local start_x = (not extend_from_edge and regular_toolbar_bounds) and regular_toolbar_bounds.x2 or x1
     local content_y1 = regular_toolbar_bounds and regular_toolbar_bounds.content_y1 or y1
     local content_y2 = regular_toolbar_bounds and regular_toolbar_bounds.content_y2 or y2
@@ -223,7 +223,7 @@ end
 --- @param bounds table {x, y, w, h}
 --- @param config table Overlay toolbar configuration
 --- @param rounding number Corner rounding
---- @param position string Position ("top", "bottom", "left", "right")
+--- @param position string Position ('top', 'bottom', 'left', 'right')
 local function draw_background(dl, bounds, config, rounding, position)
   if not config.bg_color then
     return  -- No backdrop by default
@@ -235,13 +235,13 @@ local function draw_background(dl, bounds, config, rounding, position)
   -- Left overlay: round right corners only (0xA = top-right + bottom-right)
   -- Right overlay: round left corners only (0x5 = top-left + bottom-left)
   local corner_flags = 0xF  -- Default: all corners
-  if position == "top" then
+  if position == 'top' then
     corner_flags = 0xC  -- Bottom corners only
-  elseif position == "bottom" then
+  elseif position == 'bottom' then
     corner_flags = 0x3  -- Top corners only
-  elseif position == "left" then
+  elseif position == 'left' then
     corner_flags = 0xA  -- Right corners only
-  elseif position == "right" then
+  elseif position == 'right' then
     corner_flags = 0x5  -- Left corners only
   end
 
@@ -257,7 +257,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param dl userdata ImGui draw list
 --- @param bounds table {x, y, w, h}
---- @param position string Position ("top", "bottom", "left", "right")
+--- @param position string Position ('top', 'bottom', 'left', 'right')
 --- @param anim_state table Animation state
 --- @param panel_id string Panel ID
 --- @return boolean True if button was clicked
@@ -266,13 +266,13 @@ local function draw_toggle_button(ctx, dl, bounds, position, anim_state, panel_i
   local btn_x, btn_y
 
   -- Position button based on orientation
-  if position == "left" then
+  if position == 'left' then
     btn_x = bounds.x + bounds.w - btn_size - 2
     btn_y = bounds.y + (bounds.h - btn_size) * 0.5
-  elseif position == "right" then
+  elseif position == 'right' then
     btn_x = bounds.x + 2
     btn_y = bounds.y + (bounds.h - btn_size) * 0.5
-  elseif position == "top" then
+  elseif position == 'top' then
     btn_x = bounds.x + (bounds.w - btn_size) * 0.5
     btn_y = bounds.y + bounds.h - btn_size - 2
   else -- bottom
@@ -282,20 +282,20 @@ local function draw_toggle_button(ctx, dl, bounds, position, anim_state, panel_i
 
   -- Simple invisible button for click detection
   ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
-  local clicked = ImGui.InvisibleButton(ctx, panel_id .. "_overlay_toggle", btn_size, btn_size)
+  local clicked = ImGui.InvisibleButton(ctx, panel_id .. '_overlay_toggle', btn_size, btn_size)
 
   -- Draw arrow indicator
   local mx, my = ImGui.GetMousePos(ctx)
   local is_hovering = mx >= btn_x and mx <= btn_x + btn_size and my >= btn_y and my <= btn_y + btn_size
   local color = is_hovering and 0xFFFFFFFF or 0xAAAAAAFF
 
-  local arrow_icon = anim_state.is_expanded and "<" or ">"
-  if position == "right" then
-    arrow_icon = anim_state.is_expanded and ">" or "<"
-  elseif position == "top" then
-    arrow_icon = anim_state.is_expanded and "^" or "v"
-  elseif position == "bottom" then
-    arrow_icon = anim_state.is_expanded and "v" or "^"
+  local arrow_icon = anim_state.is_expanded and '<' or '>'
+  if position == 'right' then
+    arrow_icon = anim_state.is_expanded and '>' or '<'
+  elseif position == 'top' then
+    arrow_icon = anim_state.is_expanded and '^' or 'v'
+  elseif position == 'bottom' then
+    arrow_icon = anim_state.is_expanded and 'v' or '^'
   end
 
   -- Draw button background
@@ -320,7 +320,7 @@ end
 --- @param anim_state table Animation state
 --- @param panel_state table Panel state
 --- @param panel_id string Panel ID
---- @param position string Position ("top", "bottom", "left", "right")
+--- @param position string Position ('top', 'bottom', 'left', 'right')
 --- @param rounding number Corner rounding
 function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_state, panel_state, panel_id, position, rounding)
   if not config or not config.enabled then
@@ -334,7 +334,7 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
   local button_clicked = false
 
   -- Draw toggle button for button-triggered overlays
-  if auto_hide_cfg.trigger == "button" then
+  if auto_hide_cfg.trigger == 'button' then
     button_clicked = draw_toggle_button(ctx, dl, bounds, position, anim_state, panel_id)
   end
 
@@ -348,7 +348,7 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
     local x1, y1, x2, y2 = table.unpack(panel_bounds)
     local is_in_hover_zone = false
 
-    if position == "left" or position == "right" then
+    if position == 'left' or position == 'right' then
       -- Vertical toolbar (left/right)
       local button_count = config.elements and #config.elements or 0
       local button_height = 40  -- Standard button height from sidebars layout
@@ -367,7 +367,7 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
       local hover_zone_outside = 30  -- Extend 30px outside panel
       local hover_zone_inside = 50   -- Extend 50px inside panel
 
-      if position == "left" then
+      if position == 'left' then
         local hover_zone_x1 = x1 - hover_zone_outside  -- Start outside panel
         local hover_zone_x2 = x1 + hover_zone_inside    -- End inside panel
         is_in_hover_zone = mx >= hover_zone_x1 and mx <= hover_zone_x2 and
@@ -378,7 +378,7 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
         is_in_hover_zone = mx >= hover_zone_x1 and mx <= hover_zone_x2 and
                           my >= hover_zone_y1 and my <= hover_zone_y2
       end
-    else -- position == "top" or position == "bottom"
+    else -- position == 'top' or position == 'bottom'
       -- Horizontal toolbar (top/bottom)
       local button_count = config.elements and #config.elements or 0
       local button_width = 80  -- Standard button width for horizontal toolbars
@@ -397,7 +397,7 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
       local hover_zone_outside = 30  -- Extend 30px outside panel
       local hover_zone_inside = 50   -- Extend 50px inside panel
 
-      if position == "top" then
+      if position == 'top' then
         local hover_zone_y1 = y1 - hover_zone_outside  -- Start outside panel
         local hover_zone_y2 = y1 + hover_zone_inside    -- End inside panel
         is_in_hover_zone = mx >= hover_zone_x1 and mx <= hover_zone_x2 and
@@ -451,13 +451,13 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
 
   -- Adjust clip rect based on position to clip at inner edge (after border)
   local clip_x1, clip_y1, clip_x2, clip_y2 = x1, y1, x2, y2
-  if position == "left" then
+  if position == 'left' then
     clip_x1 = x1 + panel_border_width  -- Clip at inner edge (after left border)
-  elseif position == "right" then
+  elseif position == 'right' then
     clip_x2 = x2 - panel_border_width  -- Clip at inner edge (before right border)
-  elseif position == "top" then
+  elseif position == 'top' then
     clip_y1 = y1 + panel_border_width  -- Clip at inner edge (after top border)
-  elseif position == "bottom" then
+  elseif position == 'bottom' then
     clip_y2 = y2 - panel_border_width  -- Clip at inner edge (before bottom border)
   end
 
@@ -467,7 +467,7 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
   if config.elements and #config.elements > 0 and anim_state.current > 0.01 then
     local orientation = get_orientation(position)
 
-    if orientation == "horizontal" then
+    if orientation == 'horizontal' then
       -- Use Header renderer for horizontal overlay toolbars (top/bottom)
       Header.draw_elements(ctx, dl, bounds.x, bounds.y, bounds.w, bounds.h, panel_state, config, position)
 
@@ -476,7 +476,7 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
       ImGui.Dummy(ctx, bounds.w, bounds.h)
     else
       -- Use Sidebars renderer for vertical overlay toolbars (left/right)
-      local side = (position == "left") and "left" or "right"
+      local side = (position == 'left') and 'left' or 'right'
       Sidebars.draw(ctx, dl, bounds.x, bounds.y, bounds.w, bounds.h, config, panel_id, side)
 
       -- Add dummy to establish window bounds for SetCursorPos calls
