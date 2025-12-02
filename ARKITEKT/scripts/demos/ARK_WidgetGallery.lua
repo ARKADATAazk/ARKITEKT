@@ -255,6 +255,52 @@ local function draw_gui(ctx)
   ImGui.Spacing(ctx)
 
   -- ========================================================================
+  -- PIANO
+  -- ========================================================================
+  draw_section_header(ctx, "Piano - Interactive keyboard")
+
+  -- Horizontal piano (2 octaves)
+  local piano_h = Ark.Piano(ctx, {
+    orientation = "horizontal",
+    start_note = 60,  -- Middle C
+    num_octaves = 2,
+    white_key_width = 18,
+    white_key_height = 70,
+    is_interactive = true,
+    active_notes = {},
+    on_note_press = function(note)
+      print("Piano note pressed:", note)
+    end,
+  })
+
+  ImGui.SameLine(ctx)
+  ImGui.Dummy(ctx, 20, 1)  -- Spacing
+  ImGui.SameLine(ctx)
+
+  -- Vertical piano (1 octave, display-only with active notes)
+  local c_major = {
+    [60] = true,  -- C
+    [62] = true,  -- D
+    [64] = true,  -- E
+    [65] = true,  -- F
+    [67] = true,  -- G
+    [69] = true,  -- A
+    [71] = true,  -- B
+  }
+
+  Ark.Piano(ctx, {
+    orientation = "vertical",
+    start_note = 60,
+    num_octaves = 1,
+    white_key_width = 18,
+    white_key_height = 70,
+    is_interactive = false,  -- Display only
+    active_notes = c_major,
+  })
+
+  ImGui.Spacing(ctx)
+
+  -- ========================================================================
   -- MEDIA ITEMS
   -- ========================================================================
   draw_section_header(ctx, "Media Items - Complete item tiles")

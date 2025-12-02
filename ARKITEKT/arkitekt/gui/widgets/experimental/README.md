@@ -167,6 +167,54 @@ Ark.MIDIPianoRoll(ctx, {
 
 ---
 
+### Piano
+**File**: `audio/piano.lua`
+**Status**: Prototype
+**Description**: Interactive piano keyboard for note input and visualization.
+
+**Features**:
+- Horizontal or vertical orientation
+- Configurable octave range (start_note + num_octaves or end_note)
+- Interactive mode (clickable keys) or display-only mode
+- Active note highlighting (for showing which notes are playing)
+- White and black keys with proper layout
+- Hover states
+- Returns pressed/released notes
+
+**Usage**:
+```lua
+-- Interactive piano (input device)
+local result = Ark.Piano(ctx, {
+  orientation = "horizontal",
+  start_note = 60,       -- Middle C
+  num_octaves = 2,       -- 2 octaves
+  white_key_width = 20,
+  white_key_height = 80,
+  is_interactive = true,
+  active_notes = {[64] = true, [67] = true},  -- E and G highlighted
+  on_note_press = function(note)
+    print("Note pressed:", note)
+  end,
+})
+
+-- Display-only piano (show scale/active notes)
+Ark.Piano(ctx, {
+  orientation = "vertical",
+  start_note = 48,
+  num_octaves = 3,
+  is_interactive = false,  -- Display only
+  active_notes = c_major_scale,
+})
+```
+
+**Known Issues**:
+- No scrollable mode yet (will clip if too many octaves)
+- No keyboard input support (only mouse)
+- Note release detection not implemented (would need state tracking)
+- Black keys overlap white keys (z-order), may cause click precision issues
+
+---
+
 ### MediaItem
 **File**: `audio/media_item.lua`
 **Status**: Prototype
