@@ -22,6 +22,10 @@ local state = {
   knob2 = 75,
   knob3 = 25,
 
+  -- Encoder values (endless rotation)
+  encoder_angle = 0,
+  encoder_value = 100,  -- Accumulated value
+
   -- Fader values
   fader1 = 0,    -- dB
   fader2 = -6,
@@ -175,6 +179,27 @@ local function draw_gui(ctx)
     color = Colors.hexrgb("#33CCFF"),
   })
   if knob3.changed then state.knob3 = knob3.value end
+
+  ImGui.Spacing(ctx)
+
+  -- ========================================================================
+  -- ENCODERS
+  -- ========================================================================
+  draw_section_header(ctx, "Encoders - Endless rotation (no bounds)")
+
+  local encoder = Ark.Encoder(ctx, {
+    label = "Value",
+    angle = state.encoder_angle,
+    sensitivity = 0.02,
+  })
+
+  if encoder.changed then
+    state.encoder_angle = encoder.angle
+    state.encoder_value = state.encoder_value + encoder.delta * 100
+  end
+
+  ImGui.SameLine(ctx)
+  ImGui.Text(ctx, string.format("Accumulated: %.1f", state.encoder_value))
 
   ImGui.Spacing(ctx)
 

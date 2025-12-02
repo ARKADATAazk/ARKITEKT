@@ -94,6 +94,7 @@ local MODULES = {
   Tree = 'arkitekt.gui.widgets.navigation.tree_view',
 
   -- Experimental Widgets (APIs may change, use with caution)
+  Encoder = 'arkitekt.gui.widgets.experimental.encoder',
   Fader = 'arkitekt.gui.widgets.experimental.fader',
   MediaItem = 'arkitekt.gui.widgets.experimental.audio.media_item',
   MIDIPianoRoll = 'arkitekt.gui.widgets.experimental.audio.midi_piano_roll',

@@ -6,6 +6,55 @@ This folder contains prototype widgets that are being developed and tested. Use 
 
 ## Current Experimental Widgets
 
+### Encoder
+**File**: `encoder.lua`
+**Status**: Prototype
+**Description**: Rotary encoder with endless rotation (no bounds) for relative adjustments.
+
+**Features**:
+- Endless rotation (no min/max bounds)
+- Tracks relative delta changes, not absolute values
+- Visual indicator shows rotation position
+- Adjustable sensitivity
+- Convenience constructors: `tempo()`, `fine()`, `coarse()`
+- Custom value display support
+
+**Usage**:
+```lua
+-- Basic encoder (returns delta on each frame)
+local result = Ark.Encoder(ctx, {
+  label = "Offset",
+  angle = encoder_angle,      -- Visual rotation state (persisted)
+  sensitivity = 0.01,
+})
+
+if result.changed then
+  encoder_angle = result.angle  -- Update visual state
+  value = value + result.delta   -- Apply delta to your value
+end
+
+-- Tempo encoder (shows BPM changes)
+local tempo_result = Ark.Encoder.tempo(ctx, {
+  angle = tempo_angle,
+})
+if tempo_result.changed then
+  tempo_angle = tempo_result.angle
+  bpm = bpm + tempo_result.delta * 100  -- Scale to BPM range
+end
+
+-- Fine/coarse adjustment
+Ark.Encoder.fine(ctx, { angle = fine_angle })     -- Low sensitivity
+Ark.Encoder.coarse(ctx, { angle = coarse_angle }) -- High sensitivity
+```
+
+**Known Issues**:
+- No tick marks or detents for tactile feedback
+- Visual wrapping is seamless (no indication of full rotation count)
+- No shift/alt modifier for sensitivity adjustment
+- Horizontal drag not supported (only vertical)
+
+---
+
 ### Fader
 **File**: `fader.lua`
 **Status**: Prototype
