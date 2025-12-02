@@ -14,7 +14,7 @@ local M = {}
 -- Accessor: item.name (override with opts.get_value)
 function M.compare_alpha(a, b, opts)
   opts = opts or {}
-  local get = opts.get_value or function(x) return x.name or "" end
+  local get = opts.get_value or function(x) return x.name or '' end
   return get(a):lower() < get(b):lower()
 end
 
@@ -27,13 +27,13 @@ function M.compare_index(a, b, opts)
 end
 
 -- Length/duration comparison
--- Accessor: item.length or (item["end"] - item.start) (override with opts.get_value)
+-- Accessor: item.length or (item['end'] - item.start) (override with opts.get_value)
 function M.compare_length(a, b, opts)
   opts = opts or {}
   local get = opts.get_value or function(x)
     if x.length then return x.length end
     if x.total_duration then return x.total_duration end
-    return (x["end"] or 0) - (x.start or 0)
+    return (x['end'] or 0) - (x.start or 0)
   end
   return get(a) < get(b)
 end
@@ -116,13 +116,13 @@ end
 -- @param list table The list to sort
 -- @param opts table Options:
 --   mode: string (comparator name) or function(a, b, opts) -> boolean
---   direction: "asc" (default) or "desc"
+--   direction: 'asc' (default) or 'desc'
 --   get_value: optional accessor function for the comparator
 -- @return table The sorted list (same reference)
 function M.apply(list, opts)
   opts = opts or {}
   local mode = opts.mode
-  local direction = opts.direction or "asc"
+  local direction = opts.direction or 'asc'
 
   -- No mode = no sorting
   if not mode then
@@ -131,7 +131,7 @@ function M.apply(list, opts)
 
   -- Resolve comparator (string lookup or direct function)
   local comparator
-  if type(mode) == "function" then
+  if type(mode) == 'function' then
     comparator = mode
   else
     comparator = M.COMPARATORS[mode]
@@ -147,7 +147,7 @@ function M.apply(list, opts)
   end)
 
   -- Reverse if descending
-  if direction == "desc" then
+  if direction == 'desc' then
     M.reverse(list)
   end
 
@@ -171,22 +171,22 @@ end
 
 -- Sort by alphabetical order
 function M.by_alpha(list, direction)
-  return M.apply(list, { mode = "alpha", direction = direction })
+  return M.apply(list, { mode = 'alpha', direction = direction })
 end
 
 -- Sort by index
 function M.by_index(list, direction)
-  return M.apply(list, { mode = "index", direction = direction })
+  return M.apply(list, { mode = 'index', direction = direction })
 end
 
 -- Sort by length/duration
 function M.by_length(list, direction)
-  return M.apply(list, { mode = "length", direction = direction })
+  return M.apply(list, { mode = 'length', direction = direction })
 end
 
 -- Sort by color (hue order)
 function M.by_color(list, direction)
-  return M.apply(list, { mode = "color", direction = direction })
+  return M.apply(list, { mode = 'color', direction = direction })
 end
 
 return M
