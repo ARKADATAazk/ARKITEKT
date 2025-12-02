@@ -93,6 +93,11 @@ local MODULES = {
   -- Navigation
   Tree = 'arkitekt.gui.widgets.navigation.tree_view',
 
+  -- Experimental Widgets (APIs may change, use with caution)
+  Fader = 'arkitekt.gui.widgets.experimental.fader',
+  VUMeter = 'arkitekt.gui.widgets.experimental.vu_meter',
+  XYPad = 'arkitekt.gui.widgets.experimental.xy_pad',
+
   -- Utilities (commonly used modules)
   Anim = 'arkitekt.core.animation',
   Colors = 'arkitekt.core.colors',
