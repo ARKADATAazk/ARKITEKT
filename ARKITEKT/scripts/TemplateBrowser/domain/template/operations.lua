@@ -13,18 +13,18 @@ function M.apply_to_selected_track(template_path, template_uuid, state)
   local track_count = reaper.CountSelectedTracks(0)
 
   if track_count == 0 then
-    state.set_status("No track selected. Please select a track first.", "warning")
+    state.set_status('No track selected. Please select a track first.', 'warning')
     return false
   end
 
   -- Read template file
-  local f, err = io.open(template_path, "r")
+  local f, err = io.open(template_path, 'r')
   if not f then
-    Logger.error("TEMPLATE", "Failed to read: %s - %s", template_path, err or "unknown")
-    state.set_status("Could not read template file", "error")
+    Logger.error('TEMPLATE', 'Failed to read: %s - %s', template_path, err or 'unknown')
+    state.set_status('Could not read template file', 'error')
     return false
   end
-  local chunk = f:read("*all")
+  local chunk = f:read('*all')
   f:close()
 
   reaper.Undo_BeginBlock()
@@ -36,7 +36,7 @@ function M.apply_to_selected_track(template_path, template_uuid, state)
     end
   end
 
-  reaper.Undo_EndBlock("Apply Track Template", -1)
+  reaper.Undo_EndBlock('Apply Track Template', -1)
   reaper.UpdateArrange()
 
   -- Track usage
@@ -63,25 +63,25 @@ function M.insert_as_new_track(template_path, template_uuid, state)
   -- Get insertion point (after selected track, or at end)
   local sel_track = reaper.GetSelectedTrack(0, 0)
   local insert_idx = sel_track
-    and reaper.GetMediaTrackInfo_Value(sel_track, "IP_TRACKNUMBER")
+    and reaper.GetMediaTrackInfo_Value(sel_track, 'IP_TRACKNUMBER')
     or reaper.CountTracks(0)
 
   -- Read template file
-  local f, err = io.open(template_path, "r")
+  local f, err = io.open(template_path, 'r')
   if not f then
-    Logger.error("TEMPLATE", "Failed to read: %s - %s", template_path, err or "unknown")
-    state.set_status("Could not read template file", "error")
+    Logger.error('TEMPLATE', 'Failed to read: %s - %s', template_path, err or 'unknown')
+    state.set_status('Could not read template file', 'error')
     return false
   end
-  local chunk = f:read("*all")
+  local chunk = f:read('*all')
   f:close()
 
   reaper.Undo_BeginBlock()
 
   -- Count how many tracks are in the template
   local track_count = 0
-  for line in chunk:gmatch("[^\r\n]+") do
-    if line:match("^<TRACK") then
+  for line in chunk:gmatch('[^\r\n]+') do
+    if line:match('^<TRACK') then
       track_count = track_count + 1
     end
   end
@@ -97,7 +97,7 @@ function M.insert_as_new_track(template_path, template_uuid, state)
     reaper.SetOnlyTrackSelected(new_track)
   end
 
-  reaper.Undo_EndBlock("Insert Track Template", -1)
+  reaper.Undo_EndBlock('Insert Track Template', -1)
   reaper.UpdateArrange()
   reaper.TrackList_AdjustWindows(false)
 

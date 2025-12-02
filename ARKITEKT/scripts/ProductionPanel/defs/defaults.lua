@@ -4,7 +4,7 @@
 
 return {
   WINDOW = {
-    TITLE = "Production Panel",
+    TITLE = 'Production Panel',
     WIDTH = 1200,
     HEIGHT = 700,
     MIN_WIDTH = 800,
@@ -13,7 +13,7 @@ return {
 
   MACROS = {
     COUNT = 8,
-    DEFAULT_NAME = "Macro",
+    DEFAULT_NAME = 'Macro',
     MIN_VALUE = 0.0,
     MAX_VALUE = 1.0,
     DEFAULT_VALUE = 0.0,

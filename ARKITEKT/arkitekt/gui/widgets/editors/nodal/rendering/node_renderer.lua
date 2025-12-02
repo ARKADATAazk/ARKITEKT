@@ -43,7 +43,7 @@ function M.render(ctx, node, animator, config)
   local x2, y2 = node.x + node.width, node.y + node.height
   
   -- Use dark neutral background instead of base_color
-  local bg_color = config.colors.bg_base or hexrgb("#1A1A1A")
+  local bg_color = config.colors.bg_base or hexrgb('#1A1A1A')
   
   -- Get colored chip color from mirror_mode
   local chip_color = require('arkitekt.gui.widgets.editors.nodal.core.node').get_base_color(node, config)
@@ -82,11 +82,11 @@ function M.render_header(ctx, dl, node, config, chip_color)
     alpha_factor = 1.0,
   })
   
-  local sequence_text = "#" .. (node.sequence_index or "?")
+  local sequence_text = '#' .. (node.sequence_index or '?')
   local seq_w, seq_h = ImGui.CalcTextSize(ctx, sequence_text)
   local seq_x = x1 + 24
   local seq_y = y1
-  Draw.text(dl, seq_x, seq_y, hexrgb("#888888"), sequence_text)
+  Draw.text(dl, seq_x, seq_y, hexrgb('#888888'), sequence_text)
   
   local name_x = seq_x + seq_w + 8
   local name_y = y1
@@ -99,15 +99,15 @@ function M.render_body(ctx, dl, node, config)
   
   local text_color = config.colors.text.body
   
-  local line1 = "Wwise: " .. node.properties.wwise_state
+  local line1 = 'Wwise: ' .. node.properties.wwise_state
   Draw.text(dl, x1, y1, text_color, line1)
   y1 = y1 + config.node.body_line_height
   
-  local line2 = "Loops: ×" .. node.properties.loop_count
+  local line2 = 'Loops: ×' .. node.properties.loop_count
   Draw.text(dl, x1, y1, text_color, line2)
   y1 = y1 + config.node.body_line_height
   
-  local line3 = "Transition: " .. node.properties.transition_type .. " (" .. node.properties.transition_duration .. "s)"
+  local line3 = 'Transition: ' .. node.properties.transition_type .. ' (' .. node.properties.transition_duration .. 's)'
   Draw.text(dl, x1, y1, text_color, line3)
 end
 
@@ -117,13 +117,13 @@ function M.render_loop_badge(ctx, dl, node, config, chip_color)
     padding_x = 6,
     padding_y = 3,
     margin = 6,
-    bg = hexrgb("#14181C"),
+    bg = hexrgb('#14181C'),
     border_alpha = 0x33,
     font_scale = 0.88,
   }
   
   local loop_count = node.properties.loop_count or 1
-  local badge_text = (loop_count == 0) and "∞" or ("×" .. loop_count)
+  local badge_text = (loop_count == 0) and '∞' or ('×' .. loop_count)
   
   local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
   bw = bw * badge_config.font_scale
@@ -140,12 +140,12 @@ function M.render_loop_badge(ctx, dl, node, config, chip_color)
     badge_config.rounding, 0, 0.5)
   
   Draw.text(dl, badge_x + badge_config.padding_x, badge_y + badge_config.padding_y, 
-    hexrgb("#FFFFFFDD"), badge_text)
+    hexrgb('#FFFFFFDD'), badge_text)
 end
 
 function M.render_triggers_ui(ctx, dl, node, config, chip_color)
   if not node.triggers or #node.triggers == 0 then
-    -- Show "Add Trigger" button even if no triggers
+    -- Show 'Add Trigger' button even if no triggers
     M.render_add_trigger_button(ctx, node, config)
     return
   end
@@ -157,7 +157,7 @@ function M.render_triggers_ui(ctx, dl, node, config, chip_color)
                    config.node.trigger_section_padding_top
   
   -- Section label
-  Draw.text(dl, x1, y_offset, config.colors.text.trigger_section, "⚡ TRIGGERS")
+  Draw.text(dl, x1, y_offset, config.colors.text.trigger_section, '⚡ TRIGGERS')
   y_offset = y_offset + trigger_config.section_label_height
   
   -- Render each trigger
@@ -202,13 +202,13 @@ function M.render_trigger_item(ctx, node, trigger, index, x, y, config, chip_col
   local item_width = node.width - config.node.padding * 2 - trigger_config.indent - trigger_config.delete_button_size - 4
   
   -- Event name (editable)
-  Draw.text(dl, indent, y, config.colors.text.body, "Event:")
+  Draw.text(dl, indent, y, config.colors.text.body, 'Event:')
   ImGui.SetCursorScreenPos(ctx, indent + 50, y - 2)
   ImGui.PushItemWidth(ctx, item_width - 50)
-  ImGui.PushID(ctx, "trigger_event_" .. node.guid .. "_" .. index)
+  ImGui.PushID(ctx, 'trigger_event_' .. node.guid .. '_' .. index)
   
-  local event_name = trigger.event or "OnEvent"
-  local changed, new_event = ImGui.InputText(ctx, "##event", event_name)
+  local event_name = trigger.event or 'OnEvent'
+  local changed, new_event = ImGui.InputText(ctx, '##event', event_name)
   if changed then
     trigger.event = new_event
   end
@@ -219,14 +219,14 @@ function M.render_trigger_item(ctx, node, trigger, index, x, y, config, chip_col
   y = y + trigger_config.item_height
   
   -- Target dropdown
-  Draw.text(dl, indent, y, config.colors.text.body, "→")
+  Draw.text(dl, indent, y, config.colors.text.body, '→')
   ImGui.SetCursorScreenPos(ctx, indent + trigger_config.label_width, y - 2)
   ImGui.PushItemWidth(ctx, item_width - trigger_config.label_width - trigger_config.mode_width - 4)
-  ImGui.PushID(ctx, "trigger_target_" .. node.guid .. "_" .. index)
+  ImGui.PushID(ctx, 'trigger_target_' .. node.guid .. '_' .. index)
   
-  local target_name = trigger.target_name or "Select Target..."
+  local target_name = trigger.target_name or 'Select Target...'
   
-  if ImGui.BeginCombo(ctx, "##target", target_name) then
+  if ImGui.BeginCombo(ctx, '##target', target_name) then
     for _, other_node in ipairs(M.available_nodes) do
       if other_node.guid ~= node.guid then  -- Don't allow self-targeting
         local is_selected = trigger.target_section == other_node.guid
@@ -246,11 +246,11 @@ function M.render_trigger_item(ctx, node, trigger, index, x, y, config, chip_col
   -- Mode dropdown
   ImGui.SameLine(ctx, 0, 4)
   ImGui.PushItemWidth(ctx, trigger_config.mode_width)
-  ImGui.PushID(ctx, "trigger_mode_" .. node.guid .. "_" .. index)
+  ImGui.PushID(ctx, 'trigger_mode_' .. node.guid .. '_' .. index)
   
-  local mode = trigger.mode or "INCREMENTAL"
-  if ImGui.BeginCombo(ctx, "##mode", mode) then
-    local modes = {"IMMEDIATE", "INCREMENTAL", "END_OF_SEGMENT"}
+  local mode = trigger.mode or 'INCREMENTAL'
+  if ImGui.BeginCombo(ctx, '##mode', mode) then
+    local modes = {'IMMEDIATE', 'INCREMENTAL', 'END_OF_SEGMENT'}
     for _, m in ipairs(modes) do
       if ImGui.Selectable(ctx, m, mode == m) then
         trigger.mode = m
@@ -265,8 +265,8 @@ function M.render_trigger_item(ctx, node, trigger, index, x, y, config, chip_col
   
   -- Delete button
   ImGui.SameLine(ctx, 0, 4)
-  ImGui.PushID(ctx, "trigger_delete_" .. node.guid .. "_" .. index)
-  local should_remove = ImGui.Button(ctx, "×", trigger_config.delete_button_size, trigger_config.delete_button_size)
+  ImGui.PushID(ctx, 'trigger_delete_' .. node.guid .. '_' .. index)
+  local should_remove = ImGui.Button(ctx, '×', trigger_config.delete_button_size, trigger_config.delete_button_size)
   ImGui.PopID(ctx)
   
   return changed, should_remove
@@ -288,7 +288,7 @@ function M.render_add_trigger_button(ctx, node, config)
   
   local x = node.x + config.node.padding + trigger_config.indent
   ImGui.SetCursorScreenPos(ctx, x, y_offset)
-  ImGui.PushID(ctx, "add_trigger_" .. node.guid)
+  ImGui.PushID(ctx, 'add_trigger_' .. node.guid)
   
   if ImGui.Button(ctx, trigger_config.add_button_text, button_width, trigger_config.add_button_height) then
     -- Add new trigger
@@ -298,10 +298,10 @@ function M.render_add_trigger_button(ctx, node, config)
     
     local new_trigger = {
       guid = reaper.genGuid(),
-      event = "OnEvent" .. (#node.triggers + 1),
+      event = 'OnEvent' .. (#node.triggers + 1),
       target_section = nil,
-      target_name = "Select Target...",
-      mode = "INCREMENTAL",
+      target_name = 'Select Target...',
+      mode = 'INCREMENTAL',
     }
     
     node.triggers[#node.triggers + 1] = new_trigger

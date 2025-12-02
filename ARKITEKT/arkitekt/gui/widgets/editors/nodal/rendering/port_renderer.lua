@@ -18,7 +18,7 @@ function M.render(ctx, dl, port, color, config)
   ImGui.DrawList_AddCircleFilled(dl, port.x, port.y, size, color)
   
   if port.hovered and port.event_name then
-    ImGui.SetTooltip(ctx, port.event_name .. " → " .. (port.jump_mode or ""))
+    ImGui.SetTooltip(ctx, port.event_name .. ' → ' .. (port.jump_mode or ''))
   end
 end
 

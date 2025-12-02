@@ -65,7 +65,7 @@ function EnvelopeView:get_param_index(param_name)
   -- Get parameter index from theme layout
   -- Returns nil if not found
   local ok, idx = pcall(reaper.ThemeLayout_GetParameter, param_name)
-  if ok and type(idx) == "number" then
+  if ok and type(idx) == 'number' then
     return idx
   end
   return nil
@@ -85,18 +85,18 @@ function EnvelopeView:draw(ctx, shell_state)
 
   -- Title
   ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
-  ImGui.Text(ctx, "Envelope Panel")
+  ImGui.Text(ctx, 'Envelope Panel')
   ImGui.PopFont(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-  ImGui.Text(ctx, "Configure envelope appearance and element visibility")
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+  ImGui.Text(ctx, 'Configure envelope appearance and element visibility')
   ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 8)
 
   -- Single scrollable content area
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "env_content", avail_w, 0, 1) then
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+  if ImGui.BeginChild(ctx, 'env_content', avail_w, 0, 1) then
     -- Draw background pattern (using panel defaults)
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
@@ -114,13 +114,13 @@ function EnvelopeView:draw(ctx, shell_state)
 
     -- Layout & Size Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "ACTIVE LAYOUT & SIZE")
+    ImGui.Text(ctx, 'ACTIVE LAYOUT & SIZE')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
     -- Active Layout
     ImGui.AlignTextToFramePadding(ctx)
-    ImGui.Text(ctx, "Active Layout")
+    ImGui.Text(ctx, 'Active Layout')
     ImGui.SameLine(ctx, 120)
 
     for _, layout in ipairs({'A', 'B', 'C'}) do
@@ -130,13 +130,13 @@ function EnvelopeView:draw(ctx, shell_state)
         width = 50,
         height = 24,
         is_toggled = is_active,
-        preset_name = "BUTTON_TOGGLE_WHITE",
+        preset_name = 'BUTTON_TOGGLE_WHITE',
         on_click = function()
           self.active_layout = layout
           ThemeParams.set_active_layout('envcp', layout)
           self:load_from_theme()
         end
-      }, "env_layout_" .. layout) then
+      }, 'env_layout_' .. layout) then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -146,7 +146,7 @@ function EnvelopeView:draw(ctx, shell_state)
 
     -- Apply Size (Envelope only has one layout, no A/B/C)
     ImGui.AlignTextToFramePadding(ctx)
-    ImGui.Text(ctx, "Apply Size")
+    ImGui.Text(ctx, 'Apply Size')
     ImGui.SameLine(ctx, 120)
 
     for _, size in ipairs({'100%', '150%', '200%'}) do
@@ -158,7 +158,7 @@ function EnvelopeView:draw(ctx, shell_state)
           local scale = (size == '100%') and '' or (size .. '_')
           ThemeParams.apply_layout_to_tracks('envcp', 'A', scale)
         end
-      }, "env_size_" .. size) then
+      }, 'env_size_' .. size) then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -168,7 +168,7 @@ function EnvelopeView:draw(ctx, shell_state)
 
     -- Sizing Controls Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "SIZING CONTROLS")
+    ImGui.Text(ctx, 'SIZING CONTROLS')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
@@ -185,7 +185,7 @@ function EnvelopeView:draw(ctx, shell_state)
       local label_text_w = ImGui.CalcTextSize(ctx, label)
       ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + label_w - label_text_w)
       ImGui.AlignTextToFramePadding(ctx)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
       ImGui.Text(ctx, label)
       ImGui.PopStyleColor(ctx)
 
@@ -207,18 +207,18 @@ function EnvelopeView:draw(ctx, shell_state)
 
     -- Column 1: Element Sizing
     ImGui.BeginGroup(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "Element Sizing")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.Text(ctx, 'Element Sizing')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
 
-    local changed, new_idx = draw_spinner_row("Name Size", "envcp_labelSize", self.envcp_labelSize_idx, SPINNER_VALUES.envcp_labelSize)
+    local changed, new_idx = draw_spinner_row('Name Size', 'envcp_labelSize', self.envcp_labelSize_idx, SPINNER_VALUES.envcp_labelSize)
     if changed then
       self.envcp_labelSize_idx = new_idx
       ThemeParams.set_param('envcp_labelSize', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Fader Size", "envcp_fader_size", self.envcp_fader_size_idx, SPINNER_VALUES.envcp_fader_size)
+    changed, new_idx = draw_spinner_row('Fader Size', 'envcp_fader_size', self.envcp_fader_size_idx, SPINNER_VALUES.envcp_fader_size)
     if changed then
       self.envcp_fader_size_idx = new_idx
       ThemeParams.set_param('envcp_fader_size', new_idx, true)
@@ -229,12 +229,12 @@ function EnvelopeView:draw(ctx, shell_state)
     -- Column 2: Options
     ImGui.SameLine(ctx, col_w + 8)
     ImGui.BeginGroup(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "Options")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.Text(ctx, 'Options')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
 
-    if Ark.Checkbox.draw_at_cursor(ctx, "Match folder indent", self.envcp_folder_indent, nil, "envcp_folder_indent") then
+    if Ark.Checkbox.draw_at_cursor(ctx, 'Match folder indent', self.envcp_folder_indent, nil, 'envcp_folder_indent') then
       self.envcp_folder_indent = not self.envcp_folder_indent
       ThemeParams.set_param('envcp_folder_indent', self.envcp_folder_indent and 1 or 0, true)
     end
@@ -245,12 +245,12 @@ function EnvelopeView:draw(ctx, shell_state)
 
     -- Element Visibility Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "ELEMENT VISIBILITY")
+    ImGui.Text(ctx, 'ELEMENT VISIBILITY')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-    ImGui.Text(ctx, "Control which envelope elements are visible")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+    ImGui.Text(ctx, 'Control which envelope elements are visible')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 2)
 
@@ -271,9 +271,9 @@ function EnvelopeView:draw(ctx, shell_state)
     ImGui.BeginGroup(ctx)
 
     -- Left column
-    self.show_env_volume = draw_checkbox_row("Show volume control", self.show_env_volume, "env_volume")
-    self.show_env_pan = draw_checkbox_row("Show pan control", self.show_env_pan, "env_pan")
-    self.show_env_fader = draw_checkbox_row("Show fader", self.show_env_fader, "env_fader")
+    self.show_env_volume = draw_checkbox_row('Show volume control', self.show_env_volume, 'env_volume')
+    self.show_env_pan = draw_checkbox_row('Show pan control', self.show_env_pan, 'env_pan')
+    self.show_env_fader = draw_checkbox_row('Show fader', self.show_env_fader, 'env_fader')
 
     ImGui.EndGroup(ctx)
 
@@ -282,9 +282,9 @@ function EnvelopeView:draw(ctx, shell_state)
     ImGui.BeginGroup(ctx)
 
     -- Right column
-    self.show_env_values = draw_checkbox_row("Show values", self.show_env_values, "env_values")
-    self.show_env_mod_values = draw_checkbox_row("Show modulation values", self.show_env_mod_values, "env_mod_values")
-    self.env_hide_tcp_env = draw_checkbox_row("Hide TCP envelope controls", self.env_hide_tcp_env, "env_hide_tcp")
+    self.show_env_values = draw_checkbox_row('Show values', self.show_env_values, 'env_values')
+    self.show_env_mod_values = draw_checkbox_row('Show modulation values', self.show_env_mod_values, 'env_mod_values')
+    self.env_hide_tcp_env = draw_checkbox_row('Hide TCP envelope controls', self.env_hide_tcp_env, 'env_hide_tcp')
 
     ImGui.EndGroup(ctx)
 

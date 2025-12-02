@@ -189,7 +189,7 @@ function M.draw_arkitekt(ctx, x, y, size, color)
   local left_mid_x, left_mid_y = cx - s * 0.45, cy - s * 0.05
   local right_mid_x, right_mid_y = cx + s * 0.45, cy - s * 0.05
   
-  -- Draw connecting lines (triangle "A")
+  -- Draw connecting lines (triangle 'A')
   local thickness = math.max(1.5 * dpi, 1.0)
   ImGui.DrawList_AddLine(draw_list, top_x, top_y, left_bot_x, left_bot_y, color, thickness)
   ImGui.DrawList_AddLine(draw_list, top_x, top_y, right_bot_x, right_bot_y, color, thickness)
@@ -261,7 +261,7 @@ function M.draw_arkitekt_v2(ctx, x, y, size, color)
     color, bar_h * 0.2)
 end
 
--- Alternative: Simple "A" monogram
+-- Alternative: Simple 'A' monogram
 function M.draw_simple_a(ctx, x, y, size, color)
   local draw_list = ImGui.GetWindowDrawList(ctx)
   local dpi = ImGui.GetWindowDpiScale(ctx)
@@ -269,7 +269,7 @@ function M.draw_simple_a(ctx, x, y, size, color)
   local s = size * dpi
   local cx, cy = x + s * 0.5, y + s * 0.5
   
-  -- Triangle "A"
+  -- Triangle 'A'
   local top_x, top_y = cx, cy - s * 0.4
   local left_x, left_y = cx - s * 0.35, cy + s * 0.4
   local right_x, right_y = cx + s * 0.35, cy + s * 0.4

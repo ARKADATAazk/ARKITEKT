@@ -25,7 +25,7 @@ function M.render(ctx, connection, nodes, config)
   end
   
   -- Draw Manhattan path (series of line segments)
-  M.render_manhattan_path(dl, points, connection.color, thickness, connection.type == "trigger", config)
+  M.render_manhattan_path(dl, points, connection.color, thickness, connection.type == 'trigger', config)
   
   if connection.animated then
     M.render_animated_dot_manhattan(dl, points, connection.color, config)
@@ -181,7 +181,7 @@ function M.render_connection_label_manhattan(ctx, dl, connection, points, config
       local bg_y2 = mid_y + text_h / 2 + padding
       
       ImGui.DrawList_AddRectFilled(dl, bg_x1, bg_y1, bg_x2, bg_y2, 
-        config.colors.connection_label_bg or hexrgb("#1A1A1AEE"), 
+        config.colors.connection_label_bg or hexrgb('#1A1A1AEE'), 
         config.connection.label_bg_rounding or 4)
       
       ImGui.DrawList_AddRect(dl, bg_x1, bg_y1, bg_x2, bg_y2, connection.color, 

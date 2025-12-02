@@ -121,7 +121,7 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
   if not self.audio_grid_opts then return end
   header_offset = header_offset or 0
 
-  if ImGui.BeginChild(ctx, "audio_grid", avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
+  if ImGui.BeginChild(ctx, 'audio_grid', avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
     -- Check for CTRL/ALT+wheel BEFORE grid draws (prevents scroll)
     local saved_scroll = nil
     local wheel_y = ImGui.GetMouseWheel(ctx)
@@ -187,7 +187,7 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
   if not self.midi_grid_opts then return end
   header_offset = header_offset or 0
 
-  if ImGui.BeginChild(ctx, "midi_grid", avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
+  if ImGui.BeginChild(ctx, 'midi_grid', avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
     -- Check for CTRL/ALT+wheel BEFORE grid draws (prevents scroll)
     local saved_scroll = nil
     local wheel_y = ImGui.GetMouseWheel(ctx)

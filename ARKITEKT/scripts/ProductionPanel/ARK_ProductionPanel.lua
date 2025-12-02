@@ -22,7 +22,7 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
+local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 
 -- ============================================================================
 -- IMPORTS
@@ -37,8 +37,8 @@ local Colors = require('arkitekt.core.colors')
 -- ============================================================================
 -- SETTINGS & STATE INITIALIZATION
 -- ============================================================================
-local data_dir = Ark._bootstrap.get_data_dir("ProductionPanel")
-local settings = Settings.new(data_dir, "settings.json")
+local data_dir = Ark._bootstrap.get_data_dir('ProductionPanel')
+local settings = Settings.new(data_dir, 'settings.json')
 
 State.initialize(settings)
 
@@ -47,11 +47,11 @@ State.initialize(settings)
 -- ============================================================================
 Shell.run({
   title        = Defaults.WINDOW.TITLE,
-  version      = "v0.1.0-proto",
+  version      = 'v0.1.0-proto',
   settings     = settings,
   initial_size = { w = Defaults.WINDOW.WIDTH, h = Defaults.WINDOW.HEIGHT },
   min_size     = { w = Defaults.WINDOW.MIN_WIDTH, h = Defaults.WINDOW.MIN_HEIGHT },
-  icon_color   = Colors.hexrgb("#D94A4A"),
+  icon_color   = Colors.hexrgb('#D94A4A'),
 
   draw = function(ctx, shell_state)
     GUI.draw(ctx, shell_state)

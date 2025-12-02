@@ -16,9 +16,9 @@ local M = {}
 -- - M.save_track_filter() - Save track filter state
 
 function M.run_tests()
-  print("[storage_test] Running tests...")
+  print('[storage_test] Running tests...')
   -- Test stubs to be implemented
-  print("[storage_test] All tests passed (stubs only)")
+  print('[storage_test] All tests passed (stubs only)')
   return true
 end
 

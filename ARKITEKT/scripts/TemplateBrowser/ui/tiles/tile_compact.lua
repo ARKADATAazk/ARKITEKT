@@ -46,10 +46,10 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local hover_factor = animator:get(template.uuid, 'hover')
 
   -- Color definitions (inspired by Parameter Library)
-  local BG_BASE = hexrgb("#252525")
-  local BG_HOVER = hexrgb("#2D2D2D")
-  local BRD_BASE = hexrgb("#333333")
-  local BRD_HOVER = hexrgb("#5588FF")
+  local BG_BASE = hexrgb('#252525')
+  local BG_HOVER = hexrgb('#2D2D2D')
+  local BRD_BASE = hexrgb('#333333')
+  local BRD_HOVER = hexrgb('#5588FF')
   local rounding = 3
 
   -- Background color with smooth hover transition and subtle color tint
@@ -92,7 +92,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
       local b = math.floor(190 * (1 - blend) + cb * blend)
       ant_color = Ark.Colors.components_to_rgba(r, g, b, 0x99)
     else
-      ant_color = hexrgb("#C0C0C099")  -- Lighter grey with 60% opacity
+      ant_color = hexrgb('#C0C0C099')  -- Lighter grey with 60% opacity
     end
     MarchingAnts.draw(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y1 + tile_h - 0.5, ant_color, 1.5, rounding, 8, 6, 20)
   else
@@ -128,9 +128,9 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Section 1: Template Name (left-aligned, takes ~35% width)
   local available_width = tile_w - (padding * 2)
   local name_width = math.floor(available_width * M.CONFIG.name_width_fraction)
-  local name_color = hexrgb("#CCCCCC")  -- Match Parameter Library text color
+  local name_color = hexrgb('#CCCCCC')  -- Match Parameter Library text color
   if state.selected or state.hover then
-    name_color = hexrgb("#FFFFFF")
+    name_color = hexrgb('#FFFFFF')
   end
 
   local truncated_name = truncate_text(ctx, template.name, name_width - 8)
@@ -140,16 +140,16 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Section 2: Track count badge (if multi-track)
   local track_count = template.track_count or 1
   if track_count > 1 then
-    local track_text = track_count .. "T"
-    local track_color = Ark.Colors.with_alpha(hexrgb("#A8A8A8"), 200)
+    local track_text = track_count .. 'T'
+    local track_color = Ark.Colors.with_alpha(hexrgb('#A8A8A8'), 200)
     Ark.Draw.text(dl, cursor_x, cursor_y, track_color, track_text)
     cursor_x = cursor_x + ImGui.CalcTextSize(ctx, track_text) + 12
   end
 
   -- Section 3: VST Info (just show count badge, no chips due to small height)
   if template.fx and #template.fx > 0 then
-    local vst_text = string.format("VST:%d", #template.fx)
-    local vst_color = Ark.Colors.with_alpha(hexrgb("#6A9EFF"), 200)
+    local vst_text = string.format('VST:%d', #template.fx)
+    local vst_color = Ark.Colors.with_alpha(hexrgb('#6A9EFF'), 200)
     Ark.Draw.text(dl, cursor_x, cursor_y, vst_color, vst_text)
     cursor_x = cursor_x + ImGui.CalcTextSize(ctx, vst_text) + 12
   else
@@ -158,8 +158,8 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
   -- Section 4: Tags (just show count, no chips due to small height)
   if tmpl_meta and tmpl_meta.tags and #tmpl_meta.tags > 0 then
-    local tags_text = string.format("Tags:%d", #tmpl_meta.tags)
-    local tags_color = Ark.Colors.with_alpha(hexrgb("#888888"), 180)
+    local tags_text = string.format('Tags:%d', #tmpl_meta.tags)
+    local tags_color = Ark.Colors.with_alpha(hexrgb('#888888'), 180)
     Ark.Draw.text(dl, cursor_x, cursor_y, tags_color, tags_text)
   end
 
@@ -177,9 +177,9 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Star color: light grey when enabled, dark when disabled
   local star_color
   if is_favorite then
-    star_color = hexrgb("#E8E8E8")  -- Light grey when enabled
+    star_color = hexrgb('#E8E8E8')  -- Light grey when enabled
   else
-    star_color = is_star_hovered and hexrgb("#282828A0") or hexrgb("#18181850")
+    star_color = is_star_hovered and hexrgb('#282828A0') or hexrgb('#18181850')
   end
 
   -- Render star using remix icon font
@@ -198,7 +198,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
     ImGui.PopFont(ctx)
   else
     -- Fallback to Unicode star if no icon font
-    local star_char_fallback = "★"
+    local star_char_fallback = '★'
     local text_w, text_h = ImGui.CalcTextSize(ctx, star_char_fallback)
     local star_text_x = star_x + (star_size - text_w) * 0.5
     local star_text_y = star_y + (star_size - text_h) * 0.5

@@ -32,7 +32,7 @@ local state = {
   show_tracks = true,  -- Show track list visualization
 
   -- Context (tcp, mcp, etc.)
-  context = "tcp",
+  context = 'tcp',
 }
 
 -- Initialize state
@@ -44,7 +44,7 @@ function M.initialize(settings)
     state.parent_h = settings:get('parent_h', 90)
     state.show_grid = settings:get('show_grid', true)
     state.show_attachments = settings:get('show_attachments', true)
-    state.context = settings:get('context', "tcp")
+    state.context = settings:get('context', 'tcp')
 
     -- Load saved elements
     local saved_elements = settings:get('elements', nil)
@@ -242,14 +242,14 @@ function M.load_tcp_defaults()
 
   -- Add some common TCP elements with reasonable defaults
   local defaults = {
-    "tcp.size",
-    "tcp.mute",
-    "tcp.solo",
-    "tcp.recarm",
-    "tcp.volume",
-    "tcp.pan",
-    "tcp.label",
-    "tcp.meter",
+    'tcp.size',
+    'tcp.mute',
+    'tcp.solo',
+    'tcp.recarm',
+    'tcp.volume',
+    'tcp.pan',
+    'tcp.label',
+    'tcp.meter',
   }
 
   for _, id in ipairs(defaults) do

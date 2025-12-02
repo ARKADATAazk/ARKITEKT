@@ -16,9 +16,9 @@ local state = {
 
   -- Configurations system - multiple named assembler presets
   configurations = {
-    active = "Default",
+    active = 'Default',
     items = {
-      ["Default"] = {
+      ['Default'] = {
         active_packages = {},
         package_order = {},
         package_exclusions = {},
@@ -28,9 +28,9 @@ local state = {
   },
 
   -- UI state
-  active_tab = "ASSEMBLER",
+  active_tab = 'ASSEMBLER',
   demo_mode = true,
-  search_text = "",
+  search_text = '',
   filters = {
     TCP = true,
     MCP = true,
@@ -38,13 +38,13 @@ local state = {
     Global = true,
   },
   tile_size = 220,
-  output_mode = "folder",  -- "folder" (unpacked) or "zip"
+  output_mode = 'folder',  -- 'folder' (unpacked) or 'zip'
   show_default_60_params = true,  -- Show Default 6.0 specific parameters in TCP/MCP views
 
   -- Theme info
-  theme_status = "direct",  -- or "zip-ready", "needs-link", etc.
-  theme_name = "Default Theme",
-  cache_status = "ready",
+  theme_status = 'direct',  -- or 'zip-ready', 'needs-link', etc.
+  theme_name = 'Default Theme',
+  cache_status = 'ready',
 }
 
 -- ============================================================================
@@ -55,12 +55,12 @@ function M.initialize(settings)
   state.settings = settings
 
   if settings then
-    state.active_tab = settings:get('active_tab', "ASSEMBLER")
+    state.active_tab = settings:get('active_tab', 'ASSEMBLER')
     state.demo_mode = settings:get('demo_mode', true)
-    state.search_text = settings:get('search_text', "")
+    state.search_text = settings:get('search_text', '')
     state.filters = settings:get('filters', state.filters)
     state.tile_size = settings:get('tile_size', 220)
-    state.output_mode = settings:get('output_mode', "folder")
+    state.output_mode = settings:get('output_mode', 'folder')
     state.show_default_60_params = settings:get('show_default_60_params', true)
 
     -- Load configurations
@@ -68,8 +68,8 @@ function M.initialize(settings)
     if saved_configs and saved_configs.items and saved_configs.active then
       state.configurations = saved_configs
       -- Ensure Default always exists
-      if not state.configurations.items["Default"] then
-        state.configurations.items["Default"] = {
+      if not state.configurations.items['Default'] then
+        state.configurations.items['Default'] = {
           active_packages = {},
           package_order = {},
           package_exclusions = {},
@@ -78,7 +78,7 @@ function M.initialize(settings)
       end
       -- Ensure active config exists
       if not state.configurations.items[state.configurations.active] then
-        state.configurations.active = "Default"
+        state.configurations.active = 'Default'
       end
     end
   end
@@ -282,14 +282,14 @@ function M.add_configuration(name, clone_from_current)
 end
 
 function M.delete_configuration(name)
-  if name == "Default" then return false end  -- Can't delete default
+  if name == 'Default' then return false end  -- Can't delete default
   if not state.configurations.items[name] then return false end
 
   state.configurations.items[name] = nil
 
   -- Switch to Default if we deleted the active one
   if state.configurations.active == name then
-    state.configurations.active = "Default"
+    state.configurations.active = 'Default'
     M.update_resolution()
   end
 
@@ -298,7 +298,7 @@ function M.delete_configuration(name)
 end
 
 function M.rename_configuration(old_name, new_name)
-  if old_name == "Default" then return false end  -- Can't rename default
+  if old_name == 'Default' then return false end  -- Can't rename default
   if not state.configurations.items[old_name] then return false end
   if state.configurations.items[new_name] then return false end  -- Name taken
 

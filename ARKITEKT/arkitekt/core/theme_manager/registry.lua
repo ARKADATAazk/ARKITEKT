@@ -50,7 +50,7 @@ end
 --- @param script_name string Name of the script
 --- @param palette table Flat palette with DSL wrappers
 function M.register_palette(script_name, palette)
-  if type(script_name) ~= "string" or type(palette) ~= "table" then
+  if type(script_name) ~= 'string' or type(palette) ~= 'table' then
     return
   end
   M.script_palettes[script_name] = palette
@@ -66,10 +66,10 @@ end
 
 --- Patterns for keys that should use normalized transforms (same as engine.lua)
 local NORMALIZE_PATTERNS = {
-  "_[Bb][Rr][Ii][Gg][Hh][Tt][Nn][Ee][Ss][Ss]$",   -- _brightness (any case)
-  "_[Ss][Aa][Tt][Uu][Rr][Aa][Tt][Ii][Oo][Nn]$",   -- _saturation (any case)
-  "[Bb][Rr][Ii][Gg][Hh][Tt][Nn][Ee][Ss][Ss]$",    -- BRIGHTNESS (any case, no underscore)
-  "[Ss][Aa][Tt][Uu][Rr][Aa][Tt][Ii][Oo][Nn]$",    -- SATURATION (any case, no underscore)
+  '_[Bb][Rr][Ii][Gg][Hh][Tt][Nn][Ee][Ss][Ss]$',   -- _brightness (any case)
+  '_[Ss][Aa][Tt][Uu][Rr][Aa][Tt][Ii][Oo][Nn]$',   -- _saturation (any case)
+  '[Bb][Rr][Ii][Gg][Hh][Tt][Nn][Ee][Ss][Ss]$',    -- BRIGHTNESS (any case, no underscore)
+  '[Ss][Aa][Tt][Uu][Rr][Aa][Tt][Ii][Oo][Nn]$',    -- SATURATION (any case, no underscore)
 }
 
 --- Check if a key should use normalized transform
@@ -111,7 +111,7 @@ function M.get_computed_palette(script_name, current_t)
 
   for key, def in pairs(palette_def) do
     -- Use unified derive_entry if BG_BASE available, otherwise fallback
-    if type(def) == "table" and def.mode == "offset" then
+    if type(def) == 'table' and def.mode == 'offset' then
       -- Offset mode requires BG_BASE
       if bg_base then
         computed[key] = Engine.derive_entry(bg_base, def, current_t, key)
@@ -119,13 +119,13 @@ function M.get_computed_palette(script_name, current_t)
         -- Fallback: can't compute offset without BG_BASE
         computed[key] = nil
       end
-    elseif type(def) == "table" and def.mode then
+    elseif type(def) == 'table' and def.mode then
       -- snap or lerp
       local resolved = Engine.resolve_value(def, current_t)
-      if type(resolved) == "string" then
+      if type(resolved) == 'string' then
         -- Hex string → convert to RGBA
-        computed[key] = Colors.hexrgb(resolved .. "FF")
-      elseif type(resolved) == "number" then
+        computed[key] = Colors.hexrgb(resolved .. 'FF')
+      elseif type(resolved) == 'number' then
         -- Number → apply normalization if key matches pattern
         if should_normalize(key) then
           resolved = Engine.normalize_to_multiplier(resolved)

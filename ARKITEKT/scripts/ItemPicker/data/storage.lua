@@ -6,8 +6,8 @@
 local M = {}
 local JSON = require('arkitekt.core.json')
 
-local EXTNAME = "ARK_ItemPicker"
-local SETTINGS_KEY = "settings"
+local EXTNAME = 'ARK_ItemPicker'
+local SETTINGS_KEY = 'settings'
 
 -- Default settings
 local function get_default_settings()
@@ -20,37 +20,37 @@ local function get_default_settings()
     show_audio = true,
     show_midi = true,
     focus_keyboard_on_init = true,
-    search_string = "",
+    search_string = '',
     tile_width = nil,  -- nil = use config default
     tile_height = nil,  -- nil = use config default
     split_midi_by_track = false,
     group_items_by_name = true,
     separator_position = nil,
     separator_position_horizontal = nil,
-    sort_mode = "none",
+    sort_mode = 'none',
     sort_reverse = false,
     waveform_quality = 1.0,
     waveform_filled = true,
     waveform_zero_line = false,
     show_visualization_in_small_tiles = false,
     enable_tile_fx = true,
-    layout_mode = "vertical",
+    layout_mode = 'vertical',
     enable_region_processing = false,  -- Enable region detection and filtering
     show_region_tags = false,  -- Show region tags on item tiles (only if processing enabled)
-    search_mode = "items",  -- Search mode: "items", "tracks", "regions", "mixed"
+    search_mode = 'items',  -- Search mode: 'items', 'tracks', 'regions', 'mixed'
   }
 end
 
 function M.load_settings()
   local has_state, state_str = reaper.GetProjExtState(0, EXTNAME, SETTINGS_KEY)
 
-  if not has_state or has_state == 0 or state_str == "" then
+  if not has_state or has_state == 0 or state_str == '' then
     return get_default_settings()
   end
 
   -- SECURITY FIX: Use safe JSON.decode instead of unsafe load()
   local settings = JSON.decode(state_str)
-  if not settings or type(settings) ~= "table" then
+  if not settings or type(settings) ~= 'table' then
     return get_default_settings()
   end
 
@@ -77,15 +77,15 @@ end
 
 -- Disabled items persistence
 function M.load_disabled_items()
-  local has_state, state_str = reaper.GetProjExtState(0, EXTNAME, "disabled_items")
+  local has_state, state_str = reaper.GetProjExtState(0, EXTNAME, 'disabled_items')
 
-  if not has_state or has_state == 0 or state_str == "" then
+  if not has_state or has_state == 0 or state_str == '' then
     return { audio = {}, midi = {} }
   end
 
   -- SECURITY FIX: Use safe JSON.decode instead of unsafe load()
   local disabled = JSON.decode(state_str)
-  if not disabled or type(disabled) ~= "table" then
+  if not disabled or type(disabled) ~= 'table' then
     return { audio = {}, midi = {} }
   end
 
@@ -98,21 +98,21 @@ function M.save_disabled_items(disabled)
   -- SECURITY FIX: Use safe JSON.encode instead of custom serialization
   local serialized = JSON.encode(disabled)
   if serialized then
-    reaper.SetProjExtState(0, EXTNAME, "disabled_items", serialized)
+    reaper.SetProjExtState(0, EXTNAME, 'disabled_items', serialized)
   end
 end
 
 -- Favorites persistence
 function M.load_favorites()
-  local has_state, state_str = reaper.GetProjExtState(0, EXTNAME, "favorites")
+  local has_state, state_str = reaper.GetProjExtState(0, EXTNAME, 'favorites')
 
-  if not has_state or has_state == 0 or state_str == "" then
+  if not has_state or has_state == 0 or state_str == '' then
     return { audio = {}, midi = {} }
   end
 
   -- SECURITY FIX: Use safe JSON.decode instead of unsafe load()
   local favorites = JSON.decode(state_str)
-  if not favorites or type(favorites) ~= "table" then
+  if not favorites or type(favorites) ~= 'table' then
     return { audio = {}, midi = {} }
   end
 
@@ -125,21 +125,21 @@ function M.save_favorites(favorites)
   -- SECURITY FIX: Use safe JSON.encode instead of custom serialization
   local serialized = JSON.encode(favorites)
   if serialized then
-    reaper.SetProjExtState(0, EXTNAME, "favorites", serialized)
+    reaper.SetProjExtState(0, EXTNAME, 'favorites', serialized)
   end
 end
 
 -- Track filter persistence
 function M.load_track_filter()
-  local has_state, state_str = reaper.GetProjExtState(0, EXTNAME, "track_filter")
+  local has_state, state_str = reaper.GetProjExtState(0, EXTNAME, 'track_filter')
 
-  if not has_state or has_state == 0 or state_str == "" then
+  if not has_state or has_state == 0 or state_str == '' then
     return { whitelist = nil, enabled = nil }
   end
 
   -- SECURITY FIX: Use safe JSON.decode instead of unsafe load()
   local filter = JSON.decode(state_str)
-  if not filter or type(filter) ~= "table" then
+  if not filter or type(filter) ~= 'table' then
     return { whitelist = nil, enabled = nil }
   end
 
@@ -154,7 +154,7 @@ function M.save_track_filter(whitelist, enabled)
   }
   local serialized = JSON.encode(filter_data)
   if serialized then
-    reaper.SetProjExtState(0, EXTNAME, "track_filter", serialized)
+    reaper.SetProjExtState(0, EXTNAME, 'track_filter', serialized)
   end
 end
 

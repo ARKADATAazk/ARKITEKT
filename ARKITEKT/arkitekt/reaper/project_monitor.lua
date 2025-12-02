@@ -37,20 +37,20 @@ end
 --- @return string? filename Full project path or nil if unsaved
 function M.get_current_project_filename(proj)
   proj = proj or 0
-  local proj_path = reaper.GetProjectPath("", proj)
-  local proj_name = reaper.GetProjectName(0, "", proj)
+  local proj_path = reaper.GetProjectPath('', proj)
+  local proj_name = reaper.GetProjectName(0, '', proj)
 
-  if proj_path == "" or proj_name == "" then
+  if proj_path == '' or proj_name == '' then
     return nil
   end
 
-  return proj_path .. "/" .. proj_name
+  return proj_path .. '/' .. proj_name
 end
 
 --- Get current project pointer (for detecting tab switches)
 --- @return userdata? project_ptr The project pointer or nil
 function M.get_current_project_ptr()
-  local proj, _ = reaper.EnumProjects(-1, "")
+  local proj, _ = reaper.EnumProjects(-1, '')
   return proj
 end
 
@@ -135,10 +135,10 @@ function Monitor:has_unsaved_changes()
 end
 
 --- Get current project name (without path)
---- @return string name The project name (or "untitled.rpp" if unsaved)
+--- @return string name The project name (or 'untitled.rpp' if unsaved)
 function Monitor:get_project_name()
-  local _, name = reaper.GetProjectName(0, "")
-  return name or "untitled.rpp"
+  local _, name = reaper.GetProjectName(0, '')
+  return name or 'untitled.rpp'
 end
 
 --- Check if current project is saved

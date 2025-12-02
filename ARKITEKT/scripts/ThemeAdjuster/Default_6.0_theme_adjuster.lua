@@ -9,9 +9,9 @@ drawScale,drawScale_nonmac,drawScale_inv_nonmac,drawScale_inv_mac = 1,1,1,1
 _gfxw,_gfxh = table.unpack(_desired_sizes[reaper.GetExtState(sTitle,'showHelp') == 'false' and 1 or 2])
 
 gfx.init(sTitle, _gfxw,_gfxh,
-tonumber(reaper.GetExtState(sTitle,"dock")) or 0,
-tonumber(reaper.GetExtState(sTitle,"wndx")) or 100,
-tonumber(reaper.GetExtState(sTitle,"wndy")) or 50)
+tonumber(reaper.GetExtState(sTitle,'dock')) or 0,
+tonumber(reaper.GetExtState(sTitle,'wndx')) or 100,
+tonumber(reaper.GetExtState(sTitle,'wndy')) or 50)
 
 function debugTable(t)
   local str = ''
@@ -55,7 +55,7 @@ function setCustCol(track, r,g,b)
 end
 
 function applyCustCol(col)
-  if type(col) ~= "table" or #col < 3 then
+  if type(col) ~= 'table' or #col < 3 then
     return
   end
   reaper.Undo_BeginBlock()
@@ -122,33 +122,33 @@ end
   ---------- TEXT -----------
 
 textPadding = 3
-if reaper.GetOS():match("^Win") == nil then
-  gfx.setfont(1, "Verdana", 9)
-  gfx.setfont(2, "Verdana", 10)
-  gfx.setfont(3, "Tahoma", 10)
-  gfx.setfont(4, "Verdana", 14)
-  gfx.setfont(5, "Tahoma", 11)
-  gfx.setfont(11, "Verdana", 18)
-  gfx.setfont(12, "Verdana", 20)
-  gfx.setfont(13, "Tahoma", 20)
-  gfx.setfont(14, "Verdana", 28)
-  gfx.setfont(15, "Tahoma", 22)
+if reaper.GetOS():match('^Win') == nil then
+  gfx.setfont(1, 'Verdana', 9)
+  gfx.setfont(2, 'Verdana', 10)
+  gfx.setfont(3, 'Tahoma', 10)
+  gfx.setfont(4, 'Verdana', 14)
+  gfx.setfont(5, 'Tahoma', 11)
+  gfx.setfont(11, 'Verdana', 18)
+  gfx.setfont(12, 'Verdana', 20)
+  gfx.setfont(13, 'Tahoma', 20)
+  gfx.setfont(14, 'Verdana', 28)
+  gfx.setfont(15, 'Tahoma', 22)
 else
-  gfx.setfont(1, "Calibri", 13)
-  gfx.setfont(2, "Calibri", 15)
-  gfx.setfont(3, "Calibri", 16)
-  gfx.setfont(4, "Calibri", 20) -- used in : undocked palette title
-  gfx.setfont(5, "Calibri", 16) -- IMPORTANT : match the font and size (by eye, oops!) of TCP & EnvCP labels
-  gfx.setfont(11, "Calibri", 26)
-  gfx.setfont(12, "Calibri", 30)
-  gfx.setfont(13, "Calibri", 32)
-  gfx.setfont(14, "Calibri", 40) -- used in : undocked palette title
-  gfx.setfont(15, "Calibri", 32)
+  gfx.setfont(1, 'Calibri', 13)
+  gfx.setfont(2, 'Calibri', 15)
+  gfx.setfont(3, 'Calibri', 16)
+  gfx.setfont(4, 'Calibri', 20) -- used in : undocked palette title
+  gfx.setfont(5, 'Calibri', 16) -- IMPORTANT : match the font and size (by eye, oops!) of TCP & EnvCP labels
+  gfx.setfont(11, 'Calibri', 26)
+  gfx.setfont(12, 'Calibri', 30)
+  gfx.setfont(13, 'Calibri', 32)
+  gfx.setfont(14, 'Calibri', 40) -- used in : undocked palette title
+  gfx.setfont(15, 'Calibri', 32)
 end
 
 
 if reaper.LocalizeString ~= nil then
-  translate = function(s) return reaper.LocalizeString(s or '---',"Default_6.0_Theme_Adjuster") end
+  translate = function(s) return reaper.LocalizeString(s or '---','Default_6.0_Theme_Adjuster') end
 else
   translate = function(s) return s or '---' end
 end
@@ -165,7 +165,7 @@ function text(str,x,y,w,h,align,col,style,lineSpacing,vCenter,wrap)
     lines = textWrap(str,drawScale * 105)
   else
     lines = {}
-    for s in string.gmatch(str, "([^#]+)") do
+    for s in string.gmatch(str, '([^#]+)') do
       table.insert(lines, s)
     end
   end
@@ -180,9 +180,9 @@ function text(str,x,y,w,h,align,col,style,lineSpacing,vCenter,wrap)
 end
 
 function textWrap(str,w) -- returns array of lines
-  local lines,curlen,curline,last_sspace = {}, 0, "", false
+  local lines,curlen,curline,last_sspace = {}, 0, '', false
   -- enumerate words
-  for s in str:gmatch("([^%s-/]*[-/]* ?)") do
+  for s in str:gmatch('([^%s-/]*[-/]* ?)') do
     local sspace = false -- set if space was the delimiter
     if s:match(' $') then
       sspace = true
@@ -190,22 +190,22 @@ function textWrap(str,w) -- returns array of lines
     end
     local measure_s = s
     if curlen ~= 0 and last_sspace == true then
-      measure_s = " " .. measure_s
+      measure_s = ' ' .. measure_s
     end
     last_sspace = sspace
 
     local length = gfx.measurestr(measure_s)
     if length > w then
-      if curline ~= "" then
+      if curline ~= '' then
         table.insert(lines,curline)
-        curline = ""
+        curline = ''
       end
       curlen = 0
       while length > w do
         -- split up a long word, decimating measure_s as we go
         local wlen = string.len(measure_s) - 1
         while wlen > 0 do
-          local sstr = string.format("%s%s",measure_s:sub(1,wlen), wlen>1 and "-" or "")
+          local sstr = string.format('%s%s',measure_s:sub(1,wlen), wlen>1 and '-' or '')
           local slen = gfx.measurestr(sstr)
           if slen <= w or wlen == 1 then
             table.insert(lines,sstr)
@@ -217,7 +217,7 @@ function textWrap(str,w) -- returns array of lines
         end
       end
     end
-    if measure_s ~= "" then
+    if measure_s ~= '' then
       if curlen == 0 or curlen + length <= w then
         curline = curline .. measure_s
         curlen = curlen + length
@@ -229,7 +229,7 @@ function textWrap(str,w) -- returns array of lines
       end
     end
   end
-  if curline ~= "" then
+  if curline ~= '' then
     table.insert(lines,curline)
   end
   return lines
@@ -238,8 +238,8 @@ end
   --------- IMAGES ----------
 
 function loadImage(idx, name)
-  local str = debug.getinfo(1, "S").source:match[[^@(.*[\/])[^\/]-$]].."Default_6.0_theme_adjuster_images/"
-  if gfx.loadimg(idx, str..name) == -1 then reaper.ShowConsoleMsg("image "..name.." not found") end
+  local str = debug.getinfo(1, 'S').source:match[[^@(.*[\/])[^\/]-$]]..'Default_6.0_theme_adjuster_images/'
+  if gfx.loadimg(idx, str..name) == -1 then reaper.ShowConsoleMsg('image '..name..' not found') end
 end
 
 image_idx,image_idx_size = {},0
@@ -254,8 +254,8 @@ function getImage(img,drawScale)
     image_idx[img] = cache_rec
     image_idx_size = image_idx_size + 1
   end
-  if drawScale == 2 then img = img .. "@2x" end
-  loadImage(cache_rec.idx,img .. ".png")
+  if drawScale == 2 then img = img .. '@2x' end
+  loadImage(cache_rec.idx,img .. '.png')
   cache_rec.scale = drawScale
   return cache_rec.idx
 end
@@ -595,7 +595,7 @@ function Readout:doParamGet()
     elseif self.action == doFader then
       local tmp,tmp,value = reaper.ThemeLayout_GetParameter(self.param[1]) --< color faders have param as number, no need to lookup 
       local v, suffix = paramToVal(self.param[1],value)
-      self.text.str = string.format(suffix == "" and "%.2f" or "%d%s",v,suffix);
+      self.text.str = string.format(suffix == '' and '%.2f' or '%d%s',v,suffix);
     elseif self.action == doGenericFader then
       local tmp,desc,value = reaper.ThemeLayout_GetParameter(self.param[1])
       if tmp ~= nil then
@@ -737,7 +737,7 @@ function anySelected(self) -- called by an object's updateState value, and uses 
     for i=0, reaper.CountTracks(0)-1 do
       local track = reaper.GetTrack(0, i)
       if reaper.IsTrackSelected(track) == true then
-        local tmp, l = reaper.GetSetMediaTrackInfo_String(track, p, "", false)
+        local tmp, l = reaper.GetSetMediaTrackInfo_String(track, p, '', false)
         if string.sub(l,-1) == self.getParam[2] then -- a selected track is using this layout
           self.text.col = self.text.colTrue
           break
@@ -781,14 +781,14 @@ end
 function read_ini(file, sec, ent)
   local insec, str, section = false, string.lower(ent), string.lower(sec)
   for l in io.lines(file) do
-    local m = string.match(l,"^%s*[[](.-)[]]")
+    local m = string.match(l,'^%s*[[](.-)[]]')
     if m ~= nil then
       insec = section == string.lower(m)
     else
       if insec then
-        local a = string.match(l,"^%s*(.-)=")
+        local a = string.match(l,'^%s*(.-)=')
         if a ~= nil and str == string.lower(a) then
-          return string.match(l,"^.-=(.*)")
+          return string.match(l,'^.-=(.*)')
         end
       end
     end
@@ -829,7 +829,7 @@ end
 function measureTrackNames(trackCount)
   local nameChanged = 0
   for i=0, trackCount do
-    local tmp, trackName = reaper.GetSetMediaTrackInfo_String(reaper.GetTrack(0, i), 'P_NAME', "", false)
+    local tmp, trackName = reaper.GetSetMediaTrackInfo_String(reaper.GetTrack(0, i), 'P_NAME', '', false)
     if (trackNames[i] ~= trackName) then -- track name has changed
       trackNames[i] = trackName
       gfx.setfont(5)
@@ -911,7 +911,7 @@ function doHelpVis(visible)
   if _dockedRoot.visible ~= true then
     _gfxw,_gfxh = table.unpack(_desired_sizes[_helpL.visible == true and 2 or 1])
     _gfxw,_gfxh = drawScale_nonmac*_gfxw,drawScale_nonmac*_gfxh
-    gfx.init("",_gfxw,_gfxh)
+    gfx.init('',_gfxw,_gfxh)
   end
 end
 
@@ -949,11 +949,11 @@ end
 
 function switchTheme()
   local str = string.match(reaper.GetLastColorThemeFile(), '^(.*)[/\\].+$')
-  if(reaper.file_exists(str.."/Default_6.0_unpacked.ReaperTheme")==true) then
-    openTheme = reaper.OpenColorThemeFile(str.."/Default_6.0_unpacked.ReaperTheme")
-  else if(reaper.file_exists(str.."/Default_6.0.ReaperThemeZip")==true) then
-    openTheme = reaper.OpenColorThemeFile(str.."/Default_6.0.ReaperThemeZip")
-    else reaper.ShowConsoleMsg("Default 6.0 theme not found")
+  if(reaper.file_exists(str..'/Default_6.0_unpacked.ReaperTheme')==true) then
+    openTheme = reaper.OpenColorThemeFile(str..'/Default_6.0_unpacked.ReaperTheme')
+  else if(reaper.file_exists(str..'/Default_6.0.ReaperThemeZip')==true) then
+    openTheme = reaper.OpenColorThemeFile(str..'/Default_6.0.ReaperThemeZip')
+    else reaper.ShowConsoleMsg('Default 6.0 theme not found')
     end
   end
   indexParams()
@@ -986,7 +986,7 @@ function getDpi()
   local newScale, os = 1, reaper.GetOS()
   if gfx.ext_retina>1.49 then newScale = 2 end
 
-  if os ~= "OSX64" and os ~= "OSX32" and os ~= "macOS-arm64" then
+  if os ~= 'OSX64' and os ~= 'OSX32' and os ~= 'macOS-arm64' then
     -- disable (non-macOS) hidpi if window is constrained in height or width
     local minw, minh = 500, 660
     if _dockedRoot.visible ~= false then  minw, minh = 400, 24 end
@@ -1145,7 +1145,7 @@ function doFader(self,dX)
     local vValMin, vValMinSuffix = paramToVal(self.param[1],minvalue)
     local vValMax, vValMaxSuffix = paramToVal(self.param[1],maxvalue)
     local r,v = reaper.GetUserInputs(desc, 1, vValMin..vValMinSuffix..' to '..vValMax..vValMinSuffix, self.text.str)
-    local val = tonumber(v:match("[-]?[%d.,]+"))
+    local val = tonumber(v:match('[-]?[%d.,]+'))
     if r ~= false and val ~= nil then
       local tmp,tmp,tmp,tmp,minvalue,maxvalue = reaper.ThemeLayout_GetParameter(self.param[1])
       val = math.floor(valToParam(self.param[1],val))
@@ -1361,7 +1361,7 @@ function Element:mouseUp(x,y) end
 function Element:doubleClick() end
 
 function Element:mouseWheel(v)
-  if self.action ~= nil and type(self.param) == "table" then
+  if self.action ~= nil and type(self.param) == 'table' then
     self.action({self.param[1],v})
     root:doUpdateState() -- doing a complete root:doUpdateState because other buttons might have changed state as a result of my actions.
     root:doParamGet()
@@ -1603,9 +1603,9 @@ helpR_borders = 'Adds visual separation to your mixer with borders. '
 help_pref = 'These buttons set REAPER preferences. Their settings are automatically '
           ..'saved to your REAPER install.'
 
-help_proj_extmix="These settings are part of your REAPER project, and will be saved "
+help_proj_extmix='These settings are part of your REAPER project, and will be saved '
                .."when it is saved (except for 'Scroll to selected track', which is "
-               .."a REAPER preference)"
+               ..'a REAPER preference)'
 
 helpR_recolProject = 'Assigns random colors from the palette. Tracks which share '
                    ..'a color will be given the same new color.'
@@ -2136,9 +2136,9 @@ end
 
 function Quit()
   d,x,y,w,h=gfx.dock(-1,0,0,0,0)
-  reaper.SetExtState(sTitle,"dock",d,true)
-  reaper.SetExtState(sTitle,"wndx",x,true)
-  reaper.SetExtState(sTitle,"wndy",y,true)
+  reaper.SetExtState(sTitle,'dock',d,true)
+  reaper.SetExtState(sTitle,'wndx',x,true)
+  reaper.SetExtState(sTitle,'wndy',y,true)
   reaper.SetExtState(sTitle,'editPage',editPage,true)
   reaper.SetExtState(sTitle,'editPage2',editPage2,true)
   reaper.SetExtState(sTitle,'paletteCurrent',palette.current,true)

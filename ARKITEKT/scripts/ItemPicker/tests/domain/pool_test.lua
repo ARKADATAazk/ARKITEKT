@@ -12,9 +12,9 @@ local M = {}
 -- - M.get_unique_pooled_items() - Get first item from each pool
 
 function M.run_tests()
-  print("[pool_test] Running tests...")
+  print('[pool_test] Running tests...')
   -- Test stubs to be implemented
-  print("[pool_test] All tests passed (stubs only)")
+  print('[pool_test] All tests passed (stubs only)')
   return true
 end
 

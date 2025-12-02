@@ -17,10 +17,10 @@ local M = {}
 -- Base colors for dark/light themes. Anchors are auto-computed from these.
 
 M.presets = {
-  dark       = "#242424",  -- t=0 anchor
-  grey       = "#333333",
-  light_grey = "#505050",
-  light      = "#E0E0E0",  -- t=1 anchor
+  dark       = '#242424',  -- t=0 anchor
+  grey       = '#333333',
+  light_grey = '#505050',
+  light      = '#E0E0E0',  -- t=1 anchor
 }
 
 -- =============================================================================
@@ -32,15 +32,15 @@ M.presets = {
 --- @param name string Variable name for error messages
 --- @return boolean valid, string|nil error_message
 local function validate_hex(hex, name)
-  if type(hex) ~= "string" then
-    return false, string.format("%s: expected string, got %s", name, type(hex))
+  if type(hex) ~= 'string' then
+    return false, string.format('%s: expected string, got %s', name, type(hex))
   end
-  if not hex:match("^#[0-9A-Fa-f]+$") then
+  if not hex:match('^#[0-9A-Fa-f]+$') then
     return false, string.format("%s: invalid hex format '%s'", name, hex)
   end
   local len = #hex - 1  -- minus the #
   if len ~= 6 and len ~= 8 then
-    return false, string.format("%s: hex must be 6 or 8 chars, got %d", name, len)
+    return false, string.format('%s: hex must be 6 or 8 chars, got %d', name, len)
   end
   return true
 end
@@ -69,7 +69,7 @@ local function warn_low_contrast(fg_hex, bg_hex, name, min_ratio)
   local ratio = contrast_ratio(fg, bg)
   if ratio < min_ratio then
     reaper.ShowConsoleMsg(string.format(
-      "[Theme] Warning: %s has low contrast (%.1f:1, need %.1f:1)\n",
+      '[Theme] Warning: %s has low contrast (%.1f:1, need %.1f:1)\n',
       name, ratio, min_ratio
     ))
   end
@@ -77,9 +77,9 @@ end
 
 -- Validate presets on load
 for name, hex in pairs(M.presets) do
-  local valid, err = validate_hex(hex, "presets." .. name)
+  local valid, err = validate_hex(hex, 'presets.' .. name)
   if not valid then
-    reaper.ShowConsoleMsg("[Theme] " .. err .. "\n")
+    reaper.ShowConsoleMsg('[Theme] ' .. err .. '\n')
   end
 end
 
@@ -121,9 +121,9 @@ M.value_ranges = {
 local function get_range_for_key(key)
   if not key then return nil end
   local lower = key:lower()
-  if lower:match("opacity") then return M.value_ranges.OPACITY end
-  if lower:match("brightness") then return M.value_ranges.BRIGHTNESS end
-  if lower:match("saturation") then return M.value_ranges.SATURATION end
+  if lower:match('opacity') then return M.value_ranges.OPACITY end
+  if lower:match('brightness') then return M.value_ranges.BRIGHTNESS end
+  if lower:match('saturation') then return M.value_ranges.SATURATION end
   return nil
 end
 
@@ -132,7 +132,7 @@ end
 --- @param value number Value to clamp
 --- @return number Clamped value
 local function clamp_value(key, value)
-  if type(value) ~= "number" then return value end
+  if type(value) ~= 'number' then return value end
   local range = get_range_for_key(key)
   if not range then return value end
   return math.max(range.min, math.min(range.max, value))
@@ -157,32 +157,32 @@ M.clamp_value = clamp_value
 --   offset3(dark, mid, light) - delta from BG_BASE with 3 zones
 
 local function snap(dark_val, light_val)
-  return { mode = "snap", dark = dark_val, light = light_val }
+  return { mode = 'snap', dark = dark_val, light = light_val }
 end
 
 local function lerp(dark_val, light_val)
-  return { mode = "lerp", dark = dark_val, light = light_val }
+  return { mode = 'lerp', dark = dark_val, light = light_val }
 end
 
 local function offset(dark_delta, light_delta)
-  return { mode = "offset", dark = dark_delta, light = light_delta or dark_delta }
+  return { mode = 'offset', dark = dark_delta, light = light_delta or dark_delta }
 end
 
 local function bg()
-  return { mode = "bg" }
+  return { mode = 'bg' }
 end
 
 -- 3-Zone variants (fixed thirds: 0.33, 0.67)
 local function snap3(dark_val, mid_val, light_val)
-  return { mode = "snap3", dark = dark_val, mid = mid_val, light = light_val }
+  return { mode = 'snap3', dark = dark_val, mid = mid_val, light = light_val }
 end
 
 local function lerp3(dark_val, mid_val, light_val)
-  return { mode = "lerp3", dark = dark_val, mid = mid_val, light = light_val }
+  return { mode = 'lerp3', dark = dark_val, mid = mid_val, light = light_val }
 end
 
 local function offset3(dark_delta, mid_delta, light_delta)
-  return { mode = "offset3", dark = dark_delta, mid = mid_delta, light = light_delta }
+  return { mode = 'offset3', dark = dark_delta, mid = mid_delta, light = light_delta }
 end
 
 -- Export wrappers
@@ -218,7 +218,7 @@ M.colors = {
   BORDER_HOVER    = offset(0.18, -0.14),   -- was 0.10/-0.08, increased for visible pop
   BORDER_ACTIVE   = offset(0.30, -0.22),   -- was 0.15/-0.12, much brighter on click
   BORDER_FOCUS    = offset(0.25, -0.18),   -- was 0.20/-0.15
-  BORDER_OUTER    = snap("#000000", "#404040"),
+  BORDER_OUTER    = snap('#000000', '#404040'),
   BORDER_OUTER_OPACITY = lerp(0.87, 0.60),
 
   -- === ACCENTS (from BG_BASE) ===
@@ -230,20 +230,20 @@ M.colors = {
 
   -- === ACCENTS (standalone) ===
   -- Changed from lerp to offset to guarantee visible contrast from BG_BASE
-  -- (lerp created a "dead zone" in mid-range themes like light_grey)
+  -- (lerp created a 'dead zone' in mid-range themes like light_grey)
   ACCENT_WHITE        = offset(0.12, -0.15),
   ACCENT_WHITE_BRIGHT = offset(0.20, -0.22),
-  ACCENT_SUCCESS = lerp("#4CAF50", "#2E7D32"),
-  ACCENT_WARNING = lerp("#FFA726", "#F57C00"),
-  ACCENT_DANGER  = lerp("#EF5350", "#C62828"),
+  ACCENT_SUCCESS = lerp('#4CAF50', '#2E7D32'),
+  ACCENT_WARNING = lerp('#FFA726', '#F57C00'),
+  ACCENT_DANGER  = lerp('#EF5350', '#C62828'),
 
   -- === TEXT ===
-  TEXT_NORMAL = snap("#FFFFFF", "#000000"),
-  TEXT_HOVER  = snap("#F0F0F0", "#1A1A1A"),
-  TEXT_ACTIVE = snap("#E8E8E8", "#222222"),
-  TEXT_DIMMED = snap("#A0A0A0", "#606060"),
-  TEXT_DARK   = snap("#808080", "#808080"),
-  TEXT_BRIGHT = snap("#FFFFFF", "#000000"),
+  TEXT_NORMAL = snap('#FFFFFF', '#000000'),
+  TEXT_HOVER  = snap('#F0F0F0', '#1A1A1A'),
+  TEXT_ACTIVE = snap('#E8E8E8', '#222222'),
+  TEXT_DIMMED = snap('#A0A0A0', '#606060'),
+  TEXT_DARK   = snap('#808080', '#808080'),
+  TEXT_BRIGHT = snap('#FFFFFF', '#000000'),
 
   -- === PATTERNS (from BG_BASE, includes panel offset) ===
   PATTERN_PRIMARY   = offset(-0.064, -0.10),
@@ -251,54 +251,54 @@ M.colors = {
 
   -- === TILES ===
   -- BRIGHTNESS/SATURATION use normalized scale: 0=off, 0.5=neutral, 1=max (2x)
-  TILE_NAME_COLOR      = snap("#DDE3E9", "#1A1A1A"),
+  TILE_NAME_COLOR      = snap('#DDE3E9', '#1A1A1A'),
   TILE_FILL_BRIGHTNESS = lerp(0.25, 0.35), -- Normalized: 0.5=1x, so 0.25→0.5x, 0.35→0.7x
   TILE_FILL_SATURATION = lerp(0.20, 0.35), -- Normalized: 0.5=1x, so 0.20→0.4x, 0.35→0.7x
   TILE_FILL_OPACITY    = lerp(0.4, 0.6),   -- Light: slightly more opaque (was 0.5)
 
   -- === BADGES ===
-  BADGE_BG             = snap("#14181C", "#E8ECF0"),
-  BADGE_TEXT           = snap("#FFFFFF", "#1A1A1A"),
+  BADGE_BG             = snap('#14181C', '#E8ECF0'),
+  BADGE_TEXT           = snap('#FFFFFF', '#1A1A1A'),
   BADGE_BG_OPACITY     = lerp(0.85, 0.90),
   BADGE_BORDER_OPACITY = lerp(0.20, 0.15),
 
   -- === PLAYLIST ===
-  PLAYLIST_TILE_COLOR  = snap("#3A3A3A", "#A0A0A0"),  -- Light: darker for contrast (was #D0D0D0)
-  PLAYLIST_NAME_COLOR  = snap("#CCCCCC", "#2A2A2A"),
-  PLAYLIST_BADGE_COLOR = snap("#999999", "#666666"),
+  PLAYLIST_TILE_COLOR  = snap('#3A3A3A', '#A0A0A0'),  -- Light: darker for contrast (was #D0D0D0)
+  PLAYLIST_NAME_COLOR  = snap('#CCCCCC', '#2A2A2A'),
+  PLAYLIST_BADGE_COLOR = snap('#999999', '#666666'),
 
   -- === OPERATIONS (drag/drop feedback) ===
-  OP_MOVE   = snap("#CCCCCC", "#444444"),  -- Gray - move operation
-  OP_COPY   = snap("#06B6D4", "#0891B2"),  -- Cyan - copy operation
-  OP_DELETE = snap("#E84A4A", "#DC2626"),  -- Red - delete operation
-  OP_LINK   = snap("#4A9EFF", "#2563EB"),  -- Blue - link/reference
+  OP_MOVE   = snap('#CCCCCC', '#444444'),  -- Gray - move operation
+  OP_COPY   = snap('#06B6D4', '#0891B2'),  -- Cyan - copy operation
+  OP_DELETE = snap('#E84A4A', '#DC2626'),  -- Red - delete operation
+  OP_LINK   = snap('#4A9EFF', '#2563EB'),  -- Blue - link/reference
 
   -- === COLORED BUTTONS ===
   -- Each variant: BG (base), HOVER (+lightness), ACTIVE (-lightness), TEXT (auto contrast)
 
   -- Danger (red)
-  BUTTON_DANGER_BG     = lerp("#B91C1C", "#FCA5A5"),
-  BUTTON_DANGER_HOVER  = lerp("#DC2626", "#FEE2E2"),
-  BUTTON_DANGER_ACTIVE = lerp("#991B1B", "#F87171"),
-  BUTTON_DANGER_TEXT   = snap("#FFFFFF", "#7F1D1D"),
+  BUTTON_DANGER_BG     = lerp('#B91C1C', '#FCA5A5'),
+  BUTTON_DANGER_HOVER  = lerp('#DC2626', '#FEE2E2'),
+  BUTTON_DANGER_ACTIVE = lerp('#991B1B', '#F87171'),
+  BUTTON_DANGER_TEXT   = snap('#FFFFFF', '#7F1D1D'),
 
   -- Success (green)
-  BUTTON_SUCCESS_BG     = lerp("#15803D", "#86EFAC"),
-  BUTTON_SUCCESS_HOVER  = lerp("#16A34A", "#BBF7D0"),
-  BUTTON_SUCCESS_ACTIVE = lerp("#166534", "#4ADE80"),
-  BUTTON_SUCCESS_TEXT   = snap("#FFFFFF", "#14532D"),
+  BUTTON_SUCCESS_BG     = lerp('#15803D', '#86EFAC'),
+  BUTTON_SUCCESS_HOVER  = lerp('#16A34A', '#BBF7D0'),
+  BUTTON_SUCCESS_ACTIVE = lerp('#166534', '#4ADE80'),
+  BUTTON_SUCCESS_TEXT   = snap('#FFFFFF', '#14532D'),
 
   -- Warning (amber/orange)
-  BUTTON_WARNING_BG     = lerp("#B45309", "#FCD34D"),
-  BUTTON_WARNING_HOVER  = lerp("#D97706", "#FDE68A"),
-  BUTTON_WARNING_ACTIVE = lerp("#92400E", "#FBBF24"),
-  BUTTON_WARNING_TEXT   = snap("#FFFFFF", "#78350F"),
+  BUTTON_WARNING_BG     = lerp('#B45309', '#FCD34D'),
+  BUTTON_WARNING_HOVER  = lerp('#D97706', '#FDE68A'),
+  BUTTON_WARNING_ACTIVE = lerp('#92400E', '#FBBF24'),
+  BUTTON_WARNING_TEXT   = snap('#FFFFFF', '#78350F'),
 
   -- Info (blue)
-  BUTTON_INFO_BG     = lerp("#1D4ED8", "#93C5FD"),
-  BUTTON_INFO_HOVER  = lerp("#2563EB", "#BFDBFE"),
-  BUTTON_INFO_ACTIVE = lerp("#1E40AF", "#60A5FA"),
-  BUTTON_INFO_TEXT   = snap("#FFFFFF", "#1E3A8A"),
+  BUTTON_INFO_BG     = lerp('#1D4ED8', '#93C5FD'),
+  BUTTON_INFO_HOVER  = lerp('#2563EB', '#BFDBFE'),
+  BUTTON_INFO_ACTIVE = lerp('#1E40AF', '#60A5FA'),
+  BUTTON_INFO_TEXT   = snap('#FFFFFF', '#1E3A8A'),
 }
 
 -- =============================================================================

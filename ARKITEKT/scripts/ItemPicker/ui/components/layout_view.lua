@@ -68,8 +68,8 @@ function LayoutView:handle_shortcuts(ctx)
 
   -- ESC to clear search
   if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-    if self.state.settings.search_string and self.state.settings.search_string ~= "" then
-      self.state.set_search_filter("")
+    if self.state.settings.search_string and self.state.settings.search_string ~= '' then
+      self.state.set_search_filter('')
     end
   end
 end
@@ -114,7 +114,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Draw dotted pattern
   local Theme = get_theme()
   local ThemeColors = Theme and Theme.COLORS or {}
-  local pattern_color = ThemeColors.PATTERN_PRIMARY or Ark.Colors.hexrgb("#2A2A2A")
+  local pattern_color = ThemeColors.PATTERN_PRIMARY or Ark.Colors.hexrgb('#2A2A2A')
 
   local overlay_pattern_config = {
     enabled = true,
@@ -147,8 +147,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Settings panel (using SlidingZone)
   local settings_result = Ark.SlidingZone(ctx, {
-    id = "settings_panel",
-    edge = "top",
+    id = 'settings_panel',
+    edge = 'top',
     bounds = {
       x = coord_offset_x,
       y = search_base_y - settings_offset,  -- Position 11px higher
@@ -246,8 +246,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
     -- Region filter using SlidingZone (extends upward to cover SettingsPanel area)
     local filter_result = Ark.SlidingZone(ctx, {
-      id = "region_filter_bar",
-      edge = "top",
+      id = 'region_filter_bar',
+      edge = 'top',
       bounds = {
         x = coord_offset_x,
         y = filter_bar_base_y,
@@ -306,13 +306,13 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local header_height = self.config.LAYOUT.HEADER_HEIGHT
   local panel_right_padding = 12
 
-  if view_mode == "MIDI" then
+  if view_mode == 'MIDI' then
     ContentPanels.draw_midi_only(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, self.state, self.config, self.coordinator)
-  elseif view_mode == "AUDIO" then
+  elseif view_mode == 'AUDIO' then
     ContentPanels.draw_audio_only(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, self.state, self.config, self.coordinator)
   else
-    local layout_mode = self.state.settings.layout_mode or "vertical"
-    if layout_mode == "horizontal" then
+    local layout_mode = self.state.settings.layout_mode or 'vertical'
+    if layout_mode == 'horizontal' then
       ContentPanels.draw_mixed_horizontal(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, self.state, self.config, self.coordinator)
     else
       ContentPanels.draw_mixed_vertical(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, self.state, self.config, self.coordinator)

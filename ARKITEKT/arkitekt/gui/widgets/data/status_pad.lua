@@ -16,7 +16,7 @@ local DEFAULTS = {
   width = 250,
   height = 40,
   rounding = 5,
-  base_color = hexrgb("#41E0A3"),
+  base_color = hexrgb('#41E0A3'),
   icon_box_size   = 18,
   icon_area_width = 45,
   text_padding_x       = 12,
@@ -25,9 +25,9 @@ local DEFAULTS = {
   text_line_spacing    = 2,
   hover_animation_speed = 10.0,
   icons = {
-    check = "check",
-    minus = "minus",
-    dot   = "dot",
+    check = 'check',
+    minus = 'minus',
+    dot   = 'dot',
   },
 }
 
@@ -46,21 +46,21 @@ StatusPad.__index = StatusPad
 function M.new(opts)
   opts = opts or {}
   local pad = setmetatable({
-    id             = opts.id or "status_pad",
+    id             = opts.id or 'status_pad',
     width          = opts.width   or DEFAULTS.width,
     height         = opts.height  or DEFAULTS.height,
     rounding       = opts.rounding or DEFAULTS.rounding,
     base_color     = opts.color or DEFAULTS.base_color,
-    primary_text   = opts.primary_text or "",
+    primary_text   = opts.primary_text or '',
     secondary_text = opts.secondary_text,
     state          = opts.state or false,
-    icon_type      = opts.icon_type or "check",
+    icon_type      = opts.icon_type or 'check',
     on_click       = opts.on_click,
     hover_alpha    = 0,
     config         = {},
   }, StatusPad)
   for k, v in pairs(DEFAULTS) do
-    if type(v) ~= "table" then
+    if type(v) ~= 'table' then
       local user_val = opts.config and opts.config[k]
       pad.config[k] = user_val == nil and v or user_val
     end
@@ -80,13 +80,13 @@ function StatusPad:_draw_icon(ctx, dl, x, y)
 
   if self.state then
     local icon_color = self.base_color
-    if self.icon_type == "check" then
+    if self.icon_type == 'check' then
       local px1, py1 = ix1 + icon_box_size * 0.2, iy1 + icon_box_size * 0.5
       local px2, py2 = ix1 + icon_box_size * 0.45, iy1 + icon_box_size * 0.75
       local px3, py3 = ix1 + icon_box_size * 0.8, iy1 + icon_box_size * 0.25
       ImGui.DrawList_AddLine(dl, px1, py1, px2, py2, icon_color, 1.8)
       ImGui.DrawList_AddLine(dl, px2, py2, px3, py3, icon_color, 1.8)
-    elseif self.icon_type == "minus" then
+    elseif self.icon_type == 'minus' then
       local mid_y = iy1 + icon_box_size / 2
       ImGui.DrawList_AddLine(dl, ix1 + icon_box_size * 0.2, mid_y, ix2 - icon_box_size * 0.2, mid_y, icon_color, 1.8)
     end
@@ -116,10 +116,10 @@ function StatusPad:draw(ctx, x, y)
 
   local text_x = x1 + cfg.icon_area_width
   local available_width = self.width - cfg.icon_area_width - cfg.text_padding_x
-  local primary_color   = self.state and hexrgb("#FFFFFF") or hexrgb("#BBBBBB")
-  local secondary_color = self.state and hexrgb("#AAAAAA") or hexrgb("#888888")
+  local primary_color   = self.state and hexrgb('#FFFFFF') or hexrgb('#BBBBBB')
+  local secondary_color = self.state and hexrgb('#AAAAAA') or hexrgb('#888888')
 
-  if self.secondary_text and self.secondary_text ~= "" then
+  if self.secondary_text and self.secondary_text ~= '' then
     local _, primary_h   = _measure_text(ctx, self.primary_text)
     local _, secondary_h = _measure_text(ctx, self.secondary_text)
     local total_h = primary_h + secondary_h + cfg.text_line_spacing
@@ -133,7 +133,7 @@ function StatusPad:draw(ctx, x, y)
   end
 
   ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.InvisibleButton(ctx, self.id .. "_btn", self.width, self.height)
+  ImGui.InvisibleButton(ctx, self.id .. '_btn', self.width, self.height)
   if ImGui.IsItemClicked(ctx, 0) and self.on_click then
     self.on_click(not self.state)
   end

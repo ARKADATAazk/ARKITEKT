@@ -18,12 +18,12 @@ function M.draw(ctx, state, config, width, height)
   local all_fx = FXParser.get_all_fx(state.templates)
 
   -- Header with VST count and Force Reparse button
-  ImGui.Text(ctx, string.format("%d VST%s found", #all_fx, #all_fx == 1 and "" or "s"))
+  ImGui.Text(ctx, string.format('%d VST%s found', #all_fx, #all_fx == 1 and '' or 's'))
 
   ImGui.SameLine(ctx, width - UI.BUTTON.WIDTH_MEDIUM - config.PANEL_PADDING * 2)
 
   -- Force Reparse button (two-click confirmation)
-  local button_label = "Force Reparse All"
+  local button_label = 'Force Reparse All'
   local button_config = {
     label = button_label,
     width = UI.BUTTON.WIDTH_MEDIUM,
@@ -31,19 +31,19 @@ function M.draw(ctx, state, config, width, height)
   }
 
   if state.reparse_armed then
-    button_label = "CONFIRM REPARSE?"
+    button_label = 'CONFIRM REPARSE?'
     button_config = {
       label = button_label,
       width = UI.BUTTON.WIDTH_MEDIUM,
       height = UI.BUTTON.HEIGHT_DEFAULT,
-      bg_color = Ark.Colors.hexrgb("#CC3333")
+      bg_color = Ark.Colors.hexrgb('#CC3333')
     }
   end
 
-  if Ark.Button.draw_at_cursor(ctx, button_config, "force_reparse") then
+  if Ark.Button.draw_at_cursor(ctx, button_config, 'force_reparse') then
     if state.reparse_armed then
       -- Second click - execute reparse
-      Logger.info("VSTSTAB", "Force reparsing all templates...")
+      Logger.info('VSTSTAB', 'Force reparsing all templates...')
 
       -- Clear file_size from all templates in metadata to force re-parse
       if state.metadata and state.metadata.templates then
@@ -75,7 +75,7 @@ function M.draw(ctx, state, config, width, height)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  if Helpers.begin_child_compat(ctx, "VSTsList", width - config.PANEL_PADDING * 2, height - 60, false) then
+  if Helpers.begin_child_compat(ctx, 'VSTsList', width - config.PANEL_PADDING * 2, height - 60, false) then
     for _, fx_name in ipairs(all_fx) do
       ImGui.PushID(ctx, fx_name)
 
@@ -93,14 +93,14 @@ function M.draw(ctx, state, config, width, height)
       if vst_color then
         bg_color = is_selected and vst_color or Ark.Colors.with_opacity(vst_color, 0.8)
       else
-        bg_color = is_selected and Ark.Colors.hexrgb("#4A4A4ACC") or Ark.Colors.hexrgb("#3A3A3ACC")
+        bg_color = is_selected and Ark.Colors.hexrgb('#4A4A4ACC') or Ark.Colors.hexrgb('#3A3A3ACC')
       end
 
       local clicked, chip_w, chip_h = Chip.draw(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
         bg_color = bg_color,
-        text_color = vst_color and Ark.Colors.auto_text_color(vst_color) or Ark.Colors.hexrgb("#FFFFFF"),
+        text_color = vst_color and Ark.Colors.auto_text_color(vst_color) or Ark.Colors.hexrgb('#FFFFFF'),
         height = 22,
         padding_h = 8,
         rounding = 2,

@@ -13,7 +13,7 @@ local ResponsiveGrid = require('arkitekt.gui.layout.responsive')
 local Dnd = require('arkitekt.gui.interaction.drag_visual')
 local DragIndicator = Dnd.DragIndicator
 local BatchRenameModal = require('arkitekt.gui.widgets.overlays.batch_rename_modal')
-local State = require("RegionPlaylist.app.state")
+local State = require('RegionPlaylist.app.state')
 
 -- Menu components
 local ActiveActionsMenu = require('RegionPlaylist.ui.components.menus.active_actions_menu')
@@ -123,7 +123,7 @@ function Coordinator:_get_drag_colors()
       for _, key in ipairs(data) do
         for _, item in ipairs(playlist_items) do
           if item.key == key then
-            if item.type == "playlist" then
+            if item.type == 'playlist' then
               if self.get_playlist_by_id then
                 local playlist = self.get_playlist_by_id(item.playlist_id)
                 if playlist and playlist.chip_color then
@@ -145,12 +145,12 @@ function Coordinator:_get_drag_colors()
     local data = payload and payload.data or {}
     if type(data) == 'table' then
       for _, item in ipairs(data) do
-        if type(item) == "number" then
+        if type(item) == 'number' then
           local region = self.get_region_by_rid(item)
           if region and region.color then
             colors[#colors + 1] = region.color
           end
-        elseif type(item) == "table" and item.type == "playlist" then
+        elseif type(item) == 'table' and item.type == 'playlist' then
           if item.chip_color then
             colors[#colors + 1] = item.chip_color
           end
@@ -268,7 +268,7 @@ function Coordinator:draw_active(ctx, playlist, height, shell_state)
     local header = self.active_container.config.header
     if header.elements then
       for _, element in ipairs(header.elements) do
-        if element.type == "tab_strip" and element.config then
+        if element.type == 'tab_strip' and element.config then
           element.config.icon_font = icons_font
           element.config.icon_font_size = icons_size or 12
         end
@@ -460,7 +460,7 @@ function Coordinator:draw_pool(ctx, regions, height, shell_state)
     self._pool_tile_height = responsive_height
     self._pool_gap = raw_gap
     self._pool_clip_bounds = self.pool_container.visible_bounds
-    self._pool_disable_background_clicks = ImGui.IsPopupOpen(ctx, "PoolActionsMenu")
+    self._pool_disable_background_clicks = ImGui.IsPopupOpen(ctx, 'PoolActionsMenu')
 
     -- Draw grid using opts-based API
     local opts = PoolGridFactory.create_opts(self, self.config)

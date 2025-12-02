@@ -27,12 +27,12 @@ function M.create_opts(deps)
   local on_star_click = deps.on_star_click
   local on_tag_drop = deps.on_tag_drop
   local gui = deps.gui
-  local id = deps.id or "template_grid"
+  local id = deps.id or 'template_grid'
 
   -- Determine layout based on view mode
-  local view_mode = get_view_mode and get_view_mode() or "grid"
+  local view_mode = get_view_mode and get_view_mode() or 'grid'
   local gap, fixed_tile_h
-  if view_mode == "list" then
+  if view_mode == 'list' then
     gap = 4
     fixed_tile_h = TemplateTileCompact.CONFIG.tile_height
   else
@@ -51,18 +51,18 @@ function M.create_opts(deps)
 
     -- Unique key for each template
     key = function(template)
-      return "template_" .. tostring(template.uuid)
+      return 'template_' .. tostring(template.uuid)
     end,
 
     -- Tile rendering
     render_item = function(ctx, rect, template, state)
-      local current_view_mode = get_view_mode and get_view_mode() or "grid"
+      local current_view_mode = get_view_mode and get_view_mode() or 'grid'
 
       -- Add fonts to state for tile rendering (from GUI reference)
       state.fonts = gui and gui.fonts or nil
 
       -- Use appropriate tile renderer based on view mode
-      if current_view_mode == "list" then
+      if current_view_mode == 'list' then
         TemplateTileCompact.render(ctx, rect, template, state, metadata, animator)
       else
         TemplateTile.render(ctx, rect, template, state, metadata, animator)
@@ -77,7 +77,7 @@ function M.create_opts(deps)
       -- Show track tree tooltip on hover (with delay)
       if state.hover then
         ImGui.SetCursorScreenPos(ctx, rect[1], rect[2])
-        ImGui.InvisibleButton(ctx, "##tooltip_" .. template.uuid, rect[3] - rect[1], rect[4] - rect[2])
+        ImGui.InvisibleButton(ctx, '##tooltip_' .. template.uuid, rect[3] - rect[1], rect[4] - rect[2])
         Tooltips.show_template_info(ctx, ImGui, template, metadata)
       end
 
@@ -87,7 +87,7 @@ function M.create_opts(deps)
 
         if is_tag_dragging then
           local selected_keys = gui and gui.state and gui.state.selected_template_keys or {}
-          local template_key = "template_" .. template.uuid
+          local template_key = 'template_' .. template.uuid
 
           local is_selected = false
           for _, key in ipairs(selected_keys) do
@@ -116,12 +116,12 @@ function M.create_opts(deps)
         end
 
         ImGui.SetCursorScreenPos(ctx, rect[1], rect[2])
-        ImGui.InvisibleButton(ctx, "##tile_drop_" .. template.uuid, rect[3] - rect[1], rect[4] - rect[2])
+        ImGui.InvisibleButton(ctx, '##tile_drop_' .. template.uuid, rect[3] - rect[1], rect[4] - rect[2])
 
         ImGui.PushStyleColor(ctx, ImGui.Col_DragDropTarget, 0x00000000)
 
         if ImGui.BeginDragDropTarget(ctx) then
-          local template_key = "template_" .. template.uuid
+          local template_key = 'template_' .. template.uuid
           DragDrop.set_hovered_drop_target(template_key)
 
           local selected_keys = gui and gui.state and gui.state.selected_template_keys or {}
@@ -157,7 +157,7 @@ function M.create_opts(deps)
 
       ['double_click'] = function(grid, key)
         if on_double_click then
-          local uuid = key:match("template_(.+)")
+          local uuid = key:match('template_(.+)')
           local templates = get_templates()
           for _, tmpl in ipairs(templates) do
             if tmpl.uuid == uuid then
@@ -170,7 +170,7 @@ function M.create_opts(deps)
 
       ['click:right'] = function(grid, key, selected_keys)
         if on_right_click then
-          local uuid = key:match("template_(.+)")
+          local uuid = key:match('template_(.+)')
           local templates = get_templates()
           for _, tmpl in ipairs(templates) do
             if tmpl.uuid == uuid then
@@ -186,7 +186,7 @@ function M.create_opts(deps)
         local uuids = {}
 
         for _, key in ipairs(item_keys) do
-          local uuid = key:match("template_(.+)")
+          local uuid = key:match('template_(.+)')
           local templates = get_templates()
           for _, tmpl in ipairs(templates) do
             if tmpl.uuid == uuid then
@@ -198,11 +198,11 @@ function M.create_opts(deps)
         end
 
         if grid then
-          grid.drag_payload_type = "TEMPLATE"
-          grid.drag_payload_data = table.concat(uuids, "\n")
+          grid.drag_payload_type = 'TEMPLATE'
+          grid.drag_payload_data = table.concat(uuids, '\n')
           grid.drag_label = #items > 1
-            and ("Move " .. #items .. " templates")
-            or ("Move: " .. items[1].name)
+            and ('Move ' .. #items .. ' templates')
+            or ('Move: ' .. items[1].name)
         end
 
         return items
@@ -226,9 +226,9 @@ function M.create_opts(deps)
         duration = 0.2,
       },
       marquee = {
-        fill_color = Ark.Colors.hexrgb("#FFFFFF22"),
-        fill_color_add = Ark.Colors.hexrgb("#FFFFFF33"),
-        stroke_color = Ark.Colors.hexrgb("#FFFFFF"),
+        fill_color = Ark.Colors.hexrgb('#FFFFFF22'),
+        fill_color_add = Ark.Colors.hexrgb('#FFFFFF33'),
+        stroke_color = Ark.Colors.hexrgb('#FFFFFF'),
         stroke_thickness = 1,
         rounding = 0,
       },

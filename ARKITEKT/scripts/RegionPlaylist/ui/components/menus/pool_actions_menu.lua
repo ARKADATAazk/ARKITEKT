@@ -14,11 +14,11 @@ local function extract_pool_selection(selection)
   if selection then
     local selected_keys = selection:selected_keys()
     for _, key in ipairs(selected_keys) do
-      local rid = key:match("^pool_(%d+)$")
+      local rid = key:match('^pool_(%d+)$')
       if rid then
         rids[#rids + 1] = tonumber(rid)
       end
-      local playlist_id = key:match("^pool_playlist_(.+)$")
+      local playlist_id = key:match('^pool_playlist_(.+)$')
       if playlist_id then
         playlist_ids[#playlist_ids + 1] = playlist_id
       end
@@ -40,13 +40,13 @@ end
 function M.render(ctx, coordinator)
   -- Open popup if requested
   if coordinator._pool_actions_menu_visible then
-    ImGui.OpenPopup(ctx, "PoolActionsMenu")
+    ImGui.OpenPopup(ctx, 'PoolActionsMenu')
     coordinator._pool_actions_menu_visible = false
   end
 
   -- Render popup
-  if ContextMenu.begin(ctx, "PoolActionsMenu") then
-    if ContextMenu.item(ctx, "Append Selected Regions to Project") then
+  if ContextMenu.begin(ctx, 'PoolActionsMenu') then
+    if ContextMenu.item(ctx, 'Append Selected Regions to Project') then
       local rids = extract_pool_selection(coordinator.pool_grid and coordinator.pool_grid.selection)
       if #rids > 0 then
         local RegionOps = require('arkitekt.reaper.region_operations')
@@ -55,7 +55,7 @@ function M.render(ctx, coordinator)
       ImGui.CloseCurrentPopup(ctx)
     end
 
-    if ContextMenu.item(ctx, "Paste Selected Regions at Edit Cursor") then
+    if ContextMenu.item(ctx, 'Paste Selected Regions at Edit Cursor') then
       local rids = extract_pool_selection(coordinator.pool_grid and coordinator.pool_grid.selection)
       if #rids > 0 then
         local RegionOps = require('arkitekt.reaper.region_operations')

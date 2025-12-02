@@ -20,21 +20,21 @@ end
 -- @param ctx ImGui context
 function M.render(console, ctx)
   if not console or not ctx then
-    error("Console.render() requires console instance and ImGui context")
+    error('Console.render() requires console instance and ImGui context')
   end
   console:render(ctx)
 end
 
 --- Set the log level filter
 -- @param console Console instance
--- @param level string One of: "All", "INFO", "DEBUG", "WARN", "ERROR", "PROFILE"
+-- @param level string One of: 'All', 'INFO', 'DEBUG', 'WARN', 'ERROR', 'PROFILE'
 function M.set_level_filter(console, level)
   if not console then
-    error("Console.set_level_filter() requires console instance")
+    error('Console.set_level_filter() requires console instance')
   end
   local valid = {All=true, INFO=true, DEBUG=true, WARN=true, ERROR=true, PROFILE=true}
   if not valid[level] then
-    error("Invalid filter level: " .. tostring(level))
+    error('Invalid filter level: ' .. tostring(level))
   end
   console.filter_category = level
   console:update_text_view()
@@ -45,7 +45,7 @@ end
 -- @return string Current filter level
 function M.get_level_filter(console)
   if not console then
-    error("Console.get_level_filter() requires console instance")
+    error('Console.get_level_filter() requires console instance')
   end
   return console.filter_category
 end
@@ -55,9 +55,9 @@ end
 -- @param text string Search query (empty string to clear)
 function M.set_search(console, text)
   if not console then
-    error("Console.set_search() requires console instance")
+    error('Console.set_search() requires console instance')
   end
-  console.search_text = text or ""
+  console.search_text = text or ''
   console:update_text_view()
 end
 
@@ -66,7 +66,7 @@ end
 -- @return string Current search query
 function M.get_search(console)
   if not console then
-    error("Console.get_search() requires console instance")
+    error('Console.get_search() requires console instance')
   end
   return console.search_text
 end
@@ -75,7 +75,7 @@ end
 -- @param console Console instance
 function M.pause(console)
   if not console then
-    error("Console.pause() requires console instance")
+    error('Console.pause() requires console instance')
   end
   console.paused = true
 end
@@ -84,7 +84,7 @@ end
 -- @param console Console instance
 function M.resume(console)
   if not console then
-    error("Console.resume() requires console instance")
+    error('Console.resume() requires console instance')
   end
   console.paused = false
 end
@@ -93,7 +93,7 @@ end
 -- @param console Console instance
 function M.toggle_pause(console)
   if not console then
-    error("Console.toggle_pause() requires console instance")
+    error('Console.toggle_pause() requires console instance')
   end
   console.paused = not console.paused
 end
@@ -103,7 +103,7 @@ end
 -- @return boolean True if paused
 function M.is_paused(console)
   if not console then
-    error("Console.is_paused() requires console instance")
+    error('Console.is_paused() requires console instance')
   end
   return console.paused
 end
@@ -113,7 +113,7 @@ end
 -- @return boolean True if selection was copied
 function M.copy_selection(console)
   if not console then
-    error("Console.copy_selection() requires console instance")
+    error('Console.copy_selection() requires console instance')
   end
   return console.text_view:copy()
 end
@@ -122,7 +122,7 @@ end
 -- @param console Console instance
 function M.select_all(console)
   if not console then
-    error("Console.select_all() requires console instance")
+    error('Console.select_all() requires console instance')
   end
   console.text_view:select_all()
 end
@@ -132,7 +132,7 @@ end
 -- @return boolean True if text is selected
 function M.has_selection(console)
   if not console then
-    error("Console.has_selection() requires console instance")
+    error('Console.has_selection() requires console instance')
   end
   return console.text_view:has_selection()
 end
@@ -142,7 +142,7 @@ end
 -- @return string Selected text or empty string
 function M.get_selected_text(console)
   if not console then
-    error("Console.get_selected_text() requires console instance")
+    error('Console.get_selected_text() requires console instance')
   end
   return console.text_view:get_selected_text()
 end
@@ -152,7 +152,7 @@ end
 -- @return number Current frames per second
 function M.get_fps(console)
   if not console then
-    error("Console.get_fps() requires console instance")
+    error('Console.get_fps() requires console instance')
   end
   return console.fps
 end
@@ -162,7 +162,7 @@ end
 -- @return number Frame time in ms
 function M.get_frame_time(console)
   if not console then
-    error("Console.get_frame_time() requires console instance")
+    error('Console.get_frame_time() requires console instance')
   end
   return console.frame_time_ms
 end

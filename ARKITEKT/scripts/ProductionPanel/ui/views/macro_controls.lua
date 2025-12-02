@@ -14,14 +14,14 @@ local Theme = require('arkitekt.core.theme')
 
 -- MOCK DATA (for prototype)
 local mock_macros = {
-  { name = "Cutoff", value = 0.65, assigned = "Filter - Cutoff" },
-  { name = "Resonance", value = 0.42, assigned = "Filter - Q" },
-  { name = "Attack", value = 0.15, assigned = "Env - Attack" },
-  { name = "Release", value = 0.58, assigned = "Env - Release" },
-  { name = "Mix", value = 0.50, assigned = "Reverb - Mix" },
-  { name = "Time", value = 0.73, assigned = "Delay - Time" },
-  { name = "Feedback", value = 0.38, assigned = "Delay - Feedback" },
-  { name = "Drive", value = 0.80, assigned = "Distortion - Drive" },
+  { name = 'Cutoff', value = 0.65, assigned = 'Filter - Cutoff' },
+  { name = 'Resonance', value = 0.42, assigned = 'Filter - Q' },
+  { name = 'Attack', value = 0.15, assigned = 'Env - Attack' },
+  { name = 'Release', value = 0.58, assigned = 'Env - Release' },
+  { name = 'Mix', value = 0.50, assigned = 'Reverb - Mix' },
+  { name = 'Time', value = 0.73, assigned = 'Delay - Time' },
+  { name = 'Feedback', value = 0.38, assigned = 'Delay - Feedback' },
+  { name = 'Drive', value = 0.80, assigned = 'Distortion - Drive' },
 }
 
 -- STATE
@@ -57,8 +57,8 @@ function M.draw(ctx)
   local padding = Defaults.UI.SECTION_PADDING
 
   -- Header
-  -- ImGui.PushFont(ctx, "font_title" or 0)  -- Font API requires font object + size, disabled for now
-  ImGui.Text(ctx, "Macro Controls")
+  -- ImGui.PushFont(ctx, 'font_title' or 0)  -- Font API requires font object + size, disabled for now
+  ImGui.Text(ctx, 'Macro Controls')
   -- ImGui.PopFont(ctx)
 
   ImGui.Spacing(ctx)
@@ -68,7 +68,7 @@ function M.draw(ctx)
   -- Learn mode toggle
   local button_color = state.learn_mode and Theme.COLORS.ACCENT_DANGER or Theme.COLORS.BG_HOVER
   ImGui.PushStyleColor(ctx, ImGui.Col_Button, button_color)
-  if ImGui.Button(ctx, state.learn_mode and "● LEARN MODE ACTIVE" or "Learn", 150, 28) then
+  if ImGui.Button(ctx, state.learn_mode and '● LEARN MODE ACTIVE' or 'Learn', 150, 28) then
     state.learn_mode = not state.learn_mode
     if not state.learn_mode then
       state.selected_macro = nil
@@ -79,7 +79,7 @@ function M.draw(ctx)
   if state.learn_mode then
     ImGui.SameLine(ctx)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, Theme.COLORS.ACCENT_DANGER)
-    ImGui.Text(ctx, "Click a macro knob, then touch a parameter to assign")
+    ImGui.Text(ctx, 'Click a macro knob, then touch a parameter to assign')
     ImGui.PopStyleColor(ctx)
   end
 
@@ -106,14 +106,14 @@ function M.draw(ctx)
 
     -- Draw knob
     local result = Knob.draw(ctx, {
-      id = "macro_" .. i,
+      id = 'macro_' .. i,
       label = macro.name,
       value = macro.value,
       min = macro.min,
       max = macro.max,
       size = knob_size,
       value_color = knob_color,
-      tooltip = macro.assigned and ("Assigned: " .. macro.assigned) or "No assignment",
+      tooltip = macro.assigned and ('Assigned: ' .. macro.assigned) or 'No assignment',
     })
 
     -- Handle knob interaction
@@ -129,13 +129,13 @@ function M.draw(ctx)
 
     -- Assignment label below knob
     ImGui.SetCursorScreenPos(ctx, x, y + knob_size + 24)
-    local assign_text = macro.assigned or "Not assigned"
+    local assign_text = macro.assigned or 'Not assigned'
     local assign_color = macro.assigned and Theme.COLORS.TEXT_DIMMED or Theme.COLORS.TEXT_DARK
 
     -- Truncate if too long
     local max_chars = 12
     if #assign_text > max_chars then
-      assign_text = assign_text:sub(1, max_chars) .. "..."
+      assign_text = assign_text:sub(1, max_chars) .. '...'
     end
 
     local text_w = ImGui.CalcTextSize(ctx, assign_text)
@@ -153,11 +153,11 @@ function M.draw(ctx)
   ImGui.Spacing(ctx)
 
   -- Assignment panel (mockup)
-  ImGui.Text(ctx, "Active FX Container: None")
+  ImGui.Text(ctx, 'Active FX Container: None')
   ImGui.Spacing(ctx)
 
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, Theme.COLORS.TEXT_DARK)
-  ImGui.Text(ctx, "📝 Mockup: Select an FX container to enable macro assignment")
+  ImGui.Text(ctx, '📝 Mockup: Select an FX container to enable macro assignment')
   ImGui.PopStyleColor(ctx)
 end
 

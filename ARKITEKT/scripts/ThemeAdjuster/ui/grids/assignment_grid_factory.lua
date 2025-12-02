@@ -9,7 +9,7 @@ local hexrgb = Ark.Colors.hexrgb
 local M = {}
 
 local function create_behaviors(view, tab_id)
-  local grid_id = "assign_" .. tab_id
+  local grid_id = 'assign_' .. tab_id
   return {
     drag_start = function(grid, item_keys)
       -- With opts-based API, behaviors are replaced each frame, so we need to
@@ -30,15 +30,15 @@ local function create_behaviors(view, tab_id)
     delete = function(grid, item_keys)
       -- Remove parameters or groups from this tab
       for _, key in ipairs(item_keys) do
-        if key:match("^assign_group_") then
+        if key:match('^assign_group_') then
           -- This is a group
-          local group_id = key:match("^assign_group_(.+)")
+          local group_id = key:match('^assign_group_(.+)')
           if group_id then
             view:unassign_group_from_tab(group_id, tab_id)
           end
         else
           -- This is a parameter
-          local param_name = key:match("^assign_(.+)")
+          local param_name = key:match('^assign_(.+)')
           if param_name then
             view:unassign_param_from_tab(param_name, tab_id)
           end
@@ -94,14 +94,14 @@ function M.create_opts(view, tab_id, config)
 
   -- Visual feedback configurations
   local dim_config = config.dim_config or {
-    fill_color = hexrgb("#00000088"),
-    stroke_color = hexrgb("#FFFFFF33"),
+    fill_color = hexrgb('#00000088'),
+    stroke_color = hexrgb('#FFFFFF33'),
     stroke_thickness = 1.5,
     rounding = 3,
   }
 
   local drop_config = config.drop_config or {
-    indicator_color = hexrgb("#5588FFAA"),
+    indicator_color = hexrgb('#5588FFAA'),
     indicator_thickness = 2,
     enabled = true,
   }
@@ -112,11 +112,11 @@ function M.create_opts(view, tab_id, config)
   }
 
   -- Get per-frame items from view's cached property or fallback
-  local items_key = "_assignment_items_" .. tab_id
+  local items_key = '_assignment_items_' .. tab_id
   local items = view[items_key] or view:get_assignment_items(tab_id)
 
   return {
-    id = "assign_" .. tab_id,
+    id = 'assign_' .. tab_id,
     gap = 2,  -- Compact spacing
     min_col_w = function() return 600 end,  -- Single column layout
     fixed_tile_h = 28,  -- Slightly smaller for assignment tiles
@@ -125,10 +125,10 @@ function M.create_opts(view, tab_id, config)
     items = items,
 
     key = function(item)
-      if item.type == "group" then
-        return "assign_group_" .. item.group_id
+      if item.type == 'group' then
+        return 'assign_group_' .. item.group_id
       else
-        return "assign_" .. item.param_name
+        return 'assign_' .. item.param_name
       end
     end,
 

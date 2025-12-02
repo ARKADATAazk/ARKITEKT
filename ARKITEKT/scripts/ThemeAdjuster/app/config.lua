@@ -27,8 +27,8 @@ function M.get_assembler_container_config(callbacks, filters)
       elements = {
         -- Left: Configuration tab_strip
         {
-          id = "config_tabs",
-          type = "tab_strip",
+          id = 'config_tabs',
+          type = 'tab_strip',
           width = 300,
           spacing_before = 0,
           config = {
@@ -45,54 +45,54 @@ function M.get_assembler_container_config(callbacks, filters)
         },
         -- Center: Empty spacer
         {
-          id = "spacer1",
-          type = "separator",
+          id = 'spacer1',
+          type = 'separator',
           flex = 1,
           spacing_before = 0,
           config = { show_line = false },
         },
         -- Right: Search, Filters
         {
-          id = "search",
-          type = "inputtext",
+          id = 'search',
+          type = 'inputtext',
           width = 200,
           spacing_before = 0,
           config = {
-            placeholder = "Search packages...",
+            placeholder = 'Search packages...',
             on_change = callbacks.on_search_changed,
           },
         },
         {
-          id = "filters",
-          type = "combo",
+          id = 'filters',
+          type = 'combo',
           width = 80,
           spacing_before = 0,
           config = {
-            tooltip = "Filter Packages",
+            tooltip = 'Filter Packages',
             current_value = nil,
             options = {
-              { value = nil, label = "Filters" },
+              { value = nil, label = 'Filters' },
               {
-                value = "tcp",
-                label = "TCP",
+                value = 'tcp',
+                label = 'TCP',
                 checkbox = true,
                 checked = filters.TCP,
               },
               {
-                value = "mcp",
-                label = "MCP",
+                value = 'mcp',
+                label = 'MCP',
                 checkbox = true,
                 checked = filters.MCP,
               },
               {
-                value = "transport",
-                label = "Transport",
+                value = 'transport',
+                label = 'Transport',
                 checkbox = true,
                 checked = filters.Transport,
               },
               {
-                value = "global",
-                label = "Global",
+                value = 'global',
+                label = 'Global',
                 checkbox = true,
                 checked = filters.Global,
               },

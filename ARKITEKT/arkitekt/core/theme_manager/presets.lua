@@ -34,7 +34,7 @@ end
 
 --- Get primary preset names (for UI selectors)
 function M.get_primary()
-  return { "dark", "grey", "light_grey", "light" }
+  return { 'dark', 'grey', 'light_grey', 'light' }
 end
 
 --- Check if a preset exists
@@ -47,7 +47,7 @@ function M.apply(name)
   local hex = M.presets[name]
   if not hex then return false end
 
-  local bg = Colors.hexrgb(hex .. "FF")
+  local bg = Colors.hexrgb(hex .. 'FF')
   get_theme().generate_and_apply(bg)
   return true
 end
@@ -57,7 +57,7 @@ function M.get_palette(name)
   local hex = M.presets[name]
   if not hex then return nil end
 
-  local bg = Colors.hexrgb(hex .. "FF")
+  local bg = Colors.hexrgb(hex .. 'FF')
   return Engine.generate_palette(bg)
 end
 

@@ -204,7 +204,7 @@ function GUI:draw(ctx, shell_state)
 
     -- Reorganize from raw pool (instant operation)
     if self.state.incremental_loader then
-      local incremental_loader_module = require("ItemPicker.data.loader")
+      local incremental_loader_module = require('ItemPicker.data.loader')
 
       incremental_loader_module.reorganize_items(
         self.state.incremental_loader,
@@ -271,7 +271,7 @@ function GUI:draw(ctx, shell_state)
   -- Check if dragging
   if not self.state.dragging then
     -- Normal mode - show main UI
-    self.layout_view:render(ctx, big_font, big_font_size, "Item Picker", SCREEN_W, SCREEN_H, is_overlay_mode)
+    self.layout_view:render(ctx, big_font, big_font_size, 'Item Picker', SCREEN_W, SCREEN_H, is_overlay_mode)
 
     -- Render track filter modal on top if active
     TrackFilter.render_modal(ctx, self.state, {
@@ -348,7 +348,7 @@ function GUI:draw(ctx, shell_state)
         local effective_pooled = (original_pooled and not alt) or (not original_pooled and alt)
         use_pooled_copy = effective_pooled
         -- Debug output
-        reaper.ShowConsoleMsg(string.format("[POOL DEBUG] alt=%s, original=%s, effective=%s, use_pooled=%s\n",
+        reaper.ShowConsoleMsg(string.format('[POOL DEBUG] alt=%s, original=%s, effective=%s, use_pooled=%s\n',
           tostring(alt), tostring(original_pooled), tostring(effective_pooled), tostring(use_pooled_copy)))
       end
 

@@ -7,7 +7,7 @@ local Logger = require('arkitekt.debug.logger')
 
 local M = {}
 
-package.loaded["RegionPlaylist.ui.shortcuts"] = M
+package.loaded['RegionPlaylist.ui.shortcuts'] = M
 
 function M.handle_keyboard_shortcuts(ctx, state, region_tiles)
   -- Block shortcuts when any popup/modal is open
@@ -19,7 +19,7 @@ function M.handle_keyboard_shortcuts(ctx, state, region_tiles)
   local shift = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
   
   if ctrl and ImGui.IsKeyPressed(ctx, ImGui.Key_Z, false) then
-    local State = require("RegionPlaylist.app.state")
+    local State = require('RegionPlaylist.app.state')
     if shift then
       State.redo()
     else
@@ -29,7 +29,7 @@ function M.handle_keyboard_shortcuts(ctx, state, region_tiles)
   end
   
   if ctrl and ImGui.IsKeyPressed(ctx, ImGui.Key_Y, false) then
-    local State = require("RegionPlaylist.app.state")
+    local State = require('RegionPlaylist.app.state')
     State.redo()
     return true
   end
@@ -49,7 +49,7 @@ function M.handle_keyboard_shortcuts(ctx, state, region_tiles)
       
       local success = state.bridge:play()
       if not success then
-        Logger.warn("PLAYBACK", "Failed to play - check playlist")
+        Logger.warn('PLAYBACK', 'Failed to play - check playlist')
       end
     end
     return true
@@ -67,7 +67,7 @@ function M.handle_keyboard_shortcuts(ctx, state, region_tiles)
   
   if ImGui.IsKeyPressed(ctx, ImGui.Key_Q, false) then
     local bridge_state = state.bridge:get_state()
-    local modes = { "none", "beat", "bar", "grid" }
+    local modes = { 'none', 'beat', 'bar', 'grid' }
     local current_idx = 1
     for i, mode in ipairs(modes) do
       if mode == bridge_state.quantize_mode then

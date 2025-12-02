@@ -26,10 +26,10 @@ M.DEMO = {
 -- FILTER OPTIONS
 -- ============================================================================
 M.FILTER_OPTIONS = {
-  { value = "tcp", label = "TCP", key = "TCP" },
-  { value = "mcp", label = "MCP", key = "MCP" },
-  { value = "transport", label = "Transport", key = "Transport" },
-  { value = "global", label = "Global", key = "Global" },
+  { value = 'tcp', label = 'TCP', key = 'TCP' },
+  { value = 'mcp', label = 'MCP', key = 'MCP' },
+  { value = 'transport', label = 'Transport', key = 'Transport' },
+  { value = 'global', label = 'Global', key = 'Global' },
 }
 
 return M

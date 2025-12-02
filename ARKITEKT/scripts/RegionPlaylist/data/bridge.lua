@@ -65,12 +65,12 @@
 --   - domain/playback/controller.lua (playback engine)
 --   - app/controller.lua (calls invalidate_sequence on commits)
 
-local Engine = require("RegionPlaylist.domain.playback.controller")
-local Playback = require("RegionPlaylist.domain.playback.loop")
-local RegionState = require("RegionPlaylist.data.storage")
-local SequenceExpander = require("RegionPlaylist.domain.playback.expander")
-local Logger = require("arkitekt.debug.logger")
-local Callbacks = require("arkitekt.core.callbacks")
+local Engine = require('RegionPlaylist.domain.playback.controller')
+local Playback = require('RegionPlaylist.domain.playback.loop')
+local RegionState = require('RegionPlaylist.data.storage')
+local SequenceExpander = require('RegionPlaylist.domain.playback.expander')
+local Logger = require('arkitekt.debug.logger')
+local Callbacks = require('arkitekt.core.callbacks')
 
 -- Set to true for verbose sequence building debug logs
 local DEBUG_BRIDGE = false
@@ -84,7 +84,7 @@ local Transport = require('arkitekt.reaper.transport')
 
 local M = {}
 
-package.loaded["RegionPlaylist.data.bridge"] = M
+package.loaded['RegionPlaylist.data.bridge'] = M
 
 -- Use framework callback wrapper instead of local implementation
 local safe_call = Callbacks.safe_call
@@ -113,13 +113,13 @@ function M.create(opts)
 
   bridge.engine = Engine.new({
     proj = bridge.proj,
-    quantize_mode = saved_settings.quantize_mode or "measure",
+    quantize_mode = saved_settings.quantize_mode or 'measure',
     follow_playhead = saved_settings.follow_playhead or false,
     transport_override = saved_settings.transport_override or false,
     loop_playlist = saved_settings.loop_playlist or false,
     follow_viewport = saved_settings.follow_viewport or false,
     shuffle_enabled = saved_settings.shuffle_enabled or false,
-    shuffle_mode = saved_settings.shuffle_mode or "true_shuffle",
+    shuffle_mode = saved_settings.shuffle_mode or 'true_shuffle',
     on_repeat_cycle = nil,
     playlist_lookup = opts.get_playlist_by_id,
   })
@@ -128,7 +128,7 @@ function M.create(opts)
   local needs_save = false
 
   if saved_settings.quantize_mode == nil then
-    saved_settings.quantize_mode = "measure"
+    saved_settings.quantize_mode = 'measure'
     needs_save = true
   end
 
@@ -138,7 +138,7 @@ function M.create(opts)
   end
 
   if saved_settings.shuffle_mode == nil then
-    saved_settings.shuffle_mode = "true_shuffle"
+    saved_settings.shuffle_mode = 'true_shuffle'
     needs_save = true
   end
 
@@ -195,7 +195,7 @@ function M.create(opts)
     -- This prevents the transport from switching playlists when user changes tabs during playback
     if is_playing and bridge._playing_playlist_id then
       if DEBUG_BRIDGE then
-        Logger.debug("BRIDGE", "Skipping sequence rebuild - currently playing playlist %s (active: %s)",
+        Logger.debug('BRIDGE', 'Skipping sequence rebuild - currently playing playlist %s (active: %s)',
           tostring(bridge._playing_playlist_id), tostring(active_playlist_id))
       end
       bridge.sequence_cache_dirty = false
@@ -216,12 +216,12 @@ function M.create(opts)
     for idx, entry in ipairs(sequence) do
       if entry.item_key and not bridge.sequence_lookup[entry.item_key] then
         bridge.sequence_lookup[entry.item_key] = idx
-        if DEBUG_BRIDGE then Logger.debug("BRIDGE", "Mapping key '%s' -> idx %d", entry.item_key, idx) end
+        if DEBUG_BRIDGE then Logger.debug('BRIDGE', "Mapping key '%s' -> idx %d", entry.item_key, idx) end
       end
     end
 
     if DEBUG_BRIDGE then
-      Logger.debug("BRIDGE", "Final sequence_lookup built with %d entries",
+      Logger.debug('BRIDGE', 'Final sequence_lookup built with %d entries',
         (function() local count = 0; for _ in pairs(bridge.sequence_lookup) do count = count + 1 end; return count end)())
     end
 
@@ -283,7 +283,7 @@ function M.create(opts)
         rid = rid,
         name = rgn.name,
         start = rgn.start,
-        ["end"] = rgn["end"],
+        ['end'] = rgn['end'],
         color = rgn.color,
       }
     end
@@ -332,7 +332,7 @@ function M.create(opts)
     self:_ensure_sequence()
     -- Remember which playlist we're playing when playback starts
     self._playing_playlist_id = safe_call(self.get_active_playlist_id)
-    Logger.info("BRIDGE", "PLAY playlist '%s' (%d items)", tostring(self._playing_playlist_id), #self.sequence_cache)
+    Logger.info('BRIDGE', "PLAY playlist '%s' (%d items)", tostring(self._playing_playlist_id), #self.sequence_cache)
 
     -- If we're starting after a stop (not resuming from pause), force reset to beginning
     -- This must happen AFTER _ensure_sequence() so it overrides sequence restoration
@@ -346,7 +346,7 @@ function M.create(opts)
   end
 
   function bridge:stop()
-    Logger.info("BRIDGE", "STOP - clearing playlist '%s'", tostring(self._playing_playlist_id))
+    Logger.info('BRIDGE', "STOP - clearing playlist '%s'", tostring(self._playing_playlist_id))
     -- Clear the playing playlist ID when stopping
     -- This allows the sequence to be rebuilt for a different playlist on next play
     self._playing_playlist_id = nil
@@ -556,14 +556,14 @@ function M.create(opts)
       if entry then
         local region = self.engine.state.region_cache[entry.rid]
         if region then
-          local region_duration = region["end"] - region.start
+          local region_duration = region['end'] - region.start
           total_duration = total_duration + region_duration
           
           if not found_current then
             if idx == current_pointer then
               -- We're currently playing this exact sequence entry
               -- Clamp playpos to handle transition jitter when looping same region
-              local clamped_pos = max(region.start, min(playpos, region["end"]))
+              local clamped_pos = max(region.start, min(playpos, region['end']))
               local region_elapsed = clamped_pos - region.start
               elapsed_duration = elapsed_duration + min(region_elapsed, region_duration)
               found_current = true
@@ -601,11 +601,11 @@ function M.create(opts)
         if region then
           if idx == current_pointer then
             -- We're currently playing this exact sequence entry
-            remaining = remaining + max(0, region["end"] - playpos)
+            remaining = remaining + max(0, region['end'] - playpos)
             found_current = true
           elseif idx > current_pointer then
             -- This entry hasn't played yet
-            remaining = remaining + (region["end"] - region.start)
+            remaining = remaining + (region['end'] - region.start)
           end
         end
       end

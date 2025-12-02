@@ -1,6 +1,6 @@
 -- @noindex
 -- Arkitekt/gui/widgets/overlay/sheet.lua
--- A task-oriented modal "sheet" with visual polish
+-- A task-oriented modal 'sheet' with visual polish
 
 local ImGui = require('arkitekt.platform.imgui')
 
@@ -34,7 +34,7 @@ function Sheet.render(ctx, alpha, bounds, content_fn, opts)
     for i = config.sheet.shadow.layers, 1, -1 do
       local shadow_offset = math.floor((i / config.sheet.shadow.layers) * config.sheet.shadow.max_offset)
       local shadow_alpha = Colors.opacity((config.sheet.shadow.base_alpha / i) * alpha / 255)
-      local shadow_color = Colors.with_alpha(hexrgb("#000000"), shadow_alpha)
+      local shadow_color = Colors.with_alpha(hexrgb('#000000'), shadow_alpha)
       Draw.rect_filled(dl, 
         x - shadow_offset, y - shadow_offset, 
         x + w + shadow_offset, y + h + shadow_offset, 
@@ -78,7 +78,7 @@ function Sheet.render(ctx, alpha, bounds, content_fn, opts)
   Draw.rect(dl, x + 1, y + 1, x + w - 1, y + h - 1, inner_border, r - 1, config.sheet.border.inner_thickness)
 
   local hh = opts.header_h or config.sheet.header.height
-  local title = tostring(opts.title or "")
+  local title = tostring(opts.title or '')
   if #title > 0 then
     local title_color = Colors.with_alpha(
       config.sheet.header.text_color,

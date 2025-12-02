@@ -17,20 +17,20 @@ local CAT = Element.CATEGORIES
 M.elements = {
   -- SIZE element (special - defines panel size)
   {
-    id = "tcp.size",
-    name = "Panel Size",
+    id = 'tcp.size',
+    name = 'Panel Size',
     category = CAT.CONTAINER,
-    description = "Baseline size (x,y) and minimum size (w,h)",
+    description = 'Baseline size (x,y) and minimum size (w,h)',
     is_size = true,
     coords = {x = 300, y = 90, w = 200, h = 60, ls = 0, ts = 0, rs = 0, bs = 0},
   },
 
   -- MARGIN (inner padding)
   {
-    id = "tcp.margin",
-    name = "Inner Margins",
+    id = 'tcp.margin',
+    name = 'Inner Margins',
     category = CAT.CONTAINER,
-    description = "Inner margin padding (l,t,r,b)",
+    description = 'Inner margin padding (l,t,r,b)',
     is_margin = true,
     coords = {x = 4, y = 4, w = 4, h = 4, ls = 0, ts = 0, rs = 0, bs = 0},
   },
@@ -39,94 +39,94 @@ M.elements = {
   -- BUTTONS
   -- ============================================
   {
-    id = "tcp.recarm",
-    name = "Record Arm",
+    id = 'tcp.recarm',
+    name = 'Record Arm',
     category = CAT.BUTTON,
-    description = "Record arm button",
+    description = 'Record arm button',
     coords = {x = 4, y = 4, w = 20, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.recmon",
-    name = "Record Monitor",
+    id = 'tcp.recmon',
+    name = 'Record Monitor',
     category = CAT.BUTTON,
-    description = "Record monitor mode button",
+    description = 'Record monitor mode button',
     coords = {x = 26, y = 4, w = 20, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.recmode",
-    name = "Record Mode",
+    id = 'tcp.recmode',
+    name = 'Record Mode',
     category = CAT.BUTTON,
-    description = "Record mode button",
+    description = 'Record mode button',
     coords = {x = 48, y = 4, w = 20, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.mute",
-    name = "Mute",
+    id = 'tcp.mute',
+    name = 'Mute',
     category = CAT.BUTTON,
-    description = "Mute button",
+    description = 'Mute button',
     coords = {x = 4, y = 26, w = 20, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.solo",
-    name = "Solo",
+    id = 'tcp.solo',
+    name = 'Solo',
     category = CAT.BUTTON,
-    description = "Solo button",
+    description = 'Solo button',
     coords = {x = 26, y = 26, w = 20, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.fx",
-    name = "FX",
+    id = 'tcp.fx',
+    name = 'FX',
     category = CAT.BUTTON,
-    description = "FX button",
+    description = 'FX button',
     coords = {x = 4, y = 48, w = 20, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.fxbyp",
-    name = "FX Bypass",
+    id = 'tcp.fxbyp',
+    name = 'FX Bypass',
     category = CAT.BUTTON,
-    description = "FX bypass button",
+    description = 'FX bypass button',
     coords = {x = 26, y = 48, w = 20, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.fxin",
-    name = "Input FX",
+    id = 'tcp.fxin',
+    name = 'Input FX',
     category = CAT.BUTTON,
-    description = "Input-FX button",
+    description = 'Input-FX button',
     coords = {x = 48, y = 48, w = 20, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.env",
-    name = "Envelope",
+    id = 'tcp.env',
+    name = 'Envelope',
     category = CAT.BUTTON,
-    description = "Envelope/automation mode button",
+    description = 'Envelope/automation mode button',
     coords = {x = 4, y = 70, w = 20, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.phase",
-    name = "Phase",
+    id = 'tcp.phase',
+    name = 'Phase',
     category = CAT.BUTTON,
-    description = "Phase/polarity button",
+    description = 'Phase/polarity button',
     coords = {x = 26, y = 70, w = 20, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.io",
-    name = "I/O",
+    id = 'tcp.io',
+    name = 'I/O',
     category = CAT.BUTTON,
-    description = "IO button",
+    description = 'IO button',
     coords = {x = 48, y = 70, w = 20, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.folder",
-    name = "Folder",
+    id = 'tcp.folder',
+    name = 'Folder',
     category = CAT.BUTTON,
-    description = "Folder button",
+    description = 'Folder button',
     coords = {x = 70, y = 4, w = 20, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.foldercomp",
-    name = "Folder Compact",
+    id = 'tcp.foldercomp',
+    name = 'Folder Compact',
     category = CAT.BUTTON,
-    description = "Folder compact button",
+    description = 'Folder compact button',
     coords = {x = 70, y = 26, w = 20, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
 
@@ -134,24 +134,24 @@ M.elements = {
   -- FADERS/CONTROLS
   -- ============================================
   {
-    id = "tcp.volume",
-    name = "Volume Fader",
+    id = 'tcp.volume',
+    name = 'Volume Fader',
     category = CAT.FADER,
-    description = "Volume fader",
+    description = 'Volume fader',
     coords = {x = 94, y = 4, w = 100, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.pan",
-    name = "Pan Fader",
+    id = 'tcp.pan',
+    name = 'Pan Fader',
     category = CAT.FADER,
-    description = "Pan fader/knob",
+    description = 'Pan fader/knob',
     coords = {x = 94, y = 26, w = 60, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.width",
-    name = "Width Fader",
+    id = 'tcp.width',
+    name = 'Width Fader',
     category = CAT.FADER,
-    description = "Width fader/knob",
+    description = 'Width fader/knob',
     coords = {x = 156, y = 26, w = 60, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
 
@@ -159,17 +159,17 @@ M.elements = {
   -- LABELS/TEXT
   -- ============================================
   {
-    id = "tcp.label",
-    name = "Track Name",
+    id = 'tcp.label',
+    name = 'Track Name',
     category = CAT.LABEL,
-    description = "Track name text",
+    description = 'Track name text',
     coords = {x = 94, y = 48, w = 120, h = 20, ls = 0, ts = 0, rs = 1, bs = 0},  -- Stretches horizontally
   },
   {
-    id = "tcp.trackidx",
-    name = "Track Index",
+    id = 'tcp.trackidx',
+    name = 'Track Index',
     category = CAT.LABEL,
-    description = "Track index number",
+    description = 'Track index number',
     coords = {x = 94, y = 70, w = 30, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
 
@@ -177,24 +177,24 @@ M.elements = {
   -- VOLUME/PAN LABELS (readouts)
   -- ============================================
   {
-    id = "tcp.volume.label",
-    name = "Volume Readout",
+    id = 'tcp.volume.label',
+    name = 'Volume Readout',
     category = CAT.LABEL,
-    description = "Volume readout text",
+    description = 'Volume readout text',
     coords = {x = 196, y = 4, w = 50, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.pan.label",
-    name = "Pan Readout",
+    id = 'tcp.pan.label',
+    name = 'Pan Readout',
     category = CAT.LABEL,
-    description = "Pan readout text",
+    description = 'Pan readout text',
     coords = {x = 94, y = 4, w = 40, h = 16, ls = 0, ts = 0, rs = 0, bs = 0},
   },
   {
-    id = "tcp.width.label",
-    name = "Width Readout",
+    id = 'tcp.width.label',
+    name = 'Width Readout',
     category = CAT.LABEL,
-    description = "Width readout text",
+    description = 'Width readout text',
     coords = {x = 156, y = 4, w = 40, h = 16, ls = 0, ts = 0, rs = 0, bs = 0},
   },
 
@@ -202,10 +202,10 @@ M.elements = {
   -- INPUT
   -- ============================================
   {
-    id = "tcp.recinput",
-    name = "Record Input",
+    id = 'tcp.recinput',
+    name = 'Record Input',
     category = CAT.INPUT,
-    description = "Record input text field",
+    description = 'Record input text field',
     coords = {x = 126, y = 70, w = 80, h = 20, ls = 0, ts = 0, rs = 0, bs = 0},
   },
 
@@ -213,10 +213,10 @@ M.elements = {
   -- METER
   -- ============================================
   {
-    id = "tcp.meter",
-    name = "Meter",
+    id = 'tcp.meter',
+    name = 'Meter',
     category = CAT.METER,
-    description = "Meter outer coordinates",
+    description = 'Meter outer coordinates',
     coords = {x = 250, y = 4, w = 46, h = 82, ls = 0, ts = 0, rs = 1, bs = 1},  -- Anchored right, stretches vertically
   },
 
@@ -224,31 +224,31 @@ M.elements = {
   -- FX PARAMETER AREA
   -- ============================================
   {
-    id = "tcp.fxparm",
-    name = "FX Parameter List",
+    id = 'tcp.fxparm',
+    name = 'FX Parameter List',
     category = CAT.CONTAINER,
-    description = "FX parameter list area",
+    description = 'FX parameter list area',
     coords = {x = 4, y = 92, w = 200, h = 60, ls = 0, ts = 0, rs = 1, bs = 1},  -- Stretches both ways
   },
   {
-    id = "tcp.fxlist",
-    name = "FX Insert List",
+    id = 'tcp.fxlist',
+    name = 'FX Insert List',
     category = CAT.CONTAINER,
-    description = "FX insert list area",
+    description = 'FX insert list area',
     coords = {x = 4, y = 92, w = 200, h = 60, ls = 0, ts = 0, rs = 1, bs = 1},
   },
   {
-    id = "tcp.sendlist",
-    name = "Send List",
+    id = 'tcp.sendlist',
+    name = 'Send List',
     category = CAT.CONTAINER,
-    description = "TCP send list area",
+    description = 'TCP send list area',
     coords = {x = 4, y = 92, w = 200, h = 60, ls = 0, ts = 0, rs = 1, bs = 1},
   },
   {
-    id = "tcp.fxembed",
-    name = "FX Embed Area",
+    id = 'tcp.fxembed',
+    name = 'FX Embed Area',
     category = CAT.CONTAINER,
-    description = "FX Embed area rectangle",
+    description = 'FX Embed area rectangle',
     coords = {x = 4, y = 92, w = 200, h = 60, ls = 0, ts = 0, rs = 1, bs = 1},
   },
 }
@@ -304,7 +304,7 @@ function M.get_main_elements()
   for _, def in ipairs(M.elements) do
     -- Skip sub-elements (.color, .font, .label of controls)
     local parts = {}
-    for p in def.id:gmatch("[^.]+") do parts[#parts + 1] = p end
+    for p in def.id:gmatch('[^.]+') do parts[#parts + 1] = p end
 
     if #parts <= 2 then
       result[#result + 1] = def
@@ -316,13 +316,13 @@ end
 
 -- Category display names
 M.category_names = {
-  [CAT.BUTTON] = "Buttons",
-  [CAT.FADER] = "Faders",
-  [CAT.LABEL] = "Labels",
-  [CAT.METER] = "Meters",
-  [CAT.CONTAINER] = "Containers",
-  [CAT.INPUT] = "Inputs",
-  [CAT.OTHER] = "Other",
+  [CAT.BUTTON] = 'Buttons',
+  [CAT.FADER] = 'Faders',
+  [CAT.LABEL] = 'Labels',
+  [CAT.METER] = 'Meters',
+  [CAT.CONTAINER] = 'Containers',
+  [CAT.INPUT] = 'Inputs',
+  [CAT.OTHER] = 'Other',
 }
 
 -- Category order for display

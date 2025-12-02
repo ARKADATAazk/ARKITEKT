@@ -12,7 +12,7 @@ local Colors = require('arkitekt.core.colors')
 -- ============================================================================
 
 local state = {
-  current_theme = "dark",
+  current_theme = 'dark',
   test_results = {},
 }
 
@@ -23,59 +23,59 @@ local function run_test()
   local config1 = Style.build_button_config()
   local bg1 = config1.bg_color
   state.test_results[#state.test_results + 1] = {
-    test = "Initial button bg",
-    value = string.format("0x%08X", bg1),
+    test = 'Initial button bg',
+    value = string.format('0x%08X', bg1),
     passed = true,
   }
 
   -- Test 2: Change theme
-  ThemeManager.apply_theme("light")
+  ThemeManager.apply_theme('light')
 
   -- Test 3: Build config again (should have new colors)
   local config2 = Style.build_button_config()
   local bg2 = config2.bg_color
 
   state.test_results[#state.test_results + 1] = {
-    test = "After theme change",
-    value = string.format("0x%08X", bg2),
+    test = 'After theme change',
+    value = string.format('0x%08X', bg2),
     passed = (bg1 ~= bg2),  -- Should be different!
   }
 
   -- Test 4: Apply dynamic preset
   local config3 = Style.build_button_config()
-  Style.apply_dynamic_preset(config3, "BUTTON_TOGGLE_TEAL")
+  Style.apply_dynamic_preset(config3, 'BUTTON_TOGGLE_TEAL')
 
   state.test_results[#state.test_results + 1] = {
-    test = "Preset applied (TEAL",
-    value = string.format("bg_on = 0x%08X", config3.bg_on_color or 0),
+    test = 'Preset applied (TEAL',
+    value = string.format('bg_on = 0x%08X', config3.bg_on_color or 0),
     passed = (config3.bg_on_color ~= nil),
   })
 
   -- Test 5: Verify preset uses M.COLORS
   local teal_before = Style.COLORS.ACCENT_TEAL
   local config4 = Style.build_button_config()
-  Style.apply_dynamic_preset(config4, "BUTTON_TOGGLE_TEAL")
+  Style.apply_dynamic_preset(config4, 'BUTTON_TOGGLE_TEAL')
   local preset_color = config4.bg_on_color
 
   state.test_results[#state.test_results + 1] = {
-    test = "Preset references M.COLORS",
-    value = string.format("ACCENT_TEAL = 0x%08X", teal_before),
+    test = 'Preset references M.COLORS',
+    value = string.format('ACCENT_TEAL = 0x%08X', teal_before),
     passed = (preset_color == teal_before),
   }
 
   -- Test 6: Change M.COLORS directly and rebuild
-  Style.COLORS.ACCENT_TEAL = Colors.hexrgb("#FF0000FF")  -- Red
+  Style.COLORS.ACCENT_TEAL = Colors.hexrgb('#FF0000FF')  -- Red
   local config5 = Style.build_button_config()
-  Style.apply_dynamic_preset(config5, "BUTTON_TOGGLE_TEAL")
+  Style.apply_dynamic_preset(config5, 'BUTTON_TOGGLE_TEAL')
 
   state.test_results[#state.test_results + 1] = {
-    test = "Preset adapts to M.COLORS change",
-    value = string.format("New color = 0x%08X", config5.bg_on_color or 0),
-    passed = (config5.bg_on_color == Colors.hexrgb("#FF0000FF")),
+    test = 'Preset adapts to M.COLORS change',
+    value = string.format('New color = 0x%08X', config5.bg_on_color or 0),
+    passed = (config5.bg_on_color == Colors.hexrgb('#FF0000FF')),
   }
 
   -- Restore original theme
-  ThemeManager.apply_theme("dark")
+  ThemeManager.apply_theme('dark')
 end
 
 -- ============================================================================
@@ -101,13 +101,13 @@ local function main()
     return window_open
   end
 
-  ImGui.Text(ctx, "Testing Dynamic Config Builders (Option 3)")
+  ImGui.Text(ctx, 'Testing Dynamic Config Builders (Option 3)')
   ImGui.Spacing(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
   -- Run test button
-  if ImGui.Button(ctx, "Run Tests", 150, 30) then
+  if ImGui.Button(ctx, 'Run Tests', 150, 30) then
     run_test()
   end
 
@@ -115,18 +115,18 @@ local function main()
 
   -- Show test results
   if #state.test_results > 0 then
-    ImGui.Text(ctx, "Test Results:")
+    ImGui.Text(ctx, 'Test Results:')
     ImGui.Spacing(ctx)
 
     for i, result in ipairs(state.test_results) do
       local status_color = result.passed and 0x4CAF50FF or 0xEF5350FF
-      local status_text = result.passed and "[PASS]" or "[FAIL]"
+      local status_text = result.passed and '[PASS]' or '[FAIL]'
 
       ImGui.TextColored(ctx, status_color, status_text)
       ImGui.SameLine(ctx)
       ImGui.Text(ctx, result.test)
 
-      ImGui.Text(ctx, "  → " .. result.value)
+      ImGui.Text(ctx, '  → ' .. result.value)
       ImGui.Spacing(ctx)
     end
   end
@@ -135,15 +135,15 @@ local function main()
   ImGui.Spacing(ctx)
 
   -- Live color display
-  ImGui.Text(ctx, "Current Theme Colors (M.COLORS):")
+  ImGui.Text(ctx, 'Current Theme Colors (M.COLORS):')
   ImGui.Spacing(ctx)
 
   local colors_to_show = {
-    {"BG_BASE", "Background"},
-    {"BG_HOVER", "Hover"},
-    {"TEXT_NORMAL", "Text"},
-    {"ACCENT_TEAL", "Teal Accent"},
-    {"ACCENT_WHITE", "White Accent"},
+    {'BG_BASE', 'Background'},
+    {'BG_HOVER', 'Hover'},
+    {'TEXT_NORMAL', 'Text'},
+    {'ACCENT_TEAL', 'Teal Accent'},
+    {'ACCENT_WHITE', 'White Accent'},
   }
 
   for _, pair in ipairs(colors_to_show) do
@@ -155,7 +155,7 @@ local function main()
       ImGui.SameLine(ctx)
 
       local r, g, b, a = Colors.rgba_to_components(color)
-      ImGui.Text(ctx, string.format("%s: #%02X%02X%02X", label, r, g, b))
+      ImGui.Text(ctx, string.format('%s: #%02X%02X%02X', label, r, g, b))
     end
   end
 
@@ -164,10 +164,10 @@ local function main()
   ImGui.Spacing(ctx)
 
   -- Manual theme switcher
-  ImGui.Text(ctx, "Change Theme:")
+  ImGui.Text(ctx, 'Change Theme:')
   ImGui.Spacing(ctx)
 
-  local themes = {"dark", "light", "midnight", "pro_tools"}
+  local themes = {'dark', 'light', 'midnight', 'pro_tools'}
   for _, theme in ipairs(themes) do
     if ImGui.Button(ctx, theme, 100, 25) then
       ThemeManager.apply_theme(theme)
@@ -177,7 +177,7 @@ local function main()
   end
   ImGui.NewLine(ctx)
 
-  ImGui.Text(ctx, "Current: " .. state.current_theme)
+  ImGui.Text(ctx, 'Current: ' .. state.current_theme)
   ImGui.Spacing(ctx)
 
   -- Instructions

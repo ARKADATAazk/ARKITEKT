@@ -23,7 +23,7 @@ local function draw_custom_collapsible_header(ctx, label, is_open, width, config
   local dl = ImGui.GetWindowDrawList(ctx)
 
   -- Invisible button for interaction
-  ImGui.InvisibleButton(ctx, "##header_" .. label, width, header_height)
+  ImGui.InvisibleButton(ctx, '##header_' .. label, width, header_height)
   local clicked = ImGui.IsItemClicked(ctx)
   local hovered = ImGui.IsItemHovered(ctx)
 
@@ -34,7 +34,7 @@ local function draw_custom_collapsible_header(ctx, label, is_open, width, config
   end
 
   -- Draw chevron icon (left-aligned)
-  local chevron = is_open and "▼" or "▶"
+  local chevron = is_open and '▼' or '▶'
   local chevron_x = x + padding
   local chevron_y = y + (header_height - ImGui.GetTextLineHeight(ctx)) / 2
 
@@ -43,7 +43,7 @@ local function draw_custom_collapsible_header(ctx, label, is_open, width, config
   -- Calculate chevron width for text offset
   local chevron_width = ImGui.CalcTextSize(ctx, chevron)
 
-  -- Draw label text (bold) - we'll use regular font but with slight offset for "bold" effect
+  -- Draw label text (bold) - we'll use regular font but with slight offset for 'bold' effect
   local text_x = chevron_x + chevron_width + padding * 2
   local text_y = chevron_y
 
@@ -56,11 +56,11 @@ end
 
 -- Tags list for bottom of directory tab (with filtering)
 local function draw_tags_mini_list(ctx, state, config, width, height)
-  if not Helpers.begin_child_compat(ctx, "DirectoryTags", width, height, true) then
+  if not Helpers.begin_child_compat(ctx, 'DirectoryTags', width, height, true) then
     return
   end
 
-  -- Header with "+" button
+  -- Header with '+' button
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
 
   -- Position button at the right
@@ -68,19 +68,19 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
   ImGui.SetCursorPosX(ctx, button_x)
 
   if Ark.Button.draw_at_cursor(ctx, {
-    label = "+",
+    label = '+',
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
-  }, "createtag_dir") then
+  }, 'createtag_dir') then
     -- Create new tag - prompt for name
     local tag_num = 1
-    local new_tag_name = "Tag " .. tag_num
+    local new_tag_name = 'Tag ' .. tag_num
 
     -- Find unique name
     if state.metadata and state.metadata.tags then
       while state.metadata.tags[new_tag_name] do
         tag_num = tag_num + 1
-        new_tag_name = "Tag " .. tag_num
+        new_tag_name = 'Tag ' .. tag_num
       end
     end
 
@@ -105,7 +105,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
   local tags_list_height = height - UI.HEADER.DEFAULT - UI.PADDING.SEPARATOR_SPACING
 
   -- List all tags with filtering (scrollable)
-  if Helpers.begin_child_compat(ctx, "DirectoryTagsList", 0, tags_list_height, false) then
+  if Helpers.begin_child_compat(ctx, 'DirectoryTagsList', 0, tags_list_height, false) then
     if state.metadata and state.metadata.tags then
       for tag_name, tag_data in pairs(state.metadata.tags) do
         ImGui.PushID(ctx, tag_name)
@@ -141,7 +141,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
         ImGui.PopID(ctx)
       end
     else
-      ImGui.TextDisabled(ctx, "No tags yet")
+      ImGui.TextDisabled(ctx, 'No tags yet')
     end
 
     ImGui.EndChild(ctx)  -- End DirectoryTagsList
@@ -165,22 +165,22 @@ function M.draw(ctx, state, config, width, height, gui)
 
   -- Physical folder button
   if Ark.Button.draw_at_cursor(ctx, {
-    label = "+",
+    label = '+',
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
-  }, "folder_physical") then
+  }, 'folder_physical') then
     -- Create new folder inside selected folder (or root if nothing selected)
-    local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
+    local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. 'TrackTemplates'
     local parent_path = template_path
-    local parent_relative_path = ""
+    local parent_relative_path = ''
 
     -- Determine parent folder from selection
     if state.selected_folders and next(state.selected_folders) then
       -- Get first selected folder as parent
       for folder_path, _ in pairs(state.selected_folders) do
-        -- Handle ROOT node: "__ROOT__" ID maps to "" path
-        if folder_path == "__ROOT__" then
-          parent_relative_path = ""
+        -- Handle ROOT node: '__ROOT__' ID maps to '' path
+        if folder_path == '__ROOT__' then
+          parent_relative_path = ''
           parent_path = template_path
         else
           parent_relative_path = folder_path
@@ -188,26 +188,26 @@ function M.draw(ctx, state, config, width, height, gui)
         end
         break  -- Use first selected
       end
-    elseif state.selected_folder and state.selected_folder ~= "" and state.selected_folder ~= "__ROOT__" then
+    elseif state.selected_folder and state.selected_folder ~= '' and state.selected_folder ~= '__ROOT__' then
       parent_relative_path = state.selected_folder
       parent_path = template_path .. package.config:sub(1,1) .. state.selected_folder
     end
 
     local folder_num = 1
-    local new_folder_name = "New Folder"
+    local new_folder_name = 'New Folder'
 
     -- Find unique name by checking existing folders in the scanned folder tree
     local function folder_exists_in_parent(parent_rel_path, name)
       -- Navigate to parent folder in the tree
       local function find_children_at_path(node, path)
-        if not path or path == "" then
+        if not path or path == '' then
           -- Root level
           return node.children or {}
         end
 
         -- Navigate to the target path
         local parts = {}
-        for part in path:gmatch("[^"..package.config:sub(1,1).."]+") do
+        for part in path:gmatch('[^'..package.config:sub(1,1)..']+') do
           parts[#parts + 1] = part
         end
 
@@ -239,7 +239,7 @@ function M.draw(ctx, state, config, width, height, gui)
 
     while folder_exists_in_parent(parent_relative_path, new_folder_name) do
       folder_num = folder_num + 1
-      new_folder_name = "New Folder " .. folder_num
+      new_folder_name = 'New Folder ' .. folder_num
     end
 
     local success, new_path = FileOps.create_folder(parent_path, new_folder_name)
@@ -250,7 +250,7 @@ function M.draw(ctx, state, config, width, height, gui)
       -- Select the newly created folder
       local sep = package.config:sub(1,1)
       local new_relative_path = parent_relative_path
-      if new_relative_path ~= "" then
+      if new_relative_path ~= '' then
         new_relative_path = new_relative_path .. sep .. new_folder_name
       else
         new_relative_path = new_folder_name
@@ -263,49 +263,49 @@ function M.draw(ctx, state, config, width, height, gui)
       state.last_clicked_folder = new_relative_path
 
       -- Open parent folder to show the new folder
-      if parent_relative_path ~= "" then
+      if parent_relative_path ~= '' then
         state.folder_open_state[parent_relative_path] = true
       end
-      state.folder_open_state["__ROOT__"] = true  -- Open ROOT
+      state.folder_open_state['__ROOT__'] = true  -- Open ROOT
 
       -- Show status message
-      state.set_status("Created folder: " .. new_folder_name, "success")
+      state.set_status('Created folder: ' .. new_folder_name, 'success')
     else
-      state.set_status("Failed to create folder", "error")
+      state.set_status('Failed to create folder', 'error')
     end
   end
 
   -- Virtual folder button
   ImGui.SameLine(ctx, 0, UI.BUTTON.SPACING)
   if Ark.Button.draw_at_cursor(ctx, {
-    label = "V",
+    label = 'V',
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
-  }, "folder_virtual") then
+  }, 'folder_virtual') then
     -- Create new virtual folder
     local Persistence = require('TemplateBrowser.data.storage')
 
     -- Determine parent folder from selection (only virtual folders/root)
-    local parent_id = "__VIRTUAL_ROOT__"  -- Default to virtual root
+    local parent_id = '__VIRTUAL_ROOT__'  -- Default to virtual root
     if state.selected_folders and next(state.selected_folders) then
       for folder_id, _ in pairs(state.selected_folders) do
         -- Only use as parent if it's a virtual folder
         local is_virtual = state.metadata.virtual_folders and state.metadata.virtual_folders[folder_id]
-        if is_virtual or folder_id == "__VIRTUAL_ROOT__" then
+        if is_virtual or folder_id == '__VIRTUAL_ROOT__' then
           parent_id = folder_id
           break  -- Use first selected virtual folder
         end
       end
     elseif state.selected_folder then
       local is_virtual = state.metadata.virtual_folders and state.metadata.virtual_folders[state.selected_folder]
-      if is_virtual or state.selected_folder == "__VIRTUAL_ROOT__" then
+      if is_virtual or state.selected_folder == '__VIRTUAL_ROOT__' then
         parent_id = state.selected_folder
       end
     end
 
     -- Find unique name for the virtual folder
     local folder_num = 1
-    local new_folder_name = "New Virtual Folder"
+    local new_folder_name = 'New Virtual Folder'
 
     local function virtual_folder_name_exists(name)
       if not state.metadata or not state.metadata.virtual_folders then
@@ -323,7 +323,7 @@ function M.draw(ctx, state, config, width, height, gui)
 
     while virtual_folder_name_exists(new_folder_name) do
       folder_num = folder_num + 1
-      new_folder_name = "New Virtual Folder " .. folder_num
+      new_folder_name = 'New Virtual Folder ' .. folder_num
     end
 
     -- Create the virtual folder in metadata
@@ -350,12 +350,12 @@ function M.draw(ctx, state, config, width, height, gui)
     state.last_clicked_folder = new_id
 
     -- Open parent folder to show the new virtual folder
-    if parent_id ~= "__VIRTUAL_ROOT__" then
+    if parent_id ~= '__VIRTUAL_ROOT__' then
       state.folder_open_state[parent_id] = true
     end
-    state.folder_open_state["__VIRTUAL_ROOT__"] = true  -- Open Virtual Root
+    state.folder_open_state['__VIRTUAL_ROOT__'] = true  -- Open Virtual Root
 
-    state.set_status("Created virtual folder: " .. new_folder_name, "success")
+    state.set_status('Created virtual folder: ' .. new_folder_name, 'success')
   end
 
   ImGui.PopStyleColor(ctx)
@@ -363,14 +363,14 @@ function M.draw(ctx, state, config, width, height, gui)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- "All Templates" option
-  local is_all_selected = (state.selected_folder == nil or state.selected_folder == "")
+  -- 'All Templates' option
+  local is_all_selected = (state.selected_folder == nil or state.selected_folder == '')
   if is_all_selected then
     ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.selected_bg)
   end
 
-  if ImGui.Selectable(ctx, "All Templates", is_all_selected) then
-    state.selected_folder = ""
+  if ImGui.Selectable(ctx, 'All Templates', is_all_selected) then
+    state.selected_folder = ''
     local Scanner = require('TemplateBrowser.domain.template.scanner')
     Scanner.filter_templates(state)
   end
@@ -405,10 +405,10 @@ function M.draw(ctx, state, config, width, height, gui)
 
   -- Count open sections and calculate available height
   local open_sections = {}
-  if state.physical_section_open then open_sections[#open_sections + 1] = "physical" end
-  if state.virtual_section_open then open_sections[#open_sections + 1] = "virtual" end
-  if state.inbox_section_open then open_sections[#open_sections + 1] = "inbox" end
-  if state.archive_section_open then open_sections[#open_sections + 1] = "archive" end
+  if state.physical_section_open then open_sections[#open_sections + 1] = 'physical' end
+  if state.virtual_section_open then open_sections[#open_sections + 1] = 'virtual' end
+  if state.inbox_section_open then open_sections[#open_sections + 1] = 'inbox' end
+  if state.archive_section_open then open_sections[#open_sections + 1] = 'archive' end
 
   local num_open = #open_sections
   local num_closed = 4 - num_open
@@ -486,11 +486,11 @@ function M.draw(ctx, state, config, width, height, gui)
 
   -- Helper function to draw thin separator line above header
   local function draw_thin_separator(ctx, dl, x, y, width, is_hovered, hover_time)
-    local line_color = Ark.Colors.hexrgb("#333333")  -- Default dark
+    local line_color = Ark.Colors.hexrgb('#333333')  -- Default dark
 
     -- If hovered for more than 1 second, highlight light grey
     if is_hovered and hover_time >= hover_threshold then
-      line_color = Ark.Colors.hexrgb("#666666")  -- Light grey highlight
+      line_color = Ark.Colors.hexrgb('#666666')  -- Light grey highlight
     end
 
     -- Draw thin horizontal line
@@ -500,7 +500,7 @@ function M.draw(ctx, state, config, width, height, gui)
   local dl = ImGui.GetWindowDrawList(ctx)
 
   -- === PHYSICAL DIRECTORY SECTION (no separator above first section) ===
-  local physical_clicked = draw_custom_collapsible_header(ctx, "Physical Directory", state.physical_section_open, width, config)
+  local physical_clicked = draw_custom_collapsible_header(ctx, 'Physical Directory', state.physical_section_open, width, config)
 
   -- Update open state on click
   if physical_clicked then
@@ -510,7 +510,7 @@ function M.draw(ctx, state, config, width, height, gui)
 
   if physical_open then
     local scroll_height = physical_actual_height - header_height
-    if scroll_height > 10 and Helpers.begin_child_compat(ctx, "PhysicalTreeScroll", 0, scroll_height, false) then
+    if scroll_height > 10 and Helpers.begin_child_compat(ctx, 'PhysicalTreeScroll', 0, scroll_height, false) then
       TreeViewModule.draw_physical_tree(ctx, state, config)
       ImGui.EndChild(ctx)
     end
@@ -535,7 +535,7 @@ function M.draw(ctx, state, config, width, height, gui)
 
     -- Invisible button for drag interaction (only if virtual is also open)
     ImGui.SetCursorScreenPos(ctx, sep1_x, sep1_y - 2)
-    ImGui.InvisibleButton(ctx, "##sep1", width, separator_height + 4)
+    ImGui.InvisibleButton(ctx, '##sep1', width, separator_height + 4)
 
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNS)
@@ -559,7 +559,7 @@ function M.draw(ctx, state, config, width, height, gui)
   end
 
   -- === VIRTUAL DIRECTORY SECTION ===
-  local virtual_clicked = draw_custom_collapsible_header(ctx, "Virtual Directory", state.virtual_section_open, width, config)
+  local virtual_clicked = draw_custom_collapsible_header(ctx, 'Virtual Directory', state.virtual_section_open, width, config)
 
   -- Update open state on click
   if virtual_clicked then
@@ -569,7 +569,7 @@ function M.draw(ctx, state, config, width, height, gui)
 
   if virtual_open then
     local scroll_height = virtual_actual_height - header_height
-    if scroll_height > 10 and Helpers.begin_child_compat(ctx, "VirtualTreeScroll", 0, scroll_height, false) then
+    if scroll_height > 10 and Helpers.begin_child_compat(ctx, 'VirtualTreeScroll', 0, scroll_height, false) then
       TreeViewModule.draw_virtual_tree(ctx, state, config)
       ImGui.EndChild(ctx)
     end
@@ -594,7 +594,7 @@ function M.draw(ctx, state, config, width, height, gui)
 
     -- Invisible button for drag interaction
     ImGui.SetCursorScreenPos(ctx, sep2_x, sep2_y - 2)
-    ImGui.InvisibleButton(ctx, "##sep2", width, separator_height + 4)
+    ImGui.InvisibleButton(ctx, '##sep2', width, separator_height + 4)
 
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNS)
@@ -618,7 +618,7 @@ function M.draw(ctx, state, config, width, height, gui)
   end
 
   -- === INBOX SECTION ===
-  local inbox_clicked = draw_custom_collapsible_header(ctx, "Inbox", state.inbox_section_open, width, config)
+  local inbox_clicked = draw_custom_collapsible_header(ctx, 'Inbox', state.inbox_section_open, width, config)
 
   -- Update open state on click
   if inbox_clicked then
@@ -628,7 +628,7 @@ function M.draw(ctx, state, config, width, height, gui)
 
   if inbox_open then
     local scroll_height = inbox_actual_height - header_height
-    if scroll_height > 10 and Helpers.begin_child_compat(ctx, "InboxTreeScroll", 0, scroll_height, false) then
+    if scroll_height > 10 and Helpers.begin_child_compat(ctx, 'InboxTreeScroll', 0, scroll_height, false) then
       TreeViewModule.draw_inbox_tree(ctx, state, config)
       ImGui.EndChild(ctx)
     end
@@ -653,7 +653,7 @@ function M.draw(ctx, state, config, width, height, gui)
 
     -- Invisible button for drag interaction
     ImGui.SetCursorScreenPos(ctx, sep3_x, sep3_y - 2)
-    ImGui.InvisibleButton(ctx, "##sep3", width, separator_height + 4)
+    ImGui.InvisibleButton(ctx, '##sep3', width, separator_height + 4)
 
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNS)
@@ -677,7 +677,7 @@ function M.draw(ctx, state, config, width, height, gui)
   end
 
   -- === ARCHIVE SECTION ===
-  local archive_clicked = draw_custom_collapsible_header(ctx, "Archive", state.archive_section_open, width, config)
+  local archive_clicked = draw_custom_collapsible_header(ctx, 'Archive', state.archive_section_open, width, config)
 
   -- Update open state on click
   if archive_clicked then
@@ -687,7 +687,7 @@ function M.draw(ctx, state, config, width, height, gui)
 
   if archive_open then
     local scroll_height = archive_actual_height - header_height
-    if scroll_height > 10 and Helpers.begin_child_compat(ctx, "ArchiveTreeScroll", 0, scroll_height, false) then
+    if scroll_height > 10 and Helpers.begin_child_compat(ctx, 'ArchiveTreeScroll', 0, scroll_height, false) then
       TreeViewModule.draw_archive_tree(ctx, state, config)
       ImGui.EndChild(ctx)
     end

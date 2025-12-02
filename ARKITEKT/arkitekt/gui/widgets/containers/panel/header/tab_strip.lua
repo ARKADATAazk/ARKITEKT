@@ -223,7 +223,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   if overflow_at_edge and final_tab_widths then
     responsive_widths = {}
     for i = 1, #tabs do
-      responsive_widths[i] = final_tab_widths[i] or Rendering.calculate_tab_width(ctx, tabs[i].label or "Tab", config, tabs[i].chip_color ~= nil)
+      responsive_widths[i] = final_tab_widths[i] or Rendering.calculate_tab_width(ctx, tabs[i].label or 'Tab', config, tabs[i].chip_color ~= nil)
     end
   else
     local widths, _ = Rendering.calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, overflow_at_edge)
@@ -269,7 +269,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     if is_visible then
       local pos = state.tab_positions[tab_data.id]
       if pos then
-        local tab_w = responsive_widths[i] or Rendering.calculate_tab_width(ctx, tab_data.label or "Tab", config, tab_data.chip_color ~= nil)
+        local tab_w = responsive_widths[i] or Rendering.calculate_tab_width(ctx, tab_data.label or 'Tab', config, tab_data.chip_color ~= nil)
         local tab_x = (pos.current_x + 0.5) // 1
 
         if state.dragging_tab and state.dragging_tab.id == tab_data.id then
@@ -437,7 +437,7 @@ function M.measure(ctx, config, state)
 
   for i, tab in ipairs(tabs) do
     local has_chip = tab.chip_color ~= nil
-    local tab_w = Rendering.calculate_tab_width(ctx, tab.label or "Tab", config, has_chip)
+    local tab_w = Rendering.calculate_tab_width(ctx, tab.label or 'Tab', config, has_chip)
     total = total + tab_w
 
     local effective_spacing = spacing

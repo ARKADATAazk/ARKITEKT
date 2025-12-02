@@ -18,7 +18,7 @@ local function ensure_init()
 end
 
 -- Generate a random UUID v4
--- Returns: string in format "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+-- Returns: string in format 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
 -- where x is any hexadecimal digit and y is one of 8, 9, A, or B
 function M.generate()
   ensure_init()

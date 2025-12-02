@@ -86,11 +86,11 @@ function M.calculate_next_transition(region_end, mode, max_lookahead, proj)
   
   local target_time
   
-  if mode == "beat" then
+  if mode == 'beat' then
     target_time = M.quantize_to_beat(region_end, proj, false)
-  elseif mode == "bar" then
+  elseif mode == 'bar' then
     target_time = M.quantize_to_bar(region_end, proj, false)
-  elseif mode == "grid" then
+  elseif mode == 'grid' then
     target_time = M.quantize_to_grid(region_end, proj, false)
   else
     target_time = region_end

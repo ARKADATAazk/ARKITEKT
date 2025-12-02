@@ -38,32 +38,32 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
+local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 
 local ImGui = Ark.ImGui
 local script_dir = Ark._bootstrap.root_path
 
-local Shell = require("arkitekt.app.shell")
-local Hub = require("hub.hub")
-local PackageGrid = require("arkitekt.gui.widgets.media.package_tiles.grid")
-local Micromanage = require("arkitekt.gui.widgets.media.package_tiles.micromanage")
-local SelRect = require("arkitekt.gui.widgets.data.selection_rectangle")
+local Shell = require('arkitekt.app.shell')
+local Hub = require('hub.hub')
+local PackageGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
+local Micromanage = require('arkitekt.gui.widgets.media.package_tiles.micromanage')
+local SelRect = require('arkitekt.gui.widgets.data.selection_rectangle')
 
-local SettingsOK, Settings = pcall(require, "arkitekt.core.settings")
-local StyleOK, Style = pcall(require, "arkitekt.gui.style.imgui")
+local SettingsOK, Settings = pcall(require, 'arkitekt.core.settings')
+local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui')
 local hexrgb = Ark.Colors.hexrgb
 
 
 local settings = nil
-if SettingsOK and type(Settings.new)=="function" then
-  local data_dir = Ark._bootstrap.get_data_dir("ARKITEKT")
-  local ok, inst = pcall(Settings.new, data_dir, "settings.json")
+if SettingsOK and type(Settings.new)=='function' then
+  local data_dir = Ark._bootstrap.get_data_dir('ARKITEKT')
+  local ok, inst = pcall(Settings.new, data_dir, 'settings.json')
   if ok then settings = inst end
 end
 
 local pkg = {
   tile = 220,
-  search = "",
+  search = '',
   order = {},
   active = {},
   index = {},
@@ -73,41 +73,41 @@ local pkg = {
 }
 
 local mock_data = {
-  { id="TCP_Modern_Light", name="Modern Light Theme", type="TCP", assets=15, 
-    keys={"tcp_background.png", "tcp_button.png", "tcp_slider.png", "tcp_knob.png", "tcp_meter.png"} },
+  { id='TCP_Modern_Light', name='Modern Light Theme', type='TCP', assets=15, 
+    keys={'tcp_background.png', 'tcp_button.png', 'tcp_slider.png', 'tcp_knob.png', 'tcp_meter.png'} },
   
-  { id="TCP_Dark_Minimal", name="Dark Minimal", type="TCP", assets=22, 
-    keys={"tcp_background.png", "tcp_knob.png", "tcp_vu.png", "tcp_button.png", "tcp_fader.png"} },
+  { id='TCP_Dark_Minimal', name='Dark Minimal', type='TCP', assets=22, 
+    keys={'tcp_background.png', 'tcp_knob.png', 'tcp_vu.png', 'tcp_button.png', 'tcp_fader.png'} },
   
-  { id="MCP_Pro_Blue", name="Pro Blue Mixer", type="MCP", assets=18, 
-    keys={"mcp_strip.png", "mcp_fader.png", "mcp_pan.png", "mcp_solo.png", "mcp_mute.png"} },
+  { id='MCP_Pro_Blue', name='Pro Blue Mixer', type='MCP', assets=18, 
+    keys={'mcp_strip.png', 'mcp_fader.png', 'mcp_pan.png', 'mcp_solo.png', 'mcp_mute.png'} },
   
-  { id="Transport_Classic", name="Classic Transport", type="Transport", assets=12, 
-    keys={"transport_play.png", "transport_stop.png", "transport_record.png", "transport_pause.png"} },
+  { id='Transport_Classic', name='Classic Transport', type='Transport', assets=12, 
+    keys={'transport_play.png', 'transport_stop.png', 'transport_record.png', 'transport_pause.png'} },
   
-  { id="TCP_Colorful", name="Colorful TCP", type="TCP", assets=25, 
-    keys={"tcp_background.png", "tcp_label.png", "tcp_meter.png", "tcp_knob.png", "tcp_slider.png"} },
+  { id='TCP_Colorful', name='Colorful TCP', type='TCP', assets=25, 
+    keys={'tcp_background.png', 'tcp_label.png', 'tcp_meter.png', 'tcp_knob.png', 'tcp_slider.png'} },
   
-  { id="MCP_Compact", name="Compact Mixer", type="MCP", assets=14, 
-    keys={"mcp_strip.png", "mcp_solo.png", "mcp_mute.png", "mcp_fader.png", "mcp_volume.png"} },
+  { id='MCP_Compact', name='Compact Mixer', type='MCP', assets=14, 
+    keys={'mcp_strip.png', 'mcp_solo.png', 'mcp_mute.png', 'mcp_fader.png', 'mcp_volume.png'} },
   
-  { id="Global_Icons", name="Icon Pack", type="Global", assets=45, 
-    keys={"icon_save.png", "icon_load.png", "icon_export.png", "icon_settings.png"} },
+  { id='Global_Icons', name='Icon Pack', type='Global', assets=45, 
+    keys={'icon_save.png', 'icon_load.png', 'icon_export.png', 'icon_settings.png'} },
   
-  { id="TCP_Vintage", name="Vintage Look", type="TCP", assets=19, 
-    keys={"tcp_warm.png", "tcp_analog.png", "tcp_tape.png", "tcp_background.png", "tcp_slider.png"} },
+  { id='TCP_Vintage', name='Vintage Look', type='TCP', assets=19, 
+    keys={'tcp_warm.png', 'tcp_analog.png', 'tcp_tape.png', 'tcp_background.png', 'tcp_slider.png'} },
   
-  { id="MCP_Studio", name="Studio Mixer", type="MCP", assets=21, 
-    keys={"mcp_strip.png", "mcp_fader.png", "mcp_pan.png", "mcp_eq.png", "mcp_insert.png"} },
+  { id='MCP_Studio', name='Studio Mixer', type='MCP', assets=21, 
+    keys={'mcp_strip.png', 'mcp_fader.png', 'mcp_pan.png', 'mcp_eq.png', 'mcp_insert.png'} },
   
-  { id="Transport_Modern", name="Modern Transport", type="Transport", assets=16, 
-    keys={"transport_play.png", "transport_stop.png", "transport_record.png", "transport_loop.png"} },
+  { id='Transport_Modern', name='Modern Transport', type='Transport', assets=16, 
+    keys={'transport_play.png', 'transport_stop.png', 'transport_record.png', 'transport_loop.png'} },
 }
 
 for i, data in ipairs(mock_data) do
   local P = {
     id = data.id,
-    path = "mock://packages/" .. data.id,
+    path = 'mock://packages/' .. data.id,
     meta = {
       name = data.name,
       type = data.type,
@@ -129,7 +129,7 @@ end
 function pkg:visible()
   local result = {}
   for _, P in ipairs(self.index) do
-    local matches_search = (self.search == "" or P.id:lower():find(self.search:lower(), 1, true) or 
+    local matches_search = (self.search == '' or P.id:lower():find(self.search:lower(), 1, true) or 
                            (P.meta.name and P.meta.name:lower():find(self.search:lower(), 1, true)))
     local matches_filter = self.filters[P.meta.type] == true
     
@@ -221,7 +221,7 @@ local sel_rect = SelRect.new()
 local grid = PackageGrid.create(pkg, settings, theme)
 
 local container = Ark.Panel.new({
-  id = "packages_container",
+  id = 'packages_container',
   width = nil,
   height = nil,
   sel_rect = sel_rect,
@@ -244,20 +244,20 @@ local function get_app_status()
   
   if total_conflicts > 0 then
     return {
-      color = hexrgb("#FFA500"),
-      text = string.format("CONFLICTS: %d", total_conflicts),
+      color = hexrgb('#FFA500'),
+      text = string.format('CONFLICTS: %d', total_conflicts),
     }
   end
   
   return {
-    color = hexrgb("#41E0A3"),
-    text = "READY",
+    color = hexrgb('#41E0A3'),
+    text = 'READY',
   }
 end
 
 local function draw_hub(ctx)
   Hub.render_hub(ctx, {
-    apps_path = script_dir .. "/scripts/"
+    apps_path = script_dir .. '/scripts/'
   })
 end
 
@@ -314,55 +314,55 @@ local function draw_packages(ctx)
 end
 
 local function draw_settings(ctx)
-  ImGui.Text(ctx, "Settings")
+  ImGui.Text(ctx, 'Settings')
   ImGui.Separator(ctx)
-  ImGui.TextWrapped(ctx, "This demo showcases the grid widget system:")
-  ImGui.BulletText(ctx, "Multi-select with Ctrl/Shift")
-  ImGui.BulletText(ctx, "Drag & drop reordering")
-  ImGui.BulletText(ctx, "Selection rectangle")
-  ImGui.BulletText(ctx, "Animated transitions")
-  ImGui.BulletText(ctx, "Marching ants borders")
+  ImGui.TextWrapped(ctx, 'This demo showcases the grid widget system:')
+  ImGui.BulletText(ctx, 'Multi-select with Ctrl/Shift')
+  ImGui.BulletText(ctx, 'Drag & drop reordering')
+  ImGui.BulletText(ctx, 'Selection rectangle')
+  ImGui.BulletText(ctx, 'Animated transitions')
+  ImGui.BulletText(ctx, 'Marching ants borders')
   ImGui.Dummy(ctx, 1, 20)
-  ImGui.Text(ctx, string.format("Packages visible: %d", #pkg:visible()))
-  ImGui.Text(ctx, string.format("Selection count: %d", grid:get_selected_count()))
+  ImGui.Text(ctx, string.format('Packages visible: %d', #pkg:visible()))
+  ImGui.Text(ctx, string.format('Selection count: %d', grid:get_selected_count()))
   
   local conflicts = pkg:conflicts(true)
   local total_conflicts = 0
   for _, count in pairs(conflicts) do
     total_conflicts = total_conflicts + count
   end
-  ImGui.Text(ctx, string.format("Conflicts: %d", total_conflicts))
+  ImGui.Text(ctx, string.format('Conflicts: %d', total_conflicts))
 end
 
 local function draw_about(ctx)
-  ImGui.Text(ctx, "About ARKITEKT Hub")
+  ImGui.Text(ctx, 'About ARKITEKT Hub')
   ImGui.Separator(ctx)
-  ImGui.TextWrapped(ctx, "This hub demonstrates the ARKITEKT framework capabilities:")
+  ImGui.TextWrapped(ctx, 'This hub demonstrates the ARKITEKT framework capabilities:')
   ImGui.Dummy(ctx, 1, 10)
-  ImGui.BulletText(ctx, "Modular widget system")
-  ImGui.BulletText(ctx, "Grid-based layouts")
-  ImGui.BulletText(ctx, "Visual effects and animations")
-  ImGui.BulletText(ctx, "Settings persistence")
-  ImGui.BulletText(ctx, "Custom window chrome")
-  ImGui.BulletText(ctx, "App launcher integration")
+  ImGui.BulletText(ctx, 'Modular widget system')
+  ImGui.BulletText(ctx, 'Grid-based layouts')
+  ImGui.BulletText(ctx, 'Visual effects and animations')
+  ImGui.BulletText(ctx, 'Settings persistence')
+  ImGui.BulletText(ctx, 'Custom window chrome')
+  ImGui.BulletText(ctx, 'App launcher integration')
 end
 
 local function draw(ctx, state)
   local active_tab = state.window:get_active_tab()
   
-  if active_tab == "HUB" then 
+  if active_tab == 'HUB' then 
     draw_hub(ctx)
-  elseif active_tab == "PACKAGES" then 
+  elseif active_tab == 'PACKAGES' then 
     draw_packages(ctx)
-  elseif active_tab == "SETTINGS" then 
+  elseif active_tab == 'SETTINGS' then 
     draw_settings(ctx)
-  elseif active_tab == "ABOUT" then 
+  elseif active_tab == 'ABOUT' then 
     draw_about(ctx)
   end
 end
 
 Shell.run({
-  title = "ARKITEKT Hub",
+  title = 'ARKITEKT Hub',
   draw = draw,
   settings = settings,
   style = StyleOK and Style or nil,
@@ -373,11 +373,11 @@ Shell.run({
   content_padding = 12,
   tabs = {
     items = {
-      { id="HUB", label="Hub" },
-      { id="PACKAGES", label="Demo" },
-      { id="SETTINGS", label="Settings" },
-      { id="ABOUT", label="About" },
+      { id='HUB', label='Hub' },
+      { id='PACKAGES', label='Demo' },
+      { id='SETTINGS', label='Settings' },
+      { id='ABOUT', label='About' },
     },
-    active = "HUB",
+    active = 'HUB',
   },
 })

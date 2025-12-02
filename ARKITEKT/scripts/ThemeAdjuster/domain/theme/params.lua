@@ -3,7 +3,7 @@
 -- REAPER theme parameter indexing and access layer
 
 local Logger = require('arkitekt.debug.logger')
-local log = Logger.new("ThemeParams")
+local log = Logger.new('ThemeParams')
 
 local M = {}
 
@@ -37,16 +37,16 @@ function M.index_parameters()
     local name, desc = reaper.ThemeLayout_GetParameter(i)
     if name == nil then break end
 
-    -- Parse parameter description: "A_tcp_LabelSize" → layout='A', param='tcp_LabelSize'
+    -- Parse parameter description: 'A_tcp_LabelSize' → layout='A', param='tcp_LabelSize'
     local layout_char = string.sub(desc, 1, 1)
-    local param_name = string.sub(desc, 3)  -- Skip "A_"
+    local param_name = string.sub(desc, 3)  -- Skip 'A_'
 
     -- Map layout prefix to index key
     local layout_key
     if layout_char == 'A' then layout_key = 'A'
     elseif layout_char == 'B' then layout_key = 'B'
     elseif layout_char == 'C' then layout_key = 'C'
-    elseif layout_char == 'g' then layout_key = 'global'  -- "glb_" prefix
+    elseif layout_char == 'g' then layout_key = 'global'  -- 'glb_' prefix
     else layout_key = 'A' end  -- Default to A for unprefixed params
 
     if paramsIdx[layout_key] then
@@ -267,7 +267,7 @@ function M.initialize()
   local total = count_table(paramsIdx.A) + count_table(paramsIdx.B) +
                 count_table(paramsIdx.C) + count_table(paramsIdx.global)
 
-  log:info("Indexed %d theme parameters", total)
+  log:info('Indexed %d theme parameters', total)
 end
 
 return M

@@ -58,10 +58,10 @@ M.get_color_by_name = Static.get_color_by_name
 -- For theme-reactive colors, use Style.COLORS.OP_MOVE/OP_COPY/etc. at runtime.
 
 M.OPERATIONS = {
-  move = "#CCCCCCFF",   -- Fallback: light gray
-  copy = "#06B6D4FF",   -- Fallback: cyan
-  delete = "#E84A4AFF", -- Fallback: red
-  link = "#4A9EFFFF",   -- Fallback: blue
+  move = '#CCCCCCFF',   -- Fallback: light gray
+  copy = '#06B6D4FF',   -- Fallback: cyan
+  delete = '#E84A4AFF', -- Fallback: red
+  link = '#4A9EFFFF',   -- Fallback: blue
 }
 
 return M

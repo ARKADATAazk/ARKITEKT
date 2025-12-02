@@ -12,35 +12,35 @@ local M = {}
 -- ============================================================================
 
 M.LINK_MODE = {
-  UNLINKED = "unlinked",
-  LINK = "link",        -- Delta-based: parameters move together by same value
-  SYNC = "sync",        -- Absolute: parameter syncs to group's source value
+  UNLINKED = 'unlinked',
+  LINK = 'link',        -- Delta-based: parameters move together by same value
+  SYNC = 'sync',        -- Absolute: parameter syncs to group's source value
 }
 
 M.PARAM_TYPE = {
-  FLOAT = "float",
-  INT = "int",
-  BOOL = "bool",
+  FLOAT = 'float',
+  INT = 'int',
+  BOOL = 'bool',
 }
 
 -- 16 distinct colors for link groups (cycling)
 M.GROUP_COLORS = {
-  hexrgb("#E74C3C"), -- Red
-  hexrgb("#3498DB"), -- Blue
-  hexrgb("#2ECC71"), -- Green
-  hexrgb("#F39C12"), -- Orange
-  hexrgb("#9B59B6"), -- Purple
-  hexrgb("#1ABC9C"), -- Turquoise
-  hexrgb("#E91E63"), -- Pink
-  hexrgb("#00BCD4"), -- Cyan
-  hexrgb("#FF9800"), -- Amber
-  hexrgb("#8BC34A"), -- Light Green
-  hexrgb("#673AB7"), -- Deep Purple
-  hexrgb("#FF5722"), -- Deep Orange
-  hexrgb("#009688"), -- Teal
-  hexrgb("#FFC107"), -- Yellow
-  hexrgb("#795548"), -- Brown
-  hexrgb("#607D8B"), -- Blue Grey
+  hexrgb('#E74C3C'), -- Red
+  hexrgb('#3498DB'), -- Blue
+  hexrgb('#2ECC71'), -- Green
+  hexrgb('#F39C12'), -- Orange
+  hexrgb('#9B59B6'), -- Purple
+  hexrgb('#1ABC9C'), -- Turquoise
+  hexrgb('#E91E63'), -- Pink
+  hexrgb('#00BCD4'), -- Cyan
+  hexrgb('#FF9800'), -- Amber
+  hexrgb('#8BC34A'), -- Light Green
+  hexrgb('#673AB7'), -- Deep Purple
+  hexrgb('#FF5722'), -- Deep Orange
+  hexrgb('#009688'), -- Teal
+  hexrgb('#FFC107'), -- Yellow
+  hexrgb('#795548'), -- Brown
+  hexrgb('#607D8B'), -- Blue Grey
 }
 
 -- ============================================================================
@@ -48,13 +48,13 @@ M.GROUP_COLORS = {
 -- ============================================================================
 
 local state = {
-  -- Link groups: { [group_id] = { params = {param1, param2, ...}, type = "float|int|bool" } }
+  -- Link groups: { [group_id] = { params = {param1, param2, ...}, type = 'float|int|bool' } }
   groups = {},
 
   -- Parameter to group mapping: { [param_name] = group_id }
   param_to_group = {},
 
-  -- Link modes per parameter: { [param_name] = "unlinked|link|sync" }
+  -- Link modes per parameter: { [param_name] = 'unlinked|link|sync' }
   link_modes = {},
 
   -- Virtual values (can exceed Reaper limits for LINK mode)
@@ -74,11 +74,11 @@ local state = {
 
 -- Maps parameter type strings to our internal types
 local function normalize_param_type(param_type)
-  if param_type == "slider" then
+  if param_type == 'slider' then
     return M.PARAM_TYPE.FLOAT
-  elseif param_type == "spinner" then
+  elseif param_type == 'spinner' then
     return M.PARAM_TYPE.INT
-  elseif param_type == "toggle" then
+  elseif param_type == 'toggle' then
     return M.PARAM_TYPE.BOOL
   end
   return nil
@@ -106,7 +106,7 @@ function M.add_to_group(param_name, param_type, target_param_name)
   -- Get normalized type
   local norm_type = normalize_param_type(param_type)
   if not norm_type then
-    return false, "Invalid parameter type"
+    return false, 'Invalid parameter type'
   end
 
   -- Check if target is in a group
@@ -118,7 +118,7 @@ function M.add_to_group(param_name, param_type, target_param_name)
 
     -- Verify type compatibility
     if group.type ~= norm_type then
-      return false, "Type mismatch with group"
+      return false, 'Type mismatch with group'
     end
 
     -- Remove from old group if exists
@@ -338,7 +338,7 @@ function M.propagate_value_change(param_name, old_value, new_value, param)
         -- SYNC: Match same percentage position in target's range
         propagations[#propagations + 1] = {
           param_name = other_param,
-          mode = "sync",
+          mode = 'sync',
           percent = new_percent,  -- Position as percentage (0-1)
         }
 
@@ -360,7 +360,7 @@ function M.propagate_value_change(param_name, old_value, new_value, param)
 
         propagations[#propagations + 1] = {
           param_name = other_param,
-          mode = "link",
+          mode = 'link',
           virtual_value = new_virtual,  -- Virtual value (can be negative)
         }
       end

@@ -3,16 +3,16 @@
 -- Main GUI orchestrator (refactored - view-based architecture)
 
 local ImGui = require('arkitekt.platform.imgui')
-local RegionTiles = require("RegionPlaylist.ui.tiles.coordinator")
-local Shortcuts = require("RegionPlaylist.ui.shortcuts")
-local PlaylistController = require("RegionPlaylist.app.controller")
+local RegionTiles = require('RegionPlaylist.ui.tiles.coordinator')
+local Shortcuts = require('RegionPlaylist.ui.shortcuts')
+local PlaylistController = require('RegionPlaylist.app.controller')
 local Config = require('RegionPlaylist.app.config')
 local ConfigFactory = require('RegionPlaylist.app.config_factory')
-local BatchOperations = require("RegionPlaylist.ui.components.batch_operations")
+local BatchOperations = require('RegionPlaylist.ui.components.batch_operations')
 
-local TransportView = require("RegionPlaylist.ui.views.transport.transport_view")
-local LayoutView = require("RegionPlaylist.ui.views.layout_view")
-local OverflowModalView = require("RegionPlaylist.ui.views.overflow_modal_view")
+local TransportView = require('RegionPlaylist.ui.views.transport.transport_view')
+local LayoutView = require('RegionPlaylist.ui.views.layout_view')
+local OverflowModalView = require('RegionPlaylist.ui.views.overflow_modal_view')
 local Logger = require('arkitekt.debug.logger')
 
 local M = {}
@@ -94,7 +94,7 @@ function M.create(State, AppConfig, settings)
     on_pool_sort = function(mode)
       State.set_sort_mode(mode)
       if mode == nil then
-        State.set_sort_direction("asc")
+        State.set_sort_direction('asc')
       end
       State.persist_ui_prefs()
     end,
@@ -171,14 +171,14 @@ function M.create(State, AppConfig, settings)
 
     -- Single item rename from pool (inline editing)
     on_pool_rename = function(item_key, new_name)
-      local rid = tonumber(item_key:match("pool_(%d+)"))
+      local rid = tonumber(item_key:match('pool_(%d+)'))
       if rid then
         -- Rename region directly
         local Regions = require('arkitekt.reaper.regions')
         Regions.set_region_name(0, rid, new_name)
       else
         -- Rename playlist
-        local playlist_id = item_key:match("pool_playlist_(.+)")
+        local playlist_id = item_key:match('pool_playlist_(.+)')
         if playlist_id then
           self.controller:rename_playlist(playlist_id, new_name)
           -- Refresh tabs to show updated playlist name
@@ -275,9 +275,9 @@ function M.create(State, AppConfig, settings)
       if State.detect_circular_reference then
         local circular, path = State.detect_circular_reference(active_playlist_id, playlist_id)
         if circular then
-          local path_str = table.concat(path, " → ")
-          Logger.warn("GUI", "Circular reference detected: %s", path_str)
-          reaper.MB("Cannot add playlist: circular reference detected.\n\nPath: " .. path_str, "Circular Reference", 0)
+          local path_str = table.concat(path, ' → ')
+          Logger.warn('GUI', 'Circular reference detected: %s', path_str)
+          reaper.MB('Cannot add playlist: circular reference detected.\n\nPath: ' .. path_str, 'Circular Reference', 0)
           return
         end
       end
@@ -298,7 +298,7 @@ function M.create(State, AppConfig, settings)
   self.region_tiles:set_app_bridge(State.get_bridge())
   self.region_tiles:set_pool_mode(State.get_pool_mode())
   
-  State.active_search_filter = ""
+  State.active_search_filter = ''
 
   -- Initialize transport view (ImGui-style module function)
   local transport_config = ConfigFactory.get_transport_config(State)

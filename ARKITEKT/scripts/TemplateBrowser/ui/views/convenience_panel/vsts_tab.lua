@@ -17,14 +17,14 @@ function M.draw(ctx, state, config, width, height)
   local all_fx = FXParser.get_all_fx(state.templates)
 
   -- Header with VST count
-  ImGui.Text(ctx, string.format("%d VST%s found", #all_fx, #all_fx == 1 and "" or "s"))
+  ImGui.Text(ctx, string.format('%d VST%s found', #all_fx, #all_fx == 1 and '' or 's'))
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
   -- Calculate remaining height for VST list
   local vsts_list_height = height - 36  -- Account for header + separator
 
-  if Helpers.begin_child_compat(ctx, "ConvenienceVSTsList", width - config.PANEL_PADDING * 2, vsts_list_height, false) then
+  if Helpers.begin_child_compat(ctx, 'ConvenienceVSTsList', width - config.PANEL_PADDING * 2, vsts_list_height, false) then
     for _, fx_name in ipairs(all_fx) do
       ImGui.PushID(ctx, fx_name)
 
@@ -42,14 +42,14 @@ function M.draw(ctx, state, config, width, height)
       if vst_color then
         bg_color = is_selected and vst_color or Ark.Colors.with_opacity(vst_color, 0.8)
       else
-        bg_color = is_selected and Ark.Colors.hexrgb("#4A4A4ACC") or Ark.Colors.hexrgb("#3A3A3ACC")
+        bg_color = is_selected and Ark.Colors.hexrgb('#4A4A4ACC') or Ark.Colors.hexrgb('#3A3A3ACC')
       end
 
       local clicked, chip_w, chip_h = Chip.draw(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
         bg_color = bg_color,
-        text_color = vst_color and Ark.Colors.auto_text_color(vst_color) or Ark.Colors.hexrgb("#FFFFFF"),
+        text_color = vst_color and Ark.Colors.auto_text_color(vst_color) or Ark.Colors.hexrgb('#FFFFFF'),
         height = 22,
         padding_h = 8,
         rounding = 2,

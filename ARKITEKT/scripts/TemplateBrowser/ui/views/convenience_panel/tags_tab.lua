@@ -15,11 +15,11 @@ local M = {}
 
 -- Draw mini tags list with filtering
 function M.draw(ctx, state, config, width, height)
-  if not Helpers.begin_child_compat(ctx, "ConvenienceTags", width, height, false) then
+  if not Helpers.begin_child_compat(ctx, 'ConvenienceTags', width, height, false) then
     return
   end
 
-  -- Header with "+" button
+  -- Header with '+' button
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
 
   -- Position button at the right
@@ -27,19 +27,19 @@ function M.draw(ctx, state, config, width, height)
   ImGui.SetCursorPosX(ctx, button_x)
 
   if Ark.Button.draw_at_cursor(ctx, {
-    label = "+",
+    label = '+',
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
-  }, "createtag_conv") then
+  }, 'createtag_conv') then
     -- Create new tag - prompt for name
     local tag_num = 1
-    local new_tag_name = "Tag " .. tag_num
+    local new_tag_name = 'Tag ' .. tag_num
 
     -- Find unique name
     if state.metadata and state.metadata.tags then
       while state.metadata.tags[new_tag_name] do
         tag_num = tag_num + 1
-        new_tag_name = "Tag " .. tag_num
+        new_tag_name = 'Tag ' .. tag_num
       end
     end
 
@@ -59,7 +59,7 @@ function M.draw(ctx, state, config, width, height)
   local tags_list_height = height - UI.HEADER.DEFAULT - UI.PADDING.SEPARATOR_SPACING
 
   -- List all tags with filtering (scrollable) using justified layout
-  if Helpers.begin_child_compat(ctx, "ConvenienceTagsList", 0, tags_list_height, false) then
+  if Helpers.begin_child_compat(ctx, 'ConvenienceTagsList', 0, tags_list_height, false) then
     if state.metadata and state.metadata.tags then
       -- Build sorted list of tags
       local tag_items = {}
@@ -118,7 +118,7 @@ function M.draw(ctx, state, config, width, height)
         end
       end
     else
-      ImGui.TextDisabled(ctx, "No tags yet")
+      ImGui.TextDisabled(ctx, 'No tags yet')
     end
 
     ImGui.EndChild(ctx)  -- End ConvenienceTagsList

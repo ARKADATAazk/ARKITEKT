@@ -8,9 +8,9 @@
 --   -- Create group structure
 --   local groups = {
 --     TileGroup.create_group({
---       id = "group_1",
---       name = "Custom Meters",
---       color = "#FF6600",
+--       id = 'group_1',
+--       name = 'Custom Meters',
+--       color = '#FF6600',
 --       collapsed = false,
 --       items = {item1, item2, item3}
 --     }),

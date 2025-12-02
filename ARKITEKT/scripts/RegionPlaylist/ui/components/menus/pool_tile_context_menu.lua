@@ -17,11 +17,11 @@ local function extract_pool_selection(selection)
   if selection then
     local selected_keys = selection:selected_keys()
     for _, key in ipairs(selected_keys) do
-      local rid = key:match("^pool_(%d+)$")
+      local rid = key:match('^pool_(%d+)$')
       if rid then
         rids[#rids + 1] = tonumber(rid)
       end
-      local playlist_id = key:match("^pool_playlist_(.+)$")
+      local playlist_id = key:match('^pool_playlist_(.+)$')
       if playlist_id then
         playlist_ids[#playlist_ids + 1] = playlist_id
       end
@@ -44,16 +44,16 @@ end
 function M.render(ctx, coordinator, shell_state)
   -- Open popup if requested
   if coordinator._pool_tile_context_visible then
-    ImGui.OpenPopup(ctx, "PoolTileContextMenu")
+    ImGui.OpenPopup(ctx, 'PoolTileContextMenu')
     coordinator._pool_tile_context_visible = false
   end
 
   -- Render popup
-  if ContextMenu.begin(ctx, "PoolTileContextMenu") then
+  if ContextMenu.begin(ctx, 'PoolTileContextMenu') then
     local selected_keys = coordinator._pool_tile_context_keys or {}
 
     -- Apply Random Color (same color for all selected)
-    if ContextMenu.item(ctx, "Apply Random Color") then
+    if ContextMenu.item(ctx, 'Apply Random Color') then
       if #selected_keys > 0 and coordinator.controller then
         local color = Persistence.generate_chip_color()
         local rids, playlist_ids = extract_pool_selection(coordinator.pool_grid and coordinator.pool_grid.selection)
@@ -69,7 +69,7 @@ function M.render(ctx, coordinator, shell_state)
     end
 
     -- Apply Random Colors (different color for each)
-    if ContextMenu.item(ctx, "Apply Random Colors") then
+    if ContextMenu.item(ctx, 'Apply Random Colors') then
       if #selected_keys > 0 and coordinator.controller then
         -- Build map of rid -> color for batch operation
         local rid_color_map = {}
@@ -77,11 +77,11 @@ function M.render(ctx, coordinator, shell_state)
 
         for _, key in ipairs(selected_keys) do
           local color = Persistence.generate_chip_color()
-          local rid = key:match("^pool_(%d+)$")
+          local rid = key:match('^pool_(%d+)$')
           if rid then
             rid_color_map[tonumber(rid)] = color
           else
-            local playlist_id = key:match("^pool_playlist_(.+)$")
+            local playlist_id = key:match('^pool_playlist_(.+)$')
             if playlist_id then
               playlist_colors[#playlist_colors + 1] = {id = playlist_id, color = color}
             end
@@ -117,14 +117,14 @@ function M.render(ctx, coordinator, shell_state)
     })
 
     -- Batch Rename & Recolor
-    if ContextMenu.item(ctx, "Batch Rename & Recolor...") then
+    if ContextMenu.item(ctx, 'Batch Rename & Recolor...') then
       if #selected_keys > 0 then
         BatchRenameModal.open(#selected_keys, function(pattern)
           if coordinator.on_pool_batch_rename then
             coordinator.on_pool_batch_rename(selected_keys, pattern)
           end
         end, {
-          item_type = "items",
+          item_type = 'items',
           on_rename_and_recolor = function(pattern, color)
             if coordinator.on_pool_batch_rename_and_recolor then
               coordinator.on_pool_batch_rename_and_recolor(selected_keys, pattern, color)

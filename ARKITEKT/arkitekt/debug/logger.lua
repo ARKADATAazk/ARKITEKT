@@ -17,7 +17,7 @@ local LIVE_STALE_TIMEOUT = 10.0  -- Seconds before slot is considered stale
 
 local function add_entry(level, category, message, ...)
   -- Format message with varargs if provided
-  local formatted_message = message or ""
+  local formatted_message = message or ''
   if select('#', ...) > 0 then
     formatted_message = string.format(message, ...)
   end
@@ -25,7 +25,7 @@ local function add_entry(level, category, message, ...)
   local entry = {
     time = reaper.time_precise(),
     level = level,
-    category = category or "SYSTEM",
+    category = category or 'SYSTEM',
     message = formatted_message,
     data = nil,
     expanded = false,
@@ -41,23 +41,23 @@ local function add_entry(level, category, message, ...)
 end
 
 function M.info(category, message, ...)
-  add_entry("INFO", category, message, ...)
+  add_entry('INFO', category, message, ...)
 end
 
 function M.debug(category, message, ...)
-  add_entry("DEBUG", category, message, ...)
+  add_entry('DEBUG', category, message, ...)
 end
 
 function M.warn(category, message, ...)
-  add_entry("WARN", category, message, ...)
+  add_entry('WARN', category, message, ...)
 end
 
 function M.error(category, message, ...)
-  add_entry("ERROR", category, message, ...)
+  add_entry('ERROR', category, message, ...)
 end
 
 function M.profile(category, duration_ms)
-  add_entry("PROFILE", category, string.format("%.2fms", duration_ms))
+  add_entry('PROFILE', category, string.format('%.2fms', duration_ms))
 end
 
 function M.clear()
@@ -105,12 +105,12 @@ end
 -- ============================================================================
 
 --- Create or update a live log slot
---- @param category string Category name (e.g., "TRANSPORT")
---- @param key string Unique key within category (e.g., "position")
+--- @param category string Category name (e.g., 'TRANSPORT')
+--- @param key string Unique key within category (e.g., 'position')
 --- @param message string Message with optional format specifiers
 --- @param ... any Format arguments
 function M.live(category, key, message, ...)
-  local slot_key = category .. ":" .. key
+  local slot_key = category .. ':' .. key
   local formatted = select('#', ...) > 0 and string.format(message, ...) or message
   local now = reaper.time_precise()
 
@@ -158,14 +158,14 @@ end
 --- @param key string Slot key
 --- @return table|nil slot The slot data or nil
 function M.get_live_slot(category, key)
-  return live_slots[category .. ":" .. key]
+  return live_slots[category .. ':' .. key]
 end
 
 --- Clear a specific live slot
 --- @param category string Category name
 --- @param key string Slot key
 function M.clear_live_slot(category, key)
-  live_slots[category .. ":" .. key] = nil
+  live_slots[category .. ':' .. key] = nil
 end
 
 --- Clear all live slots
@@ -186,7 +186,7 @@ end
 --- @param key string Slot key
 --- @return boolean stale True if slot is stale or doesn't exist
 function M.is_live_stale(category, key)
-  local slot = live_slots[category .. ":" .. key]
+  local slot = live_slots[category .. ':' .. key]
   if not slot then return true end
   return (reaper.time_precise() - slot.last_update) > LIVE_STALE_TIMEOUT
 end
@@ -230,11 +230,11 @@ end
 
 --- Create a logger instance bound to a specific category
 --- Usage:
----   local log = Logger.new("MyCategory")
----   log:info("message")
----   log:debug("value: %d", 42)
----   log:warn("warning")
----   log:error("error occurred")
+---   local log = Logger.new('MyCategory')
+---   log:info('message')
+---   log:debug('value: %d', 42)
+---   log:warn('warning')
+---   log:error('error occurred')
 ---
 --- @param category string The category name for all logs from this instance
 --- @return table logger Logger instance with :info, :debug, :warn, :error methods

@@ -163,7 +163,7 @@ function M:draw(ctx)
 
   for i = 1, n do
     local it = items[i]
-    local label = (it.label or it.id or ("Tab "..i))
+    local label = (it.label or it.id or ('Tab '..i))
     local disabled = (it.disabled == true)
 
     local x1 = edges[i-1]
@@ -173,7 +173,7 @@ function M:draw(ctx)
     local tab_w = (x2 - x1)
 
     ImGui.SetCursorScreenPos(ctx, x1, y1)
-    local _pressed = ImGui.InvisibleButton(ctx, "##tab"..i, tab_w, y2 - y1, ImGui.ButtonFlags_None or 0)
+    local _pressed = ImGui.InvisibleButton(ctx, '##tab'..i, tab_w, y2 - y1, ImGui.ButtonFlags_None or 0)
 
     local hovered = ImGui.IsItemHovered(ctx)
     local held    = ImGui.IsItemActive(ctx)

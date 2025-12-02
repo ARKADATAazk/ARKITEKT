@@ -18,7 +18,7 @@ local M = {}
 -- QUANTIZE DEFAULTS
 -- ============================================================================
 M.QUANTIZE = {
-  default_mode = "measure",
+  default_mode = 'measure',
   default_lookahead = 0.30,
   min_lookahead = 0.20,
   max_lookahead = 1.0,
@@ -32,7 +32,7 @@ M.TRANSPORT = {
   padding = 12,
   spacing = 12,
   -- panel_bg_color: Transparent - Transport uses TransportFX for dynamic themed background
-  panel_bg_color = hexrgb("#00000000"),
+  panel_bg_color = hexrgb('#00000000'),
 
   corner_buttons = {
     size = 30,
@@ -52,7 +52,7 @@ M.TRANSPORT = {
     -- status_color: nil falls back to Style.COLORS.TEXT_DIM
     -- region_color: nil falls back to Style.COLORS.TEXT_NORMAL
     -- track_color: nil falls back to Style.COLORS.BG_HOVER
-    fill_color = hexrgb("#41E0A3"),  -- Accent color (keep explicit)
+    fill_color = hexrgb('#41E0A3'),  -- Accent color (keep explicit)
     progress_height = 3,
   },
 
@@ -112,7 +112,7 @@ M.CONTAINER = {
     corner_button_inner_rounding = 12,
     mode_toggle_width = 100,
     search_width = 200,
-    sort_width = 136,  -- Increased from 120 to fit "Alphabetical"
+    sort_width = 136,  -- Increased from 120 to fit 'Alphabetical'
   },
 }
 
@@ -176,7 +176,7 @@ M.REGION_TILES = {
     border_lerp = 0.5,
     base_fill_desaturation = 0.4,
     base_fill_brightness = 0.4,
-    base_fill_alpha = hexrgb("#00000066"),
+    base_fill_alpha = hexrgb('#00000066'),
   },
 
   dim = {
@@ -192,7 +192,7 @@ M.REGION_TILES = {
         width = 2,
         color = Constants.ACCENT.MOVE,
         glow_width = 12,
-        glow_color = glow_color(ColorDefs.OPERATIONS.move, "33"),
+        glow_color = glow_color(ColorDefs.OPERATIONS.move, '33'),
       },
       caps = {
         width = 8,
@@ -200,7 +200,7 @@ M.REGION_TILES = {
         color = Constants.ACCENT.MOVE,
         rounding = 0,
         glow_size = 3,
-        glow_color = glow_color(ColorDefs.OPERATIONS.move, "44"),
+        glow_color = glow_color(ColorDefs.OPERATIONS.move, '44'),
       },
     },
     copy_mode = {
@@ -208,7 +208,7 @@ M.REGION_TILES = {
         width = 2,
         color = Constants.ACCENT.COPY,
         glow_width = 12,
-        glow_color = glow_color(ColorDefs.OPERATIONS.copy, "33"),
+        glow_color = glow_color(ColorDefs.OPERATIONS.copy, '33'),
       },
       caps = {
         width = 8,
@@ -216,7 +216,7 @@ M.REGION_TILES = {
         color = Constants.ACCENT.COPY,
         rounding = 0,
         glow_size = 3,
-        glow_color = glow_color(ColorDefs.OPERATIONS.copy, "44"),
+        glow_color = glow_color(ColorDefs.OPERATIONS.copy, '44'),
       },
     },
     pulse_speed = 2.5,
@@ -253,21 +253,21 @@ M.REGION_TILES = {
     },
     copy_mode = {
       stroke_color = Constants.ACCENT.COPY,
-      glow_color = glow_color(ColorDefs.OPERATIONS.copy, "33"),
+      glow_color = glow_color(ColorDefs.OPERATIONS.copy, '33'),
       badge_accent = Constants.ACCENT.COPY,
-      indicator_text = "+",
+      indicator_text = '+',
       indicator_color = Constants.ACCENT.COPY,
     },
     move_mode = {
       stroke_color = Constants.ACCENT.MOVE,
-      glow_color = glow_color(ColorDefs.OPERATIONS.move, "33"),
+      glow_color = glow_color(ColorDefs.OPERATIONS.move, '33'),
       badge_accent = Constants.ACCENT.MOVE,
     },
     delete_mode = {
       stroke_color = Constants.ACCENT.DELETE,
-      glow_color = glow_color(ColorDefs.OPERATIONS.delete, "33"),
+      glow_color = glow_color(ColorDefs.OPERATIONS.delete, '33'),
       badge_accent = Constants.ACCENT.DELETE,
-      indicator_text = "-",
+      indicator_text = '-',
       indicator_color = Constants.ACCENT.DELETE,
     },
   },

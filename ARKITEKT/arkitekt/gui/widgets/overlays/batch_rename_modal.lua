@@ -22,19 +22,19 @@ local BatchRenameModal = {}
 BatchRenameModal.__index = BatchRenameModal
 
 -- Global settings persistence (REAPER-wide, not per-project)
-local EXTSTATE_SECTION = "ARKITEKT_BATCH_RENAME"
-local EXTSTATE_SEPARATOR = "wildcard_separator"
-local EXTSTATE_START_INDEX = "wildcard_start_index"
-local EXTSTATE_PADDING = "wildcard_padding"
-local EXTSTATE_LETTER_CASE = "wildcard_letter_case"
-local EXTSTATE_NAMES_CATEGORY = "common_names_category"
+local EXTSTATE_SECTION = 'ARKITEKT_BATCH_RENAME'
+local EXTSTATE_SEPARATOR = 'wildcard_separator'
+local EXTSTATE_START_INDEX = 'wildcard_start_index'
+local EXTSTATE_PADDING = 'wildcard_padding'
+local EXTSTATE_LETTER_CASE = 'wildcard_letter_case'
+local EXTSTATE_NAMES_CATEGORY = 'common_names_category'
 
 -- Load separator preference from global REAPER settings
 local function load_separator_preference()
   local value = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_SEPARATOR)
-  if value == "underscore" then return "underscore"
-  elseif value == "space" then return "space"
-  else return "none" end
+  if value == 'underscore' then return 'underscore'
+  elseif value == 'space' then return 'space'
+  else return 'none' end
 end
 
 -- Save separator preference to global REAPER settings
@@ -45,7 +45,7 @@ end
 -- Load start index preference (0 or 1)
 local function load_start_index_preference()
   local value = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_START_INDEX)
-  return value == "0" and 0 or 1
+  return value == '0' and 0 or 1
 end
 
 -- Save start index preference
@@ -56,8 +56,8 @@ end
 -- Load padding preference (none, 2, 3)
 local function load_padding_preference()
   local value = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_PADDING)
-  if value == "2" then return 2
-  elseif value == "3" then return 3
+  if value == '2' then return 2
+  elseif value == '3' then return 3
   else return 0 end  -- none
 end
 
@@ -69,7 +69,7 @@ end
 -- Load letter case preference (lowercase, uppercase)
 local function load_letter_case_preference()
   local value = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_LETTER_CASE)
-  return value == "uppercase" and "uppercase" or "lowercase"
+  return value == 'uppercase' and 'uppercase' or 'lowercase'
 end
 
 -- Save letter case preference
@@ -80,7 +80,7 @@ end
 -- Load common names category preference
 local function load_names_category_preference()
   local value = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_NAMES_CATEGORY)
-  return value == "general" and "general" or "game"
+  return value == 'general' and 'general' or 'game'
 end
 
 -- Save common names category preference
@@ -99,17 +99,17 @@ local function apply_pattern(pattern, index, start_index, padding, letter_case)
 
   -- Apply number wildcard with padding
   if padding == 2 then
-    result = result:gsub("%$n", string.format("%02d", num_value))
+    result = result:gsub('%$n', string.format('%02d', num_value))
   elseif padding == 3 then
-    result = result:gsub("%$n", string.format("%03d", num_value))
+    result = result:gsub('%$n', string.format('%03d', num_value))
   else
-    result = result:gsub("%$n", tostring(num_value))
+    result = result:gsub('%$n', tostring(num_value))
   end
 
   -- Apply letter wildcard (case based on preference)
-  result = result:gsub("%$l", function()
+  result = result:gsub('%$l', function()
     local letter_index = (num_value) % 26
-    if letter_case == "uppercase" then
+    if letter_case == 'uppercase' then
       return string.char(65 + letter_index)  -- 65 is 'A'
     else
       return string.char(97 + letter_index)  -- 97 is 'a'
@@ -126,7 +126,7 @@ local function generate_preview(pattern, count, start_index, padding, letter_cas
     previews[i] = apply_pattern(pattern, i, start_index, padding, letter_case)
   end
   if count > 5 then
-    previews[#previews + 1] = "..."
+    previews[#previews + 1] = '...'
   end
   return previews
 end
@@ -135,21 +135,21 @@ end
 function M.new()
   return setmetatable({
     is_open = false,
-    pattern = "",
+    pattern = '',
     preview_items = {},
     on_confirm = nil,
     on_rename_and_recolor = nil,
     on_recolor = nil,
     focus_input = false,
     item_count = 0,
-    item_type = "items",  -- Default item type label
+    item_type = 'items',  -- Default item type label
     selected_color = 0xFF5733FF,  -- Default color (RGBA)
     picker_initialized = false,
-    separator = "none",  -- Wildcard separator: "none", "underscore", "space"
+    separator = 'none',  -- Wildcard separator: 'none', 'underscore', 'space'
     start_index = 1,  -- Start from: 0 or 1
     padding = 0,  -- Padding: 0 (none), 2 (01), 3 (001)
-    letter_case = "lowercase",  -- Letter case: "lowercase" or "uppercase"
-    names_category = "game",  -- Common names category: "game" or "general"
+    letter_case = 'lowercase',  -- Letter case: 'lowercase' or 'uppercase'
+    names_category = 'game',  -- Common names category: 'game' or 'general'
   }, BatchRenameModal)
 end
 
@@ -157,13 +157,13 @@ end
 function BatchRenameModal:open(item_count, on_confirm_callback, opts)
   opts = opts or {}
   self.is_open = true
-  self.pattern = ""
+  self.pattern = ''
   self.preview_items = {}
   self.on_confirm = on_confirm_callback
   self.on_rename_and_recolor = opts.on_rename_and_recolor
   self.on_recolor = opts.on_recolor
   self.selected_color = opts.initial_color or 0xFF5733FF
-  self.item_type = opts.item_type or "items"  -- Configurable item type label
+  self.item_type = opts.item_type or 'items'  -- Configurable item type label
   self.focus_input = true
   self.item_count = item_count
   self.picker_initialized = false
@@ -200,10 +200,10 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local start_x = ImGui.GetCursorPosX(ctx) // 1
 
   -- Title centered with configurable item type
-  local title_text = string.format("Rename %d %s", count, self.item_type or "items")
+  local title_text = string.format('Rename %d %s', count, self.item_type or 'items')
   local title_w = ImGui.CalcTextSize(ctx, title_text)
   ImGui.SetCursorPosX(ctx, math.floor(ImGui.GetCursorPosX(ctx) + (modal_w - title_w) * 0.5))
-  ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), title_text)
+  ImGui.TextColored(ctx, hexrgb('#CCCCCCFF'), title_text)
   ImGui.Dummy(ctx, 0, 24)
 
   -- ========================================================================
@@ -220,12 +220,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Initialize color picker only once per modal open
   if not self.picker_initialized then
-    ColorPickerWindow.show_inline("batch_rename_picker", self.selected_color)
+    ColorPickerWindow.show_inline('batch_rename_picker', self.selected_color)
     self.picker_initialized = true
   end
 
   -- Render the inline color picker
-  local color_changed = ColorPickerWindow.render_inline(ctx, "batch_rename_picker", {
+  local color_changed = ColorPickerWindow.render_inline(ctx, 'batch_rename_picker', {
     size = picker_size,
     on_change = function(color)
       self.selected_color = color
@@ -240,7 +240,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- Check if hovering
   local is_help_hovered = ImGui.IsMouseHoveringRect(ctx, help_x, help_y, help_x + help_size, help_y + help_size)
 
-  local icon_color = is_help_hovered and hexrgb("#FFFFFF") or hexrgb("#888888")
+  local icon_color = is_help_hovered and hexrgb('#FFFFFF') or hexrgb('#888888')
 
   -- Get icon font from shell_state
   local icon_font = self.shell_state and self.shell_state.fonts and self.shell_state.fonts.icons
@@ -257,28 +257,28 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Make it clickable
   ImGui.SetCursorPos(ctx, start_x + (picker_size - 32) * 0.5, start_y + picker_size + 8)
-  ImGui.InvisibleButton(ctx, "help_icon", help_size, help_size)
+  ImGui.InvisibleButton(ctx, 'help_icon', help_size, help_size)
 
   -- Show tooltip on hover
   if is_help_hovered then
     ImGui.BeginTooltip(ctx)
     ImGui.PushTextWrapPos(ctx, 400)
-    ImGui.TextColored(ctx, hexrgb("#EEEEEE"), "Batch Rename & Recolor Help")
+    ImGui.TextColored(ctx, hexrgb('#EEEEEE'), 'Batch Rename & Recolor Help')
     ImGui.Separator(ctx)
     ImGui.Dummy(ctx, 0, 4)
-    ImGui.TextColored(ctx, hexrgb("#CCCCCC"), "Wildcards:")
-    ImGui.BulletText(ctx, "$n = number (0, 1, 2... or 1, 2, 3...)")
-    ImGui.BulletText(ctx, "$l = letter (a, b, c... or A, B, C...)")
-    ImGui.BulletText(ctx, "Right-click wildcards for options")
+    ImGui.TextColored(ctx, hexrgb('#CCCCCC'), 'Wildcards:')
+    ImGui.BulletText(ctx, '$n = number (0, 1, 2... or 1, 2, 3...)')
+    ImGui.BulletText(ctx, '$l = letter (a, b, c... or A, B, C...)')
+    ImGui.BulletText(ctx, 'Right-click wildcards for options')
     ImGui.Dummy(ctx, 0, 4)
-    ImGui.TextColored(ctx, hexrgb("#CCCCCC"), "Common Names:")
-    ImGui.BulletText(ctx, "Click to insert into pattern")
-    ImGui.BulletText(ctx, "Color-coded by category/emotion")
-    ImGui.BulletText(ctx, "SHIFT+Click = insert without separator")
-    ImGui.BulletText(ctx, "SHIFT+CTRL+Click = capitalize & no separator")
+    ImGui.TextColored(ctx, hexrgb('#CCCCCC'), 'Common Names:')
+    ImGui.BulletText(ctx, 'Click to insert into pattern')
+    ImGui.BulletText(ctx, 'Color-coded by category/emotion')
+    ImGui.BulletText(ctx, 'SHIFT+Click = insert without separator')
+    ImGui.BulletText(ctx, 'SHIFT+CTRL+Click = capitalize & no separator')
     ImGui.Dummy(ctx, 0, 4)
-    ImGui.TextColored(ctx, hexrgb("#CCCCCC"), "Separator:")
-    ImGui.BulletText(ctx, "Added before wildcards automatically")
+    ImGui.TextColored(ctx, hexrgb('#CCCCCC'), 'Separator:')
+    ImGui.BulletText(ctx, 'Added before wildcards automatically')
     ImGui.PopTextWrapPos(ctx)
     ImGui.EndTooltip(ctx)
   end
@@ -300,16 +300,16 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   end
 
   -- Set text in SearchInput component
-  InputText.set_text("batch_rename_pattern", self.pattern)
+  InputText.set_text('batch_rename_pattern', self.pattern)
 
   local result = InputText.search(ctx, {
-    id = "batch_rename_pattern",
+    id = 'batch_rename_pattern',
     x = screen_x,
     y = screen_y,
     width = right_col_width,
     height = input_height,
     draw_list = dl,
-    placeholder = "pattern$wildcard",
+    placeholder = 'pattern$wildcard',
     on_change = function(text)
       self.pattern = text
       self.preview_items = generate_preview(text, count, self.start_index, self.padding, self.letter_case)
@@ -324,13 +324,13 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Wildcards label and chips (with right-click context menus)
   ImGui.SetCursorPosX(ctx, right_col_x)
-  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcards (right-click for options):")
+  ImGui.TextColored(ctx, hexrgb('#999999FF'), 'Wildcards (right-click for options):')
   ImGui.Dummy(ctx, 0, 6)
   ImGui.SetCursorPosX(ctx, right_col_x)
 
   local wildcard_chips = {
-    {label = "number ($n)", wildcard = "$n", type = "number"},
-    {label = self.letter_case == "uppercase" and "LETTER ($l)" or "letter ($l)", wildcard = "$l", type = "letter"},
+    {label = 'number ($n)', wildcard = '$n', type = 'number'},
+    {label = self.letter_case == 'uppercase' and 'LETTER ($l)' or 'letter ($l)', wildcard = '$l', type = 'letter'},
   }
 
   local chip_spacing = 6
@@ -345,10 +345,10 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
       label = chip_data.label,
       style = Chip.STYLE.ACTION,
       interactive = true,
-      id = "wildcard_" .. i,
+      id = 'wildcard_' .. i,
       bg_color = wildcard_config.bg_color,
       text_color = wildcard_config.text_color,
-      border_color = hexrgb("#00000000"),  -- Transparent border (flat color fill)
+      border_color = hexrgb('#00000000'),  -- Transparent border (flat color fill)
       rounding = wildcard_config.rounding,
       padding_h = wildcard_config.padding_h,
     })
@@ -360,12 +360,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
       local is_ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
 
       -- Insert separator before wildcard (unless shift is held)
-      local sep = ""
+      local sep = ''
       if not is_shift then
-        if self.separator == "underscore" then
-          sep = "_"
-        elseif self.separator == "space" then
-          sep = " "
+        if self.separator == 'underscore' then
+          sep = '_'
+        elseif self.separator == 'space' then
+          sep = ' '
         end
       end
 
@@ -378,21 +378,21 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
     -- Right click - show context menu
     if ImGui.IsItemHovered(ctx) and ImGui.IsMouseClicked(ctx, 1) then
-      ImGui.OpenPopup(ctx, "wildcard_context_" .. chip_data.type)
+      ImGui.OpenPopup(ctx, 'wildcard_context_' .. chip_data.type)
     end
 
     -- Context menu for number wildcard
-    if chip_data.type == "number" and ContextMenu.begin(ctx, "wildcard_context_number") then
-      ImGui.TextColored(ctx, hexrgb("#999999FF"), "Number Options")
+    if chip_data.type == 'number' and ContextMenu.begin(ctx, 'wildcard_context_number') then
+      ImGui.TextColored(ctx, hexrgb('#999999FF'), 'Number Options')
       ContextMenu.separator(ctx)
 
       -- Start from options
-      if ContextMenu.checkbox_item(ctx, "Start from 0", self.start_index == 0) then
+      if ContextMenu.checkbox_item(ctx, 'Start from 0', self.start_index == 0) then
         self.start_index = 0
         save_start_index_preference(0)
         self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
       end
-      if ContextMenu.checkbox_item(ctx, "Start from 1", self.start_index == 1) then
+      if ContextMenu.checkbox_item(ctx, 'Start from 1', self.start_index == 1) then
         self.start_index = 1
         save_start_index_preference(1)
         self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
@@ -401,17 +401,17 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
       ContextMenu.separator(ctx)
 
       -- Padding options
-      if ContextMenu.checkbox_item(ctx, "No padding", self.padding == 0) then
+      if ContextMenu.checkbox_item(ctx, 'No padding', self.padding == 0) then
         self.padding = 0
         save_padding_preference(0)
         self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
       end
-      if ContextMenu.checkbox_item(ctx, "Padding: 01", self.padding == 2) then
+      if ContextMenu.checkbox_item(ctx, 'Padding: 01', self.padding == 2) then
         self.padding = 2
         save_padding_preference(2)
         self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
       end
-      if ContextMenu.checkbox_item(ctx, "Padding: 001", self.padding == 3) then
+      if ContextMenu.checkbox_item(ctx, 'Padding: 001', self.padding == 3) then
         self.padding = 3
         save_padding_preference(3)
         self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
@@ -421,18 +421,18 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     end
 
     -- Context menu for letter wildcard
-    if chip_data.type == "letter" and ContextMenu.begin(ctx, "wildcard_context_letter") then
-      ImGui.TextColored(ctx, hexrgb("#999999FF"), "Letter Case")
+    if chip_data.type == 'letter' and ContextMenu.begin(ctx, 'wildcard_context_letter') then
+      ImGui.TextColored(ctx, hexrgb('#999999FF'), 'Letter Case')
       ContextMenu.separator(ctx)
 
-      if ContextMenu.checkbox_item(ctx, "lowercase (a, b, c...)", self.letter_case == "lowercase") then
-        self.letter_case = "lowercase"
-        save_letter_case_preference("lowercase")
+      if ContextMenu.checkbox_item(ctx, 'lowercase (a, b, c...)', self.letter_case == 'lowercase') then
+        self.letter_case = 'lowercase'
+        save_letter_case_preference('lowercase')
         self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
       end
-      if ContextMenu.checkbox_item(ctx, "UPPERCASE (A, B, C...)", self.letter_case == "uppercase") then
-        self.letter_case = "uppercase"
-        save_letter_case_preference("uppercase")
+      if ContextMenu.checkbox_item(ctx, 'UPPERCASE (A, B, C...)', self.letter_case == 'uppercase') then
+        self.letter_case = 'uppercase'
+        save_letter_case_preference('uppercase')
         self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
       end
 
@@ -445,7 +445,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Common names label with category dropdown
   ImGui.SetCursorPosX(ctx, right_col_x)
-  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Common Names:")
+  ImGui.TextColored(ctx, hexrgb('#999999FF'), 'Common Names:')
   ImGui.SameLine(ctx, 0, 12)
 
   local dropdown_x, dropdown_y = ImGui.GetCursorScreenPos(ctx)
@@ -453,15 +453,15 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local dropdown_h = 24
 
   local result = Combo.draw(ctx, {
-    id = "names_category",
+    id = 'names_category',
     draw_list = dl,
     x = dropdown_x,
     y = dropdown_y,
     width = dropdown_w,
     height = dropdown_h,
     options = {
-      {value = "game", label = "Game Music"},
-      {value = "general", label = "General Music"},
+      {value = 'game', label = 'Game Music'},
+      {value = 'general', label = 'General Music'},
     },
     current_value = self.names_category,
     on_change = function(value)
@@ -478,71 +478,71 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- Common names organized by category with color coding
   -- Color palette: 16 desaturated colors for different musical/emotional categories
   local COLORS = {
-    intense_red = hexrgb("#B85C5C"),      -- Combat, battle, boss, action
-    tension_yellow = hexrgb("#B8A55C"),   -- Tension, suspense
-    calm_green = hexrgb("#6B9B7C"),       -- Calm, peaceful, ambience, explore
-    structure_gray = hexrgb("#8B8B8B"),   -- Intro, outro, verse, chorus, refrain, bridge, part
-    special_purple = hexrgb("#9B7CB8"),   -- Break, stinger, loop
-    victory_gold = hexrgb("#B89B5C"),     -- Victory, theme
-    defeat_dark = hexrgb("#6B5C5C"),      -- Defeat
-    menu_blue = hexrgb("#5C7CB8"),        -- Menu, interlude
-    musical_teal = hexrgb("#5C9B9B"),     -- Solo, tutti, crescendo, diminuendo
-    stealth_indigo = hexrgb("#6B6B8B"),   -- Stealth
-    puzzle_cyan = hexrgb("#5C9BB8"),      -- Puzzle
-    cinematic_slate = hexrgb("#7C7C8B"),  -- Cinematic, cutscene
-    variation_brown = hexrgb("#9B8B6B"),  -- Variation, reprise, coda
+    intense_red = hexrgb('#B85C5C'),      -- Combat, battle, boss, action
+    tension_yellow = hexrgb('#B8A55C'),   -- Tension, suspense
+    calm_green = hexrgb('#6B9B7C'),       -- Calm, peaceful, ambience, explore
+    structure_gray = hexrgb('#8B8B8B'),   -- Intro, outro, verse, chorus, refrain, bridge, part
+    special_purple = hexrgb('#9B7CB8'),   -- Break, stinger, loop
+    victory_gold = hexrgb('#B89B5C'),     -- Victory, theme
+    defeat_dark = hexrgb('#6B5C5C'),      -- Defeat
+    menu_blue = hexrgb('#5C7CB8'),        -- Menu, interlude
+    musical_teal = hexrgb('#5C9B9B'),     -- Solo, tutti, crescendo, diminuendo
+    stealth_indigo = hexrgb('#6B6B8B'),   -- Stealth
+    puzzle_cyan = hexrgb('#5C9BB8'),      -- Puzzle
+    cinematic_slate = hexrgb('#7C7C8B'),  -- Cinematic, cutscene
+    variation_brown = hexrgb('#9B8B6B'),  -- Variation, reprise, coda
   }
 
   local game_music_names = {
-    {name = "combat", color = COLORS.intense_red},
-    {name = "battle", color = COLORS.intense_red},
-    {name = "boss", color = COLORS.intense_red},
-    {name = "action", color = COLORS.intense_red},
-    {name = "tension", color = COLORS.tension_yellow},
-    {name = "suspense", color = COLORS.tension_yellow},
-    {name = "ambience", color = COLORS.calm_green},
-    {name = "calm", color = COLORS.calm_green},
-    {name = "peaceful", color = COLORS.calm_green},
-    {name = "explore", color = COLORS.calm_green},
-    {name = "intro", color = COLORS.structure_gray},
-    {name = "outro", color = COLORS.structure_gray},
-    {name = "break", color = COLORS.special_purple},
-    {name = "stinger", color = COLORS.special_purple},
-    {name = "loop", color = COLORS.special_purple},
-    {name = "menu", color = COLORS.menu_blue},
-    {name = "theme", color = COLORS.victory_gold},
-    {name = "victory", color = COLORS.victory_gold},
-    {name = "defeat", color = COLORS.defeat_dark},
-    {name = "stealth", color = COLORS.stealth_indigo},
-    {name = "puzzle", color = COLORS.puzzle_cyan},
-    {name = "cutscene", color = COLORS.cinematic_slate},
-    {name = "cinematic", color = COLORS.cinematic_slate},
+    {name = 'combat', color = COLORS.intense_red},
+    {name = 'battle', color = COLORS.intense_red},
+    {name = 'boss', color = COLORS.intense_red},
+    {name = 'action', color = COLORS.intense_red},
+    {name = 'tension', color = COLORS.tension_yellow},
+    {name = 'suspense', color = COLORS.tension_yellow},
+    {name = 'ambience', color = COLORS.calm_green},
+    {name = 'calm', color = COLORS.calm_green},
+    {name = 'peaceful', color = COLORS.calm_green},
+    {name = 'explore', color = COLORS.calm_green},
+    {name = 'intro', color = COLORS.structure_gray},
+    {name = 'outro', color = COLORS.structure_gray},
+    {name = 'break', color = COLORS.special_purple},
+    {name = 'stinger', color = COLORS.special_purple},
+    {name = 'loop', color = COLORS.special_purple},
+    {name = 'menu', color = COLORS.menu_blue},
+    {name = 'theme', color = COLORS.victory_gold},
+    {name = 'victory', color = COLORS.victory_gold},
+    {name = 'defeat', color = COLORS.defeat_dark},
+    {name = 'stealth', color = COLORS.stealth_indigo},
+    {name = 'puzzle', color = COLORS.puzzle_cyan},
+    {name = 'cutscene', color = COLORS.cinematic_slate},
+    {name = 'cinematic', color = COLORS.cinematic_slate},
   }
 
   local general_music_names = {
-    {name = "intro", color = COLORS.structure_gray},
-    {name = "outro", color = COLORS.structure_gray},
-    {name = "verse", color = COLORS.structure_gray},
-    {name = "chorus", color = COLORS.structure_gray},
-    {name = "refrain", color = COLORS.structure_gray},
-    {name = "bridge", color = COLORS.structure_gray},
-    {name = "break", color = COLORS.special_purple},
-    {name = "partA", color = COLORS.structure_gray},
-    {name = "partB", color = COLORS.structure_gray},
-    {name = "partC", color = COLORS.structure_gray},
-    {name = "part", color = COLORS.structure_gray},
-    {name = "theme", color = COLORS.victory_gold},
-    {name = "variation", color = COLORS.variation_brown},
-    {name = "reprise", color = COLORS.variation_brown},
-    {name = "coda", color = COLORS.variation_brown},
-    {name = "interlude", color = COLORS.menu_blue},
-    {name = "solo", color = COLORS.musical_teal},
-    {name = "tutti", color = COLORS.musical_teal},
-    {name = "crescendo", color = COLORS.musical_teal},
-    {name = "diminuendo", color = COLORS.musical_teal},
+    {name = 'intro', color = COLORS.structure_gray},
+    {name = 'outro', color = COLORS.structure_gray},
+    {name = 'verse', color = COLORS.structure_gray},
+    {name = 'chorus', color = COLORS.structure_gray},
+    {name = 'refrain', color = COLORS.structure_gray},
+    {name = 'bridge', color = COLORS.structure_gray},
+    {name = 'break', color = COLORS.special_purple},
+    {name = 'partA', color = COLORS.structure_gray},
+    {name = 'partB', color = COLORS.structure_gray},
+    {name = 'partC', color = COLORS.structure_gray},
+    {name = 'part', color = COLORS.structure_gray},
+    {name = 'theme', color = COLORS.victory_gold},
+    {name = 'variation', color = COLORS.variation_brown},
+    {name = 'reprise', color = COLORS.variation_brown},
+    {name = 'coda', color = COLORS.variation_brown},
+    {name = 'interlude', color = COLORS.menu_blue},
+    {name = 'solo', color = COLORS.musical_teal},
+    {name = 'tutti', color = COLORS.musical_teal},
+    {name = 'crescendo', color = COLORS.musical_teal},
+    {name = 'diminuendo', color = COLORS.musical_teal},
   }
 
-  local common_names = self.names_category == "game" and game_music_names or general_music_names
+  local common_names = self.names_category == 'game' and game_music_names or general_music_names
 
   -- Render common names in a clipped child window to prevent overflow
   ImGui.SetCursorPosX(ctx, right_col_x)
@@ -551,7 +551,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
-  if ImGui.BeginChild(ctx, "common_names_child", right_col_width, chips_height, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
+  if ImGui.BeginChild(ctx, 'common_names_child', right_col_width, chips_height, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
     local cur_line_x = 0
     local cur_line_y = 0
     local line_height = 30
@@ -584,10 +584,10 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
         label = name,
         style = Chip.STYLE.ACTION,
         interactive = true,
-        id = "common_name_" .. i,
+        id = 'common_name_' .. i,
         bg_color = color,
         text_color = tag_config.text_color,
-        border_color = hexrgb("#00000000"),  -- Transparent border (flat color fill)
+        border_color = hexrgb('#00000000'),  -- Transparent border (flat color fill)
         rounding = tag_config.rounding,
         padding_h = tag_config.padding_h,
       })
@@ -613,8 +613,8 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
           self.pattern = self.pattern .. name_text
         else
           -- Add separator if pattern is not empty
-          if self.pattern ~= "" and not self.pattern:match("%s$") then
-            self.pattern = self.pattern .. "_"
+          if self.pattern ~= '' and not self.pattern:match('%s$') then
+            self.pattern = self.pattern .. '_'
           end
           self.pattern = self.pattern .. name_text
         end
@@ -633,45 +633,45 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Wildcard separator radio buttons
   ImGui.SetCursorPosX(ctx, right_col_x)
-  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Separator before wildcard:")
+  ImGui.TextColored(ctx, hexrgb('#999999FF'), 'Separator before wildcard:')
   ImGui.Dummy(ctx, 0, 6)
   ImGui.SetCursorPosX(ctx, right_col_x)
 
-  -- Radio button for "None"
+  -- Radio button for 'None'
   if RadioButton.draw(ctx, {
-    id = "sep_none",
-    label = "None",
-    selected = self.separator == "none",
-    advance = "none",
+    id = 'sep_none',
+    label = 'None',
+    selected = self.separator == 'none',
+    advance = 'none',
   }).clicked then
-    self.separator = "none"
-    save_separator_preference("none")
+    self.separator = 'none'
+    save_separator_preference('none')
   end
 
   ImGui.SameLine(ctx, 0, 12)
 
-  -- Radio button for "Underscore"
+  -- Radio button for 'Underscore'
   if RadioButton.draw(ctx, {
-    id = "sep_underscore",
-    label = "Underscore (_)",
-    selected = self.separator == "underscore",
-    advance = "none",
+    id = 'sep_underscore',
+    label = 'Underscore (_)',
+    selected = self.separator == 'underscore',
+    advance = 'none',
   }).clicked then
-    self.separator = "underscore"
-    save_separator_preference("underscore")
+    self.separator = 'underscore'
+    save_separator_preference('underscore')
   end
 
   ImGui.SameLine(ctx, 0, 12)
 
-  -- Radio button for "Space"
+  -- Radio button for 'Space'
   if RadioButton.draw(ctx, {
-    id = "sep_space",
-    label = "Space ( )",
-    selected = self.separator == "space",
-    advance = "none",
+    id = 'sep_space',
+    label = 'Space ( )',
+    selected = self.separator == 'space',
+    advance = 'none',
   }).clicked then
-    self.separator = "space"
-    save_separator_preference("space")
+    self.separator = 'space'
+    save_separator_preference('space')
   end
 
   -- ========================================================================
@@ -691,12 +691,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   if #self.preview_items > 0 then
     ImGui.SetCursorPosX(ctx, start_x)
-    ImGui.TextColored(ctx, hexrgb("#999999FF"), "Preview:")
+    ImGui.TextColored(ctx, hexrgb('#999999FF'), 'Preview:')
     ImGui.Dummy(ctx, 0, 4)
     ImGui.Indent(ctx, start_x + 12)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 2)
     for _, name in ipairs(self.preview_items) do
-      ImGui.TextColored(ctx, hexrgb("#DDDDDDFF"), name)
+      ImGui.TextColored(ctx, hexrgb('#DDDDDDFF'), name)
     end
     ImGui.PopStyleVar(ctx, 1)
     ImGui.Unindent(ctx, start_x + 12)
@@ -723,17 +723,17 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local screen_x, screen_y = ImGui.GetCursorScreenPos(ctx)
 
   local should_close = false
-  local can_rename = self.pattern ~= ""
+  local can_rename = self.pattern ~= ''
 
   -- Cancel button
   local cancel_result = Button.draw(ctx, {
-    id = "batch_rename_cancel",
+    id = 'batch_rename_cancel',
     draw_list = dl,
     x = screen_x,
     y = screen_y,
     width = button_w_small,
     height = button_h,
-    label = "Cancel",
+    label = 'Cancel',
     rounding = 4,
     ignore_modal = true,
   })
@@ -744,13 +744,13 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Rename button (disabled when no pattern)
   local rename_result = Button.draw(ctx, {
-    id = "batch_rename_rename",
+    id = 'batch_rename_rename',
     draw_list = dl,
     x = screen_x + button_w_small + spacing,
     y = screen_y,
     width = button_w_small,
     height = button_h,
-    label = "Rename",
+    label = 'Rename',
     rounding = 4,
     is_disabled = not can_rename,
     ignore_modal = true,
@@ -766,13 +766,13 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- Rename & Recolor button (disabled when no pattern) - WIDER
   local rename_recolor_x = screen_x + (button_w_small + spacing) * 2
   local rename_recolor_result = Button.draw(ctx, {
-    id = "batch_rename_both",
+    id = 'batch_rename_both',
     draw_list = dl,
     x = rename_recolor_x,
     y = screen_y,
     width = button_w_large,
     height = button_h,
-    label = "Rename & Recolor",
+    label = 'Rename & Recolor',
     rounding = 4,
     is_disabled = not can_rename,
     ignore_modal = true,
@@ -788,13 +788,13 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- Recolor button (always enabled)
   local recolor_x = rename_recolor_x + button_w_large + spacing
   local recolor_result = Button.draw(ctx, {
-    id = "batch_rename_recolor",
+    id = 'batch_rename_recolor',
     draw_list = dl,
     x = recolor_x,
     y = screen_y,
     width = button_w_small,
     height = button_h,
-    label = "Recolor",
+    label = 'Recolor',
     rounding = 4,
     ignore_modal = true,
   })
@@ -872,7 +872,7 @@ function BatchRenameModal:draw(ctx, item_count, window, shell_state)
 
   -- Fallback to BeginPopupModal when overlay is not available
   if not self.popup_opened then
-    ImGui.OpenPopup(ctx, "Batch Rename##batch_rename_modal")
+    ImGui.OpenPopup(ctx, 'Batch Rename##batch_rename_modal')
     self.popup_opened = true
   end
 
@@ -888,13 +888,13 @@ function BatchRenameModal:draw(ctx, item_count, window, shell_state)
                 ImGui.WindowFlags_NoDocking
 
   -- Apply consistent styling
-  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, hexrgb("#1A1A1AFF"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#404040FF"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, hexrgb('#1A1A1AFF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb('#404040FF'))
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 16, 12)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 10)
 
   -- Begin modal popup
-  local visible, open = ImGui.BeginPopupModal(ctx, "Batch Rename##batch_rename_modal", true, flags)
+  local visible, open = ImGui.BeginPopupModal(ctx, 'Batch Rename##batch_rename_modal', true, flags)
 
   if visible then
     local should_close = self:draw_content(ctx, count, false)
@@ -947,7 +947,7 @@ local _open_instances = {}
 --- @return string id The ID of this modal instance
 function M.open(item_count, on_confirm_callback, opts)
   opts = opts or {}
-  local id = opts.id or "##batch_rename_modal"
+  local id = opts.id or '##batch_rename_modal'
 
   if not _open_instances[id] then
     _open_instances[id] = M.new()
@@ -957,10 +957,10 @@ function M.open(item_count, on_confirm_callback, opts)
 end
 
 --- Check if a batch rename modal is open
---- @param id string|nil Optional ID (defaults to "##batch_rename_modal")
+--- @param id string|nil Optional ID (defaults to '##batch_rename_modal')
 --- @return boolean
 function M.is_open(id)
-  id = id or "##batch_rename_modal"
+  id = id or '##batch_rename_modal'
   if not _open_instances[id] then return false end
   return _open_instances[id]:should_show()
 end
@@ -970,10 +970,10 @@ end
 --- @param item_count number Number of items
 --- @param window table Window object (for overlay mode)
 --- @param shell_state table Shell state (for fonts)
---- @param id string|nil Optional ID (defaults to "##batch_rename_modal")
+--- @param id string|nil Optional ID (defaults to '##batch_rename_modal')
 --- @return boolean handled Whether the modal was drawn
 function M.draw(ctx, item_count, window, shell_state, id)
-  id = id or "##batch_rename_modal"
+  id = id or '##batch_rename_modal'
   if not _open_instances[id] then return false end
   return _open_instances[id]:draw(ctx, item_count, window, shell_state)
 end

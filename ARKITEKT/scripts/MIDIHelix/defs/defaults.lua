@@ -16,6 +16,6 @@ return {
   WINDOW = {
     WIDTH = 400,
     HEIGHT = 300,
-    TITLE = "MIDI Helix - Euclidean Generator",
+    TITLE = 'MIDI Helix - Euclidean Generator',
   },
 }

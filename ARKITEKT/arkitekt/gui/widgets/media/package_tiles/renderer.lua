@@ -33,12 +33,12 @@ local Metadata = nil
 local function get_metadata()
   if not Metadata then
     -- Get script directory from debug info
-    local info = debug.getinfo(1, "S")
-    local script_dir = info.source:match("@(.+[\\/])") or ""
+    local info = debug.getinfo(1, 'S')
+    local script_dir = info.source:match('@(.+[\\/])') or ''
 
     -- Navigate from arkitekt/gui/widgets/media/package_tiles/ to scripts/ThemeAdjuster/packages/
     -- Go up 5 levels (package_tiles -> media -> widgets -> gui -> arkitekt) then into scripts/ThemeAdjuster/packages
-    local metadata_path = script_dir .. "../../../../../scripts/ThemeAdjuster/packages/metadata.lua"
+    local metadata_path = script_dir .. '../../../../../scripts/ThemeAdjuster/packages/metadata.lua'
 
     -- Try loading directly
     local chunk, err = loadfile(metadata_path)
@@ -79,11 +79,11 @@ M.CONFIG = {
 
   -- Static fallback colors (used when ScriptColors not available)
   colors_static = {
-    bg = { inactive = hexrgb("#1A1A1A"), active = hexrgb("#2D4A37"), hover_tint = hexrgb("#2A2A2A"), hover_influence = 0.4 },
-    border = { inactive = hexrgb("#303030"), active = nil, hover = nil, thickness = 0.5 },
-    text = { active = hexrgb("#FFFFFF"), inactive = hexrgb("#999999"), secondary = hexrgb("#888888"), conflict = hexrgb("#FFA500") },
-    badge = { bg_active = hexrgb("#00000099"), bg_inactive = hexrgb("#00000066"), text = hexrgb("#AAAAAA") },
-    footer = { gradient = hexrgb("#00000044") },
+    bg = { inactive = hexrgb('#1A1A1A'), active = hexrgb('#2D4A37'), hover_tint = hexrgb('#2A2A2A'), hover_influence = 0.4 },
+    border = { inactive = hexrgb('#303030'), active = nil, hover = nil, thickness = 0.5 },
+    text = { active = hexrgb('#FFFFFF'), inactive = hexrgb('#999999'), secondary = hexrgb('#888888'), conflict = hexrgb('#FFA500') },
+    badge = { bg_active = hexrgb('#00000099'), bg_inactive = hexrgb('#00000066'), text = hexrgb('#AAAAAA') },
+    footer = { gradient = hexrgb('#00000044') },
   },
   
   selection = {
@@ -109,42 +109,42 @@ M.CONFIG = {
     max_tags = 10,           -- Maximum tags to show
     -- Full display names
     display = {
-      TCP = "TCP",
-      MCP = "MCP",
-      Transport = "TRANSPORT",
-      Toolbar = "TOOLBARS",
-      Meter = "GLOBAL",      -- Meter consolidated into Global
-      EnvCP = "ENVCP",
-      Items = "ITEMS",
-      MIDI = "MIDI",
-      Track = "TCP",         -- Track consolidated into TCP
-      Global = "GLOBAL",
-      RTCONFIG = "RTCONFIG",
+      TCP = 'TCP',
+      MCP = 'MCP',
+      Transport = 'TRANSPORT',
+      Toolbar = 'TOOLBARS',
+      Meter = 'GLOBAL',      -- Meter consolidated into Global
+      EnvCP = 'ENVCP',
+      Items = 'ITEMS',
+      MIDI = 'MIDI',
+      Track = 'TCP',         -- Track consolidated into TCP
+      Global = 'GLOBAL',
+      RTCONFIG = 'RTCONFIG',
     },
     -- Color palette matching active assignment tagging system
     colors = {
-      TCP = hexrgb("#5A7A9A"),      -- Blue
-      MCP = hexrgb("#9A9A5A"),      -- Yellow
-      ENVCP = hexrgb("#5A9A8A"),    -- Teal
-      TRANSPORT = hexrgb("#9A5A5A"),-- Red
-      GLOBAL = hexrgb("#6A6A6A"),   -- Grey
-      TOOLBARS = hexrgb("#8A6A5A"), -- Brown/orange
-      ITEMS = hexrgb("#7A8A5A"),    -- Olive
-      MIDI = hexrgb("#6A5A8A"),     -- Purple
-      RTCONFIG = hexrgb("#5AAA5A"), -- Green (important!)
+      TCP = hexrgb('#5A7A9A'),      -- Blue
+      MCP = hexrgb('#9A9A5A'),      -- Yellow
+      ENVCP = hexrgb('#5A9A8A'),    -- Teal
+      TRANSPORT = hexrgb('#9A5A5A'),-- Red
+      GLOBAL = hexrgb('#6A6A6A'),   -- Grey
+      TOOLBARS = hexrgb('#8A6A5A'), -- Brown/orange
+      ITEMS = hexrgb('#7A8A5A'),    -- Olive
+      MIDI = hexrgb('#6A5A8A'),     -- Purple
+      RTCONFIG = hexrgb('#5AAA5A'), -- Green (important!)
     },
-    text_color = hexrgb("#000000"),  -- Black text
+    text_color = hexrgb('#000000'),  -- Black text
   },
   
   mosaic = {
     padding = 15, max_size = 50, gap = 6, count = 3,
-    rounding = 3, border_color = hexrgb("#00000088"), border_thickness = 1, y_offset = 45,
+    rounding = 3, border_color = hexrgb('#00000088'), border_thickness = 1, y_offset = 45,
   },
   
   animation = { speed_hover = 12.0, speed_active = 8.0 },
   
   truncation = {
-    ellipsis = "...",
+    ellipsis = '...',
     min_chars = 3,
   },
 }
@@ -191,7 +191,7 @@ end
 -- (Some external code may reference M.CONFIG.colors directly)
 setmetatable(M.CONFIG, {
   __index = function(t, k)
-    if k == "colors" then
+    if k == 'colors' then
       return M.get_colors()
     end
     return rawget(t, k)
@@ -199,7 +199,7 @@ setmetatable(M.CONFIG, {
 })
 
 local function truncate_text(ctx, text, max_width)
-  if not text or text == "" then return "" end
+  if not text or text == '' then return '' end
   
   local full_w, _ = CalcTextSize(ctx, text)
   if full_w <= max_width then return text end
@@ -310,7 +310,7 @@ function M.TileRenderer.order_badge(ctx, dl, pkg, P, tile_x, tile_y)
   ImGui.SetCursorScreenPos(ctx, x1, y1)
   ImGui.InvisibleButton(ctx, '##ordtip-' .. P.id, x2 - x1, y2 - y1)
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Overwrite priority")
+    ImGui.SetTooltip(ctx, 'Overwrite priority')
   end
 end
 
@@ -329,7 +329,7 @@ function M.TileRenderer.conflicts(ctx, dl, pkg, P, tile_x, tile_y, tile_w)
   ImGui.SetCursorScreenPos(ctx, x, y)
   ImGui.InvisibleButton(ctx, '##conftip-' .. P.id, tw, th)
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Conflicting Assets in Packages\n(autosolved through Overwrite Priority)")
+    ImGui.SetTooltip(ctx, 'Conflicting Assets in Packages\n(autosolved through Overwrite Priority)')
   end
 end
 
@@ -451,7 +451,7 @@ function M.TileRenderer.checkbox(ctx, pkg, P, cb_rects, tile_x, tile_y, tile_w, 
   ImGui.PopID(ctx)
 
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, pkg.active[P.id] and "Disable package" or "Enable package")
+    ImGui.SetTooltip(ctx, pkg.active[P.id] and 'Disable package' or 'Enable package')
   end
 end
 
@@ -552,7 +552,7 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
       local img_path = asset and asset.path
       local img_drawn = false
 
-      if img_path and not img_path:match("^%(mock%)") then
+      if img_path and not img_path:match('^%(mock%)') then
         -- Use public API for validated access (auto-validates and recreates if needed)
         local rec = M._package_image_cache:get_validated(img_path)
 
@@ -593,13 +593,13 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
 
       -- Fallback to colored square if image didn't load
       if not img_drawn then
-        local col = theme.color_from_key(key:gsub("%.%w+$", ""))
+        local col = theme.color_from_key(key:gsub('%.%w+$', ''))
         Draw.rect_filled(dl, cx, cy, cx + cell_size, cy + cell_size, col, M.CONFIG.mosaic.rounding)
         Draw.rect(dl, cx, cy, cx + cell_size, cy + cell_size,
                   M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
 
         local label = key:sub(1, 3):upper()
-        Draw.centered_text(ctx, label, cx, cy, cx + cell_size, cy + cell_size, hexrgb("#FFFFFF"))
+        Draw.centered_text(ctx, label, cx, cy, cx + cell_size, cy + cell_size, hexrgb('#FFFFFF'))
       end
     end
   end

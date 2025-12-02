@@ -1,6 +1,6 @@
 -- @noindex
 -- Arkitekt/app/titlebar.lua
--- MODIFIED: Stylized titlebar with centered "AZK" branding
+-- MODIFIED: Stylized titlebar with centered 'AZK' branding
 -- ADDED: Context menu on right-click icon (Hub, Metrics, Debug Console, Profiler)
 -- REMOVED: Keyboard shortcuts and tooltips for cleaner interface
 -- UPDATED: ImGui 0.10 font size handling
@@ -33,7 +33,7 @@ do
   if ok then Icon = mod end
 end
 
--- Format version string: extract numbers and dots, prepend "v"
+-- Format version string: extract numbers and dots, prepend 'v'
 local function format_version(version)
   if not version or version == '' then return nil end
 
@@ -293,7 +293,7 @@ function M.new(opts)
               -- Get CURRENT app's theme mode (for App Override submenu)
               local current_mode = ThemeManager.get_mode and ThemeManager.get_mode() or nil
 
-              -- Format preset name: "light_grey" -> "Light Grey"
+              -- Format preset name: 'light_grey' -> 'Light Grey'
               local function format_preset_name(name)
                 return name:gsub('_', ' '):gsub('(%a)([%w]*)', function(a, b)
                   return a:upper() .. b
@@ -364,7 +364,7 @@ function M.new(opts)
                   ImGui.EndDisabled(ctx)
                 end
 
-                -- Clickable "Custom" label to apply the custom theme (same line as picker, marked by GLOBAL mode)
+                -- Clickable 'Custom' label to apply the custom theme (same line as picker, marked by GLOBAL mode)
                 ImGui.SameLine(ctx)
                 local custom_label = (global_mode == 'custom') and '* Custom' or '  Custom'
                 if ContextMenu.item(ctx, custom_label, { enabled = not has_override }) then
@@ -399,7 +399,7 @@ function M.new(opts)
                 local has_override = ThemeManager.has_app_override(self.app_name)
 
                 if ContextMenu.begin_menu(ctx, 'App Override') then
-                  -- "None" option (clears override, uses global)
+                  -- 'None' option (clears override, uses global)
                   local none_label = not has_override and '* None (use global)' or '  None (use global)'
                   if ContextMenu.item(ctx, none_label) then
                     if has_override then

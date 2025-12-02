@@ -86,7 +86,7 @@ function M.update_tab_positions(ctx, state, config, tabs, start_x, available_wid
 
   for i, tab in ipairs(tabs) do
     local tab_id = key_fn(tab)
-    local tab_width = tab_widths[i] or calculate_tab_width(ctx, tab.label or "Tab", config, tab.chip_color ~= nil)
+    local tab_width = tab_widths[i] or calculate_tab_width(ctx, tab.label or 'Tab', config, tab.chip_color ~= nil)
     local pos = state.tab_positions[tab_id]
 
     if not pos then

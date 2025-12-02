@@ -28,8 +28,8 @@ local ANGLE_RANGE = MAX_ANGLE - MIN_ANGLE
 function M.draw(ctx, opts)
   opts = opts or {}
 
-  local id = opts.id or "knob"
-  local label = opts.label or "Knob"
+  local id = opts.id or 'knob'
+  local label = opts.label or 'Knob'
   local value = opts.value or 0.0
   local min_val = opts.min or 0.0
   local max_val = opts.max or 1.0
@@ -126,7 +126,7 @@ function M.draw(ctx, opts)
   ImGui.DrawList_AddCircle(dl, center_x, center_y, radius, border_color, 32, 1)
 
   -- Label below knob
-  if label and label ~= "" then
+  if label and label ~= '' then
     ImGui.SetCursorScreenPos(ctx, x, y + size + 4)
 
     -- Center the label
@@ -139,7 +139,7 @@ function M.draw(ctx, opts)
   end
 
   -- Value text (centered in knob)
-  local value_text = string.format("%.2f", current_value)
+  local value_text = string.format('%.2f', current_value)
   local text_w, text_h = ImGui.CalcTextSize(ctx, value_text)
   ImGui.SetCursorScreenPos(ctx, center_x - text_w / 2, center_y - text_h / 2)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)

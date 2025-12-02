@@ -19,7 +19,7 @@ function M.new(region_tiles, state_module, on_tab_selected)
     region_tiles = region_tiles,
     state = state_module,
     on_tab_selected = on_tab_selected,
-    search_text = "",
+    search_text = '',
     is_open = false,
   }, OverflowModalView)
 end
@@ -49,18 +49,18 @@ function OverflowModalView:draw(ctx, window)
   local tab_items = {}
   for _, tab in ipairs(all_tabs) do
     local region_count, playlist_count = self.state.count_playlist_contents(tab.id)
-    local count_str = ""
+    local count_str = ''
     if region_count > 0 or playlist_count > 0 then
       local parts = {}
-      if region_count > 0 then parts[#parts + 1] = region_count .. "R" end
-      if playlist_count > 0 then parts[#parts + 1] = playlist_count .. "P" end
-      count_str = " (" .. table.concat(parts, ", ") .. ")"
+      if region_count > 0 then parts[#parts + 1] = region_count .. 'R' end
+      if playlist_count > 0 then parts[#parts + 1] = playlist_count .. 'P' end
+      count_str = ' (' .. table.concat(parts, ', ') .. ')'
     end
     
     tab_items[#tab_items + 1] = {
       id = tab.id,
       label = tab.label .. count_str,
-      color = tab.chip_color or hexrgb("#888888"),
+      color = tab.chip_color or hexrgb('#888888'),
     }
   end
   
@@ -70,13 +70,13 @@ function OverflowModalView:draw(ctx, window)
   
   if not window or not window.overlay then
     if not self.is_open then
-      ImGui.OpenPopup(ctx, "##overflow_tabs_popup")
+      ImGui.OpenPopup(ctx, '##overflow_tabs_popup')
       self.is_open = true
     end
     
     ImGui.SetNextWindowSize(ctx, 600, 500, ImGui.Cond_FirstUseEver)
     
-    local visible = ImGui.BeginPopupModal(ctx, "##overflow_tabs_popup", true, ImGui.WindowFlags_NoTitleBar)
+    local visible = ImGui.BeginPopupModal(ctx, '##overflow_tabs_popup', true, ImGui.WindowFlags_NoTitleBar)
     
     if not visible then
       self.is_open = false
@@ -85,20 +85,20 @@ function OverflowModalView:draw(ctx, window)
     end
     
     ImGui.SetNextItemWidth(ctx, -1)
-    local changed, text = ImGui.InputTextWithHint(ctx, "##tab_search", "Search playlists...", self.search_text)
+    local changed, text = ImGui.InputTextWithHint(ctx, '##tab_search', 'Search playlists...', self.search_text)
     if changed then
       self.search_text = text
     end
 
     ImGui.Dummy(ctx, 0, 8)
 
-    if ImGui.BeginChild(ctx, "##tab_list", 0, -40) then
+    if ImGui.BeginChild(ctx, '##tab_list', 0, -40) then
       local text_h = ImGui.GetTextLineHeight(ctx)
       local clicked_tab = ChipList.draw_columns(ctx, tab_items, {
         selected_ids = selected_ids,
         search_text = self.search_text,
         use_dot_style = true,
-        bg_color = hexrgb("#3a3a3a"),  -- Grey fill
+        bg_color = hexrgb('#3a3a3a'),  -- Grey fill
         item_height = text_h + 1,  -- Further reduced (was text_h + 4, now ~30% smaller)
         dot_size = 7,
         dot_spacing = 7,
@@ -129,7 +129,7 @@ function OverflowModalView:draw(ctx, window)
     local avail_w = ImGui.GetContentRegionAvail(ctx)
     ImGui.SetCursorPosX(ctx, (avail_w - button_w) * 0.5)
     
-    if ImGui.Button(ctx, "Close", button_w, 0) then
+    if ImGui.Button(ctx, 'Close', button_w, 0) then
       ImGui.CloseCurrentPopup(ctx)
       self.is_open = false
       self:close()
@@ -158,10 +158,10 @@ function OverflowModalView:draw(ctx, window)
           local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
 
           Ark.InputText.search(ctx, {
-            id = "overflow_search",
+            id = 'overflow_search',
             width = content_w,
             height = search_height,
-            placeholder = "Search playlists...",
+            placeholder = 'Search playlists...',
             text = self.search_text,
             on_change = function(new_text)
               self.search_text = new_text
@@ -181,7 +181,7 @@ function OverflowModalView:draw(ctx, window)
             selected_ids = selected_ids,
             search_text = self.search_text,
             use_dot_style = true,
-            bg_color = hexrgb("#3a3a3a"),  -- Grey fill
+            bg_color = hexrgb('#3a3a3a'),  -- Grey fill
             item_height = text_h + 1,  -- Further reduced (was text_h + 4, now ~30% smaller)
             dot_size = 7,
             dot_spacing = 7,

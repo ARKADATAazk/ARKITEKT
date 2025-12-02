@@ -17,34 +17,34 @@ local sqrt = math.sqrt
 local M = {}
 
 M.CONFIG = {
-  bg_base = Ark.Colors.hexrgb("#1A1A1A"),
+  bg_base = Ark.Colors.hexrgb('#1A1A1A'),
   disabled = { desaturate = 0.9, brightness = 0.5, alpha_multiplier = 0.6, min_lightness = 0.28 },
   responsive = { hide_length_below = 35, hide_text_below = 15 },
   playlist_tile = { 
-    base_color = Ark.Colors.hexrgb("#3A3A3A"), 
-    name_color = Ark.Colors.hexrgb("#CCCCCC"), 
-    badge_color = Ark.Colors.hexrgb("#999999") 
+    base_color = Ark.Colors.hexrgb('#3A3A3A'), 
+    name_color = Ark.Colors.hexrgb('#CCCCCC'), 
+    badge_color = Ark.Colors.hexrgb('#999999') 
   },
   text_margin_right = 6,
   badge_margin = 6,
   badge_padding_x = 6,
   badge_padding_y = 3,
   badge_rounding = 4,
-  badge_bg = Ark.Colors.hexrgb("#14181C"),
+  badge_bg = Ark.Colors.hexrgb('#14181C'),
   badge_border_alpha = 0x33,
   badge_nudge_x = 0,
   badge_nudge_y = 0,
   badge_text_nudge_x = -1,
   badge_text_nudge_y = -2,
   circular = {
-    base_color = Ark.Colors.hexrgb("#240C0Cff"),
-    stripe_color = Ark.Colors.with_opacity(Ark.Colors.hexrgb("#430d0d85"), 0.2),
-    border_color = Ark.Colors.hexrgb("#240f0fff"),
-    text_color = Ark.Colors.hexrgb("#901b1bff"),
-    lock_color = Ark.Colors.hexrgb("#901b1bff"),
-    playlist_chip_color = Ark.Colors.hexrgb("#901b1bff"),
-    badge_bg = Ark.Colors.hexrgb("#240C0Cff"),
-    badge_border_color = Ark.Colors.hexrgb("#652a2aff"),
+    base_color = Ark.Colors.hexrgb('#240C0Cff'),
+    stripe_color = Ark.Colors.with_opacity(Ark.Colors.hexrgb('#430d0d85'), 0.2),
+    border_color = Ark.Colors.hexrgb('#240f0fff'),
+    text_color = Ark.Colors.hexrgb('#901b1bff'),
+    lock_color = Ark.Colors.hexrgb('#901b1bff'),
+    playlist_chip_color = Ark.Colors.hexrgb('#901b1bff'),
+    badge_bg = Ark.Colors.hexrgb('#240C0Cff'),
+    badge_border_color = Ark.Colors.hexrgb('#652a2aff'),
     lock_base_w = 11,
     lock_base_h = 7,
     lock_handle_w = 2,
@@ -135,7 +135,7 @@ function M.render_region(opts)
   local grid = opts.grid
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-  local key = "pool_" .. tostring(region.rid)
+  local key = 'pool_' .. tostring(region.rid)
 
   animator:track(key, 'hover', state.hover and 1.0 or 0.0, hover_config and hover_config.animation_speed_hover or 12.0)
   local hover_factor = animator:get(key, 'hover')
@@ -174,7 +174,7 @@ function M.render_playlist(opts)
   local grid = opts.grid
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-  local key = "pool_playlist_" .. tostring(playlist.id)
+  local key = 'pool_playlist_' .. tostring(playlist.id)
   local is_disabled = playlist.is_disabled or false
 
   -- Special rendering for circular reference tiles
@@ -190,8 +190,8 @@ function M.render_playlist(opts)
   
   local base_color = M.CONFIG.playlist_tile.base_color
   local playlist_data = {
-    name = playlist.name or "Unnamed Playlist",
-    chip_color = playlist.chip_color or Ark.Colors.hexrgb("#FF5733"),
+    name = playlist.name or 'Unnamed Playlist',
+    chip_color = playlist.chip_color or Ark.Colors.hexrgb('#FF5733'),
     total_duration = playlist.total_duration or 0
   }
 
@@ -223,7 +223,7 @@ function M.render_playlist(opts)
   local right_elements = {}
   
   if show_badge then
-    local badge_text = string.format("[%d]", item_count)
+    local badge_text = string.format('[%d]', item_count)
     local badge_w, _ = ImGui.CalcTextSize(ctx, badge_text)
     right_elements[#right_elements + 1] = BaseRenderer.create_element(
       true,
@@ -241,14 +241,14 @@ function M.render_playlist(opts)
       name_color = Ark.Colors.adjust_brightness(name_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     end
     if (state.hover or state.selected) and not is_disabled then
-      name_color = Ark.Colors.hexrgb("#FFFFFF")
+      name_color = Ark.Colors.hexrgb('#FFFFFF')
     end
 
     BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, name_color, actual_height, rect, grid, base_color, key)
   end
   
   if show_badge then
-    local badge_text = string.format("[%d]", item_count)
+    local badge_text = string.format('[%d]', item_count)
     local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
     bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
     -- Calculate badge height with padding for positioning
@@ -271,7 +271,7 @@ function M.render_playlist(opts)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Ark.Colors.with_alpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
     
     -- Use whiter text like active tiles
-    Ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Ark.Colors.with_alpha(Ark.Colors.hexrgb("#FFFFFFDD"), text_alpha), badge_text)
+    Ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Ark.Colors.with_alpha(Ark.Colors.hexrgb('#FFFFFFDD'), text_alpha), badge_text)
   end
   
   -- Draw playlist duration in bottom right (like regions)
@@ -280,9 +280,9 @@ function M.render_playlist(opts)
   end
   
   ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.InvisibleButton(ctx, key .. "_tooltip", x2 - x1, y2 - y1)
+  ImGui.InvisibleButton(ctx, key .. '_tooltip', x2 - x1, y2 - y1)
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, string.format("Playlist • %d items", item_count))
+    ImGui.SetTooltip(ctx, string.format('Playlist • %d items', item_count))
   end
 end
 
@@ -301,14 +301,14 @@ function M.render_circular_playlist(opts)
 
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-  local key = "pool_playlist_" .. tostring(playlist.id)
+  local key = 'pool_playlist_' .. tostring(playlist.id)
   
   animator:track(key, 'hover', 0, hover_config and hover_config.animation_speed_hover or 12.0)
   animator:track(key, 'disabled', 1.0, 12.0)
   
   local base_color = M.CONFIG.circular.base_color
   local playlist_data = {
-    name = playlist.name or "Unnamed Playlist",
+    name = playlist.name or 'Unnamed Playlist',
     chip_color = M.CONFIG.circular.playlist_chip_color
   }
   
@@ -351,7 +351,7 @@ function M.render_circular_playlist(opts)
   
   if show_badge then
     -- Draw badge container with lock icon (same size as normal badge)
-    local badge_text = string.format("[%d]", item_count)
+    local badge_text = string.format('[%d]', item_count)
     local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
     bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
     local badge_x = x2 - 25 - M.CONFIG.badge_margin
@@ -372,9 +372,9 @@ function M.render_circular_playlist(opts)
   
   -- Tooltip
   ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.InvisibleButton(ctx, key .. "_tooltip", x2 - x1, y2 - y1)
+  ImGui.InvisibleButton(ctx, key .. '_tooltip', x2 - x1, y2 - y1)
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Cannot drag to Active Grid: would create circular reference")
+    ImGui.SetTooltip(ctx, 'Cannot drag to Active Grid: would create circular reference')
   end
 end
 

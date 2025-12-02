@@ -15,7 +15,7 @@ local M = {}
 
 -- Draw TAGS content (full tag management)
 function M.draw(ctx, state, config, width, height)
-  -- Header with "+" button
+  -- Header with '+' button
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
 
   -- Position button at the right
@@ -23,19 +23,19 @@ function M.draw(ctx, state, config, width, height)
   ImGui.SetCursorPosX(ctx, button_x)
 
   if Ark.Button.draw_at_cursor(ctx, {
-    label = "+",
+    label = '+',
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
-  }, "createtag") then
+  }, 'createtag') then
     -- Create new tag - prompt for name
     local tag_num = 1
-    local new_tag_name = "Tag " .. tag_num
+    local new_tag_name = 'Tag ' .. tag_num
 
     -- Find unique name
     if state.metadata and state.metadata.tags then
       while state.metadata.tags[new_tag_name] do
         tag_num = tag_num + 1
-        new_tag_name = "Tag " .. tag_num
+        new_tag_name = 'Tag ' .. tag_num
       end
     end
 
@@ -52,7 +52,7 @@ function M.draw(ctx, state, config, width, height)
   ImGui.Spacing(ctx)
 
   -- List all tags using justified layout
-  if Helpers.begin_child_compat(ctx, "TagsList", width - config.PANEL_PADDING * 2, height - 30, false) then
+  if Helpers.begin_child_compat(ctx, 'TagsList', width - config.PANEL_PADDING * 2, height - 30, false) then
     if state.metadata and state.metadata.tags then
       -- Build sorted list of tags
       local tag_items = {}
@@ -70,7 +70,7 @@ function M.draw(ctx, state, config, width, height)
       if #tag_items > 0 then
         -- Check if any tag is being renamed
         local renaming_tag = nil
-        if state.renaming_type == "tag" then
+        if state.renaming_type == 'tag' then
           renaming_tag = state.renaming_item
         end
 
@@ -96,7 +96,7 @@ function M.draw(ctx, state, config, width, height)
           -- Check for double-click
           if ImGui.IsMouseDoubleClicked(ctx, 0) then
             state.renaming_item = clicked_id
-            state.renaming_type = "tag"
+            state.renaming_type = 'tag'
             state.rename_buffer = clicked_id
           end
         end
@@ -109,18 +109,18 @@ function M.draw(ctx, state, config, width, height)
         -- Handle rename mode separately (show input field overlay)
         if renaming_tag then
           -- Initialize field with current name
-          if Ark.InputText.get_text("tag_rename_" .. renaming_tag) == "" then
-            Ark.InputText.set_text("tag_rename_" .. renaming_tag, state.rename_buffer)
+          if Ark.InputText.get_text('tag_rename_' .. renaming_tag) == '' then
+            Ark.InputText.set_text('tag_rename_' .. renaming_tag, state.rename_buffer)
           end
 
           ImGui.Spacing(ctx)
-          ImGui.Text(ctx, "Renaming: " .. renaming_tag)
+          ImGui.Text(ctx, 'Renaming: ' .. renaming_tag)
 
           local changed, new_name = Ark.InputText.draw_at_cursor(ctx, {
             width = -1,
             height = UI.CHIP.HEIGHT_SMALL,
             text = state.rename_buffer,
-          }, "tag_rename_" .. renaming_tag)
+          }, 'tag_rename_' .. renaming_tag)
 
           if changed then
             state.rename_buffer = new_name
@@ -133,7 +133,7 @@ function M.draw(ctx, state, config, width, height)
 
           -- Commit on Enter or deactivate
           if ImGui.IsItemDeactivatedAfterEdit(ctx) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
-            if state.rename_buffer ~= "" and state.rename_buffer ~= renaming_tag then
+            if state.rename_buffer ~= '' and state.rename_buffer ~= renaming_tag then
               -- Rename tag
               Tags.rename_tag(state.metadata, renaming_tag, state.rename_buffer)
               local Persistence = require('TemplateBrowser.data.storage')
@@ -141,19 +141,19 @@ function M.draw(ctx, state, config, width, height)
             end
             state.renaming_item = nil
             state.renaming_type = nil
-            state.rename_buffer = ""
+            state.rename_buffer = ''
           end
 
           -- Cancel on Escape
           if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
             state.renaming_item = nil
             state.renaming_type = nil
-            state.rename_buffer = ""
+            state.rename_buffer = ''
           end
         end
       end
     else
-      ImGui.TextDisabled(ctx, "No tags yet")
+      ImGui.TextDisabled(ctx, 'No tags yet')
     end
 
     ImGui.EndChild(ctx)

@@ -178,7 +178,7 @@ function M.draw(ctx, opts)
   return { width = w, height = h }
 end
 
---- Draw hatched fill with glow/overflow effect (the original "glitch" effect)
+--- Draw hatched fill with glow/overflow effect (the original 'glitch' effect)
 --- This intentionally lets lines escape bounds for a cool visual effect
 --- @param ctx userdata ImGui context
 --- @param opts table Options: x, y, w, h, direction, spacing, thickness, color, overflow, glow_layers
@@ -323,7 +323,7 @@ function M.draw_glitch(ctx, opts)
     local layer_thickness = thickness + (layers - layer) * 0.3
 
     -- The original buggy forward diagonal pattern (↘)
-    -- The "bug" was in how endpoints were calculated, creating curved appearance
+    -- The 'bug' was in how endpoints were calculated, creating curved appearance
     for i = -h * intensity, w * intensity, spacing do
       -- Original buggy math that created the cool effect
       local x1 = math.max(x, x + i)
@@ -350,7 +350,7 @@ function M.draw_glitch(ctx, opts)
     end
   end
 
-  -- Optional: draw the bounding box to show where the "clean" area would be
+  -- Optional: draw the bounding box to show where the 'clean' area would be
   if show_box then
     local box_color = (color & 0xFFFFFF00) | 0x40
     ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, box_color, 0, 0, 1)

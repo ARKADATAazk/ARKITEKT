@@ -20,7 +20,7 @@ M._template_config_state = M._template_config_state or {}  -- editing state for 
 
 function M.render(ctx, rect, item, state, view, tab_id)
   -- Check if this is a group assignment
-  if item.type == "group" then
+  if item.type == 'group' then
     M.render_group(ctx, rect, item, state, view, tab_id)
     return
   end
@@ -35,7 +35,7 @@ function M.render(ctx, rect, item, state, view, tab_id)
   local metadata = view.custom_metadata[param_name] or {}
 
   -- Animation state (smooth transitions)
-  local key = "assign_" .. tab_id .. "_" .. param_name
+  local key = 'assign_' .. tab_id .. '_' .. param_name
   M._anim[key] = M._anim[key] or { hover = 0 }
 
   -- CORRECT: Grid passes state.hover and state.selected (not is_hovered/is_selected!)
@@ -43,7 +43,7 @@ function M.render(ctx, rect, item, state, view, tab_id)
   M._anim[key].hover = hover_t
 
   -- Get tab color
-  local tab_color = view.tab_colors[tab_id] or hexrgb("#888888")
+  local tab_color = view.tab_colors[tab_id] or hexrgb('#888888')
 
   -- Color definitions - use tab color for base with very low opacity
   local function dim_color(color, opacity)
@@ -91,18 +91,18 @@ function M.render(ctx, rect, item, state, view, tab_id)
 
   -- Check link status for visual indicator
   local is_in_group = ParameterLinkManager.is_in_group(param_name)
-  local link_prefix = ""
-  local link_color = hexrgb("#FFFFFF")
+  local link_prefix = ''
+  local link_color = hexrgb('#FFFFFF')
 
   if is_in_group then
     local mode = ParameterLinkManager.get_link_mode(param_name)
-    link_prefix = mode == ParameterLinkManager.LINK_MODE.LINK and "⇄ " or "⇉ "
-    link_color = ParameterLinkManager.get_group_color(param_name) or hexrgb("#4AE290")
+    link_prefix = mode == ParameterLinkManager.LINK_MODE.LINK and '⇄ ' or '⇉ '
+    link_color = ParameterLinkManager.get_group_color(param_name) or hexrgb('#4AE290')
   end
 
-  if metadata.display_name and metadata.display_name ~= "" then
+  if metadata.display_name and metadata.display_name ~= '' then
     -- Link indicator
-    if link_prefix ~= "" then
+    if link_prefix ~= '' then
       ImGui.PushStyleColor(ctx, ImGui.Col_Text, link_color)
       ImGui.Text(ctx, link_prefix)
       ImGui.PopStyleColor(ctx)
@@ -110,27 +110,27 @@ function M.render(ctx, rect, item, state, view, tab_id)
     end
 
     -- Custom name on LEFT (bright color)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CCCCCC'))
     local custom_name = metadata.display_name
-    local max_len = link_prefix ~= "" and 26 or 30
+    local max_len = link_prefix ~= '' and 26 or 30
     if #custom_name > max_len then
-      custom_name = custom_name:sub(1, max_len - 3) .. "..."
+      custom_name = custom_name:sub(1, max_len - 3) .. '...'
     end
     ImGui.Text(ctx, custom_name)
     ImGui.PopStyleColor(ctx)
 
     -- Parameter name on RIGHT (muted)
     ImGui.SameLine(ctx, 0, 12)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
     local display_name = param_name
     if #display_name > 25 then
-      display_name = display_name:sub(1, 22) .. "..."
+      display_name = display_name:sub(1, 22) .. '...'
     end
-    ImGui.Text(ctx, "(" .. display_name .. ")")
+    ImGui.Text(ctx, '(' .. display_name .. ')')
     ImGui.PopStyleColor(ctx)
   else
     -- Link indicator
-    if link_prefix ~= "" then
+    if link_prefix ~= '' then
       ImGui.PushStyleColor(ctx, ImGui.Col_Text, link_color)
       ImGui.Text(ctx, link_prefix)
       ImGui.PopStyleColor(ctx)
@@ -138,26 +138,26 @@ function M.render(ctx, rect, item, state, view, tab_id)
     end
 
     -- No custom name - just show parameter name (muted color)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
     local display_name = param_name
-    local max_len = link_prefix ~= "" and 21 or 25
+    local max_len = link_prefix ~= '' and 21 or 25
     if #display_name > max_len then
-      display_name = display_name:sub(1, max_len - 3) .. "..."
+      display_name = display_name:sub(1, max_len - 3) .. '...'
     end
     ImGui.Text(ctx, display_name)
     ImGui.PopStyleColor(ctx)
 
     -- Tooltip
     if ImGui.IsItemHovered(ctx) then
-      local tooltip = "Parameter: " .. param_name
+      local tooltip = 'Parameter: ' .. param_name
       if is_in_group then
         local other_params = ParameterLinkManager.get_other_group_params(param_name)
         local mode = ParameterLinkManager.get_link_mode(param_name)
-        local mode_text = mode == ParameterLinkManager.LINK_MODE.LINK and "LINK" or "SYNC"
+        local mode_text = mode == ParameterLinkManager.LINK_MODE.LINK and 'LINK' or 'SYNC'
         if #other_params > 0 then
-          tooltip = tooltip .. string.format("\nGrouped with: %s [%s]", table.concat(other_params, ", "), mode_text)
+          tooltip = tooltip .. string.format('\nGrouped with: %s [%s]', table.concat(other_params, ', '), mode_text)
         else
-          tooltip = tooltip .. string.format("\nIn group [%s]", mode_text)
+          tooltip = tooltip .. string.format('\nIn group [%s]', mode_text)
         end
       end
       ImGui.SetTooltip(ctx, tooltip)
@@ -167,18 +167,18 @@ function M.render(ctx, rect, item, state, view, tab_id)
   -- Show order number for debugging (optional)
   if view.dev_mode and item.order then
     ImGui.SameLine(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#555555"))
-    ImGui.Text(ctx, string.format("#%d", item.order))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#555555'))
+    ImGui.Text(ctx, string.format('#%d', item.order))
     ImGui.PopStyleColor(ctx)
   end
 
   -- Invisible button covering whole tile for right-click detection
   ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.InvisibleButton(ctx, "##tile_interact_" .. param_name .. "_" .. tab_id, w, h)
+  ImGui.InvisibleButton(ctx, '##tile_interact_' .. param_name .. '_' .. tab_id, w, h)
 
   -- Right-click context menu
-  if ImGui.BeginPopupContextItem(ctx, "tile_context_" .. param_name .. "_" .. tab_id) then
-    if ImGui.MenuItem(ctx, "Configure Template...") then
+  if ImGui.BeginPopupContextItem(ctx, 'tile_context_' .. param_name .. '_' .. tab_id) then
+    if ImGui.MenuItem(ctx, 'Configure Template...') then
       M._template_config_open[param_name] = true
 
       -- Initialize config state - load existing template or create new
@@ -186,13 +186,13 @@ function M.render(ctx, rect, item, state, view, tab_id)
       if assignment and assignment.template then
         -- Load existing template
         M._template_config_state[param_name] = {
-          template_type = assignment.template.type or "none",
+          template_type = assignment.template.type or 'none',
           presets = assignment.template.presets or {},
         }
       else
         -- Create new config
         M._template_config_state[param_name] = {
-          template_type = "none",
+          template_type = 'none',
           presets = {},
         }
       end
@@ -202,9 +202,9 @@ function M.render(ctx, rect, item, state, view, tab_id)
     local assignment = view:get_assignment_for_param(param_name)
     if assignment and assignment.template then
       ImGui.Separator(ctx)
-      ImGui.Text(ctx, "Current: " .. (assignment.template.type or "unknown"))
+      ImGui.Text(ctx, 'Current: ' .. (assignment.template.type or 'unknown'))
 
-      if ImGui.MenuItem(ctx, "Remove Template") then
+      if ImGui.MenuItem(ctx, 'Remove Template') then
         assignment.template = nil
         view:save_assignments()
       end
@@ -244,29 +244,29 @@ function M.render_template_config_dialogs(ctx, view)
       ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
 
       local flags = ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoDocking
-      local visible, open = ImGui.Begin(ctx, "Template Configuration: " .. param_name, true, flags)
+      local visible, open = ImGui.Begin(ctx, 'Template Configuration: ' .. param_name, true, flags)
 
       if visible then
-        ImGui.Text(ctx, "Template Type:")
+        ImGui.Text(ctx, 'Template Type:')
         ImGui.Separator(ctx)
         ImGui.Dummy(ctx, 0, 8)
 
         -- Template type selector
-        if ImGui.RadioButton(ctx, "None (Default Control)", state.template_type == "none") then
-          state.template_type = "none"
+        if ImGui.RadioButton(ctx, 'None (Default Control)', state.template_type == 'none') then
+          state.template_type = 'none'
         end
 
         ImGui.Dummy(ctx, 0, 4)
 
-        if ImGui.RadioButton(ctx, "Preset Spinner", state.template_type == "preset_spinner") then
-          state.template_type = "preset_spinner"
+        if ImGui.RadioButton(ctx, 'Preset Spinner', state.template_type == 'preset_spinner') then
+          state.template_type = 'preset_spinner'
           -- Initialize with some defaults if empty
           if #state.presets == 0 then
             state.presets = {
-              {value = param.min or 0, label = "Off"},
-              {value = ((param.max or 100) - (param.min or 0)) * 0.3 + (param.min or 0), label = "Low"},
-              {value = ((param.max or 100) - (param.min or 0)) * 0.5 + (param.min or 0), label = "Medium"},
-              {value = ((param.max or 100) - (param.min or 0)) * 0.7 + (param.min or 0), label = "High"},
+              {value = param.min or 0, label = 'Off'},
+              {value = ((param.max or 100) - (param.min or 0)) * 0.3 + (param.min or 0), label = 'Low'},
+              {value = ((param.max or 100) - (param.min or 0)) * 0.5 + (param.min or 0), label = 'Medium'},
+              {value = ((param.max or 100) - (param.min or 0)) * 0.7 + (param.min or 0), label = 'High'},
             }
           end
         end
@@ -274,8 +274,8 @@ function M.render_template_config_dialogs(ctx, view)
         ImGui.Dummy(ctx, 0, 12)
 
         -- Preset editor (only for preset_spinner)
-        if state.template_type == "preset_spinner" then
-          ImGui.Text(ctx, "Presets:")
+        if state.template_type == 'preset_spinner' then
+          ImGui.Text(ctx, 'Presets:')
           ImGui.Separator(ctx)
           ImGui.Dummy(ctx, 0, 8)
 
@@ -285,20 +285,20 @@ function M.render_template_config_dialogs(ctx, view)
             ImGui.PushID(ctx, i)
 
             ImGui.SetNextItemWidth(ctx, 100)
-            local changed_val, new_val = ImGui.InputDouble(ctx, "##value", preset.value)
+            local changed_val, new_val = ImGui.InputDouble(ctx, '##value', preset.value)
             if changed_val then
               preset.value = new_val
             end
 
             ImGui.SameLine(ctx, 0, 8)
             ImGui.SetNextItemWidth(ctx, 200)
-            local changed_label, new_label = ImGui.InputText(ctx, "##label", preset.label)
+            local changed_label, new_label = ImGui.InputText(ctx, '##label', preset.label)
             if changed_label then
               preset.label = new_label
             end
 
             ImGui.SameLine(ctx, 0, 8)
-            if ImGui.Button(ctx, "Remove") then
+            if ImGui.Button(ctx, 'Remove') then
               to_remove = i
             end
 
@@ -310,8 +310,8 @@ function M.render_template_config_dialogs(ctx, view)
           end
 
           ImGui.Dummy(ctx, 0, 8)
-          if ImGui.Button(ctx, "Add Preset") then
-            table.insert(state.presets, {value = param.min or 0, label = "New Preset"})
+          if ImGui.Button(ctx, 'Add Preset') then
+            table.insert(state.presets, {value = param.min or 0, label = 'New Preset'})
           end
         end
 
@@ -320,16 +320,16 @@ function M.render_template_config_dialogs(ctx, view)
         ImGui.Separator(ctx)
         ImGui.Dummy(ctx, 0, 8)
 
-        if ImGui.Button(ctx, "Save", 100, 28) then
+        if ImGui.Button(ctx, 'Save', 100, 28) then
           -- Apply template to assignment
           local assignment = view:get_assignment_for_param(param_name)
           if assignment then
-            if state.template_type == "none" then
+            if state.template_type == 'none' then
               assignment.template = nil
             else
               assignment.template = {
                 type = state.template_type,
-                presets = state.template_type == "preset_spinner" and state.presets or nil,
+                presets = state.template_type == 'preset_spinner' and state.presets or nil,
               }
             end
             view:save_assignments()
@@ -338,7 +338,7 @@ function M.render_template_config_dialogs(ctx, view)
         end
 
         ImGui.SameLine(ctx, 0, 8)
-        if ImGui.Button(ctx, "Cancel", 100, 28) then
+        if ImGui.Button(ctx, 'Cancel', 100, 28) then
           M._template_config_open[param_name] = false
         end
 
@@ -374,25 +374,25 @@ function M.render_group(ctx, rect, item, state, view, tab_id)
 
   if not group then
     -- Group not found, render error placeholder
-    ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, hexrgb("#440000"), 3)
-    ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, hexrgb("#880000"), 3, 0, 1)
+    ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, hexrgb('#440000'), 3)
+    ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, hexrgb('#880000'), 3, 0, 1)
     ImGui.SetCursorScreenPos(ctx, x1 + 8, y1 + 4)
-    ImGui.Text(ctx, "Group not found: " .. group_id)
+    ImGui.Text(ctx, 'Group not found: ' .. group_id)
     return
   end
 
   -- Animation state
-  local key = "assign_group_" .. tab_id .. "_" .. group_id
+  local key = 'assign_group_' .. tab_id .. '_' .. group_id
   M._anim[key] = M._anim[key] or { hover = 0 }
   local hover_t = Math.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
   M._anim[key].hover = hover_t
 
   -- Get tab color
-  local tab_color = view.tab_colors[tab_id] or hexrgb("#888888")
+  local tab_color = view.tab_colors[tab_id] or hexrgb('#888888')
 
   -- Parse group color
   local group_color = group.color
-  if type(group_color) == "string" then
+  if type(group_color) == 'string' then
     group_color = hexrgb(group_color)
   end
 
@@ -439,45 +439,45 @@ function M.render_group(ctx, rect, item, state, view, tab_id)
   ImGui.SetCursorScreenPos(ctx, x1 + 8 + badge_size + 6, y1 + 1)
   ImGui.AlignTextToFramePadding(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
-  local display_name = group.name or ("Group " .. group_id)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CCCCCC'))
+  local display_name = group.name or ('Group ' .. group_id)
   if #display_name > 30 then
-    display_name = display_name:sub(1, 27) .. "..."
+    display_name = display_name:sub(1, 27) .. '...'
   end
   ImGui.Text(ctx, display_name)
   ImGui.PopStyleColor(ctx)
 
   -- Member count
   ImGui.SameLine(ctx, 0, 8)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
   local count = #(group.template_ids or {})
-  ImGui.Text(ctx, string.format("(%d template%s)", count, count == 1 and "" or "s"))
+  ImGui.Text(ctx, string.format('(%d template%s)', count, count == 1 and '' or 's'))
   ImGui.PopStyleColor(ctx)
 
   -- Invisible button for interaction
   ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.InvisibleButton(ctx, "##group_tile_interact_" .. group_id .. "_" .. tab_id, w, h)
+  ImGui.InvisibleButton(ctx, '##group_tile_interact_' .. group_id .. '_' .. tab_id, w, h)
 
   -- Right-click context menu
-  if ImGui.BeginPopupContextItem(ctx, "group_context_" .. group_id .. "_" .. tab_id) then
-    if ImGui.MenuItem(ctx, "Configure Group...") then
+  if ImGui.BeginPopupContextItem(ctx, 'group_context_' .. group_id .. '_' .. tab_id) then
+    if ImGui.MenuItem(ctx, 'Configure Group...') then
       -- TODO: Open group configuration dialog
       -- M._group_config_open[group_id] = true
     end
 
     ImGui.Separator(ctx)
 
-    if ImGui.MenuItem(ctx, "Rename Group...") then
+    if ImGui.MenuItem(ctx, 'Rename Group...') then
       -- TODO: Rename dialog
     end
 
-    if ImGui.MenuItem(ctx, "Change Color...") then
+    if ImGui.MenuItem(ctx, 'Change Color...') then
       -- TODO: Color picker
     end
 
     ImGui.Separator(ctx)
 
-    if ImGui.MenuItem(ctx, "Remove from Tab") then
+    if ImGui.MenuItem(ctx, 'Remove from Tab') then
       view:unassign_group_from_tab(group_id, tab_id)
     end
 
@@ -486,15 +486,15 @@ function M.render_group(ctx, rect, item, state, view, tab_id)
 
   -- Tooltip
   if ImGui.IsItemHovered(ctx) then
-    local tooltip = string.format("Group: %s\nContains %d template%s", group.name, count, count == 1 and "" or "s")
+    local tooltip = string.format('Group: %s\nContains %d template%s', group.name, count, count == 1 and '' or 's')
 
     -- List template names
     if count > 0 then
-      tooltip = tooltip .. "\n\nTemplates:"
+      tooltip = tooltip .. '\n\nTemplates:'
       for i, template_id in ipairs(group.template_ids) do
         local template = view.templates[template_id]
         if template then
-          tooltip = tooltip .. "\n  • " .. template.name
+          tooltip = tooltip .. '\n  • ' .. template.name
         end
       end
     end

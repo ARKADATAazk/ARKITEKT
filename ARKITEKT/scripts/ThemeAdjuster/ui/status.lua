@@ -18,19 +18,19 @@ local function get_app_status(State)
       local cache_status = State.get_cache_status()
       local theme_status = State.get_theme_status()
 
-      if cache_status == "needs_rebuild" then
-        status_message = "Cache needs rebuild"
+      if cache_status == 'needs_rebuild' then
+        status_message = 'Cache needs rebuild'
         status_color = STATUS_COLORS.WARNING
-      elseif cache_status == "rebuilding" then
-        status_message = "Rebuilding cache..."
+      elseif cache_status == 'rebuilding' then
+        status_message = 'Rebuilding cache...'
         status_color = STATUS_COLORS.INFO
-      elseif theme_status == "needs-link" then
-        status_message = "Theme not linked"
+      elseif theme_status == 'needs-link' then
+        status_message = 'Theme not linked'
         status_color = STATUS_COLORS.ERROR
       else
         -- Show demo mode status or ready
         if State.get_demo_mode() then
-          status_message = "Demo Mode - " .. #State.get_packages() .. " packages"
+          status_message = 'Demo Mode - ' .. #State.get_packages() .. ' packages'
           status_color = STATUS_COLORS.INFO
         else
           local packages = State.get_packages()
@@ -40,14 +40,14 @@ local function get_app_status(State)
             if is_active then active_count = active_count + 1 end
           end
 
-          status_message = string.format("%d/%d packages active", active_count, #packages)
+          status_message = string.format('%d/%d packages active', active_count, #packages)
           status_color = STATUS_COLORS.READY
         end
       end
 
       return {
         color = status_color,
-        text = status_message or "Ready",
+        text = status_message or 'Ready',
         buttons = nil,
         right_buttons = nil,
       }
@@ -58,7 +58,7 @@ local function get_app_status(State)
     else
       return {
         color = STATUS_COLORS.ERROR,
-        text = "Status Error: " .. tostring(result),
+        text = 'Status Error: ' .. tostring(result),
         buttons = nil,
         right_buttons = nil,
       }

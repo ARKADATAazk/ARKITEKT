@@ -47,7 +47,7 @@ function M.get_active_container_config(callbacks)
   }
 
   for key, value in pairs(callbacks or {}) do
-    if type(key) == "string" and key:match("^on_") and type(value) == "function" then
+    if type(key) == 'string' and key:match('^on_') and type(value) == 'function' then
       tab_config[key] = value
     end
   end
@@ -58,8 +58,8 @@ function M.get_active_container_config(callbacks)
       height = Defaults.CONTAINER.active.header_height,
       elements = {
         {
-          id = "tabs",
-          type = "tab_strip",
+          id = 'tabs',
+          type = 'tab_strip',
           flex = 1,
           spacing_before = 0,
           config = tab_config,
@@ -90,8 +90,8 @@ function M.get_pool_container_config(callbacks)
       height = Defaults.CONTAINER.pool.header_height,
       elements = {
         {
-          id = "mode_toggle",
-          type = "button",
+          id = 'mode_toggle',
+          type = 'button',
           width = Defaults.CONTAINER.pool.mode_toggle_width,
           spacing_before = 0,
           config = {
@@ -101,26 +101,26 @@ function M.get_pool_container_config(callbacks)
           },
         },
         {
-          id = "spacer1",
-          type = "separator",
+          id = 'spacer1',
+          type = 'separator',
           flex = 1,
           spacing_before = 0,
           config = { show_line = false },
         },
         {
-          id = "search",
-          type = "inputtext",
+          id = 'search',
+          type = 'inputtext',
           width = Defaults.CONTAINER.pool.search_width,
           spacing_before = 0,
           config = {
-            preset = "search",
+            preset = 'search',
             placeholder = Strings.POOL.search_placeholder,
             on_change = callbacks.on_search_changed,
           },
         },
         {
-          id = "sort",
-          type = "combo",
+          id = 'sort',
+          type = 'combo',
           width = Defaults.CONTAINER.pool.sort_width,
           spacing_before = 0,
           config = {
@@ -129,10 +129,10 @@ function M.get_pool_container_config(callbacks)
             enable_sort = true,
             options = {
               { value = nil, label = Strings.POOL.sort_options.no_sort },
-              { value = "color", label = Strings.POOL.sort_options.color },
-              { value = "index", label = Strings.POOL.sort_options.index },
-              { value = "alpha", label = Strings.POOL.sort_options.alpha },
-              { value = "length", label = Strings.POOL.sort_options.length },
+              { value = 'color', label = Strings.POOL.sort_options.color },
+              { value = 'index', label = Strings.POOL.sort_options.index },
+              { value = 'alpha', label = Strings.POOL.sort_options.alpha },
+              { value = 'length', label = Strings.POOL.sort_options.length },
             },
             enable_mousewheel = true,
             on_change = callbacks.on_sort_changed,
@@ -209,7 +209,7 @@ function M.get_transport_config(state_module)
         end,
         tooltip = Strings.TRANSPORT.settings,
         on_click = function()
-          Logger.info("GUI", "Settings button clicked (coming soon)")
+          Logger.info('GUI', 'Settings button clicked (coming soon)')
         end,
       },
     },

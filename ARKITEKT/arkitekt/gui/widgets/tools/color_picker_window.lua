@@ -120,7 +120,7 @@ local function render_picker_contents(ctx, id, on_change)
   local changed = false
 
   -- Style the color picker with dark borders
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#000000FF"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb('#000000FF'))
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameBorderSize, 1)
 
   -- Color picker configuration
@@ -165,8 +165,8 @@ local function render_picker_contents(ctx, id, on_change)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  local hex_str = string.format("#%06X", (inst.current_color >> 8) & 0xFFFFFF)
-  ImGui.Text(ctx, "Color: " .. hex_str)
+  local hex_str = string.format('#%06X', (inst.current_color >> 8) & 0xFFFFFF)
+  ImGui.Text(ctx, 'Color: ' .. hex_str)
 
   return changed
 end
@@ -184,7 +184,7 @@ function M.render(ctx, id, config)
     return false
   end
 
-  local title = config.title or "Color Picker"
+  local title = config.title or 'Color Picker'
   local on_change = config.on_change
 
   -- Window flags: always on top, auto-resize, with close button
@@ -204,7 +204,7 @@ function M.render(ctx, id, config)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 12, 12)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, 4)
 
-  local visible, open = ImGui.Begin(ctx, title .. "##" .. id, true, window_flags)
+  local visible, open = ImGui.Begin(ctx, title .. '##' .. id, true, window_flags)
 
   ImGui.PopStyleVar(ctx, 2)
 
@@ -226,7 +226,7 @@ function M.render(ctx, id, config)
   -- Close button at bottom
   ImGui.Spacing(ctx)
   local button_w = ImGui.GetContentRegionAvail(ctx)
-  if ImGui.Button(ctx, "Close", button_w, 0) then
+  if ImGui.Button(ctx, 'Close', button_w, 0) then
     inst.is_open = false
   end
 

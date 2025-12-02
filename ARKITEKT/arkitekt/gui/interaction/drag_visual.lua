@@ -8,7 +8,7 @@
 -- Responsibilities:
 -- - Drawing animated drag indicators (glow effects, pulsing)
 -- - Drawing drop zone highlights with mode-specific colors
--- - Rendering operation badges (copy "+", move arrow, etc.)
+-- - Rendering operation badges (copy '+', move arrow, etc.)
 -- - Theme-reactive color configuration
 --
 -- Original source: Merged from dnd/config.lua, dnd/drag_indicator.lua, dnd/drop_indicator.lua
@@ -69,9 +69,9 @@ end
 -- Build mode configs once at module load time
 -- Theme.COLORS are read once here, then reused for all draw calls
 local function build_mode_configs()
-  local move_color = get_op_color("OP_MOVE")
-  local copy_color = get_op_color("OP_COPY")
-  local delete_color = get_op_color("OP_DELETE")
+  local move_color = get_op_color('OP_MOVE')
+  local copy_color = get_op_color('OP_COPY')
+  local delete_color = get_op_color('OP_DELETE')
 
   return {
     move = {
@@ -83,14 +83,14 @@ local function build_mode_configs()
       stroke_color = copy_color,
       glow_color = get_glow_color(copy_color),
       badge_accent = copy_color,
-      indicator_text = "+",
+      indicator_text = '+',
       indicator_color = copy_color,
     },
     delete = {
       stroke_color = delete_color,
       glow_color = get_glow_color(delete_color),
       badge_accent = delete_color,
-      indicator_text = "-",
+      indicator_text = '-',
       indicator_color = delete_color,
     },
   }
@@ -157,7 +157,7 @@ M.INNER_GLOW_DEFAULTS = {
 
 -- Get inner glow color (lazy evaluation)
 function M.get_inner_glow_color()
-  return Colors.with_alpha(get_op_color("OP_MOVE"), 0x22)
+  return Colors.with_alpha(get_op_color('OP_MOVE'), 0x22)
 end
 
 function M.get_mode_config(config, is_copy, is_delete)

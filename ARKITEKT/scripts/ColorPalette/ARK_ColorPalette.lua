@@ -7,24 +7,24 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
+local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 
 local ImGui = Ark.ImGui
-local SRC = debug.getinfo(1,"S").source:sub(2)
-local HERE = Ark._bootstrap.dirname(SRC) or "."
+local SRC = debug.getinfo(1,'S').source:sub(2)
+local HERE = Ark._bootstrap.dirname(SRC) or '.'
 
 -- Load dependencies
-local Shell = require("arkitekt.app.shell")
-local State = require("ColorPalette.app.state")
-local GUI = require("ColorPalette.app.gui")
-local OverlayManager = require("arkitekt.gui.widgets.overlays.overlay.manager")
+local Shell = require('arkitekt.app.shell')
+local State = require('ColorPalette.app.state')
+local GUI = require('ColorPalette.app.gui')
+local OverlayManager = require('arkitekt.gui.widgets.overlays.overlay.manager')
 
 -- Load optional style
-local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui")
+local style_ok, Style = pcall(require, 'arkitekt.gui.style.imgui')
 
 -- Initialize cache directory for settings
 local SEP = package.config:sub(1,1)
-local cache_dir = reaper.GetResourcePath() .. SEP .. "Scripts" .. SEP .. "Arkitekt" .. SEP .. "cache" .. SEP .. "ColorPalette"
+local cache_dir = reaper.GetResourcePath() .. SEP .. 'Scripts' .. SEP .. 'Arkitekt' .. SEP .. 'cache' .. SEP .. 'ColorPalette'
 
 -- Initialize settings and state
 local Settings = require('arkitekt.core.settings')
@@ -51,7 +51,7 @@ end
 -- - Clicking X button hides (doesn't terminate)
 -- - Script stays alive in background
 Shell.run({
-  title = "Color Palette",
+  title = 'Color Palette',
   draw = draw,
   style = style_ok and Style or nil,
   settings = settings,
@@ -65,8 +65,8 @@ Shell.run({
   
   -- Make window frameless
   flags = ImGui.WindowFlags_NoBackground,
-  bg_color_floating = hexrgb("#00000000"),
-  bg_color_docked = hexrgb("#00000000"),
+  bg_color_floating = hexrgb('#00000000'),
+  bg_color_docked = hexrgb('#00000000'),
   
   -- Pass overlay manager to window
   overlay = overlay,

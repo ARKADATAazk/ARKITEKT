@@ -34,8 +34,8 @@ function M.SampleLimit(spl)
 end
 
 function M.RemoveKeyFromChunk(chunk_string, key)
-  local pattern = key .. "[^\n]*\n?"
-  local modified_chunk = string.gsub(chunk_string, pattern, "")
+  local pattern = key .. '[^\n]*\n?'
+  local modified_chunk = string.gsub(chunk_string, pattern, '')
   return modified_chunk
 end
 

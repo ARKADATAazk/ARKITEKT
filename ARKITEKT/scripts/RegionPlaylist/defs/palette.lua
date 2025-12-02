@@ -20,16 +20,16 @@ local M = {}
 -- =============================================================================
 -- Colors adapt to dark/light theme while preserving semantic meaning.
 
-ThemeManager.register_script_palette("RegionPlaylist", {
+ThemeManager.register_script_palette('RegionPlaylist', {
   -- === CIRCULAR DEPENDENCY (error state) ===
-  CIRCULAR_BASE         = snap("#240C0C", "#FFDDDD"),  -- dark red / light pink
-  CIRCULAR_STRIPE       = snap("#430D0D", "#FFCCCC"),
-  CIRCULAR_BORDER       = snap("#240F0F", "#FFCCCC"),
-  CIRCULAR_TEXT         = snap("#901B1B", "#CC0000"),  -- muted red / vivid red
-  CIRCULAR_LOCK         = snap("#901B1B", "#CC0000"),
-  CIRCULAR_CHIP         = snap("#901B1B", "#CC0000"),
-  CIRCULAR_BADGE_BG     = snap("#240C0C", "#FFE0E0"),
-  CIRCULAR_BADGE_BORDER = snap("#652A2A", "#CC8888"),
+  CIRCULAR_BASE         = snap('#240C0C', '#FFDDDD'),  -- dark red / light pink
+  CIRCULAR_STRIPE       = snap('#430D0D', '#FFCCCC'),
+  CIRCULAR_BORDER       = snap('#240F0F', '#FFCCCC'),
+  CIRCULAR_TEXT         = snap('#901B1B', '#CC0000'),  -- muted red / vivid red
+  CIRCULAR_LOCK         = snap('#901B1B', '#CC0000'),
+  CIRCULAR_CHIP         = snap('#901B1B', '#CC0000'),
+  CIRCULAR_BADGE_BG     = snap('#240C0C', '#FFE0E0'),
+  CIRCULAR_BADGE_BORDER = snap('#652A2A', '#CC8888'),
 
   -- === CIRCULAR VALUES ===
   CIRCULAR_STRIPE_OPACITY = lerp(0.20, 0.30),
@@ -37,7 +37,7 @@ ThemeManager.register_script_palette("RegionPlaylist", {
   CIRCULAR_STRIPE_SPACING = lerp(16, 16),    -- constant
 
   -- === FALLBACK ===
-  FALLBACK_CHIP = snap("#FF5733", "#E64A19"),  -- orange-red
+  FALLBACK_CHIP = snap('#FF5733', '#E64A19'),  -- orange-red
 
   -- === CUSTOM PANEL (example of offset) ===
   -- CUSTOM_PANEL_BG = offset(-0.06),  -- Would derive from BG_BASE
@@ -50,18 +50,18 @@ ThemeManager.register_script_palette("RegionPlaylist", {
 --- Get computed circular dependency colors (theme-reactive)
 --- @return table Colors ready for ImGui drawing
 function M.get_circular()
-  local p = ThemeManager.get_script_palette("RegionPlaylist")
+  local p = ThemeManager.get_script_palette('RegionPlaylist')
   if not p then
     -- Fallback if not registered
     return {
-      base = Ark.Colors.hexrgb("#240C0CFF"),
-      stripe = Ark.Colors.hexrgb("#430D0D33"),
-      border = Ark.Colors.hexrgb("#240F0FFF"),
-      text = Ark.Colors.hexrgb("#901B1BFF"),
-      lock = Ark.Colors.hexrgb("#901B1BFF"),
-      chip = Ark.Colors.hexrgb("#901B1BFF"),
-      badge_bg = Ark.Colors.hexrgb("#240C0CFF"),
-      badge_border = Ark.Colors.hexrgb("#652A2AFF"),
+      base = Ark.Colors.hexrgb('#240C0CFF'),
+      stripe = Ark.Colors.hexrgb('#430D0D33'),
+      border = Ark.Colors.hexrgb('#240F0FFF'),
+      text = Ark.Colors.hexrgb('#901B1BFF'),
+      lock = Ark.Colors.hexrgb('#901B1BFF'),
+      chip = Ark.Colors.hexrgb('#901B1BFF'),
+      badge_bg = Ark.Colors.hexrgb('#240C0CFF'),
+      badge_border = Ark.Colors.hexrgb('#652A2AFF'),
       stripe_width = 8,
       stripe_spacing = 16,
     }
@@ -84,9 +84,9 @@ end
 --- Get fallback chip color (theme-reactive)
 --- @return number RGBA color
 function M.get_fallback_chip()
-  local p = ThemeManager.get_script_palette("RegionPlaylist")
+  local p = ThemeManager.get_script_palette('RegionPlaylist')
   if not p then
-    return Ark.Colors.hexrgb("#FF5733FF")
+    return Ark.Colors.hexrgb('#FF5733FF')
   end
   return p.FALLBACK_CHIP
 end
@@ -101,8 +101,8 @@ end
 function M.get_badge()
   local S = Ark.Style.COLORS or {}
   return {
-    bg = S.BADGE_BG or Ark.Colors.hexrgb("#14181CDD"),
-    text = S.BADGE_TEXT or Ark.Colors.hexrgb("#FFFFFFDD"),
+    bg = S.BADGE_BG or Ark.Colors.hexrgb('#14181CDD'),
+    text = S.BADGE_TEXT or Ark.Colors.hexrgb('#FFFFFFDD'),
     border_opacity = S.BADGE_BORDER_OPACITY or 0.20,
   }
 end
@@ -112,9 +112,9 @@ end
 function M.get_playlist_tile()
   local S = Ark.Style.COLORS or {}
   return {
-    base  = S.PLAYLIST_TILE_COLOR or Ark.Colors.hexrgb("#3A3A3AFF"),
-    name  = S.PLAYLIST_NAME_COLOR or Ark.Colors.hexrgb("#CCCCCCFF"),
-    badge = S.PLAYLIST_BADGE_COLOR or Ark.Colors.hexrgb("#999999FF"),
+    base  = S.PLAYLIST_TILE_COLOR or Ark.Colors.hexrgb('#3A3A3AFF'),
+    name  = S.PLAYLIST_NAME_COLOR or Ark.Colors.hexrgb('#CCCCCCFF'),
+    badge = S.PLAYLIST_BADGE_COLOR or Ark.Colors.hexrgb('#999999FF'),
   }
 end
 

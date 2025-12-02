@@ -26,7 +26,7 @@ function M.passes_region_filter(selected_regions, item_regions)
 
   -- Check if item has at least one selected region
   for _, region in ipairs(item_regions) do
-    local region_name = type(region) == "table" and region.name or region
+    local region_name = type(region) == 'table' and region.name or region
     if selected_regions[region_name] then
       return true
     end

@@ -20,7 +20,7 @@ function M.new(opts)
 
   local self = setmetatable({
     -- Filter/search
-    search_text = "",
+    search_text = '',
 
     -- Collapsed categories
     collapsed = {},
@@ -55,9 +55,9 @@ function Panel:draw_category_header(ctx, category, display_name)
   local is_collapsed = self.collapsed[category]
 
   -- Header button
-  ImGui.PushStyleColor(ctx, ImGui.Col_Header, hexrgb("#2A2A2A"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, hexrgb("#333333"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, hexrgb("#404040"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Header, hexrgb('#2A2A2A'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, hexrgb('#333333'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, hexrgb('#404040'))
 
   local open = ImGui.CollapsingHeader(ctx, display_name, not is_collapsed and ImGui.TreeNodeFlags_DefaultOpen or 0)
 
@@ -66,7 +66,7 @@ function Panel:draw_category_header(ctx, category, display_name)
   -- Right-click on category header toggles all elements in category
   local action = nil
   if ImGui.IsItemClicked(ctx, 1) then  -- 1 = right mouse button
-    action = "toggle_category"
+    action = 'toggle_category'
   end
 
   self.collapsed[category] = not open
@@ -85,16 +85,16 @@ function Panel:draw_element_item(ctx, def)
 
   -- For hidden elements, dim the color
   if is_hidden then
-    cat_color = hexrgb("#555555")
+    cat_color = hexrgb('#555555')
   end
 
   -- Display name with status indicators
   local label = def.name
   if is_active then
     if is_hidden then
-      label = label .. " [hidden]"
+      label = label .. ' [hidden]'
     else
-      label = label .. " +"
+      label = label .. ' +'
     end
   end
 
@@ -102,7 +102,7 @@ function Panel:draw_element_item(ctx, def)
 
   -- Draw element as DOT style chip
   local clicked, chip_w, chip_h = Chip.draw(ctx, {
-    id = "elem_" .. def.id,
+    id = 'elem_' .. def.id,
     style = Chip.STYLE.DOT,
     label = label,
     color = cat_color,
@@ -117,31 +117,31 @@ function Panel:draw_element_item(ctx, def)
 
   -- Right-click on active elements directly toggles visibility (no menu)
   if is_active and ImGui.IsItemClicked(ctx, 1) then  -- 1 = right mouse button
-    return "toggle", active_elem
+    return 'toggle', active_elem
   end
 
   -- Tooltip on hover
   if ImGui.IsItemHovered(ctx) then
     ImGui.BeginTooltip(ctx)
     ImGui.Text(ctx, def.id)
-    if def.description and def.description ~= "" then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+    if def.description and def.description ~= '' then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
       ImGui.Text(ctx, def.description)
       ImGui.PopStyleColor(ctx)
     end
     if is_active then
       if is_hidden then
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CC6666"))
-        ImGui.Text(ctx, "(hidden - right-click to show)")
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CC6666'))
+        ImGui.Text(ctx, '(hidden - right-click to show)')
         ImGui.PopStyleColor(ctx)
       else
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CC88"))
-        ImGui.Text(ctx, "(click to select, right-click to hide)")
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CC88'))
+        ImGui.Text(ctx, '(click to select, right-click to hide)')
         ImGui.PopStyleColor(ctx)
       end
     else
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
-      ImGui.Text(ctx, "Double-click to add")
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+      ImGui.Text(ctx, 'Double-click to add')
       ImGui.PopStyleColor(ctx)
     end
     ImGui.EndTooltip(ctx)
@@ -154,14 +154,14 @@ function Panel:draw_element_item(ctx, def)
   if clicked then
     if is_active then
       -- Active element: select it for editing
-      return "select_active", active_elem
+      return 'select_active', active_elem
     else
       -- Inactive: select in palette
       self.selected_def = def
-      return "select"
+      return 'select'
     end
   elseif double_clicked and not is_active then
-    return "add"
+    return 'add'
   end
 
   return nil
@@ -172,24 +172,24 @@ function Panel:draw_custom_element_item(ctx, elem)
   local is_hidden = not elem.visible
 
   -- Custom elements get a distinct color
-  local cat_color = hexrgb("#9966CC")  -- Purple for custom
+  local cat_color = hexrgb('#9966CC')  -- Purple for custom
   if is_hidden then
-    cat_color = hexrgb("#555555")
+    cat_color = hexrgb('#555555')
   end
 
   -- Display name with status
   local label = elem.name or elem.id
   if is_hidden then
-    label = label .. " [hidden]"
+    label = label .. ' [hidden]'
   else
-    label = label .. " +"
+    label = label .. ' +'
   end
 
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
   -- Draw as DOT style chip
   local clicked, chip_w, chip_h = Chip.draw(ctx, {
-    id = "custom_" .. elem.id,
+    id = 'custom_' .. elem.id,
     style = Chip.STYLE.DOT,
     label = label,
     color = cat_color,
@@ -204,23 +204,23 @@ function Panel:draw_custom_element_item(ctx, elem)
 
   -- Right-click toggles visibility
   if ImGui.IsItemClicked(ctx, 1) then
-    return "toggle", elem
+    return 'toggle', elem
   end
 
   -- Tooltip
   if ImGui.IsItemHovered(ctx) then
     ImGui.BeginTooltip(ctx)
     ImGui.Text(ctx, elem.id)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#9966CC"))
-    ImGui.Text(ctx, "(custom element from rtconfig)")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#9966CC'))
+    ImGui.Text(ctx, '(custom element from rtconfig)')
     ImGui.PopStyleColor(ctx)
     if is_hidden then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CC6666"))
-      ImGui.Text(ctx, "(hidden - right-click to show)")
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CC6666'))
+      ImGui.Text(ctx, '(hidden - right-click to show)')
       ImGui.PopStyleColor(ctx)
     else
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CC88"))
-      ImGui.Text(ctx, "(click to select, right-click to hide)")
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CC88'))
+      ImGui.Text(ctx, '(click to select, right-click to hide)')
       ImGui.PopStyleColor(ctx)
     end
     ImGui.EndTooltip(ctx)
@@ -228,7 +228,7 @@ function Panel:draw_custom_element_item(ctx, elem)
 
   -- Click to select
   if clicked then
-    return "select_active", elem
+    return 'select_active', elem
   end
 
   return nil
@@ -240,7 +240,7 @@ function Panel:draw(ctx)
 
   -- Search bar
   ImGui.PushItemWidth(ctx, -1)
-  local changed, text = ImGui.InputTextWithHint(ctx, "##search", "Search elements...", self.search_text)
+  local changed, text = ImGui.InputTextWithHint(ctx, '##search', 'Search elements...', self.search_text)
   if changed then
     self.search_text = text
   end
@@ -261,7 +261,7 @@ function Panel:draw(ctx)
       for _, def in ipairs(elements) do
         local name_lower = def.name:lower()
         local id_lower = def.id:lower()
-        if search_lower == "" or name_lower:find(search_lower, 1, true) or id_lower:find(search_lower, 1, true) then
+        if search_lower == '' or name_lower:find(search_lower, 1, true) or id_lower:find(search_lower, 1, true) then
           filtered[#filtered + 1] = def
         end
       end
@@ -269,13 +269,13 @@ function Panel:draw(ctx)
       -- Only show category if it has matching elements
       if #filtered > 0 then
         local display_name = TCPElements.category_names[category] or category
-        display_name = display_name .. " (" .. #filtered .. ")"
+        display_name = display_name .. ' (' .. #filtered .. ')'
 
         local header_open, header_action = self:draw_category_header(ctx, category, display_name)
 
         -- Handle category header right-click (toggle all elements in category)
-        if header_action == "toggle_category" then
-          result = { type = "toggle_category", category = category }
+        if header_action == 'toggle_category' then
+          result = { type = 'toggle_category', category = category }
         end
 
         if header_open then
@@ -283,16 +283,16 @@ function Panel:draw(ctx)
 
           for _, def in ipairs(filtered) do
             local action, elem = self:draw_element_item(ctx, def)
-            if action == "add" then
-              result = { type = "add", definition = def }
-            elseif action == "select" then
-              result = { type = "select", definition = def }
-            elseif action == "select_active" then
-              result = { type = "select_active", element = elem }
-            elseif action == "toggle" then
-              result = { type = "toggle", element = elem }
-            elseif action == "reset" then
-              result = { type = "reset", element = elem }
+            if action == 'add' then
+              result = { type = 'add', definition = def }
+            elseif action == 'select' then
+              result = { type = 'select', definition = def }
+            elseif action == 'select_active' then
+              result = { type = 'select_active', element = elem }
+            elseif action == 'toggle' then
+              result = { type = 'toggle', element = elem }
+            elseif action == 'reset' then
+              result = { type = 'reset', element = elem }
             end
           end
 
@@ -309,7 +309,7 @@ function Panel:draw(ctx)
       -- Apply search filter
       local name_lower = (elem.name or elem.id):lower()
       local id_lower = elem.id:lower()
-      if search_lower == "" or name_lower:find(search_lower, 1, true) or id_lower:find(search_lower, 1, true) then
+      if search_lower == '' or name_lower:find(search_lower, 1, true) or id_lower:find(search_lower, 1, true) then
         custom_elements[#custom_elements + 1] = elem
       end
     end
@@ -321,11 +321,11 @@ function Panel:draw(ctx)
 
     ImGui.Dummy(ctx, 0, 8)
 
-    local display_name = "Customs (" .. #custom_elements .. ")"
-    local header_open, header_action = self:draw_category_header(ctx, "customs", display_name)
+    local display_name = 'Customs (' .. #custom_elements .. ')'
+    local header_open, header_action = self:draw_category_header(ctx, 'customs', display_name)
 
-    if header_action == "toggle_category" then
-      result = { type = "toggle_category", category = "customs" }
+    if header_action == 'toggle_category' then
+      result = { type = 'toggle_category', category = 'customs' }
     end
 
     if header_open then
@@ -333,10 +333,10 @@ function Panel:draw(ctx)
 
       for _, elem in ipairs(custom_elements) do
         local action, target = self:draw_custom_element_item(ctx, elem)
-        if action == "toggle" then
-          result = { type = "toggle", element = target }
-        elseif action == "select_active" then
-          result = { type = "select_active", element = target }
+        if action == 'toggle' then
+          result = { type = 'toggle', element = target }
+        elseif action == 'select_active' then
+          result = { type = 'select_active', element = target }
         end
       end
 
@@ -350,8 +350,8 @@ function Panel:draw(ctx)
   ImGui.Dummy(ctx, 0, 4)
 
   if self.selected_def then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "Selected: " .. self.selected_def.name)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.Text(ctx, 'Selected: ' .. self.selected_def.name)
     ImGui.PopStyleColor(ctx)
 
     ImGui.Dummy(ctx, 0, 4)
@@ -360,21 +360,21 @@ function Panel:draw(ctx)
     local avail_w = ImGui.GetContentRegionAvail(ctx)
 
     local add_result = Button.draw(ctx, {
-      id = "add_element_btn",
+      id = 'add_element_btn',
       x = x,
       y = y,
-      label = "Add to Layout",
+      label = 'Add to Layout',
       width = avail_w - 4,
       height = 28,
-      advance = "vertical",
+      advance = 'vertical',
     })
 
     if add_result.clicked and self.on_add then
-      result = { type = "add", definition = self.selected_def }
+      result = { type = 'add', definition = self.selected_def }
     end
   else
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
-    ImGui.Text(ctx, "Select an element to add")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+    ImGui.Text(ctx, 'Select an element to add')
     ImGui.PopStyleColor(ctx)
   end
 

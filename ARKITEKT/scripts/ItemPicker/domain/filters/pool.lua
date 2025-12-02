@@ -76,8 +76,8 @@ function M.build_filtered_items(content, settings, is_disabled, search_string)
 
     -- Apply search filter
     if should_include then
-      local search = search_string or ""
-      if search ~= "" and entry[2] then
+      local search = search_string or ''
+      if search ~= '' and entry[2] then
         if not entry[2]:lower():find(search:lower(), 1, true) then
           should_include = false
         end

@@ -2,9 +2,9 @@
 -- MediaContainer/init.lua
 -- Main initialization and deferred loop for media container sync
 
-local State = require("MediaContainer.core.app_state")
-local Container = require("MediaContainer.core.container")
-local Overlay = require("MediaContainer.ui.overlay")
+local State = require('MediaContainer.core.app_state')
+local Container = require('MediaContainer.core.container')
+local Overlay = require('MediaContainer.ui.overlay')
 
 local M = {}
 

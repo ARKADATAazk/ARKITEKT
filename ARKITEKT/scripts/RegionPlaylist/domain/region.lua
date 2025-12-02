@@ -20,7 +20,7 @@ function M.new()
   }
 
   if DEBUG_DOMAIN then
-    Logger.debug("REGION", "Domain initialized")
+    Logger.debug('REGION', 'Domain initialized')
   end
 
   --- Get region by RID
@@ -42,7 +42,7 @@ function M.new()
   --- @param name string Region name
   --- @return table|nil region Region object or nil if not found
   function domain:get_region_by_name(name)
-    if not name or name == "" then return nil end
+    if not name or name == '' then return nil end
     return self.name_index[name]
   end
 
@@ -58,7 +58,7 @@ function M.new()
       if region then return region end
     end
     -- Try name (stable across renumbering if user didn't rename)
-    if name and name ~= "" then
+    if name and name ~= '' then
       local region = self.name_index[name]
       if region then return region end
     end
@@ -86,7 +86,7 @@ function M.new()
   function domain:set_pool_order(new_order)
     self.pool_order = new_order
     if DEBUG_DOMAIN then
-      Logger.debug("REGION", "Pool order updated: %d regions", #new_order)
+      Logger.debug('REGION', 'Pool order updated: %d regions', #new_order)
     end
   end
 
@@ -107,14 +107,14 @@ function M.new()
         self.guid_index[region.guid] = region
       end
       -- Index by name (only if non-empty, first one wins for duplicates)
-      if region.name and region.name ~= "" and not self.name_index[region.name] then
+      if region.name and region.name ~= '' and not self.name_index[region.name] then
         self.name_index[region.name] = region
       end
       self.pool_order[#self.pool_order + 1] = region.rid
     end
 
     if DEBUG_DOMAIN then
-      Logger.debug("REGION", "Refreshed from bridge: %d regions loaded", #regions)
+      Logger.debug('REGION', 'Refreshed from bridge: %d regions loaded', #regions)
     end
   end
 

@@ -42,7 +42,7 @@ function M.new(opts)
   })
   
   self.follow_playhead = (opts.follow_playhead ~= false)
-  self.quantize_mode = opts.quantize_mode or "measure"
+  self.quantize_mode = opts.quantize_mode or 'measure'
   self.on_repeat_cycle = opts.on_repeat_cycle
   
   -- Initialize quantize submodule with the mode

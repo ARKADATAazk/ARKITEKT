@@ -711,7 +711,7 @@ function M.new(opts)
       end
     else
       -- Use docked or floating background color
-      -- (When "Adapt on docking" is enabled, the full theme is applied on dock transition)
+      -- (When 'Adapt on docking' is enabled, the full theme is applied on dock transition)
       local bg_color = self._was_docked and self.bg_color_docked or self.bg_color_floating
       if bg_color then
         ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, bg_color)

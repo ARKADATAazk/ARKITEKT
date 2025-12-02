@@ -84,16 +84,16 @@ local DEFAULTS = {
   
   marquee = {
     drag_threshold = 3,
-    fill_color = hexrgb("#FFFFFF22"),
-    fill_color_add = hexrgb("#FFFFFF33"),
-    stroke_color = hexrgb("#FFFFFF"),
+    fill_color = hexrgb('#FFFFFF22'),
+    fill_color_add = hexrgb('#FFFFFF33'),
+    stroke_color = hexrgb('#FFFFFF'),
     stroke_thickness = 1,
     rounding = 0,
   },
 
   dim = {
-    fill_color = hexrgb("#00000088"),
-    stroke_color = hexrgb("#FFFFFF33"),
+    fill_color = hexrgb('#00000088'),
+    stroke_color = hexrgb('#FFFFFF33'),
     stroke_thickness = 1.5,
     rounding = 6,
   },
@@ -101,17 +101,17 @@ local DEFAULTS = {
   drop = {
     line = {
       width = 2,
-      color = hexrgb("#42E896"),
+      color = hexrgb('#42E896'),
       glow_width = 12,
-      glow_color = hexrgb("#42E89633"),
+      glow_color = hexrgb('#42E89633'),
     },
     caps = {
       width = 8,
       height = 3,
-      color = hexrgb("#42E896"),
+      color = hexrgb('#42E896'),
       rounding = 0,
       glow_size = 3,
-      glow_color = hexrgb("#42E89644"),
+      glow_color = hexrgb('#42E89644'),
     },
     pulse_speed = 2.5,
   },
@@ -144,15 +144,15 @@ Grid.__index = Grid
 function M.new(opts)
   opts = opts or {}
 
-  local grid_id = opts.id or "grid"
+  local grid_id = opts.id or 'grid'
 
   local grid
   grid = setmetatable({
     id               = grid_id,
     gap              = opts.gap or 12,
-    min_col_w_fn     = type(opts.min_col_w) == "function" and opts.min_col_w or function() return opts.min_col_w or 160 end,
+    min_col_w_fn     = type(opts.min_col_w) == 'function' and opts.min_col_w or function() return opts.min_col_w or 160 end,
     -- fixed_tile_h_fn: If opts provides function, use it. Otherwise create function that reads from grid.fixed_tile_h
-    fixed_tile_h_fn  = type(opts.fixed_tile_h) == "function" and opts.fixed_tile_h or function() return grid.fixed_tile_h end,
+    fixed_tile_h_fn  = type(opts.fixed_tile_h) == 'function' and opts.fixed_tile_h or function() return grid.fixed_tile_h end,
     fixed_tile_h     = opts.fixed_tile_h,  -- Keep for backward compatibility with direct assignment
     get_items        = opts.get_items or function() return {} end,
     key              = opts.key or function(item) return tostring(item) end,
@@ -207,8 +207,8 @@ function M.new(opts)
     panel_clip_bounds = nil,
 
     -- Cache string IDs for performance (avoid string concatenation every frame)
-    _cached_bg_id = "##grid_bg_" .. grid_id,
-    _cached_empty_id = "##grid_empty_" .. grid_id,
+    _cached_bg_id = '##grid_bg_' .. grid_id,
+    _cached_empty_id = '##grid_empty_' .. grid_id,
 
     -- Virtual list mode for large datasets (1000+ items)
     virtual = opts.virtual or false,
@@ -356,7 +356,7 @@ function Grid:_draw_marquee(ctx, dl)
   if not self.sel_rect:did_drag() then return end
 
   local cfg = self.config.marquee or DEFAULTS.marquee
-  local fill = (self.sel_rect.mode == "add") and
+  local fill = (self.sel_rect.mode == 'add') and
               (cfg.fill_color_add or DEFAULTS.marquee.fill_color_add) or
               (cfg.fill_color or DEFAULTS.marquee.fill_color)
   local stroke = cfg.stroke_color or DEFAULTS.marquee.stroke_color
@@ -584,7 +584,7 @@ function Grid:_draw_virtual(ctx, items, num_items)
     local mx, my = ImGui.GetMousePos(ctx)
     local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
     local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
-    local mode = (ctrl or shift) and "add" or "replace"
+    local mode = (ctrl or shift) and 'add' or 'replace'
 
     self.sel_rect:begin(mx, my, mode, ctx)
     if self.on_click_empty then self.on_click_empty() end
@@ -1045,7 +1045,7 @@ function Grid:draw(ctx)
         if is_dragged and key == self.drag.ids[1] then
           if ImGui.BeginDragDropSource(ctx) then
             ImGui.SetDragDropPayload(ctx, self.drag_payload_type, self.drag_payload_data)
-            ImGui.Text(ctx, self.drag_label or ("Dragging " .. #self.drag.ids .. " item(s)"))
+            ImGui.Text(ctx, self.drag_label or ('Dragging ' .. #self.drag.ids .. ' item(s)'))
             ImGui.EndDragDropSource(ctx)
           end
         end
@@ -1088,7 +1088,7 @@ function Grid:draw(ctx)
     local mx, my = ImGui.GetMousePos(ctx)
     local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
     local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
-    local mode = (ctrl or shift) and "add" or "replace"
+    local mode = (ctrl or shift) and 'add' or 'replace'
 
     self.sel_rect:begin(mx, my, mode, ctx)
     if self.on_click_empty then self.on_click_empty() end
@@ -1361,7 +1361,7 @@ local function _update_grid_from_opts(grid, opts)
   if opts.fixed_tile_h ~= nil then
     grid.fixed_tile_h = opts.fixed_tile_h
     -- Also update the function version if it's not already a function
-    if type(opts.fixed_tile_h) ~= "function" then
+    if type(opts.fixed_tile_h) ~= 'function' then
       grid.fixed_tile_h_fn = function() return grid.fixed_tile_h end
     end
   end
@@ -1449,14 +1449,14 @@ function M.draw(ctx, opts)
     id = opts.id
   else
     -- Use stack + fallback
-    local base_id = "grid"
+    local base_id = 'grid'
     id = IdStack.resolve(ctx, base_id)
   end
 
   -- Debug: Check for duplicate IDs in same frame
   if DEBUG and _grid_state.frame_ids[id] then
-    local info = debug.getinfo(2, "Sl")
-    local source = info and info.short_src or "unknown"
+    local info = debug.getinfo(2, 'Sl')
+    local source = info and info.short_src or 'unknown'
     local line = info and info.currentline or 0
     reaper.ShowConsoleMsg(string.format(
       "[ARKITEKT] Warning: Ark.Grid duplicate ID '%s' in same frame - state will be shared!\n  at %s:%d\n",

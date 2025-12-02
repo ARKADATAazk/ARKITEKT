@@ -23,14 +23,14 @@ M._preset_spinner_states = M._preset_spinner_states or {}  -- keyed by param_nam
 
 -- Read/write parameter value from Reaper theme
 local function get_param_value(param_index, param_type)
-  if not param_index then return param_type == "bool" and 0 or 0.0 end
+  if not param_index then return param_type == 'bool' and 0 or 0.0 end
 
   local ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, param_index)
   if not ok or value == nil then
     -- Default values based on type
-    if param_type == "bool" then
+    if param_type == 'bool' then
       return 0
-    elseif param_type == "int" or param_type == "enum" then
+    elseif param_type == 'int' or param_type == 'enum' then
       return 0
     else -- float
       return 0.0
@@ -91,22 +91,22 @@ function M.render(ctx, param, tab_color, shell_state, view)
 
   -- TOP ROW: Parameter name + tooltip indicator
   ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-  local display_name = metadata.display_name and metadata.display_name ~= "" and metadata.display_name or param_name
+  local display_name = metadata.display_name and metadata.display_name ~= '' and metadata.display_name or param_name
   if #display_name > 35 then
-    display_name = display_name:sub(1, 32) .. "..."
+    display_name = display_name:sub(1, 32) .. '...'
   end
   ImGui.Text(ctx, display_name)
   ImGui.PopFont(ctx)
 
   -- Tooltip with full details
   if ImGui.IsItemHovered(ctx) then
-    local tooltip = "Parameter: " .. param_name
-    tooltip = tooltip .. "\nType: " .. (param_type or "unknown")
-    if metadata.description and metadata.description ~= "" then
-      tooltip = tooltip .. "\n" .. metadata.description
+    local tooltip = 'Parameter: ' .. param_name
+    tooltip = tooltip .. '\nType: ' .. (param_type or 'unknown')
+    if metadata.description and metadata.description ~= '' then
+      tooltip = tooltip .. '\n' .. metadata.description
     end
     if param.min and param.max then
-      tooltip = tooltip .. string.format("\nRange: %.2f - %.2f", param.min, param.max)
+      tooltip = tooltip .. string.format('\nRange: %.2f - %.2f', param.min, param.max)
     end
     ImGui.SetTooltip(ctx, tooltip)
   end
@@ -114,17 +114,17 @@ function M.render(ctx, param, tab_color, shell_state, view)
   -- Linked params indicator (same line, right side)
   if is_in_group and #other_params > 0 then
     ImGui.SameLine(ctx, avail_w - 250)
-    local group_color = ParameterLinkManager.get_group_color(param_name) or hexrgb("#4AE290")
+    local group_color = ParameterLinkManager.get_group_color(param_name) or hexrgb('#4AE290')
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, group_color)
-    local linked_text = "Linked: " .. table.concat(other_params, ", ")
+    local linked_text = 'Linked: ' .. table.concat(other_params, ', ')
     if #linked_text > 30 then
-      linked_text = linked_text:sub(1, 27) .. "..."
+      linked_text = linked_text:sub(1, 27) .. '...'
     end
     ImGui.Text(ctx, linked_text)
     ImGui.PopStyleColor(ctx)
 
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, "Grouped with:\n" .. table.concat(other_params, "\n"))
+      ImGui.SetTooltip(ctx, 'Grouped with:\n' .. table.concat(other_params, '\n'))
     end
   end
 
@@ -134,7 +134,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
   local value_changed = false
   local was_deactivated = false
   local new_value = current_value
-  local control_id = "##" .. param_name
+  local control_id = '##' .. param_name
 
   -- Check if this parameter has a template configured
   local template = nil
@@ -159,7 +159,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
   end
 
   local presets = template and ((template.config and template.config.presets) or template.presets)
-  if template and template.type == "preset_spinner" and presets and #presets > 0 then
+  if template and template.type == 'preset_spinner' and presets and #presets > 0 then
     -- Render preset spinner
     local preset_values = {}
     local preset_labels = {}
@@ -169,7 +169,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
       local value = preset.values and preset.values[param.name] or preset.value
       if value then
         preset_values[#preset_values + 1] = value
-        preset_labels[#preset_labels + 1] = preset.label or "Unnamed"
+        preset_labels[#preset_labels + 1] = preset.label or 'Unnamed'
       end
     end
 
@@ -202,7 +202,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
       end
 
       local spinner_result = Ark.Spinner.draw(ctx, {
-        id = "##preset_spinner_" .. param.name,
+        id = '##preset_spinner_' .. param.name,
         value = spinner_state.current_idx,
         options = preset_labels,
         width = CONTROL_WIDTH,
@@ -223,15 +223,15 @@ function M.render(ctx, param, tab_color, shell_state, view)
       template = nil
     end
 
-  elseif param_type == "bool" then
+  elseif param_type == 'bool' then
     -- Checkbox
     local checked = current_value ~= 0
-    if Ark.Checkbox.draw_at_cursor(ctx, param_name, checked, nil, "param_" .. param_name) then
+    if Ark.Checkbox.draw_at_cursor(ctx, param_name, checked, nil, 'param_' .. param_name) then
       new_value = checked and 0 or 1
       value_changed = true
       was_deactivated = true  -- Immediate
     end
-  elseif param_type == "int" or param_type == "enum" then
+  elseif param_type == 'int' or param_type == 'enum' then
     -- SliderInt with IsItemActive for continuous updates
     ImGui.SetNextItemWidth(ctx, CONTROL_WIDTH)
     local min_val = param.min or 0
@@ -252,7 +252,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
     ImGui.SetNextItemWidth(ctx, CONTROL_WIDTH)
     local min_val = param.min or 0.0
     local max_val = param.max or 1.0
-    local changed, val = ImGui.SliderDouble(ctx, control_id, current_value, min_val, max_val, "%.0f")
+    local changed, val = ImGui.SliderDouble(ctx, control_id, current_value, min_val, max_val, '%.0f')
     local is_active = ImGui.IsItemActive(ctx)
 
     if changed or is_active then
@@ -271,9 +271,9 @@ function M.render(ctx, param, tab_color, shell_state, view)
   -- UNLINKED button
   local is_unlinked = link_mode == ParameterLinkManager.LINK_MODE.UNLINKED
   if is_unlinked then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#555555"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb('#555555'))
   end
-  if ImGui.Button(ctx, "UNLINKED##" .. param_name, 80, 20) then
+  if ImGui.Button(ctx, 'UNLINKED##' .. param_name, 80, 20) then
     ParameterLinkManager.set_link_mode(param_name, ParameterLinkManager.LINK_MODE.UNLINKED)
     view:save_assignments()
   end
@@ -281,7 +281,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
     ImGui.PopStyleColor(ctx)
   end
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "No linking - parameter is independent")
+    ImGui.SetTooltip(ctx, 'No linking - parameter is independent')
   end
 
   ImGui.SameLine(ctx, 0, 4)
@@ -289,9 +289,9 @@ function M.render(ctx, param, tab_color, shell_state, view)
   -- LINK button
   local is_link = link_mode == ParameterLinkManager.LINK_MODE.LINK
   if is_link then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#4A90E2"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb('#4A90E2'))
   end
-  if ImGui.Button(ctx, "LINK##" .. param_name, 60, 20) then
+  if ImGui.Button(ctx, 'LINK##' .. param_name, 60, 20) then
     ParameterLinkManager.set_link_mode(param_name, ParameterLinkManager.LINK_MODE.LINK)
     view:save_assignments()
   end
@@ -299,7 +299,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
     ImGui.PopStyleColor(ctx)
   end
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "LINK mode - parameters move by same delta")
+    ImGui.SetTooltip(ctx, 'LINK mode - parameters move by same delta')
   end
 
   ImGui.SameLine(ctx, 0, 4)
@@ -307,9 +307,9 @@ function M.render(ctx, param, tab_color, shell_state, view)
   -- SYNC button
   local is_sync = link_mode == ParameterLinkManager.LINK_MODE.SYNC
   if is_sync then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#4AE290"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb('#4AE290'))
   end
-  if ImGui.Button(ctx, "SYNC##" .. param_name, 60, 20) then
+  if ImGui.Button(ctx, 'SYNC##' .. param_name, 60, 20) then
     ParameterLinkManager.set_link_mode(param_name, ParameterLinkManager.LINK_MODE.SYNC)
     view:save_assignments()
   end
@@ -317,7 +317,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
     ImGui.PopStyleColor(ctx)
   end
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "SYNC mode - parameter mirrors exact value")
+    ImGui.SetTooltip(ctx, 'SYNC mode - parameter mirrors exact value')
   end
 
   -- Handle value change and propagation (match library_tile.lua pattern)
@@ -341,10 +341,10 @@ function M.render(ctx, param, tab_color, shell_state, view)
             local target_range = target_max - target_min
             local target_new_value
 
-            if prop.mode == "sync" then
+            if prop.mode == 'sync' then
               -- SYNC: Set to same percentage position in target's range
               target_new_value = target_min + (prop.percent * target_range)
-            elseif prop.mode == "link" then
+            elseif prop.mode == 'link' then
               -- LINK: Use virtual value (can be negative), clamp for REAPER
               target_new_value = prop.virtual_value
             end
@@ -393,7 +393,7 @@ function M.render_group(ctx, group_param, tab_color, shell_state, view)
 
   if not group then
     -- Group not found, render placeholder
-    ImGui.Text(ctx, "Group not found: " .. group_name)
+    ImGui.Text(ctx, 'Group not found: ' .. group_name)
     return
   end
 
@@ -409,7 +409,7 @@ function M.render_group(ctx, group_param, tab_color, shell_state, view)
 
   if not presets or #presets == 0 then
     -- No presets configured
-    ImGui.Text(ctx, group_name .. " (no presets)")
+    ImGui.Text(ctx, group_name .. ' (no presets)')
     return
   end
 
@@ -441,16 +441,16 @@ function M.render_group(ctx, group_param, tab_color, shell_state, view)
   ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
   local display_name = group_name
   if #display_name > 35 then
-    display_name = display_name:sub(1, 32) .. "..."
+    display_name = display_name:sub(1, 32) .. '...'
   end
   ImGui.Text(ctx, display_name)
   ImGui.PopFont(ctx)
 
   -- Tooltip with group info
   if ImGui.IsItemHovered(ctx) then
-    local tooltip = "Group: " .. group_name
-    tooltip = tooltip .. "\nTemplates: " .. #(group.template_ids or {})
-    tooltip = tooltip .. "\nPresets: " .. #presets
+    local tooltip = 'Group: ' .. group_name
+    tooltip = tooltip .. '\nTemplates: ' .. #(group.template_ids or {})
+    tooltip = tooltip .. '\nPresets: ' .. #presets
     ImGui.SetTooltip(ctx, tooltip)
   end
 
@@ -460,7 +460,7 @@ function M.render_group(ctx, group_param, tab_color, shell_state, view)
   -- Build preset labels
   local preset_labels = {}
   for _, preset in ipairs(presets) do
-    preset_labels[#preset_labels + 1] = preset.label or "Unnamed"
+    preset_labels[#preset_labels + 1] = preset.label or 'Unnamed'
   end
 
   -- Track spinner state
@@ -473,7 +473,7 @@ function M.render_group(ctx, group_param, tab_color, shell_state, view)
   local spinner_state = M._preset_spinner_states[group_id]
 
   local spinner_result = Ark.Spinner.draw(ctx, {
-    id = "##group_spinner_" .. group_id,
+    id = '##group_spinner_' .. group_id,
     value = spinner_state.current_idx,
     options = preset_labels,
     width = CONTROL_WIDTH,

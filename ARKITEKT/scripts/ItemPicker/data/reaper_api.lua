@@ -31,19 +31,19 @@ local function get_item_uuid(item)
 
   -- Fallback: generate hash from item properties (shouldn't happen with SWS installed)
   if not warned_about_sws then
-    reaper.ShowConsoleMsg("[ItemPicker] WARNING: BR_GetMediaItemGUID failed - install SWS extension for stable cache!\n")
+    reaper.ShowConsoleMsg('[ItemPicker] WARNING: BR_GetMediaItemGUID failed - install SWS extension for stable cache!\n')
     warned_about_sws = true
   end
 
-  local pos = GetMediaItemInfo_Value(item, "D_POSITION")
-  local length = GetMediaItemInfo_Value(item, "D_LENGTH")
+  local pos = GetMediaItemInfo_Value(item, 'D_POSITION')
+  local length = GetMediaItemInfo_Value(item, 'D_LENGTH')
   local track = GetMediaItem_Track(item)
   if not track then
-    return string.format("item_notrack_%.6f_%.6f", pos, length)
+    return string.format('item_notrack_%.6f_%.6f', pos, length)
   end
-  local track_num = GetMediaTrackInfo_Value(track, "IP_TRACKNUMBER")
+  local track_num = GetMediaTrackInfo_Value(track, 'IP_TRACKNUMBER')
 
-  return string.format("item_%d_%.6f_%.6f", track_num, pos, length)
+  return string.format('item_%d_%.6f_%.6f', track_num, pos, length)
 end
 
 -- Export for use by other modules
@@ -63,7 +63,7 @@ function M.GetAllTracks()
 end
 
 function M.GetTrackID(track)
-  return GetMediaTrackInfo_Value(track, "IP_TRACKNUMBER")
+  return GetMediaTrackInfo_Value(track, 'IP_TRACKNUMBER')
 end
 
 function M.GetItemInTrack(track)
@@ -77,7 +77,7 @@ end
 
 function M.TrackIsFrozen(track, track_chunks)
   local chunk = track_chunks[M.GetTrackID(track)]
-  return chunk:find("<FREEZE")
+  return chunk:find('<FREEZE')
 end
 
 function M.IsParentFrozen(track, track_chunks)
@@ -92,7 +92,7 @@ end
 
 function M.IsParentMuted(track)
   local function isTrackMuted(t)
-    return GetMediaTrackInfo_Value(t, "B_MUTE") > 0 
+    return GetMediaTrackInfo_Value(t, 'B_MUTE') > 0 
   end
 
   local parentTrack = GetParentTrack(track)
@@ -108,7 +108,7 @@ function M.GetAllTrackStateChunks()
   local all_tracks = M.GetAllTracks()
   local chunks = {}
   for key, track in pairs(all_tracks) do
-    local _, chunk = GetTrackStateChunk(track, "")
+    local _, chunk = GetTrackStateChunk(track, '')
     chunks[#chunks + 1] = chunk
   end
   return chunks
@@ -118,14 +118,14 @@ function M.GetAllCleanedItemChunks()
   local item_chunks = {}
   for i = 0, CountMediaItems(0) - 1 do
     local item = GetMediaItem(0, i)
-    local _, chunk = GetItemStateChunk(item, "")
-    chunk = utils.RemoveKeyFromChunk(chunk, "POSITION")
-    chunk = utils.RemoveKeyFromChunk(chunk, "IGUID")
-    chunk = utils.RemoveKeyFromChunk(chunk, "IID")
-    chunk = utils.RemoveKeyFromChunk(chunk, "GUID")
+    local _, chunk = GetItemStateChunk(item, '')
+    chunk = utils.RemoveKeyFromChunk(chunk, 'POSITION')
+    chunk = utils.RemoveKeyFromChunk(chunk, 'IGUID')
+    chunk = utils.RemoveKeyFromChunk(chunk, 'IID')
+    chunk = utils.RemoveKeyFromChunk(chunk, 'GUID')
     local track_id = M.GetTrackID(GetMediaItemTrack(item))
-    local item_id = GetMediaItemInfo_Value(item, "IP_ITEMNUMBER")
-    item_chunks[track_id .. " " .. item_id] = chunk
+    local item_id = GetMediaItemInfo_Value(item, 'IP_ITEMNUMBER')
+    item_chunks[track_id .. ' ' .. item_id] = chunk
   end
   return item_chunks
 end
@@ -133,8 +133,8 @@ end
 function M.ItemChunkID(item)
   local track = GetMediaItemTrack(item)
   local track_id = M.GetTrackID(track)
-  local item_id = GetMediaItemInfo_Value(item, "IP_ITEMNUMBER")
-  return track_id .. " " .. item_id
+  local item_id = GetMediaItemInfo_Value(item, 'IP_ITEMNUMBER')
+  return track_id .. ' ' .. item_id
 end
 
 function M.GetProjectSamples(settings, state)
@@ -147,13 +147,13 @@ function M.GetProjectSamples(settings, state)
 
   -- First pass: count items per source (for pooling detection)
   for key, track in pairs(all_tracks) do
-    if reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") == 0 or M.IsParentFrozen(track, state.track_chunks) == true then
+    if reaper.GetMediaTrackInfo_Value(track, 'B_SHOWINTCP') == 0 or M.IsParentFrozen(track, state.track_chunks) == true then
       goto count_next_track
     end
 
     local track_items = M.GetItemInTrack(track)
     for key, item in pairs(track_items) do
-      if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+      if not item or not reaper.ValidatePtr2(0, item, 'MediaItem*') then
         goto count_next_item
       end
 
@@ -178,14 +178,14 @@ function M.GetProjectSamples(settings, state)
   local collected_sources = {}  -- Track which sources we've already collected
 
   for key, track in pairs(all_tracks) do
-    if reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") == 0 or M.IsParentFrozen(track, state.track_chunks) == true then
+    if reaper.GetMediaTrackInfo_Value(track, 'B_SHOWINTCP') == 0 or M.IsParentFrozen(track, state.track_chunks) == true then
       goto next_track
     end
 
     local track_items = M.GetItemInTrack(track)
     for key, item in pairs(track_items) do
       -- Validate item is a valid MediaItem pointer
-      if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+      if not item or not reaper.ValidatePtr2(0, item, 'MediaItem*') then
         goto next_item
       end
 
@@ -225,13 +225,13 @@ function M.GetProjectSamples(settings, state)
 
         -- Get take name (same as MIDI items)
         local item_name = reaper.GetTakeName(take)
-        if not item_name or item_name == "" then
+        if not item_name or item_name == '' then
           -- Fallback to filename if take has no name
-          item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$")
+          item_name = (filename:match('[^/\\]+$') or ''):match('(.+)%..+$') or filename:match('[^/\\]+$')
         end
 
-        local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or M.IsParentMuted(track) == true
-        local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
+        local track_muted = reaper.GetMediaTrackInfo_Value(track, 'B_MUTE') == 1 or M.IsParentMuted(track) == true
+        local item_muted = reaper.GetMediaItemInfo_Value(item, 'B_MUTE') == 1
 
         -- Get pool count for this source
         local pool_count = source_pool_counts[source_ptr] or 1
@@ -274,13 +274,13 @@ function M.GetProjectMIDI(settings, state)
 
   -- First pass: count items per MIDI data (for pooling detection)
   for key, track in pairs(all_tracks) do
-    if reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") == 0 or M.IsParentFrozen(track, state.track_chunks) == true then
+    if reaper.GetMediaTrackInfo_Value(track, 'B_SHOWINTCP') == 0 or M.IsParentFrozen(track, state.track_chunks) == true then
       goto count_next_track
     end
 
     local track_items = M.GetItemInTrack(track)
     for key, item in pairs(track_items) do
-      if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+      if not item or not reaper.ValidatePtr2(0, item, 'MediaItem*') then
         goto count_next_item
       end
 
@@ -307,17 +307,17 @@ function M.GetProjectMIDI(settings, state)
   local collected_midi = {}  -- Track which MIDI data we've already collected
 
   for key, track in pairs(all_tracks) do
-    if reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") == 0 or M.IsParentFrozen(track, state.track_chunks) == true then
+    if reaper.GetMediaTrackInfo_Value(track, 'B_SHOWINTCP') == 0 or M.IsParentFrozen(track, state.track_chunks) == true then
       goto next_track
     end
 
     local track_items = M.GetItemInTrack(track)
     local track_midi = {}
-    local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or M.IsParentMuted(track) == true
+    local track_muted = reaper.GetMediaTrackInfo_Value(track, 'B_MUTE') == 1 or M.IsParentMuted(track) == true
 
     for key, item in pairs(track_items) do
       -- Validate item is a valid MediaItem pointer
-      if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+      if not item or not reaper.ValidatePtr2(0, item, 'MediaItem*') then
         goto next_item
       end
 
@@ -345,10 +345,10 @@ function M.GetProjectMIDI(settings, state)
           end
         end
 
-        local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
+        local item_muted = reaper.GetMediaItemInfo_Value(item, 'B_MUTE') == 1
         local item_name = reaper.GetTakeName(take)
-        if not item_name or item_name == "" then
-          item_name = "MIDI Item"
+        if not item_name or item_name == '' then
+          item_name = 'MIDI Item'
         end
 
         -- Get pool count for this MIDI data
@@ -400,7 +400,7 @@ end
 
 function M.InsertItemAtMousePos(item, state, use_pooled_copy)
   -- Validate item is a valid MediaItem
-  if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+  if not item or not reaper.ValidatePtr2(0, item, 'MediaItem*') then
     return
   end
 
@@ -448,7 +448,7 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
           end
         end
 
-        if current_item and reaper.ValidatePtr2(0, current_item, "MediaItem*") then
+        if current_item and reaper.ValidatePtr2(0, current_item, 'MediaItem*') then
           items_to_insert[#items_to_insert + 1] = current_item
         end
       end
@@ -461,7 +461,7 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
     local want_pooled = use_pooled_copy == true
 
     -- Debug: show toggle state
-    reaper.ShowConsoleMsg(string.format("[TOGGLE DEBUG] want_pooled=%s\n", tostring(want_pooled)))
+    reaper.ShowConsoleMsg(string.format('[TOGGLE DEBUG] want_pooled=%s\n', tostring(want_pooled)))
 
     -- Save original toggle state and set to ON if we want pooled copies
     -- This is needed to create pooled copies from non-pooled sources
@@ -492,7 +492,7 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
         end
 
         -- Calculate next position (current item length)
-        local item_len = reaper.GetMediaItemInfo_Value(inserted, "D_LENGTH")
+        local item_len = reaper.GetMediaItemInfo_Value(inserted, 'D_LENGTH')
         current_pos = current_pos + item_len
       end
       reaper.SelectAllMediaItems(0, false)
@@ -548,7 +548,7 @@ function M.InsertItemsAtEditCursor(items_to_insert, state, use_pooled_copy)
   local current_pos = cursor_pos
 
   for _, insert_item in ipairs(items_to_insert) do
-    if insert_item and reaper.ValidatePtr2(0, insert_item, "MediaItem*") then
+    if insert_item and reaper.ValidatePtr2(0, insert_item, 'MediaItem*') then
       reaper.SetMediaItemSelected(insert_item, true)
 
       -- Create copy using ApplyNudge (nudgewhat=5 = duplicate/copies mode)
@@ -565,7 +565,7 @@ function M.InsertItemsAtEditCursor(items_to_insert, state, use_pooled_copy)
         end
 
         -- Calculate next position (current item length)
-        local item_len = reaper.GetMediaItemInfo_Value(inserted, "D_LENGTH")
+        local item_len = reaper.GetMediaItemInfo_Value(inserted, 'D_LENGTH')
         current_pos = current_pos + item_len
       end
       reaper.SelectAllMediaItems(0, false)
@@ -590,7 +590,7 @@ function M.GetAllProjectRegions()
     local retval, isrgn, pos, rgnend, name, markrgnindexnumber, color =
       reaper.EnumProjectMarkers3(0, i)
 
-    if isrgn and name and name ~= "" then
+    if isrgn and name and name ~= '' then
       -- Convert REAPER color to RGBA format
       local rgba_color
       if color and color ~= 0 then
@@ -610,8 +610,8 @@ end
 
 function M.GetRegionsForItem(item)
   -- Get item position and length
-  local item_start = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
-  local item_length = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+  local item_start = reaper.GetMediaItemInfo_Value(item, 'D_POSITION')
+  local item_length = reaper.GetMediaItemInfo_Value(item, 'D_LENGTH')
   local item_end = item_start + item_length
 
   -- Get all regions and check for overlaps
@@ -627,7 +627,7 @@ function M.GetRegionsForItem(item)
       -- Regions overlap if: region_start < item_end AND region_end > item_start
       if pos < item_end and rgnend > item_start then
         -- Skip empty region names
-        if name and name ~= "" then
+        if name and name ~= '' then
           -- Convert REAPER color to RGBA format
           local rgba_color
           if color and color ~= 0 then

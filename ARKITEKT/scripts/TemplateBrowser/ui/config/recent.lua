@@ -15,20 +15,20 @@ function M.create(callbacks, is_overlay_mode)
       elements = {
         -- Quick access mode dropdown (left side)
         {
-          id = "quick_access_mode",
-          type = "combo",
+          id = 'quick_access_mode',
+          type = 'combo',
           width = 120,
           spacing_before = 0,
           config = {
-            tooltip = "Quick Access",
+            tooltip = 'Quick Access',
             tooltip_delay = 0.5,
             enable_sort = false,
             get_value = callbacks.get_quick_access_mode,
             options = {
-              { value = "inbox", label = "Inbox" },
-              { value = "recents", label = "Recents" },
-              { value = "favorites", label = "Favorites" },
-              { value = "most_used", label = "Most Used" },
+              { value = 'inbox', label = 'Inbox' },
+              { value = 'recents', label = 'Recents' },
+              { value = 'favorites', label = 'Favorites' },
+              { value = 'most_used', label = 'Most Used' },
             },
             enable_mousewheel = true,
             on_change = callbacks.on_quick_access_mode_changed,
@@ -36,39 +36,39 @@ function M.create(callbacks, is_overlay_mode)
         },
         -- Spacer
         {
-          id = "spacer1",
-          type = "separator",
+          id = 'spacer1',
+          type = 'separator',
           flex = 1,
           spacing_before = 0,
           config = { show_line = false },
         },
         -- Search field (right side, grouped with sort and view)
         {
-          id = "search",
-          type = "inputtext",
+          id = 'search',
+          type = 'inputtext',
           width = 150,
           spacing_before = 0,
           config = {
-            placeholder = "Search...",
+            placeholder = 'Search...',
             get_value = callbacks.get_search_query,
             on_change = callbacks.on_search_changed,
           },
         },
         -- Sort dropdown (grouped with search and view, no spacing)
         {
-          id = "sort",
-          type = "combo",
+          id = 'sort',
+          type = 'combo',
           width = 120,
           spacing_before = 0,
           config = {
-            tooltip = "Sort by",
+            tooltip = 'Sort by',
             tooltip_delay = 0.5,
             enable_sort = false,
             get_value = callbacks.get_sort_mode,
             options = {
-              { value = "alphabetical", label = "Alphabetical" },
-              { value = "color", label = "Color" },
-              { value = "insertion", label = "Recently Added" },
+              { value = 'alphabetical', label = 'Alphabetical' },
+              { value = 'color', label = 'Color' },
+              { value = 'insertion', label = 'Recently Added' },
             },
             enable_mousewheel = true,
             on_change = callbacks.on_sort_changed,
@@ -76,14 +76,14 @@ function M.create(callbacks, is_overlay_mode)
         },
         -- Grid/List toggle button (grouped with search and sort, no spacing)
         {
-          id = "view_toggle",
-          type = "button",
+          id = 'view_toggle',
+          type = 'button',
           width = 60,
           spacing_before = 0,
           config = {
             label = callbacks.get_view_mode_label,  -- Function-based dynamic label
             on_click = callbacks.on_view_toggle,
-            tooltip = "Toggle view mode",
+            tooltip = 'Toggle view mode',
             tooltip_delay = 0.5,
           },
         },

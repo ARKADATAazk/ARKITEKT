@@ -21,12 +21,12 @@ M.SETTINGS = {
   split_midi_by_track = false,
   group_items_by_name = true,
   focus_keyboard_on_init = true,
-  search_string = "",
+  search_string = '',
   tile_width = nil,
   tile_height = nil,
   separator_position = nil,
   separator_position_horizontal = nil,
-  sort_mode = "none",
+  sort_mode = 'none',
   sort_reverse = false,
   waveform_quality = 1.0,
   waveform_filled = true,
@@ -34,7 +34,7 @@ M.SETTINGS = {
   show_visualization_in_small_tiles = false,
   show_duration = true,
   enable_tile_fx = true,
-  layout_mode = "vertical",
+  layout_mode = 'vertical',
   show_region_tags = false,
   auto_preview_on_hover = false,
   auto_preview_delay = 0.3,  -- seconds before preview starts
@@ -46,38 +46,38 @@ M.SETTINGS = {
 
 -- Sort modes
 M.SORT_MODES = {
-  "none",
-  "color",
-  "name",
-  "pool",
-  "length",
+  'none',
+  'color',
+  'name',
+  'pool',
+  'length',
 }
 
 -- Layout modes
 M.LAYOUT_MODES = {
-  "vertical",
-  "horizontal",
+  'vertical',
+  'horizontal',
 }
 
 -- View modes
 M.VIEW_MODES = {
-  "MIXED",
-  "MIDI",
-  "AUDIO",
+  'MIXED',
+  'MIDI',
+  'AUDIO',
 }
 
 -- Search modes
 M.SEARCH_MODES = {
-  {value = "items", label = "Items"},
-  {value = "tracks", label = "Tracks"},
-  {value = "regions", label = "Regions"},
-  {value = "mixed", label = "Mixed"},
+  {value = 'items', label = 'Items'},
+  {value = 'tracks', label = 'Tracks'},
+  {value = 'regions', label = 'Regions'},
+  {value = 'mixed', label = 'Mixed'},
 }
 
 -- Reverse lookups for O(1) access
-M.SEARCH_MODE_BY_LABEL = Lookup.build_reverse_lookup(M.SEARCH_MODES, "label", "value")
-M.SEARCH_MODE_BY_VALUE = Lookup.build_reverse_lookup(M.SEARCH_MODES, "value", "label")
-M.SEARCH_MODE_INDEX = Lookup.build_index(M.SEARCH_MODES, "value")
+M.SEARCH_MODE_BY_LABEL = Lookup.build_reverse_lookup(M.SEARCH_MODES, 'label', 'value')
+M.SEARCH_MODE_BY_VALUE = Lookup.build_reverse_lookup(M.SEARCH_MODES, 'value', 'label')
+M.SEARCH_MODE_INDEX = Lookup.build_index(M.SEARCH_MODES, 'value')
 
 -- =============================================================================
 -- ANIMATION DEFAULTS

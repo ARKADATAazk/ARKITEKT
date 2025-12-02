@@ -23,7 +23,7 @@ local function get_item_data(state, item_index)
     return {
       media_item = state.item_to_add,
       name = state.item_to_add_name,
-      color = state.item_to_add_color or hexrgb("#42E896FF"),
+      color = state.item_to_add_color or hexrgb('#42E896FF'),
       is_midi = take and reaper.TakeIsMIDI(take) or false,
     }
   end
@@ -37,7 +37,7 @@ local function get_item_data(state, item_index)
     return {
       media_item = state.item_to_add,
       name = state.item_to_add_name,
-      color = state.item_to_add_color or hexrgb("#42E896FF"),
+      color = state.item_to_add_color or hexrgb('#42E896FF'),
       is_midi = false,
     }
   end
@@ -54,11 +54,11 @@ local function get_item_data(state, item_index)
     color = Ark.Colors.components_to_rgba(R, G, B, 255)
   else
     -- No color flag: use default grey
-    color = Ark.Colors.hexrgb("#555B5B")
+    color = Ark.Colors.hexrgb('#555B5B')
   end
 
   local media_item = item_data[1]  -- MediaItem pointer
-  local name = item_data[2] or "Unknown"
+  local name = item_data[2] or 'Unknown'
   local take = media_item and reaper.GetActiveTake(media_item)
 
   return {
@@ -106,7 +106,7 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
     return true  -- Mouse released, insert item
   end
 
-  local arrange_window = reaper.JS_Window_Find("trackview", true)
+  local arrange_window = reaper.JS_Window_Find('trackview', true)
   local rv, w_x1, w_y1, w_x2, w_y2 = reaper.JS_Window_GetRect(arrange_window)
   local w_width, w_height = w_x2 - w_x1, w_y2 - w_y1
 
@@ -114,7 +114,7 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
   ImGui.SetNextWindowSize(ctx, w_width, w_height - 17)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
 
-  local _, _ = ImGui.Begin(ctx, "drag_target_window", false,
+  local _, _ = ImGui.Begin(ctx, 'drag_target_window', false,
     ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoInputs | ImGui.WindowFlags_NoTitleBar |
     ImGui.WindowFlags_NoFocusOnAppearing | ImGui.WindowFlags_NoBackground)
 
@@ -145,7 +145,7 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
   local rect_x1, rect_y1, rect_x2, rect_y2
 
   -- Validate state.item_to_add is a valid MediaItem
-  if not state.item_to_add or not reaper.ValidatePtr2(0, state.item_to_add, "MediaItem*") then
+  if not state.item_to_add or not reaper.ValidatePtr2(0, state.item_to_add, 'MediaItem*') then
     ImGui.PopStyleVar(ctx, 1)
     ImGui.End(ctx)
     return false
@@ -161,10 +161,10 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
   local source = reaper.GetMediaItemTake_Source(take)
   local item_length = source and reaper.GetMediaSourceLength(source) or 0
 
-  if track and (str == "arrange" or (str and str:find('envelope'))) then
+  if track and (str == 'arrange' or (str and str:find('envelope'))) then
     -- Over existing track
-    local track_height = reaper.GetMediaTrackInfo_Value(track, "I_TCPH")
-    local track_y = reaper.GetMediaTrackInfo_Value(track, "I_TCPY")
+    local track_height = reaper.GetMediaTrackInfo_Value(track, 'I_TCPH')
+    local track_y = reaper.GetMediaTrackInfo_Value(track, 'I_TCPY')
 
     rect_x1 = mouse_x
     rect_y1 = w_y1 + track_y
@@ -172,10 +172,10 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
     rect_y2 = rect_y1 + track_height
 
     state.out_of_bounds = nil
-  elseif m_window == "arrange" and m_segment == "empty" and last_track then
+  elseif m_window == 'arrange' and m_segment == 'empty' and last_track then
     -- Over empty space below tracks
-    local track_height = reaper.GetMediaTrackInfo_Value(last_track, "I_WNDH")
-    local track_y = reaper.GetMediaTrackInfo_Value(last_track, "I_TCPY")
+    local track_height = reaper.GetMediaTrackInfo_Value(last_track, 'I_WNDH')
+    local track_y = reaper.GetMediaTrackInfo_Value(last_track, 'I_TCPY')
 
     rect_x1 = mouse_x
     rect_y1 = w_y1 + track_y + track_height
@@ -190,7 +190,7 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
   -- Draw insertion preview
   if rect_x1 then
     -- Grey crosshair lines instead of blue
-    local line_color = Ark.Colors.hexrgba("#808080", 0.8)
+    local line_color = Ark.Colors.hexrgba('#808080', 0.8)
 
     -- Get the items being dragged
     local dragging_count = (state.dragging_keys and #state.dragging_keys) or 1
@@ -201,9 +201,9 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
       local item_data = get_item_data(state, i)
       local media_item = item_data.media_item
 
-      if media_item and reaper.ValidatePtr2(0, media_item, "MediaItem*") then
+      if media_item and reaper.ValidatePtr2(0, media_item, 'MediaItem*') then
         -- Get actual item length (works correctly for both audio and MIDI)
-        local item_len = reaper.GetMediaItemInfo_Value(media_item, "D_LENGTH")
+        local item_len = reaper.GetMediaItemInfo_Value(media_item, 'D_LENGTH')
         local item_width = item_len * arrange_zoom_level
 
         local item_take = reaper.GetActiveTake(media_item)
@@ -223,7 +223,7 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
             item_color = Ark.Colors.with_opacity(Ark.Colors.components_to_rgba(r*255, g*255, b*255, 255), 0.8)
           else
             -- Fallback to grey
-            item_color = Ark.Colors.hexrgba("#B1B4B4", 0.8)
+            item_color = Ark.Colors.hexrgba('#B1B4B4', 0.8)
           end
 
           -- Draw base rectangle with item color
@@ -290,14 +290,14 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
   end
 
   -- Validate state.item_to_add is a valid MediaItem
-  if not state.item_to_add or not reaper.ValidatePtr2(0, state.item_to_add, "MediaItem*") then
+  if not state.item_to_add or not reaper.ValidatePtr2(0, state.item_to_add, 'MediaItem*') then
     return
   end
 
   local mouse_x, mouse_y = reaper.GetMousePosition()
   ImGui.SetNextWindowPos(ctx, mouse_x, mouse_y)
 
-  if ImGui.Begin(ctx, "MouseFollower", false,
+  if ImGui.Begin(ctx, 'MouseFollower', false,
     ImGui.WindowFlags_NoInputs | ImGui.WindowFlags_TopMost | ImGui.WindowFlags_NoTitleBar |
     ImGui.WindowFlags_NoBackground | ImGui.WindowFlags_AlwaysAutoResize) then
 
@@ -362,7 +362,7 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       -- Multiple shadow layers for soft glow effect
       for layer = shadow_layers, 1, -1 do
         local shadow_alpha = (0.12 / layer) * opacity  -- Softer shadows for back tiles
-        local shadow_color = apply_alpha(hexrgb("#000000FF"), shadow_alpha)
+        local shadow_color = apply_alpha(hexrgb('#000000FF'), shadow_alpha)
         local expand = layer * 1.5
 
         ImGui.DrawList_AddRectFilled(state.draw_list,
@@ -432,11 +432,11 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
         header_color = Ark.Colors.with_opacity(Ark.Colors.components_to_rgba(r*255, g*255, b*255, 255), header_alpha)
       else
         -- Fallback: dark overlay
-        header_color = apply_alpha(hexrgb("#00000040"), opacity)
+        header_color = apply_alpha(hexrgb('#00000040'), opacity)
       end
 
       -- Add text shadow overlay
-      local text_shadow = hexrgb("#00000000")
+      local text_shadow = hexrgb('#00000000')
       if config and config.TILE_RENDER and config.TILE_RENDER.header then
         text_shadow = apply_alpha(config.TILE_RENDER.header.text_shadow, opacity)
       end
@@ -446,7 +446,7 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y1 + header_height, text_shadow, tile_rounding, round_flags)
 
       -- Item name (use config text color or default white)
-      local text_color = (config and config.TILE_RENDER and config.TILE_RENDER.text.primary_color) or hexrgb("#FFFFFFFF")
+      local text_color = (config and config.TILE_RENDER and config.TILE_RENDER.text.primary_color) or hexrgb('#FFFFFFFF')
       local name_color = apply_alpha(text_color, opacity)
       local text_x = x1 + 8
       local text_y = y1 + (header_height - ImGui.GetTextLineHeight(ctx)) / 2
@@ -473,29 +473,29 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       ImGui.DrawList_AddRectFilled(state.draw_list,
         badge_x + 2, badge_y + 2,
         badge_x + badge_width + 2, badge_y + badge_height + 2,
-        hexrgb("#00000066"), rounding)
+        hexrgb('#00000066'), rounding)
 
       -- Badge background (90% opacity dark grey)
       ImGui.DrawList_AddRectFilled(state.draw_list,
         badge_x, badge_y,
         badge_x + badge_width, badge_y + badge_height,
-        hexrgb("#1A1A1AE6"), rounding)
+        hexrgb('#1A1A1AE6'), rounding)
 
       -- Badge border (subtle)
       ImGui.DrawList_AddRect(state.draw_list,
         badge_x, badge_y,
         badge_x + badge_width, badge_y + badge_height,
-        hexrgb("#FFFFFF33"), rounding, 0, 1)
+        hexrgb('#FFFFFF33'), rounding, 0, 1)
 
       -- Badge text (centered)
       local text_x = badge_x + padding_x
       local text_y = badge_y + padding_y
-      ImGui.DrawList_AddText(state.draw_list, text_x, text_y, hexrgb("#FFFFFFFF"), badge_text)
+      ImGui.DrawList_AddText(state.draw_list, text_x, text_y, hexrgb('#FFFFFFFF'), badge_text)
     end
 
     -- ALT + MIDI pooled badge (teal, shown when ALT is held for MIDI items)
     if state.alt_pool_mode then
-      local pool_badge_text = tostring(dragging_count) .. " midi pooled"
+      local pool_badge_text = tostring(dragging_count) .. ' midi pooled'
       local pool_badge_w, pool_badge_h = ImGui.CalcTextSize(ctx, pool_badge_text)
 
       -- Badge styling
@@ -513,24 +513,24 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       ImGui.DrawList_AddRectFilled(state.draw_list,
         pool_badge_x + 2, pool_badge_y + 2,
         pool_badge_x + pool_badge_width + 2, pool_badge_y + pool_badge_height + 2,
-        hexrgb("#00000066"), rounding)
+        hexrgb('#00000066'), rounding)
 
       -- Badge background (teal color)
       ImGui.DrawList_AddRectFilled(state.draw_list,
         pool_badge_x, pool_badge_y,
         pool_badge_x + pool_badge_width, pool_badge_y + pool_badge_height,
-        hexrgb("#008B8BE6"), rounding)
+        hexrgb('#008B8BE6'), rounding)
 
       -- Badge border (lighter teal)
       ImGui.DrawList_AddRect(state.draw_list,
         pool_badge_x, pool_badge_y,
         pool_badge_x + pool_badge_width, pool_badge_y + pool_badge_height,
-        hexrgb("#20B2AA66"), rounding, 0, 1)
+        hexrgb('#20B2AA66'), rounding, 0, 1)
 
       -- Badge text (white, centered)
       local text_x = pool_badge_x + padding_x
       local text_y = pool_badge_y + padding_y
-      ImGui.DrawList_AddText(state.draw_list, text_x, text_y, hexrgb("#FFFFFFFF"), pool_badge_text)
+      ImGui.DrawList_AddText(state.draw_list, text_x, text_y, hexrgb('#FFFFFFFF'), pool_badge_text)
     end
 
     -- Dummy to reserve space

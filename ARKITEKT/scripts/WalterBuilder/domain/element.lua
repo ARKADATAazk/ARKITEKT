@@ -10,13 +10,13 @@ Element.__index = Element
 
 -- Element categories
 M.CATEGORIES = {
-  BUTTON = "button",
-  FADER = "fader",
-  LABEL = "label",
-  METER = "meter",
-  CONTAINER = "container",
-  INPUT = "input",
-  OTHER = "other",
+  BUTTON = 'button',
+  FADER = 'fader',
+  LABEL = 'label',
+  METER = 'meter',
+  CONTAINER = 'container',
+  INPUT = 'input',
+  OTHER = 'other',
 }
 
 -- Create a new element
@@ -25,8 +25,8 @@ function M.new(opts)
 
   local self = setmetatable({
     -- Identity
-    id = opts.id or "element",  -- e.g., "tcp.mute", "tcp.volume"
-    name = opts.name or opts.id or "Element",  -- Display name
+    id = opts.id or 'element',  -- e.g., 'tcp.mute', 'tcp.volume'
+    name = opts.name or opts.id or 'Element',  -- Display name
     category = opts.category or M.CATEGORIES.OTHER,
 
     -- Coordinates
@@ -37,7 +37,7 @@ function M.new(opts)
     color = opts.color,  -- Override color (optional)
 
     -- Metadata
-    description = opts.description or "",
+    description = opts.description or '',
     is_size = opts.is_size or false,  -- Is this a .size element?
     is_color = opts.is_color or false,  -- Is this a .color element?
     is_font = opts.is_font or false,  -- Is this a .font element?
@@ -51,29 +51,29 @@ function M.new(opts)
   return self
 end
 
--- Get the base element ID (e.g., "tcp.mute" from "tcp.mute.color")
+-- Get the base element ID (e.g., 'tcp.mute' from 'tcp.mute.color')
 function Element:get_base_id()
   local parts = {}
-  for part in self.id:gmatch("[^.]+") do
+  for part in self.id:gmatch('[^.]+') do
     parts[#parts + 1] = part
   end
 
   -- Return first two parts (context.element)
   if #parts >= 2 then
-    return parts[1] .. "." .. parts[2]
+    return parts[1] .. '.' .. parts[2]
   end
   return self.id
 end
 
 -- Get the context (tcp, mcp, envcp, trans, etc.)
 function Element:get_context()
-  return self.id:match("^([^.]+)")
+  return self.id:match('^([^.]+)')
 end
 
 -- Check if this is a sub-element (e.g., .color, .font, .label)
 function Element:is_sub_element()
   local parts = {}
-  for part in self.id:gmatch("[^.]+") do
+  for part in self.id:gmatch('[^.]+') do
     parts[#parts + 1] = part
   end
   return #parts > 2
@@ -84,7 +84,7 @@ function Element:get_sub_type()
   if not self:is_sub_element() then return nil end
 
   local parts = {}
-  for part in self.id:gmatch("[^.]+") do
+  for part in self.id:gmatch('[^.]+') do
     parts[#parts + 1] = part
   end
   return parts[3]
@@ -139,9 +139,9 @@ end
 -- Serialize to WALTER format
 function Element:serialize()
   if not self.visible then
-    return "clear " .. self.id
+    return 'clear ' .. self.id
   end
-  return "set " .. self.id .. " " .. Coordinate.serialize(self.coords)
+  return 'set ' .. self.id .. ' ' .. Coordinate.serialize(self.coords)
 end
 
 return M

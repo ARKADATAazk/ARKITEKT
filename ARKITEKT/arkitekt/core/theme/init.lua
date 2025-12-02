@@ -20,7 +20,7 @@
 --
 --   -- Build widget configs
 --   local btn_config = Theme.build_button_config()
---   local danger_btn = Theme.build_colored_button_config("danger")
+--   local danger_btn = Theme.build_colored_button_config('danger')
 --
 --   -- Set theme mode
 --   Theme.set_dark()
@@ -45,43 +45,43 @@ M.COLORS = {
   -- These are overwritten when a theme is applied
 
   -- Backgrounds
-  BG_BASE        = hexrgb("#242424FF"),
-  BG_HOVER       = hexrgb("#2A2A2AFF"),
-  BG_ACTIVE      = hexrgb("#303030FF"),
-  BG_HEADER      = hexrgb("#1E1E1EFF"),
-  BG_PANEL       = hexrgb("#1A1A1AFF"),
-  BG_CHROME      = hexrgb("#0F0F0FFF"),
-  BG_TRANSPARENT = hexrgb("#00000000"),
+  BG_BASE        = hexrgb('#242424FF'),
+  BG_HOVER       = hexrgb('#2A2A2AFF'),
+  BG_ACTIVE      = hexrgb('#303030FF'),
+  BG_HEADER      = hexrgb('#1E1E1EFF'),
+  BG_PANEL       = hexrgb('#1A1A1AFF'),
+  BG_CHROME      = hexrgb('#0F0F0FFF'),
+  BG_TRANSPARENT = hexrgb('#00000000'),
 
   -- Borders
-  BORDER_OUTER  = hexrgb("#000000DD"),
-  BORDER_INNER  = hexrgb("#2f2f2fff"),
-  BORDER_HOVER  = hexrgb("#505050FF"),
-  BORDER_ACTIVE = hexrgb("#B0B0B077"),
-  BORDER_FOCUS  = hexrgb("#7B7B7BFF"),
+  BORDER_OUTER  = hexrgb('#000000DD'),
+  BORDER_INNER  = hexrgb('#2f2f2fff'),
+  BORDER_HOVER  = hexrgb('#505050FF'),
+  BORDER_ACTIVE = hexrgb('#B0B0B077'),
+  BORDER_FOCUS  = hexrgb('#7B7B7BFF'),
 
   -- Text
-  TEXT_NORMAL = hexrgb("#CCCCCCFF"),
-  TEXT_HOVER  = hexrgb("#FFFFFFFF"),
-  TEXT_ACTIVE = hexrgb("#FFFFFFFF"),
-  TEXT_DIMMED = hexrgb("#AAAAAAFF"),
-  TEXT_DARK   = hexrgb("#707070FF"),
-  TEXT_BRIGHT = hexrgb("#EEEEEEFF"),
+  TEXT_NORMAL = hexrgb('#CCCCCCFF'),
+  TEXT_HOVER  = hexrgb('#FFFFFFFF'),
+  TEXT_ACTIVE = hexrgb('#FFFFFFFF'),
+  TEXT_DIMMED = hexrgb('#AAAAAAFF'),
+  TEXT_DARK   = hexrgb('#707070FF'),
+  TEXT_BRIGHT = hexrgb('#EEEEEEFF'),
 
   -- Accents
-  ACCENT_PRIMARY      = hexrgb("#4A9EFF"),
-  ACCENT_TEAL         = hexrgb("#295650FF"),
-  ACCENT_TEAL_BRIGHT  = hexrgb("#41E0A3FF"),
-  ACCENT_WHITE        = hexrgb("#2f2f2fff"),
-  ACCENT_WHITE_BRIGHT = hexrgb("#585858ff"),
-  ACCENT_TRANSPARENT  = hexrgb("#43434388"),
-  ACCENT_SUCCESS      = hexrgb("#4CAF50"),
-  ACCENT_WARNING      = hexrgb("#FFA726"),
-  ACCENT_DANGER       = hexrgb("#EF5350"),
+  ACCENT_PRIMARY      = hexrgb('#4A9EFF'),
+  ACCENT_TEAL         = hexrgb('#295650FF'),
+  ACCENT_TEAL_BRIGHT  = hexrgb('#41E0A3FF'),
+  ACCENT_WHITE        = hexrgb('#2f2f2fff'),
+  ACCENT_WHITE_BRIGHT = hexrgb('#585858ff'),
+  ACCENT_TRANSPARENT  = hexrgb('#43434388'),
+  ACCENT_SUCCESS      = hexrgb('#4CAF50'),
+  ACCENT_WARNING      = hexrgb('#FFA726'),
+  ACCENT_DANGER       = hexrgb('#EF5350'),
 
   -- Patterns
-  PATTERN_PRIMARY   = hexrgb("#30303060"),
-  PATTERN_SECONDARY = hexrgb("#30303020"),
+  PATTERN_PRIMARY   = hexrgb('#30303060'),
+  PATTERN_SECONDARY = hexrgb('#30303020'),
 }
 
 -- =============================================================================
@@ -124,8 +124,8 @@ end
 --- Get current interpolation factor t (0.0 = dark, 1.0 = light)
 function M.get_t()
   local lightness = M.get_theme_lightness()
-  if M.current_mode == "dark" then return 0 end
-  if M.current_mode == "light" then return 1 end
+  if M.current_mode == 'dark' then return 0 end
+  if M.current_mode == 'light' then return 1 end
   return Engine.compute_t(lightness)
 end
 
@@ -162,30 +162,30 @@ end
 
 --- Apply dark preset
 function M.set_dark()
-  return M.set_mode("dark")
+  return M.set_mode('dark')
 end
 
 --- Apply light preset
 function M.set_light()
-  return M.set_mode("light")
+  return M.set_mode('light')
 end
 
 --- Adapt to REAPER's current theme
 function M.adapt()
-  return M.set_mode("adapt")
+  return M.set_mode('adapt')
 end
 
 --- Set theme by mode name
---- @param mode string "dark", "light", "adapt", or "custom"
+--- @param mode string 'dark', 'light', 'adapt', or 'custom'
 --- @param persist boolean|nil Whether to save preference (default: true)
 --- @param app_name string|nil App name for per-app storage
 function M.set_mode(mode, persist, app_name)
   if persist == nil then persist = true end
   local success = false
 
-  if mode == "adapt" then
+  if mode == 'adapt' then
     success = Integration.sync_with_reaper()
-  elseif mode == "custom" then
+  elseif mode == 'custom' then
     success = Integration.apply_custom_color()
   elseif Presets.exists(mode) then
     success = Presets.apply(mode)
@@ -209,11 +209,11 @@ function M.get_mode()
 end
 
 --- Initialize theme from saved preference or default
---- @param default_mode string|nil Default mode (default: "adapt")
+--- @param default_mode string|nil Default mode (default: 'adapt')
 --- @param app_name string|nil App name for per-app overrides
 --- @return boolean Success
 function M.init(default_mode, app_name)
-  default_mode = default_mode or "adapt"
+  default_mode = default_mode or 'adapt'
 
   -- Load with app fallback (checks app-specific, then global)
   local saved_mode = Integration.load_mode(app_name)
@@ -221,7 +221,7 @@ function M.init(default_mode, app_name)
 
   -- Validate saved mode (including custom if a custom color exists)
   local valid_modes = { dark = true, light = true, adapt = true, grey = true, light_grey = true }
-  if saved_mode == "custom" and Integration.get_custom_color() then
+  if saved_mode == 'custom' and Integration.get_custom_color() then
     valid_modes.custom = true
   end
 
@@ -267,7 +267,7 @@ M.apply_custom_color = Integration.apply_custom_color
 function M.set_custom(color)
   if not color then return false end
   Integration.set_custom_color(color)
-  return M.set_mode("custom")
+  return M.set_mode('custom')
 end
 
 -- =============================================================================
@@ -405,11 +405,11 @@ end
 --- Build colored button config (danger, success, warning, info)
 function M.build_colored_button_config(variant)
   if _colored_button_caches[variant] then return _colored_button_caches[variant] end
-  local prefix = "BUTTON_" .. string.upper(variant) .. "_"
-  local bg = M.COLORS[prefix .. "BG"]
-  local hover = M.COLORS[prefix .. "HOVER"]
-  local active = M.COLORS[prefix .. "ACTIVE"]
-  local text = M.COLORS[prefix .. "TEXT"]
+  local prefix = 'BUTTON_' .. string.upper(variant) .. '_'
+  local bg = M.COLORS[prefix .. 'BG']
+  local hover = M.COLORS[prefix .. 'HOVER']
+  local active = M.COLORS[prefix .. 'ACTIVE']
+  local text = M.COLORS[prefix .. 'TEXT']
 
   if not bg then return M.build_button_config() end
 
@@ -481,7 +481,7 @@ function M.build_dropdown_config()
   -- Return a COPY to prevent mutation
   local copy = {}
   for k, v in pairs(_dropdown_config_cache) do
-    if type(v) == "table" and k == "popup" then
+    if type(v) == 'table' and k == 'popup' then
       -- Deep copy popup table
       copy[k] = {}
       for pk, pv in pairs(v) do
@@ -498,7 +498,7 @@ end
 function M.build_search_input_config()
   if _search_input_config_cache then return _search_input_config_cache end
   _search_input_config_cache = {
-    placeholder = "Search...",
+    placeholder = 'Search...',
     fade_speed = 8.0,
     bg_color = M.COLORS.BG_BASE,
     bg_hover_color = M.COLORS.BG_HOVER,
@@ -538,7 +538,7 @@ function M.build_panel_colors()
     bg_panel = M.COLORS.BG_PANEL,
     border_panel = M.COLORS.BORDER_OUTER,
     bg_header = M.COLORS.BG_HEADER,
-    border_header = Colors.with_alpha(hexrgb("#000000"), 0x66),
+    border_header = Colors.with_alpha(hexrgb('#000000'), 0x66),
     bg_tab = M.COLORS.BG_BASE,
     bg_tab_hover = M.COLORS.BG_HOVER,
     bg_tab_active = M.COLORS.BG_ACTIVE,
@@ -550,7 +550,7 @@ function M.build_panel_colors()
     border_tab_focus = M.COLORS.BORDER_FOCUS,
     bg_tab_track = M.COLORS.BG_PANEL,
     border_tab_track = M.COLORS.BORDER_OUTER,
-    separator_line = Colors.with_alpha(hexrgb("#303030"), 0x80),
+    separator_line = Colors.with_alpha(hexrgb('#303030'), 0x80),
     bg_scrollbar = M.COLORS.BG_TRANSPARENT,
     pattern_primary = M.COLORS.PATTERN_PRIMARY,
     pattern_secondary = M.COLORS.PATTERN_SECONDARY,
@@ -565,12 +565,12 @@ function M.build_action_chip_config(variant)
   -- Action chips: colored rectangles with contrasting text
   local configs = {
     wildcard = {
-      bg_color = M.COLORS.ACCENT_PRIMARY or hexrgb("#5B8FB9"),
-      text_color = M.COLORS.TEXT_DARK or hexrgb("#1a1a1a"),
+      bg_color = M.COLORS.ACCENT_PRIMARY or hexrgb('#5B8FB9'),
+      text_color = M.COLORS.TEXT_DARK or hexrgb('#1a1a1a'),
     },
     tag = {
-      bg_color = M.COLORS.ACCENT_WARNING or hexrgb("#8B7355"),
-      text_color = M.COLORS.TEXT_DARK or hexrgb("#1a1a1a"),
+      bg_color = M.COLORS.ACCENT_WARNING or hexrgb('#8B7355'),
+      text_color = M.COLORS.TEXT_DARK or hexrgb('#1a1a1a'),
     },
   }
 
@@ -578,7 +578,7 @@ function M.build_action_chip_config(variant)
   _action_chip_caches[variant] = {
     bg_color = base.bg_color,
     text_color = base.text_color,
-    border_color = Colors.with_alpha(hexrgb("#000000"), 100),
+    border_color = Colors.with_alpha(hexrgb('#000000'), 100),
     rounding = 2,
     padding_h = 8,
   }
@@ -591,39 +591,39 @@ end
 
 M.PRESETS = {
   BUTTON_TOGGLE_TEAL = {
-    bg_on_color = "ACCENT_TEAL",
-    bg_on_hover_color = "ACCENT_TEAL_BRIGHT",
-    bg_on_active_color = "ACCENT_TEAL",
-    border_inner_on_color = "ACCENT_TEAL_BRIGHT",
-    border_inner_on_hover_color = "ACCENT_TEAL_BRIGHT",
-    border_inner_on_active_color = "ACCENT_TEAL",
-    text_on_color = "ACCENT_TEAL_BRIGHT",
-    text_on_hover_color = "ACCENT_TEAL_BRIGHT",
-    text_on_active_color = "ACCENT_TEAL_BRIGHT",
+    bg_on_color = 'ACCENT_TEAL',
+    bg_on_hover_color = 'ACCENT_TEAL_BRIGHT',
+    bg_on_active_color = 'ACCENT_TEAL',
+    border_inner_on_color = 'ACCENT_TEAL_BRIGHT',
+    border_inner_on_hover_color = 'ACCENT_TEAL_BRIGHT',
+    border_inner_on_active_color = 'ACCENT_TEAL',
+    text_on_color = 'ACCENT_TEAL_BRIGHT',
+    text_on_hover_color = 'ACCENT_TEAL_BRIGHT',
+    text_on_active_color = 'ACCENT_TEAL_BRIGHT',
   },
 
   BUTTON_TOGGLE_WHITE = {
-    bg_on_color = "ACCENT_WHITE",
-    bg_on_hover_color = "ACCENT_WHITE_BRIGHT",
-    bg_on_active_color = "ACCENT_WHITE",
-    border_inner_on_color = "ACCENT_WHITE_BRIGHT",
-    border_inner_on_hover_color = "ACCENT_WHITE_BRIGHT",
-    border_inner_on_active_color = "ACCENT_WHITE",
-    text_on_color = "TEXT_BRIGHT",
-    text_on_hover_color = "TEXT_BRIGHT",
-    text_on_active_color = "TEXT_BRIGHT",
+    bg_on_color = 'ACCENT_WHITE',
+    bg_on_hover_color = 'ACCENT_WHITE_BRIGHT',
+    bg_on_active_color = 'ACCENT_WHITE',
+    border_inner_on_color = 'ACCENT_WHITE_BRIGHT',
+    border_inner_on_hover_color = 'ACCENT_WHITE_BRIGHT',
+    border_inner_on_active_color = 'ACCENT_WHITE',
+    text_on_color = 'TEXT_BRIGHT',
+    text_on_hover_color = 'TEXT_BRIGHT',
+    text_on_active_color = 'TEXT_BRIGHT',
   },
 
   BUTTON_TOGGLE_TRANSPARENT = {
-    bg_on_color = "ACCENT_TRANSPARENT",
-    bg_on_hover_color = "ACCENT_TRANSPARENT",
-    bg_on_active_color = "ACCENT_TRANSPARENT",
-    border_inner_on_color = "ACCENT_WHITE_BRIGHT",
-    border_inner_on_hover_color = "TEXT_BRIGHT",
-    border_inner_on_active_color = "ACCENT_WHITE",
-    text_on_color = "TEXT_BRIGHT",
-    text_on_hover_color = "TEXT_BRIGHT",
-    text_on_active_color = "TEXT_BRIGHT",
+    bg_on_color = 'ACCENT_TRANSPARENT',
+    bg_on_hover_color = 'ACCENT_TRANSPARENT',
+    bg_on_active_color = 'ACCENT_TRANSPARENT',
+    border_inner_on_color = 'ACCENT_WHITE_BRIGHT',
+    border_inner_on_hover_color = 'TEXT_BRIGHT',
+    border_inner_on_active_color = 'ACCENT_WHITE',
+    text_on_color = 'TEXT_BRIGHT',
+    text_on_hover_color = 'TEXT_BRIGHT',
+    text_on_active_color = 'TEXT_BRIGHT',
   },
 }
 
@@ -636,7 +636,7 @@ function M.apply_preset(config, preset_name)
   if not preset then return end
 
   for key, value in pairs(preset) do
-    if type(value) == "string" then
+    if type(value) == 'string' then
       config[key] = M.COLORS[value]
     else
       config[key] = value

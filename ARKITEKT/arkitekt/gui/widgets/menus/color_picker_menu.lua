@@ -23,7 +23,7 @@ local DEFAULTS = {
   chip_radius = 7,          -- Radius for circle chips (legacy)
   columns = 7,              -- 7 columns for 28 colors (4 rows)
   show_none_option = true,
-  none_label = "Remove Color",
+  none_label = 'Remove Color',
   shape = Chip.SHAPE.SQUARE, -- Default to square like Wwise
 }
 
@@ -41,7 +41,7 @@ local DEFAULTS = {
 --   - chip_size: number - size for square chips (default 17)
 --   - chip_radius: number - radius for circle chips (default 7)
 --   - columns: number - number of columns (default 7 for 28 colors)
---   - show_none_option: boolean - show "Remove Color" option (optional)
+--   - show_none_option: boolean - show 'Remove Color' option (optional)
 --   - none_label: string - label for none option (optional)
 --   - icon_font: font - remix icon font for selection indicator (optional)
 -- @return boolean - true if a color was selected
@@ -91,7 +91,7 @@ function M.render(ctx, opts)
   local bg_y = menu_start_y - bg_padding
   local bg_w = actual_grid_width + (bg_padding * 2)
   local bg_h = grid_height + (bg_padding * 2)
-  ImGui.DrawList_AddRectFilled(dl, bg_x, bg_y, bg_x + bg_w, bg_y + bg_h, hexrgb("#1a1a1aFF"), 4)
+  ImGui.DrawList_AddRectFilled(dl, bg_x, bg_y, bg_x + bg_w, bg_y + bg_h, hexrgb('#1a1a1aFF'), 4)
 
   -- Convert palette to integer colors
   local preset_colors = {}
@@ -116,7 +116,7 @@ function M.render(ctx, opts)
     local hit_x = chip_cx - hit_size * 0.5
     local hit_y = chip_cy - hit_size * 0.5
     ImGui.SetCursorScreenPos(ctx, hit_x, hit_y)
-    if ImGui.InvisibleButton(ctx, "##color_" .. i, hit_size, hit_size) then
+    if ImGui.InvisibleButton(ctx, '##color_' .. i, hit_size, hit_size) then
       if opts.on_select then
         local color_hex = palette[i].hex
         local color_name = palette[i].name
@@ -159,7 +159,7 @@ function M.render(ctx, opts)
       local base_size = opts.icon_font_size or 12
       local icon_size = (base_size * 0.5) // 1  -- 50% of base size
       ImGui.PushFont(ctx, opts.icon_font, icon_size)
-      local icon_color = hexrgb("#00000099")  -- Black icon at 60% opacity
+      local icon_color = hexrgb('#00000099')  -- Black icon at 60% opacity
       local text_w, text_h = ImGui.CalcTextSize(ctx, ICON_CHECK)
       local icon_x = chip_cx - text_w * 0.5  -- Centered (even chip size)
       local icon_y = chip_cy - text_h * 0.5
@@ -171,9 +171,9 @@ function M.render(ctx, opts)
   -- Move cursor past the grid
   ImGui.SetCursorScreenPos(ctx, menu_start_x, menu_start_y + grid_height + 12)
 
-  -- "Remove Color" button
+  -- 'Remove Color' button
   if show_none then
-    local button_text = opts.current_color and none_label or "No Color"
+    local button_text = opts.current_color and none_label or 'No Color'
     local button_width = ImGui.GetContentRegionAvail(ctx)
     local button_height = 28
 
@@ -184,7 +184,7 @@ function M.render(ctx, opts)
       label = button_text,
       width = button_width - 16,
       height = button_height,
-    }, "remove_color_btn", "vertical")  -- Use vertical advancement for menu context
+    }, 'remove_color_btn', 'vertical')  -- Use vertical advancement for menu context
     if clicked then
       if opts.on_select then
         opts.on_select(nil, nil, nil)
@@ -202,7 +202,7 @@ end
 
 --- Render a color picker as a submenu
 -- @param ctx ImGui context
--- @param label string - menu label (e.g., "Assign Color")
+-- @param label string - menu label (e.g., 'Assign Color')
 -- @param opts Options table (same as render)
 -- @return boolean - true if a color was selected
 function M.submenu(ctx, label, opts)

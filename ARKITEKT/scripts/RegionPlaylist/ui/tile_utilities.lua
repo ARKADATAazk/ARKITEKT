@@ -12,7 +12,7 @@ function M.format_bar_length(start_time, end_time, proj)
 
   local duration = end_time - start_time
   if duration <= 0 then
-    return "0.0.00"
+    return '0.0.00'
   end
 
   local start_qn = reaper.TimeMap2_timeToQN(proj, start_time)
@@ -55,7 +55,7 @@ function M.format_bar_length(start_time, end_time, proj)
     end
   end
 
-  return string.format("%d.%d.%02d", bars, beats, hundredths)
+  return string.format('%d.%d.%02d', bars, beats, hundredths)
 end
 
 return M

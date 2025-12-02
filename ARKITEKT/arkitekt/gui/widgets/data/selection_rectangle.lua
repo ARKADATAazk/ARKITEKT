@@ -16,7 +16,7 @@ function M.new(opts)
 
   return setmetatable({
     active = false,
-    mode = "replace",
+    mode = 'replace',
     start_pos = nil,
     current_pos = nil,
     dragged = false,
@@ -29,7 +29,7 @@ end
 
 function SelRect:begin(x, y, mode, ctx)
   self.active = true
-  self.mode = mode or "replace"
+  self.mode = mode or 'replace'
   self.ctx = ctx
   
   if ctx then
@@ -106,7 +106,7 @@ function SelRect:clear()
   self.active = false
   self.start_pos = nil
   self.current_pos = nil
-  self.mode = "replace"
+  self.mode = 'replace'
   self.dragged = false
   self.start_scroll_x = 0
   self.start_scroll_y = 0

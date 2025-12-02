@@ -36,13 +36,13 @@ function UndoManager:push(operation)
     self.current_index = self.current_index - 1
   end
 
-  Logger.debug("UNDO", "Added operation '%s' (stack: %d)", operation.description, #self.stack)
+  Logger.debug('UNDO', "Added operation '%s' (stack: %d)", operation.description, #self.stack)
 end
 
 -- Undo the last operation
 function UndoManager:undo()
   if self.current_index <= 0 then
-    Logger.debug("UNDO", "Nothing to undo")
+    Logger.debug('UNDO', 'Nothing to undo')
     return false
   end
 
@@ -51,10 +51,10 @@ function UndoManager:undo()
     local success = operation.undo_fn()
     if success then
       self.current_index = self.current_index - 1
-      Logger.info("UNDO", "Undo: '%s'", operation.description)
+      Logger.info('UNDO', "Undo: '%s'", operation.description)
       return true
     else
-      Logger.error("UNDO", "Undo FAILED: '%s'", operation.description)
+      Logger.error('UNDO', "Undo FAILED: '%s'", operation.description)
       return false
     end
   end
@@ -65,7 +65,7 @@ end
 -- Redo an undone operation
 function UndoManager:redo()
   if self.current_index >= #self.stack then
-    Logger.debug("UNDO", "Nothing to redo")
+    Logger.debug('UNDO', 'Nothing to redo')
     return false
   end
 
@@ -74,10 +74,10 @@ function UndoManager:redo()
     local success = operation.redo_fn()
     if success then
       self.current_index = self.current_index + 1
-      Logger.info("UNDO", "Redo: '%s'", operation.description)
+      Logger.info('UNDO', "Redo: '%s'", operation.description)
       return true
     else
-      Logger.error("UNDO", "Redo FAILED: '%s'", operation.description)
+      Logger.error('UNDO', "Redo FAILED: '%s'", operation.description)
       return false
     end
   end
@@ -99,7 +99,7 @@ end
 function UndoManager:clear()
   self.stack = {}
   self.current_index = 0
-  Logger.debug("UNDO", "Stack cleared")
+  Logger.debug('UNDO', 'Stack cleared')
 end
 
 return M

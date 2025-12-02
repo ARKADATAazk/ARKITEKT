@@ -11,94 +11,94 @@ local M = {}
 M.SHORTCUTS = {
   -- Search
   {
-    key = "F",
-    mods = {"Ctrl"},
-    action = "focus_search",
-    description = "Focus search box",
+    key = 'F',
+    mods = {'Ctrl'},
+    action = 'focus_search',
+    description = 'Focus search box',
   },
 
   -- Template operations
   {
-    key = "Enter",
+    key = 'Enter',
     mods = {},
-    action = "apply_template",
-    description = "Apply selected template to track",
+    action = 'apply_template',
+    description = 'Apply selected template to track',
   },
   {
-    key = "Enter",
-    mods = {"Shift"},
-    action = "insert_template",
-    description = "Insert selected template as new track",
+    key = 'Enter',
+    mods = {'Shift'},
+    action = 'insert_template',
+    description = 'Insert selected template as new track',
   },
   {
-    key = "F2",
+    key = 'F2',
     mods = {},
-    action = "rename_template",
-    description = "Rename selected template",
+    action = 'rename_template',
+    description = 'Rename selected template',
   },
   {
-    key = "Delete",
+    key = 'Delete',
     mods = {},
-    action = "archive_template",
-    description = "Archive selected template(s)",
+    action = 'archive_template',
+    description = 'Archive selected template(s)',
   },
 
   -- Navigation
   {
-    key = "LeftArrow",
+    key = 'LeftArrow',
     mods = {},
-    action = "navigate_left",
-    description = "Navigate left in grid",
+    action = 'navigate_left',
+    description = 'Navigate left in grid',
   },
   {
-    key = "RightArrow",
+    key = 'RightArrow',
     mods = {},
-    action = "navigate_right",
-    description = "Navigate right in grid",
+    action = 'navigate_right',
+    description = 'Navigate right in grid',
   },
   {
-    key = "UpArrow",
+    key = 'UpArrow',
     mods = {},
-    action = "navigate_up",
-    description = "Navigate up in grid",
+    action = 'navigate_up',
+    description = 'Navigate up in grid',
   },
   {
-    key = "DownArrow",
+    key = 'DownArrow',
     mods = {},
-    action = "navigate_down",
-    description = "Navigate down in grid",
+    action = 'navigate_down',
+    description = 'Navigate down in grid',
   },
 
   -- Undo/Redo
   {
-    key = "Z",
-    mods = {"Ctrl"},
-    action = "undo",
-    description = "Undo last action",
+    key = 'Z',
+    mods = {'Ctrl'},
+    action = 'undo',
+    description = 'Undo last action',
   },
   {
-    key = "Z",
-    mods = {"Ctrl", "Shift"},
-    action = "redo",
-    description = "Redo last undone action",
+    key = 'Z',
+    mods = {'Ctrl', 'Shift'},
+    action = 'redo',
+    description = 'Redo last undone action',
   },
 
   -- Window
   {
-    key = "Escape",
+    key = 'Escape',
     mods = {},
-    action = "close_window",
-    description = "Close Template Browser",
+    action = 'close_window',
+    description = 'Close Template Browser',
   },
 }
 
 -- Check if a modifier is pressed
 local function is_mod_pressed(ctx, mod)
-  if mod == "Ctrl" then
+  if mod == 'Ctrl' then
     return ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
-  elseif mod == "Shift" then
+  elseif mod == 'Shift' then
     return ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
-  elseif mod == "Alt" then
+  elseif mod == 'Alt' then
     return ImGui.IsKeyDown(ctx, ImGui.Mod_Alt)
   end
   return false
@@ -111,9 +111,9 @@ local function check_mods(ctx, required_mods)
   local alt_required = false
 
   for _, mod in ipairs(required_mods) do
-    if mod == "Ctrl" then ctrl_required = true end
-    if mod == "Shift" then shift_required = true end
-    if mod == "Alt" then alt_required = true end
+    if mod == 'Ctrl' then ctrl_required = true end
+    if mod == 'Shift' then shift_required = true end
+    if mod == 'Alt' then alt_required = true end
   end
 
   local ctrl_pressed = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
@@ -178,7 +178,7 @@ function M.check_shortcuts(ctx)
 end
 
 -- Get formatted shortcut string for display
--- e.g., "Ctrl+F", "Shift+Enter", "Delete"
+-- e.g., 'Ctrl+F', 'Shift+Enter', 'Delete'
 function M.format_shortcut(shortcut)
   local parts = {}
 
@@ -188,7 +188,7 @@ function M.format_shortcut(shortcut)
 
   parts[#parts + 1] = shortcut.key
 
-  return table.concat(parts, "+")
+  return table.concat(parts, '+')
 end
 
 -- Get all shortcuts as formatted strings (for help dialog)

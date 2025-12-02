@@ -21,7 +21,7 @@ function M.separate_active_items(item_keys, get_items_fn)
   for i, key in ipairs(item_keys) do
     for _, item in ipairs(items) do
       if item.key == key then
-        if item.type == "playlist" then
+        if item.type == 'playlist' then
           playlist_items[#playlist_items + 1] = {
             index = i,
             key = key,
@@ -49,7 +49,7 @@ function M.separate_pool_items(item_keys)
   local playlist_items = {}
 
   for i, key in ipairs(item_keys) do
-    local rid = tonumber(key:match("pool_(%d+)"))
+    local rid = tonumber(key:match('pool_(%d+)'))
     if rid then
       region_items[#region_items + 1] = {
         index = i,
@@ -57,7 +57,7 @@ function M.separate_pool_items(item_keys)
         rid = rid
       }
     else
-      local playlist_id = key:match("pool_playlist_(.+)")
+      local playlist_id = key:match('pool_playlist_(.+)')
       if playlist_id then
         playlist_items[#playlist_items + 1] = {
           index = i,

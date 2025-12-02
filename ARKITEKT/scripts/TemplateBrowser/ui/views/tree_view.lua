@@ -90,12 +90,12 @@ local function prepare_tree_nodes(node, metadata, all_templates)
         local subdir = reaper.EnumerateSubdirectories(path, idx)
         if not subdir then break end
 
-        local sub_relative = relative_path ~= "" and (relative_path .. sep .. subdir) or subdir
+        local sub_relative = relative_path ~= '' and (relative_path .. sep .. subdir) or subdir
         local sub_path = path .. subdir .. sep
         local sub_full_path = sub_path:sub(1, -2)  -- Remove trailing separator
 
         local folder_node = {
-          id = "__ARCHIVE__" .. sep .. sub_relative,
+          id = '__ARCHIVE__' .. sep .. sub_relative,
           name = subdir,
           path = sub_relative,
           full_path = sub_full_path,
@@ -114,11 +114,11 @@ local function prepare_tree_nodes(node, metadata, all_templates)
         local file = reaper.EnumerateFiles(path, idx)
         if not file then break end
 
-        local file_relative = relative_path ~= "" and (relative_path .. sep .. file) or file
+        local file_relative = relative_path ~= '' and (relative_path .. sep .. file) or file
         local file_full_path = path .. file
 
         local file_node = {
-          id = "__ARCHIVE_FILE__" .. sep .. file_relative,
+          id = '__ARCHIVE_FILE__' .. sep .. file_relative,
           name = file,
           path = file_relative,
           full_path = file_full_path,
@@ -140,8 +140,8 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     local test_file = reaper.EnumerateFiles(archive_path .. sep, 0)
 
     -- If we can enumerate (even if empty), directory exists
-    if test_subdir ~= nil or test_file ~= nil or reaper.file_exists(archive_path .. sep .. "dummy") == false then
-      archive_children = scan_archive_dir(archive_path .. sep, "")
+    if test_subdir ~= nil or test_file ~= nil or reaper.file_exists(archive_path .. sep .. 'dummy') == false then
+      archive_children = scan_archive_dir(archive_path .. sep, '')
     end
 
     return archive_children
@@ -156,7 +156,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
       for _, tmpl in ipairs(all_templates) do
         if tmpl.relative_path == Constants.FOLDERS.INBOX then
           local template_node = {
-            id = "__INBOX_TMPL__" .. tmpl.uuid,
+            id = '__INBOX_TMPL__' .. tmpl.uuid,
             name = tmpl.name,
             path = tmpl.path,
             full_path = tmpl.path,
@@ -179,11 +179,11 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   local root_nodes = {}
 
   -- Add Physical Root node
-  local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
+  local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. 'TrackTemplates'
   local physical_root = {
-    id = "__ROOT__",  -- Unique ID for ImGui (must not be empty)
-    name = "Physical Directory",
-    path = "",  -- Relative path is empty (represents TrackTemplates root)
+    id = '__ROOT__',  -- Unique ID for ImGui (must not be empty)
+    name = 'Physical Directory',
+    path = '',  -- Relative path is empty (represents TrackTemplates root)
     full_path = template_path,
     children = {},
     is_virtual = false,
@@ -205,10 +205,10 @@ local function prepare_tree_nodes(node, metadata, all_templates)
 
   -- Add Virtual Root node (separate from physical)
   local virtual_root = {
-    id = "__VIRTUAL_ROOT__",
-    name = "Virtual Directory",
-    path = "__VIRTUAL_ROOT__",
-    children = build_virtual_tree("__VIRTUAL_ROOT__"),  -- All virtual folders go here
+    id = '__VIRTUAL_ROOT__',
+    name = 'Virtual Directory',
+    path = '__VIRTUAL_ROOT__',
+    children = build_virtual_tree('__VIRTUAL_ROOT__'),  -- All virtual folders go here
     is_virtual = true,
   }
 
@@ -217,9 +217,9 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   -- Add Inbox Root node
   local inbox_children = build_inbox_tree()
   local inbox_root = {
-    id = "__INBOX_ROOT__",
-    name = "Inbox",
-    path = "__INBOX_ROOT__",
+    id = '__INBOX_ROOT__',
+    name = 'Inbox',
+    path = '__INBOX_ROOT__',
     children = inbox_children,
     is_inbox = true,
     template_count = #inbox_children,  -- Show count badge
@@ -229,9 +229,9 @@ local function prepare_tree_nodes(node, metadata, all_templates)
 
   -- Add Archive Root node
   local archive_root = {
-    id = "__ARCHIVE_ROOT__",
-    name = "Archive",
-    path = "__ARCHIVE_ROOT__",
+    id = '__ARCHIVE_ROOT__',
+    name = 'Archive',
+    path = '__ARCHIVE_ROOT__',
     children = build_archive_tree(),
     is_archive = true,
   }
@@ -249,7 +249,7 @@ function M.draw_physical_tree(ctx, state, config)
   -- Get physical root node and extract its children (start one level down)
   local physical_nodes = {}
   for _, node in ipairs(all_nodes) do
-    if node.id == "__ROOT__" then
+    if node.id == '__ROOT__' then
       -- Use children of root directly, not the root itself
       physical_nodes = node.children or {}
       break
@@ -261,8 +261,8 @@ function M.draw_physical_tree(ctx, state, config)
   end
 
   -- Ensure ROOT node is open by default (for state consistency)
-  if state.folder_open_state["__ROOT__"] == nil then
-    state.folder_open_state["__ROOT__"] = true
+  if state.folder_open_state['__ROOT__'] == nil then
+    state.folder_open_state['__ROOT__'] = true
   end
 
   -- Map state variables to TreeView format
@@ -271,7 +271,7 @@ function M.draw_physical_tree(ctx, state, config)
     selected_nodes = state.selected_folders,
     last_clicked_node = state.last_clicked_folder,
     renaming_node = state.renaming_folder_path or nil,
-    rename_buffer = state.rename_buffer or "",
+    rename_buffer = state.rename_buffer or '',
   }
 
   -- Draw tree with callbacks
@@ -281,7 +281,7 @@ function M.draw_physical_tree(ctx, state, config)
     show_template_count = true,  -- Enable template count badges on folders
     enable_drag_drop = true,  -- Enable folder drag-and-drop
     enable_multi_select = true,  -- Enable multi-select with Ctrl/Shift
-    context_menu_id = "folder_context_menu",  -- Enable context menu
+    context_menu_id = 'folder_context_menu',  -- Enable context menu
 
     -- Check if node can be renamed (prevent renaming system folders)
     can_rename = function(node)
@@ -331,9 +331,9 @@ function M.draw_physical_tree(ctx, state, config)
 
       -- Check if payload contains multiple IDs (newline-separated)
       local dragged_ids = {}
-      if dragged_node_id:find("\n") then
+      if dragged_node_id:find('\n') then
         -- Multi-drag: split by newline
-        for id in dragged_node_id:gmatch("[^\n]+") do
+        for id in dragged_node_id:gmatch('[^\n]+') do
           dragged_ids[#dragged_ids + 1] = id
         end
       else
@@ -346,19 +346,19 @@ function M.draw_physical_tree(ctx, state, config)
       for _, id in ipairs(dragged_ids) do
         local source_node = find_node_by_id(tree_nodes, id)
         if not source_node or not target_node then
-          state.set_status("Error: Cannot find source or target folder", "error")
+          state.set_status('Error: Cannot find source or target folder', 'error')
           return
         end
 
         -- Don't allow dropping onto self
         if source_node.id == target_node.id then
-          state.set_status("Cannot move folder into itself", "error")
+          state.set_status('Cannot move folder into itself', 'error')
           return
         end
 
         -- Don't allow dropping into own descendants (circular reference)
         if is_descendant(source_node, target_node.id) then
-          state.set_status("Cannot move folder into its own subfolder", "error")
+          state.set_status('Cannot move folder into its own subfolder', 'error')
           return
         end
 
@@ -369,17 +369,17 @@ function M.draw_physical_tree(ctx, state, config)
       local move_operations = {}
       local target_full_path = target_node.full_path
       local target_name = target_node.name
-      local target_normalized = target_full_path:gsub("[/\\]+$", "")
+      local target_normalized = target_full_path:gsub('[/\\]+$', '')
 
       for _, source_node in ipairs(folders_to_move) do
         local source_full_path = source_node.full_path
         local source_name = source_node.name
-        local source_normalized = source_full_path:gsub("[/\\]+$", "")
+        local source_normalized = source_full_path:gsub('[/\\]+$', '')
 
         -- Extract old parent directory
-        local old_parent = source_normalized:match("^(.+)[/\\][^/\\]+$")
+        local old_parent = source_normalized:match('^(.+)[/\\][^/\\]+$')
         if not old_parent then
-          state.set_status("Cannot determine parent folder for: " .. source_name, "error")
+          state.set_status('Cannot determine parent folder for: ' .. source_name, 'error')
           return
         end
 
@@ -399,7 +399,7 @@ function M.draw_physical_tree(ctx, state, config)
           op.new_path = new_path
         else
           all_success = false
-          state.set_status("Failed to move folder: " .. op.source_name, "error")
+          state.set_status('Failed to move folder: ' .. op.source_name, 'error')
           break
         end
       end
@@ -407,8 +407,8 @@ function M.draw_physical_tree(ctx, state, config)
       if all_success then
         -- Create batch undo operation
         local description = #folders_to_move > 1
-          and ("Move " .. #folders_to_move .. " folders -> " .. target_name)
-          or ("Move folder: " .. move_operations[1].source_name .. " -> " .. target_name)
+          and ('Move ' .. #folders_to_move .. ' folders -> ' .. target_name)
+          or ('Move folder: ' .. move_operations[1].source_name .. ' -> ' .. target_name)
 
         state.undo_manager:push({
           description = description,
@@ -453,9 +453,9 @@ function M.draw_physical_tree(ctx, state, config)
         -- Success message
         local count = #folders_to_move
         if count > 1 then
-          state.set_status("Successfully moved " .. count .. " folders to " .. target_name, "success")
+          state.set_status('Successfully moved ' .. count .. ' folders to ' .. target_name, 'success')
         else
-          state.set_status("Successfully moved " .. folders_to_move[1].name .. " to " .. target_name, "success")
+          state.set_status('Successfully moved ' .. folders_to_move[1].name .. ' to ' .. target_name, 'success')
         end
       end
     end,
@@ -466,9 +466,9 @@ function M.draw_physical_tree(ctx, state, config)
 
       -- Parse payload (can be single UUID or newline-separated UUIDs)
       local uuids = {}
-      if template_payload:find("\n") then
+      if template_payload:find('\n') then
         -- Multi-template drag
-        for uuid in template_payload:gmatch("[^\n]+") do
+        for uuid in template_payload:gmatch('[^\n]+') do
           uuids[#uuids + 1] = uuid
         end
       else
@@ -483,7 +483,7 @@ function M.draw_physical_tree(ctx, state, config)
         -- Get the virtual folder from metadata
         local vfolder = state.metadata.virtual_folders[target_node.id]
         if not vfolder then
-          state.set_status("Virtual folder not found", "error")
+          state.set_status('Virtual folder not found', 'error')
           return
         end
 
@@ -516,15 +516,15 @@ function M.draw_physical_tree(ctx, state, config)
         -- Success message
         if added_count > 0 then
           if #uuids > 1 then
-            state.set_status("Added " .. added_count .. " of " .. #uuids .. " templates to " .. target_node.name, "success")
+            state.set_status('Added ' .. added_count .. ' of ' .. #uuids .. ' templates to ' .. target_node.name, 'success')
           else
-            state.set_status("Added template to " .. target_node.name, "success")
+            state.set_status('Added template to ' .. target_node.name, 'success')
           end
         else
           if #uuids > 1 then
-            state.set_status("Templates already in " .. target_node.name, "info")
+            state.set_status('Templates already in ' .. target_node.name, 'info')
           else
-            state.set_status("Template already in " .. target_node.name, "info")
+            state.set_status('Template already in ' .. target_node.name, 'info')
           end
         end
 
@@ -561,7 +561,7 @@ function M.draw_physical_tree(ctx, state, config)
         state.conflict_pending = {
           templates = templates_to_move,
           target_folder = target_node,
-          operation = "move"
+          operation = 'move'
         }
         return  -- Wait for user decision in modal (processed in main draw loop)
       end
@@ -575,7 +575,7 @@ function M.draw_physical_tree(ctx, state, config)
         if success then
           success_count = success_count + 1
         else
-          state.set_status("Failed to move template: " .. tmpl.name, "error")
+          state.set_status('Failed to move template: ' .. tmpl.name, 'error')
         end
       end
 
@@ -585,9 +585,9 @@ function M.draw_physical_tree(ctx, state, config)
 
         -- Success message
         if total_count > 1 then
-          state.set_status("Moved " .. success_count .. " of " .. total_count .. " templates to " .. target_node.name, "success")
+          state.set_status('Moved ' .. success_count .. ' of ' .. total_count .. ' templates to ' .. target_node.name, 'success')
         else
-          state.set_status("Moved " .. templates_to_move[1].name .. " to " .. target_node.name, "success")
+          state.set_status('Moved ' .. templates_to_move[1].name .. ' to ' .. target_node.name, 'success')
         end
       end
     end,
@@ -599,9 +599,9 @@ function M.draw_physical_tree(ctx, state, config)
 
     -- Context menu renderer (called inline by TreeView)
     render_context_menu = function(ctx_inner, node)
-      if ContextMenu.begin(ctx_inner, "folder_context_menu") then
+      if ContextMenu.begin(ctx_inner, 'folder_context_menu') then
         -- Build color options from centralized palette
-        local color_options = {{ name = "None", color = nil }}
+        local color_options = {{ name = 'None', color = nil }}
         for _, palette_color in ipairs(ColorDefs.PALETTE) do
           color_options[#color_options + 1] = {
             name = palette_color.name,
@@ -637,7 +637,7 @@ function M.draw_physical_tree(ctx, state, config)
 
               if not folder_uuid then
                 -- Create new metadata entry
-                folder_uuid = reaper.genGuid("")
+                folder_uuid = reaper.genGuid('')
                 state.metadata.folders[folder_uuid] = {
                   path = node.path,
                   name = node.name,
@@ -666,7 +666,7 @@ function M.draw_physical_tree(ctx, state, config)
           if not is_system_folder then
             ContextMenu.separator(ctx_inner)
 
-            if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
+            if ContextMenu.item(ctx_inner, 'Delete Virtual Folder') then
               -- Remove from metadata
               if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
                 state.metadata.virtual_folders[node.id] = nil
@@ -674,14 +674,14 @@ function M.draw_physical_tree(ctx, state, config)
 
                 -- Clear selection if this folder was selected
                 if state.selected_folder == node.id then
-                  state.selected_folder = ""
+                  state.selected_folder = ''
                   state.selected_folders = {}
                 end
 
                 -- Refresh UI (no need to rescan templates, just rebuild tree)
                 Scanner.filter_templates(state)
 
-                state.set_status("Deleted virtual folder: " .. node.name, "success")
+                state.set_status('Deleted virtual folder: ' .. node.name, 'success')
               end
 
               ImGui.CloseCurrentPopup(ctx_inner)
@@ -695,33 +695,33 @@ function M.draw_physical_tree(ctx, state, config)
 
     -- Rename callback
     on_rename = function(node, new_name)
-      if new_name ~= "" and new_name ~= node.name then
+      if new_name ~= '' and new_name ~= node.name then
         -- Handle virtual folder rename (metadata only, no file operations)
         if node.is_virtual then
           if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
             -- Prevent renaming system folders
             local vfolder = state.metadata.virtual_folders[node.id]
             if vfolder.is_system then
-              state.set_status("Cannot rename system folder: " .. node.name, "error")
+              state.set_status('Cannot rename system folder: ' .. node.name, 'error')
               return false
             end
 
             state.metadata.virtual_folders[node.id].name = new_name
             Persistence.save_metadata(state.metadata)
-            state.set_status("Renamed virtual folder to: " .. new_name, "success")
+            state.set_status('Renamed virtual folder to: ' .. new_name, 'success')
           end
           return
         end
 
         -- Handle physical folder rename (file operations + metadata update)
         local old_path = node.full_path
-        local old_relative_path = node.path  -- e.g., "OldFolder" or "Parent/OldFolder"
+        local old_relative_path = node.path  -- e.g., 'OldFolder' or 'Parent/OldFolder'
 
         local success, new_path = FileOps.rename_folder(old_path, new_name)
         if success then
           -- Calculate new relative path
-          local parent_path = old_relative_path:match("^(.+)[/\\][^/\\]+$")
-          local new_relative_path = parent_path and (parent_path .. "/" .. new_name) or new_name
+          local parent_path = old_relative_path:match('^(.+)[/\\][^/\\]+$')
+          local new_relative_path = parent_path and (parent_path .. '/' .. new_name) or new_name
 
           -- Update metadata paths for this folder and all templates in it
           -- Update folder metadata
@@ -730,9 +730,9 @@ function M.draw_physical_tree(ctx, state, config)
               if folder.path == old_relative_path then
                 folder.name = new_name
                 folder.path = new_relative_path
-              elseif folder.path:find("^" .. old_relative_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1") .. "[/\\]") then
+              elseif folder.path:find('^' .. old_relative_path:gsub('([%(%)%.%%%+%-%*%?%[%]%^%$])', '%%%1') .. '[/\\]') then
                 -- Update subfolders
-                folder.path = folder.path:gsub("^" .. old_relative_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1"), new_relative_path)
+                folder.path = folder.path:gsub('^' .. old_relative_path:gsub('([%(%)%.%%%+%-%*%?%[%]%^%$])', '%%%1'), new_relative_path)
               end
             end
           end
@@ -740,11 +740,11 @@ function M.draw_physical_tree(ctx, state, config)
           -- Update template metadata paths (without re-parsing!)
           if state.metadata and state.metadata.templates then
             for uuid, tmpl in pairs(state.metadata.templates) do
-              local tmpl_path = tmpl.folder or ""
+              local tmpl_path = tmpl.folder or ''
               if tmpl_path == old_relative_path then
                 tmpl.folder = new_relative_path
-              elseif tmpl_path:find("^" .. old_relative_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1") .. "[/\\]") then
-                tmpl.folder = tmpl_path:gsub("^" .. old_relative_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1"), new_relative_path)
+              elseif tmpl_path:find('^' .. old_relative_path:gsub('([%(%)%.%%%+%-%*%?%[%]%^%$])', '%%%1') .. '[/\\]') then
+                tmpl.folder = tmpl_path:gsub('^' .. old_relative_path:gsub('([%(%)%.%%%+%-%*%?%[%]%^%$])', '%%%1'), new_relative_path)
               end
             end
           end
@@ -754,7 +754,7 @@ function M.draw_physical_tree(ctx, state, config)
 
           -- Create undo operation
           state.undo_manager:push({
-            description = "Rename folder: " .. node.name .. " -> " .. new_name,
+            description = 'Rename folder: ' .. node.name .. ' -> ' .. new_name,
             undo_fn = function()
               local undo_success = FileOps.rename_folder(new_path, node.name)
               if undo_success then
@@ -780,7 +780,7 @@ function M.draw_physical_tree(ctx, state, config)
     -- Delete callback (Delete key)
     on_delete = function(node)
       -- Don't allow deleting root nodes or virtual folders (only physical)
-      if node.id == "__ROOT__" or node.id == "__VIRTUAL_ROOT__" or node.is_virtual then
+      if node.id == '__ROOT__' or node.id == '__VIRTUAL_ROOT__' or node.is_virtual then
         return
       end
 
@@ -788,8 +788,8 @@ function M.draw_physical_tree(ctx, state, config)
       local template_count = 0
       for _, tmpl in ipairs(state.templates) do
         local sep = package.config:sub(1,1)
-        local tmpl_path = tmpl.relative_path or ""
-        if tmpl_path == node.path or tmpl_path:find("^" .. node.path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1") .. sep) then
+        local tmpl_path = tmpl.relative_path or ''
+        if tmpl_path == node.path or tmpl_path:find('^' .. node.path:gsub('([%(%)%.%%%+%-%*%?%[%]%^%$])', '%%%1') .. sep) then
           template_count = template_count + 1
         end
       end
@@ -801,19 +801,19 @@ function M.draw_physical_tree(ctx, state, config)
         -- SECURITY: Validate path before deletion
         local path_ok, path_err = PathValidation.is_safe_path(node.full_path)
         if not path_ok then
-          state.set_status("Invalid path: " .. (path_err or "unknown"), "error")
+          state.set_status('Invalid path: ' .. (path_err or 'unknown'), 'error')
           return
         end
         success = os.remove(node.full_path)
         if success then
-          state.set_status("Deleted empty folder: " .. node.name, "success")
+          state.set_status('Deleted empty folder: ' .. node.name, 'success')
         else
           -- Folder might have subdirectories - try archiving instead
           success, archive_path = FileOps.delete_folder(node.full_path)
           if success then
-            state.set_status(string.format("Folder has subdirectories, archived to %s", archive_path), "success")
+            state.set_status(string.format('Folder has subdirectories, archived to %s', archive_path), 'success')
           else
-            state.set_status("Failed to delete folder: " .. node.name, "error")
+            state.set_status('Failed to delete folder: ' .. node.name, 'error')
             return
           end
         end
@@ -821,12 +821,12 @@ function M.draw_physical_tree(ctx, state, config)
         -- Folder with templates: archive with structure
         success, archive_path = FileOps.delete_folder(node.full_path)
         if success then
-          state.set_status(string.format("Deleted folder with %d template%s, archived to %s",
+          state.set_status(string.format('Deleted folder with %d template%s, archived to %s',
             template_count,
-            template_count == 1 and "" or "s",
-            archive_path), "success")
+            template_count == 1 and '' or 's',
+            archive_path), 'success')
         else
-          state.set_status("Failed to archive folder: " .. node.name, "error")
+          state.set_status('Failed to archive folder: ' .. node.name, 'error')
           return
         end
       end
@@ -834,7 +834,7 @@ function M.draw_physical_tree(ctx, state, config)
       -- Create undo operation
       if success then
         state.undo_manager:push({
-          description = "Delete folder: " .. node.name,
+          description = 'Delete folder: ' .. node.name,
           undo_fn = function()
             if archive_path then
               -- Restore from archive
@@ -842,7 +842,7 @@ function M.draw_physical_tree(ctx, state, config)
               local src_ok, src_err = PathValidation.is_safe_path(archive_path)
               local dst_ok, dst_err = PathValidation.is_safe_path(node.full_path)
               if not src_ok or not dst_ok then
-                Logger.error("TREEVIEW", "Undo blocked - invalid path: %s", src_err or dst_err or "unknown")
+                Logger.error('TREEVIEW', 'Undo blocked - invalid path: %s', src_err or dst_err or 'unknown')
                 return false
               end
               local restore_success = os.rename(archive_path, node.full_path)
@@ -860,7 +860,7 @@ function M.draw_physical_tree(ctx, state, config)
               -- SECURITY: Validate path before redo
               local path_ok, path_err = PathValidation.is_safe_path(node.full_path)
               if not path_ok then
-                Logger.error("TREEVIEW", "Redo blocked - invalid path: %s", path_err or "unknown")
+                Logger.error('TREEVIEW', 'Redo blocked - invalid path: %s', path_err or 'unknown')
                 return false
               end
               local redo_success = os.remove(node.full_path)
@@ -883,7 +883,7 @@ function M.draw_physical_tree(ctx, state, config)
         })
 
         -- Clear selection and rescan
-        state.selected_folder = ""
+        state.selected_folder = ''
         state.selected_folders = {}
         Scanner.scan_templates(state)
       end
@@ -905,7 +905,7 @@ function M.draw_virtual_tree(ctx, state, config)
   -- Get virtual root node and extract its children (start one level down)
   local virtual_nodes = {}
   for _, node in ipairs(all_nodes) do
-    if node.id == "__VIRTUAL_ROOT__" then
+    if node.id == '__VIRTUAL_ROOT__' then
       -- Use children of root directly, not the root itself
       virtual_nodes = node.children or {}
       break
@@ -917,8 +917,8 @@ function M.draw_virtual_tree(ctx, state, config)
   end
 
   -- Ensure VIRTUAL_ROOT node is open by default (for state consistency)
-  if state.folder_open_state["__VIRTUAL_ROOT__"] == nil then
-    state.folder_open_state["__VIRTUAL_ROOT__"] = true
+  if state.folder_open_state['__VIRTUAL_ROOT__'] == nil then
+    state.folder_open_state['__VIRTUAL_ROOT__'] = true
   end
 
   -- Map state variables to TreeView format (same as physical tree)
@@ -927,7 +927,7 @@ function M.draw_virtual_tree(ctx, state, config)
     selected_nodes = state.selected_folders,
     last_clicked_node = state.last_clicked_folder,
     renaming_node = state.renaming_folder_path or nil,
-    rename_buffer = state.rename_buffer or "",
+    rename_buffer = state.rename_buffer or '',
   }
 
   -- Draw tree with same callbacks as physical tree (they handle both types)
@@ -936,7 +936,7 @@ function M.draw_virtual_tree(ctx, state, config)
     show_colors = true,
     enable_drag_drop = true,
     enable_multi_select = true,
-    context_menu_id = "folder_context_menu",
+    context_menu_id = 'folder_context_menu',
 
     can_rename = function(node)
       if node.is_virtual then
@@ -964,8 +964,8 @@ function M.draw_virtual_tree(ctx, state, config)
 
       -- Parse payload
       local uuids = {}
-      if template_payload:find("\n") then
-        for uuid in template_payload:gmatch("[^\n]+") do
+      if template_payload:find('\n') then
+        for uuid in template_payload:gmatch('[^\n]+') do
           uuids[#uuids + 1] = uuid
         end
       else
@@ -978,7 +978,7 @@ function M.draw_virtual_tree(ctx, state, config)
       if target_node.is_virtual then
         local vfolder = state.metadata.virtual_folders[target_node.id]
         if not vfolder then
-          state.set_status("Virtual folder not found", "error")
+          state.set_status('Virtual folder not found', 'error')
           return
         end
 
@@ -1006,15 +1006,15 @@ function M.draw_virtual_tree(ctx, state, config)
 
         if added_count > 0 then
           if #uuids > 1 then
-            state.set_status("Added " .. added_count .. " of " .. #uuids .. " templates to " .. target_node.name, "success")
+            state.set_status('Added ' .. added_count .. ' of ' .. #uuids .. ' templates to ' .. target_node.name, 'success')
           else
-            state.set_status("Added template to " .. target_node.name, "success")
+            state.set_status('Added template to ' .. target_node.name, 'success')
           end
         else
           if #uuids > 1 then
-            state.set_status("Templates already in " .. target_node.name, "info")
+            state.set_status('Templates already in ' .. target_node.name, 'info')
           else
-            state.set_status("Template already in " .. target_node.name, "info")
+            state.set_status('Template already in ' .. target_node.name, 'info')
           end
         end
       end
@@ -1025,9 +1025,9 @@ function M.draw_virtual_tree(ctx, state, config)
     end,
 
     render_context_menu = function(ctx_inner, node)
-      if ContextMenu.begin(ctx_inner, "folder_context_menu") then
+      if ContextMenu.begin(ctx_inner, 'folder_context_menu') then
         -- Build color options from centralized palette
-        local color_options = {{ name = "None", color = nil }}
+        local color_options = {{ name = 'None', color = nil }}
         for _, palette_color in ipairs(ColorDefs.PALETTE) do
           color_options[#color_options + 1] = {
             name = palette_color.name,
@@ -1056,19 +1056,19 @@ function M.draw_virtual_tree(ctx, state, config)
           if not is_system_folder then
             ContextMenu.separator(ctx_inner)
 
-            if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
+            if ContextMenu.item(ctx_inner, 'Delete Virtual Folder') then
               if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
                 state.metadata.virtual_folders[node.id] = nil
                 Persistence.save_metadata(state.metadata)
 
                 if state.selected_folder == node.id then
-                  state.selected_folder = ""
+                  state.selected_folder = ''
                   state.selected_folders = {}
                 end
 
                 Scanner.filter_templates(state)
 
-                state.set_status("Deleted virtual folder: " .. node.name, "success")
+                state.set_status('Deleted virtual folder: ' .. node.name, 'success')
               end
 
               ImGui.CloseCurrentPopup(ctx_inner)
@@ -1081,18 +1081,18 @@ function M.draw_virtual_tree(ctx, state, config)
     end,
 
     on_rename = function(node, new_name)
-      if new_name ~= "" and new_name ~= node.name then
+      if new_name ~= '' and new_name ~= node.name then
         if node.is_virtual then
           if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
             local vfolder = state.metadata.virtual_folders[node.id]
             if vfolder.is_system then
-              state.set_status("Cannot rename system folder: " .. node.name, "error")
+              state.set_status('Cannot rename system folder: ' .. node.name, 'error')
               return false
             end
 
             state.metadata.virtual_folders[node.id].name = new_name
             Persistence.save_metadata(state.metadata)
-            state.set_status("Renamed virtual folder to: " .. new_name, "success")
+            state.set_status('Renamed virtual folder to: ' .. new_name, 'success')
           end
         end
       end
@@ -1121,17 +1121,17 @@ function M.draw_inbox_tree(ctx, state, config)
   local inbox_nodes = {}
   local inbox_count = 0
   for _, node in ipairs(all_nodes) do
-    if node.id == "__INBOX_ROOT__" then
+    if node.id == '__INBOX_ROOT__' then
       inbox_nodes = node.children or {}
       inbox_count = node.template_count or #inbox_nodes
       break
     end
   end
 
-  -- Always show inbox tree (even if empty - shows "empty" state)
+  -- Always show inbox tree (even if empty - shows 'empty' state)
   -- Ensure INBOX_ROOT node is open by default
-  if state.folder_open_state["__INBOX_ROOT__"] == nil then
-    state.folder_open_state["__INBOX_ROOT__"] = true
+  if state.folder_open_state['__INBOX_ROOT__'] == nil then
+    state.folder_open_state['__INBOX_ROOT__'] = true
   end
 
   -- Map state variables to TreeView format
@@ -1140,7 +1140,7 @@ function M.draw_inbox_tree(ctx, state, config)
     selected_nodes = state.selected_folders,
     last_clicked_node = state.last_clicked_folder,
     renaming_node = nil,  -- Inbox items can't be renamed here
-    rename_buffer = "",
+    rename_buffer = '',
   }
 
   -- Draw tree with callbacks for inbox
@@ -1188,7 +1188,7 @@ function M.draw_archive_tree(ctx, state, config)
   -- Get archive root node and extract its children (start one level down)
   local archive_nodes = {}
   for _, node in ipairs(all_nodes) do
-    if node.id == "__ARCHIVE_ROOT__" then
+    if node.id == '__ARCHIVE_ROOT__' then
       -- Use children of root directly, not the root itself
       archive_nodes = node.children or {}
       break
@@ -1200,8 +1200,8 @@ function M.draw_archive_tree(ctx, state, config)
   end
 
   -- Ensure ARCHIVE_ROOT node is open by default (for state consistency)
-  if state.folder_open_state["__ARCHIVE_ROOT__"] == nil then
-    state.folder_open_state["__ARCHIVE_ROOT__"] = true
+  if state.folder_open_state['__ARCHIVE_ROOT__'] == nil then
+    state.folder_open_state['__ARCHIVE_ROOT__'] = true
   end
 
   -- Map state variables to TreeView format
@@ -1210,7 +1210,7 @@ function M.draw_archive_tree(ctx, state, config)
     selected_nodes = state.selected_folders,
     last_clicked_node = state.last_clicked_folder,
     renaming_node = nil,  -- Archive folders cannot be renamed
-    rename_buffer = "",
+    rename_buffer = '',
   }
 
   -- Draw tree with minimal callbacks (archive is read-only)

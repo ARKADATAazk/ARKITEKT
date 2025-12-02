@@ -26,9 +26,9 @@ function M.draw_convenience_panel(ctx, gui, width, height)
     local content_height = height - header_height - (padding * 2)
 
     -- Draw content based on active tab
-    if state.convenience_panel_tab == "tags" then
+    if state.convenience_panel_tab == 'tags' then
       ConvTagsTab.draw(ctx, state, gui.config, width, content_height)
-    elseif state.convenience_panel_tab == "vsts" then
+    elseif state.convenience_panel_tab == 'vsts' then
       ConvVstsTab.draw(ctx, state, gui.config, width, content_height)
     end
 

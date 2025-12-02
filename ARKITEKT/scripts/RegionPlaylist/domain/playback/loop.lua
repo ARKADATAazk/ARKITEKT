@@ -64,7 +64,7 @@ function Playback:update()
   if state.scheduled_jump and self.callbacks.on_transition_scheduled then
     local region = self.engine:get_region_by_rid(current_rid)
     if region then
-      self.callbacks.on_transition_scheduled(current_rid, region["end"], state.scheduled_jump)
+      self.callbacks.on_transition_scheduled(current_rid, region['end'], state.scheduled_jump)
     end
   end
 end
@@ -87,12 +87,12 @@ function Playback:get_progress()
 
   local playpos = Transport.get_play_position(self.engine.proj)
   
-  local duration = region["end"] - region.start
+  local duration = region['end'] - region.start
   if duration <= 0 then return 0 end
   
   -- Clamp playpos within region bounds to handle transition jitter
   -- When looping the same region, pointer updates before playpos resets
-  local clamped_pos = max(region.start, min(playpos, region["end"]))
+  local clamped_pos = max(region.start, min(playpos, region['end']))
   local elapsed = clamped_pos - region.start
   return max(0, min(1, elapsed / duration))
 end
@@ -115,7 +115,7 @@ function Playback:get_time_remaining()
 
   local playpos = Transport.get_play_position(self.engine.proj)
 
-  return max(0, region["end"] - playpos)
+  return max(0, region['end'] - playpos)
 end
 
 return M

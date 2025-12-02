@@ -86,7 +86,7 @@ end
 
 -- Apply color to selected tracks
 local function apply_color_to_selected(color)
-  if type(color) ~= "table" or #color < 3 then
+  if type(color) ~= 'table' or #color < 3 then
     return
   end
 
@@ -173,18 +173,18 @@ function ColorsView:draw(ctx, shell_state)
 
   -- Title
   ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
-  ImGui.Text(ctx, "Track Colors")
+  ImGui.Text(ctx, 'Track Colors')
   ImGui.PopFont(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-  ImGui.Text(ctx, "Apply color palettes to project tracks")
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+  ImGui.Text(ctx, 'Apply color palettes to project tracks')
   ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 8)
 
   -- Single scrollable content area
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "colors_content", avail_w, 0, 1) then
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+  if ImGui.BeginChild(ctx, 'colors_content', avail_w, 0, 1) then
     -- Draw background pattern
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
@@ -214,14 +214,14 @@ function ColorsView:draw(ctx, shell_state)
 
     -- Palette Selection
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "COLOR PALETTE")
+    ImGui.Text(ctx, 'COLOR PALETTE')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 6)
 
     -- Palette name display
     local current_palette = PALETTES[self.current_palette_idx]
     ImGui.PushFont(ctx, shell_state.fonts.bold, 20)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
     local palette_text_w = ImGui.CalcTextSize(ctx, current_palette.name)
     ImGui.SetCursorPosX(ctx, (avail_w - palette_text_w) / 2)
     ImGui.Text(ctx, current_palette.name)
@@ -239,7 +239,7 @@ function ColorsView:draw(ctx, shell_state)
     ImGui.SetCursorPosX(ctx, start_x)
 
     for i, color in ipairs(current_palette.colors) do
-      local color_hex = string.format("#%02X%02X%02X", color[1], color[2], color[3])
+      local color_hex = string.format('#%02X%02X%02X', color[1], color[2], color[3])
       local color_packed = hexrgb(color_hex)
 
       -- Draw color button
@@ -248,7 +248,7 @@ function ColorsView:draw(ctx, shell_state)
       ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, color_packed)
       ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameRounding, 4)
 
-      if ImGui.Button(ctx, "##color_" .. i, swatch_size, swatch_size) then
+      if ImGui.Button(ctx, '##color_' .. i, swatch_size, swatch_size) then
         apply_color_to_selected(color)
       end
 
@@ -256,7 +256,7 @@ function ColorsView:draw(ctx, shell_state)
       ImGui.PopStyleColor(ctx, 3)
 
       if ImGui.IsItemHovered(ctx) then
-        ImGui.SetTooltip(ctx, string.format("R:%d G:%d B:%d\nClick to apply to selected tracks", color[1], color[2], color[3]))
+        ImGui.SetTooltip(ctx, string.format('R:%d G:%d B:%d\nClick to apply to selected tracks', color[1], color[2], color[3]))
       end
 
       if i < #current_palette.colors then
@@ -267,8 +267,8 @@ function ColorsView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 16)
 
     -- Instruction text
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
-    local instr_text = "Click a color to apply it to all selected tracks"
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+    local instr_text = 'Click a color to apply it to all selected tracks'
     local instr_w = ImGui.CalcTextSize(ctx, instr_text)
     ImGui.SetCursorPosX(ctx, (avail_w - instr_w) / 2)
     ImGui.Text(ctx, instr_text)
@@ -278,17 +278,17 @@ function ColorsView:draw(ctx, shell_state)
 
     -- Palette Controls Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "PALETTE CONTROLS")
+    ImGui.Text(ctx, 'PALETTE CONTROLS')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 8)
 
     -- Palette spinner
     ImGui.AlignTextToFramePadding(ctx)
-    ImGui.Text(ctx, "Select Palette")
+    ImGui.Text(ctx, 'Select Palette')
     ImGui.SameLine(ctx, 140)
 
     local spinner_result = Ark.Spinner.draw(ctx, {
-      id = "palette_selector",
+      id = 'palette_selector',
       value = self.current_palette_idx,
       options = PALETTE_NAMES,
       width = 200,
@@ -302,24 +302,24 @@ function ColorsView:draw(ctx, shell_state)
 
     -- Recolor all tracks button
     if Ark.Button.draw_at_cursor(ctx, {
-      label = "Recolor All Tracks Using This Palette",
+      label = 'Recolor All Tracks Using This Palette',
       width = 320,
       height = 32,
       on_click = function()
         recolor_all_tracks(self.current_palette_idx)
       end
-    }, "recolor_all") then
+    }, 'recolor_all') then
     end
 
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, "Applies this palette to all colored tracks in the project")
+      ImGui.SetTooltip(ctx, 'Applies this palette to all colored tracks in the project')
     end
 
     ImGui.Dummy(ctx, 0, 24)
 
     -- Color Adjustment Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "COLOR ADJUSTMENTS")
+    ImGui.Text(ctx, 'COLOR ADJUSTMENTS')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 8)
 
@@ -331,50 +331,50 @@ function ColorsView:draw(ctx, shell_state)
 
     -- Row 1: Darken buttons
     if Ark.Button.draw_at_cursor(ctx, {
-      label = "Darken Selected",
+      label = 'Darken Selected',
       width = btn_width,
       height = btn_height,
       on_click = function()
         adjust_track_brightness(true, true)
       end
-    }, "darken_selected") then
+    }, 'darken_selected') then
     end
 
     ImGui.SameLine(ctx, 0, 12)
 
     if Ark.Button.draw_at_cursor(ctx, {
-      label = "Darken All",
+      label = 'Darken All',
       width = btn_width,
       height = btn_height,
       on_click = function()
         adjust_track_brightness(false, true)
       end
-    }, "darken_all") then
+    }, 'darken_all') then
     end
 
     ImGui.Dummy(ctx, 0, 8)
 
     -- Row 2: Brighten buttons
     if Ark.Button.draw_at_cursor(ctx, {
-      label = "Brighten Selected",
+      label = 'Brighten Selected',
       width = btn_width,
       height = btn_height,
       on_click = function()
         adjust_track_brightness(true, false)
       end
-    }, "brighten_selected") then
+    }, 'brighten_selected') then
     end
 
     ImGui.SameLine(ctx, 0, 12)
 
     if Ark.Button.draw_at_cursor(ctx, {
-      label = "Brighten All",
+      label = 'Brighten All',
       width = btn_width,
       height = btn_height,
       on_click = function()
         adjust_track_brightness(false, false)
       end
-    }, "brighten_all") then
+    }, 'brighten_all') then
     end
 
     ImGui.EndGroup(ctx)
@@ -382,9 +382,9 @@ function ColorsView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 16)
 
     -- Help text
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
-    ImGui.TextWrapped(ctx, "Track colors are stored in the project file and are independent of the theme. " ..
-                            "Use these tools to quickly apply coordinated color schemes to your tracks.")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+    ImGui.TextWrapped(ctx, 'Track colors are stored in the project file and are independent of the theme. ' ..
+                            'Use these tools to quickly apply coordinated color schemes to your tracks.')
     ImGui.PopStyleColor(ctx)
 
     ImGui.Unindent(ctx, 12)

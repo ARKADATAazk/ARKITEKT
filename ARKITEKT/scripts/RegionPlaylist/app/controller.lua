@@ -13,7 +13,7 @@ Controller.__index = Controller
 -- Set to true for verbose controller debugging
 local DEBUG_CONTROLLER = false
 
-package.loaded["RegionPlaylist.app.controller"] = M
+package.loaded['RegionPlaylist.app.controller'] = M
 
 function M.new(state_module, settings, undo_manager)
   local ctrl = setmetatable({
@@ -67,23 +67,23 @@ function Controller:_generate_unique_name(base_name, exclude_id)
     end
   end
 
-  -- Try "Name Copy" first
-  local candidate = base_name .. " Copy"
+  -- Try 'Name Copy' first
+  local candidate = base_name .. ' Copy'
   if not existing_names[candidate] then
     return candidate
   end
 
-  -- Try "Name Copy (2)", "Name Copy (3)", etc.
+  -- Try 'Name Copy (2)', 'Name Copy (3)', etc.
   local index = 2
   while true do
-    candidate = base_name .. " Copy (" .. index .. ")"
+    candidate = base_name .. ' Copy (' .. index .. ')'
     if not existing_names[candidate] then
       return candidate
     end
     index = index + 1
     -- Safety limit to prevent infinite loop
     if index > 1000 then
-      return base_name .. " Copy (" .. os.time() .. ")"
+      return base_name .. ' Copy (' .. os.time() .. ')'
     end
   end
 end
@@ -92,10 +92,10 @@ function Controller:create_playlist(name)
   return self:_with_undo(function()
     local new_id = self:_generate_playlist_id()
 
-    local RegionState = require("RegionPlaylist.data.storage")
+    local RegionState = require('RegionPlaylist.data.storage')
 
     -- Generate human-readable default name based on count
-    local default_name = "Playlist " .. tostring(#self.state.get_playlists() + 1)
+    local default_name = 'Playlist ' .. tostring(#self.state.get_playlists() + 1)
 
     local new_playlist = {
       id = new_id,
@@ -137,22 +137,22 @@ function Controller:duplicate_playlist(id)
   end
 
   if not source_playlist then
-    return false, "Playlist not found"
+    return false, 'Playlist not found'
   end
 
   return self:_with_undo(function()
     local new_id = self:_generate_playlist_id()
-    local RegionState = require("RegionPlaylist.data.storage")
+    local RegionState = require('RegionPlaylist.data.storage')
 
     -- Deep copy items with proper structure and new keys
     local new_items = {}
     for i, item in ipairs(source_playlist.items) do
       local new_item
 
-      if item.type == "region" then
+      if item.type == 'region' then
         -- Region item - preserve GUID and name for stable tracking
         new_item = {
-          type = "region",
+          type = 'region',
           rid = item.rid,
           guid = item.guid,  -- Preserve GUID across duplication
           region_name = item.region_name,  -- Preserve name as fallback
@@ -160,10 +160,10 @@ function Controller:duplicate_playlist(id)
           enabled = item.enabled ~= false,
           key = self:_generate_item_key(),
         }
-      elseif item.type == "playlist" then
+      elseif item.type == 'playlist' then
         -- Playlist item
         new_item = {
-          type = "playlist",
+          type = 'playlist',
           playlist_id = item.playlist_id,
           reps = item.reps or 1,
           enabled = item.enabled ~= false,
@@ -193,23 +193,23 @@ end
 
 function Controller:rename_playlist(id, new_name)
   if DEBUG_CONTROLLER then
-    Logger.debug("CONTROLLER", "rename_playlist called with ID: %s new_name: %s", tostring(id), tostring(new_name))
+    Logger.debug('CONTROLLER', 'rename_playlist called with ID: %s new_name: %s', tostring(id), tostring(new_name))
   end
   local playlist = self:_get_playlist(id)
   if not playlist then
     if DEBUG_CONTROLLER then
-      Logger.warn("CONTROLLER", "Playlist not found for ID: %s", tostring(id))
+      Logger.warn('CONTROLLER', 'Playlist not found for ID: %s', tostring(id))
     end
-    return false, "Playlist not found"
+    return false, 'Playlist not found'
   end
 
   if DEBUG_CONTROLLER then
-    Logger.debug("CONTROLLER", "Found playlist, renaming from '%s' to '%s'", tostring(playlist.name), tostring(new_name))
+    Logger.debug('CONTROLLER', "Found playlist, renaming from '%s' to '%s'", tostring(playlist.name), tostring(new_name))
   end
   return self:_with_undo(function()
     playlist.name = new_name or playlist.name
     if DEBUG_CONTROLLER then
-      Logger.debug("CONTROLLER", "Rename complete, new name: %s", tostring(playlist.name))
+      Logger.debug('CONTROLLER', 'Rename complete, new name: %s', tostring(playlist.name))
     end
     return true
   end)
@@ -217,11 +217,11 @@ end
 
 function Controller:rename_item(playlist_id, item_key, new_name)
   local playlist = self:_get_playlist(playlist_id)
-  if not playlist then return false, "Playlist not found" end
+  if not playlist then return false, 'Playlist not found' end
 
   for _, item in ipairs(playlist.items) do
     if item.key == item_key then
-      if item.type == "playlist" then
+      if item.type == 'playlist' then
         -- Rename playlist item
         return self:rename_playlist(item.playlist_id, new_name)
       else
@@ -234,18 +234,18 @@ function Controller:rename_item(playlist_id, item_key, new_name)
             return true
           end)
         end
-        return false, "Region not found"
+        return false, 'Region not found'
       end
     end
   end
 
-  return false, "Item not found"
+  return false, 'Item not found'
 end
 
 function Controller:set_playlist_color(id, color)
   local playlist = self:_get_playlist(id)
   if not playlist then
-    return false, "Playlist not found"
+    return false, 'Playlist not found'
   end
 
   return self:_with_undo(function()
@@ -258,14 +258,14 @@ function Controller:set_region_color(rid, color)
   local Regions = require('arkitekt.reaper.regions')
 
   if DEBUG_CONTROLLER then
-    Logger.debug("CONTROLLER", "set_region_color(%d, %08X)", rid, color)
+    Logger.debug('CONTROLLER', 'set_region_color(%d, %08X)', rid, color)
   end
 
   -- Set color in Reaper (this updates the timeline immediately)
   local success = Regions.set_region_color(0, rid, color)
 
   if DEBUG_CONTROLLER then
-    Logger.debug("CONTROLLER", "  -> Regions.set_region_color returned: %s", tostring(success))
+    Logger.debug('CONTROLLER', '  -> Regions.set_region_color returned: %s', tostring(success))
   end
 
   if success then
@@ -313,7 +313,7 @@ end
 function Controller:delete_playlist(id)
   local playlists = self.state.get_playlists()
   if #playlists <= 1 then
-    return false, "Cannot delete last playlist"
+    return false, 'Cannot delete last playlist'
   end
   
   return self:_with_undo(function()
@@ -326,7 +326,7 @@ function Controller:delete_playlist(id)
     end
     
     if not delete_index then
-      error("Playlist not found")
+      error('Playlist not found')
     end
     
     table.remove(playlists, delete_index)
@@ -340,7 +340,7 @@ function Controller:delete_playlist(id)
       local i = 1
       while i <= #pl.items do
         local item = pl.items[i]
-        if item.type == "playlist" and item.playlist_id == id then
+        if item.type == 'playlist' and item.playlist_id == id then
           table.remove(pl.items, i)
         else
           i = i + 1
@@ -366,7 +366,7 @@ function Controller:add_item(playlist_id, rid, insert_index)
   return self:_with_undo(function()
     local pl = self:_get_playlist(playlist_id)
     if not pl then
-      error("Playlist not found")
+      error('Playlist not found')
     end
 
     -- Look up region to get its GUID and name for stable tracking
@@ -375,7 +375,7 @@ function Controller:add_item(playlist_id, rid, insert_index)
     local region_name = region and region.name or nil
 
     local new_item = {
-      type = "region",
+      type = 'region',
       rid = rid,
       guid = guid,  -- Store GUID for stable tracking
       region_name = region_name,  -- Store name as fallback (survives renumbering)
@@ -394,16 +394,16 @@ function Controller:add_playlist_item(target_playlist_id, source_playlist_id, in
   return self:_with_undo(function()
     local target_pl = self:_get_playlist(target_playlist_id)
     if not target_pl then
-      error("Target playlist not found")
+      error('Target playlist not found')
     end
     
     local source_pl = self:_get_playlist(source_playlist_id)
     if not source_pl then
-      error("Source playlist not found")
+      error('Source playlist not found')
     end
     
     local new_item = {
-      type = "playlist",
+      type = 'playlist',
       playlist_id = source_playlist_id,
       reps = 1,
       enabled = true,
@@ -420,7 +420,7 @@ function Controller:add_items_batch(playlist_id, rids, insert_index)
   return self:_with_undo(function()
     local pl = self:_get_playlist(playlist_id)
     if not pl then
-      error("Playlist not found")
+      error('Playlist not found')
     end
 
     local keys = {}
@@ -433,7 +433,7 @@ function Controller:add_items_batch(playlist_id, rids, insert_index)
       local region_name = region and region.name or nil
 
       local new_item = {
-        type = "region",
+        type = 'region',
         rid = rid,
         guid = guid,  -- Store GUID for stable tracking
         region_name = region_name,  -- Store name as fallback (survives renumbering)
@@ -453,7 +453,7 @@ function Controller:copy_items(playlist_id, items, insert_index)
   return self:_with_undo(function()
     local pl = self:_get_playlist(playlist_id)
     if not pl then
-      error("Playlist not found")
+      error('Playlist not found')
     end
 
     local keys = {}
@@ -472,7 +472,7 @@ function Controller:copy_items(playlist_id, items, insert_index)
       end
 
       local new_item = {
-        type = item.type or "region",
+        type = item.type or 'region',
         rid = item.rid,
         guid = guid,  -- Preserve GUID for stable tracking
         region_name = region_name,  -- Preserve name as fallback
@@ -493,7 +493,7 @@ function Controller:reorder_items(playlist_id, new_order)
   return self:_with_undo(function()
     local pl = self:_get_playlist(playlist_id)
     if not pl then
-      error("Playlist not found")
+      error('Playlist not found')
     end
     
     pl.items = new_order
@@ -504,7 +504,7 @@ function Controller:delete_items(playlist_id, item_keys)
   return self:_with_undo(function()
     local pl = self:_get_playlist(playlist_id)
     if not pl then
-      error("Playlist not found")
+      error('Playlist not found')
     end
     
     local keys_set = {}
@@ -527,7 +527,7 @@ function Controller:toggle_item_enabled(playlist_id, item_key, enabled)
   return self:_with_undo(function()
     local pl = self:_get_playlist(playlist_id)
     if not pl then
-      error("Playlist not found")
+      error('Playlist not found')
     end
     
     for _, item in ipairs(pl.items) do
@@ -543,7 +543,7 @@ function Controller:adjust_repeats(playlist_id, item_keys, delta)
   return self:_with_undo(function()
     local pl = self:_get_playlist(playlist_id)
     if not pl then
-      error("Playlist not found")
+      error('Playlist not found')
     end
     
     local keys_set = {}
@@ -563,7 +563,7 @@ function Controller:sync_repeats(playlist_id, item_keys, target_reps)
   return self:_with_undo(function()
     local pl = self:_get_playlist(playlist_id)
     if not pl then
-      error("Playlist not found")
+      error('Playlist not found')
     end
     
     local keys_set = {}
@@ -583,7 +583,7 @@ function Controller:cycle_repeats(playlist_id, item_key)
   return self:_with_undo(function()
     local pl = self:_get_playlist(playlist_id)
     if not pl then
-      error("Playlist not found")
+      error('Playlist not found')
     end
     
     for _, item in ipairs(pl.items) do

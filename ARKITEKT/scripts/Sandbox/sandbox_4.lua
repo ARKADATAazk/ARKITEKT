@@ -4,14 +4,14 @@
 -- Multiselection, keyboard nav, search, context menu, clipboard ops
 -- Virtual scrolling, custom icons, drag & drop reordering
 
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
-local root_path = script_path:match("(.*)[\\/][^\\/]+[\\/]?$") or script_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
+local script_path = debug.getinfo(1, 'S').source:match('@?(.*)[\\/]') or ''
+local root_path = script_path:match('(.*)[\\/][^\\/]+[\\/]?$') or script_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+if not root_path:match('[\\/]$') then root_path = root_path .. '/' end
 
-local arkitekt_path = root_path .. "ARKITEKT/"
-package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. package.path
+local arkitekt_path = root_path .. 'ARKITEKT/'
+package.path = arkitekt_path .. '?.lua;' .. arkitekt_path .. '?/init.lua;' .. package.path
 
 local ImGui = require('arkitekt.platform.imgui')
 local Shell = require('arkitekt.app.shell')
@@ -52,7 +52,7 @@ local TREE_CONFIG = {
   show_alternating_bg = false,
   show_checkboxes = true,  -- NEW: Global checkbox toggle
   tree_line_thickness = 1,
-  tree_line_style = "dotted", -- "solid" or "dotted"
+  tree_line_style = 'dotted', -- 'solid' or 'dotted'
   tree_line_dot_spacing = 2,
 
   -- Default item flags
@@ -66,22 +66,22 @@ local TREE_CONFIG = {
   },
 
   -- Colors
-  bg_hover = hexrgb("#2E2E2EFF"),
-  bg_selected = hexrgb("#393939FF"),
-  bg_selected_hover = hexrgb("#3E3E3EFF"),
-  bg_alternate = hexrgb("#1C1C1CFF"),
-  bg_disabled = hexrgb("#0F0F0FFF"),
-  text_normal = hexrgb("#CCCCCCFF"),
-  text_hover = hexrgb("#FFFFFFFF"),
-  text_disabled = hexrgb("#666666FF"),
-  arrow_color = hexrgb("#B0B0B0FF"),
-  icon_color = hexrgb("#888888FF"),
-  icon_open_color = hexrgb("#9A9A9AFF"),
-  tree_line_color = hexrgb("#505050FF"),
-  checkbox_border = hexrgb("#888888FF"),
-  checkbox_check = hexrgb("#4A9EFFFF"),
-  checkbox_bg = hexrgb("#2A2A2AFF"),
-  checkbox_bg_disabled = hexrgb("#1A1A1AFF"),
+  bg_hover = hexrgb('#2E2E2EFF'),
+  bg_selected = hexrgb('#393939FF'),
+  bg_selected_hover = hexrgb('#3E3E3EFF'),
+  bg_alternate = hexrgb('#1C1C1CFF'),
+  bg_disabled = hexrgb('#0F0F0FFF'),
+  text_normal = hexrgb('#CCCCCCFF'),
+  text_hover = hexrgb('#FFFFFFFF'),
+  text_disabled = hexrgb('#666666FF'),
+  arrow_color = hexrgb('#B0B0B0FF'),
+  icon_color = hexrgb('#888888FF'),
+  icon_open_color = hexrgb('#9A9A9AFF'),
+  tree_line_color = hexrgb('#505050FF'),
+  checkbox_border = hexrgb('#888888FF'),
+  checkbox_check = hexrgb('#4A9EFFFF'),
+  checkbox_bg = hexrgb('#2A2A2AFF'),
+  checkbox_bg_disabled = hexrgb('#1A1A1AFF'),
 }
 
 -- ============================================================================
@@ -90,53 +90,53 @@ local TREE_CONFIG = {
 
 local mock_tree = {
   {
-    id = "root",
-    name = "Project Root",
-    color = hexrgb("#4A9EFFFF"),
+    id = 'root',
+    name = 'Project Root',
+    color = hexrgb('#4A9EFFFF'),
     flags = { checkable = true },
     checked = true,
     children = {
       {
-        id = "src",
-        name = "src",
-        color = hexrgb("#41E0A3FF"),
+        id = 'src',
+        name = 'src',
+        color = hexrgb('#41E0A3FF'),
         flags = { checkable = true },
         checked = true,
         children = {
-          { id = "components", name = "components", flags = { checkable = true }, checked = true, children = {
-            { id = "button", name = "Button.lua", flags = { checkable = true }, checked = true, children = {} },
-            { id = "dropdown", name = "Dropdown.lua", flags = { checkable = true }, checked = false, children = {} },
+          { id = 'components', name = 'components', flags = { checkable = true }, checked = true, children = {
+            { id = 'button', name = 'Button.lua', flags = { checkable = true }, checked = true, children = {} },
+            { id = 'dropdown', name = 'Dropdown.lua', flags = { checkable = true }, checked = false, children = {} },
           }},
-          { id = "utils", name = "utils", flags = { checkable = true }, checked = true, children = {
-            { id = "colors", name = "colors.lua", flags = { checkable = true }, checked = true, children = {} },
-            { id = "config", name = "config.lua", flags = { checkable = true }, checked = true, children = {} },
+          { id = 'utils', name = 'utils', flags = { checkable = true }, checked = true, children = {
+            { id = 'colors', name = 'colors.lua', flags = { checkable = true }, checked = true, children = {} },
+            { id = 'config', name = 'config.lua', flags = { checkable = true }, checked = true, children = {} },
           }},
-          { id = "styles", name = "styles", flags = { checkable = true }, checked = false, children = {} },
+          { id = 'styles', name = 'styles', flags = { checkable = true }, checked = false, children = {} },
         }
       },
       {
-        id = "docs",
-        name = "Documentation",
-        color = hexrgb("#FFA726FF"),
+        id = 'docs',
+        name = 'Documentation',
+        color = hexrgb('#FFA726FF'),
         children = {
-          { id = "guides", name = "Guides", children = {
-            { id = "getting-started", name = "Getting Started.md", children = {} },
-            { id = "advanced", name = "Advanced Topics.md", children = {} },
+          { id = 'guides', name = 'Guides', children = {
+            { id = 'getting-started', name = 'Getting Started.md', children = {} },
+            { id = 'advanced', name = 'Advanced Topics.md', children = {} },
           }},
-          { id = "api", name = "API Reference", children = {} },
+          { id = 'api', name = 'API Reference', children = {} },
         }
       },
       {
-        id = "tests",
-        name = "tests",
+        id = 'tests',
+        name = 'tests',
         children = {
-          { id = "unit", name = "unit", children = {} },
-          { id = "integration", name = "integration", children = {} },
+          { id = 'unit', name = 'unit', children = {} },
+          { id = 'integration', name = 'integration', children = {} },
         }
       },
-      { id = "config-root", name = "config", children = {} },
-      { id = "scripts", name = "scripts", children = {} },
-      { id = "assets", name = "assets", children = {} },
+      { id = 'config-root', name = 'config', children = {} },
+      { id = 'scripts', name = 'scripts', children = {} },
+      { id = 'assets', name = 'assets', children = {} },
     }
   }
 }
@@ -178,7 +178,7 @@ local function is_item_checkable(node)
   return flags.checkable and TREE_CONFIG.show_checkboxes
 end
 
--- Get checkbox state (true, false, or "partial" for tri-state)
+-- Get checkbox state (true, false, or 'partial' for tri-state)
 local function get_check_state(node)
   return node.checked or false
 end
@@ -210,7 +210,7 @@ local function set_check_state(nodes, node_id, checked)
               local child_state = get_check_state(child)
               if child_state == true then
                 any_checked = true
-              elseif child_state == "partial" then
+              elseif child_state == 'partial' then
                 has_partial = true
               else
                 all_checked = false
@@ -219,7 +219,7 @@ local function set_check_state(nodes, node_id, checked)
           end
 
           if has_partial or (any_checked and not all_checked) then
-            n.checked = "partial"
+            n.checked = 'partial'
           elseif all_checked then
             n.checked = true
           else
@@ -247,20 +247,20 @@ local tree_state = {
   hovered = nil,
   scroll_y = 0,
   editing = nil,
-  edit_buffer = "",
+  edit_buffer = '',
   edit_focus_set = false,
   flat_list = {}, -- Flat list of visible items in order for arrow navigation
   clipboard = {}, -- Clipboard for cut/copy/paste
-  clipboard_mode = nil, -- "cut" or "copy"
+  clipboard_mode = nil, -- 'cut' or 'copy'
   context_menu_open = false,
   context_menu_x = 0,
   context_menu_y = 0,
-  search_text = "",
+  search_text = '',
   search_active = false,
   tree_bounds = {}, -- Store tree bounds for click detection
 
   -- Type-to-search state
-  type_buffer = "",
+  type_buffer = '',
   type_timeout = 0,
   type_timeout_duration = 1.0, -- seconds to wait before clearing buffer
 
@@ -273,7 +273,7 @@ local tree_state = {
   drag_start_y = 0,
   drag_threshold = 5, -- pixels to move before drag starts
   drop_target_id = nil,
-  drop_position = nil, -- "before", "into", "after"
+  drop_position = nil, -- 'before', 'into', 'after'
 
   -- Virtual scrolling
   use_virtual_scrolling = true,
@@ -281,11 +281,11 @@ local tree_state = {
 
   -- Icon types
   icon_types = {
-    folder = "folder",
-    file = "file",
-    lua = "lua",
-    markdown = "markdown",
-    config = "config",
+    folder = 'folder',
+    file = 'file',
+    lua = 'lua',
+    markdown = 'markdown',
+    config = 'config',
   },
 }
 
@@ -382,12 +382,12 @@ local function delete_nodes_by_ids(nodes, ids_to_delete)
 end
 
 local function duplicate_node(node, add_copy_suffix)
-  -- add_copy_suffix: true = add " (copy)" to name, false/nil = keep original name
+  -- add_copy_suffix: true = add ' (copy)' to name, false/nil = keep original name
   if add_copy_suffix == nil then add_copy_suffix = true end
 
   local new_node = {
-    id = node.id .. "_copy_" .. os.time() .. "_" .. math.random(1000, 9999),
-    name = add_copy_suffix and (node.name .. " (copy)") or node.name,
+    id = node.id .. '_copy_' .. os.time() .. '_' .. math.random(1000, 9999),
+    name = add_copy_suffix and (node.name .. ' (copy)') or node.name,
     color = node.color,
     flags = node.flags,
     checked = node.checked,
@@ -418,7 +418,7 @@ local function get_selected_nodes(nodes)
 end
 
 local function node_matches_search(node, search_text)
-  if search_text == "" then return true end
+  if search_text == '' then return true end
   local lower_search = search_text:lower()
   local lower_name = node.name:lower()
   return lower_name:find(lower_search, 1, true) ~= nil
@@ -466,13 +466,13 @@ end
 local function insert_node_at(nodes, target_id, node_to_insert, position)
   for i, target_node in ipairs(nodes) do
     if target_node.id == target_id then
-      if position == "before" then
+      if position == 'before' then
         table.insert(nodes, i, node_to_insert)
         return true
-      elseif position == "after" then
+      elseif position == 'after' then
         table.insert(nodes, i + 1, node_to_insert)
         return true
-      elseif position == "into" then
+      elseif position == 'into' then
         target_node.children = target_node.children or {}
         target_node.children[#target_node.children + 1] = node_to_insert
         tree_state.open[target_id] = true -- Auto-expand
@@ -517,7 +517,7 @@ local function draw_checkbox(dl, x, y, checked, enabled)
 
     ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, check_color, 2)
     ImGui.DrawList_AddLine(dl, x2, y2, x3, y3, check_color, 2)
-  elseif checked == "partial" then
+  elseif checked == 'partial' then
     -- Draw dash for partial state (tri-state)
     ImGui.DrawList_AddLine(dl, x + 3, y + size / 2, x + size - 3, y + size / 2, check_color, 2)
   end
@@ -570,25 +570,25 @@ local function draw_file_icon(dl, x, y, color)
   -- File body
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, color, 0)
   -- Corner fold
-  ImGui.DrawList_AddTriangleFilled(dl, x + w - corner, y, x + w, y, x + w, y + corner, hexrgb("#000000AA"))
+  ImGui.DrawList_AddTriangleFilled(dl, x + w - corner, y, x + w, y, x + w, y + corner, hexrgb('#000000AA'))
 end
 
 local function draw_lua_icon(dl, x, y, color)
-  color = color or hexrgb("#00007FFF") -- Blue for Lua
+  color = color or hexrgb('#00007FFF') -- Blue for Lua
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
 
-  -- Draw "L" shape
+  -- Draw 'L' shape
   ImGui.DrawList_AddRectFilled(dl, x, y, x + 3, y + 12, color, 0)
   ImGui.DrawList_AddRectFilled(dl, x, y + 9, x + 10, y + 12, color, 0)
 end
 
 local function draw_markdown_icon(dl, x, y, color)
-  color = color or hexrgb("#0A7EA3FF") -- Cyan for markdown
+  color = color or hexrgb('#0A7EA3FF') -- Cyan for markdown
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
 
-  -- Draw "M" shape using individual lines
+  -- Draw 'M' shape using individual lines
   local thickness = 2
   -- Left vertical line
   ImGui.DrawList_AddLine(dl, x, y + 10, x, y, color, thickness)
@@ -601,38 +601,38 @@ local function draw_markdown_icon(dl, x, y, color)
 end
 
 local function draw_config_icon(dl, x, y, color)
-  color = color or hexrgb("#888888FF")
+  color = color or hexrgb('#888888FF')
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
 
   -- Draw gear-like shape
   ImGui.DrawList_AddCircleFilled(dl, x + 5, y + 6, 4, color)
-  ImGui.DrawList_AddCircleFilled(dl, x + 5, y + 6, 2, hexrgb("#000000AA"))
+  ImGui.DrawList_AddCircleFilled(dl, x + 5, y + 6, 2, hexrgb('#000000AA'))
 end
 
 local function get_node_icon_type(node)
   if node.children and #node.children > 0 then
-    return "folder"
+    return 'folder'
   end
 
   local name = node.name:lower()
-  if name:match("%.lua$") then return "lua" end
-  if name:match("%.md$") then return "markdown" end
-  if name:match("config") or name:match("%.json$") or name:match("%.yaml$") then return "config" end
+  if name:match('%.lua$') then return 'lua' end
+  if name:match('%.md$') then return 'markdown' end
+  if name:match('config') or name:match('%.json$') or name:match('%.yaml$') then return 'config' end
 
-  return "file"
+  return 'file'
 end
 
 local function draw_node_icon(dl, x, y, node, is_open, color)
   local icon_type = get_node_icon_type(node)
 
-  if icon_type == "folder" then
+  if icon_type == 'folder' then
     draw_folder_icon(dl, x, y, is_open, color)
-  elseif icon_type == "lua" then
+  elseif icon_type == 'lua' then
     draw_lua_icon(dl, x, y, color)
-  elseif icon_type == "markdown" then
+  elseif icon_type == 'markdown' then
     draw_markdown_icon(dl, x, y, color)
-  elseif icon_type == "config" then
+  elseif icon_type == 'config' then
     draw_config_icon(dl, x, y, color)
   else
     draw_file_icon(dl, x, y, color)
@@ -666,7 +666,7 @@ local function draw_tree_lines(dl, x, y, depth, item_h, has_children, is_last_ch
 
   local cfg = TREE_CONFIG
   local line_color = cfg.tree_line_color
-  local is_dotted = cfg.tree_line_style == "dotted"
+  local is_dotted = cfg.tree_line_style == 'dotted'
 
   -- Better line positioning - align with arrow center
   local base_x = x - cfg.indent_width / 2
@@ -757,15 +757,15 @@ local function draw_drag_preview(ctx, dl, drag_node, selected_count, is_copy_mod
   local preview_y = my + offset_y
 
   -- VS Code colors
-  local bg_color = hexrgb("#252526E6")  -- Dark semi-transparent
-  local border_color = hexrgb("#454545FF")
-  local text_color = hexrgb("#CCCCCCFF")
-  local badge_bg = hexrgb("#007ACCFF")  -- VS Code blue
-  local badge_text = hexrgb("#FFFFFFFF")
+  local bg_color = hexrgb('#252526E6')  -- Dark semi-transparent
+  local border_color = hexrgb('#454545FF')
+  local text_color = hexrgb('#CCCCCCFF')
+  local badge_bg = hexrgb('#007ACCFF')  -- VS Code blue
+  local badge_text = hexrgb('#FFFFFFFF')
 
   -- Draw shadow (subtle)
   local shadow_offset = 2
-  local shadow_color = hexrgb("#00000040")
+  local shadow_color = hexrgb('#00000040')
   ImGui.DrawList_AddRectFilled(dl,
     preview_x + shadow_offset, preview_y + shadow_offset,
     preview_x + preview_w + shadow_offset, preview_y + preview_h + shadow_offset,
@@ -781,7 +781,7 @@ local function draw_drag_preview(ctx, dl, drag_node, selected_count, is_copy_mod
   local icon_x = preview_x + padding
   local icon_y = preview_y + (preview_h - icon_size) / 2
   local has_children = drag_node.children and #drag_node.children > 0
-  local icon_color = hexrgb("#CCCCCCFF")
+  local icon_color = hexrgb('#CCCCCCFF')
 
   if has_children then
     -- Folder icon (scaled down version)
@@ -840,10 +840,10 @@ local function draw_drag_preview(ctx, dl, drag_node, selected_count, is_copy_mod
     local plus_x = content_end_x + spacing
     local plus_y = preview_y + (preview_h - copy_indicator_size) / 2
     local plus_size = copy_indicator_size
-    local plus_color = hexrgb("#00FF00FF")  -- Green for copy
+    local plus_color = hexrgb('#00FF00FF')  -- Green for copy
 
     -- Draw circle background
-    ImGui.DrawList_AddCircleFilled(dl, plus_x + plus_size/2, plus_y + plus_size/2, plus_size/2, hexrgb("#00000080"))
+    ImGui.DrawList_AddCircleFilled(dl, plus_x + plus_size/2, plus_y + plus_size/2, plus_size/2, hexrgb('#00000080'))
 
     -- Draw + symbol
     local plus_w = plus_size * 0.5
@@ -877,7 +877,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   ImGui.PushID(ctx, node.id)
 
   -- Skip if doesn't match search
-  local search_active = tree_state.search_text ~= ""
+  local search_active = tree_state.search_text ~= ''
   if search_active and not has_matching_children(node, tree_state.search_text) then
     ImGui.PopID(ctx)
     return y_pos, row_index
@@ -904,7 +904,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   local icon_x = arrow_x + cfg.arrow_size + cfg.arrow_margin
   local icon_y = y_pos + (item_h - 9) / 2
   local text_x = icon_x + cfg.icon_width + cfg.icon_margin + cfg.item_padding_left
-  local text_y = y_pos + (item_h - ImGui.CalcTextSize(ctx, "Tg")) / 2
+  local text_y = y_pos + (item_h - ImGui.CalcTextSize(ctx, 'Tg')) / 2
 
   local item_right = visible_x + visible_w - cfg.padding_right
 
@@ -927,7 +927,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
 
   -- Search highlight
   if search_active and matches_search then
-    ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, hexrgb("#4A4A1AFF"))
+    ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, hexrgb('#4A4A1AFF'))
   end
 
   if item_selected then
@@ -947,26 +947,26 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
       end
     end
     if is_being_dragged then
-      -- Semi-transparent white overlay to indicate "being dragged"
-      ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, hexrgb("#FFFFFF18"))
+      -- Semi-transparent white overlay to indicate 'being dragged'
+      ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, hexrgb('#FFFFFF18'))
       -- Subtle border for additional feedback
-      ImGui.DrawList_AddRect(dl, visible_x + 1, y_pos + 1, visible_x + visible_w - 1, y_pos + item_h - 1, hexrgb("#FFFFFF40"), 0, 0, 1)
+      ImGui.DrawList_AddRect(dl, visible_x + 1, y_pos + 1, visible_x + visible_w - 1, y_pos + item_h - 1, hexrgb('#FFFFFF40'), 0, 0, 1)
     end
   end
 
   -- Focused indicator (subtle border)
   if is_focused and not tree_state.editing then
-    ImGui.DrawList_AddRect(dl, visible_x + 1, y_pos, visible_x + visible_w - 1, y_pos + item_h, hexrgb("#6A9EFFAA"), 0, 0, 1)
+    ImGui.DrawList_AddRect(dl, visible_x + 1, y_pos, visible_x + visible_w - 1, y_pos + item_h, hexrgb('#6A9EFFAA'), 0, 0, 1)
   end
 
   -- Drag & drop visual feedback
   if tree_state.drag_active and tree_state.drop_target_id == node.id then
-    local drop_color = hexrgb("#4A9EFFFF")
-    if tree_state.drop_position == "before" then
+    local drop_color = hexrgb('#4A9EFFFF')
+    if tree_state.drop_position == 'before' then
       ImGui.DrawList_AddLine(dl, visible_x, y_pos, visible_x + visible_w, y_pos, drop_color, 2)
-    elseif tree_state.drop_position == "after" then
+    elseif tree_state.drop_position == 'after' then
       ImGui.DrawList_AddLine(dl, visible_x, y_pos + item_h, visible_x + visible_w, y_pos + item_h, drop_color, 2)
-    elseif tree_state.drop_position == "into" then
+    elseif tree_state.drop_position == 'into' then
       ImGui.DrawList_AddRect(dl, visible_x + 2, y_pos + 1, visible_x + visible_w - 2, y_pos + item_h - 1, drop_color, 0, 0, 2)
     end
   end
@@ -986,18 +986,18 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   -- Text or edit field
   if is_editing then
     -- Inline editing (ID scoped by PushID)
-    Ark.InputText.set_text("##edit", tree_state.edit_buffer)
+    Ark.InputText.set_text('##edit', tree_state.edit_buffer)
 
     local available_w = item_right - text_x
     local result = Ark.InputText.draw(ctx, {
-      id = "##edit",
+      id = '##edit',
       x = text_x,
       y = y_pos + 1,
       width = available_w,
       height = item_h - 2,
     })
 
-    tree_state.edit_buffer = Ark.InputText.get_text("##edit") or tree_state.edit_buffer
+    tree_state.edit_buffer = Ark.InputText.get_text('##edit') or tree_state.edit_buffer
 
     if not tree_state.edit_focus_set then
       ImGui.SetKeyboardFocusHere(ctx, -1)
@@ -1006,7 +1006,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
 
     -- Handle enter/escape
     if ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter) then
-      if tree_state.edit_buffer ~= "" then
+      if tree_state.edit_buffer ~= '' then
         node.name = tree_state.edit_buffer
       end
       tree_state.editing = nil
@@ -1026,16 +1026,16 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
       local truncated = node.name
       while text_w > available_w - 10 and #truncated > 3 do
         truncated = truncated:sub(1, -2)
-        text_w = ImGui.CalcTextSize(ctx, truncated .. "...")
+        text_w = ImGui.CalcTextSize(ctx, truncated .. '...')
       end
-      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, truncated .. "...")
+      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, truncated .. '...')
     else
       ImGui.DrawList_AddText(dl, text_x, text_y, text_color, node.name)
     end
 
     -- Invisible button for interaction
     ImGui.SetCursorScreenPos(ctx, visible_x, y_pos)
-    ImGui.InvisibleButton(ctx, "##item", visible_w, item_h)  -- Scoped by PushID
+    ImGui.InvisibleButton(ctx, '##item', visible_w, item_h)  -- Scoped by PushID
 
     -- Tooltip for truncated items
     if is_truncated and ImGui.IsItemHovered(ctx, ImGui.HoveredFlags_DelayNormal) then
@@ -1103,13 +1103,13 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
         local relative_y = my - y_pos
         if relative_y < item_h * 0.25 then
           tree_state.drop_target_id = node.id
-          tree_state.drop_position = "before"
+          tree_state.drop_position = 'before'
         elseif relative_y > item_h * 0.75 then
           tree_state.drop_target_id = node.id
-          tree_state.drop_position = "after"
+          tree_state.drop_position = 'after'
         elseif has_children then
           tree_state.drop_target_id = node.id
-          tree_state.drop_position = "into"
+          tree_state.drop_position = 'into'
         end
       end
     end
@@ -1144,7 +1144,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   local next_row = row_index + 1
 
   -- Debug: Track why children aren't rendering for root
-  if node.id == "root" and depth == 0 then
+  if node.id == 'root' and depth == 0 then
     tree_state.debug_root_open = is_open
     tree_state.debug_root_has_children = has_children
     tree_state.debug_root_child_count = has_children and #node.children or 0
@@ -1153,8 +1153,8 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     tree_state.debug_node_id = node.id
     tree_state.debug_node_name = node.name
     tree_state.debug_children_nil = (node.children == nil)
-    tree_state.debug_children_count = node.children and #node.children or "NIL"
-    tree_state.debug_open_table_root = tree_state.open["root"]
+    tree_state.debug_children_count = node.children and #node.children or 'NIL'
+    tree_state.debug_open_table_root = tree_state.open['root']
     tree_state.debug_open_table_size = 0
     for k, v in pairs(tree_state.open) do
       tree_state.debug_open_table_size = tree_state.debug_open_table_size + 1
@@ -1184,8 +1184,8 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
   local dl = ImGui.GetWindowDrawList(ctx)
   local cfg = TREE_CONFIG
 
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, hexrgb("#1A1A1AFF"))
-  ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, hexrgb("#000000DD"))
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, hexrgb('#1A1A1AFF'))
+  ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, hexrgb('#000000DD'))
 
   -- Mouse wheel scrolling
   if ImGui.IsWindowHovered(ctx) then
@@ -1365,27 +1365,27 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
     -- CTRL+X: Cut
     if ctrl_held and ImGui.IsKeyPressed(ctx, ImGui.Key_X) then
       tree_state.clipboard = get_selected_nodes(nodes)
-      tree_state.clipboard_mode = "cut"
+      tree_state.clipboard_mode = 'cut'
     end
 
     -- CTRL+C: Copy
     if ctrl_held and ImGui.IsKeyPressed(ctx, ImGui.Key_C) then
       tree_state.clipboard = get_selected_nodes(nodes)
-      tree_state.clipboard_mode = "copy"
+      tree_state.clipboard_mode = 'copy'
     end
 
     -- CTRL+V: Paste
     if ctrl_held and ImGui.IsKeyPressed(ctx, ImGui.Key_V) then
       if #tree_state.clipboard > 0 then
         for _, node in ipairs(tree_state.clipboard) do
-          if tree_state.clipboard_mode == "copy" then
+          if tree_state.clipboard_mode == 'copy' then
             nodes[#nodes + 1] = duplicate_node(node)
           else
             -- For cut, would need to remove from original location
             nodes[#nodes + 1] = node
           end
         end
-        if tree_state.clipboard_mode == "cut" then
+        if tree_state.clipboard_mode == 'cut' then
           tree_state.clipboard = {}
           tree_state.clipboard_mode = nil
         end
@@ -1397,7 +1397,7 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
 
     -- Update timeout - clear buffer if timeout exceeded
     if tree_state.type_timeout > 0 and current_time > tree_state.type_timeout then
-      tree_state.type_buffer = ""
+      tree_state.type_buffer = ''
       tree_state.type_timeout = 0
     end
 
@@ -1408,10 +1408,10 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
 
     if no_modifiers then
       -- Check letter keys A-Z
-      local letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      local letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
       for i = 1, #letters do
         local letter = letters:sub(i, i)
-        local key = ImGui["Key_" .. letter]
+        local key = ImGui['Key_' .. letter]
         if key and ImGui.IsKeyPressed(ctx, key) then
           local shift_held = mods & ImGui.Mod_Shift ~= 0
           tree_state.type_buffer = tree_state.type_buffer .. (shift_held and letter or letter:lower())
@@ -1423,10 +1423,10 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
 
       -- Check number keys 0-9 if no letter was pressed
       if not char_captured then
-        local numbers = "0123456789"
+        local numbers = '0123456789'
         for i = 1, #numbers do
           local num = numbers:sub(i, i)
-          local key = ImGui["Key_" .. num]
+          local key = ImGui['Key_' .. num]
           if key and ImGui.IsKeyPressed(ctx, key) then
             tree_state.type_buffer = tree_state.type_buffer .. num
             tree_state.type_timeout = current_time + tree_state.type_timeout_duration
@@ -1439,8 +1439,8 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
       -- Check common punctuation
       if not char_captured then
         local punct_keys = {
-          {ImGui.Key_Space, " "}, {ImGui.Key_Minus, "-"}, {ImGui.Key_Period, "."},
-          {ImGui.Key_Slash, "/"}, {ImGui.Key_Apostrophe, "_"}
+          {ImGui.Key_Space, ' '}, {ImGui.Key_Minus, '-'}, {ImGui.Key_Period, '.'},
+          {ImGui.Key_Slash, '/'}, {ImGui.Key_Apostrophe, '_'}
         }
         for _, pair in ipairs(punct_keys) do
           if ImGui.IsKeyPressed(ctx, pair[1]) then
@@ -1454,7 +1454,7 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
     end
 
     -- Search for matching item if buffer has content
-    if char_captured and tree_state.type_buffer ~= "" and #tree_state.flat_list > 0 then
+    if char_captured and tree_state.type_buffer ~= '' and #tree_state.flat_list > 0 then
       local search_term = tree_state.type_buffer:lower()
 
       -- Find first item that starts with the search term
@@ -1509,7 +1509,7 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
 
         -- Determine target parent (for checking if copying to same location)
         local target_parent_id = nil
-        if tree_state.drop_position == "into" then
+        if tree_state.drop_position == 'into' then
           target_parent_id = target_id
         else
           -- Find parent of target node
@@ -1561,11 +1561,11 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
 
         -- Insert all nodes at target
         for i, node_to_insert in ipairs(nodes_to_insert) do
-          -- Insert in order, adjusting position for "after" to maintain order
+          -- Insert in order, adjusting position for 'after' to maintain order
           local pos = tree_state.drop_position
-          if i > 1 and pos == "after" then
+          if i > 1 and pos == 'after' then
             -- For subsequent items in multi-drag, keep inserting after
-            pos = "after"
+            pos = 'after'
           end
           insert_node_at(nodes, target_id, node_to_insert, pos)
         end
@@ -1644,16 +1644,16 @@ local function draw_context_menu(ctx, nodes)
   if not tree_state.context_menu_open then return end
 
   ImGui.SetNextWindowPos(ctx, tree_state.context_menu_x, tree_state.context_menu_y)
-  if ImGui.BeginPopup(ctx, "##tree_context_menu") then
+  if ImGui.BeginPopup(ctx, '##tree_context_menu') then
     local selected_count = 0
     for _ in pairs(tree_state.selected) do
       selected_count = selected_count + 1
     end
 
-    ImGui.Text(ctx, string.format("%d item(s) selected", selected_count))
+    ImGui.Text(ctx, string.format('%d item(s) selected', selected_count))
     ImGui.Separator(ctx)
 
-    if ImGui.MenuItem(ctx, "Rename (F2)") then
+    if ImGui.MenuItem(ctx, 'Rename (F2)') then
       if tree_state.focused then
         tree_state.editing = tree_state.focused
         local node = find_node_by_id(nodes, tree_state.focused)
@@ -1665,7 +1665,7 @@ local function draw_context_menu(ctx, nodes)
       ImGui.CloseCurrentPopup(ctx)
     end
 
-    if ImGui.MenuItem(ctx, "Duplicate (Ctrl+D)") then
+    if ImGui.MenuItem(ctx, 'Duplicate (Ctrl+D)') then
       local selected_nodes = get_selected_nodes(nodes)
       for _, node in ipairs(selected_nodes) do
         nodes[#nodes + 1] = duplicate_node(node)
@@ -1673,7 +1673,7 @@ local function draw_context_menu(ctx, nodes)
       ImGui.CloseCurrentPopup(ctx)
     end
 
-    if ImGui.MenuItem(ctx, "Delete (Del)") then
+    if ImGui.MenuItem(ctx, 'Delete (Del)') then
       delete_nodes_by_ids(nodes, tree_state.selected)
       clear_selection()
       ImGui.CloseCurrentPopup(ctx)
@@ -1681,27 +1681,27 @@ local function draw_context_menu(ctx, nodes)
 
     ImGui.Separator(ctx)
 
-    if ImGui.MenuItem(ctx, "Cut (Ctrl+X)") then
+    if ImGui.MenuItem(ctx, 'Cut (Ctrl+X)') then
       tree_state.clipboard = get_selected_nodes(nodes)
-      tree_state.clipboard_mode = "cut"
+      tree_state.clipboard_mode = 'cut'
       ImGui.CloseCurrentPopup(ctx)
     end
 
-    if ImGui.MenuItem(ctx, "Copy (Ctrl+C)") then
+    if ImGui.MenuItem(ctx, 'Copy (Ctrl+C)') then
       tree_state.clipboard = get_selected_nodes(nodes)
-      tree_state.clipboard_mode = "copy"
+      tree_state.clipboard_mode = 'copy'
       ImGui.CloseCurrentPopup(ctx)
     end
 
-    if ImGui.MenuItem(ctx, "Paste (Ctrl+V)", nil, false, #tree_state.clipboard > 0) then
+    if ImGui.MenuItem(ctx, 'Paste (Ctrl+V)', nil, false, #tree_state.clipboard > 0) then
       for _, node in ipairs(tree_state.clipboard) do
-        if tree_state.clipboard_mode == "copy" then
+        if tree_state.clipboard_mode == 'copy' then
           nodes[#nodes + 1] = duplicate_node(node)
         else
           nodes[#nodes + 1] = node
         end
       end
-      if tree_state.clipboard_mode == "cut" then
+      if tree_state.clipboard_mode == 'cut' then
         tree_state.clipboard = {}
         tree_state.clipboard_mode = nil
       end
@@ -1710,12 +1710,12 @@ local function draw_context_menu(ctx, nodes)
 
     ImGui.Separator(ctx)
 
-    if ImGui.MenuItem(ctx, "Select All (Ctrl+A)") then
+    if ImGui.MenuItem(ctx, 'Select All (Ctrl+A)') then
       select_all_visible()
       ImGui.CloseCurrentPopup(ctx)
     end
 
-    if ImGui.MenuItem(ctx, "Invert Selection (Ctrl+I)") then
+    if ImGui.MenuItem(ctx, 'Invert Selection (Ctrl+I)') then
       invert_selection()
       ImGui.CloseCurrentPopup(ctx)
     end
@@ -1731,7 +1731,7 @@ end
 -- ============================================================================
 
 local function config_section(ctx, title)
-  ImGui.Text(ctx, "")
+  ImGui.Text(ctx, '')
   ImGui.Text(ctx, title)
   ImGui.Separator(ctx)
 end
@@ -1755,63 +1755,63 @@ end
 -- ============================================================================
 
 Shell.run({
-  title = "Custom TreeView Prototype",
-  version = "v3.5.0",
-  version_color = hexrgb("#888888FF"),
+  title = 'Custom TreeView Prototype',
+  version = 'v3.5.0',
+  version_color = hexrgb('#888888FF'),
   initial_pos = { x = 120, y = 120 },
   initial_size = { w = 700, h = 700 },
   min_size = { w = 600, h = 500 },
-  icon_color = hexrgb("#4A9EFFFF"),
+  icon_color = hexrgb('#4A9EFFFF'),
   icon_size = 18,
 
   draw = function(ctx, shell_state)
-    ImGui.Text(ctx, "Custom TreeView v3.5 - Advanced Tree Control")
-    ImGui.Text(ctx, "Features: Virtual Scrolling • Custom Icons • Drag & Drop Reordering")
-    ImGui.Text(ctx, "Selection: Click • CTRL+Click • SHIFT+Click • CTRL+A • CTRL+I")
-    ImGui.Text(ctx, "Navigation: Arrows • Home/End • PgUp/PgDown • Search • F2/Del/Menu")
+    ImGui.Text(ctx, 'Custom TreeView v3.5 - Advanced Tree Control')
+    ImGui.Text(ctx, 'Features: Virtual Scrolling • Custom Icons • Drag & Drop Reordering')
+    ImGui.Text(ctx, 'Selection: Click • CTRL+Click • SHIFT+Click • CTRL+A • CTRL+I')
+    ImGui.Text(ctx, 'Navigation: Arrows • Home/End • PgUp/PgDown • Search • F2/Del/Menu')
     ImGui.Separator(ctx)
 
     local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
     local left_width = 280
 
-    ImGui.BeginChild(ctx, "config_panel", left_width, 0)
+    ImGui.BeginChild(ctx, 'config_panel', left_width, 0)
 
-    config_section(ctx, "Dimensions")
-    TREE_CONFIG.item_height = slider_int(ctx, "Item Height", TREE_CONFIG.item_height, 14, 28, 200)
-    TREE_CONFIG.indent_width = slider_int(ctx, "Indent Width", TREE_CONFIG.indent_width, 16, 36, 200)
-    TREE_CONFIG.arrow_size = slider_int(ctx, "Arrow Size", TREE_CONFIG.arrow_size, 3, 8, 200)
-    TREE_CONFIG.icon_width = slider_int(ctx, "Icon Width", TREE_CONFIG.icon_width, 10, 20, 200)
+    config_section(ctx, 'Dimensions')
+    TREE_CONFIG.item_height = slider_int(ctx, 'Item Height', TREE_CONFIG.item_height, 14, 28, 200)
+    TREE_CONFIG.indent_width = slider_int(ctx, 'Indent Width', TREE_CONFIG.indent_width, 16, 36, 200)
+    TREE_CONFIG.arrow_size = slider_int(ctx, 'Arrow Size', TREE_CONFIG.arrow_size, 3, 8, 200)
+    TREE_CONFIG.icon_width = slider_int(ctx, 'Icon Width', TREE_CONFIG.icon_width, 10, 20, 200)
 
-    config_section(ctx, "Padding")
-    TREE_CONFIG.padding_left = slider_int(ctx, "Padding Left", TREE_CONFIG.padding_left, 0, 16, 200)
-    TREE_CONFIG.padding_top = slider_int(ctx, "Padding Top", TREE_CONFIG.padding_top, 0, 16, 200)
-    TREE_CONFIG.item_padding_left = slider_int(ctx, "Item Pad L", TREE_CONFIG.item_padding_left, 0, 8, 200)
+    config_section(ctx, 'Padding')
+    TREE_CONFIG.padding_left = slider_int(ctx, 'Padding Left', TREE_CONFIG.padding_left, 0, 16, 200)
+    TREE_CONFIG.padding_top = slider_int(ctx, 'Padding Top', TREE_CONFIG.padding_top, 0, 16, 200)
+    TREE_CONFIG.item_padding_left = slider_int(ctx, 'Item Pad L', TREE_CONFIG.item_padding_left, 0, 8, 200)
 
-    config_section(ctx, "Tree Lines")
-    TREE_CONFIG.show_tree_lines = checkbox(ctx, "Show Lines", TREE_CONFIG.show_tree_lines)
+    config_section(ctx, 'Tree Lines')
+    TREE_CONFIG.show_tree_lines = checkbox(ctx, 'Show Lines', TREE_CONFIG.show_tree_lines)
     if TREE_CONFIG.show_tree_lines then
       ImGui.Indent(ctx, 20)
-      TREE_CONFIG.tree_line_thickness = slider_int(ctx, "Thickness", TREE_CONFIG.tree_line_thickness, 1, 3, 160)
+      TREE_CONFIG.tree_line_thickness = slider_int(ctx, 'Thickness', TREE_CONFIG.tree_line_thickness, 1, 3, 160)
 
-      ImGui.Text(ctx, "Style:")
+      ImGui.Text(ctx, 'Style:')
       ImGui.SameLine(ctx)
-      if ImGui.RadioButton(ctx, "Solid##style", TREE_CONFIG.tree_line_style == "solid") then
-        TREE_CONFIG.tree_line_style = "solid"
+      if ImGui.RadioButton(ctx, 'Solid##style', TREE_CONFIG.tree_line_style == 'solid') then
+        TREE_CONFIG.tree_line_style = 'solid'
       end
       ImGui.SameLine(ctx)
-      if ImGui.RadioButton(ctx, "Dotted##style", TREE_CONFIG.tree_line_style == "dotted") then
-        TREE_CONFIG.tree_line_style = "dotted"
+      if ImGui.RadioButton(ctx, 'Dotted##style', TREE_CONFIG.tree_line_style == 'dotted') then
+        TREE_CONFIG.tree_line_style = 'dotted'
       end
 
-      if TREE_CONFIG.tree_line_style == "dotted" then
-        TREE_CONFIG.tree_line_dot_spacing = slider_int(ctx, "Dot Spacing", TREE_CONFIG.tree_line_dot_spacing, 1, 5, 160)
+      if TREE_CONFIG.tree_line_style == 'dotted' then
+        TREE_CONFIG.tree_line_dot_spacing = slider_int(ctx, 'Dot Spacing', TREE_CONFIG.tree_line_dot_spacing, 1, 5, 160)
       end
       ImGui.Unindent(ctx, 20)
     end
-    TREE_CONFIG.show_alternating_bg = checkbox(ctx, "Alternating Rows", TREE_CONFIG.show_alternating_bg)
+    TREE_CONFIG.show_alternating_bg = checkbox(ctx, 'Alternating Rows', TREE_CONFIG.show_alternating_bg)
 
-    config_section(ctx, "Actions")
-    if ImGui.Button(ctx, "Expand All", 120, 24) then
+    config_section(ctx, 'Actions')
+    if ImGui.Button(ctx, 'Expand All', 120, 24) then
       for _, node in ipairs(mock_tree) do
         local function expand_all(n)
           tree_state.open[n.id] = true
@@ -1826,7 +1826,7 @@ Shell.run({
     end
 
     ImGui.SameLine(ctx)
-    if ImGui.Button(ctx, "Collapse All", 120, 24) then
+    if ImGui.Button(ctx, 'Collapse All', 120, 24) then
       tree_state.open = { root = true }
     end
 
@@ -1835,19 +1835,19 @@ Shell.run({
     ImGui.SameLine(ctx)
 
     -- Right side: Tree view
-    ImGui.BeginChild(ctx, "tree_container", 0, 0)
+    ImGui.BeginChild(ctx, 'tree_container', 0, 0)
 
     local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
 
     -- Search bar at top
     ImGui.SetNextItemWidth(ctx, avail_w - 100)
-    local search_changed, new_search = ImGui.InputText(ctx, "##search", tree_state.search_text)
+    local search_changed, new_search = ImGui.InputText(ctx, '##search', tree_state.search_text)
     if search_changed then
       tree_state.search_text = new_search
     end
     ImGui.SameLine(ctx)
-    if ImGui.Button(ctx, "Clear", 90, 0) then
-      tree_state.search_text = ""
+    if ImGui.Button(ctx, 'Clear', 90, 0) then
+      tree_state.search_text = ''
     end
 
     local tree_x, tree_y = ImGui.GetCursorScreenPos(ctx)
@@ -1857,7 +1857,7 @@ Shell.run({
 
     -- Context menu
     if tree_state.context_menu_open then
-      ImGui.OpenPopup(ctx, "##tree_context_menu")
+      ImGui.OpenPopup(ctx, '##tree_context_menu')
     end
     draw_context_menu(ctx, mock_tree)
 
@@ -1873,46 +1873,46 @@ Shell.run({
       selected_ids[#selected_ids + 1] = id
     end
 
-    local selected_text = "None"
+    local selected_text = 'None'
     if selected_count == 1 then
       selected_text = selected_ids[1]
     elseif selected_count > 1 then
-      selected_text = string.format("%d items", selected_count)
+      selected_text = string.format('%d items', selected_count)
     end
 
     -- Debug info
-    ImGui.Text(ctx, string.format("Selected: %s  |  Focused: %s  |  Editing: %s  |  Hovered: %s",
+    ImGui.Text(ctx, string.format('Selected: %s  |  Focused: %s  |  Editing: %s  |  Hovered: %s',
       selected_text,
-      tree_state.focused or "None",
-      tree_state.editing or "None",
-      tree_state.hovered or "None"))
+      tree_state.focused or 'None',
+      tree_state.editing or 'None',
+      tree_state.hovered or 'None'))
 
     -- Debug: Show tree structure info
-    ImGui.Text(ctx, string.format("Tree nodes: %d  |  Flat list: %d  |  Scroll: %.1f",
+    ImGui.Text(ctx, string.format('Tree nodes: %d  |  Flat list: %d  |  Scroll: %.1f',
       #mock_tree,
       #tree_state.flat_list,
       tree_state.scroll_y))
 
-    ImGui.Text(ctx, string.format("Root: %s (children: %d)  |  src open: %s",
-      mock_tree[1] and mock_tree[1].name or "nil",
+    ImGui.Text(ctx, string.format('Root: %s (children: %d)  |  src open: %s',
+      mock_tree[1] and mock_tree[1].name or 'nil',
       mock_tree[1] and mock_tree[1].children and #mock_tree[1].children or 0,
-      tree_state.open["src"] and "yes" or "no"))
+      tree_state.open['src'] and 'yes' or 'no'))
 
     -- More detailed debug
     if #tree_state.flat_list <= 1 then
-      ImGui.TextColored(ctx, 0xFF0000FF, "WARNING: Only root in flat_list! Children not rendering!")
-      ImGui.Text(ctx, string.format("Debug: is_open=%s | has_children=%s | child_count=%s",
-        tree_state.debug_root_open and "TRUE" or "FALSE",
-        tree_state.debug_root_has_children and "TRUE" or "FALSE",
+      ImGui.TextColored(ctx, 0xFF0000FF, 'WARNING: Only root in flat_list! Children not rendering!')
+      ImGui.Text(ctx, string.format('Debug: is_open=%s | has_children=%s | child_count=%s',
+        tree_state.debug_root_open and 'TRUE' or 'FALSE',
+        tree_state.debug_root_has_children and 'TRUE' or 'FALSE',
         tostring(tree_state.debug_root_child_count or 0)))
 
-      ImGui.Text(ctx, string.format("Node: id=%s name=%s",
-        tree_state.debug_node_id or "NIL",
-        tree_state.debug_node_name or "NIL"))
+      ImGui.Text(ctx, string.format('Node: id=%s name=%s',
+        tree_state.debug_node_id or 'NIL',
+        tree_state.debug_node_name or 'NIL'))
 
-      ImGui.Text(ctx, string.format("Children: nil=%s count=%s | open_table[root]=%s table_size=%d",
-        tree_state.debug_children_nil and "YES" or "NO",
-        tostring(tree_state.debug_children_count or "?"),
+      ImGui.Text(ctx, string.format('Children: nil=%s count=%s | open_table[root]=%s table_size=%d',
+        tree_state.debug_children_nil and 'YES' or 'NO',
+        tostring(tree_state.debug_children_count or '?'),
         tostring(tree_state.debug_open_table_root),
         tree_state.debug_open_table_size or 0))
     end

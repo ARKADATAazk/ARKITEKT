@@ -36,9 +36,9 @@ function M.add_to_queue(state, templates)
   state.fx_queue.complete = (added == 0)  -- If nothing to parse, mark as complete
 
   if added > 0 then
-    Logger.debug("FXQUEUE", "Added %d templates for parsing (%d cached)", added, #templates - added)
+    Logger.debug('FXQUEUE', 'Added %d templates for parsing (%d cached)', added, #templates - added)
   else
-    Logger.debug("FXQUEUE", "All templates cached, no parsing needed")
+    Logger.debug('FXQUEUE', 'All templates cached, no parsing needed')
   end
 end
 
@@ -67,9 +67,9 @@ function M.process_batch(state, batch_size)
       state.metadata.templates[tmpl.uuid].fx = fx_list
       -- Ensure file_size is stored (should already be set during scan, but just to be safe)
       if not state.metadata.templates[tmpl.uuid].file_size then
-        local file_handle = io.open(tmpl.path, "r")
+        local file_handle = io.open(tmpl.path, 'r')
         if file_handle then
-          file_handle:seek("end")
+          file_handle:seek('end')
           state.metadata.templates[tmpl.uuid].file_size = file_handle:seek()
           file_handle:close()
         end
@@ -83,7 +83,7 @@ function M.process_batch(state, batch_size)
   -- Check if complete
   if state.fx_queue.index >= state.fx_queue.total then
     state.fx_queue.complete = true
-    Logger.info("FXQUEUE", "Parsing complete!")
+    Logger.info('FXQUEUE', 'Parsing complete!')
 
     -- Save metadata with updated FX
     if state.metadata then
@@ -119,10 +119,10 @@ end
 -- Get status string for UI
 function M.get_status(state)
   if not state.fx_queue or state.fx_queue.complete then
-    return ""
+    return ''
   end
 
-  return string.format("Parsing VSTs: %d/%d", state.fx_queue.index, state.fx_queue.total)
+  return string.format('Parsing VSTs: %d/%d', state.fx_queue.index, state.fx_queue.total)
 end
 
 return M

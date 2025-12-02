@@ -39,13 +39,13 @@ M.modified_keys = {}
 
 -- Category order (matches theme.lua structure)
 local CATEGORY_ORDER = {
-  "BG", "BORDER", "ACCENT", "TEXT", "PATTERN",
-  "TILE", "BADGE", "PLAYLIST", "OP", "BUTTON"
+  'BG', 'BORDER', 'ACCENT', 'TEXT', 'PATTERN',
+  'TILE', 'BADGE', 'PLAYLIST', 'OP', 'BUTTON'
 }
 
 -- UI state
 M.scroll_y = 0
-M.filter_text = ""
+M.filter_text = ''
 M.show_only_modified = false
 M.show_script_column = false  -- Toggle for two-column view
 M.selected_script = nil       -- Currently selected script for column view
@@ -70,13 +70,13 @@ end
 
 --- Apply an override to a palette key
 --- @param key string Palette key
---- @param field string "dark" or "light"
+--- @param field string 'dark' or 'light'
 --- @param value any New value
 function M.set_override(key, field, value)
   if not M.overrides[key] then
     -- Initialize from original definition
     local def = Palette.colors[key]
-    if def and type(def) == "table" and def.mode then
+    if def and type(def) == 'table' and def.mode then
       M.overrides[key] = {
         mode = def.mode,
         dark = def.dark,
@@ -177,14 +177,14 @@ function M.validate()
   local valid_modes = { bg = true, lerp = true, offset = true, snap = true }
 
   for key, def in pairs(Palette.colors) do
-    if type(def) == "table" and def.mode then
+    if type(def) == 'table' and def.mode then
       if not valid_modes[def.mode] then
         errors[#errors + 1] = string.format(
           "colors.%s has invalid mode '%s'",
           key, tostring(def.mode)
         )
       end
-      if def.mode ~= "bg" then
+      if def.mode ~= 'bg' then
         if def.dark == nil then
           errors[#errors + 1] = string.format("colors.%s missing 'dark' value", key)
         end
@@ -192,7 +192,7 @@ function M.validate()
           errors[#errors + 1] = string.format("colors.%s missing 'light' value", key)
         end
       end
-    elseif type(def) ~= "table" then
+    elseif type(def) ~= 'table' then
       errors[#errors + 1] = string.format(
         "colors.%s is raw value '%s' (missing DSL wrapper?)",
         key, tostring(def)
@@ -201,7 +201,7 @@ function M.validate()
   end
 
   if #errors > 0 then
-    return false, table.concat(errors, "\n")
+    return false, table.concat(errors, '\n')
   end
   return true, nil
 end
@@ -215,7 +215,7 @@ function M.get_validation_summary()
     valid = valid,
     error_message = err,
     color_count = count,
-    error_count = err and select(2, err:gsub("\n", "\n")) + 1 or 0,
+    error_count = err and select(2, err:gsub('\n', '\n')) + 1 or 0,
   }
 end
 
@@ -225,12 +225,12 @@ end
 
 --- Format a value for Lua export
 local function format_value(val)
-  if type(val) == "string" then
-    return string.format('"%s"', val)
-  elseif type(val) == "number" then
+  if type(val) == 'string' then
+    return string.format(''%s'', val)
+  elseif type(val) == 'number' then
     -- Format nicely: remove trailing zeros
-    local formatted = string.format("%.4f", val):gsub("%.?0+$", "")
-    if formatted == "" or formatted == "-" then formatted = "0" end
+    local formatted = string.format('%.4f', val):gsub('%.?0+$', '')
+    if formatted == '' or formatted == '-' then formatted = '0' end
     return formatted
   else
     return tostring(val)
@@ -240,7 +240,7 @@ end
 --- Export global palette as Lua DSL code
 function M.export_global_as_lua()
   local lines = {}
-  lines[#lines + 1] = "M.colors = {"
+  lines[#lines + 1] = 'M.colors = {'
 
   -- Group by category (based on prefix)
   local categories = {}
@@ -254,9 +254,9 @@ function M.export_global_as_lua()
 
   for _, key in ipairs(all_keys) do
     local def = M.overrides[key] or Palette.colors[key]
-    if type(def) == "table" and def.mode then
+    if type(def) == 'table' and def.mode then
       -- Find category
-      local cat = "OTHER"
+      local cat = 'OTHER'
       for _, prefix in ipairs(CATEGORY_ORDER) do
         if key:sub(1, #prefix) == prefix then
           cat = prefix
@@ -272,28 +272,28 @@ function M.export_global_as_lua()
   -- Output by category
   for _, cat in ipairs(CATEGORY_ORDER) do
     if categories[cat] and #categories[cat] > 0 then
-      lines[#lines + 1] = ""
-      lines[#lines + 1] = string.format("  -- === %s ===", cat)
+      lines[#lines + 1] = ''
+      lines[#lines + 1] = string.format('  -- === %s ===', cat)
 
       for _, item in ipairs(categories[cat]) do
         local key, def = item.key, item.def
-        local modified = M.modified_keys[key] and " -- MODIFIED" or ""
+        local modified = M.modified_keys[key] and ' -- MODIFIED' or ''
 
-        if def.mode == "bg" then
-          lines[#lines + 1] = string.format("  %s = bg(),%s", key, modified)
-        elseif def.mode == "lerp" then
-          lines[#lines + 1] = string.format("  %s = lerp(%s, %s),%s",
+        if def.mode == 'bg' then
+          lines[#lines + 1] = string.format('  %s = bg(),%s', key, modified)
+        elseif def.mode == 'lerp' then
+          lines[#lines + 1] = string.format('  %s = lerp(%s, %s),%s',
             key, format_value(def.dark), format_value(def.light), modified)
-        elseif def.mode == "offset" then
+        elseif def.mode == 'offset' then
           if def.dark == def.light then
-            lines[#lines + 1] = string.format("  %s = offset(%s),%s",
+            lines[#lines + 1] = string.format('  %s = offset(%s),%s',
               key, format_value(def.dark), modified)
           else
-            lines[#lines + 1] = string.format("  %s = offset(%s, %s),%s",
+            lines[#lines + 1] = string.format('  %s = offset(%s, %s),%s',
               key, format_value(def.dark), format_value(def.light), modified)
           end
-        elseif def.mode == "snap" then
-          lines[#lines + 1] = string.format("  %s = snap(%s, %s),%s",
+        elseif def.mode == 'snap' then
+          lines[#lines + 1] = string.format('  %s = snap(%s, %s),%s',
             key, format_value(def.dark), format_value(def.light), modified)
         end
       end
@@ -302,34 +302,34 @@ function M.export_global_as_lua()
 
   -- Handle OTHER category
   if categories.OTHER and #categories.OTHER > 0 then
-    lines[#lines + 1] = ""
-    lines[#lines + 1] = "  -- === OTHER ==="
+    lines[#lines + 1] = ''
+    lines[#lines + 1] = '  -- === OTHER ==='
     for _, item in ipairs(categories.OTHER) do
       local key, def = item.key, item.def
-      local modified = M.modified_keys[key] and " -- MODIFIED" or ""
-      if def.mode == "lerp" then
-        lines[#lines + 1] = string.format("  %s = lerp(%s, %s),%s",
+      local modified = M.modified_keys[key] and ' -- MODIFIED' or ''
+      if def.mode == 'lerp' then
+        lines[#lines + 1] = string.format('  %s = lerp(%s, %s),%s',
           key, format_value(def.dark), format_value(def.light), modified)
-      elseif def.mode == "snap" then
-        lines[#lines + 1] = string.format("  %s = snap(%s, %s),%s",
+      elseif def.mode == 'snap' then
+        lines[#lines + 1] = string.format('  %s = snap(%s, %s),%s',
           key, format_value(def.dark), format_value(def.light), modified)
       end
     end
   end
 
-  lines[#lines + 1] = "}"
+  lines[#lines + 1] = '}'
 
-  return table.concat(lines, "\n")
+  return table.concat(lines, '\n')
 end
 
 --- Export only modified values as Lua
 function M.export_modified_as_lua()
   if not next(M.modified_keys) then
-    return "-- No modifications"
+    return '-- No modifications'
   end
 
   local lines = {}
-  lines[#lines + 1] = "-- Modified values only:"
+  lines[#lines + 1] = '-- Modified values only:'
 
   local sorted_keys = {}
   for key in pairs(M.modified_keys) do
@@ -340,25 +340,25 @@ function M.export_modified_as_lua()
   for _, key in ipairs(sorted_keys) do
     local def = M.overrides[key]
     if def then
-      if def.mode == "lerp" then
-        lines[#lines + 1] = string.format("  %s = lerp(%s, %s),",
+      if def.mode == 'lerp' then
+        lines[#lines + 1] = string.format('  %s = lerp(%s, %s),',
           key, format_value(def.dark), format_value(def.light))
-      elseif def.mode == "offset" then
+      elseif def.mode == 'offset' then
         if def.dark == def.light then
-          lines[#lines + 1] = string.format("  %s = offset(%s),",
+          lines[#lines + 1] = string.format('  %s = offset(%s),',
             key, format_value(def.dark))
         else
-          lines[#lines + 1] = string.format("  %s = offset(%s, %s),",
+          lines[#lines + 1] = string.format('  %s = offset(%s, %s),',
             key, format_value(def.dark), format_value(def.light))
         end
-      elseif def.mode == "snap" then
-        lines[#lines + 1] = string.format("  %s = snap(%s, %s),",
+      elseif def.mode == 'snap' then
+        lines[#lines + 1] = string.format('  %s = snap(%s, %s),',
           key, format_value(def.dark), format_value(def.light))
       end
     end
   end
 
-  return table.concat(lines, "\n")
+  return table.concat(lines, '\n')
 end
 
 --- Copy text to clipboard (REAPER)
@@ -376,7 +376,7 @@ end
 
 --- Draw a slider for a numeric value
 local function draw_slider(ctx, ImGui, label, value, min_val, max_val, format)
-  format = format or "%.3f"
+  format = format or '%.3f'
   ImGui.SetNextItemWidth(ctx, 120)
   local changed, new_val = ImGui.SliderDouble(ctx, label, value, min_val, max_val, format)
   return changed, new_val
@@ -397,7 +397,7 @@ end
 --- Parse hex string to simple 0xRRGGBB (no alpha)
 local function hex_to_rgb(hex)
   if not hex then return 0x808080 end
-  local h = hex:gsub("#", "")
+  local h = hex:gsub('#', '')
   -- If 8-char hex (RRGGBBAA), strip alpha
   if #h == 8 then h = h:sub(1, 6) end
   return tonumber(h, 16) or 0x808080
@@ -405,7 +405,7 @@ end
 
 --- Format 0xRRGGBB to hex string
 local function rgb_to_hex(color_int)
-  return string.format("#%06X", color_int & 0xFFFFFF)
+  return string.format('#%06X', color_int & 0xFFFFFF)
 end
 
 --- Draw a color picker for a hex string
@@ -431,7 +431,7 @@ end
 --- Draw editor for a single DSL entry
 local function draw_entry_editor(ctx, ImGui, key, original_def, current_def)
   local def = current_def or original_def
-  if type(def) ~= "table" or not def.mode then return end
+  if type(def) ~= 'table' or not def.mode then return end
 
   local modified = M.modified_keys[key]
   local mode = def.mode
@@ -446,53 +446,53 @@ local function draw_entry_editor(ctx, ImGui, key, original_def, current_def)
   end
 
   ImGui.SameLine(ctx, 200)
-  ImGui.TextDisabled(ctx, string.format("[%s]", mode))
+  ImGui.TextDisabled(ctx, string.format('[%s]', mode))
 
-  if mode == "bg" then
+  if mode == 'bg' then
     ImGui.SameLine(ctx)
-    ImGui.TextDisabled(ctx, "(passthrough)")
+    ImGui.TextDisabled(ctx, '(passthrough)')
 
-  elseif mode == "offset" then
+  elseif mode == 'offset' then
     ImGui.SameLine(ctx)
 
     -- Dark offset
-    local changed_d, new_d = draw_slider(ctx, ImGui, "##dark", def.dark or 0, -0.5, 0.5, "D:%+.3f")
-    if changed_d then M.set_override(key, "dark", new_d) end
+    local changed_d, new_d = draw_slider(ctx, ImGui, '##dark', def.dark or 0, -0.5, 0.5, 'D:%+.3f')
+    if changed_d then M.set_override(key, 'dark', new_d) end
 
     ImGui.SameLine(ctx)
-    ImGui.Text(ctx, "/")
+    ImGui.Text(ctx, '/')
     ImGui.SameLine(ctx)
 
     -- Light offset
-    local changed_l, new_l = draw_slider(ctx, ImGui, "##light", def.light or 0, -0.5, 0.5, "L:%+.3f")
-    if changed_l then M.set_override(key, "light", new_l) end
+    local changed_l, new_l = draw_slider(ctx, ImGui, '##light', def.light or 0, -0.5, 0.5, 'L:%+.3f')
+    if changed_l then M.set_override(key, 'light', new_l) end
 
-  elseif mode == "snap" or mode == "lerp" then
+  elseif mode == 'snap' or mode == 'lerp' then
     ImGui.SameLine(ctx)
 
     -- Get appropriate range for this key
     local range_min, range_max = get_slider_range(key)
 
     -- Dark value
-    if type(def.dark) == "string" then
-      local changed, new_val = draw_color_picker(ctx, ImGui, "##dark", def.dark)
-      if changed then M.set_override(key, "dark", new_val) end
-    elseif type(def.dark) == "number" then
-      local changed, new_val = draw_slider(ctx, ImGui, "##dark", def.dark, range_min, range_max, "D:%.3f")
-      if changed then M.set_override(key, "dark", new_val) end
+    if type(def.dark) == 'string' then
+      local changed, new_val = draw_color_picker(ctx, ImGui, '##dark', def.dark)
+      if changed then M.set_override(key, 'dark', new_val) end
+    elseif type(def.dark) == 'number' then
+      local changed, new_val = draw_slider(ctx, ImGui, '##dark', def.dark, range_min, range_max, 'D:%.3f')
+      if changed then M.set_override(key, 'dark', new_val) end
     end
 
     ImGui.SameLine(ctx)
-    ImGui.Text(ctx, "|")
+    ImGui.Text(ctx, '|')
     ImGui.SameLine(ctx)
 
     -- Light value
-    if type(def.light) == "string" then
-      local changed, new_val = draw_color_picker(ctx, ImGui, "##light", def.light)
-      if changed then M.set_override(key, "light", new_val) end
-    elseif type(def.light) == "number" then
-      local changed, new_val = draw_slider(ctx, ImGui, "##light", def.light, range_min, range_max, "L:%.3f")
-      if changed then M.set_override(key, "light", new_val) end
+    if type(def.light) == 'string' then
+      local changed, new_val = draw_color_picker(ctx, ImGui, '##light', def.light)
+      if changed then M.set_override(key, 'light', new_val) end
+    elseif type(def.light) == 'number' then
+      local changed, new_val = draw_slider(ctx, ImGui, '##light', def.light, range_min, range_max, 'L:%.3f')
+      if changed then M.set_override(key, 'light', new_val) end
     end
 
   end
@@ -500,7 +500,7 @@ local function draw_entry_editor(ctx, ImGui, key, original_def, current_def)
   -- Reset button for modified entries
   if modified then
     ImGui.SameLine(ctx)
-    if ImGui.SmallButton(ctx, "Reset##" .. key) then
+    if ImGui.SmallButton(ctx, 'Reset##' .. key) then
       M.clear_override(key)
     end
   end
@@ -520,19 +520,19 @@ function M.render_debug_window(ctx, ImGui, state)
   -- Window setup - style is already pushed by shell
   ImGui.SetNextWindowSize(ctx, 750, 650, ImGui.Cond_FirstUseEver)
 
-  local visible, open = ImGui.Begin(ctx, "Theme Debugger", true)
+  local visible, open = ImGui.Begin(ctx, 'Theme Debugger', true)
   if visible then
     -- Header info
-    ImGui.Text(ctx, string.format("Mode: %s | Lightness: %.3f | t: %.3f",
-      current_mode or "nil", lightness, t))
+    ImGui.Text(ctx, string.format('Mode: %s | Lightness: %.3f | t: %.3f',
+      current_mode or 'nil', lightness, t))
 
     -- Validation status
     local valid, err = M.validate()
     ImGui.SameLine(ctx)
     if valid then
-      ImGui.TextColored(ctx, 0x4CAF50FF, "[Valid]")
+      ImGui.TextColored(ctx, 0x4CAF50FF, '[Valid]')
     else
-      ImGui.TextColored(ctx, 0xEF5350FF, "[Errors]")
+      ImGui.TextColored(ctx, 0xEF5350FF, '[Errors]')
       if ImGui.IsItemHovered(ctx) then
         ImGui.SetTooltip(ctx, err)
       end
@@ -543,46 +543,46 @@ function M.render_debug_window(ctx, ImGui, state)
     for _ in pairs(M.modified_keys) do mod_count = mod_count + 1 end
     if mod_count > 0 then
       ImGui.SameLine(ctx)
-      ImGui.TextColored(ctx, 0xFFAA00FF, string.format("[%d modified]", mod_count))
+      ImGui.TextColored(ctx, 0xFFAA00FF, string.format('[%d modified]', mod_count))
     end
 
     ImGui.Separator(ctx)
 
     -- Toolbar
-    if ImGui.Button(ctx, "Copy All as Lua") then
+    if ImGui.Button(ctx, 'Copy All as Lua') then
       local lua_code = M.export_global_as_lua()
       if copy_to_clipboard(lua_code) then
-        reaper.ShowConsoleMsg("Theme Debugger: Copied to clipboard!\n")
+        reaper.ShowConsoleMsg('Theme Debugger: Copied to clipboard!\n')
       end
     end
 
     ImGui.SameLine(ctx)
-    if ImGui.Button(ctx, "Copy Modified") then
+    if ImGui.Button(ctx, 'Copy Modified') then
       local lua_code = M.export_modified_as_lua()
       if copy_to_clipboard(lua_code) then
-        reaper.ShowConsoleMsg("Theme Debugger: Modified values copied!\n")
+        reaper.ShowConsoleMsg('Theme Debugger: Modified values copied!\n')
       end
     end
 
     ImGui.SameLine(ctx)
     if mod_count > 0 then
-      if ImGui.Button(ctx, "Reset All") then
+      if ImGui.Button(ctx, 'Reset All') then
         M.clear_all_overrides()
       end
     else
       ImGui.BeginDisabled(ctx)
-      ImGui.Button(ctx, "Reset All")
+      ImGui.Button(ctx, 'Reset All')
       ImGui.EndDisabled(ctx)
     end
 
     ImGui.SameLine(ctx)
-    ImGui.Text(ctx, "  ")
+    ImGui.Text(ctx, '  ')
     ImGui.SameLine(ctx)
-    local _, show_mod = ImGui.Checkbox(ctx, "Show modified only", M.show_only_modified)
+    local _, show_mod = ImGui.Checkbox(ctx, 'Show modified only', M.show_only_modified)
     M.show_only_modified = show_mod
 
     ImGui.SameLine(ctx)
-    local _, show_scripts = ImGui.Checkbox(ctx, "Script column", M.show_script_column)
+    local _, show_scripts = ImGui.Checkbox(ctx, 'Script column', M.show_script_column)
     M.show_script_column = show_scripts
 
     -- Script selector (when script column enabled)
@@ -610,8 +610,8 @@ function M.render_debug_window(ctx, ImGui, state)
         end
       end
 
-      local combo_items = table.concat(script_names, "\0") .. "\0"
-      local changed, new_idx = ImGui.Combo(ctx, "##script_select", current_idx, combo_items)
+      local combo_items = table.concat(script_names, '\0') .. '\0'
+      local changed, new_idx = ImGui.Combo(ctx, '##script_select', current_idx, combo_items)
       if changed then
         M.selected_script = script_names[new_idx]
       end
@@ -621,16 +621,16 @@ function M.render_debug_window(ctx, ImGui, state)
 
     -- Filter
     ImGui.SetNextItemWidth(ctx, 200)
-    local _, filter = ImGui.InputText(ctx, "Filter", M.filter_text)
+    local _, filter = ImGui.InputText(ctx, 'Filter', M.filter_text)
     M.filter_text = filter
 
     ImGui.Separator(ctx)
 
     -- Scrollable content
-    if ImGui.BeginChild(ctx, "palette_list", 0, 0, 0) then
+    if ImGui.BeginChild(ctx, 'palette_list', 0, 0, 0) then
 
       -- Global palette section
-      local global_open = ImGui.CollapsingHeader(ctx, "Global Theme Colors", ImGui.TreeNodeFlags_DefaultOpen)
+      local global_open = ImGui.CollapsingHeader(ctx, 'Global Theme Colors', ImGui.TreeNodeFlags_DefaultOpen)
       if global_open then
         -- Collect keys by category (matching theme.lua order)
         local categories = {}
@@ -638,7 +638,7 @@ function M.render_debug_window(ctx, ImGui, state)
           local include = true
 
           -- Filter check
-          if M.filter_text ~= "" then
+          if M.filter_text ~= '' then
             include = key:lower():find(M.filter_text:lower(), 1, true) ~= nil
           end
 
@@ -649,7 +649,7 @@ function M.render_debug_window(ctx, ImGui, state)
 
           if include then
             -- Find category
-            local cat = "OTHER"
+            local cat = 'OTHER'
             for _, prefix in ipairs(CATEGORY_ORDER) do
               if key:sub(1, #prefix) == prefix then
                 cat = prefix
@@ -676,7 +676,7 @@ function M.render_debug_window(ctx, ImGui, state)
         local total_keys = 0
         for _, cat in ipairs(CATEGORY_ORDER) do
           if categories[cat] and #categories[cat] > 0 then
-            ImGui.TextDisabled(ctx, "-- " .. cat .. " --")
+            ImGui.TextDisabled(ctx, '-- ' .. cat .. ' --')
             for _, key in ipairs(categories[cat]) do
               local original = Palette.colors[key]
               local current = M.overrides[key]
@@ -685,17 +685,17 @@ function M.render_debug_window(ctx, ImGui, state)
               -- Show script override indicator if script has this key
               if script_palette and script_palette[key] then
                 ImGui.SameLine(ctx)
-                ImGui.TextColored(ctx, 0x4CAF50FF, "[S]")
+                ImGui.TextColored(ctx, 0x4CAF50FF, '[S]')
                 if ImGui.IsItemHovered(ctx) then
                   local script_def = script_palette[key]
-                  local tip = string.format("Script override: %s", M.selected_script)
-                  if type(script_def) == "table" and script_def.mode then
-                    tip = tip .. string.format("\nMode: %s", script_def.mode)
+                  local tip = string.format('Script override: %s', M.selected_script)
+                  if type(script_def) == 'table' and script_def.mode then
+                    tip = tip .. string.format('\nMode: %s', script_def.mode)
                     if script_def.dark then
-                      tip = tip .. string.format("\nDark: %s", format_value(script_def.dark))
+                      tip = tip .. string.format('\nDark: %s', format_value(script_def.dark))
                     end
                     if script_def.light then
-                      tip = tip .. string.format("\nLight: %s", format_value(script_def.light))
+                      tip = tip .. string.format('\nLight: %s', format_value(script_def.light))
                     end
                   end
                   ImGui.SetTooltip(ctx, tip)
@@ -710,7 +710,7 @@ function M.render_debug_window(ctx, ImGui, state)
 
         -- Handle OTHER category
         if categories.OTHER and #categories.OTHER > 0 then
-          ImGui.TextDisabled(ctx, "-- OTHER --")
+          ImGui.TextDisabled(ctx, '-- OTHER --')
           for _, key in ipairs(categories.OTHER) do
             local original = Palette.colors[key]
             local current = M.overrides[key]
@@ -719,7 +719,7 @@ function M.render_debug_window(ctx, ImGui, state)
             -- Show script override indicator
             if script_palette and script_palette[key] then
               ImGui.SameLine(ctx)
-              ImGui.TextColored(ctx, 0x4CAF50FF, "[S]")
+              ImGui.TextColored(ctx, 0x4CAF50FF, '[S]')
             end
 
             total_keys = total_keys + 1
@@ -727,7 +727,7 @@ function M.render_debug_window(ctx, ImGui, state)
         end
 
         if total_keys == 0 then
-          ImGui.TextDisabled(ctx, "(no matching entries)")
+          ImGui.TextDisabled(ctx, '(no matching entries)')
         end
       end
 
@@ -735,12 +735,12 @@ function M.render_debug_window(ctx, ImGui, state)
 
       -- Script palettes
       for script_name, palette_def in pairs(Registry.script_palettes) do
-        local header = string.format("Script: %s", script_name)
+        local header = string.format('Script: %s', script_name)
         if ImGui.CollapsingHeader(ctx, header) then
           local keys = {}
           for key in pairs(palette_def) do
             local include = true
-            if M.filter_text ~= "" then
+            if M.filter_text ~= '' then
               include = key:lower():find(M.filter_text:lower(), 1, true) ~= nil
             end
             if include then
@@ -751,20 +751,20 @@ function M.render_debug_window(ctx, ImGui, state)
 
           for _, key in ipairs(keys) do
             local def = palette_def[key]
-            if type(def) == "table" and def.mode then
-              ImGui.PushID(ctx, script_name .. "_" .. key)
+            if type(def) == 'table' and def.mode then
+              ImGui.PushID(ctx, script_name .. '_' .. key)
               ImGui.Text(ctx, key)
               ImGui.SameLine(ctx, 200)
-              ImGui.TextDisabled(ctx, string.format("[%s]", def.mode))
+              ImGui.TextDisabled(ctx, string.format('[%s]', def.mode))
 
               -- Show values (read-only for now)
-              if def.mode == "lerp" or def.mode == "snap" then
+              if def.mode == 'lerp' or def.mode == 'snap' then
                 ImGui.SameLine(ctx)
-                ImGui.TextDisabled(ctx, string.format("D:%s L:%s",
+                ImGui.TextDisabled(ctx, string.format('D:%s L:%s',
                   format_value(def.dark), format_value(def.light)))
-              elseif def.mode == "offset" then
+              elseif def.mode == 'offset' then
                 ImGui.SameLine(ctx)
-                ImGui.TextDisabled(ctx, string.format("D:%+.3f L:%+.3f",
+                ImGui.TextDisabled(ctx, string.format('D:%+.3f L:%+.3f',
                   def.dark or 0, def.light or 0))
               end
 

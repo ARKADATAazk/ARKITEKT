@@ -19,7 +19,7 @@ function M.new()
   }
 
   if DEBUG_DOMAIN then
-    Logger.debug("PLAYLIST", "Domain initialized")
+    Logger.debug('PLAYLIST', 'Domain initialized')
   end
 
   --- Rebuild lookup index from playlists array
@@ -36,7 +36,7 @@ function M.new()
     self.playlists = playlists or {}
     rebuild_lookup()
     if DEBUG_DOMAIN then
-      Logger.debug("PLAYLIST", "Loaded %d playlists", #self.playlists)
+      Logger.debug('PLAYLIST', 'Loaded %d playlists', #self.playlists)
     end
   end
 
@@ -75,7 +75,7 @@ function M.new()
   function domain:set_active(playlist_id)
     self.active_playlist = playlist_id
     if DEBUG_DOMAIN then
-      Logger.debug("PLAYLIST", "Active playlist: %s", playlist_id or "nil")
+      Logger.debug('PLAYLIST', 'Active playlist: %s', playlist_id or 'nil')
     end
   end
 
@@ -97,7 +97,7 @@ function M.new()
       table.insert(self.playlists, 1, playlist)
       rebuild_lookup()
       if DEBUG_DOMAIN then
-        Logger.debug("PLAYLIST", "Moved to front: %s", playlist_id)
+        Logger.debug('PLAYLIST', 'Moved to front: %s', playlist_id)
       end
     end
   end
@@ -129,7 +129,7 @@ function M.new()
     self.playlists = reordered
     rebuild_lookup()
     if DEBUG_DOMAIN then
-      Logger.debug("PLAYLIST", "Reordered: %d playlists", #reordered)
+      Logger.debug('PLAYLIST', 'Reordered: %d playlists', #reordered)
     end
   end
 
@@ -140,7 +140,7 @@ function M.new()
     for _, pl in ipairs(self.playlists) do
       tabs[#tabs + 1] = {
         id = pl.id,
-        label = pl.name or "Untitled",
+        label = pl.name or 'Untitled',
         chip_color = pl.chip_color,
       }
     end
@@ -161,9 +161,9 @@ function M.new()
     local playlist_count = 0
 
     for _, item in ipairs(playlist.items) do
-      if item.type == "region" then
+      if item.type == 'region' then
         region_count = region_count + 1
-      elseif item.type == "playlist" then
+      elseif item.type == 'playlist' then
         playlist_count = playlist_count + 1
       end
     end

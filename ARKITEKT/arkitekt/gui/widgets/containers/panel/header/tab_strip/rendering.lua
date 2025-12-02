@@ -82,7 +82,7 @@ function M.calculate_responsive_tab_widths(ctx, tabs, config, available_width, s
 
   for i, tab in ipairs(tabs) do
     local has_chip = tab.chip_color ~= nil
-    local text_w = ImGui.CalcTextSize(ctx, tab.label or "Tab")
+    local text_w = ImGui.CalcTextSize(ctx, tab.label or 'Tab')
 
     -- Calculate width based on actual rendering
     local left_margin = math.max(0, padding_x - 3)
@@ -165,7 +165,7 @@ function M.calculate_visible_tabs(ctx, tabs, config, available_width)
 
   for i, tab in ipairs(tabs) do
     local has_chip = tab.chip_color ~= nil
-    local tab_width = M.calculate_tab_width(ctx, tab.label or "Tab", config, has_chip)
+    local tab_width = M.calculate_tab_width(ctx, tab.label or 'Tab', config, has_chip)
     local effective_spacing = (i > 1) and spacing or 0
     if i > 1 and i <= #tabs and spacing == 0 then
       effective_spacing = -1

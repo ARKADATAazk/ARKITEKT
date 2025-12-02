@@ -156,7 +156,7 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
     state.track_filter_painting = false
     state.track_filter_paint_value = nil
     state.track_filter_last_painted = nil
-    state.track_filter_paint_mode = nil  -- "enable" or "disable"
+    state.track_filter_paint_mode = nil  -- 'enable' or 'disable'
     state.track_filter_prev_mouse_y = nil  -- Reset cursor tracking
   end
 
@@ -207,7 +207,7 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
       else
         -- Start ENABLE paint mode (left click = enable)
         state.track_filter_painting = true
-        state.track_filter_paint_mode = "enable"
+        state.track_filter_paint_mode = 'enable'
         state.track_filter_last_painted = track.guid
         if not state.track_whitelist then state.track_whitelist = {} end
         state.track_whitelist[track.guid] = true
@@ -217,7 +217,7 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
     -- Handle right click/drag: DISABLE tracks
     if is_hovered and right_clicked and not over_arrow then
       state.track_filter_painting = true
-      state.track_filter_paint_mode = "disable"
+      state.track_filter_paint_mode = 'disable'
       state.track_filter_last_painted = track.guid
       if not state.track_whitelist then state.track_whitelist = {} end
       state.track_whitelist[track.guid] = false
@@ -225,13 +225,13 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
 
     -- Paint mode while dragging
     if state.track_filter_painting and is_hovered and not over_arrow then
-      local is_dragging = (state.track_filter_paint_mode == "enable" and left_down) or
-                          (state.track_filter_paint_mode == "disable" and right_down)
+      local is_dragging = (state.track_filter_paint_mode == 'enable' and left_down) or
+                          (state.track_filter_paint_mode == 'disable' and right_down)
 
       if is_dragging and state.track_filter_last_painted ~= track.guid then
         if not state.track_whitelist then state.track_whitelist = {} end
 
-        if state.track_filter_paint_mode == "enable" then
+        if state.track_filter_paint_mode == 'enable' then
           -- Enable mode: always set to true
           state.track_whitelist[track.guid] = true
         else
@@ -271,8 +271,8 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
 
   -- Handle crossing detection for fast cursor movement (only at top level)
   if depth == 0 and state.track_filter_painting and state.track_filter_prev_mouse_y then
-    local is_dragging = (state.track_filter_paint_mode == "enable" and left_down) or
-                        (state.track_filter_paint_mode == "disable" and right_down)
+    local is_dragging = (state.track_filter_paint_mode == 'enable' and left_down) or
+                        (state.track_filter_paint_mode == 'disable' and right_down)
 
     if is_dragging then
       -- Find tracks that cursor crossed between previous and current frame
@@ -292,7 +292,7 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
             if not state.track_whitelist then state.track_whitelist = {} end
 
             local new_value
-            if state.track_filter_paint_mode == "enable" then
+            if state.track_filter_paint_mode == 'enable' then
               new_value = true
             else
               new_value = false
@@ -411,7 +411,7 @@ function M.render_modal(ctx, state, bounds)
   -- Create invisible button over modal area to register it for IsAnyItemHovered()
   -- This prevents overlay from closing on right-click within the modal
   ImGui.SetCursorScreenPos(ctx, modal_x, modal_y)
-  ImGui.InvisibleButton(ctx, "##track_filter_modal_area", modal_width, modal_height)
+  ImGui.InvisibleButton(ctx, '##track_filter_modal_area', modal_width, modal_height)
 
   -- Modal background
   local bg_color = Ark.Colors.with_alpha(palette.panel_bg or 0x1A1A1AFF, (0xF5 * alpha) // 1)
@@ -423,11 +423,11 @@ function M.render_modal(ctx, state, bounds)
 
   -- Header
   local title_color = Ark.Colors.with_alpha(palette.text_primary or 0xFFFFFFFF, (0xFF * alpha) // 1)
-  ImGui.DrawList_AddText(draw_list, modal_x + padding, modal_y + padding, title_color, "TRACK FILTER")
+  ImGui.DrawList_AddText(draw_list, modal_x + padding, modal_y + padding, title_color, 'TRACK FILTER')
 
   -- Track count
   local total_count, selected_count = TrackFilter.count_tracks(state.track_tree, state.track_whitelist)
-  local count_text = string.format("%d / %d selected", selected_count, total_count)
+  local count_text = string.format('%d / %d selected', selected_count, total_count)
   local count_w = ImGui.CalcTextSize(ctx, count_text)
   local count_color = Ark.Colors.with_alpha(palette.text_dimmed or 0x888888FF, (0xFF * alpha) // 1)
   ImGui.DrawList_AddText(draw_list, modal_x + modal_width - padding - count_w, modal_y + padding, count_color, count_text)
@@ -447,7 +447,7 @@ function M.render_modal(ctx, state, bounds)
   end
 
   -- Draw slider label
-  local label_text = "Depth:"
+  local label_text = 'Depth:'
   local label_color = Ark.Colors.with_alpha(palette.text_label or 0x888888FF, (0xFF * alpha) // 1)
   ImGui.DrawList_AddText(draw_list, slider_x, slider_y + 2, label_color, label_text)
 
@@ -550,13 +550,13 @@ function M.render_modal(ctx, state, bounds)
     end
 
     -- Draw tooltip background
-    local tip_bg = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#1A1A1A"), (0xF5 * alpha) // 1)
-    local tip_border = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#505050"), (0xFF * alpha) // 1)
+    local tip_bg = Ark.Colors.with_alpha(Ark.Colors.hexrgb('#1A1A1A'), (0xF5 * alpha) // 1)
+    local tip_border = Ark.Colors.with_alpha(Ark.Colors.hexrgb('#505050'), (0xFF * alpha) // 1)
     ImGui.DrawList_AddRectFilled(draw_list, tip_x, tip_y, tip_x + tooltip_w, tip_y + tooltip_h, tip_bg, 4)
     ImGui.DrawList_AddRect(draw_list, tip_x, tip_y, tip_x + tooltip_w, tip_y + tooltip_h, tip_border, 4)
 
     -- Draw tooltip text
-    local tip_text_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#CCCCCC"), (0xFF * alpha) // 1)
+    local tip_text_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb('#CCCCCC'), (0xFF * alpha) // 1)
     ImGui.DrawList_AddText(draw_list, tip_x + tooltip_padding, tip_y + tooltip_padding, tip_text_color, path_text)
   end
 
@@ -566,7 +566,7 @@ function M.render_modal(ctx, state, bounds)
   local btn_height = 28
   local btn_y = footer_y + (50 - btn_height) / 2
 
-  -- "All" button
+  -- 'All' button
   local all_x = content_x
   local all_hovered = mouse_x >= all_x and mouse_x <= all_x + btn_width and
                       mouse_y >= btn_y and mouse_y <= btn_y + btn_height
@@ -576,16 +576,16 @@ function M.render_modal(ctx, state, bounds)
     if state.persist_track_filter then state.persist_track_filter() end
   end
 
-  local all_bg = all_hovered and Ark.Colors.hexrgb("#3A3A3A") or Ark.Colors.hexrgb("#2A2A2A")
+  local all_bg = all_hovered and Ark.Colors.hexrgb('#3A3A3A') or Ark.Colors.hexrgb('#2A2A2A')
   all_bg = Ark.Colors.with_alpha(all_bg, (0xEE * alpha) // 1)
   ImGui.DrawList_AddRectFilled(draw_list, all_x, btn_y, all_x + btn_width, btn_y + btn_height, all_bg, 4)
-  local all_text_w = ImGui.CalcTextSize(ctx, "All")
+  local all_text_w = ImGui.CalcTextSize(ctx, 'All')
   ImGui.DrawList_AddText(draw_list,
     all_x + (btn_width - all_text_w) / 2,
     btn_y + (btn_height - ImGui.GetTextLineHeight(ctx)) / 2,
-    Ark.Colors.with_alpha(Ark.Colors.hexrgb("#FFFFFF"), (0xEE * alpha) // 1), "All")
+    Ark.Colors.with_alpha(Ark.Colors.hexrgb('#FFFFFF'), (0xEE * alpha) // 1), 'All')
 
-  -- "None" button
+  -- 'None' button
   local none_x = content_x + btn_width + 8
   local none_hovered = mouse_x >= none_x and mouse_x <= none_x + btn_width and
                        mouse_y >= btn_y and mouse_y <= btn_y + btn_height
@@ -595,14 +595,14 @@ function M.render_modal(ctx, state, bounds)
     if state.persist_track_filter then state.persist_track_filter() end
   end
 
-  local none_bg = none_hovered and Ark.Colors.hexrgb("#3A3A3A") or Ark.Colors.hexrgb("#2A2A2A")
+  local none_bg = none_hovered and Ark.Colors.hexrgb('#3A3A3A') or Ark.Colors.hexrgb('#2A2A2A')
   none_bg = Ark.Colors.with_alpha(none_bg, (0xEE * alpha) // 1)
   ImGui.DrawList_AddRectFilled(draw_list, none_x, btn_y, none_x + btn_width, btn_y + btn_height, none_bg, 4)
-  local none_text_w = ImGui.CalcTextSize(ctx, "None")
+  local none_text_w = ImGui.CalcTextSize(ctx, 'None')
   ImGui.DrawList_AddText(draw_list,
     none_x + (btn_width - none_text_w) / 2,
     btn_y + (btn_height - ImGui.GetTextLineHeight(ctx)) / 2,
-    Ark.Colors.with_alpha(Ark.Colors.hexrgb("#FFFFFF"), (0xEE * alpha) // 1), "None")
+    Ark.Colors.with_alpha(Ark.Colors.hexrgb('#FFFFFF'), (0xEE * alpha) // 1), 'None')
 
   return true  -- Modal is active, block input behind
 end

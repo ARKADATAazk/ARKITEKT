@@ -101,10 +101,10 @@ function M.process_batch(loader, state, settings)
       -- Just collect all items from all visible tracks (NO frozen check, NO mute computation)
       loader.all_items = {}
       for _, track in pairs(all_tracks) do
-        if GetMediaTrackInfo_Value(track, "B_SHOWINTCP") ~= 0 then
+        if GetMediaTrackInfo_Value(track, 'B_SHOWINTCP') ~= 0 then
           local track_items = loader.reaper_interface.GetItemInTrack(track)
           for _, item in pairs(track_items) do
-            if item and ValidatePtr2(0, item, "MediaItem*") then
+            if item and ValidatePtr2(0, item, 'MediaItem*') then
               loader.all_items[#loader.all_items + 1] = {item = item, track = track}
             end
           end
@@ -120,17 +120,17 @@ function M.process_batch(loader, state, settings)
 
       loader.track_muted_cache = {}
       for _, track in pairs(all_tracks) do
-        local track_muted = GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
+        local track_muted = GetMediaTrackInfo_Value(track, 'B_MUTE') == 1 or loader.reaper_interface.IsParentMuted(track)
         loader.track_muted_cache[track] = track_muted
       end
 
       loader.all_items = {}
       for _, track in pairs(all_tracks) do
-        if GetMediaTrackInfo_Value(track, "B_SHOWINTCP") ~= 0 and
+        if GetMediaTrackInfo_Value(track, 'B_SHOWINTCP') ~= 0 and
            not loader.reaper_interface.IsParentFrozen(track, loader.track_chunks) then
           local track_items = loader.reaper_interface.GetItemInTrack(track)
           for _, item in pairs(track_items) do
-            if item and ValidatePtr2(0, item, "MediaItem*") then
+            if item and ValidatePtr2(0, item, 'MediaItem*') then
               loader.all_items[#loader.all_items + 1] = {item = item, track = track}
             end
           end
@@ -182,15 +182,15 @@ function M.process_batch(loader, state, settings)
     else
       -- NORMAL MODE: Full chunk processing for duplicate detection
       local t1 = time_precise()
-      local _, chunk = GetItemStateChunk(item, "")
+      local _, chunk = GetItemStateChunk(item, '')
       local t2 = time_precise()
       reaper_time = reaper_time + (t2 - t1)
 
       local utils = require('ItemPicker.domain.items.utils')
-      chunk = utils.RemoveKeyFromChunk(chunk, "POSITION")
-      chunk = utils.RemoveKeyFromChunk(chunk, "IGUID")
-      chunk = utils.RemoveKeyFromChunk(chunk, "IID")
-      chunk = utils.RemoveKeyFromChunk(chunk, "GUID")
+      chunk = utils.RemoveKeyFromChunk(chunk, 'POSITION')
+      chunk = utils.RemoveKeyFromChunk(chunk, 'IGUID')
+      chunk = utils.RemoveKeyFromChunk(chunk, 'IID')
+      chunk = utils.RemoveKeyFromChunk(chunk, 'GUID')
       local chunk_id = loader.reaper_interface.ItemChunkID(item)
       loader.item_chunks[chunk_id] = chunk
 
@@ -233,19 +233,19 @@ function M.process_audio_item_fast(loader, item, track, state)
   if not filename then return end
 
   local item_name = GetTakeName(take)
-  if not item_name or item_name == "" then
-    item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$") or "Unnamed Audio"
+  if not item_name or item_name == '' then
+    item_name = (filename:match('[^/\\]+$') or ''):match('(.+)%..+$') or filename:match('[^/\\]+$') or 'Unnamed Audio'
   end
 
   -- Compute mute status and track color ONCE during loading
-  local track_muted = GetMediaTrackInfo_Value(track, "B_MUTE") == 1
-  local item_muted = GetMediaItemInfo_Value(item, "B_MUTE") == 1
-  local track_color = GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
+  local track_muted = GetMediaTrackInfo_Value(track, 'B_MUTE') == 1
+  local item_muted = GetMediaItemInfo_Value(item, 'B_MUTE') == 1
+  local track_color = GetMediaTrackInfo_Value(track, 'I_CUSTOMCOLOR')
   local track_guid = GetTrackGUID(track)
 
   -- Get track name for search
   local _, track_name = GetTrackName(track)
-  track_name = track_name or ""
+  track_name = track_name or ''
 
   local uuid = get_item_uuid(item)
 
@@ -296,19 +296,19 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
   end
 
   local item_name = GetTakeName(take)
-  if not item_name or item_name == "" then
-    item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$") or "Unnamed Audio"
+  if not item_name or item_name == '' then
+    item_name = (filename:match('[^/\\]+$') or ''):match('(.+)%..+$') or filename:match('[^/\\]+$') or 'Unnamed Audio'
   end
 
-  local track_muted = GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
-  local item_muted = GetMediaItemInfo_Value(item, "B_MUTE") == 1
-  local track_color = GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
+  local track_muted = GetMediaTrackInfo_Value(track, 'B_MUTE') == 1 or loader.reaper_interface.IsParentMuted(track)
+  local item_muted = GetMediaItemInfo_Value(item, 'B_MUTE') == 1
+  local track_color = GetMediaTrackInfo_Value(track, 'I_CUSTOMCOLOR')
   local track_guid = GetTrackGUID(track)
   local uuid = get_item_uuid(item)
 
   -- Get track name for search
   local _, track_name = GetTrackName(track)
-  track_name = track_name or ""
+  track_name = track_name or ''
 
   -- Get regions if enabled (check both settings for backwards compatibility)
   local regions = nil
@@ -349,21 +349,21 @@ function M.process_midi_item_fast(loader, item, track, state)
 
   -- Get MIDI take name (like audio uses filename)
   local item_name = GetTakeName(take)
-  if not item_name or item_name == "" then
-    item_name = "Unnamed MIDI"
+  if not item_name or item_name == '' then
+    item_name = 'Unnamed MIDI'
   end
 
   -- Compute mute status and track color ONCE during loading
-  local track_muted = GetMediaTrackInfo_Value(track, "B_MUTE") == 1
-  local item_muted = GetMediaItemInfo_Value(item, "B_MUTE") == 1
-  local track_color = GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
+  local track_muted = GetMediaTrackInfo_Value(track, 'B_MUTE') == 1
+  local item_muted = GetMediaItemInfo_Value(item, 'B_MUTE') == 1
+  local track_color = GetMediaTrackInfo_Value(track, 'I_CUSTOMCOLOR')
   local track_guid = GetTrackGUID(track)
 
   local uuid = get_item_uuid(item)
 
   -- Get track name for search
   local _, track_name = GetTrackName(track)
-  track_name = track_name or ""
+  track_name = track_name or ''
 
   -- Get regions if enabled (check both settings for backwards compatibility)
   local regions = nil
@@ -392,8 +392,8 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
 
   -- Get MIDI take name (like audio uses filename)
   local item_name = GetTakeName(take)
-  if not item_name or item_name == "" then
-    item_name = "Unnamed MIDI"
+  if not item_name or item_name == '' then
+    item_name = 'Unnamed MIDI'
   end
 
   -- Check for duplicates using hash set (O(1) instead of O(n))
@@ -408,15 +408,15 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
     loader.midi_items[item_name] = {}
   end
 
-  local track_muted = GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
-  local item_muted = GetMediaItemInfo_Value(item, "B_MUTE") == 1
-  local track_color = GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
+  local track_muted = GetMediaTrackInfo_Value(track, 'B_MUTE') == 1 or loader.reaper_interface.IsParentMuted(track)
+  local item_muted = GetMediaItemInfo_Value(item, 'B_MUTE') == 1
+  local track_color = GetMediaTrackInfo_Value(track, 'I_CUSTOMCOLOR')
   local track_guid = GetTrackGUID(track)
   local uuid = get_item_uuid(item)
 
   -- Get track name for search
   local _, track_name = GetTrackName(track)
-  track_name = track_name or ""
+  track_name = track_name or ''
 
   -- Get regions if enabled (check both settings for backwards compatibility)
   local regions = nil
@@ -527,7 +527,7 @@ function M.calculate_pool_counts(loader)
     local item = raw_item.item
     local take = GetActiveTake(item)
     if take then
-      local _, midi_data = MIDI_GetAllEvts(take, "")
+      local _, midi_data = MIDI_GetAllEvts(take, '')
       if midi_data then
         midi_pool_counts[midi_data] = (midi_pool_counts[midi_data] or 0) + 1
       end
@@ -539,7 +539,7 @@ function M.calculate_pool_counts(loader)
     local item = raw_item.item
     local take = GetActiveTake(item)
     if take then
-      local _, midi_data = MIDI_GetAllEvts(take, "")
+      local _, midi_data = MIDI_GetAllEvts(take, '')
       if midi_data and #midi_data > 0 then
         raw_item.pool_count = midi_pool_counts[midi_data] or 1
         -- Use hash of MIDI data as pool ID
@@ -571,7 +571,7 @@ function M.reorganize_items(loader, group_by_name)
   for _, raw_item in ipairs(loader.raw_audio_items) do
     local group_key
     if group_by_name then
-      -- Group by item name (so all items named "Kick" are together, regardless of source file)
+      -- Group by item name (so all items named 'Kick' are together, regardless of source file)
       group_key = raw_item.item_name
     else
       -- Each item is separate (use UUID as unique key)
@@ -579,8 +579,8 @@ function M.reorganize_items(loader, group_by_name)
     end
 
     -- Skip items with nil keys (shouldn't happen, but safety check)
-    if not group_key or group_key == "" then
-      reaper.ShowConsoleMsg(string.format("[REORGANIZE] WARNING: Skipping audio item with nil/empty group_key (item_name=%s, uuid=%s)\n",
+    if not group_key or group_key == '' then
+      reaper.ShowConsoleMsg(string.format('[REORGANIZE] WARNING: Skipping audio item with nil/empty group_key (item_name=%s, uuid=%s)\n',
         tostring(raw_item.item_name), tostring(raw_item.uuid)))
       goto skip_audio
     end
@@ -611,7 +611,7 @@ function M.reorganize_items(loader, group_by_name)
   for _, raw_item in ipairs(loader.raw_midi_items) do
     local group_key
     if group_by_name then
-      -- Group by take name (so all "Kick" MIDI items are together)
+      -- Group by take name (so all 'Kick' MIDI items are together)
       group_key = raw_item.item_name
     else
       -- Each item is separate (use UUID as unique key)
@@ -619,8 +619,8 @@ function M.reorganize_items(loader, group_by_name)
     end
 
     -- Skip items with nil keys (shouldn't happen, but safety check)
-    if not group_key or group_key == "" then
-      reaper.ShowConsoleMsg(string.format("[REORGANIZE] WARNING: Skipping MIDI item with nil/empty group_key (item_name=%s, uuid=%s)\n",
+    if not group_key or group_key == '' then
+      reaper.ShowConsoleMsg(string.format('[REORGANIZE] WARNING: Skipping MIDI item with nil/empty group_key (item_name=%s, uuid=%s)\n',
         tostring(raw_item.item_name), tostring(raw_item.uuid)))
       goto skip_midi
     end

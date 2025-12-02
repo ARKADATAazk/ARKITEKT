@@ -40,7 +40,7 @@ function M.init(config, state_module)
   view.transport_display = DisplayWidget.new(config.display)
 
   view.container = TransportContainer.new({
-    id = "region_playlist_transport",
+    id = 'region_playlist_transport',
     height = config.height,
     button_height = 30,
     header_elements = {},
@@ -108,13 +108,13 @@ end
 
 local function build_play_button(bridge_state)
   return {
-    type = "button",
-    id = "transport_play",
-    align = "center",
+    type = 'button',
+    id = 'transport_play',
+    align = 'center',
     width = CoreConfig.TRANSPORT_BUTTONS.play.width,
     config = {
       is_toggled = bridge_state.is_playing or false,
-      preset_name = "BUTTON_TOGGLE_WHITE",
+      preset_name = 'BUTTON_TOGGLE_WHITE',
       custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
         TransportIcons.draw_play(dl, bx, by, bw, bh, text_color)
       end,
@@ -137,9 +137,9 @@ end
 
 local function build_stop_button()
   return {
-    type = "button",
-    id = "transport_stop",
-    align = "center",
+    type = 'button',
+    id = 'transport_stop',
+    align = 'center',
     width = CoreConfig.TRANSPORT_BUTTONS.stop.width,
     config = {
       custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
@@ -162,13 +162,13 @@ local function build_pause_button(bridge_state)
   local is_paused = bridge and bridge.engine and bridge.engine.transport.is_paused or false
 
   return {
-    type = "button",
-    id = "transport_pause",
-    align = "center",
+    type = 'button',
+    id = 'transport_pause',
+    align = 'center',
     width = CoreConfig.TRANSPORT_BUTTONS.pause.width,
     config = {
       is_toggled = is_paused,
-      preset_name = "BUTTON_TOGGLE_WHITE",
+      preset_name = 'BUTTON_TOGGLE_WHITE',
       custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
         TransportIcons.draw_pause(dl, bx, by, bw, bh, text_color)
       end,
@@ -188,13 +188,13 @@ end
 
 local function build_loop_button(bridge_state)
   return {
-    type = "button",
-    id = "transport_loop",
-    align = "center",
+    type = 'button',
+    id = 'transport_loop',
+    align = 'center',
     width = CoreConfig.TRANSPORT_BUTTONS.loop.width,
     config = {
       is_toggled = bridge_state.loop_enabled or false,
-      preset_name = "BUTTON_TOGGLE_WHITE",
+      preset_name = 'BUTTON_TOGGLE_WHITE',
       custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
         TransportIcons.draw_loop(dl, bx, by, bw, bh, text_color)
       end,
@@ -210,12 +210,12 @@ end
 
 local function build_jump_button(bridge_state)
   return {
-    type = "button",
-    id = "transport_jump",
-    align = "center",
+    type = 'button',
+    id = 'transport_jump',
+    align = 'center',
     width = CoreConfig.TRANSPORT_BUTTONS.jump.width,
     config = {
-      preset_name = "BUTTON_DEFAULT",
+      preset_name = 'BUTTON_DEFAULT',
       custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
         TransportIcons.draw_jump(dl, bx, by, bw, bh, text_color)
       end,
@@ -238,7 +238,7 @@ local function build_jump_button(bridge_state)
         end
 
         if success and view.state.set_state_change_notification then
-          local quantize_mode = bridge_state.quantize_mode or "none"
+          local quantize_mode = bridge_state.quantize_mode or 'none'
           if target_rid then
             local next_region = view.state.get_region_by_rid and view.state.get_region_by_rid(target_rid)
             if next_region then
@@ -254,12 +254,12 @@ end
 
 local function build_quantize_dropdown(bridge_state)
   return {
-    type = "combo",
-    id = "transport_quantize",
-    align = "center",
+    type = 'combo',
+    id = 'transport_quantize',
+    align = 'center',
     width = CoreConfig.TRANSPORT_BUTTONS.quantize.width,
     config = {
-      tooltip = "Grid/Quantize Mode",
+      tooltip = 'Grid/Quantize Mode',
       current_value = bridge_state.quantize_mode,
       options = CoreConfig.QUANTIZE.options,
       enable_mousewheel = true,
@@ -277,7 +277,7 @@ local function build_quantize_dropdown(bridge_state)
         local Theme = require('arkitekt.core.theme')
         local C = Theme.COLORS
 
-        local label = "Jump Lookahead"
+        local label = 'Jump Lookahead'
         local label_x, label_y = ImGui.GetCursorScreenPos(ctx)
         ImGui.DrawList_AddText(dl, label_x + padding, label_y, C.TEXT_BRIGHT, label)
         ImGui.Dummy(ctx, width, 20)
@@ -296,7 +296,7 @@ local function build_quantize_dropdown(bridge_state)
         ImGui.SetNextItemWidth(ctx, width - padding * 2)
 
         local lookahead_ms = view.config.quantize_lookahead * 1000
-        local changed, new_val = ImGui.SliderDouble(ctx, "##transport_quantize_lookahead", lookahead_ms, 200, 1000, "%.0fms")
+        local changed, new_val = ImGui.SliderDouble(ctx, '##transport_quantize_lookahead', lookahead_ms, 200, 1000, '%.0fms')
 
         ImGui.PopStyleVar(ctx, 3)
         ImGui.PopStyleColor(ctx, 5)
@@ -315,54 +315,54 @@ local function build_quantize_dropdown(bridge_state)
 end
 
 local function build_playback_dropdown(bridge_state)
-  local label = "PB"
+  local label = 'PB'
   local icon_draw = nil
 
   -- Check override state
   if bridge_state.override_enabled then
-    label = "PB:OVR"
+    label = 'PB:OVR'
     icon_draw = function(ctx, dl, x, y, w, h, text_color)
       TransportIcons.draw_override_icon(dl, x, y, w, h, text_color)
     end
   elseif bridge_state.shuffle_enabled then
-    label = "PB:SHF"
+    label = 'PB:SHF'
     icon_draw = function(ctx, dl, x, y, w, h, text_color)
       TransportIcons.draw_shuffle_icon(dl, x, y, w, h, text_color)
     end
   else
-    label = "PB:SEQ"
+    label = 'PB:SEQ'
     icon_draw = function(ctx, dl, x, y, w, h, text_color)
       TransportIcons.draw_sequential_icon(dl, x, y, w, h, text_color)
     end
   end
 
   local items = {
-    { id = "sequential", label = "Sequential", icon_draw = function(ctx, dl, x, y, w, h, text_color)
+    { id = 'sequential', label = 'Sequential', icon_draw = function(ctx, dl, x, y, w, h, text_color)
         TransportIcons.draw_sequential_icon(dl, x, y, w, h, text_color)
       end
     },
-    { id = "shuffle", label = "Shuffle", icon_draw = function(ctx, dl, x, y, w, h, text_color)
+    { id = 'shuffle', label = 'Shuffle', icon_draw = function(ctx, dl, x, y, w, h, text_color)
         TransportIcons.draw_shuffle_icon(dl, x, y, w, h, text_color)
       end
     },
-    { id = "override", label = "Override", icon_draw = function(ctx, dl, x, y, w, h, text_color)
+    { id = 'override', label = 'Override', icon_draw = function(ctx, dl, x, y, w, h, text_color)
         TransportIcons.draw_override_icon(dl, x, y, w, h, text_color)
       end
     },
   }
 
   -- Determine selected based on current state
-  local selected = "sequential"
+  local selected = 'sequential'
   if bridge_state.override_enabled then
-    selected = "override"
+    selected = 'override'
   elseif bridge_state.shuffle_enabled then
-    selected = "shuffle"
+    selected = 'shuffle'
   end
 
   return {
-    type = "combo",
-    id = "transport_playback_mode",
-    align = "center",
+    type = 'combo',
+    id = 'transport_playback_mode',
+    align = 'center',
     width = CoreConfig.TRANSPORT_BUTTONS.playback_mode.width,
     config = {
       label = label,
@@ -379,33 +379,33 @@ local function build_playback_dropdown(bridge_state)
         engine:set_shuffle_enabled(false)
 
         -- Then set the selected mode
-        if item.id == "override" then
+        if item.id == 'override' then
           engine:set_transport_override(true)
-        elseif item.id == "shuffle" then
+        elseif item.id == 'shuffle' then
           engine:set_shuffle_enabled(true)
         end
         -- sequential is the default (both false)
       end,
       tooltip = Strings.TRANSPORT.playback_mode,
-      preset_name = "COMBO_DEFAULT",
+      preset_name = 'COMBO_DEFAULT',
     },
   }
 end
 
 -- Build shuffle dropdown menu (context menu style)
 local function draw_shuffle_context_menu(ctx)
-  if not ImGui.BeginPopup(ctx, "transport_shuffle_menu") then
+  if not ImGui.BeginPopup(ctx, 'transport_shuffle_menu') then
     return
   end
 
-  ImGui.Text(ctx, "Shuffle Options")
+  ImGui.Text(ctx, 'Shuffle Options')
   ImGui.Separator(ctx)
 
   local bridge = view.state.get_bridge()
   local engine = bridge and bridge.engine
 
   if not engine then
-    ImGui.Text(ctx, "Engine not available")
+    ImGui.Text(ctx, 'Engine not available')
     ImGui.EndPopup(ctx)
     return
   end
@@ -413,7 +413,7 @@ local function draw_shuffle_context_menu(ctx)
   local shuffle_enabled = engine:get_shuffle_enabled() or false
 
   -- Toggle shuffle
-  if ImGui.MenuItem(ctx, shuffle_enabled and "Disable Shuffle" or "Enable Shuffle") then
+  if ImGui.MenuItem(ctx, shuffle_enabled and 'Disable Shuffle' or 'Enable Shuffle') then
     engine:set_shuffle_enabled(not shuffle_enabled)
   end
 
@@ -428,17 +428,17 @@ local function build_playback_buttons(bridge_state, shell_state)
 
   return {
     {
-      type = "button",
-      id = "transport_shuffle",
-      align = "center",
+      type = 'button',
+      id = 'transport_shuffle',
+      align = 'center',
       width = 34,
       config = {
         icon = CoreConfig.REMIX_ICONS.shuffle,
         icon_font = icon_font,
         icon_size = icon_size,
-        label = "",
+        label = '',
         is_toggled = bridge_state.shuffle_enabled or false,
-        preset_name = "BUTTON_TOGGLE_WHITE",
+        preset_name = 'BUTTON_TOGGLE_WHITE',
         tooltip = Strings.TRANSPORT.shuffle,
         on_click = function()
           local bridge = view.state.get_bridge()
@@ -450,17 +450,17 @@ local function build_playback_buttons(bridge_state, shell_state)
       },
     },
     {
-      type = "button",
-      id = "transport_hijack",
-      align = "center",
+      type = 'button',
+      id = 'transport_hijack',
+      align = 'center',
       width = 34,
       config = {
         icon = CoreConfig.REMIX_ICONS.hijack_transport,
         icon_font = icon_font,
         icon_size = icon_size,
-        label = "",
+        label = '',
         is_toggled = bridge_state.override_enabled or false,
-        preset_name = "BUTTON_TOGGLE_WHITE",
+        preset_name = 'BUTTON_TOGGLE_WHITE',
         tooltip = Strings.TRANSPORT.hijack_transport,
         on_click = function()
           local bridge = view.state.get_bridge()
@@ -472,17 +472,17 @@ local function build_playback_buttons(bridge_state, shell_state)
       },
     },
     {
-      type = "button",
-      id = "transport_follow",
-      align = "center",
+      type = 'button',
+      id = 'transport_follow',
+      align = 'center',
       width = 26,
       config = {
         icon = CoreConfig.REMIX_ICONS.follow_viewport,
         icon_font = icon_font,
         icon_size = icon_size,
-        label = "",
+        label = '',
         is_toggled = bridge_state.follow_viewport or false,
-        preset_name = "BUTTON_TOGGLE_WHITE",
+        preset_name = 'BUTTON_TOGGLE_WHITE',
         tooltip = Strings.TRANSPORT.follow_viewport,
         on_click = function()
           local bridge = view.state.get_bridge()
@@ -600,31 +600,31 @@ end
 -- Build combined playback dropdown (combines multiple modes)
 local function build_combined_pb_dropdown(bridge_state)
   -- Determine current mode label and icon
-  local label = "PB"
+  local label = 'PB'
   local icon_draw = nil
-  local tooltip = "Playback Mode"
+  local tooltip = 'Playback Mode'
 
   if bridge_state.override_enabled then
-    label = "OVR"
-    tooltip = "Override Mode (Transport controls override playlist)"
+    label = 'OVR'
+    tooltip = 'Override Mode (Transport controls override playlist)'
     icon_draw = function(ctx, dl, x, y, w, h, text_color)
       TransportIcons.draw_override_icon(dl, x, y, w, h, text_color)
     end
   elseif bridge_state.shuffle_enabled then
-    label = "SHF"
-    tooltip = "Shuffle Mode"
+    label = 'SHF'
+    tooltip = 'Shuffle Mode'
     icon_draw = function(ctx, dl, x, y, w, h, text_color)
       TransportIcons.draw_shuffle_icon(dl, x, y, w, h, text_color)
     end
   elseif bridge_state.follow_viewport then
-    label = "FLW"
-    tooltip = "Follow Viewport Mode"
+    label = 'FLW'
+    tooltip = 'Follow Viewport Mode'
     icon_draw = function(ctx, dl, x, y, w, h, text_color)
       TransportIcons.draw_follow_icon(dl, x, y, w, h, text_color)
     end
   else
-    label = "SEQ"
-    tooltip = "Sequential Mode"
+    label = 'SEQ'
+    tooltip = 'Sequential Mode'
     icon_draw = function(ctx, dl, x, y, w, h, text_color)
       TransportIcons.draw_sequential_icon(dl, x, y, w, h, text_color)
     end
@@ -633,33 +633,33 @@ local function build_combined_pb_dropdown(bridge_state)
   -- Build items list
   local items = {
     {
-      id = "sequential",
-      label = "Sequential",
-      description = "Play playlist in order",
+      id = 'sequential',
+      label = 'Sequential',
+      description = 'Play playlist in order',
       icon_draw = function(ctx, dl, x, y, w, h, text_color)
         TransportIcons.draw_sequential_icon(dl, x, y, w, h, text_color)
       end,
     },
     {
-      id = "shuffle",
-      label = "Shuffle",
-      description = "Random playlist order",
+      id = 'shuffle',
+      label = 'Shuffle',
+      description = 'Random playlist order',
       icon_draw = function(ctx, dl, x, y, w, h, text_color)
         TransportIcons.draw_shuffle_icon(dl, x, y, w, h, text_color)
       end,
     },
     {
-      id = "follow",
-      label = "Follow Viewport",
-      description = "Play region under edit cursor",
+      id = 'follow',
+      label = 'Follow Viewport',
+      description = 'Play region under edit cursor',
       icon_draw = function(ctx, dl, x, y, w, h, text_color)
         TransportIcons.draw_follow_icon(dl, x, y, w, h, text_color)
       end,
     },
     {
-      id = "override",
-      label = "Transport Override",
-      description = "Manual transport control",
+      id = 'override',
+      label = 'Transport Override',
+      description = 'Manual transport control',
       icon_draw = function(ctx, dl, x, y, w, h, text_color)
         TransportIcons.draw_override_icon(dl, x, y, w, h, text_color)
       end,
@@ -667,19 +667,19 @@ local function build_combined_pb_dropdown(bridge_state)
   }
 
   -- Determine selected item
-  local selected = "sequential"
+  local selected = 'sequential'
   if bridge_state.override_enabled then
-    selected = "override"
+    selected = 'override'
   elseif bridge_state.shuffle_enabled then
-    selected = "shuffle"
+    selected = 'shuffle'
   elseif bridge_state.follow_viewport then
-    selected = "follow"
+    selected = 'follow'
   end
 
   return {
-    type = "combo",
-    id = "transport_playback_combined",
-    align = "center",
+    type = 'combo',
+    id = 'transport_playback_combined',
+    align = 'center',
     width = CoreConfig.TRANSPORT_BUTTONS.playback_mode.width or 60,
     config = {
       label = label,
@@ -697,17 +697,17 @@ local function build_combined_pb_dropdown(bridge_state)
         engine:set_follow_viewport(false)
 
         -- Set selected mode
-        if item.id == "override" then
+        if item.id == 'override' then
           engine:set_transport_override(true)
-        elseif item.id == "shuffle" then
+        elseif item.id == 'shuffle' then
           engine:set_shuffle_enabled(true)
-        elseif item.id == "follow" then
+        elseif item.id == 'follow' then
           engine:set_follow_viewport(true)
         end
         -- sequential is default (all false)
       end,
       tooltip = tooltip,
-      preset_name = "COMBO_DEFAULT",
+      preset_name = 'COMBO_DEFAULT',
     },
   }
 end
@@ -808,7 +808,7 @@ function M.draw(ctx, shell_state, is_blocking)
 
   local playlist_data = playlist_to_display and {
     name = playlist_to_display.name,
-    color = playlist_to_display.chip_color or hexrgb("#888888"),
+    color = playlist_to_display.chip_color or hexrgb('#888888'),
   } or nil
 
   local current_region = nil

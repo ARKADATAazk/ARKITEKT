@@ -24,8 +24,8 @@ end
 local REAPER_SYNC_OFFSET = -0.012
 
 -- ExtState section for persistence
-local EXTSTATE_SECTION = "ARKITEKT"
-local EXTSTATE_TIMESTAMP_KEY = "theme_update_time"
+local EXTSTATE_SECTION = 'ARKITEKT'
+local EXTSTATE_TIMESTAMP_KEY = 'theme_update_time'
 
 -- =============================================================================
 -- REAPER COLOR CONVERSION
@@ -50,26 +50,26 @@ end
 -- DOCK ADAPTS TO REAPER SETTING
 -- =============================================================================
 
-local DOCK_ADAPT_KEY = "dock_adapts_to_reaper"
+local DOCK_ADAPT_KEY = 'dock_adapts_to_reaper'
 
 --- Check if dock adapts to REAPER theme is enabled
 --- @return boolean Whether dock adapt is enabled
 function M.is_dock_adapt_enabled()
   local saved = reaper.GetExtState(EXTSTATE_SECTION, DOCK_ADAPT_KEY)
-  return saved == "1"
+  return saved == '1'
 end
 
 --- Set dock adapts to REAPER theme setting
 --- @param enabled boolean Whether to enable dock adapt
 function M.set_dock_adapt_enabled(enabled)
-  reaper.SetExtState(EXTSTATE_SECTION, DOCK_ADAPT_KEY, enabled and "1" or "0", true)
+  reaper.SetExtState(EXTSTATE_SECTION, DOCK_ADAPT_KEY, enabled and '1' or '0', true)
 end
 
 --- Get REAPER's background color WITHOUT any offset
 --- For use when docked to match REAPER exactly
 --- @return number|nil ImGui color in RGBA format, or nil on error
 function M.get_reaper_bg_color()
-  local main_bg_raw = reaper.GetThemeColor("col_main_bg2", 0)
+  local main_bg_raw = reaper.GetThemeColor('col_main_bg2', 0)
   if main_bg_raw == -1 then
     return nil
   end
@@ -77,10 +77,10 @@ function M.get_reaper_bg_color()
 end
 
 --- Sync theme with REAPER WITHOUT the lightness offset
---- Used for "Adapt on docking" to match REAPER exactly
+--- Used for 'Adapt on docking' to match REAPER exactly
 --- @return boolean Success
 function M.sync_with_reaper_no_offset()
-  local main_bg_raw = reaper.GetThemeColor("col_main_bg2", 0)
+  local main_bg_raw = reaper.GetThemeColor('col_main_bg2', 0)
   if main_bg_raw == -1 then
     return false
   end
@@ -102,7 +102,7 @@ function M.sync_with_reaper_no_offset()
 
   -- Optional: Warn user if clamping occurred
   if was_clamped then
-    reaper.ShowConsoleMsg("[ARKITEKT] REAPER theme adjusted for visual clarity\n")
+    reaper.ShowConsoleMsg('[ARKITEKT] REAPER theme adjusted for visual clarity\n')
   end
 
   -- Generate and apply palette WITHOUT offset (exact REAPER color)
@@ -120,7 +120,7 @@ end
 --- @return boolean Success (true if colors were read and applied)
 function M.sync_with_reaper()
   -- Read single background color from REAPER
-  local main_bg_raw = reaper.GetThemeColor("col_main_bg2", 0)
+  local main_bg_raw = reaper.GetThemeColor('col_main_bg2', 0)
 
   if main_bg_raw == -1 then
     return false
@@ -147,7 +147,7 @@ function M.sync_with_reaper()
 
   -- Optional: Warn user if clamping occurred
   if was_clamped then
-    reaper.ShowConsoleMsg("[ARKITEKT] REAPER theme adjusted for visual clarity\n")
+    reaper.ShowConsoleMsg('[ARKITEKT] REAPER theme adjusted for visual clarity\n')
   end
 
   -- Generate and apply palette (text color derived automatically)
@@ -170,7 +170,7 @@ function M.create_live_sync(interval)
       last_check = now
 
       -- Read current REAPER background color
-      local current_bg = reaper.GetThemeColor("col_main_bg2", 0)
+      local current_bg = reaper.GetThemeColor('col_main_bg2', 0)
 
       -- Only update if color changed and sync succeeds
       if current_bg ~= last_bg and current_bg ~= -1 then
@@ -199,7 +199,7 @@ function M.create_cross_app_sync(interval, app_name)
       local current_timestamp = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_TIMESTAMP_KEY)
 
       -- If timestamp changed, reload theme
-      if current_timestamp ~= last_timestamp and current_timestamp ~= "" then
+      if current_timestamp ~= last_timestamp and current_timestamp ~= '' then
         last_timestamp = current_timestamp
 
         -- Reload with app fallback (respects app override)
@@ -216,7 +216,7 @@ end
 -- PERSISTENCE (via REAPER ExtState)
 -- =============================================================================
 
-local EXTSTATE_KEY = "theme_mode"
+local EXTSTATE_KEY = 'theme_mode'
 
 --- Get ExtState section name for an app
 --- @param app_name string|nil App name (nil = global)
@@ -224,9 +224,9 @@ local EXTSTATE_KEY = "theme_mode"
 --- @private
 local function get_extstate_section(app_name)
   if app_name then
-    return EXTSTATE_SECTION .. "_" .. app_name  -- "ARKITEKT_TemplateBrowser"
+    return EXTSTATE_SECTION .. '_' .. app_name  -- 'ARKITEKT_TemplateBrowser'
   end
-  return EXTSTATE_SECTION  -- "ARKITEKT"
+  return EXTSTATE_SECTION  -- 'ARKITEKT'
 end
 
 --- Notify other apps that theme changed (write timestamp)
@@ -260,14 +260,14 @@ function M.load_mode(app_name)
   if app_name then
     local section = get_extstate_section(app_name)
     local app_mode = reaper.GetExtState(section, EXTSTATE_KEY)
-    if app_mode and app_mode ~= "" then
+    if app_mode and app_mode ~= '' then
       return app_mode  -- App override exists
     end
   end
 
   -- Fallback to global
   local global_mode = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_KEY)
-  if global_mode and global_mode ~= "" then
+  if global_mode and global_mode ~= '' then
     return global_mode
   end
 
@@ -295,20 +295,20 @@ function M.has_app_override(app_name)
   if not app_name then return false end
   local section = get_extstate_section(app_name)
   local mode = reaper.GetExtState(section, EXTSTATE_KEY)
-  return mode and mode ~= ""
+  return mode and mode ~= ''
 end
 
 -- =============================================================================
 -- CUSTOM COLOR
 -- =============================================================================
 
-local CUSTOM_COLOR_KEY = "theme_custom_color"
+local CUSTOM_COLOR_KEY = 'theme_custom_color'
 
 --- Get saved custom theme color
 --- @return number|nil ImGui color in RGBA format, or nil if not set
 function M.get_custom_color()
   local saved = reaper.GetExtState(EXTSTATE_SECTION, CUSTOM_COLOR_KEY)
-  if saved and saved ~= "" then
+  if saved and saved ~= '' then
     local color = tonumber(saved)
     if color then return color end
   end
@@ -344,7 +344,7 @@ function M.apply_custom_color(color)
 
   -- Optional: Warn user if clamping occurred
   if was_clamped then
-    reaper.ShowConsoleMsg("[ARKITEKT] Custom color adjusted for visual clarity\n")
+    reaper.ShowConsoleMsg('[ARKITEKT] Custom color adjusted for visual clarity\n')
   end
 
   get_theme().generate_and_apply(clamped_color)
@@ -371,7 +371,7 @@ function M.transition_to_palette(target_palette, duration, on_complete)
     -- Lerp each color
     for key, target_color in pairs(target_palette) do
       local start_color = start_colors[key]
-      if start_color and type(target_color) == "number" and type(start_color) == "number" then
+      if start_color and type(target_color) == 'number' and type(start_color) == 'number' then
         Theme.COLORS[key] = Colors.lerp(start_color, target_color, t)
       elseif target_color then
         Theme.COLORS[key] = target_color

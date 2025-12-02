@@ -18,7 +18,7 @@ local hexrgb = Ark.Colors.hexrgb
 -- Draw a u-he style section header (dim text, left-aligned)
 local function draw_section_header(ctx, title)
   ImGui.Dummy(ctx, 0, 10)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
   ImGui.Text(ctx, title)
   ImGui.PopStyleColor(ctx)
   ImGui.Dummy(ctx, 0, 4)
@@ -46,13 +46,13 @@ local function draw_info_panel(ctx, gui, width, height)
       -- ========================================
 
       -- Template name (prominent)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
       ImGui.TextWrapped(ctx, tmpl.name)
       ImGui.PopStyleColor(ctx)
 
-      -- Location shown as "in [folder]" style
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
-      ImGui.Text(ctx, "in " .. tmpl.folder)
+      -- Location shown as 'in [folder]' style
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+      ImGui.Text(ctx, 'in ' .. tmpl.folder)
       ImGui.PopStyleColor(ctx)
 
       -- ========================================
@@ -62,7 +62,7 @@ local function draw_info_panel(ctx, gui, width, height)
       local usage_count = tmpl_metadata and tmpl_metadata.usage_count or 0
 
       if usage_count > 0 then
-        draw_section_header(ctx, "USAGE")
+        draw_section_header(ctx, 'USAGE')
 
         -- Calculate stats
         local stats = Stats.calculate_stats(usage_history)
@@ -84,38 +84,38 @@ local function draw_info_panel(ctx, gui, width, height)
 
           -- Bar color: brighter for higher values
           local intensity = count > 0 and (0.3 + 0.7 * (count / max_val)) or 0.1
-          local bar_color = Ark.Colors.with_alpha(hexrgb("#5588FF"), math.floor(255 * intensity))
+          local bar_color = Ark.Colors.with_alpha(hexrgb('#5588FF'), math.floor(255 * intensity))
 
           if bar_h > 0 then
             ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + bar_w, spark_y + spark_h - 1, bar_color, 1)
           else
             -- Draw a tiny dot for zero days
-            ImGui.DrawList_AddRectFilled(dl, bar_x, spark_y + spark_h - 2, bar_x + bar_w, spark_y + spark_h - 1, hexrgb("#333333"), 0)
+            ImGui.DrawList_AddRectFilled(dl, bar_x, spark_y + spark_h - 2, bar_x + bar_w, spark_y + spark_h - 1, hexrgb('#333333'), 0)
           end
         end
 
         ImGui.Dummy(ctx, spark_w, spark_h + 4)
 
         -- Stats text
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
 
         -- Total and trend
         local trend_icon = Stats.format_trend(stats.trend)
-        local trend_text = string.format("%d total", stats.total)
-        if trend_icon ~= "" then
-          trend_text = trend_text .. "  " .. trend_icon
+        local trend_text = string.format('%d total', stats.total)
+        if trend_icon ~= '' then
+          trend_text = trend_text .. '  ' .. trend_icon
         end
         ImGui.Text(ctx, trend_text)
 
         -- Recent activity
         if stats.last_7_days > 0 then
           ImGui.SameLine(ctx)
-          ImGui.Text(ctx, string.format("  %d this week", stats.last_7_days))
+          ImGui.Text(ctx, string.format('  %d this week', stats.last_7_days))
         end
 
         -- Streak
         if stats.streak_days > 1 then
-          ImGui.Text(ctx, string.format("🔥 %d day streak", stats.streak_days))
+          ImGui.Text(ctx, string.format('🔥 %d day streak', stats.streak_days))
         end
 
         ImGui.PopStyleColor(ctx)
@@ -125,15 +125,15 @@ local function draw_info_panel(ctx, gui, width, height)
       -- VST/FX LIST section
       -- ========================================
       if tmpl.fx and #tmpl.fx > 0 then
-        draw_section_header(ctx, "FX CHAIN")
+        draw_section_header(ctx, 'FX CHAIN')
 
         for i, fx_name in ipairs(tmpl.fx) do
           -- Dark grey with 80% transparency
           Chip.draw(ctx, {
             style = Chip.STYLE.ACTION,
             label = fx_name,
-            bg_color = hexrgb("#3A3A3ACC"),
-            text_color = hexrgb("#FFFFFF"),
+            bg_color = hexrgb('#3A3A3ACC'),
+            text_color = hexrgb('#FFFFFF'),
             height = 22,
             padding_h = 8,
             rounding = 2,
@@ -146,12 +146,12 @@ local function draw_info_panel(ctx, gui, width, height)
       -- ========================================
       -- NOTES section
       -- ========================================
-      draw_section_header(ctx, "NOTES")
+      draw_section_header(ctx, 'NOTES')
 
-      local notes = (tmpl_metadata and tmpl_metadata.notes) or ""
+      local notes = (tmpl_metadata and tmpl_metadata.notes) or ''
 
       -- Initialize markdown field with current notes
-      local notes_field_id = "template_notes_" .. tmpl.uuid
+      local notes_field_id = 'template_notes_' .. tmpl.uuid
       if Ark.MarkdownField.get_text(notes_field_id) ~= notes and not Ark.MarkdownField.is_editing(notes_field_id) then
         Ark.MarkdownField.set_text(notes_field_id, notes)
       end
@@ -160,9 +160,9 @@ local function draw_info_panel(ctx, gui, width, height)
         width = content_w,
         height = 100,
         text = notes,
-        placeholder = "Double-click to add notes...\n\nMarkdown supported",
+        placeholder = 'Double-click to add notes...\n\nMarkdown supported',
       }, notes_field_id)
-      Tooltips.show(ctx, ImGui, "notes_field")
+      Tooltips.show(ctx, ImGui, 'notes_field')
 
       if notes_changed then
         Tags.set_template_notes(state.metadata, tmpl.uuid, new_notes)
@@ -173,7 +173,7 @@ local function draw_info_panel(ctx, gui, width, height)
       -- ========================================
       -- TAGS section
       -- ========================================
-      draw_section_header(ctx, "TAGS")
+      draw_section_header(ctx, 'TAGS')
 
       if state.metadata and state.metadata.tags then
         -- Build items array for chip_list
@@ -229,71 +229,71 @@ local function draw_info_panel(ctx, gui, width, height)
             Persistence.save_metadata(state.metadata)
           end
         else
-          ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#555555"))
-          ImGui.Text(ctx, "No tags available")
-          ImGui.Text(ctx, "Create in Tags panel")
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#555555'))
+          ImGui.Text(ctx, 'No tags available')
+          ImGui.Text(ctx, 'Create in Tags panel')
           ImGui.PopStyleColor(ctx)
         end
       else
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#555555"))
-        ImGui.Text(ctx, "No tags available")
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#555555'))
+        ImGui.Text(ctx, 'No tags available')
         ImGui.PopStyleColor(ctx)
       end
 
       -- ========================================
       -- ACTIONS section (at bottom)
       -- ========================================
-      draw_section_header(ctx, "ACTIONS")
+      draw_section_header(ctx, 'ACTIONS')
 
       -- Apply to Selected Track (primary action)
       if Ark.Button.draw_at_cursor(ctx, {
-        label = "Apply to Track",
+        label = 'Apply to Track',
         width = content_w,
         height = 28,
-        bg_color = hexrgb("#2A5599"),
-        bg_hover_color = hexrgb("#3A65A9"),
-        bg_active_color = hexrgb("#1A4589"),
-      }, "apply_template") then
+        bg_color = hexrgb('#2A5599'),
+        bg_hover_color = hexrgb('#3A65A9'),
+        bg_active_color = hexrgb('#1A4589'),
+      }, 'apply_template') then
         TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
       end
-      Tooltips.show(ctx, ImGui, "template_apply")
+      Tooltips.show(ctx, ImGui, 'template_apply')
 
       ImGui.Dummy(ctx, 0, 4)
 
       -- Insert as New Track
       if Ark.Button.draw_at_cursor(ctx, {
-        label = "Insert as New Track",
+        label = 'Insert as New Track',
         width = content_w,
         height = 24,
-      }, "insert_template") then
+      }, 'insert_template') then
         TemplateOps.insert_as_new_track(tmpl.path, tmpl.uuid, state)
       end
-      Tooltips.show(ctx, ImGui, "template_insert")
+      Tooltips.show(ctx, ImGui, 'template_insert')
 
       ImGui.Dummy(ctx, 0, 4)
 
       -- Rename
       if Ark.Button.draw_at_cursor(ctx, {
-        label = "Rename (F2)",
+        label = 'Rename (F2)',
         width = content_w,
         height = 24,
-      }, "rename_template") then
+      }, 'rename_template') then
         state.renaming_item = tmpl
-        state.renaming_type = "template"
+        state.renaming_type = 'template'
         state.rename_buffer = tmpl.name
       end
-      Tooltips.show(ctx, ImGui, "template_rename")
+      Tooltips.show(ctx, ImGui, 'template_rename')
 
     else
       -- No template selected
       ImGui.Dummy(ctx, 0, 40)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#555555"))
-      local text = "Select a template"
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#555555'))
+      local text = 'Select a template'
       local text_w = ImGui.CalcTextSize(ctx, text)
       ImGui.SetCursorPosX(ctx, (content_w - text_w) / 2)
       ImGui.Text(ctx, text)
 
-      local text2 = "to view details"
+      local text2 = 'to view details'
       local text2_w = ImGui.CalcTextSize(ctx, text2)
       ImGui.SetCursorPosX(ctx, (content_w - text2_w) / 2)
       ImGui.Text(ctx, text2)

@@ -13,9 +13,9 @@ local function scan_apps(base_path)
   local i = 0
   repeat
     local file = reaper.EnumerateFiles(base_path, i)
-    if file and file:match("^ARK_.*%.lua$") then
+    if file and file:match('^ARK_.*%.lua$') then
       apps[#apps + 1] = {
-        name = file:match("^ARK_(.*%.lua$"),
+        name = file:match('^ARK_(.*%.lua$'),
         path = base_path .. file,
         file = file,
       })
@@ -28,13 +28,13 @@ end
 
 function M.launch_app(app_path)
   if not reaper.file_exists(app_path) then
-    reaper.ShowConsoleMsg("App not found: " .. app_path .. "\n")
+    reaper.ShowConsoleMsg('App not found: ' .. app_path .. '\n')
     return false
   end
   
   -- Try to find existing registered command
-  local sanitized = app_path:gsub("[^%w]", "")
-  local cmd_name = "_RS" .. sanitized
+  local sanitized = app_path:gsub('[^%w]', '')
+  local cmd_name = '_RS' .. sanitized
   local cmd_id = reaper.NamedCommandLookup(cmd_name)
   
   -- If not found, register it now
@@ -43,7 +43,7 @@ function M.launch_app(app_path)
     cmd_id = reaper.AddRemoveReaScript(true, section_id, app_path, true)
     
     if not cmd_id or cmd_id == 0 then
-      reaper.ShowConsoleMsg("Failed to register script: " .. app_path .. "\n")
+      reaper.ShowConsoleMsg('Failed to register script: ' .. app_path .. '\n')
       return false
     end
   end
@@ -54,24 +54,24 @@ end
 
 function M.render_hub(ctx, opts)
   opts = opts or {}
-  local apps_path = opts.apps_path or ""
+  local apps_path = opts.apps_path or ''
   
-  ImGui.Text(ctx, "ARKITEKT Hub")
+  ImGui.Text(ctx, 'ARKITEKT Hub')
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 1, 10)
   
   local apps = scan_apps(apps_path)
   
   if #apps == 0 then
-    ImGui.TextWrapped(ctx, "No apps found in: " .. apps_path)
+    ImGui.TextWrapped(ctx, 'No apps found in: ' .. apps_path)
     ImGui.Dummy(ctx, 1, 10)
-    ImGui.TextWrapped(ctx, "Place ARK_*.lua scripts in this directory to see them here.")
+    ImGui.TextWrapped(ctx, 'Place ARK_*.lua scripts in this directory to see them here.')
   else
-    ImGui.Text(ctx, "Available Apps:")
+    ImGui.Text(ctx, 'Available Apps:')
     ImGui.Dummy(ctx, 1, 5)
     
     for _, app in ipairs(apps) do
-      if ImGui.Button(ctx, app.name .. "##launch_" .. app.file, 200, 30) then
+      if ImGui.Button(ctx, app.name .. '##launch_' .. app.file, 200, 30) then
         M.launch_app(app.path)
       end
       
@@ -85,8 +85,8 @@ function M.render_hub(ctx, opts)
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 1, 10)
   
-  ImGui.Text(ctx, "Settings")
-  ImGui.TextWrapped(ctx, "Theme and general settings coming soon...")
+  ImGui.Text(ctx, 'Settings')
+  ImGui.TextWrapped(ctx, 'Theme and general settings coming soon...')
 end
 
 return M

@@ -503,8 +503,8 @@ end
 
 -- Get state-based color (normal, hover, active)
 function M.get_state_color(colors, is_hovered, is_active, color_key)
-  local active_key = color_key .. "_active"
-  local hover_key = color_key .. "_hover"
+  local active_key = color_key .. '_active'
+  local hover_key = color_key .. '_hover'
 
   if is_active and colors[active_key] then
     return colors[active_key]

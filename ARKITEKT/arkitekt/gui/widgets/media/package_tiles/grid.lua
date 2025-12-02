@@ -172,7 +172,7 @@ local function create_opts(pkg, settings, theme, wrapper)
   end
 
   return {
-    id = "pkg_grid",
+    id = 'pkg_grid',
     gap = 12,
     min_col_w = function() return pkg.tile or 220 end,
     fixed_tile_h = wrapper._tile_height or 150,

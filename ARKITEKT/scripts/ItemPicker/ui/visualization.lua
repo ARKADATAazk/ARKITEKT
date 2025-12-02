@@ -20,7 +20,7 @@ local MIDI_CACHE_HEIGHT = 200
 -- Performance: Cache color conversions (5-10% faster)
 -- Uses weak table so unused colors get garbage collected
 local waveform_color_cache = {}
-setmetatable(waveform_color_cache, {__mode = "kv"})
+setmetatable(waveform_color_cache, {__mode = 'kv'})
 
 -- Compute darkened waveform/MIDI color with caching
 -- Applies HSV transformation to create contrast against tile background
@@ -58,7 +58,7 @@ function M.GetItemWaveform(cache, item, uuid)
   end
 
   -- Validate item and take
-  if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+  if not item or not reaper.ValidatePtr2(0, item, 'MediaItem*') then
     return nil
   end
 
@@ -80,14 +80,14 @@ function M.GetItemWaveform(cache, item, uuid)
 
   -- Try to create PCM source from file, fallback to original source if it fails
   local source = reaper.PCM_Source_CreateFromFile(filename)
-  if not source or not reaper.ValidatePtr2(0, source, "PCM_source*") then
+  if not source or not reaper.ValidatePtr2(0, source, 'PCM_source*') then
     source = sourceraw  -- Use original source if file creation fails
   end
 
   local length = math.min(
-    reaper.GetMediaItemInfo_Value(item, "D_LENGTH"),
-    (reaper.GetMediaSourceLength(source) - reaper.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS")) *
-    (1 / reaper.GetMediaItemTakeInfo_Value(take, "D_PLAYRATE"))
+    reaper.GetMediaItemInfo_Value(item, 'D_LENGTH'),
+    (reaper.GetMediaSourceLength(source) - reaper.GetMediaItemTakeInfo_Value(take, 'D_STARTOFFS')) *
+    (1 / reaper.GetMediaItemTakeInfo_Value(take, 'D_PLAYRATE'))
   )
 
   local channels = reaper.GetMediaSourceNumChannels(source)
@@ -103,7 +103,7 @@ function M.GetItemWaveform(cache, item, uuid)
   reaper.GetMediaItemTake_Peaks(
     take,
     WAVEFORM_RESOLUTION / length,
-    reaper.GetMediaItemInfo_Value(item, "D_POSITION"),
+    reaper.GetMediaItemInfo_Value(item, 'D_POSITION'),
     channels,
     WAVEFORM_RESOLUTION,
     0,
@@ -283,7 +283,7 @@ function M.GenerateMidiThumbnail(cache, item, w, h, uuid)
   end
 
   -- Validate item
-  if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+  if not item or not reaper.ValidatePtr2(0, item, 'MediaItem*') then
     return nil
   end
 
@@ -425,7 +425,7 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
   end
 
   -- Performance: Cache normalized point coordinates (20x faster)
-  local cache_key = uuid and (uuid .. "_" .. width) or nil
+  local cache_key = uuid and (uuid .. '_' .. width) or nil
   local cached_polylines = cache_key and cache and cache.waveform_polylines and cache.waveform_polylines[cache_key]
 
   if cached_polylines then
@@ -697,7 +697,7 @@ function M.DisplayPreviewLine(ctx, preview_start, preview_end, draw_list)
     local item_x2, item_y2 = ImGui.GetItemRectMax(ctx)
     local item_w, item_h = ImGui.GetItemRectSize(ctx)
     local x = item_x1 + item_w * progress
-    ImGui.DrawList_AddLine(draw_list, x, item_y1, x, item_y2, hexrgb("#FFFFFF"))
+    ImGui.DrawList_AddLine(draw_list, x, item_y1, x, item_y2, hexrgb('#FFFFFF'))
   end
 end
 

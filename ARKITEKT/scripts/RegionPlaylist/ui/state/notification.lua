@@ -98,9 +98,9 @@ function M.new(timeouts)
     if current_override_state ~= self.last_override_state then
       self.last_override_state = current_override_state
       if current_override_state then
-        self:set_state_change_notification("Override: Transport will take over when hitting a region")
+        self:set_state_change_notification('Override: Transport will take over when hitting a region')
       else
-        self:set_state_change_notification("Override disabled")
+        self:set_state_change_notification('Override disabled')
       end
     end
   end

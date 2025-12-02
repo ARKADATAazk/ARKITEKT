@@ -101,7 +101,7 @@ end
 --- @param panel_height number Panel height (content area)
 --- @param sidebar_cfg table Sidebar configuration
 --- @param panel_id string Panel ID
---- @param side string "left" or "right"
+--- @param side string 'left' or 'right'
 --- @return number Sidebar width consumed
 function M.draw(ctx, dl, panel_x, panel_y, panel_width, panel_height, sidebar_cfg, panel_id, side)
   if not sidebar_cfg or not sidebar_cfg.enabled then

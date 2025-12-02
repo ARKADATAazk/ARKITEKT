@@ -22,10 +22,10 @@ local M = {}
 
 --- Patterns for keys that should use normalized transforms (case-insensitive)
 local NORMALIZE_PATTERNS = {
-  "_[Bb][Rr][Ii][Gg][Hh][Tt][Nn][Ee][Ss][Ss]$",   -- _brightness (any case)
-  "_[Ss][Aa][Tt][Uu][Rr][Aa][Tt][Ii][Oo][Nn]$",   -- _saturation (any case)
-  "[Bb][Rr][Ii][Gg][Hh][Tt][Nn][Ee][Ss][Ss]$",    -- BRIGHTNESS (any case, no underscore)
-  "[Ss][Aa][Tt][Uu][Rr][Aa][Tt][Ii][Oo][Nn]$",    -- SATURATION (any case, no underscore)
+  '_[Bb][Rr][Ii][Gg][Hh][Tt][Nn][Ee][Ss][Ss]$',   -- _brightness (any case)
+  '_[Ss][Aa][Tt][Uu][Rr][Aa][Tt][Ii][Oo][Nn]$',   -- _saturation (any case)
+  '[Bb][Rr][Ii][Gg][Hh][Tt][Nn][Ee][Ss][Ss]$',    -- BRIGHTNESS (any case, no underscore)
+  '[Ss][Aa][Tt][Uu][Rr][Aa][Tt][Ii][Oo][Nn]$',    -- SATURATION (any case, no underscore)
 }
 
 --- Check if a key should use normalized transform
@@ -57,7 +57,7 @@ function M.normalize_to_multiplier(normalized)
   normalized = math.max(0, math.min(1, normalized))
 
   -- Linear transform: 0→0, 0.5→1, 1→2
-  -- This gives intuitive control where 0.5 is "default/unchanged"
+  -- This gives intuitive control where 0.5 is 'default/unchanged'
   return normalized * 2
 end
 
@@ -85,7 +85,7 @@ end
 --- @param t number Interpolation factor (0.0-1.0)
 --- @return any Resolved value
 local function resolve_value(def, t)
-  if type(def) ~= "table" then
+  if type(def) ~= 'table' then
     return def  -- Raw value
   end
 
@@ -96,11 +96,11 @@ local function resolve_value(def, t)
   local mode = def.mode
 
   -- snap/offset: discrete switch at midpoint (t=0.5)
-  if mode == "offset" or mode == "snap" then
+  if mode == 'offset' or mode == 'snap' then
     return t < 0.5 and def.dark or def.light
 
   -- snap3/offset3: discrete 3-zone switch (t=0.33, 0.67)
-  elseif mode == "offset3" or mode == "snap3" then
+  elseif mode == 'offset3' or mode == 'snap3' then
     if t < 0.33 then
       return def.dark
     elseif t < 0.67 then
@@ -110,23 +110,23 @@ local function resolve_value(def, t)
     end
 
   -- lerp: smooth interpolation
-  elseif mode == "lerp" then
+  elseif mode == 'lerp' then
     local dark_val, light_val = def.dark, def.light
-    if type(dark_val) == "number" and type(light_val) == "number" then
+    if type(dark_val) == 'number' and type(light_val) == 'number' then
       return dark_val + (light_val - dark_val) * t
-    elseif type(dark_val) == "string" and type(light_val) == "string" then
+    elseif type(dark_val) == 'string' and type(light_val) == 'string' then
       -- RGB color lerp
-      local color_a = Colors.hexrgb(dark_val .. (#dark_val == 7 and "FF" or ""))
-      local color_b = Colors.hexrgb(light_val .. (#light_val == 7 and "FF" or ""))
+      local color_a = Colors.hexrgb(dark_val .. (#dark_val == 7 and 'FF' or ''))
+      local color_b = Colors.hexrgb(light_val .. (#light_val == 7 and 'FF' or ''))
       local lerped = Colors.lerp(color_a, color_b, t)
       local r, g, b = Colors.rgba_to_components(lerped)
-      return string.format("#%02X%02X%02X", r, g, b)
+      return string.format('#%02X%02X%02X', r, g, b)
     else
       return t < 0.5 and dark_val or light_val
     end
 
   -- lerp3: piecewise interpolation (0.0-0.33 dark→mid, 0.33-0.67 mid→light, 0.67-1.0 light)
-  elseif mode == "lerp3" then
+  elseif mode == 'lerp3' then
     local dark_val, mid_val, light_val = def.dark, def.mid, def.light
     local val_a, val_b, local_t
 
@@ -142,15 +142,15 @@ local function resolve_value(def, t)
     end
 
     -- Interpolate based on type
-    if type(val_a) == "number" and type(val_b) == "number" then
+    if type(val_a) == 'number' and type(val_b) == 'number' then
       return val_a + (val_b - val_a) * local_t
-    elseif type(val_a) == "string" and type(val_b) == "string" then
+    elseif type(val_a) == 'string' and type(val_b) == 'string' then
       -- RGB color lerp
-      local color_a = Colors.hexrgb(val_a .. (#val_a == 7 and "FF" or ""))
-      local color_b = Colors.hexrgb(val_b .. (#val_b == 7 and "FF" or ""))
+      local color_a = Colors.hexrgb(val_a .. (#val_a == 7 and 'FF' or ''))
+      local color_b = Colors.hexrgb(val_b .. (#val_b == 7 and 'FF' or ''))
       local lerped = Colors.lerp(color_a, color_b, local_t)
       local r, g, b = Colors.rgba_to_components(lerped)
-      return string.format("#%02X%02X%02X", r, g, b)
+      return string.format('#%02X%02X%02X', r, g, b)
     else
       return local_t < 0.5 and val_a or val_b
     end
@@ -171,19 +171,19 @@ end
 --- @return any Computed value (RGBA color or number)
 local function derive_entry(base_bg, key, def, t)
   -- Raw value (not a table)
-  if type(def) ~= "table" or not def.mode then
+  if type(def) ~= 'table' or not def.mode then
     return def
   end
 
   local mode = def.mode
 
   -- BG: Use BG_BASE directly (passthrough)
-  if mode == "bg" then
+  if mode == 'bg' then
     return base_bg
   end
 
   -- OFFSET/OFFSET3: Apply delta to BG_BASE
-  if mode == "offset" or mode == "offset3" then
+  if mode == 'offset' or mode == 'offset3' then
     local delta = resolve_value(def, t)
     -- Clamp delta to valid range
     delta = math.max(-1, math.min(1, delta))
@@ -193,10 +193,10 @@ local function derive_entry(base_bg, key, def, t)
   -- SNAP/SNAP3/LERP/LERP3: Check value type
   local resolved = resolve_value(def, t)
 
-  if type(resolved) == "string" then
+  if type(resolved) == 'string' then
     -- Hex string → convert to RGBA
-    return Colors.hexrgb(resolved .. "FF")
-  elseif type(resolved) == "number" then
+    return Colors.hexrgb(resolved .. 'FF')
+  elseif type(resolved) == 'number' then
     -- Number → apply normalization if key matches pattern
     if should_normalize(key) then
       resolved = M.normalize_to_multiplier(resolved)

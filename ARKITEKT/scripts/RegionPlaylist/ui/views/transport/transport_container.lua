@@ -28,19 +28,19 @@ function M.new(opts)
 
   -- Require config to be passed in - no local defaults
   if not opts.config then
-    error("TransportContainer.new requires opts.config to be provided")
+    error('TransportContainer.new requires opts.config to be provided')
   end
 
   local cfg = opts.config
   local button_height = opts.button_height or 23
 
   local panel = Panel.new({
-    id = opts.id or "transport_panel",
+    id = opts.id or 'transport_panel',
     height = opts.height,
     width = opts.width,
 
     config = {
-      bg_color = cfg.panel_bg_color or hexrgb("#00000000"),
+      bg_color = cfg.panel_bg_color or hexrgb('#00000000'),
       border_thickness = 0,
       -- Transport panel: top corners square, bottom corners rounded
       rounding_tl = 0,  -- Top-left: square
@@ -57,10 +57,10 @@ function M.new(opts)
       header = {
         enabled = true,
         height = button_height,
-        position = "top",
-        valign = "middle",
-        bg_color = hexrgb("#00000000"),  -- Transparent so pattern shows through
-        border_color = hexrgb("#00000000"),  -- Transparent border
+        position = 'top',
+        valign = 'middle',
+        bg_color = hexrgb('#00000000'),  -- Transparent so pattern shows through
+        border_color = hexrgb('#00000000'),  -- Transparent border
         rounding = cfg.fx and cfg.fx.rounding or 8,
         padding = { left = 0, right = 0 },
         elements = opts.header_elements or {},
@@ -73,7 +73,7 @@ function M.new(opts)
 
   local container = setmetatable({
     panel = panel,
-    id = opts.id or "transport_panel",
+    id = opts.id or 'transport_panel',
     config = cfg,
 
     height = opts.height,
@@ -91,7 +91,7 @@ function M.new(opts)
 
     -- Jump flash effect
     jump_flash_alpha = 0.0,
-    jump_flash_state = "idle",  -- "idle", "holding", "fading"
+    jump_flash_state = 'idle',  -- 'idle', 'holding', 'fading'
     jump_target_rid = nil,      -- Target region ID we're jumping to
   }, TransportPanel)
 
@@ -114,29 +114,29 @@ end
 -- Trigger jump flash effect (call when jump button is clicked)
 function TransportPanel:trigger_jump_flash(target_rid)
   self.jump_flash_alpha = 1.0
-  self.jump_flash_state = "holding"
+  self.jump_flash_state = 'holding'
   self.jump_target_rid = target_rid
 end
 
 -- Cancel jump flash effect (call when transport stops or transition cancelled)
 function TransportPanel:cancel_jump_flash()
   self.jump_flash_alpha = 0.0
-  self.jump_flash_state = "idle"
+  self.jump_flash_state = 'idle'
   self.jump_target_rid = nil
 end
 
 -- Update jump flash (hold during transition, fade after reaching target)
 function TransportPanel:update_jump_flash(dt, current_rid)
-  if self.jump_flash_state == "holding" then
+  if self.jump_flash_state == 'holding' then
     -- Hold at full opacity until we reach the target region
     if current_rid and self.jump_target_rid and current_rid == self.jump_target_rid then
       -- Transition complete, start fading
-      self.jump_flash_state = "fading"
+      self.jump_flash_state = 'fading'
     end
     -- Keep alpha at 1.0 while holding
     self.jump_flash_alpha = 1.0
 
-  elseif self.jump_flash_state == "fading" then
+  elseif self.jump_flash_state == 'fading' then
     -- Fade out
     if self.jump_flash_alpha > 0.0 then
       local fade_speed = (self.config.fx and self.config.fx.jump_flash and self.config.fx.jump_flash.fade_speed) or 3.0
@@ -144,7 +144,7 @@ function TransportPanel:update_jump_flash(dt, current_rid)
       self.jump_flash_alpha = max(0.0, self.jump_flash_alpha - fade_delta)
 
       if self.jump_flash_alpha == 0.0 then
-        self.jump_flash_state = "idle"
+        self.jump_flash_state = 'idle'
         self.jump_target_rid = nil
       end
     end
@@ -263,7 +263,7 @@ function TransportPanel:reset()
   self.target_current_color = nil
   self.target_next_color = nil
   self.jump_flash_alpha = 0.0
-  self.jump_flash_state = "idle"
+  self.jump_flash_state = 'idle'
   self.jump_target_rid = nil
 end
 
@@ -297,7 +297,7 @@ end
 
 function M.draw(ctx, id, width, height, content_fn, config, region_colors, current_rid)
   if not config then
-    error("TransportContainer.draw requires config parameter")
+    error('TransportContainer.draw requires config parameter')
   end
 
   region_colors = region_colors or {}

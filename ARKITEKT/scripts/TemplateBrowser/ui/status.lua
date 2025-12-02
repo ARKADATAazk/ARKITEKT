@@ -15,7 +15,7 @@ function M.draw(ctx, state, width, height)
 
   -- Get message from notification service
   local message, msg_type = state.notification and state.notification:get() or nil, nil
-  if not message or message == "" then
+  if not message or message == '' then
     return
   end
 

@@ -706,7 +706,7 @@ function M.start_inline_edit(grid, key, initial_text)
   grid.editing_state = {
     active = true,
     key = key,
-    text = initial_text or "",
+    text = initial_text or '',
     focus_next_frame = true,
     frames_active = 0,  -- Track frames to prevent immediate cancellation
   }
@@ -782,9 +782,9 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
   else
     -- Fallback colors
     local hexrgb = Colors.hexrgb
-    bg_color = hexrgb("#1A1A1AE0")
-    text_color = hexrgb("#FFFFFFDD")
-    selection_color = hexrgb("#4444AAAA")
+    bg_color = hexrgb('#1A1A1AE0')
+    text_color = hexrgb('#FFFFFFDD')
+    selection_color = hexrgb('#4444AAAA')
   end
 
   -- Draw backdrop (no borders)
@@ -801,17 +801,17 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
   end
 
   -- Style the input field to be transparent (we drew our own backdrop)
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, Colors.hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb('#00000000'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb('#00000000'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb('#00000000'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, Colors.hexrgb('#00000000'))
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
   ImGui.PushStyleColor(ctx, ImGui.Col_TextSelectedBg, selection_color)
 
   -- Draw input field with AutoSelectAll flag for better UX
   local changed, new_text = ImGui.InputText(
     ctx,
-    "##inline_edit_" .. key,
+    '##inline_edit_' .. key,
     state.text,
     ImGui.InputTextFlags_AutoSelectAll
   )

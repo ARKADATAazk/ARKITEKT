@@ -157,7 +157,7 @@ function Renderer:draw_stretch_pattern(ctx, dl, x, y, w, h, direction, color)
   -- Use clip rect to ensure lines stay within bounds
   ImGui.DrawList_PushClipRect(dl, x, y, x + w, y + h, true)
 
-  if direction == "horizontal" or direction == "both" then
+  if direction == 'horizontal' or direction == 'both' then
     -- Diagonal lines from top-left to bottom-right (↘)
     local total_span = w + h
     for offset = 0, total_span, spacing do
@@ -169,7 +169,7 @@ function Renderer:draw_stretch_pattern(ctx, dl, x, y, w, h, direction, color)
     end
   end
 
-  if direction == "vertical" then
+  if direction == 'vertical' then
     -- Diagonal lines from top-right to bottom-left (↙)
     local total_span = w + h
     for offset = 0, total_span, spacing do
@@ -212,15 +212,15 @@ function Renderer:draw_element(ctx, dl, canvas_x, canvas_y, sim_result, opts)
 
   -- Draw stretch pattern if showing attachments
   if opts.show_attachments then
-    local h_stretch = sim_result.h_behavior == "stretch_end" or sim_result.h_behavior == "stretch_start"
-    local v_stretch = sim_result.v_behavior == "stretch_end" or sim_result.v_behavior == "stretch_start"
+    local h_stretch = sim_result.h_behavior == 'stretch_end' or sim_result.h_behavior == 'stretch_start'
+    local v_stretch = sim_result.v_behavior == 'stretch_end' or sim_result.v_behavior == 'stretch_start'
 
     if h_stretch and v_stretch then
-      self:draw_stretch_pattern(ctx, dl, x1, y1, rect.w, rect.h, "both", border_color)
+      self:draw_stretch_pattern(ctx, dl, x1, y1, rect.w, rect.h, 'both', border_color)
     elseif h_stretch then
-      self:draw_stretch_pattern(ctx, dl, x1, y1, rect.w, rect.h, "horizontal", border_color)
+      self:draw_stretch_pattern(ctx, dl, x1, y1, rect.w, rect.h, 'horizontal', border_color)
     elseif v_stretch then
-      self:draw_stretch_pattern(ctx, dl, x1, y1, rect.w, rect.h, "vertical", border_color)
+      self:draw_stretch_pattern(ctx, dl, x1, y1, rect.w, rect.h, 'vertical', border_color)
     end
   end
 
@@ -234,7 +234,7 @@ function Renderer:draw_element(ctx, dl, canvas_x, canvas_y, sim_result, opts)
     -- Truncate name if needed
     local max_chars = math.floor((rect.w - 6) / 6)  -- Approximate char width
     if #name > max_chars then
-      name = name:sub(1, max_chars - 2) .. ".."
+      name = name:sub(1, max_chars - 2) .. '..'
     end
 
     ImGui.DrawList_AddText(dl, x1 + 3, y1 + 2, Colors.TEXT.BRIGHT, name)
@@ -242,16 +242,16 @@ function Renderer:draw_element(ctx, dl, canvas_x, canvas_y, sim_result, opts)
     -- Show ID below name if there's room (for elements with different name/id)
     if rect.h > 26 and element.id and element.name ~= element.id then
       local id_display = element.id
-      -- Extract short ID (e.g., "tcp.mute" -> "mute")
-      local short_id = id_display:match("%.([^%.]+)$") or id_display
+      -- Extract short ID (e.g., 'tcp.mute' -> 'mute')
+      local short_id = id_display:match('%.([^%.]+)$') or id_display
       if #short_id > max_chars then
-        short_id = short_id:sub(1, max_chars - 2) .. ".."
+        short_id = short_id:sub(1, max_chars - 2) .. '..'
       end
       ImGui.DrawList_AddText(dl, x1 + 3, y1 + 14, Colors.TEXT.DIM, short_id)
     end
   elseif rect.w > 16 and rect.h > 10 then
     -- For smaller elements, show abbreviated ID
-    local short = (element.id or "?"):match("%.([^%.]+)$") or (element.id or "?")
+    local short = (element.id or '?'):match('%.([^%.]+)$') or (element.id or '?')
     local abbrev = short:sub(1, 3):upper()
     ImGui.DrawList_AddText(dl, x1 + 2, y1 + 1, Colors.TEXT.DIM, abbrev)
   end
@@ -274,27 +274,27 @@ end
 
 -- Draw legend explaining colors
 function Renderer:draw_legend(ctx)
-  ImGui.Text(ctx, "Legend:")
+  ImGui.Text(ctx, 'Legend:')
 
   ImGui.SameLine(ctx, 0, 10)
-  ImGui.ColorButton(ctx, "##fixed", Colors.ATTACHMENT.FIXED, ImGui.ColorEditFlags_NoTooltip, 12, 12)
+  ImGui.ColorButton(ctx, '##fixed', Colors.ATTACHMENT.FIXED, ImGui.ColorEditFlags_NoTooltip, 12, 12)
   ImGui.SameLine(ctx, 0, 4)
-  ImGui.Text(ctx, "Fixed")
+  ImGui.Text(ctx, 'Fixed')
 
   ImGui.SameLine(ctx, 0, 10)
-  ImGui.ColorButton(ctx, "##stretch_h", Colors.ATTACHMENT.STRETCH_H, ImGui.ColorEditFlags_NoTooltip, 12, 12)
+  ImGui.ColorButton(ctx, '##stretch_h', Colors.ATTACHMENT.STRETCH_H, ImGui.ColorEditFlags_NoTooltip, 12, 12)
   ImGui.SameLine(ctx, 0, 4)
-  ImGui.Text(ctx, "Stretch H")
+  ImGui.Text(ctx, 'Stretch H')
 
   ImGui.SameLine(ctx, 0, 10)
-  ImGui.ColorButton(ctx, "##stretch_v", Colors.ATTACHMENT.STRETCH_V, ImGui.ColorEditFlags_NoTooltip, 12, 12)
+  ImGui.ColorButton(ctx, '##stretch_v', Colors.ATTACHMENT.STRETCH_V, ImGui.ColorEditFlags_NoTooltip, 12, 12)
   ImGui.SameLine(ctx, 0, 4)
-  ImGui.Text(ctx, "Stretch V")
+  ImGui.Text(ctx, 'Stretch V')
 
   ImGui.SameLine(ctx, 0, 10)
-  ImGui.ColorButton(ctx, "##move", Colors.ATTACHMENT.MOVE, ImGui.ColorEditFlags_NoTooltip, 12, 12)
+  ImGui.ColorButton(ctx, '##move', Colors.ATTACHMENT.MOVE, ImGui.ColorEditFlags_NoTooltip, 12, 12)
   ImGui.SameLine(ctx, 0, 4)
-  ImGui.Text(ctx, "Move")
+  ImGui.Text(ctx, 'Move')
 end
 
 return M

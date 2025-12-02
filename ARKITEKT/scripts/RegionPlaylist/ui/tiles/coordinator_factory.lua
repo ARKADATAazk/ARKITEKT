@@ -10,7 +10,7 @@ local HeightStabilizer = require('arkitekt.gui.layout.height_stabilizer')
 local Selector = require('RegionPlaylist.ui.tiles.selector')
 local GridBridge = require('arkitekt.gui.widgets.containers.grid.grid_bridge')
 local ActiveTile = require('RegionPlaylist.ui.tiles.renderers.active')
-local State = require("RegionPlaylist.app.state")
+local State = require('RegionPlaylist.app.state')
 local Logger = require('arkitekt.debug.logger')
 
 local M = {}
@@ -131,7 +131,7 @@ function M.new(Coordinator, opts)
       if success then
         rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
       elseif err then
-        Logger.error("COORDINATOR", "Error: %s", tostring(err))
+        Logger.error('COORDINATOR', 'Error: %s', tostring(err))
       end
       return success, err
     end
@@ -178,7 +178,7 @@ function M.new(Coordinator, opts)
   })
 
   rt.active_container = Ark.Panel.new({
-    id = "active_tiles_container",
+    id = 'active_tiles_container',
     config = active_config,
   })
 
@@ -187,8 +187,8 @@ function M.new(Coordinator, opts)
   -- >>> POOL MODE STATE (BEGIN)
   -- State-first pattern: Define state before callbacks
   local pool_mode_state = {
-    current_mode = opts.pool_mode or "regions",
-    previous_mode = "regions"
+    current_mode = opts.pool_mode or 'regions',
+    previous_mode = 'regions'
   }
   -- <<< POOL MODE STATE (END)
 
@@ -196,17 +196,17 @@ function M.new(Coordinator, opts)
     on_mode_toggle = function()
       -- Left-click: toggle between regions and playlists
       local new_mode
-      if pool_mode_state.current_mode == "regions" then
-        new_mode = "playlists"
-      elseif pool_mode_state.current_mode == "playlists" then
-        new_mode = "regions"
+      if pool_mode_state.current_mode == 'regions' then
+        new_mode = 'playlists'
+      elseif pool_mode_state.current_mode == 'playlists' then
+        new_mode = 'regions'
       else
         -- If in mixed, go to previous mode
         new_mode = pool_mode_state.previous_mode
       end
 
       -- Update previous mode if we're not in mixed
-      if new_mode ~= "mixed" then
+      if new_mode ~= 'mixed' then
         pool_mode_state.previous_mode = new_mode
       end
 
@@ -220,13 +220,13 @@ function M.new(Coordinator, opts)
     on_mode_toggle_right = function()
       -- Right-click: toggle mixed mode on/off
       local new_mode
-      if pool_mode_state.current_mode == "mixed" then
+      if pool_mode_state.current_mode == 'mixed' then
         -- Exit mixed mode, restore previous mode
         new_mode = pool_mode_state.previous_mode
       else
         -- Enter mixed mode, save current mode
         pool_mode_state.previous_mode = pool_mode_state.current_mode
-        new_mode = "mixed"
+        new_mode = 'mixed'
       end
       pool_mode_state.current_mode = new_mode
       rt.pool_container.current_mode = new_mode
@@ -259,11 +259,11 @@ function M.new(Coordinator, opts)
   })
 
   rt.pool_container = Ark.Panel.new({
-    id = "pool_tiles_container",
+    id = 'pool_tiles_container',
     config = pool_config,
   })
 
-  rt.pool_container.current_mode = opts.pool_mode or "regions"
+  rt.pool_container.current_mode = opts.pool_mode or 'regions'
 
   rt.bridge = GridBridge.new({
     copy_mode_detector = function(source, target, payload)
@@ -297,11 +297,11 @@ function M.new(Coordinator, opts)
         for _, item_data in ipairs(drop_info.payload) do
           local new_key = nil
 
-          if type(item_data) == "number" then
+          if type(item_data) == 'number' then
             if rt.on_pool_to_active then
               new_key = rt.on_pool_to_active(item_data, insert_index)
             end
-          elseif type(item_data) == "table" and item_data.type == "playlist" then
+          elseif type(item_data) == 'table' and item_data.type == 'playlist' then
             local active_playlist_id = rt.active_container:get_active_tab_id()
 
             if rt.detect_circular_ref then
@@ -309,7 +309,7 @@ function M.new(Coordinator, opts)
               if circular then
                 -- Set error in status bar and skip
                 if rt.State and rt.State.set_circular_dependency_error then
-                  rt.State.set_circular_dependency_error("Cannot add playlist - would create circular dependency")
+                  rt.State.set_circular_dependency_error('Cannot add playlist - would create circular dependency')
                 end
                 goto continue_loop
               end
@@ -341,26 +341,26 @@ function M.new(Coordinator, opts)
             local playlist_count = 0
 
             for _, item_data in ipairs(drop_info.payload) do
-              if type(item_data) == "number" then
+              if type(item_data) == 'number' then
                 region_count = region_count + 1
-              elseif type(item_data) == "table" and item_data.type == "playlist" then
+              elseif type(item_data) == 'table' and item_data.type == 'playlist' then
                 playlist_count = playlist_count + 1
               end
             end
 
             local parts = {}
             if region_count > 0 then
-              parts[#parts + 1] = string.format("%d region%s", region_count, region_count > 1 and "s" or "")
+              parts[#parts + 1] = string.format('%d region%s', region_count, region_count > 1 and 's' or '')
             end
             if playlist_count > 0 then
-              parts[#parts + 1] = string.format("%d playlist%s", playlist_count, playlist_count > 1 and "s" or "")
+              parts[#parts + 1] = string.format('%d playlist%s', playlist_count, playlist_count > 1 and 's' or '')
             end
 
             if #parts > 0 then
-              local items_text = table.concat(parts, ", ")
+              local items_text = table.concat(parts, ', ')
               local active_playlist = rt.State.get_active_playlist and rt.State.get_active_playlist()
-              local playlist_name = active_playlist and active_playlist.name or "Active Grid"
-              rt.State.set_state_change_notification(string.format("Copied %s from Pool Grid to Active Grid (%s)", items_text, playlist_name))
+              local playlist_name = active_playlist and active_playlist.name or 'Active Grid'
+              rt.State.set_state_change_notification(string.format('Copied %s from Pool Grid to Active Grid (%s)', items_text, playlist_name))
             end
           end
 
@@ -415,13 +415,13 @@ function M.new(Coordinator, opts)
 
       -- Handle both regions and playlists by checking key pattern
       for _, key in ipairs(item_keys) do
-        local playlist_id = key:match("pool_playlist_(.+)")
+        local playlist_id = key:match('pool_playlist_(.+)')
         if playlist_id and rt.get_playlist_by_id then
           -- It's a playlist
           local playlist = rt.get_playlist_by_id(playlist_id)
           if playlist then
             payload[#payload + 1] = {
-              type = "playlist",
+              type = 'playlist',
               id = playlist.id,
               name = playlist.name,
               chip_color = playlist.chip_color,
@@ -430,7 +430,7 @@ function M.new(Coordinator, opts)
           end
         else
           -- It's a region
-          local rid = tonumber(key:match("pool_(%d+)"))
+          local rid = tonumber(key:match('pool_(%d+)'))
           if rid then
             payload[#payload + 1] = rid
           end

@@ -23,7 +23,7 @@ end
 local function skip_if_no_regions(test_fn)
   return function()
     if not has_regions() then
-      Logger.warn("TEST", "SKIPPED - No regions in project")
+      Logger.warn('TEST', 'SKIPPED - No regions in project')
       return
     end
     test_fn()
@@ -45,9 +45,9 @@ function engine_tests.test_engine_state_scans_regions()
     region_count = region_count + 1
   end
 
-  Logger.info("TEST", "Engine scanned %d regions from project", region_count)
-  assert.is_type(state.region_cache, "table", "region_cache should be table")
-  assert.equals(get_region_count(), region_count, "Should match actual region count")
+  Logger.info('TEST', 'Engine scanned %d regions from project', region_count)
+  assert.is_type(state.region_cache, 'table', 'region_cache should be table')
+  assert.equals(get_region_count(), region_count, 'Should match actual region count')
 end
 
 engine_tests.test_engine_state_detects_changes = skip_if_no_regions(function()
@@ -56,7 +56,7 @@ engine_tests.test_engine_state_detects_changes = skip_if_no_regions(function()
 
   -- Initial state - no changes
   local changed = state:check_for_changes()
-  assert.falsy(changed, "No changes immediately after creation")
+  assert.falsy(changed, 'No changes immediately after creation')
 end)
 
 -- ============================================================================
@@ -72,8 +72,8 @@ function storage_tests.test_save_and_load_playlists()
   -- Create test playlist
   local test_playlist = {
     {
-      id = "test-" .. Ark.UUID.generate(),
-      name = "Integration Test Playlist",
+      id = 'test-' .. Ark.UUID.generate(),
+      name = 'Integration Test Playlist',
       items = {},
       chip_color = Persistence.generate_chip_color(),
     }
@@ -84,46 +84,46 @@ function storage_tests.test_save_and_load_playlists()
 
   -- Load and verify
   local loaded = Persistence.load_playlists(0)
-  assert.not_nil(loaded, "Should load playlists")
-  assert.truthy(#loaded >= 1, "Should have at least 1 playlist")
+  assert.not_nil(loaded, 'Should load playlists')
+  assert.truthy(#loaded >= 1, 'Should have at least 1 playlist')
 
   -- Find our test playlist
   local found = false
   for _, pl in ipairs(loaded) do
-    if pl.name == "Integration Test Playlist" then
+    if pl.name == 'Integration Test Playlist' then
       found = true
       break
     end
   end
-  assert.truthy(found, "Should find our test playlist")
+  assert.truthy(found, 'Should find our test playlist')
 end
 
 function storage_tests.test_save_and_load_settings()
   local Persistence = require('RegionPlaylist.data.storage')
 
   local test_settings = {
-    quantize_mode = "beat",
+    quantize_mode = 'beat',
     shuffle_enabled = true,
-    test_key = "test_value_" .. math.random(1000),
+    test_key = 'test_value_' .. math.random(1000),
   }
 
   Persistence.save_settings(test_settings, 0)
   local loaded = Persistence.load_settings(0)
 
-  assert.not_nil(loaded, "Should load settings")
-  assert.equals(test_settings.quantize_mode, loaded.quantize_mode, "quantize_mode should match")
-  assert.equals(test_settings.shuffle_enabled, loaded.shuffle_enabled, "shuffle_enabled should match")
-  assert.equals(test_settings.test_key, loaded.test_key, "test_key should match")
+  assert.not_nil(loaded, 'Should load settings')
+  assert.equals(test_settings.quantize_mode, loaded.quantize_mode, 'quantize_mode should match')
+  assert.equals(test_settings.shuffle_enabled, loaded.shuffle_enabled, 'shuffle_enabled should match')
+  assert.equals(test_settings.test_key, loaded.test_key, 'test_key should match')
 end
 
 function storage_tests.test_active_playlist_persistence()
   local Persistence = require('RegionPlaylist.data.storage')
 
-  local test_id = "test-active-" .. math.random(1000)
+  local test_id = 'test-active-' .. math.random(1000)
   Persistence.save_active_playlist(test_id, 0)
 
   local loaded = Persistence.load_active_playlist(0)
-  assert.equals(test_id, loaded, "Active playlist ID should persist")
+  assert.equals(test_id, loaded, 'Active playlist ID should persist')
 end
 
 -- ============================================================================
@@ -135,11 +135,11 @@ local expander_tests = {}
 function expander_tests.test_expand_empty_playlist()
   local SequenceExpander = require('RegionPlaylist.domain.playback.expander')
 
-  local empty_playlist = { id = "empty", name = "Empty", items = {} }
+  local empty_playlist = { id = 'empty', name = 'Empty', items = {} }
   local sequence, map = SequenceExpander.expand_playlist(empty_playlist, function() return nil end)
 
-  assert.is_type(sequence, "table", "Should return table")
-  assert.table_length(sequence, 0, "Empty playlist should produce empty sequence")
+  assert.is_type(sequence, 'table', 'Should return table')
+  assert.table_length(sequence, 0, 'Empty playlist should produce empty sequence')
 end
 
 expander_tests.test_expand_playlist_with_regions = skip_if_no_regions(function()
@@ -165,17 +165,17 @@ expander_tests.test_expand_playlist_with_regions = skip_if_no_regions(function()
   if not first_rid then return end
 
   local playlist = {
-    id = "test",
-    name = "Test",
+    id = 'test',
+    name = 'Test',
     items = {
-      { type = "region", rid = first_rid, reps = 2, key = Ark.UUID.generate() }
+      { type = 'region', rid = first_rid, reps = 2, key = Ark.UUID.generate() }
     }
   }
 
   local sequence, map = SequenceExpander.expand_playlist(playlist, function() return nil end)
 
-  assert.truthy(#sequence >= 2, "Should expand reps into sequence entries")
-  Logger.info("TEST", "Expanded playlist to %d sequence entries", #sequence)
+  assert.truthy(#sequence >= 2, 'Should expand reps into sequence entries')
+  Logger.info('TEST', 'Expanded playlist to %d sequence entries', #sequence)
 end)
 
 -- ============================================================================
@@ -194,9 +194,9 @@ function transport_tests.test_transport_creation()
     state = state,
   })
 
-  assert.not_nil(transport, "Transport should be created")
-  assert.falsy(transport.is_playing, "Should not be playing initially")
-  assert.falsy(transport.is_paused, "Should not be paused initially")
+  assert.not_nil(transport, 'Transport should be created')
+  assert.falsy(transport.is_playing, 'Should not be playing initially')
+  assert.falsy(transport.is_paused, 'Should not be paused initially')
 end
 
 function transport_tests.test_transport_settings()
@@ -211,21 +211,21 @@ function transport_tests.test_transport_settings()
     shuffle_enabled = true,
   })
 
-  assert.truthy(transport:get_loop_playlist(), "loop_playlist should be enabled")
-  assert.truthy(transport:get_shuffle_enabled(), "shuffle should be enabled")
+  assert.truthy(transport:get_loop_playlist(), 'loop_playlist should be enabled')
+  assert.truthy(transport:get_shuffle_enabled(), 'shuffle should be enabled')
 
   transport:set_loop_playlist(false)
-  assert.falsy(transport:get_loop_playlist(), "loop_playlist should be disabled")
+  assert.falsy(transport:get_loop_playlist(), 'loop_playlist should be disabled')
 end
 
 -- ============================================================================
 -- REGISTER TEST SUITES
 -- ============================================================================
 
-TestRunner.register("RegionPlaylist.integration.engine", engine_tests)
-TestRunner.register("RegionPlaylist.integration.storage", storage_tests)
-TestRunner.register("RegionPlaylist.integration.expander", expander_tests)
-TestRunner.register("RegionPlaylist.integration.transport", transport_tests)
+TestRunner.register('RegionPlaylist.integration.engine', engine_tests)
+TestRunner.register('RegionPlaylist.integration.storage', storage_tests)
+TestRunner.register('RegionPlaylist.integration.expander', expander_tests)
+TestRunner.register('RegionPlaylist.integration.transport', transport_tests)
 
 return {
   engine = engine_tests,

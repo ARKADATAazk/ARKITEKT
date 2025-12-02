@@ -385,7 +385,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- PERF: Cache text height per context (doesn't change within a frame)
   if _cached.text_height_ctx ~= ctx then
-    local _, h = CalcTextSize(ctx, "1")
+    local _, h = CalcTextSize(ctx, '1')
     _cached.text_height = h
     _cached.text_height_ctx = ctx
   end
@@ -410,7 +410,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     if cached_pool then
       pool_w = cached_pool[2]
     else
-      local pool_text = "×" .. tostring(pool_count)
+      local pool_text = '×' .. tostring(pool_count)
       pool_w = CalcTextSize(ctx, pool_text)
     end
     local pool_badge_w = pool_w + cfg.badge_pool_padding_x * 2
@@ -421,7 +421,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local is_renaming = state.rename_active and state.rename_uuid == item_data.uuid and state.rename_is_audio
 
   -- Populate rename text if it's empty (happens when moving to next item in batch)
-  if is_renaming and (not state.rename_text or state.rename_text == "") then
+  if is_renaming and (not state.rename_text or state.rename_text == '') then
     state.rename_text = item_data.name
   end
 
@@ -447,7 +447,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         state.rename_focus_frame = true  -- Mark this as the focus frame
       end
 
-      local changed, new_text = ImGui.InputText(ctx, "##rename", state.rename_text, ImGui.InputTextFlags_EnterReturnsTrue)
+      local changed, new_text = ImGui.InputText(ctx, '##rename', state.rename_text, ImGui.InputTextFlags_EnterReturnsTrue)
 
       -- Update rename text in real-time (even if not committed with Enter)
       if not changed then
@@ -464,7 +464,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         local item = lookup_data.item or lookup_data[1]
 
         -- Validate item pointer
-        if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+        if not item or not reaper.ValidatePtr2(0, item, 'MediaItem*') then
           state.rename_active = false
           state.rename_uuid = nil
           state.rename_focused = false
@@ -480,11 +480,11 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         reaper.Undo_BeginBlock()
         local take = reaper.GetActiveTake(item)
         if take then
-          reaper.GetSetMediaItemTakeInfo_String(take, "P_NAME", new_text, true)
+          reaper.GetSetMediaItemTakeInfo_String(take, 'P_NAME', new_text, true)
 
           -- Update the name in the lookup immediately so tile reflects change
           if state.audio_item_lookup[item_data.uuid] then
-            if type(state.audio_item_lookup[item_data.uuid]) == "table" then
+            if type(state.audio_item_lookup[item_data.uuid]) == 'table' then
               state.audio_item_lookup[item_data.uuid][2] = new_text
             end
           end
@@ -506,7 +506,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
           reaper.UpdateArrange()
         end
-        reaper.Undo_EndBlock("Rename item take", -1)
+        reaper.Undo_EndBlock('Rename item take', -1)
 
         -- Check if there are more items in the batch rename queue
         if state.rename_queue and state.rename_queue_index < #state.rename_queue then
@@ -519,7 +519,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
           -- For now, set to empty and let the next frame's double_click logic populate it
           state.rename_uuid = next_uuid
           state.rename_focused = false
-          state.rename_text = ""  -- Will be populated by factory on next frame
+          state.rename_text = ''  -- Will be populated by factory on next frame
           state.rename_focus_frame = false
         else
           -- No more items in queue, end rename session
@@ -575,7 +575,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     -- Position favorite to the left of cycle badge (if it exists)
     if item_data.total and item_data.total > 1 then
       -- Calculate where cycle badge will be positioned
-      local cycle_text = format("%d/%d", item_data.index or 1, item_data.total)
+      local cycle_text = format('%d/%d', item_data.index or 1, item_data.total)
       local cycle_w = CalcTextSize(ctx, cycle_text)
       local cycle_badge_w = cycle_w + cfg.badge_cycle_padding_x * 2
       local cycle_x = scaled_x2 - cycle_badge_w - cfg.badge_cycle_margin
@@ -613,7 +613,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       if dur_cache then
         max_chip_x = max_chip_x - dur_cache[2] - cfg.duration_text_margin_x - chip_cfg.margin_x
       else
-        local duration = reaper.GetMediaItemInfo_Value(item_data.item, "D_LENGTH")
+        local duration = reaper.GetMediaItemInfo_Value(item_data.item, 'D_LENGTH')
         if duration > 0 then
           -- Conservative estimate
           max_chip_x = max_chip_x - 50 - cfg.duration_text_margin_x - chip_cfg.margin_x
@@ -645,8 +645,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Truncate text if needed to fit
       local display_name = region_name
       if chip_w > available_width then
-        -- Binary search to find max text that fits with "..."
-        local ellipsis = "..."
+        -- Binary search to find max text that fits with '...'
+        local ellipsis = '...'
         local ellipsis_w = CalcTextSize(ctx, ellipsis)
         local target_w = available_width - chip_pad_x2 - ellipsis_w
 
@@ -704,7 +704,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     if cached_pool then
       pool_text, badge_text_w, badge_text_h = cached_pool[1], cached_pool[2], cached_pool[3]
     else
-      pool_text = "×" .. tostring(pool_count)
+      pool_text = '×' .. tostring(pool_count)
       badge_text_w, badge_text_h = CalcTextSize(ctx, pool_text)
       _cached.pool_badges = _cached.pool_badges or {}
       _cached.pool_badges[pool_count] = {pool_text, badge_text_w, badge_text_h}
@@ -724,7 +724,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
     -- Adjust position if cycle badge is visible
     if item_data.total and item_data.total > 1 then
-      local cycle_badge_text = format("%d/%d", item_data.index or 1, item_data.total)
+      local cycle_badge_text = format('%d/%d', item_data.index or 1, item_data.total)
       local cycle_w = CalcTextSize(ctx, cycle_badge_text)
       local cycle_badge_w = cycle_w + cfg.badge_cycle_padding_x * 2
       badge_x = badge_x - cycle_badge_w - cfg.badge_cycle_margin
@@ -752,7 +752,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local show_duration = state.settings.show_duration
   if show_duration == nil then show_duration = true end
   if show_duration and cascade_factor > 0.3 and compact_factor < 0.5 and item_data.item then
-    local duration = reaper.GetMediaItemInfo_Value(item_data.item, "D_LENGTH")
+    local duration = reaper.GetMediaItemInfo_Value(item_data.item, 'D_LENGTH')
     if duration > 0 then
       -- PERF: Cache duration text and dimensions by UUID (consistent with region chips)
       local dur_cache = _cached.duration_text[item_data.uuid]

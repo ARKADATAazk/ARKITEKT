@@ -1,9 +1,9 @@
 -- ARKITEKT Namespace
 -- Provides ImGui-style access to all widgets via lazy loading
 -- Auto-loads ImGui and bootstrap utilities
--- Usage: local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
+-- Usage: local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 --        local ctx = Ark.ImGui.CreateContext('My Script')
---        Ark.Button.draw(ctx, {label = "Click"})
+--        Ark.Button.draw(ctx, {label = 'Click'})
 
 -- ============================================================================
 -- SINGLETON PATTERN
@@ -28,21 +28,21 @@ end
 -- ============================================================================
 -- Run bootstrap to set up package paths and validate dependencies
 local sep = package.config:sub(1,1)
-local src = debug.getinfo(1,"S").source:sub(2)
+local src = debug.getinfo(1,'S').source:sub(2)
 -- Get the directory containing this init.lua (arkitekt/)
-local arkitekt_dir = src:match("(.-arkitekt)[/\\]") or src:match("(.*)[/\\]")
+local arkitekt_dir = src:match('(.-arkitekt)[/\\]') or src:match('(.*)[/\\]')
 if not arkitekt_dir then
-  error("ARKITEKT init.lua: Cannot determine arkitekt directory from: " .. tostring(src))
+  error('ARKITEKT init.lua: Cannot determine arkitekt directory from: ' .. tostring(src))
 end
-local bootstrap_path = arkitekt_dir .. sep .. "arkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
+local bootstrap_path = arkitekt_dir .. sep .. 'arkitekt' .. sep .. 'app' .. sep .. 'bootstrap.lua'
 -- If this file IS in arkitekt/, adjust path
-if src:match("arkitekt[/\\]init%.lua$") then
-  bootstrap_path = arkitekt_dir .. sep .. "app" .. sep .. "bootstrap.lua"
+if src:match('arkitekt[/\\]init%.lua$') then
+  bootstrap_path = arkitekt_dir .. sep .. 'app' .. sep .. 'bootstrap.lua'
 end
 local bootstrap_context = dofile(bootstrap_path).init()
 
 if not bootstrap_context then
-  error("ARKITEKT bootstrap failed - cannot continue")
+  error('ARKITEKT bootstrap failed - cannot continue')
 end
 
 local Ark = {}
@@ -126,7 +126,7 @@ setmetatable(Ark, {
                           key, module_path, module), 2)
       end
     end
-    error(string.format("Ark.%s is not a valid widget. See MODULES table in arkitekt/init.lua", key), 2)
+    error(string.format('Ark.%s is not a valid widget. See MODULES table in arkitekt/init.lua', key), 2)
   end
 })
 

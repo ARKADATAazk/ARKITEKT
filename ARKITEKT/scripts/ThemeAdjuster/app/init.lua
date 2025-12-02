@@ -7,7 +7,7 @@ local State = require('ThemeAdjuster.app.state')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 local Logger = require('arkitekt.debug.logger')
 
-local log = Logger.new("ThemeAdjuster.Init")
+local log = Logger.new('ThemeAdjuster.Init')
 
 local M = {}
 
@@ -18,26 +18,26 @@ local _settings = nil
 -- Initialize the application with optional ark bootstrap reference
 function M.initialize(ark_bootstrap)
   if _initialized then
-    log:debug("Already initialized, skipping")
+    log:debug('Already initialized, skipping')
     return _settings
   end
 
-  log:info("Initializing ThemeAdjuster")
+  log:info('Initializing ThemeAdjuster')
 
   -- Get data directory for settings
   local data_dir
   if ark_bootstrap and ark_bootstrap.get_data_dir then
-    data_dir = ark_bootstrap.get_data_dir("ThemeAdjuster")
+    data_dir = ark_bootstrap.get_data_dir('ThemeAdjuster')
   else
     -- Fallback: use script directory
     local sep = package.config:sub(1,1)
-    local src = debug.getinfo(1, "S").source:sub(2)
-    local path = src:match("(.*" .. sep .. ")")
-    data_dir = path .. "data"
+    local src = debug.getinfo(1, 'S').source:sub(2)
+    local path = src:match('(.*' .. sep .. ')')
+    data_dir = path .. 'data'
   end
 
   -- Create settings instance
-  _settings = Settings.new(data_dir, "settings.json")
+  _settings = Settings.new(data_dir, 'settings.json')
 
   -- Initialize state with settings
   State.initialize(_settings)
@@ -46,7 +46,7 @@ function M.initialize(ark_bootstrap)
   ThemeParams.initialize()
 
   _initialized = true
-  log:info("Initialization complete")
+  log:info('Initialization complete')
 
   return _settings
 end
@@ -54,7 +54,7 @@ end
 -- Get settings instance (initializes if needed)
 function M.get_settings()
   if not _initialized then
-    error("ThemeAdjuster not initialized. Call initialize() first.")
+    error('ThemeAdjuster not initialized. Call initialize() first.')
   end
   return _settings
 end

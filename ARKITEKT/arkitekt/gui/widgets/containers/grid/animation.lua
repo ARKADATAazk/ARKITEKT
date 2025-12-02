@@ -92,7 +92,7 @@ end
 
 function AnimationCoordinator:render_destroy_effects(ctx, dl)
   for key, anim_data in pairs(self.destroy_anim.destroying) do
-    self.destroy_anim:render(ctx, dl, key, anim_data.rect, hexrgb("#1A1A1A"), 6)
+    self.destroy_anim:render(ctx, dl, key, anim_data.rect, hexrgb('#1A1A1A'), 6)
   end
 end
 

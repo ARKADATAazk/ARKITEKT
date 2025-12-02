@@ -92,7 +92,7 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
       end
     else
       ImGui.SetCursorScreenPos(ctx, x, y)
-      ImGui.InvisibleButton(ctx, "##view_mode_toggle", btn_size, btn_size)
+      ImGui.InvisibleButton(ctx, '##view_mode_toggle', btn_size, btn_size)
 
       if ImGui.IsItemClicked(ctx, 0) and on_click then
         on_click()
@@ -101,7 +101,7 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
 
     -- Only show tooltip if not blocking
     if is_hovered then
-      local tooltip = current_mode == 'horizontal' and "Switch to List Mode" or "Switch to Timeline Mode"
+      local tooltip = current_mode == 'horizontal' and 'Switch to List Mode' or 'Switch to Timeline Mode'
       Tooltip.show(ctx, tooltip)
     end
   end

@@ -28,8 +28,8 @@ function M.open_config(group_id, view)
 
   M._group_config_open[group_id] = true
   M._group_config_state[group_id] = {
-    name = group.name or "",
-    color = group.color or "#888888",
+    name = group.name or '',
+    color = group.color or '#888888',
     -- Load first template's config as group defaults
     preset_config = M.load_group_preset_config(group, view),
   }
@@ -65,7 +65,7 @@ function M.load_group_preset_config(group, view)
       -- Convert old format to new format if needed
       for _, preset in ipairs(first_template.config.presets) do
         local new_preset = {
-          label = preset.label or "Unnamed",
+          label = preset.label or 'Unnamed',
           values = {}
         }
 
@@ -85,7 +85,7 @@ function M.load_group_preset_config(group, view)
   end
 
   return {
-    type = "preset_spinner",
+    type = 'preset_spinner',
     presets = presets,
     param_order = param_order,  -- Track parameter column order
   }
@@ -122,13 +122,13 @@ function M.render_config_dialogs(ctx, view)
       ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
 
       local flags = ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoDocking
-      local visible, open = ImGui.Begin(ctx, "Group Configuration: " .. (state.name ~= "" and state.name or "Unnamed Group"), true, flags)
+      local visible, open = ImGui.Begin(ctx, 'Group Configuration: ' .. (state.name ~= '' and state.name or 'Unnamed Group'), true, flags)
 
       if visible then
         -- Group name
-        ImGui.Text(ctx, "Group Name:")
+        ImGui.Text(ctx, 'Group Name:')
         ImGui.SetNextItemWidth(ctx, 300)
-        local changed_name, new_name = ImGui.InputText(ctx, "##group_name", state.name)
+        local changed_name, new_name = ImGui.InputText(ctx, '##group_name', state.name)
         if changed_name then
           state.name = new_name
         end
@@ -136,14 +136,14 @@ function M.render_config_dialogs(ctx, view)
         ImGui.Dummy(ctx, 0, 8)
 
         -- Group color picker
-        ImGui.Text(ctx, "Group Color:")
+        ImGui.Text(ctx, 'Group Color:')
         ImGui.SameLine(ctx)
 
         -- Convert hex to ImGui color format (0xRRGGBB)
         local color_int = M.hex_to_color_int(state.color)
 
         -- Color button that opens the picker
-        local changed_color, new_color_int = ImGui.ColorEdit3(ctx, "##group_color", color_int,
+        local changed_color, new_color_int = ImGui.ColorEdit3(ctx, '##group_color', color_int,
           ImGui.ColorEditFlags_NoInputs | ImGui.ColorEditFlags_PickerHueWheel)
         if changed_color then
           state.color = M.color_int_to_hex(new_color_int)
@@ -158,14 +158,14 @@ function M.render_config_dialogs(ctx, view)
         ImGui.Dummy(ctx, 0, 8)
 
         -- Template list in this group
-        ImGui.Text(ctx, string.format("Templates in this group: %d", #(group.template_ids or {})))
+        ImGui.Text(ctx, string.format('Templates in this group: %d', #(group.template_ids or {})))
         ImGui.Dummy(ctx, 0, 4)
 
-        if ImGui.BeginChild(ctx, "group_templates_list", 0, 100) then
+        if ImGui.BeginChild(ctx, 'group_templates_list', 0, 100) then
           for _, template_id in ipairs(group.template_ids or {}) do
             local template = view.templates[template_id]
             if template then
-              local param_names = table.concat(template.params or {}, ", ")
+              local param_names = table.concat(template.params or {}, ', ')
               ImGui.BulletText(ctx, param_names)
             end
           end
@@ -177,8 +177,8 @@ function M.render_config_dialogs(ctx, view)
         ImGui.Dummy(ctx, 0, 8)
 
         -- Preset configuration section
-        ImGui.Text(ctx, "Preset Configuration:")
-        ImGui.TextWrapped(ctx, "Configure presets for all templates in this group. Each parameter gets its own column.")
+        ImGui.Text(ctx, 'Preset Configuration:')
+        ImGui.TextWrapped(ctx, 'Configure presets for all templates in this group. Each parameter gets its own column.')
         ImGui.Dummy(ctx, 0, 8)
 
         -- Preset configuration (render for all templates in group)
@@ -189,14 +189,14 @@ function M.render_config_dialogs(ctx, view)
         ImGui.Separator(ctx)
         ImGui.Dummy(ctx, 0, 8)
 
-        if ImGui.Button(ctx, "Apply", 180, 28) then
+        if ImGui.Button(ctx, 'Apply', 180, 28) then
           -- Apply configuration to the group and all its templates
           M.apply_group_config(group, state, view)
           M._group_config_open[group_id] = false
         end
 
         ImGui.SameLine(ctx, 0, 8)
-        if ImGui.Button(ctx, "Cancel", 100, 28) then
+        if ImGui.Button(ctx, 'Cancel', 100, 28) then
           M._group_config_open[group_id] = false
         end
 
@@ -217,7 +217,7 @@ function M.render_preset_config(ctx, state, view)
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 0, 8)
 
-  ImGui.Text(ctx, "Presets (each row = spinner enum):")
+  ImGui.Text(ctx, 'Presets (each row = spinner enum):')
   ImGui.Dummy(ctx, 0, 4)
 
   local param_order = state.preset_config.param_order or {}
@@ -233,10 +233,10 @@ function M.render_preset_config(ctx, state, view)
                       ImGui.TableFlags_ScrollX |
                       ImGui.TableFlags_SizingFixedFit
 
-  if ImGui.BeginTable(ctx, "group_preset_table", num_columns, table_flags, 0, 180) then
+  if ImGui.BeginTable(ctx, 'group_preset_table', num_columns, table_flags, 0, 180) then
     -- Setup columns
-    ImGui.TableSetupColumn(ctx, "#", ImGui.TableColumnFlags_WidthFixed, 30)
-    ImGui.TableSetupColumn(ctx, "Label", ImGui.TableColumnFlags_WidthFixed, 120)
+    ImGui.TableSetupColumn(ctx, '#', ImGui.TableColumnFlags_WidthFixed, 30)
+    ImGui.TableSetupColumn(ctx, 'Label', ImGui.TableColumnFlags_WidthFixed, 120)
 
     -- Add column for each parameter
     for _, param_name in ipairs(param_order) do
@@ -258,12 +258,12 @@ function M.render_preset_config(ctx, state, view)
       ImGui.AlignTextToFramePadding(ctx)
       ImGui.Text(ctx, tostring(i))
       if ImGui.IsItemHovered(ctx) then
-        ImGui.SetTooltip(ctx, "Right-click to remove")
+        ImGui.SetTooltip(ctx, 'Right-click to remove')
       end
 
       -- Right-click to remove
-      if ImGui.BeginPopupContextItem(ctx, "preset_ctx_" .. i) then
-        if ImGui.MenuItem(ctx, "Remove") then
+      if ImGui.BeginPopupContextItem(ctx, 'preset_ctx_' .. i) then
+        if ImGui.MenuItem(ctx, 'Remove') then
           to_remove = i
         end
         ImGui.EndPopup(ctx)
@@ -272,7 +272,7 @@ function M.render_preset_config(ctx, state, view)
       -- Column 1: Label input
       ImGui.TableSetColumnIndex(ctx, 1)
       ImGui.SetNextItemWidth(ctx, -1)
-      local changed_label, new_label = ImGui.InputText(ctx, "##label", preset.label or "")
+      local changed_label, new_label = ImGui.InputText(ctx, '##label', preset.label or '')
       if changed_label then
         preset.label = new_label
       end
@@ -294,16 +294,16 @@ function M.render_preset_config(ctx, state, view)
           local changed = false
           local new_value = preset.values[param_name]
 
-          if param.type == "toggle" then
+          if param.type == 'toggle' then
             -- Checkbox for boolean
             local is_checked = (preset.values[param_name] ~= 0)
-            local rv, new_checked = ImGui.Checkbox(ctx, "##" .. param_name, is_checked)
+            local rv, new_checked = ImGui.Checkbox(ctx, '##' .. param_name, is_checked)
             if rv then
               changed = true
               new_value = new_checked and 1 or 0
             end
 
-          elseif param.type == "spinner" then
+          elseif param.type == 'spinner' then
             -- Combo box for enum
             local current_idx = math.floor(preset.values[param_name] - param.min + 1)
             local values = {}
@@ -311,7 +311,7 @@ function M.render_preset_config(ctx, state, view)
               values[#values + 1] = tostring(v)
             end
 
-            local rv, new_idx = ImGui.Combo(ctx, "##" .. param_name, current_idx, table.concat(values, "\0") .. "\0")
+            local rv, new_idx = ImGui.Combo(ctx, '##' .. param_name, current_idx, table.concat(values, '\0') .. '\0')
             if rv then
               changed = true
               new_value = param.min + (new_idx - 1)
@@ -319,7 +319,7 @@ function M.render_preset_config(ctx, state, view)
 
           else
             -- InputDouble for int/float/slider
-            local rv, new_val = ImGui.InputDouble(ctx, "##" .. param_name, preset.values[param_name])
+            local rv, new_val = ImGui.InputDouble(ctx, '##' .. param_name, preset.values[param_name])
             if rv then
               changed = true
               new_value = new_val
@@ -347,10 +347,10 @@ function M.render_preset_config(ctx, state, view)
   end
 
   ImGui.Dummy(ctx, 0, 8)
-  if ImGui.Button(ctx, "Add Preset", 120, 0) then
+  if ImGui.Button(ctx, 'Add Preset', 120, 0) then
     -- Create new preset with default values for all parameters
     local new_preset = {
-      label = "New Preset",
+      label = 'New Preset',
       values = {}
     }
 
@@ -365,7 +365,7 @@ function M.render_preset_config(ctx, state, view)
   end
 
   ImGui.SameLine(ctx)
-  ImGui.TextDisabled(ctx, "(Right-click row # to remove)")
+  ImGui.TextDisabled(ctx, '(Right-click row # to remove)')
 end
 
 --- Initialize default presets for a group (deprecated - now handled in load_group_preset_config)
@@ -384,7 +384,7 @@ function M.apply_group_config(group, state, view)
     local template = view.templates[template_id]
     if template then
       -- Update template type
-      template.type = "preset_spinner"
+      template.type = 'preset_spinner'
 
       -- Convert multi-parameter preset format to per-template format
       -- Each template gets presets with values only for its own parameters
@@ -417,13 +417,13 @@ end
 
 --- Convert hex color string to ImGui color integer (0xRRGGBB)
 function M.hex_to_color_int(hex)
-  hex = hex:gsub("#", "")
+  hex = hex:gsub('#', '')
   return tonumber(hex, 16)
 end
 
 --- Convert ImGui color integer (0xRRGGBB) to hex color string
 function M.color_int_to_hex(color_int)
-  return string.format("#%06X", color_int & 0xFFFFFF)
+  return string.format('#%06X', color_int & 0xFFFFFF)
 end
 
 return M

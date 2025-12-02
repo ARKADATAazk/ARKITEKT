@@ -9,12 +9,12 @@ local M = {}
 
 -- Truncate text to fit width with ellipsis
 function M.truncate_text(ctx, text, max_width)
-  if not text or max_width <= 0 then return "" end
+  if not text or max_width <= 0 then return '' end
 
   local text_width = ImGui.CalcTextSize(ctx, text)
   if text_width <= max_width then return text end
 
-  local ellipsis = "..."
+  local ellipsis = '...'
   local ellipsis_width = ImGui.CalcTextSize(ctx, ellipsis)
   local available_width = max_width - ellipsis_width
 
@@ -34,7 +34,7 @@ function M.is_favorited(template_uuid, metadata)
     return false
   end
 
-  local favorites = metadata.virtual_folders["__FAVORITES__"]
+  local favorites = metadata.virtual_folders['__FAVORITES__']
   if not favorites or not favorites.template_refs then
     return false
   end
@@ -49,12 +49,12 @@ function M.is_favorited(template_uuid, metadata)
 end
 
 -- Strip parenthetical content from VST name for display
--- e.g., "Kontakt (Native Instruments)" -> "Kontakt"
+-- e.g., 'Kontakt (Native Instruments)' -> 'Kontakt'
 function M.strip_parentheses(name)
-  if not name then return "" end
-  local stripped = name:gsub("%s*%b()", ""):gsub("^%s+", ""):gsub("%s+$", "")
+  if not name then return '' end
+  local stripped = name:gsub('%s*%b()', ''):gsub('^%s+', ''):gsub('%s+$', '')
   -- Return original if stripping would leave nothing
-  return stripped ~= "" and stripped or name
+  return stripped ~= '' and stripped or name
 end
 
 -- Check if VST name is in the tile blacklist

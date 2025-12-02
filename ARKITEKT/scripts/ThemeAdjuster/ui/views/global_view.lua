@@ -46,25 +46,25 @@ function GlobalView:load_from_theme()
   local ok, name, desc, value, default, min, max
 
   ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1000)
-  if ok and type(value) == "number" then self.gamma = value end
+  if ok and type(value) == 'number' then self.gamma = value end
 
   ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1003)
-  if ok and type(value) == "number" then self.highlights = value end
+  if ok and type(value) == 'number' then self.highlights = value end
 
   ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1002)
-  if ok and type(value) == "number" then self.midtones = value end
+  if ok and type(value) == 'number' then self.midtones = value end
 
   ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1001)
-  if ok and type(value) == "number" then self.shadows = value end
+  if ok and type(value) == 'number' then self.shadows = value end
 
   ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1004)
-  if ok and type(value) == "number" then self.saturation = value end
+  if ok and type(value) == 'number' then self.saturation = value end
 
   ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1005)
-  if ok and type(value) == "number" then self.tint = value end
+  if ok and type(value) == 'number' then self.tint = value end
 
   ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1006)
-  if ok and type(value) == "number" then self.affect_project_colors = (value ~= 0) end
+  if ok and type(value) == 'number' then self.affect_project_colors = (value ~= 0) end
 
   -- Load glb_track_label_color (regular indexed parameter)
   local param = ThemeParams.get_param('glb_track_label_color')
@@ -104,18 +104,18 @@ function GlobalView:draw(ctx, shell_state)
 
   -- Title
   ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
-  ImGui.Text(ctx, "Global Color Controls")
+  ImGui.Text(ctx, 'Global Color Controls')
   ImGui.PopFont(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-  ImGui.Text(ctx, "Adjust theme-wide color properties")
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+  ImGui.Text(ctx, 'Adjust theme-wide color properties')
   ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 15)
 
   -- Color Sliders Section
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "global_color_sliders", avail_w, 0, 1) then
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+  if ImGui.BeginChild(ctx, 'global_color_sliders', avail_w, 0, 1) then
     -- Draw background pattern (grid/dots like assembler panel)
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
@@ -145,7 +145,7 @@ function GlobalView:draw(ctx, shell_state)
 
     ImGui.Indent(ctx, 12)
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "COLOR ADJUSTMENTS")
+    ImGui.Text(ctx, 'COLOR ADJUSTMENTS')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 10)
 
@@ -173,7 +173,7 @@ function GlobalView:draw(ctx, shell_state)
       local label_text_w = ImGui.CalcTextSize(ctx, label)
       ImGui.SetCursorPosX(ctx, cursor_x_base + start_x + LABEL_WIDTH - label_text_w)
       ImGui.AlignTextToFramePadding(ctx)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
       ImGui.Text(ctx, label)
       ImGui.PopStyleColor(ctx)
 
@@ -186,7 +186,7 @@ function GlobalView:draw(ctx, shell_state)
       -- RIGHT VALUE (left-aligned)
       ImGui.SameLine(ctx, 0, SPACING)
       ImGui.AlignTextToFramePadding(ctx)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
       ImGui.Text(ctx, value_text)
       ImGui.PopStyleColor(ctx)
 
@@ -197,10 +197,10 @@ function GlobalView:draw(ctx, shell_state)
     -- Gamma slider (Storage: 500-2000, Display: 0.50-2.00, Default: 1000) - REVERSED
     local gamma_display = self.gamma / 1000
     local changed, new_gamma_normalized = draw_slider_row(
-      "Gamma",
-      string.format("%.2f", gamma_display),
+      'Gamma',
+      string.format('%.2f', gamma_display),
       Ark.HueSlider.draw_gamma,
-      "##gamma",
+      '##gamma',
       ((2000 - self.gamma) / 1500) * 100,  -- Map 500-2000 to 100-0 (reversed)
       {default = 66.67}  -- 1000 is 66.67% of reversed range
     )
@@ -218,10 +218,10 @@ function GlobalView:draw(ctx, shell_state)
     -- Highlights slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
     local highlights_display = self.highlights / 128  -- Map -256→-2.00, 0→0.00, 256→2.00
     local changed, new_highlights_normalized = draw_slider_row(
-      "Highlights",
-      string.format("%.2f", highlights_display),
+      'Highlights',
+      string.format('%.2f', highlights_display),
       Ark.HueSlider.draw_gamma,
-      "##highlights",
+      '##highlights',
       ((self.highlights + 256) / 512) * 100,  -- Map -256-256 to 0-100
       {default = 50}  -- 0 is 50% of range (0.00)
     )
@@ -239,10 +239,10 @@ function GlobalView:draw(ctx, shell_state)
     -- Midtones slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
     local midtones_display = self.midtones / 128  -- Map -256→-2.00, 0→0.00, 256→2.00
     local changed, new_midtones_normalized = draw_slider_row(
-      "Midtones",
-      string.format("%.2f", midtones_display),
+      'Midtones',
+      string.format('%.2f', midtones_display),
       Ark.HueSlider.draw_gamma,
-      "##midtones",
+      '##midtones',
       ((self.midtones + 256) / 512) * 100,  -- Map -256-256 to 0-100
       {default = 50}  -- 0 is 50% of range (0.00)
     )
@@ -260,10 +260,10 @@ function GlobalView:draw(ctx, shell_state)
     -- Shadows slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
     local shadows_display = self.shadows / 128  -- Map -256→-2.00, 0→0.00, 256→2.00
     local changed, new_shadows_normalized = draw_slider_row(
-      "Shadows",
-      string.format("%.2f", shadows_display),
+      'Shadows',
+      string.format('%.2f', shadows_display),
       Ark.HueSlider.draw_gamma,
-      "##shadows",
+      '##shadows',
       ((self.shadows + 256) / 512) * 100,  -- Map -256-256 to 0-100
       {default = 50}  -- 0 is 50% of range (0.00)
     )
@@ -281,10 +281,10 @@ function GlobalView:draw(ctx, shell_state)
     -- Saturation slider (Storage: 0-512, Display: 0%-200%, Default: 256 = 100%)
     local saturation_display = math.floor(self.saturation / 2.56 + 0.5)
     local changed, new_saturation_normalized = draw_slider_row(
-      "Saturation",
-      string.format("%d%%", saturation_display),
+      'Saturation',
+      string.format('%d%%', saturation_display),
       function(c, i, v, o) return Ark.HueSlider.draw_saturation(c, i, v, 210, o) end,
-      "##saturation",
+      '##saturation',
       (self.saturation / 512) * 100,  -- Map 0-512 to 0-100
       {default = 50, brightness = 80}  -- 256 is 50% of range
     )
@@ -302,10 +302,10 @@ function GlobalView:draw(ctx, shell_state)
     -- Tint slider (Storage: 0-384, Display: -180° to +180°, Default: 192 = 0°)
     local tint_degrees = math.floor(self.tint * 0.9375 - 180 + 0.5)
     local changed, new_tint_normalized = draw_slider_row(
-      "Tint",
-      string.format("%.0f°", tint_degrees),
+      'Tint',
+      string.format('%.0f°', tint_degrees),
       Ark.HueSlider.draw_hue,
-      "##tint",
+      '##tint',
       ((self.tint / 384) * 360),
       {default = 180, saturation = 75, brightness = 80}
     )
@@ -324,14 +324,14 @@ function GlobalView:draw(ctx, shell_state)
 
     -- Toggles
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "OPTIONS")
+    ImGui.Text(ctx, 'OPTIONS')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 6)
 
     local dl = ImGui.GetWindowDrawList(ctx)
     local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
 
-    if Ark.Checkbox.draw_at_cursor(ctx, "Custom color track names", self.custom_track_names, nil, "custom_track_names") then
+    if Ark.Checkbox.draw_at_cursor(ctx, 'Custom color track names', self.custom_track_names, nil, 'custom_track_names') then
       self.custom_track_names = not self.custom_track_names
       ThemeParams.set_param('glb_track_label_color', self.custom_track_names and 1 or 0, true)
     end
@@ -342,7 +342,7 @@ function GlobalView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 4)
 
-    if Ark.Checkbox.draw_at_cursor(ctx, "Also affect project custom colors", self.affect_project_colors, nil, "affect_project_colors") then
+    if Ark.Checkbox.draw_at_cursor(ctx, 'Also affect project custom colors', self.affect_project_colors, nil, 'affect_project_colors') then
       self.affect_project_colors = not self.affect_project_colors
       self:set_param(-1006, self.affect_project_colors and 1 or 0, true)
     end
@@ -357,7 +357,7 @@ function GlobalView:draw(ctx, shell_state)
     local button_w = 180
     local button_x = (avail_w - button_w - 24) / 2
     ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + button_x)
-    if ImGui.Button(ctx, "Reset All Color Controls", button_w, 28) then
+    if ImGui.Button(ctx, 'Reset All Color Controls', button_w, 28) then
       self:reset_color_controls()
     end
 

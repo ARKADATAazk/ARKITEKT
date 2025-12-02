@@ -21,14 +21,14 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT%-Dev[/\\])") .. "ARKITEKT" .. package.config:sub(1,1) .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
+local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT%-Dev[/\\])') .. 'ARKITEKT' .. package.config:sub(1,1) .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 
 -- ============================================================================
 -- LOAD MODULES
 -- ============================================================================
 local ImGui = Ark.ImGui
-local Shell = require("arkitekt.app.shell")
-local Settings = require("arkitekt.core.settings")
+local Shell = require('arkitekt.app.shell')
+local Settings = require('arkitekt.core.settings')
 local hexrgb = Ark.Colors.hexrgb
 
 local reaper = reaper
@@ -103,18 +103,18 @@ local function get_tile_color(name)
 end
 
 local function normalize(path)
-  return (path:gsub(sep.."+$", ""))
+  return (path:gsub(sep..'+$', ''))
 end
 
 local function dirname(path)
   path = normalize(path)
-  local dir = path:match("^(.*"..sep..")")
+  local dir = path:match('^(.*'..sep..')')
   if not dir then return nil end
   return normalize(dir)
 end
 
 local function file_exists(path)
-  local f = io.open(path, "r")
+  local f = io.open(path, 'r')
   if f then f:close() return true end
   return false
 end
@@ -125,7 +125,7 @@ local function launch_script(script_path, opts)
   opts = opts or {}
 
   if not file_exists(script_path) then
-    reaper.MB("Script not found: " .. script_path, "DevKit Error", 0)
+    reaper.MB('Script not found: ' .. script_path, 'DevKit Error', 0)
     return false
   end
 
@@ -133,16 +133,16 @@ local function launch_script(script_path, opts)
   -- Using non-persistent ExtState so it's only valid for this launch
   -- debug = enable metrics/debug mode
   -- profiler = enable Lua profiler (only relevant if debug is also true)
-  reaper.SetExtState("ARKITEKT_LAUNCH", "debug", opts.debug and "1" or "0", false)
-  reaper.SetExtState("ARKITEKT_LAUNCH", "profiler", opts.profiler and "1" or "0", false)
-  reaper.SetExtState("ARKITEKT_LAUNCH", "script_path", script_path, false)
+  reaper.SetExtState('ARKITEKT_LAUNCH', 'debug', opts.debug and '1' or '0', false)
+  reaper.SetExtState('ARKITEKT_LAUNCH', 'profiler', opts.profiler and '1' or '0', false)
+  reaper.SetExtState('ARKITEKT_LAUNCH', 'script_path', script_path, false)
 
   -- Register the script as an action temporarily (don't commit to reaper-kb.ini)
   local section_id = 0  -- Main section
   local cmd_id = reaper.AddRemoveReaScript(true, section_id, script_path, false)
 
   if not cmd_id or cmd_id == 0 then
-    reaper.MB("Failed to register script: " .. script_path, "DevKit Error", 0)
+    reaper.MB('Failed to register script: ' .. script_path, 'DevKit Error', 0)
     return false
   end
 
@@ -155,7 +155,7 @@ local function launch_script(script_path, opts)
   reaper.AddRemoveReaScript(false, section_id, script_path, false)
 
   if not ok then
-    reaper.MB("Script crashed on launch:\n\n" .. tostring(err), "DevKit Error", 0)
+    reaper.MB('Script crashed on launch:\n\n' .. tostring(err), 'DevKit Error', 0)
     return false
   end
 
@@ -166,8 +166,8 @@ end
 -- DEVKIT STATE & SETTINGS
 -- ============================================================================
 
-local data_dir = Ark._bootstrap.get_data_dir("DevKit")
-local settings = Settings.new(data_dir, "DevKit_State.json")
+local data_dir = Ark._bootstrap.get_data_dir('DevKit')
+local settings = Settings.new(data_dir, 'DevKit_State.json')
 
 -- ============================================================================
 -- AUTO-DETECT BASE_DIR & WORKTREES
@@ -176,7 +176,7 @@ local settings = Settings.new(data_dir, "DevKit_State.json")
 local function detect_default_base_dir()
   -- We assume this DevKit script lives in:
   --   <base_dir>/ARKITEKT-Dev/devkit/ARK_DevKit.lua
-  local src = debug.getinfo(1, "S").source:sub(2)
+  local src = debug.getinfo(1, 'S').source:sub(2)
   local devkit_dir = dirname(src)             -- .../ARKITEKT-Dev/devkit
   if not devkit_dir then return nil end
   local repo_root = dirname(devkit_dir)       -- .../ARKITEKT-Dev
@@ -193,16 +193,16 @@ local function find_worktrees(base_dir)
   while true do
     local name = reaper.EnumerateSubdirectories(base_dir, i)
     if not name then break end
-    if name == "ARKITEKT" or name == "ARKITEKT-Dev" or name:match("^ARKITEKT%-Dev%-") then
+    if name == 'ARKITEKT' or name == 'ARKITEKT-Dev' or name:match('^ARKITEKT%-Dev%-') then
       local path = normalize(base_dir .. sep .. name)
       local key
-      if name == "ARKITEKT" then
-        key = "stable"
-      elseif name == "ARKITEKT-Dev" then
-        key = "main"
+      if name == 'ARKITEKT' then
+        key = 'stable'
+      elseif name == 'ARKITEKT-Dev' then
+        key = 'main'
       else
         -- e.g. ARKITEKT-Dev-tiles -> tiles
-        key = name:sub(#"ARKITEKT-Dev-" + 1)
+        key = name:sub(#'ARKITEKT-Dev-' + 1)
       end
       table.insert(worktrees, {
         key  = key,
@@ -221,12 +221,12 @@ local function find_entrypoints(worktree_path)
 
   -- Determine search root: ARKITEKT-Dev* looks in /ARKITEKT, ARKITEKT looks in /
   local search_root
-  local worktree_name = worktree_path:match("([^"..sep.."]+)$")
-  if worktree_name == "ARKITEKT" then
+  local worktree_name = worktree_path:match('([^'..sep..']+)$')
+  if worktree_name == 'ARKITEKT' then
     search_root = worktree_path
   else
     -- ARKITEKT-Dev or ARKITEKT-Dev-*
-    search_root = normalize(worktree_path .. sep .. "ARKITEKT")
+    search_root = normalize(worktree_path .. sep .. 'ARKITEKT')
   end
 
   -- 1) Check for ARK_*.lua directly in search_root
@@ -234,9 +234,9 @@ local function find_entrypoints(worktree_path)
   while true do
     local fname = reaper.EnumerateFiles(search_root, i)
     if not fname then break end
-    if fname:match("^ARK_.*%.lua$") then
+    if fname:match('^ARK_.*%.lua$') then
       local full = normalize(search_root .. sep .. fname)
-      local app_key = fname:match("^ARK_(.*)%.lua$")
+      local app_key = fname:match('^ARK_(.*)%.lua$')
       table.insert(apps, {
         key       = app_key,
         name      = app_key,
@@ -247,7 +247,7 @@ local function find_entrypoints(worktree_path)
   end
 
   -- 2) Check for ARK_*.lua in scripts/[AppName]/ subdirectories
-  local scripts_dir = normalize(search_root .. sep .. "scripts")
+  local scripts_dir = normalize(search_root .. sep .. 'scripts')
   local j = 0
   while true do
     local app_dir_name = reaper.EnumerateSubdirectories(scripts_dir, j)
@@ -259,7 +259,7 @@ local function find_entrypoints(worktree_path)
     while true do
       local fname = reaper.EnumerateFiles(app_dir, k)
       if not fname then break end
-      if fname:match("^ARK_.*%.lua$") then
+      if fname:match('^ARK_.*%.lua$') then
         local full = normalize(app_dir .. sep .. fname)
         table.insert(apps, {
           key       = app_dir_name,
@@ -285,8 +285,8 @@ local State = {
   worktrees = {},
   -- Organized apps: app_name -> { name, instances = { {worktree_idx, full_path}, ... }, selected_wt_idx }
   apps_by_name = {},
-  search_query = "",
-  active_tab = "Apps",  -- "Apps" or "Sandbox"
+  search_query = '',
+  active_tab = 'Apps',  -- 'Apps' or 'Sandbox'
   sandbox_scripts = {},
   profiler_enabled = false,  -- Add profiler to Debug launches
 }
@@ -295,8 +295,8 @@ function State:initialize()
   -- Load base_dir from settings or detect
   self.base_dir = settings:get('base_dir') or detect_default_base_dir()
 
-  if not self.base_dir or self.base_dir == "" then
-    self.base_dir = reaper.GetResourcePath() .. sep .. "Scripts"
+  if not self.base_dir or self.base_dir == '' then
+    self.base_dir = reaper.GetResourcePath() .. sep .. 'Scripts'
   end
 
   self.base_dir = normalize(self.base_dir)
@@ -319,7 +319,7 @@ function State:initialize()
   end
 
   -- Restore active tab
-  self.active_tab = settings:get('active_tab') or "Apps"
+  self.active_tab = settings:get('active_tab') or 'Apps'
 
   -- Restore profiler setting
   self.profiler_enabled = settings:get('profiler_enabled') or false
@@ -383,7 +383,7 @@ function State:launch_app(app_name, opts)
 
   local app_data = self.apps_by_name[app_name]
   if not app_data or not app_data.selected_wt_idx then
-    reaper.MB("No worktree selected for " .. app_name, "DevKit Error", 0)
+    reaper.MB('No worktree selected for ' .. app_name, 'DevKit Error', 0)
     return false
   end
 
@@ -397,7 +397,7 @@ function State:launch_app(app_name, opts)
   end
 
   if not instance or not file_exists(instance.full_path) then
-    reaper.MB("Entrypoint not found for " .. app_name, "DevKit Error", 0)
+    reaper.MB('Entrypoint not found for ' .. app_name, 'DevKit Error', 0)
     return false
   end
 
@@ -411,15 +411,15 @@ function State:refresh_sandbox()
 
   -- Look in scripts/Sandbox/ directory (always at worktree root)
   for _, wt in ipairs(self.worktrees) do
-    local sandbox_dir = normalize(wt.path .. sep .. "scripts" .. sep .. "Sandbox")
+    local sandbox_dir = normalize(wt.path .. sep .. 'scripts' .. sep .. 'Sandbox')
 
     local i = 0
     while true do
       local fname = reaper.EnumerateFiles(sandbox_dir, i)
       if not fname then break end
-      if fname:match("%.lua$") then
+      if fname:match('%.lua$') then
         table.insert(self.sandbox_scripts, {
-          name = fname:gsub("%.lua$", ""),
+          name = fname:gsub('%.lua$', ''),
           full_path = normalize(sandbox_dir .. sep .. fname),
           worktree = wt.key,
         })
@@ -442,7 +442,7 @@ function State:get_filtered_apps()
   local apps = {}
 
   for app_name, app_data in pairs(self.apps_by_name) do
-    if self.search_query == "" or app_name:lower():find(self.search_query:lower(), 1, true) then
+    if self.search_query == '' or app_name:lower():find(self.search_query:lower(), 1, true) then
       table.insert(apps, app_data)
     end
   end
@@ -467,7 +467,7 @@ local function render_app_tile(ctx, app_data, tile_width, shell_state)
 
   -- Tile background
   local bg_color = get_tile_color(app_data.name)
-  local border_color = hexrgb("#2A2A2A")
+  local border_color = hexrgb('#2A2A2A')
 
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, 2)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 2, 0, 0.5)
@@ -479,7 +479,7 @@ local function render_app_tile(ctx, app_data, tile_width, shell_state)
   local max_name_width = 150
   local name_display = app_data.name
   if #name_display > 22 then
-    name_display = name_display:sub(1, 19) .. "..."
+    name_display = name_display:sub(1, 19) .. '...'
   end
   ImGui.Text(ctx, name_display)
   ImGui.PopFont(ctx)
@@ -505,7 +505,7 @@ local function render_app_tile(ctx, app_data, tile_width, shell_state)
 
   -- Render one button per worktree
   for i, wt_info in ipairs(available_worktrees) do
-    local tooltip = string.format("%s\n\nWorktree: %s\nPath: %s\n\nLeft Click: Launch\nRight Click: Debug",
+    local tooltip = string.format('%s\n\nWorktree: %s\nPath: %s\n\nLeft Click: Launch\nRight Click: Debug',
       app_data.name, wt_info.wt.key, wt_info.path)
 
     -- Measure text width and add padding (button has internal padding of ~12px per side)
@@ -513,7 +513,7 @@ local function render_app_tile(ctx, app_data, tile_width, shell_state)
     local button_width = text_w + 24  -- Add padding for button chrome
 
     local result = Ark.Button(ctx, {
-      id = app_data.name .. "_" .. wt_info.wt.key,
+      id = app_data.name .. '_' .. wt_info.wt.key,
       label = wt_info.wt.key,
       width = button_width,
       height = 28,
@@ -545,23 +545,23 @@ end
 -- ============================================================================
 
 local apps_panel = Ark.Panel.new({
-  id = "apps_panel",
+  id = 'apps_panel',
   width = nil,
   height = nil,
   config = {
     header = {
       enabled = true,
       height = 36,
-      position = "top",
+      position = 'top',
       elements = {
         {
-          id = "search",
-          type = "inputtext",
-          align = "left",
+          id = 'search',
+          type = 'inputtext',
+          align = 'left',
           width = 250,
           spacing_before = 0,
           config = {
-            placeholder = "Search apps...",
+            placeholder = 'Search apps...',
             get_value = function() return State.search_query end,
             on_change = function(text)
               State.search_query = text
@@ -569,12 +569,12 @@ local apps_panel = Ark.Panel.new({
           }
         },
         {
-          id = "refresh",
-          type = "button",
-          align = "right",
+          id = 'refresh',
+          type = 'button',
+          align = 'right',
           spacing_before = 8,
           config = {
-            label = "Refresh",
+            label = 'Refresh',
             on_click = function()
               State:refresh_worktrees()
               State:refresh_apps()
@@ -583,15 +583,15 @@ local apps_panel = Ark.Panel.new({
           }
         },
         {
-          id = "config",
-          type = "button",
-          align = "right",
+          id = 'config',
+          type = 'button',
+          align = 'right',
           spacing_before = 6,
           config = {
-            label = "Config",
+            label = 'Config',
             on_click = function()
-              local ok, input = reaper.GetUserInputs("DevKit - Base Directory", 1, "Base dir:", State.base_dir or "")
-              if ok and input ~= "" then
+              local ok, input = reaper.GetUserInputs('DevKit - Base Directory', 1, 'Base dir:', State.base_dir or '')
+              if ok and input ~= '' then
                 State.base_dir = normalize(input)
                 settings:set('base_dir', State.base_dir)
                 State:refresh_worktrees()
@@ -606,13 +606,13 @@ local apps_panel = Ark.Panel.new({
 })
 
 local function draw_sandbox(ctx, shell_state)
-  ImGui.Text(ctx, string.format("Found %d sandbox scripts:", #State.sandbox_scripts))
+  ImGui.Text(ctx, string.format('Found %d sandbox scripts:', #State.sandbox_scripts))
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 0, 8)
 
   if #State.sandbox_scripts == 0 then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
-    ImGui.TextWrapped(ctx, "No sandbox scripts found in scripts/Sandbox/")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+    ImGui.TextWrapped(ctx, 'No sandbox scripts found in scripts/Sandbox/')
     ImGui.PopStyleColor(ctx)
     return
   end
@@ -627,17 +627,17 @@ local function draw_sandbox(ctx, shell_state)
     ImGui.SameLine(ctx)
 
     -- Worktree badge
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
-    ImGui.Text(ctx, string.format("[%s]", script.worktree))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+    ImGui.Text(ctx, string.format('[%s]', script.worktree))
     ImGui.PopStyleColor(ctx)
     ImGui.SameLine(ctx, 0, 16)
 
     -- Launch button (normal, no debug)
     Ark.Button(ctx, {
-      label = "Run",
+      label = 'Run',
       width = 60,
       height = 24,
-      preset = "primary",
+      preset = 'primary',
       tooltip = script.full_path,
       on_click = function()
         launch_script(script.full_path, {})
@@ -648,20 +648,20 @@ local function draw_sandbox(ctx, shell_state)
   end
 end
 
-local Checkbox = require("arkitekt.gui.widgets.primitives.checkbox")
+local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
 
 local function draw_main(ctx, shell_state)
   -- Tab buttons (simple approach instead of TabBar)
-  local tabs = {"Apps", "Sandbox"}
+  local tabs = {'Apps', 'Sandbox'}
   for i, tab in ipairs(tabs) do
     local is_active = (State.active_tab == tab)
 
     Ark.Button(ctx, {
-      id = "tab_" .. tab,
+      id = 'tab_' .. tab,
       label = tab,
       width = 100,
       height = 28,
-      preset = is_active and "primary" or nil,
+      preset = is_active and 'primary' or nil,
       on_click = function()
         State:set_active_tab(tab)
       end
@@ -675,10 +675,10 @@ local function draw_main(ctx, shell_state)
   -- Profiler checkbox (right side of tab row) - only affects Debug button
   ImGui.SameLine(ctx, 0, 20)
   local result = Checkbox.draw(ctx, {
-    id = "profiler_checkbox",
-    label = "Profiler",
+    id = 'profiler_checkbox',
+    label = 'Profiler',
     checked = State.profiler_enabled,
-    tooltip = "Also enable Lua profiler when using Debug button",
+    tooltip = 'Also enable Lua profiler when using Debug button',
     on_change = function(value)
       State:set_profiler_enabled(value)
     end,
@@ -688,20 +688,20 @@ local function draw_main(ctx, shell_state)
 
   -- Check for no worktrees outside panel
   if #State.worktrees == 0 then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FF6666"))
-    ImGui.TextWrapped(ctx, "No worktrees found. Click Config to set the base directory.")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FF6666'))
+    ImGui.TextWrapped(ctx, 'No worktrees found. Click Config to set the base directory.')
     ImGui.PopStyleColor(ctx)
 
     ImGui.Dummy(ctx, 0, 12)
 
     if Ark.Button(ctx, {
-      id = "config_btn_main",
-      label = "Config",
+      id = 'config_btn_main',
+      label = 'Config',
       width = 100,
       height = 28,
       on_click = function()
-        local ok, input = reaper.GetUserInputs("DevKit - Base Directory", 1, "Base dir:", State.base_dir or "")
-        if ok and input ~= "" then
+        local ok, input = reaper.GetUserInputs('DevKit - Base Directory', 1, 'Base dir:', State.base_dir or '')
+        if ok and input ~= '' then
           State.base_dir = normalize(input)
           settings:set('base_dir', State.base_dir)
           State:refresh_worktrees()
@@ -716,7 +716,7 @@ local function draw_main(ctx, shell_state)
   end
 
   -- Render active tab content
-  if State.active_tab == "Sandbox" then
+  if State.active_tab == 'Sandbox' then
     draw_sandbox(ctx, shell_state)
     return
   end
@@ -729,11 +729,11 @@ local function draw_main(ctx, shell_state)
     local filtered_apps = State:get_filtered_apps()
 
     if #filtered_apps == 0 then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
-      if State.search_query ~= "" then
-        ImGui.TextWrapped(ctx, "No apps match your search.")
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+      if State.search_query ~= '' then
+        ImGui.TextWrapped(ctx, 'No apps match your search.')
       else
-        ImGui.TextWrapped(ctx, "No apps found.")
+        ImGui.TextWrapped(ctx, 'No apps found.')
       end
       ImGui.PopStyleColor(ctx)
     else
@@ -760,14 +760,14 @@ local function get_status()
 
   if wt_count == 0 then
     return {
-      color = hexrgb("#FF6666"),
-      text = "NO WORKTREES",
+      color = hexrgb('#FF6666'),
+      text = 'NO WORKTREES',
     }
   end
 
   return {
-    color = hexrgb("#41E0A3"),
-    text = string.format("%d WORKTREE(S) • %d APP(S)", wt_count, app_count),
+    color = hexrgb('#41E0A3'),
+    text = string.format('%d WORKTREE(S) • %d APP(S)', wt_count, app_count),
   }
 end
 
@@ -778,14 +778,14 @@ end
 State:initialize()
 
 Shell.run({
-  title = "ARKITEKT DevKit",
-  version = "v2.0.0",
+  title = 'ARKITEKT DevKit',
+  version = 'v2.0.0',
   draw = draw_main,
   settings = settings,
   initial_pos = { x = 200, y = 200 },
   initial_size = { w = 900, h = 600 },
   min_size = { w = 750, h = 400 },
-  icon_color = hexrgb("#FF6600"),
+  icon_color = hexrgb('#FF6600'),
   icon_size = 18,
   content_padding = 12,
   get_status_func = get_status,

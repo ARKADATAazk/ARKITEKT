@@ -28,18 +28,18 @@ function M.render(ctx, rect, item, state, view)
   if not template then return end
 
   -- Animation state
-  local key = "template_" .. template_id
+  local key = 'template_' .. template_id
   M._anim[key] = M._anim[key] or { hover = 0 }
 
   local hover_t = Math.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
   M._anim[key].hover = hover_t
 
   -- Color definitions
-  local BG_BASE = hexrgb("#252530")
-  local BG_HOVER = hexrgb("#2D2D3D")
-  local BRD_BASE = hexrgb("#444455")
-  local BRD_HOVER = hexrgb("#7788FF")
-  local ANT_COLOR = hexrgb("#7788FF7F")
+  local BG_BASE = hexrgb('#252530')
+  local BG_HOVER = hexrgb('#2D2D3D')
+  local BRD_BASE = hexrgb('#444455')
+  local BRD_HOVER = hexrgb('#7788FF')
+  local ANT_COLOR = hexrgb('#7788FF7F')
 
   -- Hover shadow effect
   if hover_t > 0.01 and not state.selected then
@@ -63,64 +63,64 @@ function M.render(ctx, rect, item, state, view)
   ImGui.AlignTextToFramePadding(ctx)
 
   -- Template name
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCFF"))
-  local display_name = template.name or "Unnamed Template"
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CCCCFF'))
+  local display_name = template.name or 'Unnamed Template'
   if #display_name > 30 then
-    display_name = display_name:sub(1, 27) .. "..."
+    display_name = display_name:sub(1, 27) .. '...'
   end
   ImGui.Text(ctx, display_name)
   ImGui.PopStyleColor(ctx)
 
   -- Template type indicator
   ImGui.SameLine(ctx)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#8888AA"))
-  local type_label = template.type == "preset_spinner" and "[Preset]" or
-                     template.type == "compound_bool" and "[Compound]" or
-                     "[Custom]"
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#8888AA'))
+  local type_label = template.type == 'preset_spinner' and '[Preset]' or
+                     template.type == 'compound_bool' and '[Compound]' or
+                     '[Custom]'
   ImGui.Text(ctx, type_label)
   ImGui.PopStyleColor(ctx)
 
   -- Parameter list (second line)
   ImGui.SetCursorScreenPos(ctx, x1 + 8, y1 + 20)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#777788"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#777788'))
 
   local param_names = {}
   for _, param_name in ipairs(template.params or {}) do
     param_names[#param_names + 1] = param_name
   end
 
-  local params_text = table.concat(param_names, ", ")
+  local params_text = table.concat(param_names, ', ')
   if #params_text > 50 then
-    params_text = params_text:sub(1, 47) .. "..."
+    params_text = params_text:sub(1, 47) .. '...'
   end
   ImGui.Text(ctx, params_text)
   ImGui.PopStyleColor(ctx)
 
   -- Tooltip
   if ImGui.IsItemHovered(ctx) then
-    local tooltip = "Template: " .. (template.name or "Unnamed")
-    tooltip = tooltip .. "\nType: " .. (template.type or "unknown")
-    tooltip = tooltip .. "\nParameters: " .. table.concat(param_names, ", ")
-    if template.type == "preset_spinner" and template.config and template.config.presets then
-      tooltip = tooltip .. "\nPresets: " .. #template.config.presets
+    local tooltip = 'Template: ' .. (template.name or 'Unnamed')
+    tooltip = tooltip .. '\nType: ' .. (template.type or 'unknown')
+    tooltip = tooltip .. '\nParameters: ' .. table.concat(param_names, ', ')
+    if template.type == 'preset_spinner' and template.config and template.config.presets then
+      tooltip = tooltip .. '\nPresets: ' .. #template.config.presets
     end
     ImGui.SetTooltip(ctx, tooltip)
   end
 
   -- Invisible button for right-click
   ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.InvisibleButton(ctx, "##template_interact_" .. template_id, w, h)
+  ImGui.InvisibleButton(ctx, '##template_interact_' .. template_id, w, h)
 
   -- Right-click context menu
-  if ImGui.BeginPopupContextItem(ctx, "template_context_" .. template_id) then
-    if ImGui.MenuItem(ctx, "Configure...") then
+  if ImGui.BeginPopupContextItem(ctx, 'template_context_' .. template_id) then
+    if ImGui.MenuItem(ctx, 'Configure...') then
       M._template_config_open[template_id] = true
       -- Load existing config and convert to new format if needed
       local presets = {}
       if template.config and template.config.presets then
         for _, preset in ipairs(template.config.presets) do
           local new_preset = {
-            label = preset.label or "Unnamed",
+            label = preset.label or 'Unnamed',
             values = {}
           }
 
@@ -140,8 +140,8 @@ function M.render(ctx, rect, item, state, view)
       end
 
       M._template_config_state[template_id] = {
-        name = template.name or "",
-        template_type = template.type or "preset_spinner",
+        name = template.name or '',
+        template_type = template.type or 'preset_spinner',
         presets = presets,
         param_order = template.params or {},
       }
@@ -149,7 +149,7 @@ function M.render(ctx, rect, item, state, view)
 
     ImGui.Separator(ctx)
 
-    if ImGui.MenuItem(ctx, "Delete") then
+    if ImGui.MenuItem(ctx, 'Delete') then
       view:delete_template(template_id)
     end
 
@@ -178,13 +178,13 @@ function M.render_template_config_dialogs(ctx, view)
       ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
 
       local flags = ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoDocking
-      local visible, open = ImGui.Begin(ctx, "Template Configuration: " .. (state.name ~= "" and state.name or "Unnamed"), true, flags)
+      local visible, open = ImGui.Begin(ctx, 'Template Configuration: ' .. (state.name ~= '' and state.name or 'Unnamed'), true, flags)
 
       if visible then
         -- Template name
-        ImGui.Text(ctx, "Template Name:")
+        ImGui.Text(ctx, 'Template Name:')
         ImGui.SetNextItemWidth(ctx, 300)
-        local changed_name, new_name = ImGui.InputText(ctx, "##template_name", state.name)
+        local changed_name, new_name = ImGui.InputText(ctx, '##template_name', state.name)
         if changed_name then
           state.name = new_name
         end
@@ -194,11 +194,11 @@ function M.render_template_config_dialogs(ctx, view)
         ImGui.Dummy(ctx, 0, 8)
 
         -- Template type
-        ImGui.Text(ctx, "Template Type:")
+        ImGui.Text(ctx, 'Template Type:')
         ImGui.Dummy(ctx, 0, 4)
 
         -- Template type selection (always preset spinner)
-        ImGui.Text(ctx, "Template Type: Preset Spinner")
+        ImGui.Text(ctx, 'Template Type: Preset Spinner')
         ImGui.Dummy(ctx, 0, 8)
 
         -- Preset configuration
@@ -209,10 +209,10 @@ function M.render_template_config_dialogs(ctx, view)
         ImGui.Separator(ctx)
         ImGui.Dummy(ctx, 0, 8)
 
-        if ImGui.Button(ctx, "Save", 100, 28) then
+        if ImGui.Button(ctx, 'Save', 100, 28) then
           -- Apply configuration
           template.name = state.name
-          template.type = "preset_spinner"
+          template.type = 'preset_spinner'
           template.config = {
             presets = state.presets
           }
@@ -221,7 +221,7 @@ function M.render_template_config_dialogs(ctx, view)
         end
 
         ImGui.SameLine(ctx, 0, 8)
-        if ImGui.Button(ctx, "Cancel", 100, 28) then
+        if ImGui.Button(ctx, 'Cancel', 100, 28) then
           M._template_config_open[template_id] = false
         end
 
@@ -239,7 +239,7 @@ end
 
 -- Render preset spinner configuration with parameter columns
 function M.render_preset_config(ctx, state, view, template)
-  ImGui.Text(ctx, "Presets (each row = spinner enum):")
+  ImGui.Text(ctx, 'Presets (each row = spinner enum):')
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 0, 8)
 
@@ -256,10 +256,10 @@ function M.render_preset_config(ctx, state, view, template)
                       ImGui.TableFlags_ScrollX |
                       ImGui.TableFlags_SizingFixedFit
 
-  if ImGui.BeginTable(ctx, "preset_table", num_columns, table_flags, 0, 250) then
+  if ImGui.BeginTable(ctx, 'preset_table', num_columns, table_flags, 0, 250) then
     -- Setup columns
-    ImGui.TableSetupColumn(ctx, "#", ImGui.TableColumnFlags_WidthFixed, 30)
-    ImGui.TableSetupColumn(ctx, "Label", ImGui.TableColumnFlags_WidthFixed, 120)
+    ImGui.TableSetupColumn(ctx, '#', ImGui.TableColumnFlags_WidthFixed, 30)
+    ImGui.TableSetupColumn(ctx, 'Label', ImGui.TableColumnFlags_WidthFixed, 120)
 
     -- Add column for each parameter
     for _, param_name in ipairs(param_order) do
@@ -281,12 +281,12 @@ function M.render_preset_config(ctx, state, view, template)
       ImGui.AlignTextToFramePadding(ctx)
       ImGui.Text(ctx, tostring(i))
       if ImGui.IsItemHovered(ctx) then
-        ImGui.SetTooltip(ctx, "Right-click to remove")
+        ImGui.SetTooltip(ctx, 'Right-click to remove')
       end
 
       -- Right-click to remove
-      if ImGui.BeginPopupContextItem(ctx, "preset_ctx_" .. i) then
-        if ImGui.MenuItem(ctx, "Remove") then
+      if ImGui.BeginPopupContextItem(ctx, 'preset_ctx_' .. i) then
+        if ImGui.MenuItem(ctx, 'Remove') then
           to_remove = i
         end
         ImGui.EndPopup(ctx)
@@ -295,7 +295,7 @@ function M.render_preset_config(ctx, state, view, template)
       -- Column 1: Label input
       ImGui.TableSetColumnIndex(ctx, 1)
       ImGui.SetNextItemWidth(ctx, -1)
-      local changed_label, new_label = ImGui.InputText(ctx, "##label", preset.label or "")
+      local changed_label, new_label = ImGui.InputText(ctx, '##label', preset.label or '')
       if changed_label then
         preset.label = new_label
       end
@@ -317,16 +317,16 @@ function M.render_preset_config(ctx, state, view, template)
           local changed = false
           local new_value = preset.values[param_name]
 
-          if param.type == "toggle" then
+          if param.type == 'toggle' then
             -- Checkbox for boolean
             local is_checked = (preset.values[param_name] ~= 0)
-            local rv, new_checked = ImGui.Checkbox(ctx, "##" .. param_name, is_checked)
+            local rv, new_checked = ImGui.Checkbox(ctx, '##' .. param_name, is_checked)
             if rv then
               changed = true
               new_value = new_checked and 1 or 0
             end
 
-          elseif param.type == "spinner" then
+          elseif param.type == 'spinner' then
             -- Combo box for enum
             local current_idx = math.floor(preset.values[param_name] - param.min + 1)
             local values = {}
@@ -334,7 +334,7 @@ function M.render_preset_config(ctx, state, view, template)
               values[#values + 1] = tostring(v)
             end
 
-            local rv, new_idx = ImGui.Combo(ctx, "##" .. param_name, current_idx, table.concat(values, "\0") .. "\0")
+            local rv, new_idx = ImGui.Combo(ctx, '##' .. param_name, current_idx, table.concat(values, '\0') .. '\0')
             if rv then
               changed = true
               new_value = param.min + (new_idx - 1)
@@ -342,7 +342,7 @@ function M.render_preset_config(ctx, state, view, template)
 
           else
             -- InputDouble for int/float/slider
-            local rv, new_val = ImGui.InputDouble(ctx, "##" .. param_name, preset.values[param_name])
+            local rv, new_val = ImGui.InputDouble(ctx, '##' .. param_name, preset.values[param_name])
             if rv then
               changed = true
               new_value = new_val
@@ -370,10 +370,10 @@ function M.render_preset_config(ctx, state, view, template)
   end
 
   ImGui.Dummy(ctx, 0, 8)
-  if ImGui.Button(ctx, "Add Preset", 120, 0) then
+  if ImGui.Button(ctx, 'Add Preset', 120, 0) then
     -- Create new preset with default values for all parameters
     local new_preset = {
-      label = "New Preset",
+      label = 'New Preset',
       values = {}
     }
 
@@ -388,7 +388,7 @@ function M.render_preset_config(ctx, state, view, template)
   end
 
   ImGui.SameLine(ctx)
-  ImGui.TextDisabled(ctx, "(Right-click row # to remove)")
+  ImGui.TextDisabled(ctx, '(Right-click row # to remove)')
 end
 
 -- Removed compound boolean config - no longer needed

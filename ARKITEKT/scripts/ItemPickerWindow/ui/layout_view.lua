@@ -20,9 +20,9 @@ function M.new(config, state)
 end
 
 function LayoutView:draw(ctx, coordinator, shell_state)
-  local layout_mode = self.state.settings.layout_mode or "vertical"
+  local layout_mode = self.state.settings.layout_mode or 'vertical'
 
-  if layout_mode == "horizontal" then
+  if layout_mode == 'horizontal' then
     self:draw_horizontal(ctx, coordinator, shell_state)
   else
     self:draw_vertical(ctx, coordinator, shell_state)
@@ -70,11 +70,11 @@ function LayoutView:draw_vertical(ctx, coordinator, shell_state)
   -- Draw separator
   local separator_y = start_y + midi_height + separator_gap / 2
   local sep_result = Ark.Splitter.draw(ctx, {
-    id = "midi_audio_separator_h",
+    id = 'midi_audio_separator_h',
     x = start_x,
     y = separator_y,
     width = content_w,
-    orientation = "horizontal",
+    orientation = 'horizontal',
     thickness = separator_config.thickness or 4,
   })
 
@@ -82,9 +82,9 @@ function LayoutView:draw_vertical(ctx, coordinator, shell_state)
   if coordinator.midi_grid then coordinator.midi_grid.block_all_input = sep_result.dragging end
   if coordinator.audio_grid then coordinator.audio_grid.block_all_input = sep_result.dragging end
 
-  if sep_result.action == "reset" then
+  if sep_result.action == 'reset' then
     self.state.set_separator_position(self.config.SEPARATOR.default_midi_height or 250)
-  elseif sep_result.action == "drag" and content_h >= min_total_height then
+  elseif sep_result.action == 'drag' and content_h >= min_total_height then
     local new_midi_height = sep_result.position - start_y - separator_gap / 2
     new_midi_height = max(min_midi_height, min(new_midi_height, content_h - min_audio_height - separator_gap))
     self.state.set_separator_position(new_midi_height)
@@ -136,7 +136,7 @@ function LayoutView:draw_horizontal(ctx, coordinator, shell_state)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
   -- MIDI panel (left)
-  if ImGui.BeginChild(ctx, "##left_column", midi_width, content_h, ImGui.ChildFlags_None, 0) then
+  if ImGui.BeginChild(ctx, '##left_column', midi_width, content_h, ImGui.ChildFlags_None, 0) then
     coordinator:draw_midi(ctx, content_h, shell_state)
   end
   ImGui.EndChild(ctx)
@@ -146,11 +146,11 @@ function LayoutView:draw_horizontal(ctx, coordinator, shell_state)
   -- Draw vertical separator
   local separator_x = start_x + midi_width + separator_gap / 2
   local sep_result = Ark.Splitter.draw(ctx, {
-    id = "midi_audio_separator_v",
+    id = 'midi_audio_separator_v',
     x = separator_x,
     y = start_y,
     height = content_h,
-    orientation = "vertical",
+    orientation = 'vertical',
     thickness = separator_config.thickness or 4,
   })
 
@@ -158,9 +158,9 @@ function LayoutView:draw_horizontal(ctx, coordinator, shell_state)
   if coordinator.midi_grid then coordinator.midi_grid.block_all_input = sep_result.dragging end
   if coordinator.audio_grid then coordinator.audio_grid.block_all_input = sep_result.dragging end
 
-  if sep_result.action == "reset" then
+  if sep_result.action == 'reset' then
     self.state.set_setting('separator_position_horizontal', 400)
-  elseif sep_result.action == "drag" and content_w >= min_total_width then
+  elseif sep_result.action == 'drag' and content_w >= min_total_width then
     local new_midi_width = sep_result.position - start_x - separator_gap / 2
     new_midi_width = max(min_midi_width, min(new_midi_width, content_w - min_audio_width - separator_gap))
     self.state.set_setting('separator_position_horizontal', new_midi_width)
@@ -172,7 +172,7 @@ function LayoutView:draw_horizontal(ctx, coordinator, shell_state)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
   -- Audio panel (right)
-  if ImGui.BeginChild(ctx, "##right_column", audio_width, content_h, ImGui.ChildFlags_None, 0) then
+  if ImGui.BeginChild(ctx, '##right_column', audio_width, content_h, ImGui.ChildFlags_None, 0) then
     coordinator:draw_audio(ctx, content_h, shell_state)
   end
   ImGui.EndChild(ctx)

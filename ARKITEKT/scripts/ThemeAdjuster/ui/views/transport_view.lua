@@ -50,7 +50,7 @@ function TransportView:get_param_index(param_name)
   -- Get parameter index from theme layout
   -- Returns nil if not found
   local ok, idx = pcall(reaper.ThemeLayout_GetParameter, param_name)
-  if ok and type(idx) == "number" then
+  if ok and type(idx) == 'number' then
     return idx
   end
   return nil
@@ -70,18 +70,18 @@ function TransportView:draw(ctx, shell_state)
 
   -- Title
   ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
-  ImGui.Text(ctx, "Transport Bar")
+  ImGui.Text(ctx, 'Transport Bar')
   ImGui.PopFont(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-  ImGui.Text(ctx, "Configure transport bar appearance and visibility")
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+  ImGui.Text(ctx, 'Configure transport bar appearance and visibility')
   ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 8)
 
   -- Single scrollable content area
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "transport_content", avail_w, 0, 1) then
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+  if ImGui.BeginChild(ctx, 'transport_content', avail_w, 0, 1) then
     -- Draw background pattern (using panel defaults)
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
@@ -99,13 +99,13 @@ function TransportView:draw(ctx, shell_state)
 
     -- Layout & Size Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "ACTIVE LAYOUT & SIZE")
+    ImGui.Text(ctx, 'ACTIVE LAYOUT & SIZE')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
     -- Active Layout
     ImGui.AlignTextToFramePadding(ctx)
-    ImGui.Text(ctx, "Active Layout")
+    ImGui.Text(ctx, 'Active Layout')
     ImGui.SameLine(ctx, 120)
 
     for _, layout in ipairs({'A', 'B', 'C'}) do
@@ -115,13 +115,13 @@ function TransportView:draw(ctx, shell_state)
         width = 50,
         height = 24,
         is_toggled = is_active,
-        preset_name = "BUTTON_TOGGLE_WHITE",
+        preset_name = 'BUTTON_TOGGLE_WHITE',
         on_click = function()
           self.active_layout = layout
           ThemeParams.set_active_layout('trans', layout)
           self:load_from_theme()
         end
-      }, "trans_layout_" .. layout) then
+      }, 'trans_layout_' .. layout) then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -131,7 +131,7 @@ function TransportView:draw(ctx, shell_state)
 
     -- Apply Size (Transport only has one layout, no A/B/C)
     ImGui.AlignTextToFramePadding(ctx)
-    ImGui.Text(ctx, "Apply Size")
+    ImGui.Text(ctx, 'Apply Size')
     ImGui.SameLine(ctx, 120)
 
     for _, size in ipairs({'100%', '150%', '200%'}) do
@@ -143,7 +143,7 @@ function TransportView:draw(ctx, shell_state)
           local scale = (size == '100%') and '' or (size .. '_')
           ThemeParams.apply_layout_to_tracks('trans', 'A', scale)
         end
-      }, "trans_size_" .. size) then
+      }, 'trans_size_' .. size) then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -153,7 +153,7 @@ function TransportView:draw(ctx, shell_state)
 
     -- Sizing Controls Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "SIZING CONTROLS")
+    ImGui.Text(ctx, 'SIZING CONTROLS')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
@@ -167,7 +167,7 @@ function TransportView:draw(ctx, shell_state)
       local label_text_w = ImGui.CalcTextSize(ctx, label)
       ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + label_w - label_text_w)
       ImGui.AlignTextToFramePadding(ctx)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
       ImGui.Text(ctx, label)
       ImGui.PopStyleColor(ctx)
 
@@ -186,7 +186,7 @@ function TransportView:draw(ctx, shell_state)
       return changed, new_idx
     end
 
-    local changed, new_idx = draw_spinner_row("Play Rate Size", "trans_rate_size", self.trans_rate_size_idx, SPINNER_VALUES.trans_rate_size)
+    local changed, new_idx = draw_spinner_row('Play Rate Size', 'trans_rate_size', self.trans_rate_size_idx, SPINNER_VALUES.trans_rate_size)
     if changed then
       self.trans_rate_size_idx = new_idx
       ThemeParams.set_param('trans_rate_size', new_idx, true)
@@ -196,12 +196,12 @@ function TransportView:draw(ctx, shell_state)
 
     -- Transport Preferences Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "TRANSPORT PREFERENCES")
+    ImGui.Text(ctx, 'TRANSPORT PREFERENCES')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-    ImGui.Text(ctx, "Toggle transport display options")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+    ImGui.Text(ctx, 'Toggle transport display options')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 6)
 
@@ -215,7 +215,7 @@ function TransportView:draw(ctx, shell_state)
         width = 220,
         height = 28,
         is_toggled = is_on,
-        preset_name = "BUTTON_TOGGLE_WHITE",
+        preset_name = 'BUTTON_TOGGLE_WHITE',
         on_click = function()
           reaper.Main_OnCommand(command_id, 0)
         end
@@ -225,14 +225,14 @@ function TransportView:draw(ctx, shell_state)
     end
 
     -- Row 1: Show Play Rate & Center Transport
-    draw_action_toggle("Show Play Rate", 40531, "trans_show_play_rate")
+    draw_action_toggle('Show Play Rate', 40531, 'trans_show_play_rate')
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetTooltip(ctx, Strings.TRANSPORT.show_play_rate)
     end
 
     ImGui.SameLine(ctx, 0, 8)
 
-    draw_action_toggle("Center Transport", 40533, "trans_center_transport")
+    draw_action_toggle('Center Transport', 40533, 'trans_center_transport')
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetTooltip(ctx, Strings.TRANSPORT.center_transport)
     end
@@ -240,14 +240,14 @@ function TransportView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 4)
 
     -- Row 2: Time Signature & Dock Transport
-    draw_action_toggle("Show Time Signature", 40680, "trans_time_sig")
+    draw_action_toggle('Show Time Signature', 40680, 'trans_time_sig')
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetTooltip(ctx, Strings.TRANSPORT.time_signature)
     end
 
     ImGui.SameLine(ctx, 0, 8)
 
-    draw_action_toggle("Dock Transport", 41643, "trans_dock")
+    draw_action_toggle('Dock Transport', 41643, 'trans_dock')
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetTooltip(ctx, Strings.TRANSPORT.dock_transport)
     end
@@ -257,12 +257,12 @@ function TransportView:draw(ctx, shell_state)
 
     -- Element Visibility Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "ELEMENT VISIBILITY")
+    ImGui.Text(ctx, 'ELEMENT VISIBILITY')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-    ImGui.Text(ctx, "Control which transport elements are visible")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+    ImGui.Text(ctx, 'Control which transport elements are visible')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 2)
 
@@ -283,12 +283,12 @@ function TransportView:draw(ctx, shell_state)
     ImGui.BeginGroup(ctx)
 
     -- Left column
-    self.show_play_position = draw_checkbox_row("Show play position", self.show_play_position, "trans_play_position")
-    self.show_playback_status = draw_checkbox_row("Show playback status", self.show_playback_status, "trans_playback_status")
-    self.show_transport_state = draw_checkbox_row("Show transport state", self.show_transport_state, "trans_transport_state")
-    self.show_record_status = draw_checkbox_row("Show record status", self.show_record_status, "trans_record_status")
-    self.show_loop_repeat = draw_checkbox_row("Show loop/repeat status", self.show_loop_repeat, "trans_loop_repeat")
-    self.show_auto_crossfade = draw_checkbox_row("Show auto-crossfade", self.show_auto_crossfade, "trans_auto_crossfade")
+    self.show_play_position = draw_checkbox_row('Show play position', self.show_play_position, 'trans_play_position')
+    self.show_playback_status = draw_checkbox_row('Show playback status', self.show_playback_status, 'trans_playback_status')
+    self.show_transport_state = draw_checkbox_row('Show transport state', self.show_transport_state, 'trans_transport_state')
+    self.show_record_status = draw_checkbox_row('Show record status', self.show_record_status, 'trans_record_status')
+    self.show_loop_repeat = draw_checkbox_row('Show loop/repeat status', self.show_loop_repeat, 'trans_loop_repeat')
+    self.show_auto_crossfade = draw_checkbox_row('Show auto-crossfade', self.show_auto_crossfade, 'trans_auto_crossfade')
 
     ImGui.EndGroup(ctx)
 
@@ -297,12 +297,12 @@ function TransportView:draw(ctx, shell_state)
     ImGui.BeginGroup(ctx)
 
     -- Right column
-    self.show_midi_editor_btn = draw_checkbox_row("Show MIDI editor button", self.show_midi_editor_btn, "trans_midi_editor")
-    self.show_metronome = draw_checkbox_row("Show metronome", self.show_metronome, "trans_metronome")
-    self.show_tempo_bpm = draw_checkbox_row("Show tempo (BPM)", self.show_tempo_bpm, "trans_tempo_bpm")
-    self.show_time_signature = draw_checkbox_row("Show time signature", self.show_time_signature, "trans_time_signature")
-    self.show_project_length = draw_checkbox_row("Show project length", self.show_project_length, "trans_project_length")
-    self.show_selection_length = draw_checkbox_row("Show selection length", self.show_selection_length, "trans_selection_length")
+    self.show_midi_editor_btn = draw_checkbox_row('Show MIDI editor button', self.show_midi_editor_btn, 'trans_midi_editor')
+    self.show_metronome = draw_checkbox_row('Show metronome', self.show_metronome, 'trans_metronome')
+    self.show_tempo_bpm = draw_checkbox_row('Show tempo (BPM)', self.show_tempo_bpm, 'trans_tempo_bpm')
+    self.show_time_signature = draw_checkbox_row('Show time signature', self.show_time_signature, 'trans_time_signature')
+    self.show_project_length = draw_checkbox_row('Show project length', self.show_project_length, 'trans_project_length')
+    self.show_selection_length = draw_checkbox_row('Show selection length', self.show_selection_length, 'trans_selection_length')
 
     ImGui.EndGroup(ctx)
 

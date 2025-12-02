@@ -16,10 +16,10 @@ local SEP = package.config:sub(1,1)
 
 -- Join path components
 local function join(a, b)
-  if not a or a == "" then return b end
-  if not b or b == "" then return a end
+  if not a or a == '' then return b end
+  if not b or b == '' then return a end
   local last = a:sub(-1)
-  if last == SEP or last == "/" or last == "\\" then
+  if last == SEP or last == '/' or last == '\\' then
     return a .. b
   end
   return a .. SEP .. b
@@ -27,7 +27,7 @@ end
 
 -- Check if file exists
 local function file_exists(path)
-  local f = io.open(path, "rb")
+  local f = io.open(path, 'rb')
   if f then
     f:close()
     return true
@@ -43,13 +43,13 @@ end
 -- Get basename without extension
 local function basename_no_ext(path)
   if not path then return nil end
-  local name = path:match("[^\\/]+$") or path
-  return name:gsub("%.%w+$", "")
+  local name = path:match('[^\\/]+$') or path
+  return name:gsub('%.%w+$', '')
 end
 
 -- Get directory from path
 local function dirname(path)
-  return path and path:match("^(.*[\\/])") or ""
+  return path and path:match('^(.*[\\/])') or ''
 end
 
 -- Get current theme info
@@ -67,7 +67,7 @@ function M.get_theme_info()
 
   -- Get REAPER resource path
   info.resource_path = reaper.GetResourcePath()
-  info.themes_dir = join(info.resource_path, "ColorThemes")
+  info.themes_dir = join(info.resource_path, 'ColorThemes')
 
   -- Get current theme file
   info.theme_path = reaper.GetLastColorThemeFile()
@@ -76,28 +76,28 @@ function M.get_theme_info()
   end
 
   info.theme_name = basename_no_ext(info.theme_path)
-  info.theme_ext = info.theme_path:match("%.([%w]+)$")
+  info.theme_ext = info.theme_path:match('%.([%w]+)$')
 
   -- Determine theme root directory
   -- For .ReaperTheme files, the root is usually the same directory or theme_name folder
   -- For .ReaperThemeZip, it's more complex (need to extract)
-  if info.theme_ext and info.theme_ext:lower() == "reapertheme" then
+  if info.theme_ext and info.theme_ext:lower() == 'reapertheme' then
     -- Check if there's a matching directory for the theme
-    local theme_dir = info.theme_path:gsub("%.ReaperTheme$", "")
+    local theme_dir = info.theme_path:gsub('%.ReaperTheme$', '')
     if dir_exists(theme_dir) then
       info.theme_root = theme_dir
     else
       -- Theme files might be in the same directory as .ReaperTheme
       info.theme_root = dirname(info.theme_path)
     end
-  elseif info.theme_ext and info.theme_ext:lower() == "reaperthemezip" then
+  elseif info.theme_ext and info.theme_ext:lower() == 'reaperthemezip' then
     -- For zip themes, would need extraction - return nil for now
     info.theme_root = nil
   end
 
   -- Look for rtconfig.txt
   if info.theme_root then
-    local rtconfig = join(info.theme_root, "rtconfig.txt")
+    local rtconfig = join(info.theme_root, 'rtconfig.txt')
     if file_exists(rtconfig) then
       info.rtconfig_path = rtconfig
       info.has_rtconfig = true
@@ -124,7 +124,7 @@ function M.load_current_rtconfig()
   local info = M.get_theme_info()
 
   if not info.has_rtconfig then
-    return nil, "No rtconfig.txt found for current theme"
+    return nil, 'No rtconfig.txt found for current theme'
   end
 
   local parsed, err = RtconfigParser.parse_file(info.rtconfig_path)
@@ -142,7 +142,7 @@ end
 -- Load rtconfig from specific path
 function M.load_rtconfig(path)
   if not file_exists(path) then
-    return nil, "File not found: " .. path
+    return nil, 'File not found: ' .. path
   end
 
   local parsed, err = RtconfigParser.parse_file(path)
@@ -164,14 +164,14 @@ function M.get_layout_parameters()
 
   while true do
     local retval, desc, value, defValue, minValue, maxValue = reaper.ThemeLayout_GetParameter(i)
-    if not retval or retval == "" then
+    if not retval or retval == '' then
       break
     end
 
     params[#params + 1] = {
       index = i,
       name = retval,
-      description = desc or "",
+      description = desc or '',
       value = value,
       default = defValue,
       min = minValue,
@@ -198,7 +198,7 @@ end
 function M.get_available_layouts(section)
   -- This would require parsing the rtconfig to find Layout definitions
   -- For now, return common layout names
-  return { "A", "B", "C" }
+  return { 'A', 'B', 'C' }
 end
 
 -- Set layout override for a section

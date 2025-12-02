@@ -69,33 +69,33 @@ function M.show_template_info(ctx, ImGui, template, metadata)
       end
 
       if track_tree and #track_tree > 0 then
-        ImGui.Text(ctx, string.format("Tracks: %d", #track_tree))
+        ImGui.Text(ctx, string.format('Tracks: %d', #track_tree))
         -- Show track tree with indentation (limit to 8 tracks for tooltip)
         local max_display = 8
         for i, track in ipairs(track_tree) do
           if i > max_display then
-            ImGui.TextDisabled(ctx, string.format("  ... +%d more", #track_tree - max_display))
+            ImGui.TextDisabled(ctx, string.format('  ... +%d more', #track_tree - max_display))
             break
           end
           -- Indent based on depth, add folder icon for folder tracks
-          local indent = string.rep("  ", track.depth)
-          local icon = track.is_folder and "▸ " or "• "
+          local indent = string.rep('  ', track.depth)
+          local icon = track.is_folder and '▸ ' or '• '
           ImGui.TextDisabled(ctx, indent .. icon .. track.name)
         end
       elseif track_count > 1 then
         -- Fallback if parsing failed but we know there are multiple tracks
-        ImGui.Text(ctx, string.format("Tracks: %d", track_count))
+        ImGui.Text(ctx, string.format('Tracks: %d', track_count))
       end
     end
 
     -- Location
-    if template.folder and template.folder ~= "Root" and template.folder ~= "" then
-      ImGui.Text(ctx, "Location: " .. template.folder)
+    if template.folder and template.folder ~= 'Root' and template.folder ~= '' then
+      ImGui.Text(ctx, 'Location: ' .. template.folder)
     end
 
     -- VSTs
     if template.fx and #template.fx > 0 then
-      ImGui.Text(ctx, string.format("VSTs: %d", #template.fx))
+      ImGui.Text(ctx, string.format('VSTs: %d', #template.fx))
       if #template.fx <= 5 then
         ImGui.Indent(ctx, 10)
         for _, fx_name in ipairs(template.fx) do
@@ -103,13 +103,13 @@ function M.show_template_info(ctx, ImGui, template, metadata)
         end
         ImGui.Unindent(ctx, 10)
       else
-        ImGui.Text(ctx, "  " .. table.concat(template.fx, ", ", 1, 3) .. string.format("... +%d more", #template.fx - 3))
+        ImGui.Text(ctx, '  ' .. table.concat(template.fx, ', ', 1, 3) .. string.format('... +%d more', #template.fx - 3))
       end
     end
 
     -- Tags
     if tmpl_meta and tmpl_meta.tags and #tmpl_meta.tags > 0 then
-      ImGui.Text(ctx, "Tags: " .. table.concat(tmpl_meta.tags, ", "))
+      ImGui.Text(ctx, 'Tags: ' .. table.concat(tmpl_meta.tags, ', '))
     end
 
     -- Usage stats (enhanced with time-based analysis)
@@ -119,29 +119,29 @@ function M.show_template_info(ctx, ImGui, template, metadata)
         -- Use stats module for rich summary
         local stats = Stats.calculate_stats(usage_history)
         local summary = Stats.format_summary(stats)
-        ImGui.Text(ctx, "Usage: " .. summary)
+        ImGui.Text(ctx, 'Usage: ' .. summary)
       elseif tmpl_meta.usage_count and tmpl_meta.usage_count > 0 then
         -- Fallback for old data without history
-        ImGui.Text(ctx, string.format("Used: %d times", tmpl_meta.usage_count))
+        ImGui.Text(ctx, string.format('Used: %d times', tmpl_meta.usage_count))
       end
 
       if tmpl_meta.last_used then
-        local last_used_date = os.date("%Y-%m-%d %H:%M", tmpl_meta.last_used)
-        ImGui.Text(ctx, "Last used: " .. last_used_date)
+        local last_used_date = os.date('%Y-%m-%d %H:%M', tmpl_meta.last_used)
+        ImGui.Text(ctx, 'Last used: ' .. last_used_date)
       end
 
       if tmpl_meta.created then
-        local created_date = os.date("%Y-%m-%d", tmpl_meta.created)
-        ImGui.Text(ctx, "Added: " .. created_date)
+        local created_date = os.date('%Y-%m-%d', tmpl_meta.created)
+        ImGui.Text(ctx, 'Added: ' .. created_date)
       end
     end
 
     -- Notes preview
-    if tmpl_meta and tmpl_meta.notes and tmpl_meta.notes ~= "" then
+    if tmpl_meta and tmpl_meta.notes and tmpl_meta.notes ~= '' then
       ImGui.Separator(ctx)
       local preview = tmpl_meta.notes
       if #preview > 100 then
-        preview = preview:sub(1, 100) .. "..."
+        preview = preview:sub(1, 100) .. '...'
       end
       ImGui.TextWrapped(ctx, preview)
     end
@@ -166,19 +166,19 @@ function M.show_folder_info(ctx, ImGui, folder_node, templates_count)
     ImGui.Separator(ctx)
 
     if folder_node.is_virtual then
-      ImGui.Text(ctx, "Type: Virtual Folder")
+      ImGui.Text(ctx, 'Type: Virtual Folder')
       if folder_node.template_refs then
-        ImGui.Text(ctx, string.format("Templates: %d", #folder_node.template_refs))
+        ImGui.Text(ctx, string.format('Templates: %d', #folder_node.template_refs))
       end
     else
-      ImGui.Text(ctx, "Type: Physical Folder")
+      ImGui.Text(ctx, 'Type: Physical Folder')
       if templates_count then
-        ImGui.Text(ctx, string.format("Templates: %d", templates_count))
+        ImGui.Text(ctx, string.format('Templates: %d', templates_count))
       end
     end
 
-    if folder_node.path and folder_node.path ~= "" then
-      ImGui.Text(ctx, "Path: " .. folder_node.path)
+    if folder_node.path and folder_node.path ~= '' then
+      ImGui.Text(ctx, 'Path: ' .. folder_node.path)
     end
 
     ImGui.PopTextWrapPos(ctx)

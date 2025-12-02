@@ -15,16 +15,16 @@ local M = {}
 local hexrgb = Ark.Colors.hexrgb
 
 M.CONFIG = {
-  bg_base = hexrgb("#1A1A1A"),
+  bg_base = hexrgb('#1A1A1A'),
   badge_rounding = 4,
   badge_padding_x = 6,
   badge_padding_y = 3,
   badge_margin = 6,
-  badge_bg = hexrgb("#14181C"),
+  badge_bg = hexrgb('#14181C'),
   badge_border_alpha = 0x33,
   disabled = { desaturate = 0.8, brightness = 0.4, min_alpha = 0x33, fade_speed = 20.0, min_lightness = 0.28 },
   responsive = { hide_length_below = 35, hide_badge_below = 25, hide_text_below = 15 }, -- UPDATED
-  playlist_tile = { base_color = hexrgb("#3A3A3A") },
+  playlist_tile = { base_color = hexrgb('#3A3A3A') },
   text_margin_right = 6,
   badge_nudge_x = 0,
   badge_nudge_y = 0,
@@ -57,7 +57,7 @@ end
 --- @param opts.get_playlist_by_id function Function(id) -> playlist
 --- @param opts.grid table Grid instance
 function M.render(opts)
-  if opts.item.type == "playlist" then
+  if opts.item.type == 'playlist' then
     M.render_playlist(opts)
   else
     M.render_region(opts)
@@ -141,7 +141,7 @@ function M.render_region(opts)
   local right_elements = {}
   
   if show_badge then
-    local badge_text = (item.reps == 0) and "∞" or ("×" .. (item.reps or 1))
+    local badge_text = (item.reps == 0) and '∞' or ('×' .. (item.reps or 1))
     local bw, _ = ImGui.CalcTextSize(ctx, badge_text)
     right_elements[#right_elements + 1] = BaseRenderer.create_element(
       true,
@@ -158,7 +158,7 @@ function M.render_region(opts)
   
   if show_badge then
     local reps = item.reps or 1
-    local badge_text = (reps == 0) and "∞" or ("×" .. reps)
+    local badge_text = (reps == 0) and '∞' or ('×' .. reps)
     local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
     bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
     local badge_height = bh + M.CONFIG.badge_padding_y * 2
@@ -169,10 +169,10 @@ function M.render_region(opts)
     
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Ark.Colors.with_alpha(base_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
-    Ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Ark.Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
+    Ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Ark.Colors.with_alpha(hexrgb('#FFFFFFDD'), text_alpha), badge_text)
     
     ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
-    ImGui.InvisibleButton(ctx, "##badge_" .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
+    ImGui.InvisibleButton(ctx, '##badge_' .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
     if ImGui.IsItemClicked(ctx, 0) and on_repeat_cycle then on_repeat_cycle(item.key) end
   end
   
@@ -202,21 +202,21 @@ function M.render_playlist(opts)
   -- Calculate total duration if playlist has items (in beat positions)
   local total_duration = 0
   if playlist.items and bridge then
-    local State = require("RegionPlaylist.app.state")
+    local State = require('RegionPlaylist.app.state')
     -- Calculate duration from region beat positions
     for _, pl_item in ipairs(playlist.items) do
-      local item_type = pl_item.type or "region"
+      local item_type = pl_item.type or 'region'
       local rid = pl_item.rid
       
-      if item_type == "region" and rid then
+      if item_type == 'region' and rid then
         local region = State.get_region_by_rid(rid)
         if region then
-          -- region.start and region["end"] are in beat positions
-          local duration = (region["end"] or 0) - (region.start or 0)
+          -- region.start and region['end'] are in beat positions
+          local duration = (region['end'] or 0) - (region.start or 0)
           local repeats = pl_item.reps or 1
           total_duration = total_duration + (duration * repeats)
         end
-      elseif item_type == "playlist" and pl_item.playlist_id then
+      elseif item_type == 'playlist' and pl_item.playlist_id then
         -- For nested playlists, we'd need recursive calculation
         -- For now, skip nested duration calculation in active view
       end
@@ -224,9 +224,9 @@ function M.render_playlist(opts)
   end
   
   local playlist_data = {
-    name = playlist.name or item.playlist_name or "Unknown Playlist",
+    name = playlist.name or item.playlist_name or 'Unknown Playlist',
     item_count = playlist.items and #playlist.items or item.playlist_item_count or 0,
-    chip_color = playlist.chip_color or item.chip_color or hexrgb("#FF5733"),
+    chip_color = playlist.chip_color or item.chip_color or hexrgb('#FF5733'),
     total_duration = total_duration
   }
 
@@ -301,7 +301,7 @@ function M.render_playlist(opts)
   
   if show_badge then
     local reps = item.reps or 1
-    local badge_text = (reps == 0) and ("∞ [" .. playlist_data.item_count .. "]") or ("×" .. reps .. " [" .. playlist_data.item_count .. "]")
+    local badge_text = (reps == 0) and ('∞ [' .. playlist_data.item_count .. ']') or ('×' .. reps .. ' [' .. playlist_data.item_count .. ']')
     local bw, _ = ImGui.CalcTextSize(ctx, badge_text)
     right_elements[#right_elements + 1] = BaseRenderer.create_element(
       true,
@@ -318,7 +318,7 @@ function M.render_playlist(opts)
 
   if show_badge then
     local reps = item.reps or 1
-    local badge_text = (reps == 0) and ("∞ [" .. playlist_data.item_count .. "]") or ("×" .. reps .. " [" .. playlist_data.item_count .. "]")
+    local badge_text = (reps == 0) and ('∞ [' .. playlist_data.item_count .. ']') or ('×' .. reps .. ' [' .. playlist_data.item_count .. ']')
     local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
     bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
     local badge_height = bh + M.CONFIG.badge_padding_y * 2
@@ -329,16 +329,16 @@ function M.render_playlist(opts)
 
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Ark.Colors.with_alpha(playlist_data.chip_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
-    Ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Ark.Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
+    Ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Ark.Colors.with_alpha(hexrgb('#FFFFFFDD'), text_alpha), badge_text)
     
     ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
-    ImGui.InvisibleButton(ctx, "##badge_" .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
+    ImGui.InvisibleButton(ctx, '##badge_' .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
     if ImGui.IsItemClicked(ctx, 0) and on_repeat_cycle then on_repeat_cycle(item.key) end
     
     -- Enhanced tooltip with playback info
     if ImGui.IsItemHovered(ctx) then
-      local reps_text = (reps == 0) and "∞" or tostring(reps)
-      local tooltip = string.format("Playlist • %d items • ×%s repeats", playlist_data.item_count, reps_text)
+      local reps_text = (reps == 0) and '∞' or tostring(reps)
+      local tooltip = string.format('Playlist • %d items • ×%s repeats', playlist_data.item_count, reps_text)
       
       if bridge and bridge:get_state().is_playing then
         local current_playlist_key = bridge:get_current_playlist_key()
@@ -347,7 +347,7 @@ function M.render_playlist(opts)
           if time_remaining then
             local mins = (time_remaining / 60)//1
             local secs = (time_remaining % 60)//1
-            tooltip = tooltip .. string.format("\n▶ Playing • %d:%02d remaining", mins, secs)
+            tooltip = tooltip .. string.format('\n▶ Playing • %d:%02d remaining', mins, secs)
           end
         end
       end

@@ -30,10 +30,10 @@ local function build_config()
   local Theme = get_theme()
 
   -- Use Theme.COLORS if available, otherwise fall back to dark defaults
-  local bg_chrome = Theme and Theme.COLORS and Theme.COLORS.BG_CHROME or hexrgb("#121212")
-  local border_outer = Theme and Theme.COLORS and Theme.COLORS.BORDER_OUTER or hexrgb("#404040")
-  local text_normal = Theme and Theme.COLORS and Theme.COLORS.TEXT_NORMAL or hexrgb("#FFFFFF")
-  local text_dimmed = Theme and Theme.COLORS and Theme.COLORS.TEXT_DIMMED or hexrgb("#666666")
+  local bg_chrome = Theme and Theme.COLORS and Theme.COLORS.BG_CHROME or hexrgb('#121212')
+  local border_outer = Theme and Theme.COLORS and Theme.COLORS.BORDER_OUTER or hexrgb('#404040')
+  local text_normal = Theme and Theme.COLORS and Theme.COLORS.TEXT_NORMAL or hexrgb('#FFFFFF')
+  local text_dimmed = Theme and Theme.COLORS and Theme.COLORS.TEXT_DIMMED or hexrgb('#666666')
 
   -- Determine if we're in a light theme (t > 0.5)
   local is_light = Theme and Theme.get_t and Theme.get_t() > 0.5 or false
@@ -61,19 +61,19 @@ local function build_config()
         outer_color = border_outer,
         outer_opacity = is_light and 0.5 or 0.7,
         outer_thickness = 1.5,
-        inner_color = is_light and hexrgb("#000000") or hexrgb("#FFFFFF"),
+        inner_color = is_light and hexrgb('#000000') or hexrgb('#FFFFFF'),
         inner_opacity = is_light and 0.08 or 0.10,
         inner_thickness = 1.0,
       },
 
       gradient = {
         top_enabled = false,
-        top_color = is_light and hexrgb("#000000") or hexrgb("#FFFFFF"),
+        top_color = is_light and hexrgb('#000000') or hexrgb('#FFFFFF'),
         top_height = 80,
         top_max_alpha = 0.06,
 
         bottom_enabled = false,
-        bottom_color = is_light and hexrgb("#FFFFFF") or hexrgb("#000000"),
+        bottom_color = is_light and hexrgb('#FFFFFF') or hexrgb('#000000'),
         bottom_height = 60,
         bottom_max_alpha = 0.08,
       },
@@ -88,7 +88,7 @@ local function build_config()
         divider_thickness = 1.0,
         divider_fade_width = 60,
 
-        highlight_color = is_light and hexrgb("#000000") or hexrgb("#FFFFFF"),
+        highlight_color = is_light and hexrgb('#000000') or hexrgb('#FFFFFF'),
         highlight_opacity = 0.06,
         highlight_thickness = 1.0,
       },

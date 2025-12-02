@@ -38,7 +38,7 @@ local function get_tree_state(id)
       selected_nodes = {},
       last_clicked_node = nil,
       renaming_node = nil,
-      rename_buffer = "",
+      rename_buffer = '',
       rename_focus_set = nil,
       rename_input_active = nil,
       rename_input_hovered = nil,
@@ -72,7 +72,7 @@ local function draw_tree_arrow(ctx, dl, x, y, is_open)
   local size = 5
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
-  local arrow_color = Colors.hexrgb("#B0B0B0FF")
+  local arrow_color = Colors.hexrgb('#B0B0B0FF')
 
   if is_open then
     local x1, y1 = x, y
@@ -98,7 +98,7 @@ local function draw_folder_icon(ctx, dl, x, y, color)
   local tab_h = 2
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
-  local icon_color = color or Colors.hexrgb("#888888")
+  local icon_color = color or Colors.hexrgb('#888888')
   ImGui.DrawList_AddRectFilled(dl, x, y, x + tab_w, y + tab_h, icon_color, 0)
   ImGui.DrawList_AddRectFilled(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, icon_color, 0)
   return main_w + 4
@@ -110,10 +110,10 @@ local function draw_file_icon(ctx, dl, x, y, color)
   local fold_size = 3
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
-  local icon_color = color or Colors.hexrgb("#888888")
+  local icon_color = color or Colors.hexrgb('#888888')
   ImGui.DrawList_AddRectFilled(dl, x, y, x + main_w - fold_size, y + main_h, icon_color, 0)
   ImGui.DrawList_AddRectFilled(dl, x, y + fold_size, x + main_w, y + main_h, icon_color, 0)
-  local corner_color = Colors.hexrgb("#555555")
+  local corner_color = Colors.hexrgb('#555555')
   ImGui.DrawList_AddTriangleFilled(dl,
     x + main_w - fold_size, y + fold_size,
     x + main_w, y + fold_size,
@@ -129,7 +129,7 @@ local function draw_virtual_folder_icon(ctx, dl, x, y, color)
   local tab_h = 2
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
-  local icon_color = color or Colors.hexrgb("#888888")
+  local icon_color = color or Colors.hexrgb('#888888')
   ImGui.DrawList_AddRect(dl, x, y, x + tab_w, y + tab_h, icon_color, 0, 0, 2)
   ImGui.DrawList_AddRect(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, icon_color, 0, 0, 2)
   local v_color = Colors.with_alpha(icon_color, 0xFF)
@@ -203,7 +203,7 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
     ImGui.SetNextItemAllowOverlap(ctx)
   end
 
-  local node_open = ImGui.TreeNodeEx(ctx, node_id, "", flags)
+  local node_open = ImGui.TreeNodeEx(ctx, node_id, '', flags)
 
   -- Get interaction state
   local tree_item_hovered = not is_renaming and ImGui.IsItemHovered(ctx)
@@ -224,15 +224,15 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
 
   -- Draw hover effect
   if tree_item_hovered and not is_selected then
-    local hover_color = Colors.hexrgb("#FFFFFF08")
+    local hover_color = Colors.hexrgb('#FFFFFF08')
     ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, hover_color, 0)
   end
 
   -- Draw selection indicator
   if is_selected then
     local selection_bar_width = 3
-    local selection_color = Colors.hexrgb("#FFFFFFFF")
-    local selection_bg = Colors.hexrgb("#FFFFFF15")
+    local selection_color = Colors.hexrgb('#FFFFFFFF')
+    local selection_bg = Colors.hexrgb('#FFFFFF15')
     ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_min_x + selection_bar_width, item_max_y, selection_color, 0)
     ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, selection_bg, 0)
   end
@@ -270,9 +270,9 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
     local saved_cursor_x, saved_cursor_y = ImGui.GetCursorScreenPos(ctx)
     ImGui.SetCursorScreenPos(ctx, text_x, item_min_y)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#FFFFFF15"))
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#FFFFFF20"))
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#FFFFFF25"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb('#FFFFFF15'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb('#FFFFFF20'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb('#FFFFFF25'))
 
     if not state.rename_focus_set then
       ImGui.SetKeyboardFocusHere(ctx, 0)
@@ -280,7 +280,7 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
     end
 
     ImGui.SetNextItemWidth(ctx, item_max_x - text_x - 8)
-    local rv, buf = ImGui.InputText(ctx, "##rename_" .. node_id, state.rename_buffer, ImGui.InputTextFlags_AutoSelectAll)
+    local rv, buf = ImGui.InputText(ctx, '##rename_' .. node_id, state.rename_buffer, ImGui.InputTextFlags_AutoSelectAll)
 
     if rv then
       state.rename_buffer = buf
@@ -297,7 +297,7 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
 
     -- Commit on Enter
     if ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter) then
-      if state.rename_buffer ~= "" and state.rename_buffer ~= node.name then
+      if state.rename_buffer ~= '' and state.rename_buffer ~= node.name then
         result.renamed = true
         result.renamed_node_id = node_id
         result.renamed_value = state.rename_buffer
@@ -306,33 +306,33 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
         end
       end
       state.renaming_node = nil
-      state.rename_buffer = ""
+      state.rename_buffer = ''
       state.rename_focus_set = nil
     end
 
     -- Cancel on Escape
     if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
       state.renaming_node = nil
-      state.rename_buffer = ""
+      state.rename_buffer = ''
       state.rename_focus_set = nil
     end
   else
     -- Draw text label
     local text_color
     if node_color and opts.show_colors ~= false then
-      text_color = Colors.lerp(node_color, Colors.hexrgb("#FFFFFFFF"), 0.7)
+      text_color = Colors.lerp(node_color, Colors.hexrgb('#FFFFFFFF'), 0.7)
     else
-      text_color = Colors.hexrgb("#FFFFFFFF")
+      text_color = Colors.hexrgb('#FFFFFFFF')
     end
     ImGui.DrawList_AddText(dl, text_x, text_y, text_color, node.name)
 
     -- Draw template count
     if node.template_count and node.template_count > 0 and opts.show_template_count then
-      local count_text = "(" .. node.template_count .. ")"
+      local count_text = '(' .. node.template_count .. ')'
       local count_w = ImGui.CalcTextSize(ctx, count_text)
       local count_x = item_max_x - count_w - 8
       local count_y = item_min_y
-      local count_color = Colors.hexrgb("#808080FF")
+      local count_color = Colors.hexrgb('#808080FF')
       ImGui.DrawList_AddText(dl, count_x, count_y, count_color, count_text)
     end
   end
@@ -461,7 +461,7 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
   -- Drag-drop source
   if opts.draggable and ImGui.BeginDragDropSource(ctx) then
     local drag_payload = node_id
-    local drag_label = "Move: " .. node.name
+    local drag_label = 'Move: ' .. node.name
 
     if opts.multi_select ~= false then
       local is_node_selected = state.selected_nodes[node_id] ~= nil
@@ -473,24 +473,24 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
       end
 
       if is_node_selected and count > 1 then
-        drag_payload = table.concat(selected_ids, "\n")
-        drag_label = "Move: " .. count .. " folders"
+        drag_payload = table.concat(selected_ids, '\n')
+        drag_label = 'Move: ' .. count .. ' folders'
       end
     end
 
-    ImGui.SetDragDropPayload(ctx, "TREENODE_FOLDER", drag_payload)
+    ImGui.SetDragDropPayload(ctx, 'TREENODE_FOLDER', drag_payload)
     ImGui.Text(ctx, drag_label)
     ImGui.EndDragDropSource(ctx)
   end
 
   -- Drag-drop target
   if opts.draggable and ImGui.BeginDragDropTarget(ctx) then
-    local accepted_folder, folder_payload = ImGui.AcceptDragDropPayload(ctx, "TREENODE_FOLDER")
+    local accepted_folder, folder_payload = ImGui.AcceptDragDropPayload(ctx, 'TREENODE_FOLDER')
     if accepted_folder and folder_payload and opts.on_drop_folder then
       opts.on_drop_folder(folder_payload, node)
     end
 
-    local accepted_template, template_payload = ImGui.AcceptDragDropPayload(ctx, "TEMPLATE")
+    local accepted_template, template_payload = ImGui.AcceptDragDropPayload(ctx, 'TEMPLATE')
     if accepted_template and template_payload and opts.on_drop_template then
       opts.on_drop_template(template_payload, node)
     end
@@ -521,8 +521,8 @@ end
 --- @return table Result object with selection, expansion, rename info
 function M.draw(ctx, opts)
   -- Validate opts
-  if type(opts) ~= "table" then
-    error("Ark.Tree: expected opts table, got " .. type(opts), 2)
+  if type(opts) ~= 'table' then
+    error('Ark.Tree: expected opts table, got ' .. type(opts), 2)
   end
 
   -- Resolve ID: Priority 1 = explicit id (bypasses stack), Priority 2 = stack + fallback
@@ -532,7 +532,7 @@ function M.draw(ctx, opts)
     id = opts.id
   else
     -- Use stack + fallback
-    local base_id = "tree"
+    local base_id = 'tree'
     id = IdStack.resolve(ctx, base_id)
   end
 
@@ -588,7 +588,7 @@ function M.draw(ctx, opts)
 
     if ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) and not input_active and not input_hovered then
       state.renaming_node = nil
-      state.rename_buffer = ""
+      state.rename_buffer = ''
       state.rename_focus_set = nil
       state.rename_input_active = nil
       state.rename_input_hovered = nil
@@ -613,18 +613,18 @@ end
 -- ============================================================================
 
 --- Draw tree view (DEPRECATED - use Ark.Tree(ctx, opts) instead)
---- @deprecated Use Ark.Tree(ctx, {id = "...", nodes = nodes, ...}) instead
+--- @deprecated Use Ark.Tree(ctx, {id = '...', nodes = nodes, ...}) instead
 --- @param ctx userdata ImGui context
 --- @param nodes table Root nodes
 --- @param state table External state table (will be synced)
 --- @param user_config table|nil Configuration options
 function M.draw_legacy(ctx, nodes, state, user_config)
   -- Warn once per unique caller
-  local caller_info = debug.getinfo(2, "Sl")
-  local caller_key = (caller_info.source or "unknown") .. ":" .. (caller_info.currentline or 0)
+  local caller_info = debug.getinfo(2, 'Sl')
+  local caller_key = (caller_info.source or 'unknown') .. ':' .. (caller_info.currentline or 0)
   if not deprecation_warned[caller_key] then
     deprecation_warned[caller_key] = true
-    Logger.warn("TreeView", "M.draw(ctx, nodes, state, config) is deprecated. Use Ark.Tree(ctx, {id = '...', nodes = nodes, ...}) instead. Called from: %s", caller_key)
+    Logger.warn('TreeView', "M.draw(ctx, nodes, state, config) is deprecated. Use Ark.Tree(ctx, {id = '...', nodes = nodes, ...}) instead. Called from: %s", caller_key)
   end
 
   if not nodes or #nodes == 0 then return end
@@ -640,7 +640,7 @@ function M.draw_legacy(ctx, nodes, state, user_config)
   end
 
   -- Generate a pseudo-ID from caller location
-  local pseudo_id = "legacy_tree_" .. caller_key
+  local pseudo_id = 'legacy_tree_' .. caller_key
 
   -- Convert legacy config to new opts format
   local opts = {
@@ -679,7 +679,7 @@ function M.draw_legacy(ctx, nodes, state, user_config)
   end
   if state.renaming_node then
     internal_state.renaming_node = state.renaming_node
-    internal_state.rename_buffer = state.rename_buffer or ""
+    internal_state.rename_buffer = state.rename_buffer or ''
   end
 
   -- Draw using new API
@@ -715,7 +715,7 @@ end
 function M.start_rename(tree_id, node_id, current_name)
   local state = get_tree_state(tree_id)
   state.renaming_node = node_id
-  state.rename_buffer = current_name or ""
+  state.rename_buffer = current_name or ''
   state.rename_focus_set = nil
 end
 
@@ -724,7 +724,7 @@ end
 function M.cancel_rename(tree_id)
   local state = get_tree_state(tree_id)
   state.renaming_node = nil
-  state.rename_buffer = ""
+  state.rename_buffer = ''
   state.rename_focus_set = nil
 end
 
@@ -845,8 +845,8 @@ end
 return setmetatable(M, {
   __call = function(_, ctx, opts_or_nodes, state, user_config)
     -- Detect old vs new API
-    if type(opts_or_nodes) == "table" and opts_or_nodes.id then
-      -- New API: Ark.Tree(ctx, {id = "...", nodes = ...})
+    if type(opts_or_nodes) == 'table' and opts_or_nodes.id then
+      -- New API: Ark.Tree(ctx, {id = '...', nodes = ...})
       return M.draw(ctx, opts_or_nodes)
     elseif state ~= nil then
       -- Old API: M.draw(ctx, nodes, state, config)

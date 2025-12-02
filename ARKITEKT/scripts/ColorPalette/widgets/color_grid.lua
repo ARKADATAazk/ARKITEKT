@@ -44,7 +44,7 @@ function ColorGrid:draw(ctx, colors, config, allow_interaction)
   end
   
   if not colors or #colors == 0 then
-    ImGui.Text(ctx, "No colors to display")
+    ImGui.Text(ctx, 'No colors to display')
     return nil
   end
   
@@ -108,7 +108,7 @@ function ColorGrid:draw(ctx, colors, config, allow_interaction)
     Ark.Draw.rect_filled(dl, x1, y1, x2, y2, fill_color, rounding)
     
     -- Draw black border (1px)
-    Ark.Draw.rect(dl, x1, y1, x2, y2, hexrgb("#000000"), rounding, 1)
+    Ark.Draw.rect(dl, x1, y1, x2, y2, hexrgb('#000000'), rounding, 1)
     
     -- Draw color border on top for hover effect
     if is_hovered then
@@ -117,7 +117,7 @@ function ColorGrid:draw(ctx, colors, config, allow_interaction)
     
     -- Create invisible button for interaction
     ImGui.SetCursorScreenPos(ctx, x1, y1)
-    ImGui.InvisibleButton(ctx, "##color_" .. i, tile_size, tile_size)
+    ImGui.InvisibleButton(ctx, '##color_' .. i, tile_size, tile_size)
     
     -- Only process clicks if interaction is allowed
     if allow_interaction and ImGui.IsItemClicked(ctx, 0) then
@@ -126,7 +126,7 @@ function ColorGrid:draw(ctx, colors, config, allow_interaction)
     
     -- Tooltip with hex color (only when interaction allowed)
     if allow_interaction and ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, string.format("#%06X", color >> 8))
+      ImGui.SetTooltip(ctx, string.format('#%06X', color >> 8))
     end
   end
   

@@ -13,9 +13,9 @@ local M = {}
 -- - M.insert_item_at_mouse() - Item insertion
 
 function M.run_tests()
-  print("[items_test] Running tests...")
+  print('[items_test] Running tests...')
   -- Test stubs to be implemented
-  print("[items_test] All tests passed (stubs only)")
+  print('[items_test] All tests passed (stubs only)')
   return true
 end
 

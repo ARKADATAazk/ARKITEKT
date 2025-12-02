@@ -5,7 +5,7 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
+local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 
 -- Load required modules
 local Shell = require('arkitekt.app.shell')
@@ -27,8 +27,8 @@ local gui = GUI.new(Config, State, Scanner)
 
 -- Run in overlay mode
 Shell.run({
-  mode = "overlay",
-  title = "Template Browser",
+  mode = 'overlay',
+  title = 'Template Browser',
   toggle_button = true,
 
   overlay = {

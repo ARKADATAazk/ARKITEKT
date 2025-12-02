@@ -12,8 +12,8 @@ local M = {}
 -- VIEW MODES
 -- ============================================================================
 M.VIEW_MODES = {
-  SINGLE = "single",    -- Single track/element view
-  TRACKS = "tracks",    -- Multiple tracks stacked vertically
+  SINGLE = 'single',    -- Single track/element view
+  TRACKS = 'tracks',    -- Multiple tracks stacked vertically
 }
 
 M.VIEW_MODES_REVERSE = Lookup.build_reverse(M.VIEW_MODES)
@@ -22,20 +22,20 @@ M.VIEW_MODES_REVERSE = Lookup.build_reverse(M.VIEW_MODES)
 -- CONTEXT TYPES (TCP, MCP, etc.)
 -- ============================================================================
 M.CONTEXTS = {
-  TCP = "tcp",      -- Track Control Panel
-  MCP = "mcp",      -- Mixer Control Panel
-  ENVCP = "envcp",  -- Envelope Control Panel
-  TRANS = "trans",  -- Transport
+  TCP = 'tcp',      -- Track Control Panel
+  MCP = 'mcp',      -- Mixer Control Panel
+  ENVCP = 'envcp',  -- Envelope Control Panel
+  TRANS = 'trans',  -- Transport
 }
 
 M.CONTEXTS_REVERSE = Lookup.build_reverse(M.CONTEXTS)
 
 -- Context display names for UI
 M.CONTEXT_LABELS = {
-  tcp = "TCP",
-  mcp = "MCP",
-  envcp = "EnvCP",
-  trans = "Trans",
+  tcp = 'TCP',
+  mcp = 'MCP',
+  envcp = 'EnvCP',
+  trans = 'Trans',
 }
 
 -- ============================================================================
@@ -49,10 +49,10 @@ M.FOLDER_STATES = {
 }
 
 M.FOLDER_STATE_LABELS = {
-  [0] = "None",
-  [1] = "Open",
-  [-1] = "Closed",
-  [-2] = "Last",
+  [0] = 'None',
+  [1] = 'Open',
+  [-1] = 'Closed',
+  [-2] = 'Last',
 }
 
 -- ============================================================================
@@ -68,35 +68,35 @@ M.TRACK_HEIGHTS = {
 
 -- Preset definitions for UI
 M.HEIGHT_PRESETS = {
-  { name = "Super", height = M.TRACK_HEIGHTS.SUPERCOLLAPSED },
-  { name = "Collapsed", height = M.TRACK_HEIGHTS.COLLAPSED },
-  { name = "Small", height = M.TRACK_HEIGHTS.SMALL },
-  { name = "Normal", height = M.TRACK_HEIGHTS.NORMAL },
-  { name = "Large", height = M.TRACK_HEIGHTS.LARGE },
+  { name = 'Super', height = M.TRACK_HEIGHTS.SUPERCOLLAPSED },
+  { name = 'Collapsed', height = M.TRACK_HEIGHTS.COLLAPSED },
+  { name = 'Small', height = M.TRACK_HEIGHTS.SMALL },
+  { name = 'Normal', height = M.TRACK_HEIGHTS.NORMAL },
+  { name = 'Large', height = M.TRACK_HEIGHTS.LARGE },
 }
 
 -- ============================================================================
 -- ATTACHMENT BEHAVIOR TYPES
 -- ============================================================================
 M.BEHAVIORS = {
-  FIXED = "fixed",              -- Element doesn't move or stretch
-  MOVE = "move",                -- Element moves but keeps size
-  STRETCH_START = "stretch_start",  -- Stretches from start edge
-  STRETCH_END = "stretch_end",      -- Stretches from end edge
+  FIXED = 'fixed',              -- Element doesn't move or stretch
+  MOVE = 'move',                -- Element moves but keeps size
+  STRETCH_START = 'stretch_start',  -- Stretches from start edge
+  STRETCH_END = 'stretch_end',      -- Stretches from end edge
 }
 
 -- ============================================================================
 -- ELEMENT CATEGORIES
 -- ============================================================================
 M.CATEGORIES = {
-  SIZE = "size",
-  BUTTON = "button",
-  FADER = "fader",
-  LABEL = "label",
-  METER = "meter",
-  INPUT = "input",
-  CONTAINER = "container",
-  OTHER = "other",
+  SIZE = 'size',
+  BUTTON = 'button',
+  FADER = 'fader',
+  LABEL = 'label',
+  METER = 'meter',
+  INPUT = 'input',
+  CONTAINER = 'container',
+  OTHER = 'other',
 }
 
 -- ============================================================================
@@ -142,32 +142,32 @@ M.TIMEOUTS = {
 -- STATUS TYPES
 -- ============================================================================
 M.STATUS = {
-  INFO = "info",
-  SUCCESS = "success",
-  WARNING = "warning",
-  ERROR = "error",
+  INFO = 'info',
+  SUCCESS = 'success',
+  WARNING = 'warning',
+  ERROR = 'error',
 }
 
 M.STATUS_COLORS = {
-  info = hexrgb("#CCCCCC"),
-  success = hexrgb("#41E0A3"),
-  warning = hexrgb("#E0B341"),
-  error = hexrgb("#E04141"),
+  info = hexrgb('#CCCCCC'),
+  success = hexrgb('#41E0A3'),
+  warning = hexrgb('#E0B341'),
+  error = hexrgb('#E04141'),
 }
 
 -- ============================================================================
 -- UNDO ACTION TYPES
 -- ============================================================================
 M.UNDO_ACTIONS = {
-  ADD_ELEMENT = "add_element",
-  REMOVE_ELEMENT = "remove_element",
-  UPDATE_ELEMENT = "update_element",
-  ADD_TRACK = "add_track",
-  REMOVE_TRACK = "remove_track",
-  UPDATE_TRACK = "update_track",
-  REORDER_TRACKS = "reorder_tracks",
-  CLEAR_ALL = "clear_all",
-  LOAD_DEFAULTS = "load_defaults",
+  ADD_ELEMENT = 'add_element',
+  REMOVE_ELEMENT = 'remove_element',
+  UPDATE_ELEMENT = 'update_element',
+  ADD_TRACK = 'add_track',
+  REMOVE_TRACK = 'remove_track',
+  UPDATE_TRACK = 'update_track',
+  REORDER_TRACKS = 'reorder_tracks',
+  CLEAR_ALL = 'clear_all',
+  LOAD_DEFAULTS = 'load_defaults',
 }
 
 return M

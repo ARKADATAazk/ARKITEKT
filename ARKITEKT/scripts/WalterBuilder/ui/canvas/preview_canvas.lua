@@ -13,8 +13,8 @@ local Canvas = {}
 Canvas.__index = Canvas
 
 -- View modes
-M.VIEW_SINGLE = "single"    -- Single track/element view
-M.VIEW_TRACKS = "tracks"    -- Multiple tracks stacked vertically
+M.VIEW_SINGLE = 'single'    -- Single track/element view
+M.VIEW_TRACKS = 'tracks'    -- Multiple tracks stacked vertically
 
 -- Default canvas configuration
 local DEFAULT_CONFIG = {
@@ -58,7 +58,7 @@ function M.new(opts)
     },
 
     -- Interaction state
-    dragging = nil,  -- nil, "right", "bottom", "corner", "width", "track_height", "element_move", "element_resize_*"
+    dragging = nil,  -- nil, 'right', 'bottom', 'corner', 'width', 'track_height', 'element_move', 'element_resize_*'
     drag_start_w = 0,
     drag_start_h = 0,
     drag_start_x = 0,
@@ -209,9 +209,9 @@ function Canvas:draw_handles(ctx, dl, canvas_x, canvas_y)
   }
 
   -- Determine colors based on drag state
-  local right_color = self.dragging == "right" and Colors.CANVAS.HANDLE_ACTIVE or Colors.CANVAS.HANDLE_NORMAL
-  local bottom_color = self.dragging == "bottom" and Colors.CANVAS.HANDLE_ACTIVE or Colors.CANVAS.HANDLE_NORMAL
-  local corner_color = self.dragging == "corner" and Colors.CANVAS.HANDLE_ACTIVE or Colors.CANVAS.HANDLE_NORMAL
+  local right_color = self.dragging == 'right' and Colors.CANVAS.HANDLE_ACTIVE or Colors.CANVAS.HANDLE_NORMAL
+  local bottom_color = self.dragging == 'bottom' and Colors.CANVAS.HANDLE_ACTIVE or Colors.CANVAS.HANDLE_NORMAL
+  local corner_color = self.dragging == 'corner' and Colors.CANVAS.HANDLE_ACTIVE or Colors.CANVAS.HANDLE_NORMAL
 
   -- Draw handles
   ImGui.DrawList_AddRectFilled(dl,
@@ -243,7 +243,7 @@ local function point_in_rect(px, py, rect)
 end
 
 -- Determine which part of an element was clicked (for resize vs move)
--- Returns: nil (outside), "move" (interior), "resize_e", "resize_s", "resize_se", "resize_w", "resize_n", etc.
+-- Returns: nil (outside), 'move' (interior), 'resize_e', 'resize_s', 'resize_se', 'resize_w', 'resize_n', etc.
 local function get_element_hit_zone(px, py, rect, threshold)
   if not rect or rect.w <= 0 or rect.h <= 0 then return nil end
 
@@ -258,19 +258,19 @@ local function get_element_hit_zone(px, py, rect, threshold)
   local on_bottom = py > rect.y + rect.h - threshold
 
   -- Corners first (priority over edges)
-  if on_bottom and on_right then return "resize_se" end
-  if on_bottom and on_left then return "resize_sw" end
-  if on_top and on_right then return "resize_ne" end
-  if on_top and on_left then return "resize_nw" end
+  if on_bottom and on_right then return 'resize_se' end
+  if on_bottom and on_left then return 'resize_sw' end
+  if on_top and on_right then return 'resize_ne' end
+  if on_top and on_left then return 'resize_nw' end
 
   -- Edges
-  if on_right then return "resize_e" end
-  if on_left then return "resize_w" end
-  if on_bottom then return "resize_s" end
-  if on_top then return "resize_n" end
+  if on_right then return 'resize_e' end
+  if on_left then return 'resize_w' end
+  if on_bottom then return 'resize_s' end
+  if on_top then return 'resize_n' end
 
   -- Interior = move
-  return "move"
+  return 'move'
 end
 
 -- Get cursor style for a hit zone
@@ -334,48 +334,48 @@ function Canvas:apply_element_drag(drag_type, dx, dy)
   local snap_dx = math.floor(dx / snap + 0.5) * snap
   local snap_dy = math.floor(dy / snap + 0.5) * snap
 
-  if drag_type == "element_move" then
+  if drag_type == 'element_move' then
     -- Move: update x and y
     coords.x = start.x + snap_dx
     coords.y = start.y + snap_dy
 
-  elseif drag_type == "element_resize_e" then
+  elseif drag_type == 'element_resize_e' then
     -- East: extend width
     coords.w = math.max(5, start.w + snap_dx)
 
-  elseif drag_type == "element_resize_w" then
+  elseif drag_type == 'element_resize_w' then
     -- West: move left edge, adjust width
     coords.x = start.x + snap_dx
     coords.w = math.max(5, start.w - snap_dx)
 
-  elseif drag_type == "element_resize_s" then
+  elseif drag_type == 'element_resize_s' then
     -- South: extend height
     coords.h = math.max(5, start.h + snap_dy)
 
-  elseif drag_type == "element_resize_n" then
+  elseif drag_type == 'element_resize_n' then
     -- North: move top edge, adjust height
     coords.y = start.y + snap_dy
     coords.h = math.max(5, start.h - snap_dy)
 
-  elseif drag_type == "element_resize_se" then
+  elseif drag_type == 'element_resize_se' then
     -- Southeast: extend both
     coords.w = math.max(5, start.w + snap_dx)
     coords.h = math.max(5, start.h + snap_dy)
 
-  elseif drag_type == "element_resize_nw" then
+  elseif drag_type == 'element_resize_nw' then
     -- Northwest: move both edges
     coords.x = start.x + snap_dx
     coords.y = start.y + snap_dy
     coords.w = math.max(5, start.w - snap_dx)
     coords.h = math.max(5, start.h - snap_dy)
 
-  elseif drag_type == "element_resize_ne" then
+  elseif drag_type == 'element_resize_ne' then
     -- Northeast
     coords.y = start.y + snap_dy
     coords.w = math.max(5, start.w + snap_dx)
     coords.h = math.max(5, start.h - snap_dy)
 
-  elseif drag_type == "element_resize_sw" then
+  elseif drag_type == 'element_resize_sw' then
     -- Southwest
     coords.x = start.x + snap_dx
     coords.w = math.max(5, start.w - snap_dx)
@@ -435,17 +435,17 @@ function Canvas:handle_interaction(ctx, canvas_x, canvas_y, handles)
   if ImGui.IsMouseClicked(ctx, 0) then
     -- First check canvas resize handles
     if point_in_rect(mx, my, handles.corner) then
-      self.dragging = "corner"
+      self.dragging = 'corner'
       self.drag_start_w = self.parent_w
       self.drag_start_h = self.parent_h
       self.drag_start_x = mx
       self.drag_start_y = my
     elseif point_in_rect(mx, my, handles.right) then
-      self.dragging = "right"
+      self.dragging = 'right'
       self.drag_start_w = self.parent_w
       self.drag_start_x = mx
     elseif point_in_rect(mx, my, handles.bottom) then
-      self.dragging = "bottom"
+      self.dragging = 'bottom'
       self.drag_start_h = self.parent_h
       self.drag_start_y = my
 
@@ -454,10 +454,10 @@ function Canvas:handle_interaction(ctx, canvas_x, canvas_y, handles)
       local zone = get_element_hit_zone(rel_x, rel_y, selected_rect, self.config.element_edge_threshold)
       if zone then
         -- Start element drag
-        if zone == "move" then
-          self.dragging = "element_move"
+        if zone == 'move' then
+          self.dragging = 'element_move'
         else
-          self.dragging = "element_" .. zone  -- e.g., "element_resize_se"
+          self.dragging = 'element_' .. zone  -- e.g., 'element_resize_se'
         end
         self.drag_element = self.selected_element
         self.drag_element_start_coords = {
@@ -480,10 +480,10 @@ function Canvas:handle_interaction(ctx, canvas_x, canvas_y, handles)
           local clicked = Simulator.hit_test(sim, rel_x, rel_y)
           if clicked then
             self.selected_element = clicked
-            result = { type = "select", element = clicked }
+            result = { type = 'select', element = clicked }
           else
             self.selected_element = nil
-            result = { type = "deselect" }
+            result = { type = 'deselect' }
           end
         end
       end
@@ -494,11 +494,11 @@ function Canvas:handle_interaction(ctx, canvas_x, canvas_y, handles)
         local clicked = Simulator.hit_test(sim, rel_x, rel_y)
         if clicked then
           self.selected_element = clicked
-          result = { type = "select", element = clicked }
+          result = { type = 'select', element = clicked }
         else
           -- Clicked empty space - deselect
           self.selected_element = nil
-          result = { type = "deselect" }
+          result = { type = 'deselect' }
         end
       end
     end
@@ -510,14 +510,14 @@ function Canvas:handle_interaction(ctx, canvas_x, canvas_y, handles)
     local dy = my - self.drag_start_y
 
     -- Canvas resize
-    if self.dragging == "right" or self.dragging == "corner" then
+    if self.dragging == 'right' or self.dragging == 'corner' then
       local new_w = self.drag_start_w + dx
       new_w = math.max(self.config.min_parent_w, math.min(self.config.max_parent_w, new_w))
       self.parent_w = math.floor(new_w)
       self.sim_cache = nil
     end
 
-    if self.dragging == "bottom" or self.dragging == "corner" then
+    if self.dragging == 'bottom' or self.dragging == 'corner' then
       local new_h = self.drag_start_h + dy
       new_h = math.max(self.config.min_parent_h, math.min(self.config.max_parent_h, new_h))
       self.parent_h = math.floor(new_h)
@@ -525,16 +525,16 @@ function Canvas:handle_interaction(ctx, canvas_x, canvas_y, handles)
     end
 
     -- Element drag/resize
-    if self.dragging:match("^element_") then
+    if self.dragging:match('^element_') then
       self:apply_element_drag(self.dragging, dx, dy)
-      result = { type = "element_modified", element = self.drag_element }
+      result = { type = 'element_modified', element = self.drag_element }
     end
   end
 
   -- End dragging
   if ImGui.IsMouseReleased(ctx, 0) then
-    if self.dragging and self.dragging:match("^element_") and self.drag_element then
-      result = { type = "element_drag_end", element = self.drag_element }
+    if self.dragging and self.dragging:match('^element_') and self.drag_element then
+      result = { type = 'element_drag_end', element = self.drag_element }
     end
     self.dragging = nil
     self.drag_element = nil
@@ -654,7 +654,7 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
         track_handles[#track_handles + 1] = track_handle
 
         -- Draw track height handle
-        local handle_color = (self.dragging == "track_height" and self.drag_track == track)
+        local handle_color = (self.dragging == 'track_height' and self.drag_track == track)
                            and Colors.CANVAS.HANDLE_ACTIVE or Colors.CANVAS.HANDLE_NORMAL
         ImGui.DrawList_AddRectFilled(dl,
           track_handle.x, track_handle.y,
@@ -676,7 +676,7 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
   }
 
   -- Draw width resize handle
-  local width_handle_color = (self.dragging == "width")
+  local width_handle_color = (self.dragging == 'width')
                            and Colors.CANVAS.HANDLE_ACTIVE or Colors.CANVAS.HANDLE_NORMAL
   ImGui.DrawList_AddRectFilled(dl,
     width_handle.x, width_handle.y,
@@ -733,7 +733,7 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
   if ImGui.IsMouseClicked(ctx, 0) then
     -- First check canvas resize handles
     if point_in_rect(mx, my, width_handle) then
-      self.dragging = "width"
+      self.dragging = 'width'
       self.drag_start_w = self.parent_w
       self.drag_start_x = mx
 
@@ -742,10 +742,10 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
       local zone = get_element_hit_zone(rel_x, rel_y, selected_rect_screen, self.config.element_edge_threshold)
       if zone then
         -- Start element drag
-        if zone == "move" then
-          self.dragging = "element_move"
+        if zone == 'move' then
+          self.dragging = 'element_move'
         else
-          self.dragging = "element_" .. zone
+          self.dragging = 'element_' .. zone
         end
         self.drag_element = self.selected_element
         self.drag_element_start_coords = {
@@ -764,10 +764,10 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
           local clicked_elem = Simulator.hit_test(mouse_track_sim, rel_x, track_rel_y)
           if clicked_elem then
             self.selected_element = clicked_elem
-            result = { type = "select", element = clicked_elem, track = mouse_track }
+            result = { type = 'select', element = clicked_elem, track = mouse_track }
           else
             self.selected_element = nil
-            result = { type = "select_track", track = mouse_track }
+            result = { type = 'select_track', track = mouse_track }
           end
         end
       end
@@ -777,7 +777,7 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
       local handle_hit = false
       for _, handle in ipairs(track_handles) do
         if point_in_rect(mx, my, handle) then
-          self.dragging = "track_height"
+          self.dragging = 'track_height'
           self.drag_track = handle.track
           self.drag_start_h = handle.track.height
           self.drag_start_y = my
@@ -789,14 +789,14 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
       -- If no handle hit, check for track/element selection
       if not handle_hit and rel_x >= 0 and rel_x <= self.parent_w and mouse_track then
         self.selected_track = mouse_track
-        result = { type = "select_track", track = mouse_track }
+        result = { type = 'select_track', track = mouse_track }
 
         -- Check for element within track
         local track_rel_y = rel_y - mouse_track_top
         local clicked_elem = Simulator.hit_test(mouse_track_sim, rel_x, track_rel_y)
         if clicked_elem then
           self.selected_element = clicked_elem
-          result = { type = "select", element = clicked_elem, track = mouse_track }
+          result = { type = 'select', element = clicked_elem, track = mouse_track }
         else
           -- Clicked empty space in track - deselect element
           self.selected_element = nil
@@ -810,28 +810,28 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
     local dx = mx - self.drag_start_x
     local dy = my - self.drag_start_y
 
-    if self.dragging == "width" then
+    if self.dragging == 'width' then
       local new_w = self.drag_start_w + dx
       new_w = math.max(self.config.min_parent_w, math.min(self.config.max_parent_w, new_w))
       self.parent_w = math.floor(new_w)
-      result = { type = "resize_width", width = self.parent_w }
+      result = { type = 'resize_width', width = self.parent_w }
 
-    elseif self.dragging == "track_height" and self.drag_track then
+    elseif self.dragging == 'track_height' and self.drag_track then
       local new_h = self.drag_start_h + dy
       new_h = math.max(25, math.min(200, new_h))
       self.drag_track.height = math.floor(new_h)
-      result = { type = "resize_track", track = self.drag_track, height = self.drag_track.height }
+      result = { type = 'resize_track', track = self.drag_track, height = self.drag_track.height }
 
-    elseif self.dragging:match("^element_") then
+    elseif self.dragging:match('^element_') then
       self:apply_element_drag(self.dragging, dx, dy)
-      result = { type = "element_modified", element = self.drag_element }
+      result = { type = 'element_modified', element = self.drag_element }
     end
   end
 
   -- End dragging
   if ImGui.IsMouseReleased(ctx, 0) then
-    if self.dragging and self.dragging:match("^element_") and self.drag_element then
-      result = { type = "element_drag_end", element = self.drag_element }
+    if self.dragging and self.dragging:match('^element_') and self.drag_element then
+      result = { type = 'element_drag_end', element = self.drag_element }
     end
     self.dragging = nil
     self.drag_track = nil
@@ -879,7 +879,7 @@ function Canvas:draw(ctx)
                      | ImGui.WindowFlags_NoMove
                      | ImGui.WindowFlags_NoNav
 
-  ImGui.BeginChild(ctx, "walter_canvas", avail_w, canvas_h, 1, window_flags)
+  ImGui.BeginChild(ctx, 'walter_canvas', avail_w, canvas_h, 1, window_flags)
 
   local win_x, win_y = ImGui.GetWindowPos(ctx)
   local win_w, win_h = ImGui.GetWindowSize(ctx)
@@ -949,32 +949,32 @@ function Canvas:draw(ctx)
   ImGui.EndChild(ctx)
 
   -- Draw controls below canvas
-  ImGui.Text(ctx, string.format("TCP Width: %d px", self.parent_w))
+  ImGui.Text(ctx, string.format('TCP Width: %d px', self.parent_w))
 
   -- Show selected track height in tracks view
   if self.view_mode == M.VIEW_TRACKS and self.selected_track then
     ImGui.SameLine(ctx, 0, 15)
-    ImGui.Text(ctx, string.format("Track: %s  H: %d px", self.selected_track.name, self.selected_track.height))
+    ImGui.Text(ctx, string.format('Track: %s  H: %d px', self.selected_track.name, self.selected_track.height))
   elseif self.view_mode == M.VIEW_SINGLE then
     ImGui.SameLine(ctx, 0, 15)
-    ImGui.Text(ctx, string.format("H: %d px", self.parent_h))
+    ImGui.Text(ctx, string.format('H: %d px', self.parent_h))
   end
 
   ImGui.SameLine(ctx, 0, 20)
 
   -- View mode toggle
-  if ImGui.Button(ctx, self.view_mode == M.VIEW_TRACKS and "Tracks" or "Single", 60, 0) then
+  if ImGui.Button(ctx, self.view_mode == M.VIEW_TRACKS and 'Tracks' or 'Single', 60, 0) then
     self.view_mode = (self.view_mode == M.VIEW_TRACKS) and M.VIEW_SINGLE or M.VIEW_TRACKS
   end
 
   ImGui.SameLine(ctx, 0, 10)
 
   -- Toggle buttons
-  local _, show_grid = ImGui.Checkbox(ctx, "Grid", self.config.show_grid)
+  local _, show_grid = ImGui.Checkbox(ctx, 'Grid', self.config.show_grid)
   self.config.show_grid = show_grid
 
   ImGui.SameLine(ctx)
-  local _, show_attach = ImGui.Checkbox(ctx, "Attachments", self.config.show_attachments)
+  local _, show_attach = ImGui.Checkbox(ctx, 'Attachments', self.config.show_attachments)
   self.config.show_attachments = show_attach
 
   return result

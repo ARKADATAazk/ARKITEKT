@@ -133,7 +133,7 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
       -- Handle left click: toggle mode (back-and-forth painting)
       if is_hovered and left_clicked then
         state.region_filter_painting = true
-        state.region_filter_paint_mode = "toggle"
+        state.region_filter_paint_mode = 'toggle'
         state.region_filter_last_painted = region_name
         -- Toggle selection
         if is_selected then
@@ -149,7 +149,7 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
       -- Handle right click: fixed paint mode (bulk enable/disable)
       if is_hovered and right_clicked then
         state.region_filter_painting = true
-        state.region_filter_paint_mode = "fixed"
+        state.region_filter_paint_mode = 'fixed'
         state.region_filter_paint_value = not is_selected
         state.region_filter_last_painted = region_name
         if state.region_filter_paint_value then
@@ -164,11 +164,11 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
 
       -- Paint mode while dragging
       if state.region_filter_painting and is_hovered then
-        local is_dragging = (state.region_filter_paint_mode == "toggle" and left_down) or
-                            (state.region_filter_paint_mode == "fixed" and right_down)
+        local is_dragging = (state.region_filter_paint_mode == 'toggle' and left_down) or
+                            (state.region_filter_paint_mode == 'fixed' and right_down)
 
         if is_dragging and state.region_filter_last_painted ~= region_name then
-          if state.region_filter_paint_mode == "toggle" then
+          if state.region_filter_paint_mode == 'toggle' then
             -- Toggle mode: flip the region's current state
             if is_selected then
               state.selected_regions[region_name] = nil

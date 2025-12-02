@@ -12,22 +12,22 @@ local M = {}
 -- COLORS
 -- ============================================================================
 M.COLORS = {
-  panel_bg = hexrgb("#1A1A1A"),
-  panel_border = hexrgb("#333333"),
-  header_bg = hexrgb("#252525"),
-  selected_bg = hexrgb("#2A5599"),
-  hover_bg = hexrgb("#2A2A2A"),
-  text = hexrgb("#FFFFFF"),
-  text_dim = hexrgb("#888888"),
-  separator = hexrgb("#404040"),
+  panel_bg = hexrgb('#1A1A1A'),
+  panel_border = hexrgb('#333333'),
+  header_bg = hexrgb('#252525'),
+  selected_bg = hexrgb('#2A5599'),
+  hover_bg = hexrgb('#2A2A2A'),
+  text = hexrgb('#FFFFFF'),
+  text_dim = hexrgb('#888888'),
+  separator = hexrgb('#404040'),
 }
 
 -- Status bar message colors
 M.STATUS = {
-  ERROR = hexrgb("#FF4444"),
-  WARNING = hexrgb("#FFA500"),
-  SUCCESS = hexrgb("#4AFF4A"),
-  INFO = hexrgb("#FFFFFF"),
+  ERROR = hexrgb('#FF4444'),
+  WARNING = hexrgb('#FFA500'),
+  SUCCESS = hexrgb('#4AFF4A'),
+  INFO = hexrgb('#FFFFFF'),
 }
 
 -- Tag color palette (from centralized palette)
@@ -175,17 +175,17 @@ M.MODAL = {
 -- DRAG AND DROP TYPES
 -- ============================================================================
 M.DRAG_TYPES = {
-  TAG = "tb_tag",
-  TEMPLATE = "tb_template",
-  FOLDER = "tb_folder",
+  TAG = 'tb_tag',
+  TEMPLATE = 'tb_template',
+  FOLDER = 'tb_folder',
 }
 
 -- ============================================================================
 -- SPECIAL FOLDERS
 -- ============================================================================
 M.FOLDERS = {
-  INBOX = "_Inbox",     -- Unsorted templates, pinned at top
-  ARCHIVE = "_Archive", -- Deleted templates
+  INBOX = '_Inbox',     -- Unsorted templates, pinned at top
+  ARCHIVE = '_Archive', -- Deleted templates
 }
 
 -- ============================================================================

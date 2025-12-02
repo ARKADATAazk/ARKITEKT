@@ -90,7 +90,7 @@ end
 function M.get_pdc_offset(proj)
   proj = proj or 0
   local offset_samples = reaper.GetOutputLatency()
-  local srate = tonumber(reaper.GetSetProjectInfo_String(proj, "PROJECT_SRATE", "", false)) or 48000
+  local srate = tonumber(reaper.GetSetProjectInfo_String(proj, 'PROJECT_SRATE', '', false)) or 48000
   return offset_samples / srate
 end
 

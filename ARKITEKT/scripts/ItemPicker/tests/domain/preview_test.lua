@@ -13,9 +13,9 @@ local M = {}
 -- - M.get_preview_progress() - Get playback progress
 
 function M.run_tests()
-  print("[preview_test] Running tests...")
+  print('[preview_test] Running tests...')
   -- Test stubs to be implemented
-  print("[preview_test] All tests passed (stubs only)")
+  print('[preview_test] All tests passed (stubs only)')
   return true
 end
 

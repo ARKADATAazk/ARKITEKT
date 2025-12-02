@@ -136,7 +136,7 @@ function M:set_ui_bounds(titlebar_h, statusbar_h, docked)
 end
 
 function M:push(opts)
-  assert(opts and opts.id and opts.render, "overlay requires id + render()")
+  assert(opts and opts.id and opts.render, 'overlay requires id + render()')
 
   -- Create alpha tracker with specified animation mode
   local alpha_opts = {}
@@ -355,7 +355,7 @@ function M:render(ctx, dt)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, alpha_val)
 
   -- Open popup modal if not already open
-  local popup_id = "##modal_overlay_" .. top.id
+  local popup_id = '##modal_overlay_' .. top.id
   if not ImGui.IsPopupOpen(ctx, popup_id, ImGui.PopupFlags_None) then
     ImGui.OpenPopup(ctx, popup_id)
   end
@@ -458,7 +458,7 @@ function M:draw_close_button(ctx, overlay, vp_x, vp_y, vp_w, vp_h, dt)
                                (1.0 - math.exp(-10.0 * dt))
 
   ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
-  ImGui.InvisibleButton(ctx, "##overlay_close_btn_" .. overlay.id,
+  ImGui.InvisibleButton(ctx, '##overlay_close_btn_' .. overlay.id,
                         overlay.close_button_size, overlay.close_button_size)
   overlay.close_button_hovered = ImGui.IsItemHovered(ctx)
 

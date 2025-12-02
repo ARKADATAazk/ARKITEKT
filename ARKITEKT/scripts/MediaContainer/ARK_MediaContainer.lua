@@ -9,22 +9,22 @@
 local Ark
 do
   local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, "S").source:sub(2)
-  local path = src:match("(.*"..sep..")")
+  local src = debug.getinfo(1, 'S').source:sub(2)
+  local path = src:match('(.*'..sep..')')
   while path and #path > 3 do
-    local bootstrap = path .. "arkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
-    local f = io.open(bootstrap, "r")
+    local bootstrap = path .. 'arkitekt' .. sep .. 'app' .. sep .. 'bootstrap.lua'
+    local f = io.open(bootstrap, 'r')
     if f then
       f:close()
       -- Set up package path first
-      package.path = path .. "?.lua;" .. path .. "?" .. sep .. "init.lua;" .. package.path
+      package.path = path .. '?.lua;' .. path .. '?' .. sep .. 'init.lua;' .. package.path
       ark = require('arkitekt')
       break
     end
-    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
+    path = path:match('(.*'..sep..')[^'..sep..']-'..sep..'$')
   end
   if not ark then
-    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
+    reaper.MB('ARKITEKT framework not found!', 'FATAL ERROR', 0)
     return
   end
 end
@@ -34,8 +34,8 @@ end
 -- ============================================================================
 
 local ImGui = require('arkitekt.platform.imgui')
-local Shell = require("arkitekt.app.shell")
-local MediaContainer = require("MediaContainer.init")
+local Shell = require('arkitekt.app.shell')
+local MediaContainer = require('MediaContainer.init')
 local hexrgb = Ark.Colors.hexrgb
 
 -- Initialize
@@ -46,8 +46,8 @@ MediaContainer.initialize()
 -- ============================================================================
 
 Shell.run({
-  title        = "Media Container",
-  version      = "v0.1.0",
+  title        = 'Media Container',
+  version      = 'v0.1.0',
   draw         = function(ctx, shell_state)
     local draw_list = ImGui.GetBackgroundDrawList(ctx)
     MediaContainer.update(ctx, draw_list)
@@ -56,29 +56,29 @@ Shell.run({
 
     -- Action buttons
     local button_width = 80
-    if ImGui.Button(ctx, "Create", button_width, 0) then
+    if ImGui.Button(ctx, 'Create', button_width, 0) then
       MediaContainer.create_container()
     end
     ImGui.SameLine(ctx)
-    if ImGui.Button(ctx, "Copy", button_width, 0) then
+    if ImGui.Button(ctx, 'Copy', button_width, 0) then
       MediaContainer.copy_container()
     end
     ImGui.SameLine(ctx)
-    if ImGui.Button(ctx, "Paste", button_width, 0) then
+    if ImGui.Button(ctx, 'Paste', button_width, 0) then
       MediaContainer.paste_container()
     end
 
     ImGui.Separator(ctx)
 
     -- Container count and list
-    ImGui.Text(ctx, string.format("Containers: %d", #containers))
+    ImGui.Text(ctx, string.format('Containers: %d', #containers))
 
     if #containers > 0 then
       -- Scrollable list
-      if ImGui.BeginChild(ctx, "ContainerList", 0, 120) then
+      if ImGui.BeginChild(ctx, 'ContainerList', 0, 120) then
         for i, container in ipairs(containers) do
-          local linked_text = container.master_id and " [linked]" or " [master]"
-          local label = string.format("%s%s (%d items)", container.name, linked_text, #container.items)
+          local linked_text = container.master_id and ' [linked]' or ' [master]'
+          local label = string.format('%s%s (%d items)', container.name, linked_text, #container.items)
 
           -- Color indicator
           local r, g, b, a = Ark.Colors.rgba_to_components(container.color or 0xFF6600FF)
@@ -94,7 +94,7 @@ Shell.run({
 
           -- Context menu for individual container
           if ImGui.BeginPopupContextItem(ctx) then
-            if ImGui.MenuItem(ctx, "Delete") then
+            if ImGui.MenuItem(ctx, 'Delete') then
               MediaContainer.delete_container(container.id)
             end
             ImGui.EndPopup(ctx)
@@ -106,9 +106,9 @@ Shell.run({
       ImGui.Separator(ctx)
 
       -- Delete all button
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#662222FF"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#883333FF"))
-      if ImGui.Button(ctx, "Delete All", -1, 0) then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb('#662222FF'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb('#883333FF'))
+      if ImGui.Button(ctx, 'Delete All', -1, 0) then
         -- Clear all containers
         local State = MediaContainer.State
         State.containers = {}
@@ -117,16 +117,16 @@ Shell.run({
       end
       ImGui.PopStyleColor(ctx, 2)
     else
-      ImGui.TextDisabled(ctx, "No containers yet")
-      ImGui.TextDisabled(ctx, "Select items and click Create")
+      ImGui.TextDisabled(ctx, 'No containers yet')
+      ImGui.TextDisabled(ctx, 'Select items and click Create')
     end
 
     ImGui.Separator(ctx)
-    ImGui.TextDisabled(ctx, "Sync: Active")
+    ImGui.TextDisabled(ctx, 'Sync: Active')
   end,
   initial_pos  = { x = 100, y = 100 },
   initial_size = { w = 300, h = 300 },
-  icon_color   = hexrgb("#FF9933"),
+  icon_color   = hexrgb('#FF9933'),
   icon_size    = 18,
   min_size     = { w = 280, h = 200 },
 })

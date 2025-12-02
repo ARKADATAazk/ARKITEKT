@@ -6,7 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local ModalDialog = require('arkitekt.gui.widgets.overlays.overlay.modal_dialog')
 local SWSImporter = require('RegionPlaylist.data.sws_import')
-local State = require("RegionPlaylist.app.state")
+local State = require('RegionPlaylist.app.state')
 
 local M = {}
 
@@ -18,7 +18,7 @@ local function extract_playlist_region_items(playlist)
   local items = {}
   if playlist and playlist.items then
     for _, item in ipairs(playlist.items) do
-      if item.type == "region" and item.rid then
+      if item.type == 'region' and item.rid then
         items[#items + 1] = {
           rid = item.rid,
           reps = item.reps or 1
@@ -48,9 +48,9 @@ local function execute_sws_import(coordinator, ctx)
   -- Check for SWS playlists
   if not SWSImporter.has_sws_playlists() then
     sws_result_data = {
-      title = "Import Failed",
-      message = "No SWS Region Playlists found in the current project.\n\n" ..
-                "Make sure the project is saved and contains SWS Region Playlists."
+      title = 'Import Failed',
+      message = 'No SWS Region Playlists found in the current project.\n\n' ..
+                'Make sure the project is saved and contains SWS Region Playlists.'
     }
     return
   end
@@ -60,14 +60,14 @@ local function execute_sws_import(coordinator, ctx)
 
   if success and report then
     sws_result_data = {
-      title = "Import Successful",
-      message = "Import successful!\n\n" .. SWSImporter.format_report(report)
+      title = 'Import Successful',
+      message = 'Import successful!\n\n' .. SWSImporter.format_report(report)
     }
     refresh_after_import(coordinator)
   else
     sws_result_data = {
-      title = "Import Failed",
-      message = "Import failed: " .. tostring(err or "Unknown error")
+      title = 'Import Failed',
+      message = 'Import failed: ' .. tostring(err or 'Unknown error')
     }
   end
 end
@@ -87,13 +87,13 @@ function M.render(ctx, coordinator, shell_state)
 
   -- Open popup if requested
   if coordinator._actions_menu_visible then
-    ImGui.OpenPopup(ctx, "ActionsMenu")
+    ImGui.OpenPopup(ctx, 'ActionsMenu')
     coordinator._actions_menu_visible = false
   end
 
   -- Render popup
-  if ContextMenu.begin(ctx, "ActionsMenu") then
-    if ContextMenu.item(ctx, "Crop Project to Playlist") then
+  if ContextMenu.begin(ctx, 'ActionsMenu') then
+    if ContextMenu.item(ctx, 'Crop Project to Playlist') then
       local playlist = State.get_active_playlist()
       local playlist_items = extract_playlist_region_items(playlist)
       if #playlist_items > 0 then
@@ -103,7 +103,7 @@ function M.render(ctx, coordinator, shell_state)
       ImGui.CloseCurrentPopup(ctx)
     end
 
-    if ContextMenu.item(ctx, "Crop to Playlist (New Tab)") then
+    if ContextMenu.item(ctx, 'Crop to Playlist (New Tab)') then
       local playlist = State.get_active_playlist()
       local playlist_items = extract_playlist_region_items(playlist)
       if #playlist_items > 0 then
@@ -113,7 +113,7 @@ function M.render(ctx, coordinator, shell_state)
       ImGui.CloseCurrentPopup(ctx)
     end
 
-    if ContextMenu.item(ctx, "Append Playlist to Project") then
+    if ContextMenu.item(ctx, 'Append Playlist to Project') then
       local playlist = State.get_active_playlist()
       local playlist_items = extract_playlist_region_items(playlist)
       if #playlist_items > 0 then
@@ -123,7 +123,7 @@ function M.render(ctx, coordinator, shell_state)
       ImGui.CloseCurrentPopup(ctx)
     end
 
-    if ContextMenu.item(ctx, "Paste Playlist at Edit Cursor") then
+    if ContextMenu.item(ctx, 'Paste Playlist at Edit Cursor') then
       local playlist = State.get_active_playlist()
       local playlist_items = extract_playlist_region_items(playlist)
       if #playlist_items > 0 then
@@ -133,7 +133,7 @@ function M.render(ctx, coordinator, shell_state)
       ImGui.CloseCurrentPopup(ctx)
     end
 
-    if ContextMenu.item(ctx, "Import from SWS Region Playlist") then
+    if ContextMenu.item(ctx, 'Import from SWS Region Playlist') then
       coordinator._sws_import_requested = true
       ImGui.CloseCurrentPopup(ctx)
     end
@@ -149,8 +149,8 @@ function M.render(ctx, coordinator, shell_state)
   -- Show SWS import result modal
   if sws_result_data then
     ModalDialog.show_message(ctx, window, sws_result_data.title, sws_result_data.message, {
-      id = "##sws_import_result",
-      button_label = "OK",
+      id = '##sws_import_result',
+      button_label = 'OK',
       width = 0.45,
       height = 0.25,
       on_close = function()

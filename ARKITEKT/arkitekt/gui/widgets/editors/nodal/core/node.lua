@@ -10,17 +10,17 @@ local M = {}
 function M.new(opts)
   local node = {
     guid = opts.guid or reaper.genGuid(),
-    id = opts.id or "node",
-    name = opts.name or "Unnamed Node",
+    id = opts.id or 'node',
+    name = opts.name or 'Unnamed Node',
     
-    mirror_mode = opts.mirror_mode or "linked",
+    mirror_mode = opts.mirror_mode or 'linked',
     
     template_ref = opts.template_ref,
     
     properties = opts.properties or {
-      wwise_state = "DefaultState",
+      wwise_state = 'DefaultState',
       loop_count = 1,
-      transition_type = "crossfade",
+      transition_type = 'crossfade',
       transition_duration = 2.0,
     },
     
@@ -56,11 +56,11 @@ function M.update_ports(node)
   node.ports.triggers = {}
   for i, trigger in ipairs(node.triggers) do
     node.ports.triggers[i] = {
-      type = "trigger",
-      direction = "out",
+      type = 'trigger',
+      direction = 'out',
       event_name = trigger.event,
       target_section = trigger.target_section,
-      jump_mode = trigger.mode or "INCREMENTAL",
+      jump_mode = trigger.mode or 'INCREMENTAL',
       x = 0,
       y = 0,
       hovered = false,
@@ -80,7 +80,7 @@ function M.calculate_height(node, config)
   -- Trigger section
   local trigger_count = (node.triggers and #node.triggers) or 0
   
-  -- Always include trigger section (even if empty, for "Add Trigger" button)
+  -- Always include trigger section (even if empty, for 'Add Trigger' button)
   height = height + config.node.trigger_section_padding_top
   height = height + config.trigger_ui.section_label_height
   
@@ -97,7 +97,7 @@ function M.calculate_height(node, config)
 end
 
 function M.get_base_color(node, config)
-  return config.colors.mirror_modes[node.mirror_mode] or hexrgb("#88CEFF")
+  return config.colors.mirror_modes[node.mirror_mode] or hexrgb('#88CEFF')
 end
 
 function M.is_point_inside(node, x, y)

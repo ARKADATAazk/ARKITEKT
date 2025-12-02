@@ -25,9 +25,9 @@ M.TILE = {
   text_secondary = nil,     -- → Style.COLORS.TEXT_DIMMED
   border_inactive = nil,    -- → Style.COLORS.BORDER_OUTER
 
-  -- Script-specific (green accent for "active/enabled" state)
-  bg_active = hexrgb("#2D4A37"),
-  text_active = hexrgb("#FFFFFF"),
+  -- Script-specific (green accent for 'active/enabled' state)
+  bg_active = hexrgb('#2D4A37'),
+  text_active = hexrgb('#FFFFFF'),
 
   -- Hover tint (blend with bg)
   hover_tint = nil,         -- → Style.COLORS.BG_HOVER
@@ -39,27 +39,27 @@ M.TILE = {
 }
 
 M.BADGE = {
-  bg_active = hexrgb("#00000099"),
-  bg_inactive = hexrgb("#00000066"),
+  bg_active = hexrgb('#00000099'),
+  bg_inactive = hexrgb('#00000066'),
   text = nil,               -- → Style.COLORS.TEXT_DIMMED
 }
 
 M.FOOTER = {
-  gradient = hexrgb("#00000044"),
+  gradient = hexrgb('#00000044'),
 }
 
 M.TAGS = {
   -- Tag chip colors (semantic, stay fixed)
-  TCP = hexrgb("#5A7A9A"),
-  MCP = hexrgb("#9A9A5A"),
-  ENVCP = hexrgb("#5A9A8A"),
-  TRANSPORT = hexrgb("#9A5A5A"),
-  GLOBAL = hexrgb("#6A6A6A"),
-  TOOLBARS = hexrgb("#8A6A5A"),
-  ITEMS = hexrgb("#7A8A5A"),
-  MIDI = hexrgb("#6A5A8A"),
-  RTCONFIG = hexrgb("#5AAA5A"),
-  text = hexrgb("#000000"),
+  TCP = hexrgb('#5A7A9A'),
+  MCP = hexrgb('#9A9A5A'),
+  ENVCP = hexrgb('#5A9A8A'),
+  TRANSPORT = hexrgb('#9A5A5A'),
+  GLOBAL = hexrgb('#6A6A6A'),
+  TOOLBARS = hexrgb('#8A6A5A'),
+  ITEMS = hexrgb('#7A8A5A'),
+  MIDI = hexrgb('#6A5A8A'),
+  RTCONFIG = hexrgb('#5AAA5A'),
+  text = hexrgb('#000000'),
 }
 
 M.SELECTION = {
@@ -69,7 +69,7 @@ M.SELECTION = {
 }
 
 M.CONFLICT = {
-  text = hexrgb("#FFA500"),
+  text = hexrgb('#FFA500'),
 }
 
 -- ============================================================================
@@ -84,13 +84,13 @@ function M.get_tile_colors()
   local S = ok and Style.COLORS or {}
 
   return {
-    bg_inactive = M.TILE.bg_inactive or S.BG_PANEL or hexrgb("#1A1A1A"),
+    bg_inactive = M.TILE.bg_inactive or S.BG_PANEL or hexrgb('#1A1A1A'),
     bg_active = M.TILE.bg_active,
     text_active = M.TILE.text_active,
-    text_inactive = M.TILE.text_inactive or S.TEXT_NORMAL or hexrgb("#999999"),
-    text_secondary = M.TILE.text_secondary or S.TEXT_DIMMED or hexrgb("#888888"),
-    border_inactive = M.TILE.border_inactive or S.BORDER_OUTER or hexrgb("#303030"),
-    hover_tint = M.TILE.hover_tint or S.BG_HOVER or hexrgb("#2A2A2A"),
+    text_inactive = M.TILE.text_inactive or S.TEXT_NORMAL or hexrgb('#999999'),
+    text_secondary = M.TILE.text_secondary or S.TEXT_DIMMED or hexrgb('#888888'),
+    border_inactive = M.TILE.border_inactive or S.BORDER_OUTER or hexrgb('#303030'),
+    hover_tint = M.TILE.hover_tint or S.BG_HOVER or hexrgb('#2A2A2A'),
     hover_influence = M.TILE.hover_influence,
   }
 end
@@ -104,7 +104,7 @@ function M.get_badge_colors()
   return {
     bg_active = M.BADGE.bg_active,
     bg_inactive = M.BADGE.bg_inactive,
-    text = M.BADGE.text or S.TEXT_DIMMED or hexrgb("#AAAAAA"),
+    text = M.BADGE.text or S.TEXT_DIMMED or hexrgb('#AAAAAA'),
   }
 end
 

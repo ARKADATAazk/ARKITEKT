@@ -17,7 +17,7 @@ function M.draw_left_panel(ctx, gui, width, height)
   local state = gui.state
 
   -- Only show convenience panel when on Directory tab
-  local show_convenience_panel = (state.left_panel_tab == "directory" or not state.left_panel_tab)
+  local show_convenience_panel = (state.left_panel_tab == 'directory' or not state.left_panel_tab)
 
   -- Get window's screen position and save for panel positioning
   local initial_x, initial_y = ImGui.GetCursorScreenPos(ctx)
@@ -39,14 +39,14 @@ function M.draw_left_panel(ctx, gui, width, height)
     -- Handle separator dragging
     local Ark = require('arkitekt')
     local sep_result = Ark.Splitter.draw(ctx, {
-      id = "left_panel_separator",
+      id = 'left_panel_separator',
       x = initial_x,
       y = sep_y_screen,
       width = width,
-      orientation = "horizontal",
+      orientation = 'horizontal',
       thickness = separator_thickness,
     })
-    if sep_result.action == "drag" then
+    if sep_result.action == 'drag' then
       -- Convert back to local coordinates
       local sep_new_y = sep_result.position - initial_y
       -- Clamp to valid range
@@ -55,7 +55,7 @@ function M.draw_left_panel(ctx, gui, width, height)
       sep_new_y = math.max(min_y, math.min(sep_new_y, max_y))
       state.left_panel_separator_ratio = sep_new_y / height
       sep_y_local = sep_new_y
-    elseif sep_result.action == "reset" then
+    elseif sep_result.action == 'reset' then
       state.left_panel_separator_ratio = 0.65
       sep_y_local = height * state.left_panel_separator_ratio
     end
@@ -82,11 +82,11 @@ function M.draw_left_panel(ctx, gui, width, height)
     local content_height = top_panel_height - header_height - (padding * 2)
 
     -- Draw content based on active tab
-    if state.left_panel_tab == "directory" then
+    if state.left_panel_tab == 'directory' then
       DirectoryTab.draw(ctx, state, gui.config, width, content_height, gui)
-    elseif state.left_panel_tab == "vsts" then
+    elseif state.left_panel_tab == 'vsts' then
       VstsTab.draw(ctx, state, gui.config, width, content_height)
-    elseif state.left_panel_tab == "tags" then
+    elseif state.left_panel_tab == 'tags' then
       TagsTab.draw(ctx, state, gui.config, width, content_height)
     end
 

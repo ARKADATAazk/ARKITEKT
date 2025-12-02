@@ -3,10 +3,10 @@
 -- Main GUI orchestrator with tab system
 
 local ImGui = require('arkitekt.platform.imgui')
-local Config = require("ThemeAdjuster.app.config")
-local PackageManager = require("ThemeAdjuster.data.packages.manager")
-local TabContent = require("ThemeAdjuster.ui.tab_content")
-local Theme = require("ThemeAdjuster.domain.theme.reader")
+local Config = require('ThemeAdjuster.app.config')
+local PackageManager = require('ThemeAdjuster.data.packages.manager')
+local TabContent = require('ThemeAdjuster.ui.tab_content')
+local Theme = require('ThemeAdjuster.domain.theme.reader')
 
 local M = {}
 local GUI = {}
@@ -59,13 +59,13 @@ function GUI:draw(ctx, window, shell_state)
 
   -- Update window title only when theme name changes
   local theme_info = Theme.get_theme_info()
-  local theme_name = theme_info.theme_name or ""
+  local theme_name = theme_info.theme_name or ''
   if theme_name ~= self.cached_theme_name then
     self.cached_theme_name = theme_name
-    if theme_name ~= "" then
-      window:set_title("Theme Adjuster [" .. theme_name .. "]")
+    if theme_name ~= '' then
+      window:set_title('Theme Adjuster [' .. theme_name .. ']')
     else
-      window:set_title("Theme Adjuster")
+      window:set_title('Theme Adjuster')
     end
   end
 

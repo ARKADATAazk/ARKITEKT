@@ -15,22 +15,22 @@ Coordinator.__index = Coordinator
 -- Get container config for Audio panel
 local function get_audio_container_config(opts)
   return {
-    title = "Audio Items",
+    title = 'Audio Items',
     show_tabs = false,
     show_search = true,
     show_sort = true,
     header = {
       height = 36,
       padding = 8,
-      bg_color = Ark.Colors.hexrgb("#1A1A1A"),
-      border_color = Ark.Colors.hexrgb("#2A2A2A"),
+      bg_color = Ark.Colors.hexrgb('#1A1A1A'),
+      border_color = Ark.Colors.hexrgb('#2A2A2A'),
     },
     sort_modes = {
-      { id = "none", label = "None" },
-      { id = "name", label = "Name" },
-      { id = "length", label = "Length" },
-      { id = "color", label = "Color" },
-      { id = "pool", label = "Pool" },
+      { id = 'none', label = 'None' },
+      { id = 'name', label = 'Name' },
+      { id = 'length', label = 'Length' },
+      { id = 'color', label = 'Color' },
+      { id = 'pool', label = 'Pool' },
     },
     on_search = opts.on_audio_search,
     on_sort = opts.on_audio_sort,
@@ -41,22 +41,22 @@ end
 -- Get container config for MIDI panel
 local function get_midi_container_config(opts)
   return {
-    title = "MIDI Items",
+    title = 'MIDI Items',
     show_tabs = false,
     show_search = true,
     show_sort = true,
     header = {
       height = 36,
       padding = 8,
-      bg_color = Ark.Colors.hexrgb("#1A1A1A"),
-      border_color = Ark.Colors.hexrgb("#2A2A2A"),
+      bg_color = Ark.Colors.hexrgb('#1A1A1A'),
+      border_color = Ark.Colors.hexrgb('#2A2A2A'),
     },
     sort_modes = {
-      { id = "none", label = "None" },
-      { id = "name", label = "Name" },
-      { id = "length", label = "Length" },
-      { id = "color", label = "Color" },
-      { id = "pool", label = "Pool" },
+      { id = 'none', label = 'None' },
+      { id = 'name', label = 'Name' },
+      { id = 'length', label = 'Length' },
+      { id = 'color', label = 'Color' },
+      { id = 'pool', label = 'Pool' },
     },
     on_search = opts.on_midi_search,
     on_sort = opts.on_midi_sort,
@@ -86,7 +86,7 @@ function M.new(ctx, config, state, visualization)
 
   -- Create TilesContainer for Audio panel
   self.audio_container = Ark.Panel.new({
-    id = "audio_tiles_container",
+    id = 'audio_tiles_container',
     config = get_audio_container_config({
       on_audio_search = function(text)
         state.set_search_filter(text)
@@ -95,14 +95,14 @@ function M.new(ctx, config, state, visualization)
         state.set_setting('sort_mode', mode)
       end,
       on_audio_sort_direction = function(direction)
-        state.set_setting('sort_reverse', direction == "desc")
+        state.set_setting('sort_reverse', direction == 'desc')
       end,
     }),
   })
 
   -- Create TilesContainer for MIDI panel
   self.midi_container = Ark.Panel.new({
-    id = "midi_tiles_container",
+    id = 'midi_tiles_container',
     config = get_midi_container_config({
       on_midi_search = function(text)
         state.set_search_filter(text)
@@ -111,7 +111,7 @@ function M.new(ctx, config, state, visualization)
         state.set_setting('sort_mode', mode)
       end,
       on_midi_sort_direction = function(direction)
-        state.set_setting('sort_reverse', direction == "desc")
+        state.set_setting('sort_reverse', direction == 'desc')
       end,
     }),
   })

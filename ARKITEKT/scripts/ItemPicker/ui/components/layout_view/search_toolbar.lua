@@ -78,14 +78,14 @@ function M.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
 
   -- Sort modes
   local sort_modes = {
-    {id = "none", label = "None"},
-    {id = "length", label = "Length"},
-    {id = "color", label = "Color"},
-    {id = "name", label = "Name"},
-    {id = "pool", label = "Pool"},
+    {id = 'none', label = 'None'},
+    {id = 'length', label = 'Length'},
+    {id = 'color', label = 'Color'},
+    {id = 'name', label = 'Name'},
+    {id = 'pool', label = 'Pool'},
   }
 
-  local current_sort = state.settings.sort_mode or "none"
+  local current_sort = state.settings.sort_mode or 'none'
 
   -- Pre-calculate button widths
   local sort_button_widths = {}
@@ -102,11 +102,11 @@ function M.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
 
   -- Content filter mode
   local content_button_width = 65
-  local content_filter_mode = "MIXED"
+  local content_filter_mode = 'MIXED'
   if state.settings.show_audio and not state.settings.show_midi then
-    content_filter_mode = "AUDIO"
+    content_filter_mode = 'AUDIO'
   elseif state.settings.show_midi and not state.settings.show_audio then
-    content_filter_mode = "MIDI"
+    content_filter_mode = 'MIDI'
   end
 
   local layout_button_width = button_height
@@ -120,7 +120,7 @@ function M.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
   local left_buttons_width = track_button_width + button_gap + content_button_width + button_gap + layout_button_width + button_gap
 
   -- Calculate sort label width
-  local sort_label = "Sorting:"
+  local sort_label = 'Sorting:'
   local sort_label_width = ImGui.CalcTextSize(ctx, sort_label)
 
   -- ============================================================================
@@ -131,27 +131,27 @@ function M.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
   ImGui.SetCursorScreenPos(ctx, left_section_x, search_y)
 
   -- Layout toggle button
-  local layout_mode = state.settings.layout_mode or "vertical"
-  local is_vertical = layout_mode == "vertical"
-  local is_mixed_mode = content_filter_mode == "MIXED"
+  local layout_mode = state.settings.layout_mode or 'vertical'
+  local is_vertical = layout_mode == 'vertical'
+  local is_mixed_mode = content_filter_mode == 'MIXED'
 
   Ark.Button(ctx, {
-    id = "layout_toggle_button",
+    id = 'layout_toggle_button',
     width = layout_button_width,
     height = button_height,
     draw_icon = make_layout_icon_drawer(is_vertical),
     is_toggled = is_mixed_mode,
-    preset_name = "BUTTON_TOGGLE_WHITE",
-    tooltip = not is_mixed_mode and "Enable Split View (MIXED mode)" or
-              (is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout"),
+    preset_name = 'BUTTON_TOGGLE_WHITE',
+    tooltip = not is_mixed_mode and 'Enable Split View (MIXED mode)' or
+              (is_vertical and 'Switch to Horizontal Layout' or 'Switch to Vertical Layout'),
     ignore_modal = true,
-    advance = "none",
+    advance = 'none',
     on_click = function()
       if not is_mixed_mode then
         state.set_setting('show_audio', true)
         state.set_setting('show_midi', true)
       else
-        local new_mode = layout_mode == "vertical" and "horizontal" or "vertical"
+        local new_mode = layout_mode == 'vertical' and 'horizontal' or 'vertical'
         state.set_setting('layout_mode', new_mode)
       end
     end,
@@ -161,17 +161,17 @@ function M.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
 
   -- Content filter button
   Ark.Button(ctx, {
-    id = "content_filter_button",
+    id = 'content_filter_button',
     width = content_button_width,
     height = button_height,
     label = content_filter_mode,
-    is_toggled = content_filter_mode == "MIXED",
-    preset_name = "BUTTON_TOGGLE_WHITE",
-    tooltip = "Left: Toggle MIDI/AUDIO | Right: Show both",
+    is_toggled = content_filter_mode == 'MIXED',
+    preset_name = 'BUTTON_TOGGLE_WHITE',
+    tooltip = 'Left: Toggle MIDI/AUDIO | Right: Show both',
     ignore_modal = true,
-    advance = "none",
+    advance = 'none',
     on_click = function()
-      if content_filter_mode == "MIDI" then
+      if content_filter_mode == 'MIDI' then
         state.set_setting('show_audio', true)
         state.set_setting('show_midi', false)
       else
@@ -190,15 +190,15 @@ function M.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
   -- Track filter button
   local track_filter_active = state.show_track_filter or false
   Ark.Button(ctx, {
-    id = "track_filter_button",
+    id = 'track_filter_button',
     width = track_button_width,
     height = button_height,
     draw_icon = draw_track_icon,
     is_toggled = track_filter_active,
-    preset_name = "BUTTON_TOGGLE_WHITE",
-    tooltip = "Track Filter",
+    preset_name = 'BUTTON_TOGGLE_WHITE',
+    tooltip = 'Track Filter',
     ignore_modal = true,
-    advance = "none",
+    advance = 'none',
     on_click = function()
       state.open_track_filter_modal = true
     end,
@@ -208,7 +208,7 @@ function M.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
   -- CENTER SECTION: Search input + mode dropdown
   -- Note: Uses absolute positioning for pixel-perfect overlap between input and combo
   -- ============================================================================
-  local mode_id = state.settings.search_mode or "items"
+  local mode_id = state.settings.search_mode or 'items'
   local mode_label = get_search_mode_label(mode_id)
   local dropdown_width = Constants.SEARCH.dropdown_width
   local overlap = Constants.SEARCH.overlap  -- -1 for overlap effect
@@ -223,20 +223,20 @@ function M.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
   end
 
   Ark.InputText.search(ctx, {
-    id = "item_picker_search",
+    id = 'item_picker_search',
     x = search_x,
     y = search_y,
     width = input_width,
     height = search_height,
-    placeholder = "Search " .. mode_label:lower() .. "...",
-    value = state.settings.search_string or "",
+    placeholder = 'Search ' .. mode_label:lower() .. '...',
+    value = state.settings.search_string or '',
     on_change = function(new_text)
       state.set_search_filter(new_text)
     end,
   })
 
   Ark.Combo(ctx, {
-    id = "search_mode_dropdown",
+    id = 'search_mode_dropdown',
     x = search_x + input_width + overlap,
     y = search_y,
     width = dropdown_width,
@@ -259,7 +259,7 @@ function M.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
   ImGui.SetCursorScreenPos(ctx, sort_section_x, search_y)
 
   -- Sorting label
-  local sort_label_color = Ark.Colors.hexrgb("#AAAAAA")
+  local sort_label_color = Ark.Colors.hexrgb('#AAAAAA')
   sort_label_color = Ark.Colors.with_alpha(sort_label_color, (search_fade * 200) // 1)
   local dl = ImGui.GetWindowDrawList(ctx)
   ImGui.DrawList_AddText(dl, sort_section_x, search_y + 4, sort_label_color, sort_label)
@@ -272,14 +272,14 @@ function M.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
     local is_active = (current_sort == mode.id)
 
     Ark.Button(ctx, {
-      id = "sort_button_" .. mode.id,
+      id = 'sort_button_' .. mode.id,
       width = button_w,
       height = button_height,
       label = mode.label,
       is_toggled = is_active,
-      preset_name = "BUTTON_TOGGLE_WHITE",
+      preset_name = 'BUTTON_TOGGLE_WHITE',
       ignore_modal = true,
-      advance = "none",
+      advance = 'none',
       on_click = function()
         if current_sort == mode.id then
           local current_reverse = state.settings.sort_reverse or false

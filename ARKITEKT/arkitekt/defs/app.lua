@@ -13,8 +13,8 @@ local M = {}
 -- Builds ImGui flags from a list of flag names or a preset name
 -- @param ImGui - The ImGui module (required for flag constants)
 -- @param flags_input - Either:
---   1. String preset name ("window", "overlay", "hud")
---   2. Table of flag name strings ({"WindowFlags_NoTitleBar", ...})
+--   1. String preset name ('window', 'overlay', 'hud')
+--   2. Table of flag name strings ({'WindowFlags_NoTitleBar', ...})
 --   3. Number (raw flags value to return as-is)
 --   4. nil (returns 0)
 -- @return number - Combined ImGui flags value
@@ -24,16 +24,16 @@ function M.build_imgui_flags(ImGui, flags_input)
     end
 
     -- If it's already a number, return as-is
-    if type(flags_input) == "number" then
+    if type(flags_input) == 'number' then
         return flags_input
     end
 
     local flag_names = flags_input
 
     -- If it's a preset name string, look it up
-    if type(flags_input) == "string" then
+    if type(flags_input) == 'string' then
         if not M.IMGUI_FLAGS[flags_input] then
-            error("Unknown ImGui flag preset: " .. flags_input)
+            error('Unknown ImGui flag preset: ' .. flags_input)
         end
         flag_names = M.IMGUI_FLAGS[flags_input]
     end
@@ -43,7 +43,7 @@ function M.build_imgui_flags(ImGui, flags_input)
     for _, flag_name in ipairs(flag_names) do
         local flag_value = ImGui[flag_name]
         if not flag_value then
-            error("Unknown ImGui flag: " .. flag_name)
+            error('Unknown ImGui flag: ' .. flag_name)
         end
         result = result | flag_value
     end
@@ -71,19 +71,19 @@ M.OVERLAY = {
     CLOSE_BUTTON_PROXIMITY = 150,
 
     -- Close button colors
-    CLOSE_BUTTON_BG_COLOR = hexrgb("#000000FF"),
+    CLOSE_BUTTON_BG_COLOR = hexrgb('#000000FF'),
     CLOSE_BUTTON_BG_OPACITY = 0.6,
     CLOSE_BUTTON_BG_OPACITY_HOVER = 0.8,
-    CLOSE_BUTTON_ICON_COLOR = hexrgb("#FFFFFFFF"),
-    CLOSE_BUTTON_HOVER_COLOR = hexrgb("#FF4444FF"),
-    CLOSE_BUTTON_ACTIVE_COLOR = hexrgb("#FF0000FF"),
+    CLOSE_BUTTON_ICON_COLOR = hexrgb('#FFFFFFFF'),
+    CLOSE_BUTTON_HOVER_COLOR = hexrgb('#FF4444FF'),
+    CLOSE_BUTTON_ACTIVE_COLOR = hexrgb('#FF0000FF'),
 
     -- Layout
     CONTENT_PADDING = 24,
 
     -- Scrim/backdrop
     SCRIM_OPACITY = 0.99,
-    SCRIM_COLOR = hexrgb("#000000FF"),
+    SCRIM_COLOR = hexrgb('#000000FF'),
 
     -- Behavior defaults
     DEFAULT_USE_VIEWPORT = true,
@@ -102,33 +102,33 @@ M.OVERLAY = {
 M.IMGUI_FLAGS = {
     -- Standard window mode (no native titlebar, using custom chrome)
     window = {
-        "WindowFlags_NoTitleBar",
-        "WindowFlags_NoCollapse",
-        "WindowFlags_NoScrollbar",
-        "WindowFlags_NoScrollWithMouse",
-        "WindowFlags_NoSavedSettings",  -- Prevent ImGui .ini conflicts with Settings system
+        'WindowFlags_NoTitleBar',
+        'WindowFlags_NoCollapse',
+        'WindowFlags_NoScrollbar',
+        'WindowFlags_NoScrollWithMouse',
+        'WindowFlags_NoSavedSettings',  -- Prevent ImGui .ini conflicts with Settings system
     },
 
     -- Overlay mode (fullscreen, click-through background)
     overlay = {
-        "WindowFlags_NoTitleBar",
-        "WindowFlags_NoResize",
-        "WindowFlags_NoMove",
-        "WindowFlags_NoCollapse",
-        "WindowFlags_NoScrollbar",
-        "WindowFlags_NoScrollWithMouse",
-        "WindowFlags_NoBackground",
-        "WindowFlags_NoSavedSettings",  -- Prevent ImGui .ini conflicts
+        'WindowFlags_NoTitleBar',
+        'WindowFlags_NoResize',
+        'WindowFlags_NoMove',
+        'WindowFlags_NoCollapse',
+        'WindowFlags_NoScrollbar',
+        'WindowFlags_NoScrollWithMouse',
+        'WindowFlags_NoBackground',
+        'WindowFlags_NoSavedSettings',  -- Prevent ImGui .ini conflicts
     },
 
     -- HUD mode (always on top, minimal chrome)
     hud = {
-        "WindowFlags_NoTitleBar",
-        "WindowFlags_NoCollapse",
-        "WindowFlags_NoScrollbar",
-        "WindowFlags_NoScrollWithMouse",
-        "WindowFlags_TopMost",
-        "WindowFlags_NoSavedSettings",  -- Prevent ImGui .ini conflicts
+        'WindowFlags_NoTitleBar',
+        'WindowFlags_NoCollapse',
+        'WindowFlags_NoScrollbar',
+        'WindowFlags_NoScrollWithMouse',
+        'WindowFlags_TopMost',
+        'WindowFlags_NoSavedSettings',  -- Prevent ImGui .ini conflicts
     },
 }
 
@@ -178,7 +178,7 @@ M.WINDOW = {
     default_offset = { x = 100, y = 100 },
 
     -- Default window config
-    title = "Arkitekt App",
+    title = 'Arkitekt App',
     content_padding = 12,
     min_size = { w = 400, h = 300 },
     initial_size = { w = 900, h = 600 },
@@ -186,10 +186,10 @@ M.WINDOW = {
 
     -- Background colors
     bg_color_floating = nil,
-    bg_color_docked = hexrgb("#282828"),
+    bg_color_docked = hexrgb('#282828'),
 
     -- Default mode (used for flag/chrome presets)
-    mode = "window",  -- "window", "overlay", or "hud"
+    mode = 'window',  -- 'window', 'overlay', or 'hud'
 }
 
 -- ============================================================================
@@ -202,7 +202,7 @@ M.TITLEBAR = {
     pad_v = 0,
     button_width = 44,
     button_spacing = 0,
-    button_style = "minimal",
+    button_style = 'minimal',
     separator = true,
     icon_size = 24,
     icon_spacing = 8,
@@ -212,7 +212,7 @@ M.TITLEBAR = {
 
     -- Branding
     branding_font_size = 22,
-    branding_text = "",
+    branding_text = '',
     branding_opacity = 0.15,
     branding_color = nil,
 
@@ -220,23 +220,23 @@ M.TITLEBAR = {
     bg_color = nil,
     bg_color_active = nil,
     text_color = nil,
-    version_color = hexrgb("#ffffff5b"),
+    version_color = hexrgb('#ffffff5b'),
 
     -- Button colors (minimal style)
-    button_maximize_normal = hexrgb("#00000000"),
-    button_maximize_hovered = hexrgb("#4CAF50FF"),  -- Success green
-    button_maximize_active = hexrgb("#60FFFFFF"),
-    button_close_normal = hexrgb("#00000000"),
-    button_close_hovered = hexrgb("#CC3333FF"),
-    button_close_active = hexrgb("#FF1111FF"),
+    button_maximize_normal = hexrgb('#00000000'),
+    button_maximize_hovered = hexrgb('#4CAF50FF'),  -- Success green
+    button_maximize_active = hexrgb('#60FFFFFF'),
+    button_close_normal = hexrgb('#00000000'),
+    button_close_hovered = hexrgb('#CC3333FF'),
+    button_close_active = hexrgb('#FF1111FF'),
 
     -- Button colors (filled style)
-    button_maximize_filled_normal = hexrgb("#808080"),
-    button_maximize_filled_hovered = hexrgb("#999999"),
-    button_maximize_filled_active = hexrgb("#666666"),
-    button_close_filled_normal = hexrgb("#CC3333"),
-    button_close_filled_hovered = hexrgb("#FF4444"),
-    button_close_filled_active = hexrgb("#FF1111"),
+    button_maximize_filled_normal = hexrgb('#808080'),
+    button_maximize_filled_hovered = hexrgb('#999999'),
+    button_maximize_filled_active = hexrgb('#666666'),
+    button_close_filled_normal = hexrgb('#CC3333'),
+    button_close_filled_hovered = hexrgb('#FF4444'),
+    button_close_filled_active = hexrgb('#FF1111'),
 }
 
 -- ============================================================================
@@ -261,7 +261,7 @@ M.STATUS_BAR = {
 -- DEPENDENCIES
 -- ============================================================================
 M.DEPENDENCIES = {
-    hub_path = "ARKITEKT.lua",
+    hub_path = 'ARKITEKT.lua',
 }
 
 return M

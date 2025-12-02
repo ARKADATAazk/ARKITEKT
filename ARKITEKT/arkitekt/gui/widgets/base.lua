@@ -98,7 +98,7 @@ end
 -- ============================================================================
 
 -- Global tracking of all registries for periodic cleanup
-local all_registries = setmetatable({}, { __mode = "v" })
+local all_registries = setmetatable({}, { __mode = 'v' })
 local last_cleanup_time = 0
 local CLEANUP_INTERVAL = 60.0  -- Cleanup every 60 seconds
 local STALE_THRESHOLD = 30.0   -- Remove instances not accessed for 30 seconds

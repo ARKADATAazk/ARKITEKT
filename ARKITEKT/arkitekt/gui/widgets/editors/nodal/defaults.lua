@@ -32,7 +32,7 @@ M.DEFAULT = {
     mode_width = 120,
     delete_button_size = 16,
     add_button_height = 24,
-    add_button_text = "+ Add Trigger",
+    add_button_text = '+ Add Trigger',
   },
   
   port = {
@@ -65,34 +65,34 @@ M.DEFAULT = {
     padding_x = 6,
     padding_y = 3,
     margin = 6,
-    bg = hexrgb("#14181C"),
+    bg = hexrgb('#14181C'),
     border_alpha = 0x33,
     font_scale = 0.88,
   },
   
   colors = {
     mirror_modes = {
-      linked = hexrgb("#41E0A3"),
-      detached = hexrgb("#4A9EFF"),
-      frozen = hexrgb("#FF9500"),
+      linked = hexrgb('#41E0A3'),
+      detached = hexrgb('#4A9EFF'),
+      frozen = hexrgb('#FF9500'),
     },
     
     connection_types = {
-      sequential = hexrgb("#88CEFF"),
-      trigger = hexrgb("#FF6B9D"),
+      sequential = hexrgb('#88CEFF'),
+      trigger = hexrgb('#FF6B9D'),
     },
     
     text = {
-      header = hexrgb("#FFFFFF"),
-      body = hexrgb("#AAAAAA"),
-      port_label = hexrgb("#DDDDDD"),
-      trigger_section = hexrgb("#FFFFFF"),
+      header = hexrgb('#FFFFFF'),
+      body = hexrgb('#AAAAAA'),
+      port_label = hexrgb('#DDDDDD'),
+      trigger_section = hexrgb('#FFFFFF'),
     },
     
-    bg_base = hexrgb("#1A1A1A"),
-    chip_bg = hexrgb("#1A1A1A"),
-    port_glow = hexrgb("#FFFFFF88"),
-    connection_label_bg = hexrgb("#1A1A1AEE"),
+    bg_base = hexrgb('#1A1A1A'),
+    chip_bg = hexrgb('#1A1A1A'),
+    port_glow = hexrgb('#FFFFFF88'),
+    connection_label_bg = hexrgb('#1A1A1AEE'),
   },
   
   tile_fx = {
@@ -118,7 +118,7 @@ M.DEFAULT = {
     ants_dash = 8,
     ants_gap = 6,
     ants_speed = 20,
-    ants_alpha = hexrgb("#000000FF"),
+    ants_alpha = hexrgb('#000000FF'),
   },
   
   background_pattern = {
@@ -126,14 +126,14 @@ M.DEFAULT = {
     primary = {
       type = 'grid',
       spacing = 50,
-      color = hexrgb("#14141490"),
+      color = hexrgb('#14141490'),
       line_thickness = 1.5,
     },
     secondary = {
       enabled = true,
       type = 'grid',
       spacing = 5,
-      color = hexrgb("#14141420"),
+      color = hexrgb('#14141420'),
       line_thickness = 0.5,
     },
   },

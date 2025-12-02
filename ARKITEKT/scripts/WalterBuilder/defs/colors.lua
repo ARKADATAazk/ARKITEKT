@@ -110,17 +110,17 @@ end
 
 -- Get behavior color for an element
 function M.get_behavior_color(h_behavior, v_behavior)
-  if h_behavior == "fixed" and v_behavior == "fixed" then
+  if h_behavior == 'fixed' and v_behavior == 'fixed' then
     return M.ATTACHMENT.FIXED
-  elseif h_behavior == "stretch_end" or h_behavior == "stretch_start" then
-    if v_behavior == "stretch_end" or v_behavior == "stretch_start" then
+  elseif h_behavior == 'stretch_end' or h_behavior == 'stretch_start' then
+    if v_behavior == 'stretch_end' or v_behavior == 'stretch_start' then
       return M.ATTACHMENT.STRETCH_BOTH
     else
       return M.ATTACHMENT.STRETCH_H
     end
-  elseif v_behavior == "stretch_end" or v_behavior == "stretch_start" then
+  elseif v_behavior == 'stretch_end' or v_behavior == 'stretch_start' then
     return M.ATTACHMENT.STRETCH_V
-  elseif h_behavior == "move" or v_behavior == "move" then
+  elseif h_behavior == 'move' or v_behavior == 'move' then
     return M.ATTACHMENT.MOVE
   else
     return M.ATTACHMENT.COMPLEX
@@ -129,17 +129,17 @@ end
 
 -- Get alpha version of behavior color
 function M.get_behavior_color_alpha(h_behavior, v_behavior)
-  if h_behavior == "fixed" and v_behavior == "fixed" then
+  if h_behavior == 'fixed' and v_behavior == 'fixed' then
     return M.ATTACHMENT_ALPHA.FIXED
-  elseif h_behavior == "stretch_end" or h_behavior == "stretch_start" then
-    if v_behavior == "stretch_end" or v_behavior == "stretch_start" then
+  elseif h_behavior == 'stretch_end' or h_behavior == 'stretch_start' then
+    if v_behavior == 'stretch_end' or v_behavior == 'stretch_start' then
       return M.ATTACHMENT_ALPHA.STRETCH_BOTH
     else
       return M.ATTACHMENT_ALPHA.STRETCH_H
     end
-  elseif v_behavior == "stretch_end" or v_behavior == "stretch_start" then
+  elseif v_behavior == 'stretch_end' or v_behavior == 'stretch_start' then
     return M.ATTACHMENT_ALPHA.STRETCH_V
-  elseif h_behavior == "move" or v_behavior == "move" then
+  elseif h_behavior == 'move' or v_behavior == 'move' then
     return M.ATTACHMENT_ALPHA.MOVE
   else
     return M.ATTACHMENT_ALPHA.COMPLEX

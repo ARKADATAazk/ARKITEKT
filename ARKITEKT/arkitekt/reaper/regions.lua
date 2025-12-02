@@ -7,7 +7,7 @@ local hexrgb = Colors.hexrgb
 
 local M = {}
 
-local FALLBACK_COLOR = hexrgb("#4A5A6A")
+local FALLBACK_COLOR = hexrgb('#4A5A6A')
 
 local function convert_reaper_color_to_rgba(native_color)
   if not native_color or native_color == 0 then
@@ -28,8 +28,8 @@ end
 
 -- Get GUID for a marker/region by its enumeration index
 local function get_marker_guid(proj, marker_index)
-  local retval, guid = reaper.GetSetProjectInfo_String(proj, "MARKER_GUID:" .. marker_index, "", false)
-  if retval and guid and guid ~= "" then
+  local retval, guid = reaper.GetSetProjectInfo_String(proj, 'MARKER_GUID:' .. marker_index, '', false)
+  if retval and guid and guid ~= '' then
     return guid
   end
   return nil
@@ -51,7 +51,7 @@ function M.scan_project_regions(proj)
       local guid = get_marker_guid(proj, i)
       if DEBUG_GUID then
         reaper.ShowConsoleMsg(string.format("Region scan: enum_idx=%d rid=%d name='%s' guid=%s\n",
-          i, markrgnindexnumber, name or "", guid or "NIL"))
+          i, markrgnindexnumber, name or '', guid or 'NIL'))
       end
       regions[#regions + 1] = {
         rid = markrgnindexnumber,
@@ -59,7 +59,7 @@ function M.scan_project_regions(proj)
         index = i,
         name = name,
         start = pos,
-        ["end"] = rgnend,
+        ['end'] = rgnend,
         color = convert_reaper_color_to_rgba(color),
       }
     end
@@ -83,7 +83,7 @@ function M.get_region_by_rid(proj, target_rid)
         index = i,
         name = name,
         start = pos,
-        ["end"] = rgnend,
+        ['end'] = rgnend,
         color = convert_reaper_color_to_rgba(color),
       }
     end
@@ -115,7 +115,7 @@ function M.get_region_by_guid(proj, target_guid)
           index = i,
           name = name,
           start = pos,
-          ["end"] = rgnend,
+          ['end'] = rgnend,
           color = convert_reaper_color_to_rgba(color),
         }
       end
@@ -163,7 +163,7 @@ local function set_region_color_raw(proj, target_rid, rgba_color)
     rgn.index,        -- marker/region index
     true,             -- isrgn (true for region)
     rgn.start,        -- position
-    rgn["end"],       -- region end
+    rgn['end'],       -- region end
     target_rid,       -- markrgnindexnumber (RID) - BEFORE name!
     rgn.name,         -- name - AFTER markrgnindexnumber!
     native_color,     -- color
@@ -185,7 +185,7 @@ end
 function M.set_region_color(proj, target_rid, rgba_color)
   reaper.Undo_BeginBlock()
   local success = set_region_color_raw(proj, target_rid, rgba_color)
-  reaper.Undo_EndBlock("Set region color", -1)
+  reaper.Undo_EndBlock('Set region color', -1)
 
   -- Force immediate visual update
   reaper.UpdateTimeline()
@@ -219,7 +219,7 @@ local function set_region_name_raw(proj, target_rid, new_name)
     rgn.index,        -- marker/region index
     true,             -- isrgn (true for region)
     rgn.start,        -- position
-    rgn["end"],       -- region end
+    rgn['end'],       -- region end
     target_rid,       -- markrgnindexnumber (RID) - BEFORE name!
     new_name,         -- name - AFTER markrgnindexnumber!
     native_color,     -- keep existing color (converted to native format)
@@ -241,7 +241,7 @@ end
 function M.set_region_name(proj, target_rid, new_name)
   reaper.Undo_BeginBlock()
   local success = set_region_name_raw(proj, target_rid, new_name)
-  reaper.Undo_EndBlock("Rename region", -1)
+  reaper.Undo_EndBlock('Rename region', -1)
 
   -- Force immediate visual update
   reaper.UpdateTimeline()
@@ -282,7 +282,7 @@ function M.set_region_colors_batch(proj, rids, rgba_color)
         rgn.index,
         true,
         rgn.start,
-        rgn["end"],
+        rgn['end'],
         target_rid,
         rgn.name,
         native_color,
@@ -298,7 +298,7 @@ function M.set_region_colors_batch(proj, rids, rgba_color)
     reaper.MarkProjectDirty(proj)
   end
 
-  reaper.Undo_EndBlock("Set region colors", -1)
+  reaper.Undo_EndBlock('Set region colors', -1)
 
   -- Single UI refresh for all changes
   reaper.UpdateTimeline()
@@ -334,7 +334,7 @@ function M.set_region_colors_individual(proj, rid_color_map)
         rgn.index,
         true,
         rgn.start,
-        rgn["end"],
+        rgn['end'],
         target_rid,
         rgn.name,
         native_color,
@@ -350,7 +350,7 @@ function M.set_region_colors_individual(proj, rid_color_map)
     reaper.MarkProjectDirty(proj)
   end
 
-  reaper.Undo_EndBlock("Set region colors", -1)
+  reaper.Undo_EndBlock('Set region colors', -1)
 
   -- Single UI refresh for all changes
   reaper.UpdateTimeline()
@@ -391,7 +391,7 @@ function M.set_region_names_batch(proj, renames)
         rgn.index,
         true,
         rgn.start,
-        rgn["end"],
+        rgn['end'],
         target_rid,
         new_name,
         native_color,
@@ -407,7 +407,7 @@ function M.set_region_names_batch(proj, renames)
     reaper.MarkProjectDirty(proj)
   end
 
-  reaper.Undo_EndBlock("Rename regions", -1)
+  reaper.Undo_EndBlock('Rename regions', -1)
 
   -- Single UI refresh for all changes
   reaper.UpdateTimeline()

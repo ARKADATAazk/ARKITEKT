@@ -56,19 +56,19 @@
 --   - ui/state/preferences.lua (UI preferences)
 --   - data/bridge.lua (lazy sequence expansion)
 
-local CoordinatorBridge = require("RegionPlaylist.data.bridge")
-local RegionState = require("RegionPlaylist.data.storage")
-local UndoManager = require("arkitekt.core.undo_manager")
-local UndoBridge = require("RegionPlaylist.data.undo")
-local Constants = require("RegionPlaylist.defs.constants")
-local ProjectMonitor = require("arkitekt.reaper.project_monitor")
-local Animation = require("RegionPlaylist.ui.state.animation")
-local Notification = require("RegionPlaylist.ui.state.notification")
-local UIPreferences = require("RegionPlaylist.ui.state.preferences")
-local Region = require("RegionPlaylist.domain.region")
-local Dependency = require("RegionPlaylist.domain.dependency")
-local Playlist = require("RegionPlaylist.domain.playlist")
-local PoolQueries = require("RegionPlaylist.app.pool_queries")
+local CoordinatorBridge = require('RegionPlaylist.data.bridge')
+local RegionState = require('RegionPlaylist.data.storage')
+local UndoManager = require('arkitekt.core.undo_manager')
+local UndoBridge = require('RegionPlaylist.data.undo')
+local Constants = require('RegionPlaylist.defs.constants')
+local ProjectMonitor = require('arkitekt.reaper.project_monitor')
+local Animation = require('RegionPlaylist.ui.state.animation')
+local Notification = require('RegionPlaylist.ui.state.notification')
+local UIPreferences = require('RegionPlaylist.ui.state.preferences')
+local Region = require('RegionPlaylist.domain.region')
+local Dependency = require('RegionPlaylist.domain.dependency')
+local Playlist = require('RegionPlaylist.domain.playlist')
+local PoolQueries = require('RegionPlaylist.app.pool_queries')
 local Logger = require('arkitekt.debug.logger')
 
 local M = {}
@@ -76,38 +76,38 @@ local M = {}
 -- Set to true for verbose app state logging
 local DEBUG_APP_STATE = false
 
-package.loaded["RegionPlaylist.app.state"] = M
+package.loaded['RegionPlaylist.app.state'] = M
 
 -- Build a human-readable status message from undo/redo changes
 local function _build_changes_message(prefix, changes)
   local parts = {}
 
   if changes.playlists_count > 0 then
-    parts[#parts + 1] = string.format("%d playlist%s",
+    parts[#parts + 1] = string.format('%d playlist%s',
       changes.playlists_count,
-      changes.playlists_count ~= 1 and "s" or "")
+      changes.playlists_count ~= 1 and 's' or '')
   end
 
   if changes.items_count > 0 then
-    parts[#parts + 1] = string.format("%d item%s",
+    parts[#parts + 1] = string.format('%d item%s',
       changes.items_count,
-      changes.items_count ~= 1 and "s" or "")
+      changes.items_count ~= 1 and 's' or '')
   end
 
   if changes.regions_renamed > 0 then
-    parts[#parts + 1] = string.format("%d region%s renamed",
+    parts[#parts + 1] = string.format('%d region%s renamed',
       changes.regions_renamed,
-      changes.regions_renamed ~= 1 and "s" or "")
+      changes.regions_renamed ~= 1 and 's' or '')
   end
 
   if changes.regions_recolored > 0 then
-    parts[#parts + 1] = string.format("%d region%s recolored",
+    parts[#parts + 1] = string.format('%d region%s recolored',
       changes.regions_recolored,
-      changes.regions_recolored ~= 1 and "s" or "")
+      changes.regions_recolored ~= 1 and 's' or '')
   end
 
   if #parts > 0 then
-    return prefix .. ": " .. table.concat(parts, ", ")
+    return prefix .. ': ' .. table.concat(parts, ', ')
   end
   return prefix
 end
@@ -165,7 +165,7 @@ function M.initialize(settings)
   M.ui_preferences:load_from_settings()
 
   if DEBUG_APP_STATE then
-    Logger.info("STATE", "Initialized with all 6 domains: animation, notification, ui_preferences, region, dependency, playlist")
+    Logger.info('STATE', 'Initialized with all 6 domains: animation, notification, ui_preferences, region, dependency, playlist')
   end
 
   -- Initialize project monitor to track changes
@@ -213,11 +213,11 @@ function M.load_project_state()
   local playlists = RegionState.load_playlists(0)
 
   if #playlists == 0 then
-    local UUID = require("arkitekt.core.uuid")
+    local UUID = require('arkitekt.core.uuid')
     playlists = {
       {
         id = UUID.generate(),
-        name = "Playlist 1",
+        name = 'Playlist 1',
         items = {},
         chip_color = RegionState.generate_chip_color(),
       }
@@ -483,7 +483,7 @@ function M.undo()
   local success, changes = M.restore_snapshot(snapshot)
 
   if success and changes then
-    M.set_state_change_notification(_build_changes_message("Undo", changes))
+    M.set_state_change_notification(_build_changes_message('Undo', changes))
   end
 
   return success
@@ -498,7 +498,7 @@ function M.redo()
   local success, changes = M.restore_snapshot(snapshot)
 
   if success and changes then
-    M.set_state_change_notification(_build_changes_message("Redo", changes))
+    M.set_state_change_notification(_build_changes_message('Redo', changes))
   end
 
   return success
@@ -600,11 +600,11 @@ function M.create_playlist_item(playlist_id, reps)
   end
   
   return {
-    type = "playlist",
+    type = 'playlist',
     playlist_id = playlist_id,
     reps = reps or 1,
     enabled = true,
-    key = "playlist_" .. playlist_id .. "_" .. reaper.time_precise(),
+    key = 'playlist_' .. playlist_id .. '_' .. reaper.time_precise(),
   }
 end
 
@@ -617,28 +617,28 @@ function M.cleanup_deleted_regions()
   local playlists = M.playlist:get_all()
 
   if DEBUG_CLEANUP then
-    reaper.ShowConsoleMsg("=== cleanup_deleted_regions() ===\n")
+    reaper.ShowConsoleMsg('=== cleanup_deleted_regions() ===\n')
   end
 
   for _, pl in ipairs(playlists) do
     local i = 1
     while i <= #pl.items do
       local item = pl.items[i]
-      if item.type == "region" then
+      if item.type == 'region' then
         -- Try to resolve region: GUID → Name → RID
         local region = M.region:resolve_region(item.guid, item.rid, item.region_name)
 
         if DEBUG_CLEANUP then
           reaper.ShowConsoleMsg(string.format("  Item: rid=%s guid=%s name='%s' -> resolved=%s\n",
-            tostring(item.rid), tostring(item.guid), tostring(item.region_name or ""),
-            region and tostring(region.rid) or "NIL"))
+            tostring(item.rid), tostring(item.guid), tostring(item.region_name or ''),
+            region and tostring(region.rid) or 'NIL'))
         end
 
         if region then
           -- Region found - update RID if changed (was renumbered)
           if item.rid ~= region.rid then
             if DEBUG_CLEANUP then
-              reaper.ShowConsoleMsg(string.format("    UPDATING rid: %d -> %d\n", item.rid, region.rid))
+              reaper.ShowConsoleMsg(string.format('    UPDATING rid: %d -> %d\n', item.rid, region.rid))
             end
             item.rid = region.rid
             updated_any = true
@@ -646,17 +646,17 @@ function M.cleanup_deleted_regions()
           -- Update GUID if changed or missing (renumbering generates new GUIDs)
           if region.guid and item.guid ~= region.guid then
             if DEBUG_CLEANUP then
-              reaper.ShowConsoleMsg(string.format("    UPDATING guid: %s -> %s\n",
+              reaper.ShowConsoleMsg(string.format('    UPDATING guid: %s -> %s\n',
                 tostring(item.guid), region.guid))
             end
             item.guid = region.guid
             updated_any = true
           end
           -- Update stored name if it changed
-          if region.name and region.name ~= "" and item.region_name ~= region.name then
+          if region.name and region.name ~= '' and item.region_name ~= region.name then
             if DEBUG_CLEANUP then
               reaper.ShowConsoleMsg(string.format("    UPDATING name: '%s' -> '%s'\n",
-                tostring(item.region_name or ""), region.name))
+                tostring(item.region_name or ''), region.name))
             end
             item.region_name = region.name
             updated_any = true
@@ -665,7 +665,7 @@ function M.cleanup_deleted_regions()
         else
           -- Region truly deleted - remove from playlist
           if DEBUG_CLEANUP then
-            reaper.ShowConsoleMsg(string.format("    REMOVING (not found)\n"))
+            reaper.ShowConsoleMsg(string.format('    REMOVING (not found)\n'))
           end
           table.remove(pl.items, i)
           removed_any = true

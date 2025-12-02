@@ -2,7 +2,7 @@
 -- MediaContainer/core/container.lua
 -- Container operations: create, copy, paste, sync
 
-local State = require("MediaContainer.core.app_state")
+local State = require('MediaContainer.core.app_state')
 local Ark = require('arkitekt')
 local M = {}
 
@@ -10,7 +10,7 @@ local M = {}
 function M.create_from_selection()
   local num_selected = reaper.CountSelectedMediaItems(0)
   if num_selected == 0 then
-    reaper.ShowMessageBox("Please select at least one media item.", "Media Container", 0)
+    reaper.ShowMessageBox('Please select at least one media item.', 'Media Container', 0)
     return nil
   end
 
@@ -27,8 +27,8 @@ function M.create_from_selection()
   for i = 0, num_selected - 1 do
     local item = reaper.GetSelectedMediaItem(0, i)
     local guid = reaper.BR_GetMediaItemGUID(item)
-    local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
-    local len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+    local pos = reaper.GetMediaItemInfo_Value(item, 'D_POSITION')
+    local len = reaper.GetMediaItemInfo_Value(item, 'D_LENGTH')
     local item_end = pos + len
 
     local track = reaper.GetMediaItem_Track(item)
@@ -55,7 +55,7 @@ function M.create_from_selection()
   for _, item_ref in ipairs(items) do
     local item = State.find_item_by_guid(item_ref.guid)
     if item then
-      local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+      local pos = reaper.GetMediaItemInfo_Value(item, 'D_POSITION')
       local track = reaper.GetMediaItem_Track(item)
       local track_idx = State.get_track_index(track)
 
@@ -73,7 +73,7 @@ function M.create_from_selection()
   -- Create container
   local container = {
     id = Ark.UUID.generate(),
-    name = "Container " .. (#State.containers + 1),
+    name = 'Container ' .. (#State.containers + 1),
     color = State.generate_container_color(),
     start_time = min_pos,
     end_time = max_end,
@@ -96,7 +96,7 @@ function M.create_from_selection()
     end
   end
 
-  reaper.Undo_EndBlock("Create Media Container", -1)
+  reaper.Undo_EndBlock('Create Media Container', -1)
 
   return container
 end
@@ -135,7 +135,7 @@ function M.copy_container()
   end
 
   if not found_container then
-    reaper.ShowMessageBox("No container found at cursor position or in selection.", "Media Container", 0)
+    reaper.ShowMessageBox('No container found at cursor position or in selection.', 'Media Container', 0)
     return false
   end
 
@@ -151,13 +151,13 @@ end
 function M.paste_container()
   local master_id = State.get_clipboard()
   if not master_id then
-    reaper.ShowMessageBox("No container in clipboard. Copy a container first.", "Media Container", 0)
+    reaper.ShowMessageBox('No container in clipboard. Copy a container first.', 'Media Container', 0)
     return nil
   end
 
   local master = State.get_container_by_id(master_id)
   if not master then
-    reaper.ShowMessageBox("Source container no longer exists.", "Media Container", 0)
+    reaper.ShowMessageBox('Source container no longer exists.', 'Media Container', 0)
     return nil
   end
 
@@ -176,8 +176,8 @@ function M.paste_container()
 
   if not target_track then
     reaper.PreventUIRefresh(-1)
-    reaper.Undo_EndBlock("Media Container Paste (failed)", -1)
-    reaper.ShowMessageBox("No target track available.", "Media Container", 0)
+    reaper.Undo_EndBlock('Media Container Paste (failed)', -1)
+    reaper.ShowMessageBox('No target track available.', 'Media Container', 0)
     return nil
   end
 
@@ -210,7 +210,7 @@ function M.paste_container()
     end
 
     -- Copy item using state chunk
-    local _, chunk = reaper.GetItemStateChunk(source_item, "")
+    local _, chunk = reaper.GetItemStateChunk(source_item, '')
 
     -- Create new item on target track
     local new_item = reaper.AddMediaItemToTrack(item_track)
@@ -218,7 +218,7 @@ function M.paste_container()
 
     -- Set new position
     local new_pos = cursor_pos + item_ref.rel_position
-    reaper.SetMediaItemInfo_Value(new_item, "D_POSITION", new_pos)
+    reaper.SetMediaItemInfo_Value(new_item, 'D_POSITION', new_pos)
 
     -- Get new item GUID
     local new_guid = reaper.BR_GetMediaItemGUID(new_item)
@@ -244,7 +244,7 @@ function M.paste_container()
   -- Create linked container
   local linked_container = {
     id = Ark.UUID.generate(),
-    name = master.name .. " (linked)",
+    name = master.name .. ' (linked)',
     color = master.color,
     start_time = cursor_pos,
     end_time = cursor_pos + duration,
@@ -269,7 +269,7 @@ function M.paste_container()
 
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()
-  reaper.Undo_EndBlock("Media Container Paste", -1)
+  reaper.Undo_EndBlock('Media Container Paste', -1)
 
   reaper.ShowConsoleMsg(string.format("[MediaContainer] Pasted linked container '%s' at %.2f\n",
     linked_container.name, cursor_pos))
@@ -299,7 +299,7 @@ function M.detect_changes()
           old_hash = cached_hash,
           new_hash = current_hash,
         }
-        reaper.ShowConsoleMsg(string.format("[MediaContainer] Change detected in %s\n", container.name))
+        reaper.ShowConsoleMsg(string.format('[MediaContainer] Change detected in %s\n', container.name))
       end
 
       ::continue::
@@ -338,7 +338,7 @@ function M.sync_changes(changes)
     end
     processed_masters[master_id] = true
 
-    reaper.ShowConsoleMsg(string.format("[MediaContainer] Processing sync for master group %s\n", master_id:sub(1,8)))
+    reaper.ShowConsoleMsg(string.format('[MediaContainer] Processing sync for master group %s\n', master_id:sub(1,8)))
 
     -- Find the item reference in source container
     local source_item_ref = nil
@@ -357,12 +357,12 @@ function M.sync_changes(changes)
 
     -- Get current item properties
     local source_item = change.item
-    local new_pos = reaper.GetMediaItemInfo_Value(source_item, "D_POSITION")
+    local new_pos = reaper.GetMediaItemInfo_Value(source_item, 'D_POSITION')
     local new_rel_pos = new_pos - source_container.start_time
 
     -- Update source item ref
     source_item_ref.rel_position = new_rel_pos
-    source_item_ref.length = reaper.GetMediaItemInfo_Value(source_item, "D_LENGTH")
+    source_item_ref.length = reaper.GetMediaItemInfo_Value(source_item, 'D_LENGTH')
 
     -- Sync to all linked containers
     local linked = State.get_linked_containers(master_id)
@@ -386,7 +386,7 @@ function M.sync_changes(changes)
       M.apply_item_properties(source_item, target_item,
         source_container.start_time, linked_container.start_time)
 
-      reaper.ShowConsoleMsg(string.format("[MediaContainer] Synced to %s\n", linked_container.name))
+      reaper.ShowConsoleMsg(string.format('[MediaContainer] Synced to %s\n', linked_container.name))
 
       -- Update cache (using relative position to linked container)
       local new_hash = State.get_item_state_hash(target_item, linked_container)
@@ -411,55 +411,55 @@ function M.sync_changes(changes)
 
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()
-  reaper.Undo_EndBlock("Media Container Sync", -1)
+  reaper.Undo_EndBlock('Media Container Sync', -1)
 end
 
 -- Apply item properties from source to target
 function M.apply_item_properties(source_item, target_item, source_container_start, target_container_start)
   -- Get source properties
-  local source_pos = reaper.GetMediaItemInfo_Value(source_item, "D_POSITION")
+  local source_pos = reaper.GetMediaItemInfo_Value(source_item, 'D_POSITION')
   local rel_pos = source_pos - source_container_start
 
   -- Position (relative to container)
-  reaper.SetMediaItemInfo_Value(target_item, "D_POSITION", target_container_start + rel_pos)
+  reaper.SetMediaItemInfo_Value(target_item, 'D_POSITION', target_container_start + rel_pos)
 
   -- Length
-  reaper.SetMediaItemInfo_Value(target_item, "D_LENGTH",
-    reaper.GetMediaItemInfo_Value(source_item, "D_LENGTH"))
+  reaper.SetMediaItemInfo_Value(target_item, 'D_LENGTH',
+    reaper.GetMediaItemInfo_Value(source_item, 'D_LENGTH'))
 
   -- Basic properties
-  reaper.SetMediaItemInfo_Value(target_item, "B_MUTE",
-    reaper.GetMediaItemInfo_Value(source_item, "B_MUTE"))
-  reaper.SetMediaItemInfo_Value(target_item, "D_VOL",
-    reaper.GetMediaItemInfo_Value(source_item, "D_VOL"))
+  reaper.SetMediaItemInfo_Value(target_item, 'B_MUTE',
+    reaper.GetMediaItemInfo_Value(source_item, 'B_MUTE'))
+  reaper.SetMediaItemInfo_Value(target_item, 'D_VOL',
+    reaper.GetMediaItemInfo_Value(source_item, 'D_VOL'))
 
   -- Fades
-  reaper.SetMediaItemInfo_Value(target_item, "D_FADEINLEN",
-    reaper.GetMediaItemInfo_Value(source_item, "D_FADEINLEN"))
-  reaper.SetMediaItemInfo_Value(target_item, "D_FADEOUTLEN",
-    reaper.GetMediaItemInfo_Value(source_item, "D_FADEOUTLEN"))
-  reaper.SetMediaItemInfo_Value(target_item, "C_FADEINSHAPE",
-    reaper.GetMediaItemInfo_Value(source_item, "C_FADEINSHAPE"))
-  reaper.SetMediaItemInfo_Value(target_item, "C_FADEOUTSHAPE",
-    reaper.GetMediaItemInfo_Value(source_item, "C_FADEOUTSHAPE"))
+  reaper.SetMediaItemInfo_Value(target_item, 'D_FADEINLEN',
+    reaper.GetMediaItemInfo_Value(source_item, 'D_FADEINLEN'))
+  reaper.SetMediaItemInfo_Value(target_item, 'D_FADEOUTLEN',
+    reaper.GetMediaItemInfo_Value(source_item, 'D_FADEOUTLEN'))
+  reaper.SetMediaItemInfo_Value(target_item, 'C_FADEINSHAPE',
+    reaper.GetMediaItemInfo_Value(source_item, 'C_FADEINSHAPE'))
+  reaper.SetMediaItemInfo_Value(target_item, 'C_FADEOUTSHAPE',
+    reaper.GetMediaItemInfo_Value(source_item, 'C_FADEOUTSHAPE'))
 
   -- Snap offset
-  reaper.SetMediaItemInfo_Value(target_item, "D_SNAPOFFSET",
-    reaper.GetMediaItemInfo_Value(source_item, "D_SNAPOFFSET"))
+  reaper.SetMediaItemInfo_Value(target_item, 'D_SNAPOFFSET',
+    reaper.GetMediaItemInfo_Value(source_item, 'D_SNAPOFFSET'))
 
   -- Take properties
   local source_take = reaper.GetActiveTake(source_item)
   local target_take = reaper.GetActiveTake(target_item)
 
   if source_take and target_take then
-    reaper.SetMediaItemTakeInfo_Value(target_take, "D_PITCH",
-      reaper.GetMediaItemTakeInfo_Value(source_take, "D_PITCH"))
-    reaper.SetMediaItemTakeInfo_Value(target_take, "D_PLAYRATE",
-      reaper.GetMediaItemTakeInfo_Value(source_take, "D_PLAYRATE"))
-    reaper.SetMediaItemTakeInfo_Value(target_take, "D_VOL",
-      reaper.GetMediaItemTakeInfo_Value(source_take, "D_VOL"))
-    reaper.SetMediaItemTakeInfo_Value(target_take, "D_STARTOFFS",
-      reaper.GetMediaItemTakeInfo_Value(source_take, "D_STARTOFFS"))
+    reaper.SetMediaItemTakeInfo_Value(target_take, 'D_PITCH',
+      reaper.GetMediaItemTakeInfo_Value(source_take, 'D_PITCH'))
+    reaper.SetMediaItemTakeInfo_Value(target_take, 'D_PLAYRATE',
+      reaper.GetMediaItemTakeInfo_Value(source_take, 'D_PLAYRATE'))
+    reaper.SetMediaItemTakeInfo_Value(target_take, 'D_VOL',
+      reaper.GetMediaItemTakeInfo_Value(source_take, 'D_VOL'))
+    reaper.SetMediaItemTakeInfo_Value(target_take, 'D_STARTOFFS',
+      reaper.GetMediaItemTakeInfo_Value(source_take, 'D_STARTOFFS'))
   end
 end
 
@@ -475,8 +475,8 @@ function M.update_container_bounds(container)
   for _, item_ref in ipairs(container.items) do
     local item = State.find_item_by_guid(item_ref.guid)
     if item then
-      local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
-      local len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+      local pos = reaper.GetMediaItemInfo_Value(item, 'D_POSITION')
+      local len = reaper.GetMediaItemInfo_Value(item, 'D_LENGTH')
       local item_end = pos + len
 
       if pos < min_pos then min_pos = pos end
@@ -494,7 +494,7 @@ end
 function M.delete_container(container_id)
   reaper.Undo_BeginBlock()
   State.remove_container(container_id)
-  reaper.Undo_EndBlock("Delete Media Container", -1)
+  reaper.Undo_EndBlock('Delete Media Container', -1)
 end
 
 -- Get container at position

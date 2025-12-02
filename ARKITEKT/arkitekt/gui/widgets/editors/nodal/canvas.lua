@@ -23,7 +23,7 @@ local hexrgb = Colors.hexrgb
 local M = {}
 
 M.VIEWPORT_CONFIG = {
-  border_color = hexrgb("#000000"),
+  border_color = hexrgb('#000000'),
   border_thickness = 2,
   rounding = 8,
   inset = 1,  -- Inset from actual bounds to prevent clipping
@@ -136,7 +136,7 @@ function M.render(canvas, ctx, bounds_x, bounds_y, bounds_w, bounds_h)
   
   -- Draw background color
   ImGui.DrawList_AddRectFilled(dl, viewport_x, viewport_y, viewport_x + viewport_w, viewport_y + viewport_h, 
-    canvas.config.bg_color or hexrgb("#1A1A1A"), M.VIEWPORT_CONFIG.rounding)
+    canvas.config.bg_color or hexrgb('#1A1A1A'), M.VIEWPORT_CONFIG.rounding)
   
   -- Draw grid pattern - ensure it covers the full canvas bounds
   M.render_grid(canvas, ctx, dl, viewport_x, viewport_y, viewport_w, viewport_h)
@@ -231,7 +231,7 @@ function M.render_container(canvas, ctx, dl)
     container_world_x + container_world_w, 
     container_world_y + container_world_h)
   
-  ImGui.DrawList_AddRect(dl, screen_x1, screen_y1, screen_x2, screen_y2, hexrgb("#404040AA"), 4, 0, 1.5)
+  ImGui.DrawList_AddRect(dl, screen_x1, screen_y1, screen_x2, screen_y2, hexrgb('#404040AA'), 4, 0, 1.5)
 end
 
 function M.render_nodes(canvas, ctx)
@@ -272,7 +272,7 @@ end
 
 function M.render_node_interaction(canvas, ctx, node, node_index, screen_x, screen_y, screen_w, screen_h)
   ImGui.SetCursorScreenPos(ctx, screen_x, screen_y)
-  ImGui.InvisibleButton(ctx, "##node_" .. node.guid, screen_w, screen_h)
+  ImGui.InvisibleButton(ctx, '##node_' .. node.guid, screen_w, screen_h)
   
   if ImGui.IsItemHovered(ctx) then
     canvas.hovered_node = node
@@ -314,7 +314,7 @@ function M.render_connections(canvas, ctx)
   end
   
   for _, conn in ipairs(canvas.connections) do
-    if conn.type == "trigger" then
+    if conn.type == 'trigger' then
       ConnectionRenderer.render(ctx, conn, scaled_nodes, canvas.config)
     end
   end
@@ -406,7 +406,7 @@ function M.update_hover_states(canvas, ctx, mx, my)
   end
   
   for _, conn in ipairs(canvas.connections) do
-    if conn.type == "trigger" and Connection.is_point_on_line(conn, scaled_nodes, canvas.config, mx, my) then
+    if conn.type == 'trigger' and Connection.is_point_on_line(conn, scaled_nodes, canvas.config, mx, my) then
       conn.hovered = true
       canvas.hovered_connection = conn
     end
@@ -469,7 +469,7 @@ function M.handle_input(canvas, ctx, mx, my)
   end
   
   if canvas.hovered_port and ImGui.IsMouseClicked(ctx, 0) then
-    if canvas.hovered_port.direction == "out" then
+    if canvas.hovered_port.direction == 'out' then
       local screen_x, screen_y = Viewport.world_to_screen(canvas.viewport, 
         canvas.hovered_port.x, canvas.hovered_port.y)
       

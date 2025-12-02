@@ -73,7 +73,7 @@ local _ellipsis_cache = { width = nil, ctx = nil }
 -- Truncate text to fit width
 -- OPTIMIZED: Binary search truncation (O(log n) instead of O(n) CalcTextSize calls)
 function M.truncate_text(ctx, text, max_width)
-  if not text or max_width <= 0 then return "" end
+  if not text or max_width <= 0 then return '' end
 
   -- PERF: Quick length-based estimate to skip CalcTextSize for short text
   -- Use very conservative estimate: 12px per char covers most wide characters
@@ -87,12 +87,12 @@ function M.truncate_text(ctx, text, max_width)
 
   -- PERF: Cache ellipsis width per context
   if _ellipsis_cache.ctx ~= ctx then
-    _ellipsis_cache.width = ImGui.CalcTextSize(ctx, "...")
+    _ellipsis_cache.width = ImGui.CalcTextSize(ctx, '...')
     _ellipsis_cache.ctx = ctx
   end
   local ellipsis_width = _ellipsis_cache.width
 
-  if max_width <= ellipsis_width then return "" end
+  if max_width <= ellipsis_width then return '' end
 
   local available_width = max_width - ellipsis_width
 
@@ -112,9 +112,9 @@ function M.truncate_text(ctx, text, max_width)
   end
 
   if best > 0 then
-    return text:sub(1, best) .. "..."
+    return text:sub(1, best) .. '...'
   end
-  return "..."
+  return '...'
 end
 
 -- Get dark waveform color from base color (uses palette for theme-reactive values)
@@ -459,7 +459,7 @@ function M.get_text_color(muted_factor, config)
 end
 
 -- PERF: Cache for badge text dimensions (index/total -> {width, height})
--- Badge text is always "N/M" format, so limited combinations
+-- Badge text is always 'N/M' format, so limited combinations
 local _badge_size_cache = {}
 local _badge_size_cache_ctx = nil
 
@@ -614,12 +614,12 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
   local badge_text, bw, bh
   if show_badge and total and total > 1 then
     -- PERF: Cache badge text dimensions by index/total combo
-    local cache_key = index * 10000 + total  -- Simple key for "N/M" where N,M < 10000
+    local cache_key = index * 10000 + total  -- Simple key for 'N/M' where N,M < 10000
     local cached = _badge_size_cache[cache_key]
     if cached then
       badge_text, bw, bh = cached[1], cached[2], cached[3]
     else
-      badge_text = string.format("%d/%d", index or 1, total)
+      badge_text = string.format('%d/%d', index or 1, total)
       bw, bh = ImGui.CalcTextSize(ctx, badge_text)
       _badge_size_cache[cache_key] = {badge_text, bw, bh}
     end
@@ -647,7 +647,7 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
   -- Use custom text color if provided, otherwise use primary color
   -- PERF: Inlined text rendering - bypasses Ark.Draw.text function call overhead
   local final_text_color = text_color or c.text_primary_color
-  DrawList_AddText(dl, snap(text_x), snap(text_y), with_alpha(final_text_color, text_alpha), truncated_name or "")
+  DrawList_AddText(dl, snap(text_x), snap(text_y), with_alpha(final_text_color, text_alpha), truncated_name or '')
 
   -- Render cycle badge (vertically centered in header)
   -- PERF: Inlined badge rendering - bypasses Ark.Badge.clickable overhead

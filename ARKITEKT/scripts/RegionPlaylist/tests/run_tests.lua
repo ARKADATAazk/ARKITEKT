@@ -15,10 +15,10 @@ function M.run_all()
   local results = {}
 
   -- Run each registered suite
-  results.region = TestRunner.run("RegionPlaylist.domain.region")
-  results.playlist = TestRunner.run("RegionPlaylist.domain.playlist")
-  results.ui_preferences = TestRunner.run("RegionPlaylist.ui.state.preferences")
-  results.dependency = TestRunner.run("RegionPlaylist.domain.dependency")
+  results.region = TestRunner.run('RegionPlaylist.domain.region')
+  results.playlist = TestRunner.run('RegionPlaylist.domain.playlist')
+  results.ui_preferences = TestRunner.run('RegionPlaylist.ui.state.preferences')
+  results.dependency = TestRunner.run('RegionPlaylist.domain.dependency')
 
   -- Calculate totals
   local total = 0
@@ -44,7 +44,7 @@ end
 --- @param domain_name string Domain name (region, playlist, ui_preferences, dependency)
 --- @return table results Test results for that domain
 function M.run_domain(domain_name)
-  local suite_name = "RegionPlaylist.domains." .. domain_name
+  local suite_name = 'RegionPlaylist.domains.' .. domain_name
   return TestRunner.run(suite_name)
 end
 

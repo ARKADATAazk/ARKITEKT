@@ -21,7 +21,7 @@ local function expand_items(sequence, playlist, get_playlist_by_id, context)
 
   for _, item in ipairs(playlist.items) do
     if item and item.enabled ~= false then
-      if item.type == "playlist" and item.playlist_id then
+      if item.type == 'playlist' and item.playlist_id then
         local nested_id = item.playlist_id
         local reps = normalize_loops(item.reps)
 
@@ -73,7 +73,7 @@ local function expand_items(sequence, playlist, get_playlist_by_id, context)
               -- Add nested ranges with proper offset for this repetition
               for nested_key, nested_range in pairs(new_nested_ranges) do
                 local offset = rep_start - 1
-                local unique_key = (rep > 1) and (nested_key .. "_rep" .. rep) or nested_key
+                local unique_key = (rep > 1) and (nested_key .. '_rep' .. rep) or nested_key
                 context.playlist_map[unique_key] = {
                   start_idx = nested_range.start_idx + offset,
                   end_idx = nested_range.end_idx + offset,
@@ -93,7 +93,7 @@ local function expand_items(sequence, playlist, get_playlist_by_id, context)
             end
           end
         end
-      elseif item.type == "region" and item.rid then
+      elseif item.type == 'region' and item.rid then
         local reps = normalize_loops(item.reps)
         -- All items now have UUID keys from controller
         local key = item.key
@@ -129,27 +129,27 @@ function SequenceExpander.expand_playlist(playlist, get_playlist_by_id)
 end
 
 function SequenceExpander.debug_print_sequence(sequence, get_region_by_rid)
-  Logger.info("SEQUENCER", "=== PLAYBACK SEQUENCE ===")
+  Logger.info('SEQUENCER', '=== PLAYBACK SEQUENCE ===')
   for index, entry in ipairs(sequence or {}) do
-    local region_name = "(unknown)"
+    local region_name = '(unknown)'
     if get_region_by_rid then
       local region = get_region_by_rid(entry.rid)
-      if region and region.name and region.name ~= "" then
+      if region and region.name and region.name ~= '' then
         region_name = string.format("'%s'", region.name)
       end
     end
 
-    Logger.info("SEQUENCER", "[%d] rid=%s %s (loop %d/%d) key=%s",
+    Logger.info('SEQUENCER', '[%d] rid=%s %s (loop %d/%d) key=%s',
       index,
-      tostring(entry.rid or "nil"),
+      tostring(entry.rid or 'nil'),
       region_name,
       entry.loop or 1,
       entry.total_loops or 1,
-      tostring(entry.item_key or "")
+      tostring(entry.item_key or '')
     )
   end
 
-  Logger.info("SEQUENCER", "=== TOTAL: %d entries ===", #(sequence or {}))
+  Logger.info('SEQUENCER', '=== TOTAL: %d entries ===', #(sequence or {}))
 end
 
 return SequenceExpander

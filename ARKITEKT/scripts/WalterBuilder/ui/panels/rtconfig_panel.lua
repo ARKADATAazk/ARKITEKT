@@ -34,8 +34,8 @@ function M.new(opts)
     selected_layout = nil,
     selected_macro = nil,
     show_raw = false,
-    filter_text = "",
-    current_context = "tcp",  -- tcp, mcp, envcp, trans
+    filter_text = '',
+    current_context = 'tcp',  -- tcp, mcp, envcp, trans
 
     -- Splitter state
     tree_width = 200,
@@ -126,35 +126,35 @@ end
 -- Draw summary section
 function Panel:draw_summary(ctx)
   if not self.rtconfig then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CC6666"))
-    ImGui.Text(ctx, self.load_error or "No rtconfig loaded")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CC6666'))
+    ImGui.Text(ctx, self.load_error or 'No rtconfig loaded')
     ImGui.PopStyleColor(ctx)
     return
   end
 
   local summary = RtconfigParser.get_summary(self.rtconfig)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CC88"))
-  ImGui.Text(ctx, "WALTER v" .. (summary.version or "?"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CC88'))
+  ImGui.Text(ctx, 'WALTER v' .. (summary.version or '?'))
   ImGui.PopStyleColor(ctx)
 
   ImGui.SameLine(ctx, 0, 20)
-  ImGui.Text(ctx, string.format("%d sections", summary.section_count))
+  ImGui.Text(ctx, string.format('%d sections', summary.section_count))
 
   ImGui.SameLine(ctx, 0, 20)
-  ImGui.Text(ctx, string.format("%d macros", summary.macro_count))
+  ImGui.Text(ctx, string.format('%d macros', summary.macro_count))
 
   ImGui.SameLine(ctx, 0, 20)
-  ImGui.Text(ctx, string.format("%d layouts", summary.layout_count))
+  ImGui.Text(ctx, string.format('%d layouts', summary.layout_count))
 
   -- Element breakdown
-  ImGui.Text(ctx, string.format("Elements: %d total (%d simple, %d computed)",
+  ImGui.Text(ctx, string.format('Elements: %d total (%d simple, %d computed)',
     summary.element_count,
     summary.simple_element_count,
     summary.computed_element_count))
 end
 
--- Draw the "Load to Canvas" controls
+-- Draw the 'Load to Canvas' controls
 -- Returns action table if user clicked load, nil otherwise
 function Panel:draw_load_controls(ctx)
   if not self.rtconfig then
@@ -165,16 +165,16 @@ function Panel:draw_load_controls(ctx)
   ImGui.Dummy(ctx, 0, 4)
 
   -- Context selector
-  ImGui.Text(ctx, "Context:")
+  ImGui.Text(ctx, 'Context:')
   ImGui.SameLine(ctx)
 
-  local contexts = { "tcp", "mcp", "envcp", "trans" }
+  local contexts = { 'tcp', 'mcp', 'envcp', 'trans' }
   for i, ctx_name in ipairs(contexts) do
     if i > 1 then ImGui.SameLine(ctx) end
 
     local is_selected = self.current_context == ctx_name
     if is_selected then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#4488AA"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb('#4488AA'))
     end
 
     if ImGui.SmallButton(ctx, ctx_name:upper()) then
@@ -193,35 +193,35 @@ function Panel:draw_load_controls(ctx)
     local stats = self.conversion_stats
 
     -- Simple elements (fully understood)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CC88"))
-    ImGui.Text(ctx, string.format("Simple: %d", stats.simple))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CC88'))
+    ImGui.Text(ctx, string.format('Simple: %d', stats.simple))
     ImGui.PopStyleColor(ctx)
 
     if ImGui.IsItemHovered(ctx) then
       ImGui.BeginTooltip(ctx)
-      ImGui.Text(ctx, "Elements with literal coordinates")
-      ImGui.Text(ctx, "These can be visualized accurately")
+      ImGui.Text(ctx, 'Elements with literal coordinates')
+      ImGui.Text(ctx, 'These can be visualized accurately')
       ImGui.EndTooltip(ctx)
     end
 
     ImGui.SameLine(ctx, 0, 15)
 
     -- Computed elements (expressions)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCC88"))
-    ImGui.Text(ctx, string.format("Computed: %d", stats.computed))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CCCC88'))
+    ImGui.Text(ctx, string.format('Computed: %d', stats.computed))
     ImGui.PopStyleColor(ctx)
 
     if ImGui.IsItemHovered(ctx) then
       ImGui.BeginTooltip(ctx)
-      ImGui.Text(ctx, "Elements with expressions (w<100, +, etc.)")
-      ImGui.Text(ctx, "Shown with placeholder coords")
+      ImGui.Text(ctx, 'Elements with expressions (w<100, +, etc.)')
+      ImGui.Text(ctx, 'Shown with placeholder coords')
       ImGui.EndTooltip(ctx)
     end
 
     if stats.cleared > 0 then
       ImGui.SameLine(ctx, 0, 15)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
-      ImGui.Text(ctx, string.format("Cleared: %d", stats.cleared))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+      ImGui.Text(ctx, string.format('Cleared: %d', stats.cleared))
       ImGui.PopStyleColor(ctx)
     end
   end
@@ -230,7 +230,7 @@ function Panel:draw_load_controls(ctx)
 
   -- Force Visible checkbox
   local force_visible = WalterSettings.get_force_visible()
-  local changed, new_val = ImGui.Checkbox(ctx, "Force Visible", force_visible)
+  local changed, new_val = ImGui.Checkbox(ctx, 'Force Visible', force_visible)
   if changed then
     WalterSettings.set_force_visible(new_val)
     WalterSettings.maybe_flush()
@@ -238,10 +238,10 @@ function Panel:draw_load_controls(ctx)
 
   if ImGui.IsItemHovered(ctx) then
     ImGui.BeginTooltip(ctx)
-    ImGui.Text(ctx, "Show all elements regardless of size")
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "Many elements have 0x0 size due to conditional")
-    ImGui.Text(ctx, "logic. Enable to see their positions anyway.")
+    ImGui.Text(ctx, 'Show all elements regardless of size')
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.Text(ctx, 'Many elements have 0x0 size due to conditional')
+    ImGui.Text(ctx, 'logic. Enable to see their positions anyway.')
     ImGui.PopStyleColor(ctx)
     ImGui.EndTooltip(ctx)
   end
@@ -254,7 +254,7 @@ function Panel:draw_load_controls(ctx)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, 0.5)
   end
 
-  local load_clicked = ImGui.Button(ctx, "Load to Canvas", -1, 28)
+  local load_clicked = ImGui.Button(ctx, 'Load to Canvas', -1, 28)
 
   if not can_load then
     ImGui.PopStyleVar(ctx)
@@ -264,7 +264,7 @@ function Panel:draw_load_controls(ctx)
     local elements = self:get_loadable_elements()
     if elements and #elements > 0 then
       return {
-        type = "load_to_canvas",
+        type = 'load_to_canvas',
         elements = elements,
         context = self.current_context,
         stats = self.conversion_stats,
@@ -287,9 +287,9 @@ function Panel:draw_context_controls(ctx)
     header_flags = header_flags | ImGui.TreeNodeFlags_Framed
   end
 
-  local header_label = "Context Variables"
+  local header_label = 'Context Variables'
   if RtconfigConverter.is_context_modified() then
-    header_label = header_label .. " (modified)"
+    header_label = header_label .. ' (modified)'
   end
 
   if ImGui.CollapsingHeader(ctx, header_label, header_flags) then
@@ -297,7 +297,7 @@ function Panel:draw_context_controls(ctx)
 
     -- Reset button if modified
     if RtconfigConverter.is_context_modified() then
-      if ImGui.SmallButton(ctx, "Reset to Defaults") then
+      if ImGui.SmallButton(ctx, 'Reset to Defaults') then
         RtconfigConverter.reset_context()
         changed = true
       end
@@ -305,12 +305,12 @@ function Panel:draw_context_controls(ctx)
     end
 
     -- Dimensions section
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CCFF"))
-    ImGui.Text(ctx, "Dimensions")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CCFF'))
+    ImGui.Text(ctx, 'Dimensions')
     ImGui.PopStyleColor(ctx)
 
     for _, var in ipairs(vars) do
-      if var.type == "int" then
+      if var.type == 'int' then
         local current = RtconfigConverter.get_context_value(var.key)
         ImGui.PushItemWidth(ctx, 100)
         local val_changed, new_val = ImGui.SliderInt(ctx, var.label, current, var.min, var.max)
@@ -319,10 +319,10 @@ function Panel:draw_context_controls(ctx)
           RtconfigConverter.set_context_value(var.key, new_val)
           changed = true
         end
-      elseif var.type == "float" then
+      elseif var.type == 'float' then
         local current = RtconfigConverter.get_context_value(var.key)
         ImGui.PushItemWidth(ctx, 100)
-        local val_changed, new_val = ImGui.SliderDouble(ctx, var.label, current, var.min, var.max, "%.1f")
+        local val_changed, new_val = ImGui.SliderDouble(ctx, var.label, current, var.min, var.max, '%.1f')
         ImGui.PopItemWidth(ctx)
         if val_changed then
           RtconfigConverter.set_context_value(var.key, new_val)
@@ -334,12 +334,12 @@ function Panel:draw_context_controls(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
     -- Visibility toggles section
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CCFF"))
-    ImGui.Text(ctx, "Visibility")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CCFF'))
+    ImGui.Text(ctx, 'Visibility')
     ImGui.PopStyleColor(ctx)
 
     for _, var in ipairs(vars) do
-      if var.type == "bool" and var.key:match("^hide_") then
+      if var.type == 'bool' and var.key:match('^hide_') then
         local current = RtconfigConverter.get_context_value(var.key)
         local val_changed, new_val = ImGui.Checkbox(ctx, var.label, current == 1)
         if val_changed then
@@ -352,12 +352,12 @@ function Panel:draw_context_controls(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
     -- Track state section
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CCFF"))
-    ImGui.Text(ctx, "Track State")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CCFF'))
+    ImGui.Text(ctx, 'Track State')
     ImGui.PopStyleColor(ctx)
 
     for _, var in ipairs(vars) do
-      if var.type == "bool" and not var.key:match("^hide_") then
+      if var.type == 'bool' and not var.key:match('^hide_') then
         local current = RtconfigConverter.get_context_value(var.key)
         local val_changed, new_val = ImGui.Checkbox(ctx, var.label, current == 1)
         if val_changed then
@@ -377,7 +377,7 @@ end
 function Panel:draw_sections(ctx)
   if not self.rtconfig then return end
 
-  if ImGui.CollapsingHeader(ctx, "Sections (" .. #self.rtconfig.sections .. ")", ImGui.TreeNodeFlags_DefaultOpen) then
+  if ImGui.CollapsingHeader(ctx, 'Sections (' .. #self.rtconfig.sections .. ')', ImGui.TreeNodeFlags_DefaultOpen) then
     ImGui.Indent(ctx, 8)
 
     for i, section in ipairs(self.rtconfig.sections) do
@@ -387,8 +387,8 @@ function Panel:draw_sections(ctx)
         flags = flags | ImGui.TreeNodeFlags_Selected
       end
 
-      local label = section.name .. " (" .. #section.items .. " items)"
-      if ImGui.TreeNodeEx(ctx, "sec_" .. i, label, flags) then
+      local label = section.name .. ' (' .. #section.items .. ' items)'
+      if ImGui.TreeNodeEx(ctx, 'sec_' .. i, label, flags) then
         ImGui.TreePop(ctx)
       end
 
@@ -407,7 +407,7 @@ end
 function Panel:draw_macros(ctx)
   if not self.rtconfig then return end
 
-  if ImGui.CollapsingHeader(ctx, "Macros (" .. #self.rtconfig.macros .. ")") then
+  if ImGui.CollapsingHeader(ctx, 'Macros (' .. #self.rtconfig.macros .. ')') then
     ImGui.Indent(ctx, 8)
 
     for i, macro in ipairs(self.rtconfig.macros) do
@@ -417,13 +417,13 @@ function Panel:draw_macros(ctx)
         flags = flags | ImGui.TreeNodeFlags_Selected
       end
 
-      local params_str = table.concat(macro.params, " ")
+      local params_str = table.concat(macro.params, ' ')
       local label = macro.name
       if #macro.params > 0 then
-        label = label .. " (" .. #macro.params .. " params)"
+        label = label .. ' (' .. #macro.params .. ' params)'
       end
 
-      if ImGui.TreeNodeEx(ctx, "mac_" .. i, label, flags) then
+      if ImGui.TreeNodeEx(ctx, 'mac_' .. i, label, flags) then
         ImGui.TreePop(ctx)
       end
 
@@ -436,9 +436,9 @@ function Panel:draw_macros(ctx)
       -- Tooltip with params
       if ImGui.IsItemHovered(ctx) and #macro.params > 0 then
         ImGui.BeginTooltip(ctx)
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-        ImGui.Text(ctx, "Parameters: " .. params_str)
-        ImGui.Text(ctx, "Body: " .. #macro.body .. " lines")
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+        ImGui.Text(ctx, 'Parameters: ' .. params_str)
+        ImGui.Text(ctx, 'Body: ' .. #macro.body .. ' lines')
         ImGui.PopStyleColor(ctx)
         ImGui.EndTooltip(ctx)
       end
@@ -464,11 +464,11 @@ function Panel:draw_layouts_recursive(ctx, layouts, depth)
 
     local label = layout.name
     if layout.dpi then
-      label = label .. " [" .. layout.dpi .. "%]"
+      label = label .. ' [' .. layout.dpi .. '%]'
     end
-    label = label .. " (" .. #layout.items .. " items)"
+    label = label .. ' (' .. #layout.items .. ' items)'
 
-    local node_open = ImGui.TreeNodeEx(ctx, "layout_" .. depth .. "_" .. i, label, flags)
+    local node_open = ImGui.TreeNodeEx(ctx, 'layout_' .. depth .. '_' .. i, label, flags)
 
     if ImGui.IsItemClicked(ctx) then
       self.selected_layout = layout
@@ -488,7 +488,7 @@ end
 function Panel:draw_layouts(ctx)
   if not self.rtconfig then return end
 
-  if ImGui.CollapsingHeader(ctx, "Layouts (" .. #self.rtconfig.layouts .. ")", ImGui.TreeNodeFlags_DefaultOpen) then
+  if ImGui.CollapsingHeader(ctx, 'Layouts (' .. #self.rtconfig.layouts .. ')', ImGui.TreeNodeFlags_DefaultOpen) then
     ImGui.Indent(ctx, 8)
     self:draw_layouts_recursive(ctx, self.rtconfig.layouts, 0)
     ImGui.Unindent(ctx, 8)
@@ -504,21 +504,21 @@ function Panel:draw_detail(ctx)
   elseif self.selected_macro then
     self:draw_macro_detail(ctx, self.selected_macro)
   else
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
-    ImGui.Text(ctx, "Select a section, layout, or macro to view details")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+    ImGui.Text(ctx, 'Select a section, layout, or macro to view details')
     ImGui.PopStyleColor(ctx)
   end
 end
 
 function Panel:draw_section_detail(ctx, section)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CCFF"))
-  ImGui.Text(ctx, "Section: " .. section.name)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CCFF'))
+  ImGui.Text(ctx, 'Section: ' .. section.name)
   ImGui.PopStyleColor(ctx)
   ImGui.Separator(ctx)
 
   -- Filter
   ImGui.PushItemWidth(ctx, -1)
-  local changed, text = ImGui.InputTextWithHint(ctx, "##filter", "Filter items...", self.filter_text)
+  local changed, text = ImGui.InputTextWithHint(ctx, '##filter', 'Filter items...', self.filter_text)
   if changed then self.filter_text = text end
   ImGui.PopItemWidth(ctx)
 
@@ -527,30 +527,30 @@ function Panel:draw_section_detail(ctx, section)
   -- Items list
   local filter_lower = self.filter_text:lower()
   for _, item in ipairs(section.items) do
-    local show = filter_lower == ""
-    local display = ""
+    local show = filter_lower == ''
+    local display = ''
 
     if item.type == RtconfigParser.TOKEN.SET then
-      display = "set " .. item.element
+      display = 'set ' .. item.element
       if item.is_simple then
-        display = display .. " [simple]"
+        display = display .. ' [simple]'
       else
-        display = display .. " [computed]"
+        display = display .. ' [computed]'
       end
       show = show or item.element:lower():find(filter_lower, 1, true)
     elseif item.type == RtconfigParser.TOKEN.CLEAR then
-      display = "clear " .. item.element
+      display = 'clear ' .. item.element
       show = show or item.element:lower():find(filter_lower, 1, true)
     elseif item.type == RtconfigParser.TOKEN.FRONT then
-      display = "front " .. table.concat(item.elements, " ")
+      display = 'front ' .. table.concat(item.elements, ' ')
     elseif item.type == RtconfigParser.TOKEN.MACRO_CALL then
-      display = item.macro .. " ..."
+      display = item.macro .. ' ...'
     elseif item.type == RtconfigParser.TOKEN.COMMENT then
       display = item.text:sub(1, 60)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
     elseif item.type == RtconfigParser.TOKEN.RAW then
-      display = (item.code or item.text or ""):sub(1, 60)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+      display = (item.code or item.text or ''):sub(1, 60)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
     end
 
     if show then
@@ -564,14 +564,14 @@ function Panel:draw_section_detail(ctx, section)
       if item.type == RtconfigParser.TOKEN.SET and ImGui.IsItemHovered(ctx) then
         ImGui.BeginTooltip(ctx)
         ImGui.Text(ctx, item.element)
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
         if item.is_simple and item.coords then
-          ImGui.Text(ctx, string.format("Coords: [%s]", table.concat(item.coords, " ")))
+          ImGui.Text(ctx, string.format('Coords: [%s]', table.concat(item.coords, ' ')))
         else
           -- Truncate long expressions
           local val = item.value
-          if #val > 80 then val = val:sub(1, 77) .. "..." end
-          ImGui.Text(ctx, "Value: " .. val)
+          if #val > 80 then val = val:sub(1, 77) .. '...' end
+          ImGui.Text(ctx, 'Value: ' .. val)
         end
         ImGui.PopStyleColor(ctx)
         ImGui.EndTooltip(ctx)
@@ -581,47 +581,47 @@ function Panel:draw_section_detail(ctx, section)
 end
 
 function Panel:draw_layout_detail(ctx, layout)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFCC88"))
-  ImGui.Text(ctx, "Layout: " .. layout.name)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFCC88'))
+  ImGui.Text(ctx, 'Layout: ' .. layout.name)
   if layout.dpi then
     ImGui.SameLine(ctx)
-    ImGui.Text(ctx, "[" .. layout.dpi .. "%]")
+    ImGui.Text(ctx, '[' .. layout.dpi .. '%]')
   end
   ImGui.PopStyleColor(ctx)
 
   if layout.parent then
     ImGui.SameLine(ctx, 0, 10)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
-    ImGui.Text(ctx, "(child of " .. layout.parent.name .. ")")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+    ImGui.Text(ctx, '(child of ' .. layout.parent.name .. ')')
     ImGui.PopStyleColor(ctx)
   end
 
   ImGui.Separator(ctx)
 
   -- Show items in this layout
-  ImGui.Text(ctx, #layout.items .. " items:")
+  ImGui.Text(ctx, #layout.items .. ' items:')
   ImGui.Dummy(ctx, 0, 4)
 
   for _, item in ipairs(layout.items) do
-    local display = ""
+    local display = ''
 
     if item.type == RtconfigParser.TOKEN.SET then
       if item.is_simple then
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CC88"))
-        display = "set " .. item.element .. " [literal]"
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CC88'))
+        display = 'set ' .. item.element .. ' [literal]'
       else
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCC88"))
-        display = "set " .. item.element .. " [expr]"
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CCCC88'))
+        display = 'set ' .. item.element .. ' [expr]'
       end
       ImGui.Text(ctx, display)
       ImGui.PopStyleColor(ctx)
     elseif item.type == RtconfigParser.TOKEN.MACRO_CALL then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CC88CC"))
-      ImGui.Text(ctx, item.macro .. "(" .. table.concat(item.args or {}, ", ") .. ")")
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CC88CC'))
+      ImGui.Text(ctx, item.macro .. '(' .. table.concat(item.args or {}, ', ') .. ')')
       ImGui.PopStyleColor(ctx)
     elseif item.type == RtconfigParser.TOKEN.RAW then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
-      ImGui.Text(ctx, (item.code or ""):sub(1, 50))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+      ImGui.Text(ctx, (item.code or ''):sub(1, 50))
       ImGui.PopStyleColor(ctx)
     end
   end
@@ -629,19 +629,19 @@ function Panel:draw_layout_detail(ctx, layout)
   -- Show children count
   if layout.children and #layout.children > 0 then
     ImGui.Dummy(ctx, 0, 8)
-    ImGui.Text(ctx, #layout.children .. " nested layouts")
+    ImGui.Text(ctx, #layout.children .. ' nested layouts')
   end
 end
 
 function Panel:draw_macro_detail(ctx, macro)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CC88FF"))
-  ImGui.Text(ctx, "Macro: " .. macro.name)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CC88FF'))
+  ImGui.Text(ctx, 'Macro: ' .. macro.name)
   ImGui.PopStyleColor(ctx)
   ImGui.Separator(ctx)
 
   -- Parameters
   if #macro.params > 0 then
-    ImGui.Text(ctx, "Parameters:")
+    ImGui.Text(ctx, 'Parameters:')
     ImGui.Indent(ctx, 8)
     for _, p in ipairs(macro.params) do
       ImGui.BulletText(ctx, p)
@@ -651,18 +651,18 @@ function Panel:draw_macro_detail(ctx, macro)
   end
 
   -- Body preview
-  ImGui.Text(ctx, "Body (" .. #macro.body .. " lines):")
+  ImGui.Text(ctx, 'Body (' .. #macro.body .. ' lines):')
   ImGui.Dummy(ctx, 0, 2)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
   local max_lines = 20
   for i, line in ipairs(macro.body) do
     if i > max_lines then
-      ImGui.Text(ctx, "... " .. (#macro.body - max_lines) .. " more lines")
+      ImGui.Text(ctx, '... ' .. (#macro.body - max_lines) .. ' more lines')
       break
     end
-    local text = line.code or line.text or ""
-    if #text > 70 then text = text:sub(1, 67) .. "..." end
+    local text = line.code or line.text or ''
+    if #text > 70 then text = text:sub(1, 67) .. '...' end
     ImGui.Text(ctx, text)
   end
   ImGui.PopStyleColor(ctx)
@@ -674,17 +674,17 @@ function Panel:draw(ctx)
   local result = nil
 
   -- Load buttons
-  if ImGui.Button(ctx, "Load from Theme", 120, 0) then
+  if ImGui.Button(ctx, 'Load from Theme', 120, 0) then
     self:load_from_theme()
   end
 
   ImGui.SameLine(ctx)
 
-  if ImGui.Button(ctx, "Load Reference", 100, 0) then
+  if ImGui.Button(ctx, 'Load Reference', 100, 0) then
     -- Load the bundled reference rtconfig
-    local script_path = debug.getinfo(1, "S").source:sub(2)
-    local script_dir = script_path:match("(.*[/\\])")
-    local ref_path = script_dir:gsub("ui[/\\]panels[/\\]$", "") .. "reference/rtconfig.txt"
+    local script_path = debug.getinfo(1, 'S').source:sub(2)
+    local script_dir = script_path:match('(.*[/\\])')
+    local ref_path = script_dir:gsub('ui[/\\]panels[/\\]$', '') .. 'reference/rtconfig.txt'
     self:load_from_file(ref_path)
   end
 
@@ -692,13 +692,13 @@ function Panel:draw(ctx)
 
   -- Theme info
   if self.theme_info and self.theme_info.theme_name then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "Theme: " .. self.theme_info.theme_name)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.Text(ctx, 'Theme: ' .. self.theme_info.theme_name)
     ImGui.PopStyleColor(ctx)
   elseif self.theme_info and self.theme_info.rtconfig_path then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    local filename = self.theme_info.rtconfig_path:match("[^/\\]+$") or "rtconfig.txt"
-    ImGui.Text(ctx, "File: " .. filename)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    local filename = self.theme_info.rtconfig_path:match('[^/\\]+$') or 'rtconfig.txt'
+    ImGui.Text(ctx, 'File: ' .. filename)
     ImGui.PopStyleColor(ctx)
   end
 
@@ -722,7 +722,7 @@ function Panel:draw(ctx)
       self:update_conversion()
       -- Signal that canvas should reload
       if not result then
-        result = { type = "context_changed" }
+        result = { type = 'context_changed' }
       end
     end
   end
@@ -740,7 +740,7 @@ function Panel:draw(ctx)
   local detail_w = avail_w - self.tree_width - splitter_w
 
   -- Tree panel
-  if ImGui.BeginChild(ctx, "rtconfig_tree", self.tree_width, avail_h - 20, ImGui.ChildFlags_Borders, 0) then
+  if ImGui.BeginChild(ctx, 'rtconfig_tree', self.tree_width, avail_h - 20, ImGui.ChildFlags_Borders, 0) then
     self:draw_sections(ctx)
     self:draw_macros(ctx)
     self:draw_layouts(ctx)
@@ -751,7 +751,7 @@ function Panel:draw(ctx)
 
   -- Splitter button
   local splitter_x, splitter_y = ImGui.GetCursorScreenPos(ctx)
-  ImGui.Button(ctx, "##rtconfig_splitter", splitter_w, avail_h - 20)
+  ImGui.Button(ctx, '##rtconfig_splitter', splitter_w, avail_h - 20)
 
   local is_hovered = ImGui.IsItemHovered(ctx)
   local is_active = ImGui.IsItemActive(ctx)
@@ -771,13 +771,13 @@ function Panel:draw(ctx)
 
   -- Draw splitter visual
   local dl = ImGui.GetWindowDrawList(ctx)
-  local splitter_color = (is_hovered or is_active) and hexrgb("#888888") or hexrgb("#555555")
+  local splitter_color = (is_hovered or is_active) and hexrgb('#888888') or hexrgb('#555555')
   ImGui.DrawList_AddRectFilled(dl, splitter_x, splitter_y, splitter_x + splitter_w, splitter_y + avail_h - 20, splitter_color)
 
   ImGui.SameLine(ctx, 0, 0)
 
   -- Detail panel
-  if ImGui.BeginChild(ctx, "rtconfig_detail", detail_w, avail_h - 20, ImGui.ChildFlags_Borders, 0) then
+  if ImGui.BeginChild(ctx, 'rtconfig_detail', detail_w, avail_h - 20, ImGui.ChildFlags_Borders, 0) then
     ImGui.Indent(ctx, 4)
     self:draw_detail(ctx)
     ImGui.Unindent(ctx, 4)

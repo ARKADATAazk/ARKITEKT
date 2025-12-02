@@ -58,10 +58,10 @@ function M.create_options(config, state, visualization, animator, disable_animat
       local item_muted = entry.item_muted or false
       local uuid = entry.uuid
       local pool_count = entry.pool_count or 1
-      local track_name = entry.track_name or ""
+      local track_name = entry.track_name or ''
 
       -- Safety check: ensure item_name is a valid string
-      if not item_name or type(item_name) ~= "string" then
+      if not item_name or type(item_name) ~= 'string' then
         goto continue
       end
 
@@ -80,7 +80,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
         local item_has_selected_region = false
         if entry.regions then
           for _, region in ipairs(entry.regions) do
-            local region_name = type(region) == "table" and region.name or region
+            local region_name = type(region) == 'table' and region.name or region
             if state.selected_regions[region_name] then
               item_has_selected_region = true
               break
@@ -120,19 +120,19 @@ function M.create_options(config, state, visualization, animator, disable_animat
     end
 
     -- Apply sorting
-    local sort_mode = state.settings.sort_mode or "none"
+    local sort_mode = state.settings.sort_mode or 'none'
     local sort_reverse = state.settings.sort_reverse or false
 
-    if sort_mode == "length" then
+    if sort_mode == 'length' then
       -- Sort by item length/duration
       table.sort(filtered, function(a, b)
         local a_len = 0
         local b_len = 0
         if a.item then
-          a_len = reaper.GetMediaItemInfo_Value(a.item, "D_LENGTH")
+          a_len = reaper.GetMediaItemInfo_Value(a.item, 'D_LENGTH')
         end
         if b.item then
-          b_len = reaper.GetMediaItemInfo_Value(b.item, "D_LENGTH")
+          b_len = reaper.GetMediaItemInfo_Value(b.item, 'D_LENGTH')
         end
         if sort_reverse then
           return a_len > b_len  -- Longest first
@@ -140,7 +140,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
           return a_len < b_len  -- Shortest first
         end
       end)
-    elseif sort_mode == "color" then
+    elseif sort_mode == 'color' then
       -- Sort by color using library's color comparison
       -- Uses HSL: Hue → Saturation (desc) → Lightness (desc)
       -- Grays (sat < 0.08) are grouped at the end
@@ -151,7 +151,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
           return Ark.Colors.compare_colors(a.color, b.color)
         end
       end)
-    elseif sort_mode == "name" then
+    elseif sort_mode == 'name' then
       -- Sort alphabetically by name
       table.sort(filtered, function(a, b)
         if sort_reverse then
@@ -160,7 +160,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
           return a.name:lower() < b.name:lower()
         end
       end)
-    elseif sort_mode == "pool" then
+    elseif sort_mode == 'pool' then
       -- Sort by pool count (descending), then by name
       table.sort(filtered, function(a, b)
         local a_pool = a.pool_count or 1
@@ -172,7 +172,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
             return a_pool > b_pool  -- Higher pool counts first
           end
         else
-          return (a.name or "") < (b.name or "")  -- Then alphabetically
+          return (a.name or '') < (b.name or '')  -- Then alphabetically
         end
       end)
     end
@@ -238,7 +238,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
 
   -- Grid options (returned for callable API)
   local grid_opts = {
-    id = "audio_items",
+    id = 'audio_items',
     gap = config.TILE.GAP,
     min_col_w = function() return state.get_tile_width() end,
     fixed_tile_h = state.get_tile_height(),
@@ -488,7 +488,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
           if state.is_previewing(item_data.item) then
             state.stop_preview()
           else
-            state.start_preview(item_data.item, "through_track")
+            state.start_preview(item_data.item, 'through_track')
           end
           return
         end
@@ -507,7 +507,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
           if state.is_previewing(item_data.item) then
             state.stop_preview()
           else
-            state.start_preview(item_data.item, "direct")
+            state.start_preview(item_data.item, 'direct')
           end
           return
         end

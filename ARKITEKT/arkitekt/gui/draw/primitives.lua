@@ -25,7 +25,7 @@ function M.centered_text(ctx, text, x1, y1, x2, y2, color)
   local tw, th = ImGui.CalcTextSize(ctx, text)
   local cx = x1 + ((x2 - x1 - tw)//1 * 0.5)
   local cy = y1 + ((y2 - y1 - th)//1 * 0.5)
-  ImGui.DrawList_AddText(dl, cx, cy, color or hexrgb("#FFFFFF"), text)
+  ImGui.DrawList_AddText(dl, cx, cy, color or hexrgb('#FFFFFF'), text)
 end
 
 -- Draw a crisp rectangle (pixel-aligned)
@@ -67,14 +67,14 @@ end
 
 -- Draw left-aligned text
 function M.text(dl, x, y, color, text)
-  ImGui.DrawList_AddText(dl, M.snap(x), M.snap(y), color, text or "")
+  ImGui.DrawList_AddText(dl, M.snap(x), M.snap(y), color, text or '')
 end
 
 -- Draw right-aligned text
 function M.text_right(ctx, x, y, color, text)
   local dl = ImGui.GetWindowDrawList(ctx)
   local tw = select(1, ImGui.CalcTextSize(ctx, text))
-  ImGui.DrawList_AddText(dl, M.snap(x - tw), M.snap(y), color, text or "")
+  ImGui.DrawList_AddText(dl, M.snap(x - tw), M.snap(y), color, text or '')
 end
 
 -- Check if point is in rectangle

@@ -19,7 +19,7 @@ local state = {
   grid_division = Defaults.EUCLIDEAN.GRID_DIVISION,
   note_length = Defaults.EUCLIDEAN.NOTE_LENGTH,
   pattern = {},
-  message = "",
+  message = '',
 }
 
 --- Initialize view
@@ -35,23 +35,23 @@ function M.draw(ctx)
   local ImGui = Ark.ImGui
 
   -- Header
-  ImGui.Text(ctx, "Euclidean Rhythm Generator")
+  ImGui.Text(ctx, 'Euclidean Rhythm Generator')
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
   -- Pattern controls
-  ImGui.Text(ctx, "Pattern:")
+  ImGui.Text(ctx, 'Pattern:')
   local changed = false
 
-  local c1, p = ImGui.SliderInt(ctx, "Pulses", state.pulses, 0, 32)
+  local c1, p = ImGui.SliderInt(ctx, 'Pulses', state.pulses, 0, 32)
   state.pulses = p
   changed = changed or c1
 
-  local c2, s = ImGui.SliderInt(ctx, "Steps", state.steps, 1, 32)
+  local c2, s = ImGui.SliderInt(ctx, 'Steps', state.steps, 1, 32)
   state.steps = s
   changed = changed or c2
 
-  local c3, r = ImGui.SliderInt(ctx, "Rotation", state.rotation, 0, 31)
+  local c3, r = ImGui.SliderInt(ctx, 'Rotation', state.rotation, 0, 31)
   state.rotation = r
   changed = changed or c3
 
@@ -71,31 +71,31 @@ function M.draw(ctx)
   -- Pattern visualization
   local pattern_str = Euclidean.visualize(state.pattern)
   local desc = Euclidean.describe(state.pulses, state.steps, state.rotation)
-  ImGui.Text(ctx, string.format("%s: %s", desc, pattern_str))
+  ImGui.Text(ctx, string.format('%s: %s', desc, pattern_str))
 
   ImGui.Spacing(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
   -- Note controls
-  ImGui.Text(ctx, "MIDI Output:")
-  _, state.note = ImGui.SliderInt(ctx, "Note", state.note, 0, 127)
-  _, state.velocity = ImGui.SliderInt(ctx, "Velocity", state.velocity, 1, 127)
+  ImGui.Text(ctx, 'MIDI Output:')
+  _, state.note = ImGui.SliderInt(ctx, 'Note', state.note, 0, 127)
+  _, state.velocity = ImGui.SliderInt(ctx, 'Velocity', state.velocity, 1, 127)
 
   ImGui.Spacing(ctx)
 
   -- Grid controls
-  ImGui.Text(ctx, "Timing:")
+  ImGui.Text(ctx, 'Timing:')
   local grid_changed
-  grid_changed, state.grid_division = ImGui.SliderDouble(ctx, "Grid Division", state.grid_division, 0.0625, 1.0, "%.4f")
-  _, state.note_length = ImGui.SliderDouble(ctx, "Note Length", state.note_length, 0.0625, 1.0, "%.4f")
+  grid_changed, state.grid_division = ImGui.SliderDouble(ctx, 'Grid Division', state.grid_division, 0.0625, 1.0, '%.4f')
+  _, state.note_length = ImGui.SliderDouble(ctx, 'Note Length', state.note_length, 0.0625, 1.0, '%.4f')
 
   ImGui.Spacing(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
   -- Action buttons
-  if ImGui.Button(ctx, "Generate Pattern", 150, 30) then
+  if ImGui.Button(ctx, 'Generate Pattern', 150, 30) then
     local success, msg = MidiWriter.write_pattern(state.pattern, {
       note = state.note,
       velocity = state.velocity,
@@ -107,13 +107,13 @@ function M.draw(ctx)
 
   ImGui.SameLine(ctx)
 
-  if ImGui.Button(ctx, "Clear Notes", 150, 30) then
+  if ImGui.Button(ctx, 'Clear Notes', 150, 30) then
     local success, msg = MidiWriter.clear_notes()
     state.message = msg
   end
 
   -- Status message
-  if state.message ~= "" then
+  if state.message ~= '' then
     ImGui.Spacing(ctx)
     ImGui.Text(ctx, state.message)
   end

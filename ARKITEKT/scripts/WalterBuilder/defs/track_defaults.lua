@@ -17,32 +17,32 @@ M.HEIGHTS = {
 
 -- Track states
 M.STATES = {
-  NORMAL = "normal",
-  SELECTED = "selected",
-  ARMED = "armed",
-  FOLDER_OPEN = "folder_open",
-  FOLDER_CLOSED = "folder_closed",
+  NORMAL = 'normal',
+  SELECTED = 'selected',
+  ARMED = 'armed',
+  FOLDER_OPEN = 'folder_open',
+  FOLDER_CLOSED = 'folder_closed',
 }
 
 -- Default track colors (simulating REAPER's track colors)
 M.COLORS = {
-  { name = "Default",     color = 0x3A3A3AFF },
-  { name = "Red",         color = 0xCC4444FF },
-  { name = "Orange",      color = 0xCC8844FF },
-  { name = "Yellow",      color = 0xCCCC44FF },
-  { name = "Green",       color = 0x44CC44FF },
-  { name = "Cyan",        color = 0x44CCCCFF },
-  { name = "Blue",        color = 0x4444CCFF },
-  { name = "Purple",      color = 0x8844CCFF },
-  { name = "Pink",        color = 0xCC44AAFF },
+  { name = 'Default',     color = 0x3A3A3AFF },
+  { name = 'Red',         color = 0xCC4444FF },
+  { name = 'Orange',      color = 0xCC8844FF },
+  { name = 'Yellow',      color = 0xCCCC44FF },
+  { name = 'Green',       color = 0x44CC44FF },
+  { name = 'Cyan',        color = 0x44CCCCFF },
+  { name = 'Blue',        color = 0x4444CCFF },
+  { name = 'Purple',      color = 0x8844CCFF },
+  { name = 'Pink',        color = 0xCC44AAFF },
 }
 
 -- Create a default track
 function M.new_track(opts)
   opts = opts or {}
   return {
-    id = opts.id or ("track_" .. tostring(os.time()) .. "_" .. math.random(1000)),
-    name = opts.name or "Track",
+    id = opts.id or ('track_' .. tostring(os.time()) .. '_' .. math.random(1000)),
+    name = opts.name or 'Track',
     height = opts.height or M.HEIGHTS.NORMAL,
     color = opts.color,  -- nil = no custom color
     selected = opts.selected or false,
@@ -58,14 +58,14 @@ end
 -- Default track list for demonstration
 function M.get_default_tracks()
   return {
-    M.new_track({ name = "Master Bus", height = M.HEIGHTS.NORMAL, folder_state = 1, color = 0x445566FF }),
-    M.new_track({ name = "Drums", height = M.HEIGHTS.NORMAL, folder_depth = 1, folder_state = 1, color = 0xCC6644FF }),
-    M.new_track({ name = "Kick", height = M.HEIGHTS.SMALL, folder_depth = 2, armed = true }),
-    M.new_track({ name = "Snare", height = M.HEIGHTS.SMALL, folder_depth = 2 }),
-    M.new_track({ name = "Hi-Hat", height = M.HEIGHTS.SMALL, folder_depth = 2, folder_state = -2 }),
-    M.new_track({ name = "Bass", height = M.HEIGHTS.NORMAL, folder_depth = 1, color = 0x4466CCFF }),
-    M.new_track({ name = "Guitar", height = M.HEIGHTS.NORMAL, folder_depth = 1, selected = true, color = 0x66CC44FF }),
-    M.new_track({ name = "Vocals", height = M.HEIGHTS.NORMAL, folder_depth = 1, folder_state = -2, color = 0xCC44AAFF }),
+    M.new_track({ name = 'Master Bus', height = M.HEIGHTS.NORMAL, folder_state = 1, color = 0x445566FF }),
+    M.new_track({ name = 'Drums', height = M.HEIGHTS.NORMAL, folder_depth = 1, folder_state = 1, color = 0xCC6644FF }),
+    M.new_track({ name = 'Kick', height = M.HEIGHTS.SMALL, folder_depth = 2, armed = true }),
+    M.new_track({ name = 'Snare', height = M.HEIGHTS.SMALL, folder_depth = 2 }),
+    M.new_track({ name = 'Hi-Hat', height = M.HEIGHTS.SMALL, folder_depth = 2, folder_state = -2 }),
+    M.new_track({ name = 'Bass', height = M.HEIGHTS.NORMAL, folder_depth = 1, color = 0x4466CCFF }),
+    M.new_track({ name = 'Guitar', height = M.HEIGHTS.NORMAL, folder_depth = 1, selected = true, color = 0x66CC44FF }),
+    M.new_track({ name = 'Vocals', height = M.HEIGHTS.NORMAL, folder_depth = 1, folder_state = -2, color = 0xCC44AAFF }),
   }
 end
 
@@ -73,35 +73,35 @@ end
 M.ELEMENT_GROUPS = {
   -- Main controls that flow in the 'then' macro
   main = {
-    "tcp.recarm",
-    "tcp.recmon",
-    "tcp.label",
-    "tcp.volume",
-    "tcp.io",
-    "tcp.fx",
-    "tcp.fxbyp",
-    "tcp.env",
-    "tcp.pan",
-    "tcp.width",
-    "tcp.recmode",
-    "tcp.recinput",
-    "tcp.fxin",
+    'tcp.recarm',
+    'tcp.recmon',
+    'tcp.label',
+    'tcp.volume',
+    'tcp.io',
+    'tcp.fx',
+    'tcp.fxbyp',
+    'tcp.env',
+    'tcp.pan',
+    'tcp.width',
+    'tcp.recmode',
+    'tcp.recinput',
+    'tcp.fxin',
   },
   -- Fixed position elements
   fixed = {
-    "tcp.mute",
-    "tcp.solo",
-    "tcp.phase",
-    "tcp.meter",
-    "tcp.folder",
-    "tcp.foldercomp",
-    "tcp.trackidx",
+    'tcp.mute',
+    'tcp.solo',
+    'tcp.phase',
+    'tcp.meter',
+    'tcp.folder',
+    'tcp.foldercomp',
+    'tcp.trackidx',
   },
   -- Value labels
   labels = {
-    "tcp.volume.label",
-    "tcp.pan.label",
-    "tcp.width.label",
+    'tcp.volume.label',
+    'tcp.pan.label',
+    'tcp.width.label',
   },
 }
 

@@ -87,7 +87,7 @@ function M.calculate_cascade_factor(rect, overlay_alpha)
   if overlay_alpha <= 0.001 then return 0.0 end
 
   local x1, y1 = rect[1], rect[2]
-  local key = string.format("%.0f_%.0f", x1, y1)
+  local key = string.format('%.0f_%.0f', x1, y1)
 
   if not M.tile_spawn_times[key] then
     local grid_x = (x1 / 150) // 1
@@ -105,13 +105,13 @@ end
 
 -- Truncate text to fit width
 function M.truncate_text(ctx, text, max_width)
-  if not text or max_width <= 0 then return "" end
+  if not text or max_width <= 0 then return '' end
   local text_width = ImGui.CalcTextSize(ctx, text)
   if text_width <= max_width then return text end
 
-  local ellipsis = "..."
+  local ellipsis = '...'
   local ellipsis_width = ImGui.CalcTextSize(ctx, ellipsis)
-  if max_width <= ellipsis_width then return "" end
+  if max_width <= ellipsis_width then return '' end
 
   local available_width = max_width - ellipsis_width
   for i = #text, 1, -1 do
@@ -171,7 +171,7 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
   local size = math.min(x2 - x1, y2 - y1) * 0.15
 
   local spinner_alpha = (alpha * 128) // 1
-  local spinner_color = Colors.with_alpha(hexrgb("#FFFFFF"), spinner_alpha)
+  local spinner_color = Colors.with_alpha(hexrgb('#FFFFFF'), spinner_alpha)
 
   local time = reaper.time_precise()
   local angle = (time * 2) % (math.pi * 2)
@@ -197,7 +197,7 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
 
   local right_bound_x = x2 - _cfg.text_margin_right
   if show_badge and total and total > 1 then
-    local badge_text = string.format("%d/%d", index or 1, total)
+    local badge_text = string.format('%d/%d', index or 1, total)
     local bw, _ = ImGui.CalcTextSize(ctx, badge_text)
     right_bound_x = right_bound_x - (bw + _cfg.badge_padding_x * 2 + _cfg.badge_margin)
   end
@@ -209,7 +209,7 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
 
   -- Render badge
   if show_badge and total and total > 1 then
-    local badge_text = string.format("%d/%d", index or 1, total)
+    local badge_text = string.format('%d/%d', index or 1, total)
     local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
 
     local badge_x = x2 - bw - _cfg.badge_padding_x * 2 - _cfg.badge_margin
@@ -226,7 +226,7 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
       _cfg.badge_rounding, 0, 0.5)
 
     Draw.text(dl, badge_x + _cfg.badge_padding_x, badge_y + _cfg.badge_padding_y,
-      Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
+      Colors.with_alpha(hexrgb('#FFFFFFDD'), text_alpha), badge_text)
   end
 end
 

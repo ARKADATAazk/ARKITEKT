@@ -72,7 +72,7 @@ end
 
 function M.calculate_text_position(ctx, rect, actual_height, text_sample)
   local x1, y1 = rect[1], rect[2]
-  local text_height = ImGui.CalcTextSize(ctx, text_sample or "Tg")
+  local text_height = ImGui.CalcTextSize(ctx, text_sample or 'Tg')
   
   local x = x1 + M.CONFIG.text_padding_left
   local y
@@ -123,7 +123,7 @@ local function get_reserved_index_width(ctx)
   end
   
   local max_digits = M.CONFIG.index_reserved_digits
-  local reserved_str = string.rep("9", max_digits)
+  local reserved_str = string.rep('9', max_digits)
   local width = ImGui.CalcTextSize(ctx, reserved_str)
   
   _reserved_index_width_cache[ctx_ptr] = width
@@ -135,12 +135,12 @@ end
 -- ========================================
 
 local function truncate_text(ctx, text, max_width)
-  if not text or max_width <= 0 then return "" end
+  if not text or max_width <= 0 then return '' end
   local text_width = ImGui.CalcTextSize(ctx, text)
   if text_width <= max_width then return text end
-  local ellipsis = "..."
+  local ellipsis = '...'
   local ellipsis_width = ImGui.CalcTextSize(ctx, ellipsis)
-  if max_width <= ellipsis_width then return "" end
+  if max_width <= ellipsis_width then return '' end
   local available_width = max_width - ellipsis_width
   for i = #text, 1, -1 do
     local truncated = text:sub(1, i)
@@ -178,9 +178,9 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   local accent_color = Ark.Colors.with_alpha(Ark.Colors.same_hue_variant(base_color, fx_config.index_saturation, fx_config.index_brightness, 0xFF), text_alpha)
   local name_color = Ark.Colors.with_alpha(Ark.Colors.adjust_brightness(fx_config.name_base_color, fx_config.name_brightness), text_alpha)
 
-  local index_str = string.format("%d", region.rid)
-  local name_str = region.name or "Unknown"
-  local separator = " "
+  local index_str = string.format('%d', region.rid)
+  local name_str = region.name or 'Unknown'
+  local separator = ' '
 
   -- Calculate widths
   local reserved_width = get_reserved_index_width(ctx)
@@ -223,7 +223,7 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   -- Store text zone bounds in grid for double-click detection
   if grid and rect and item_key_override then
     if not grid.text_zones then grid.text_zones = {} end
-    local text_h = ImGui.CalcTextSize(ctx, "Tg")
+    local text_h = ImGui.CalcTextSize(ctx, 'Tg')
     grid.text_zones[item_key_override] = {
       name_start_x, pos.y, right_bound_x, pos.y + text_h
     }
@@ -233,7 +233,7 @@ end
 function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, right_bound_x, name_color_override, actual_height, rect, grid, base_color, item_key_override)
   local fx_config = TileFXConfig.get()
 
-  local text_height = ImGui.CalcTextSize(ctx, "Tg")
+  local text_height = ImGui.CalcTextSize(ctx, 'Tg')
 
   -- Calculate chip position
   local reserved_width = get_reserved_index_width(ctx)
@@ -265,7 +265,7 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
   else
     name_color = Ark.Colors.with_alpha(Ark.Colors.adjust_brightness(fx_config.name_base_color, fx_config.name_brightness), text_alpha)
     if state.hover or state.selected then
-      name_color = Ark.Colors.with_alpha(hexrgb("#FFFFFF"), text_alpha)
+      name_color = Ark.Colors.with_alpha(hexrgb('#FFFFFF'), text_alpha)
     end
   end
 
@@ -296,7 +296,7 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
   -- Store text zone bounds in grid for double-click detection
   if grid and rect and item_key_override then
     if not grid.text_zones then grid.text_zones = {} end
-    local text_h = ImGui.CalcTextSize(ctx, "Tg")
+    local text_h = ImGui.CalcTextSize(ctx, 'Tg')
     grid.text_zones[item_key_override] = {
       name_start_x, pos.y, right_bound_x, pos.y + text_h
     }
@@ -308,7 +308,7 @@ function M.draw_length_display(ctx, dl, rect, region, base_color, text_alpha)
   local height_factor = math.min(1.0, math.max(0.0, ((y2 - rect[2]) - 20) / (72 - 20)))
   local fx_config = TileFXConfig.get()
 
-  local length_str = TileUtil.format_bar_length(region.start, region["end"], 0)
+  local length_str = TileUtil.format_bar_length(region.start, region['end'], 0)
   local scaled_margin = M.CONFIG.length_margin * (0.3 + 0.7 * height_factor)
 
   -- Measure text at actual draw size (ReaImGui draws at full font size)

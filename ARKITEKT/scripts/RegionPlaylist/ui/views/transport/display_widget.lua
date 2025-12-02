@@ -63,7 +63,7 @@ local function truncate_text(text, max_chars)
   if #text <= max_chars then
     return text
   end
-  return text:sub(1, max_chars - 1) .. "…"
+  return text:sub(1, max_chars - 1) .. '…'
 end
 
 -- Calculate truncation length based on available width
@@ -148,8 +148,8 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   local content_bottom = bar_y - LC.spacing_progress
   local content_top = y + (LC.padding_top or 8)
 
-  local time_text = "READY"
-  -- Dynamic time color from theme (falls back to TEXT_NORMAL for "READY")
+  local time_text = 'READY'
+  -- Dynamic time color from theme (falls back to TEXT_NORMAL for 'READY')
   local time_color = cfg.time_color or Ark.Style.COLORS.TEXT_NORMAL
 
   if bridge_state.is_playing then
@@ -170,7 +170,7 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
     ImGui.PopFont(ctx)
   end
   
-  local text_line_h = ImGui.CalcTextSize(ctx, "Tg")
+  local text_line_h = ImGui.CalcTextSize(ctx, 'Tg')
   
   local row_height = math.max(text_line_h, time_h)
   
@@ -218,8 +218,8 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   
   -- Responsive: Only show current region if width is sufficient
   if bridge_state.is_playing and current_region and width >= LC.hide_region_width then
-    local index_str = string.format("%d", current_region.rid)
-    local name_str = current_region.name or "Unknown"
+    local index_str = string.format('%d', current_region.rid)
+    local name_str = current_region.name or 'Unknown'
 
     -- Apply responsive truncation
     if width < LC.truncate_region_width then
@@ -250,8 +250,8 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   
   -- Responsive: Only show next region if width is sufficient
   if bridge_state.is_playing and next_region and width >= LC.hide_region_width then
-    local index_str = string.format("%d", next_region.rid)
-    local name_str = next_region.name or "Unknown"
+    local index_str = string.format('%d', next_region.rid)
+    local name_str = next_region.name or 'Unknown'
 
     -- Apply responsive truncation
     if width < LC.truncate_region_width then

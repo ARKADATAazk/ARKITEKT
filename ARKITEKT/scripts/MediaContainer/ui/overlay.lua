@@ -26,8 +26,8 @@ end
 local function get_track_screen_pos(track, window_y)
   if not track then return nil, nil end
 
-  local track_y = reaper.GetMediaTrackInfo_Value(track, "I_TCPY")
-  local track_h = reaper.GetMediaTrackInfo_Value(track, "I_TCPH")
+  local track_y = reaper.GetMediaTrackInfo_Value(track, 'I_TCPY')
+  local track_h = reaper.GetMediaTrackInfo_Value(track, 'I_TCPH')
 
   return window_y + track_y, track_h
 end
@@ -47,8 +47,8 @@ local function move_container_items(container, time_delta, State)
   for _, item_ref in ipairs(container.items) do
     local item = State.find_item_by_guid(item_ref.guid)
     if item then
-      local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
-      reaper.SetMediaItemInfo_Value(item, "D_POSITION", pos + time_delta)
+      local pos = reaper.GetMediaItemInfo_Value(item, 'D_POSITION')
+      reaper.SetMediaItemInfo_Value(item, 'D_POSITION', pos + time_delta)
     end
   end
 
@@ -76,7 +76,7 @@ end
 
 -- Draw container bounds on arrange view
 function M.draw_containers(ctx, draw_list, State)
-  local arrange_window = reaper.JS_Window_Find("trackview", true)
+  local arrange_window = reaper.JS_Window_Find('trackview', true)
   if not arrange_window then return end
 
   local rv, w_x1, w_y1, w_x2, w_y2 = reaper.JS_Window_GetRect(arrange_window)
@@ -110,7 +110,7 @@ function M.draw_containers(ctx, draw_list, State)
       end
     else
       -- End drag
-      reaper.Undo_EndBlock("Move Media Container", -1)
+      reaper.Undo_EndBlock('Move Media Container', -1)
       M.dragging_container_id = nil
       M.drag_start_time = nil
       M.drag_start_mouse_x = nil
@@ -122,7 +122,7 @@ function M.draw_containers(ctx, draw_list, State)
   ImGui.SetNextWindowSize(ctx, w_width, w_height - 17)  -- -17 for scrollbar
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
 
-  local visible = ImGui.Begin(ctx, "MediaContainer_Overlay", false,
+  local visible = ImGui.Begin(ctx, 'MediaContainer_Overlay', false,
     ImGui.WindowFlags_NoCollapse |
     ImGui.WindowFlags_NoInputs |
     ImGui.WindowFlags_NoTitleBar |
@@ -246,13 +246,13 @@ function M.draw_containers(ctx, draw_list, State)
     -- Draw container name label (this is the drag handle)
     local label = container.name
     if is_linked then
-      label = label .. " [linked]"
+      label = label .. ' [linked]'
     end
 
-    local text_color = Ark.Colors.hexrgba("#FFFFFF", 0.9)
-    local label_bg = Ark.Colors.hexrgba("#000000", 0.6)
+    local text_color = Ark.Colors.hexrgba('#FFFFFF', 0.9)
+    local label_bg = Ark.Colors.hexrgba('#000000', 0.6)
     if hovered_container == container and not M.dragging_container_id then
-      label_bg = Ark.Colors.hexrgba("#333333", 0.8)  -- Highlight on hover
+      label_bg = Ark.Colors.hexrgba('#333333', 0.8)  -- Highlight on hover
     end
 
     local text_w, text_h = ImGui.CalcTextSize(ctx, label)
@@ -295,10 +295,10 @@ function M.draw_containers(ctx, draw_list, State)
         reaper.SetMediaItemSelected(item, true)
         selected_count = selected_count + 1
       else
-        reaper.ShowConsoleMsg(string.format("[MediaContainer] WARNING: Could not find item with GUID %s\n", item_ref.guid))
+        reaper.ShowConsoleMsg(string.format('[MediaContainer] WARNING: Could not find item with GUID %s\n', item_ref.guid))
       end
     end
-    reaper.ShowConsoleMsg(string.format("[MediaContainer] Selected %d items\n", selected_count))
+    reaper.ShowConsoleMsg(string.format('[MediaContainer] Selected %d items\n', selected_count))
   end
 
   -- Update mouse state for next frame

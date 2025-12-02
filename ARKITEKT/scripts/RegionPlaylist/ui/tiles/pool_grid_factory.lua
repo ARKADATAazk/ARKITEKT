@@ -32,7 +32,7 @@
 --
 -- MIXED MODE:
 -- Pool can contain both regions (rid) and playlists (id + items).
--- Key function distinguishes: "pool_123" (region) vs "pool_playlist_abc" (playlist)
+-- Key function distinguishes: 'pool_123' (region) vs 'pool_playlist_abc' (playlist)
 --
 -- SEE ALSO:
 --   - ui/tiles/coordinator.lua (orchestrator that uses this factory)
@@ -49,9 +49,9 @@ local M = {}
 -- Key function for pool items
 local function pool_key(item)
   if item.id and item.items then
-    return "pool_playlist_" .. tostring(item.id)
+    return 'pool_playlist_' .. tostring(item.id)
   else
-    return "pool_" .. tostring(item.rid)
+    return 'pool_' .. tostring(item.rid)
   end
 end
 
@@ -80,11 +80,11 @@ local function create_behaviors(rt)
       local playlist_ids = {}
 
       for _, key in ipairs(new_order) do
-        local playlist_id = key:match("pool_playlist_(.+)")
+        local playlist_id = key:match('pool_playlist_(.+)')
         if playlist_id then
           playlist_ids[#playlist_ids + 1] = playlist_id
         else
-          local rid = tonumber(key:match("pool_(%d+)"))
+          local rid = tonumber(key:match('pool_(%d+)'))
           if rid then
             rids[#rids + 1] = rid
           end
@@ -111,12 +111,12 @@ local function create_behaviors(rt)
           if item.id and item.items then
             -- It's a playlist
             local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.id)
-            current_name = playlist and playlist.name or "Playlist"
+            current_name = playlist and playlist.name or 'Playlist'
           else
             -- It's a region
-            local State = require("RegionPlaylist.app.state")
+            local State = require('RegionPlaylist.app.state')
             local region = State.get_region_by_rid(item.rid)
-            current_name = region and region.name or "Region"
+            current_name = region and region.name or 'Region'
           end
           GridInput.start_inline_edit(grid, key, current_name)
           break
@@ -142,7 +142,7 @@ local function create_behaviors(rt)
             if playlist and playlist.items and #playlist.items > 0 then
               local first_item = playlist.items[1]
               if first_item.rid then
-                local State = require("RegionPlaylist.app.state")
+                local State = require('RegionPlaylist.app.state')
                 local region = State.get_region_by_rid(first_item.rid)
                 if region and region.start then
                   reaper.SetEditCurPos(region.start, true, true)
@@ -151,7 +151,7 @@ local function create_behaviors(rt)
             end
           else
             -- For regions, seek to region start
-            local State = require("RegionPlaylist.app.state")
+            local State = require('RegionPlaylist.app.state')
             local region = State.get_region_by_rid(item.rid)
             if region and region.start then
               reaper.SetEditCurPos(region.start, true, true)
@@ -177,12 +177,12 @@ local function create_behaviors(rt)
             if item.id and item.items then
               -- It's a playlist
               local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.id)
-              current_name = playlist and playlist.name or "Playlist"
+              current_name = playlist and playlist.name or 'Playlist'
             else
               -- It's a region
-              local State = require("RegionPlaylist.app.state")
+              local State = require('RegionPlaylist.app.state')
               local region = State.get_region_by_rid(item.rid)
-              current_name = region and region.name or "Region"
+              current_name = region and region.name or 'Region'
             end
             GridInput.start_inline_edit(grid, key, current_name)
             break
@@ -196,7 +196,7 @@ local function create_behaviors(rt)
             rt.on_pool_batch_rename(selected_keys, pattern)
           end
         end, {
-          item_type = "playlists",  -- Label for pool items
+          item_type = 'playlists',  -- Label for pool items
           on_rename_and_recolor = function(pattern, color)
             if rt.on_pool_batch_rename_and_recolor then
               rt.on_pool_batch_rename_and_recolor(selected_keys, pattern, color)
@@ -229,7 +229,7 @@ local function create_behaviors(rt)
 
       if selected_keys and #selected_keys > 0 then
         for _, key in ipairs(selected_keys) do
-          if key:match("^pool_playlist_") then
+          if key:match('^pool_playlist_') then
             playlist_count = playlist_count + 1
           else
             region_count = region_count + 1
@@ -332,8 +332,8 @@ function M.create_opts(rt, config)
   local base_tile_height = config.base_tile_height_pool or 72
   local tile_config = config.tile_config or { border_thickness = 0.5, rounding = 6 }
   local dim_config = config.dim_config or {
-    fill_color = hexrgb("#00000088"),
-    stroke_color = hexrgb("#FFFFFF33"),
+    fill_color = hexrgb('#00000088'),
+    stroke_color = hexrgb('#FFFFFF33'),
     stroke_thickness = 1.5,
     rounding = 6,
   }
@@ -342,7 +342,7 @@ function M.create_opts(rt, config)
   local padding = config.container and config.container.padding or 8
 
   return {
-    id = "pool_grid",
+    id = 'pool_grid',
     gap = rt._pool_gap or PoolTile.CONFIG.gap,
     min_col_w = function() return PoolTile.CONFIG.tile_width end,
     fixed_tile_h = rt._pool_tile_height or base_tile_height,

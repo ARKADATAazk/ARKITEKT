@@ -33,43 +33,43 @@ M.ACCENT = {
 
 -- Dimmed tile appearance
 M.DIM = {
-  FILL = hexrgb("#00000088"),
-  STROKE = hexrgb("#FFFFFF33"),
+  FILL = hexrgb('#00000088'),
+  STROKE = hexrgb('#FFFFFF33'),
 }
 
 -- Status bar colors
 M.STATUS = {
-  ERROR = hexrgb("#E04141"),
-  WARNING = hexrgb("#E0B341"),
-  INFO = hexrgb("#CCCCCC"),
-  PLAYING = hexrgb("#CCCCCC"),
-  READY = hexrgb("#CCCCCC"),
-  IDLE = hexrgb("#888888"),
+  ERROR = hexrgb('#E04141'),
+  WARNING = hexrgb('#E0B341'),
+  INFO = hexrgb('#CCCCCC'),
+  PLAYING = hexrgb('#CCCCCC'),
+  READY = hexrgb('#CCCCCC'),
+  IDLE = hexrgb('#888888'),
 }
 
 -- ============================================================================
 -- MODE CONSTANTS
 -- ============================================================================
 M.POOL_MODES = {
-  REGIONS = "regions",
-  PLAYLISTS = "playlists",
-  MIXED = "mixed",
+  REGIONS = 'regions',
+  PLAYLISTS = 'playlists',
+  MIXED = 'mixed',
 }
 
--- Reverse lookup: value → key (e.g., "regions" → "REGIONS")
+-- Reverse lookup: value → key (e.g., 'regions' → 'REGIONS')
 M.POOL_MODES_REVERSE = Lookup.build_reverse(M.POOL_MODES)
 
 M.LAYOUT_MODES = {
-  HORIZONTAL = "horizontal",
-  VERTICAL = "vertical",
+  HORIZONTAL = 'horizontal',
+  VERTICAL = 'vertical',
 }
 
 -- Reverse lookup: value → key
 M.LAYOUT_MODES_REVERSE = Lookup.build_reverse(M.LAYOUT_MODES)
 
 M.SORT_DIRECTIONS = {
-  ASC = "asc",
-  DESC = "desc",
+  ASC = 'asc',
+  DESC = 'desc',
 }
 
 -- Reverse lookup: value → key
@@ -160,21 +160,21 @@ M.REMIX_ICONS = {
 -- QUANTIZE OPTIONS
 -- ============================================================================
 M.QUANTIZE_OPTIONS = {
-  { value = "4bar", label = "4 Bars" },
-  { value = "2bar", label = "2 Bars" },
-  { value = "measure", label = "1 Bar" },
-  { value = "beat", label = "Beat" },
-  { value = 1, label = "1/1" },
-  { value = 0.5, label = "1/2" },
-  { value = 0.25, label = "1/4" },
-  { value = 0.125, label = "1/8" },
-  { value = 0.0625, label = "1/16" },
-  { value = 0.03125, label = "1/32" },
+  { value = '4bar', label = '4 Bars' },
+  { value = '2bar', label = '2 Bars' },
+  { value = 'measure', label = '1 Bar' },
+  { value = 'beat', label = 'Beat' },
+  { value = 1, label = '1/1' },
+  { value = 0.5, label = '1/2' },
+  { value = 0.25, label = '1/4' },
+  { value = 0.125, label = '1/8' },
+  { value = 0.0625, label = '1/16' },
+  { value = 0.03125, label = '1/32' },
 }
 
 -- Reverse lookups for O(1) access
-M.QUANTIZE_BY_LABEL = Lookup.build_reverse_lookup(M.QUANTIZE_OPTIONS, "label", "value")
-M.QUANTIZE_BY_VALUE = Lookup.build_reverse_lookup(M.QUANTIZE_OPTIONS, "value", "label")
-M.QUANTIZE_INDEX = Lookup.build_index(M.QUANTIZE_OPTIONS, "value")
+M.QUANTIZE_BY_LABEL = Lookup.build_reverse_lookup(M.QUANTIZE_OPTIONS, 'label', 'value')
+M.QUANTIZE_BY_VALUE = Lookup.build_reverse_lookup(M.QUANTIZE_OPTIONS, 'value', 'label')
+M.QUANTIZE_INDEX = Lookup.build_index(M.QUANTIZE_OPTIONS, 'value')
 
 return M

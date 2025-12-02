@@ -152,17 +152,17 @@ local function create_behaviors(rt)
 
             local parts = {}
             if region_count > 0 then
-              parts[#parts + 1] = string.format("%d region%s", region_count, region_count > 1 and "s" or "")
+              parts[#parts + 1] = string.format('%d region%s', region_count, region_count > 1 and 's' or '')
             end
             if playlist_count > 0 then
-              parts[#parts + 1] = string.format("%d playlist%s", playlist_count, playlist_count > 1 and "s" or "")
+              parts[#parts + 1] = string.format('%d playlist%s', playlist_count, playlist_count > 1 and 's' or '')
             end
 
             if #parts > 0 then
-              local items_text = table.concat(parts, ", ")
+              local items_text = table.concat(parts, ', ')
               local active_playlist = rt.State.get_active_playlist and rt.State.get_active_playlist()
-              local playlist_name = active_playlist and active_playlist.name or "Active Grid"
-              rt.State.set_state_change_notification(string.format("Copied %s within Active Grid (%s)", items_text, playlist_name))
+              local playlist_name = active_playlist and active_playlist.name or 'Active Grid'
+              rt.State.set_state_change_notification(string.format('Copied %s within Active Grid (%s)', items_text, playlist_name))
             end
           end
         end
@@ -201,17 +201,17 @@ local function create_behaviors(rt)
 
             local parts = {}
             if region_count > 0 then
-              parts[#parts + 1] = string.format("%d region%s", region_count, region_count > 1 and "s" or "")
+              parts[#parts + 1] = string.format('%d region%s', region_count, region_count > 1 and 's' or '')
             end
             if playlist_count > 0 then
-              parts[#parts + 1] = string.format("%d playlist%s", playlist_count, playlist_count > 1 and "s" or "")
+              parts[#parts + 1] = string.format('%d playlist%s', playlist_count, playlist_count > 1 and 's' or '')
             end
 
             if #parts > 0 then
-              local items_text = table.concat(parts, ", ")
+              local items_text = table.concat(parts, ', ')
               local active_playlist = rt.State.get_active_playlist and rt.State.get_active_playlist()
-              local playlist_name = active_playlist and active_playlist.name or "Active Grid"
-              rt.State.set_state_change_notification(string.format("Moved %s within Active Grid (%s)", items_text, playlist_name))
+              local playlist_name = active_playlist and active_playlist.name or 'Active Grid'
+              rt.State.set_state_change_notification(string.format('Moved %s within Active Grid (%s)', items_text, playlist_name))
             end
           end
         end
@@ -249,7 +249,7 @@ local function create_behaviors(rt)
         local pool_selected_keys = rt.pool_grid.selection:selected_keys()
 
         for _, key in ipairs(pool_selected_keys) do
-          if key:match("^pool_playlist_") then
+          if key:match('^pool_playlist_') then
             pool_selection_info.playlist_count = pool_selection_info.playlist_count + 1
           else
             pool_selection_info.region_count = pool_selection_info.region_count + 1
@@ -274,12 +274,12 @@ local function create_behaviors(rt)
         if item.key == key then
           -- Get current name
           local current_name
-          if item.type == "playlist" then
+          if item.type == 'playlist' then
             local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.playlist_id)
-            current_name = playlist and playlist.name or "Playlist"
+            current_name = playlist and playlist.name or 'Playlist'
           else
             local region = rt.get_region_by_rid(item.rid)
-            current_name = region and region.name or "Region"
+            current_name = region and region.name or 'Region'
           end
           GridInput.start_inline_edit(grid, key, current_name)
           break
@@ -299,7 +299,7 @@ local function create_behaviors(rt)
       local playlist_items = grid.get_items()
       for _, item in ipairs(playlist_items) do
         if item.key == key then
-          if item.type == "playlist" then
+          if item.type == 'playlist' then
             -- For playlists, seek to the first item in the playlist
             local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.playlist_id)
             if playlist and playlist.items and #playlist.items > 0 then
@@ -335,12 +335,12 @@ local function create_behaviors(rt)
         for _, item in ipairs(playlist_items) do
           if item.key == key then
             local current_name
-            if item.type == "playlist" then
+            if item.type == 'playlist' then
               local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.playlist_id)
-              current_name = playlist and playlist.name or "Playlist"
+              current_name = playlist and playlist.name or 'Playlist'
             else
               local region = rt.get_region_by_rid(item.rid)
-              current_name = region and region.name or "Region"
+              current_name = region and region.name or 'Region'
             end
             GridInput.start_inline_edit(grid, key, current_name)
             break
@@ -354,7 +354,7 @@ local function create_behaviors(rt)
             rt.on_active_batch_rename(selected_keys, pattern)
           end
         end, {
-          item_type = "regions",  -- Label for Region Playlist items
+          item_type = 'regions',  -- Label for Region Playlist items
           on_rename_and_recolor = function(pattern, color)
             if rt.on_active_batch_rename_and_recolor then
               rt.on_active_batch_rename_and_recolor(selected_keys, pattern, color)
@@ -429,8 +429,8 @@ function M.create_opts(rt, config)
   local base_tile_height = config.base_tile_height_active or 72
   local tile_config = config.tile_config or { border_thickness = 0.5, rounding = 6 }
   local dim_config = config.dim_config or {
-    fill_color = hexrgb("#00000088"),
-    stroke_color = hexrgb("#FFFFFF33"),
+    fill_color = hexrgb('#00000088'),
+    stroke_color = hexrgb('#FFFFFF33'),
     stroke_thickness = 1.5,
     rounding = 6,
   }
@@ -439,7 +439,7 @@ function M.create_opts(rt, config)
   local padding = config.container and config.container.padding or 8
 
   return {
-    id = "active_grid",
+    id = 'active_grid',
     gap = ActiveTile.CONFIG.gap,
     min_col_w = rt._active_min_col_w_fn or function() return ActiveTile.CONFIG.tile_width end,
     fixed_tile_h = rt._active_tile_height or base_tile_height,

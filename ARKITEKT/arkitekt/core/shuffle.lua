@@ -63,7 +63,7 @@ ShuffleManager.__index = ShuffleManager
 --- Create a new shuffle manager
 --- @param array table Initial array to manage
 --- @param opts? table Options
----   - mode: string "true_shuffle" or "random" (default: "true_shuffle")
+---   - mode: string 'true_shuffle' or 'random' (default: 'true_shuffle')
 ---   - auto_reshuffle: boolean Auto reshuffle when exhausted (default: true)
 --- @return table manager The shuffle manager
 function M.new_manager(array, opts)

@@ -52,16 +52,16 @@ local image_cache = ImageCache.new({
 
 -- Helper to check if DPI variant exists
 local function check_dpi_variants(base_path)
-  if not base_path or base_path:find("^%(mock%)") then
+  if not base_path or base_path:find('^%(mock%)') then
     return false, false
   end
 
   -- Remove .png extension
-  local base = base_path:gsub("%.png$", ""):gsub("%.PNG$", "")
+  local base = base_path:gsub('%.png$', ''):gsub('%.PNG$', '')
 
   -- Check for 150% and 200% variants
-  local has_150 = Fs.file_exists(base .. "_150.png")
-  local has_200 = Fs.file_exists(base .. "_200.png")
+  local has_150 = Fs.file_exists(base .. '_150.png')
+  local has_200 = Fs.file_exists(base .. '_200.png')
 
   return has_150, has_200
 end
@@ -69,37 +69,37 @@ end
 -- Helper to extract area from key (tcp_, mcp_, transport_, etc.)
 local function get_area_from_key(key)
   -- TCP / Track
-  if key:match("^tcp_") or key:match("^track_") then return "TCP"
+  if key:match('^tcp_') or key:match('^track_') then return 'TCP'
   -- MCP / Master / Mixer
-  elseif key:match("^mcp_") or key:match("^master_") or key:match("^mixer_") then return "MCP"
+  elseif key:match('^mcp_') or key:match('^master_') or key:match('^mixer_') then return 'MCP'
   -- Transport
-  elseif key:match("^transport_") or key:match("^trans_") then return "Transport"
+  elseif key:match('^transport_') or key:match('^trans_') then return 'Transport'
   -- Toolbar
-  elseif key:match("^toolbar_") or key:match("^tb_") then return "Toolbar"
+  elseif key:match('^toolbar_') or key:match('^tb_') then return 'Toolbar'
   -- ENVCP / Envelope
-  elseif key:match("^envcp_") or key:match("^env_") then return "ENVCP"
+  elseif key:match('^envcp_') or key:match('^env_') then return 'ENVCP'
   -- Meter
-  elseif key:match("^meter_") then return "Meter"
+  elseif key:match('^meter_') then return 'Meter'
   -- Items
-  elseif key:match("^item_") or key:match("^mi_") then return "Items"
+  elseif key:match('^item_') or key:match('^mi_') then return 'Items'
   -- MIDI
-  elseif key:match("^midi_") or key:match("^piano_") then return "MIDI"
+  elseif key:match('^midi_') or key:match('^piano_') then return 'MIDI'
   -- Docker
-  elseif key:match("^docker_") or key:match("^dock_") then return "Docker"
+  elseif key:match('^docker_') or key:match('^dock_') then return 'Docker'
   -- FX
-  elseif key:match("^fx_") or key:match("^vst_") then return "FX"
+  elseif key:match('^fx_') or key:match('^vst_') then return 'FX'
   -- Menu
-  elseif key:match("^menu_") then return "Menu"
+  elseif key:match('^menu_') then return 'Menu'
   -- Global / General
-  elseif key:match("^global_") or key:match("^gen_") or key:match("^generic_") then return "Global"
-  else return "Other"
+  elseif key:match('^global_') or key:match('^gen_') or key:match('^generic_') then return 'Global'
+  else return 'Other'
   end
 end
 
 -- Parse hex color string to RGBA int
 local function parse_hex_color(hex_str)
   if not hex_str then return nil end
-  local hex = hex_str:gsub("^#", "")
+  local hex = hex_str:gsub('^#', '')
   if #hex == 6 then
     local r = tonumber(hex:sub(1, 2), 16) or 0
     local g = tonumber(hex:sub(3, 4), 16) or 0
@@ -121,11 +121,11 @@ function M.new(State, settings)
     package_data = nil,
 
     -- UI state
-    search_text = "",
+    search_text = '',
     selected_assets = {},  -- {key = true/false}
-    view_mode = "grid",    -- "grid" or "tree"
+    view_mode = 'grid',    -- 'grid' or 'tree'
     group_by_area = true,
-    status_filter = "all", -- "all", "excluded", "pinned", "pinned_elsewhere"
+    status_filter = 'all', -- 'all', 'excluded', 'pinned', 'pinned_elsewhere'
     collapsed_groups = {}, -- {area = true/false}
 
     -- Performance caches (populated on show)
@@ -143,10 +143,10 @@ function PackageModal:show(package_data)
   self.open = true
   self.package_id = package_data.id
   self.package_data = package_data
-  self.search_text = ""
+  self.search_text = ''
   self.selected_assets = {}
   self.overlay_pushed = false
-  self.status_filter = "all"
+  self.status_filter = 'all'
   self.collapsed_groups = {}
 
   -- Pre-compute caches for performance
@@ -230,9 +230,9 @@ function PackageModal:close()
   self.overlay_pushed = false
   self.package_id = nil
   self.package_data = nil
-  self.search_text = ""
+  self.search_text = ''
   self.selected_assets = {}
-  self.status_filter = "all"
+  self.status_filter = 'all'
   self.collapsed_groups = {}
   -- Clear caches
   self._dpi_cache = {}
@@ -289,7 +289,7 @@ end
 
 -- Check if key passes current status filter
 function PackageModal:passes_status_filter(key)
-  if self.status_filter == "all" then
+  if self.status_filter == 'all' then
     return true
   end
 
@@ -303,13 +303,13 @@ function PackageModal:passes_status_filter(key)
   local is_pinned_elsewhere = pinned_to and pinned_to ~= pkg.id
   local is_shadowed = self._shadowed_cache[key] ~= nil
 
-  if self.status_filter == "excluded" then
+  if self.status_filter == 'excluded' then
     return is_excluded
-  elseif self.status_filter == "pinned" then
+  elseif self.status_filter == 'pinned' then
     return is_pinned_here
-  elseif self.status_filter == "pinned_elsewhere" then
+  elseif self.status_filter == 'pinned_elsewhere' then
     return is_pinned_elsewhere
-  elseif self.status_filter == "shadowed" then
+  elseif self.status_filter == 'shadowed' then
     return is_shadowed
   end
 
@@ -319,7 +319,7 @@ end
 -- Pre-compute grouped assets (called once on show)
 function PackageModal:_compute_grouped_assets(keys_order)
   local groups = {}
-  local group_order = {"TCP", "MCP", "ENVCP", "Items", "MIDI", "Transport", "Toolbar", "Meter", "Docker", "FX", "Menu", "Global", "Other"}
+  local group_order = {'TCP', 'MCP', 'ENVCP', 'Items', 'MIDI', 'Transport', 'Toolbar', 'Meter', 'Docker', 'FX', 'Menu', 'Global', 'Other'}
 
   -- Initialize groups
   for _, area in ipairs(group_order) do
@@ -343,7 +343,7 @@ function PackageModal:group_assets_by_area(keys_order)
 
   -- Fallback if cache not available
   local groups = {}
-  local group_order = {"TCP", "MCP", "ENVCP", "Items", "MIDI", "Transport", "Toolbar", "Meter", "Docker", "FX", "Menu", "Global", "Other"}
+  local group_order = {'TCP', 'MCP', 'ENVCP', 'Items', 'MIDI', 'Transport', 'Toolbar', 'Meter', 'Docker', 'FX', 'Menu', 'Global', 'Other'}
 
   for _, area in ipairs(group_order) do
     groups[area] = {}
@@ -376,8 +376,8 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   local has_150, has_200 = dpi_info.has_150, dpi_info.has_200
 
   -- Use cached area for tile color
-  local area = self._area_cache[key] or "Other"
-  local base_color = AREA_COLORS[area] or hexrgb("#444455")
+  local area = self._area_cache[key] or 'Other'
+  local base_color = AREA_COLORS[area] or hexrgb('#444455')
 
   -- Apply opacity based on included state
   local bg_opacity = included and 0.7 or 0.25
@@ -387,7 +387,7 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   local bg_color = (r << 24) | (g << 16) | (b << 8) | math.floor(255 * bg_opacity)
 
   -- Border color based on selection
-  local border_color = selected and hexrgb("#4A90E2") or hexrgb("#333344", 0.8)
+  local border_color = selected and hexrgb('#4A90E2') or hexrgb('#333344', 0.8)
 
   -- Draw tile background
   local x1, y1 = ImGui.GetCursorScreenPos(ctx)
@@ -398,7 +398,7 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 3, 0, selected and 2 or 1)
 
   -- Invisible button for interaction
-  ImGui.InvisibleButton(ctx, "##tile_" .. key, TILE_WIDTH, TILE_HEIGHT)
+  ImGui.InvisibleButton(ctx, '##tile_' .. key, TILE_WIDTH, TILE_HEIGHT)
 
   local clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
   local hovered = ImGui.IsItemHovered(ctx)
@@ -415,25 +415,25 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   end
 
   -- Right-click context menu for pin options
-  if ImGui.BeginPopupContextItem(ctx, "tile_pin_menu_" .. key) then
+  if ImGui.BeginPopupContextItem(ctx, 'tile_pin_menu_' .. key) then
     -- Show current pin status
     if pinned_to then
-      ImGui.TextColored(ctx, hexrgb("#888888"), "Currently pinned to:")
-      ImGui.TextColored(ctx, is_pinned and hexrgb("#4AE290") or hexrgb("#E8A54A"), pinned_to)
+      ImGui.TextColored(ctx, hexrgb('#888888'), 'Currently pinned to:')
+      ImGui.TextColored(ctx, is_pinned and hexrgb('#4AE290') or hexrgb('#E8A54A'), pinned_to)
       ImGui.Separator(ctx)
     end
 
     -- Pin options
     if is_pinned then
-      if ImGui.MenuItem(ctx, "Unpin from this package") then
+      if ImGui.MenuItem(ctx, 'Unpin from this package') then
         self:set_pinned_provider(key, nil)
       end
     else
-      if ImGui.MenuItem(ctx, "Pin to this package") then
+      if ImGui.MenuItem(ctx, 'Pin to this package') then
         self:set_pinned_provider(key, pkg.id)
       end
       if is_pinned_elsewhere then
-        if ImGui.MenuItem(ctx, "Override pin (take from " .. pinned_to .. ")") then
+        if ImGui.MenuItem(ctx, 'Override pin (take from ' .. pinned_to .. ')') then
           self:set_pinned_provider(key, pkg.id)
         end
       end
@@ -446,10 +446,10 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   local display_name = key
   local max_chars = 24
   if #display_name > max_chars then
-    display_name = display_name:sub(1, max_chars - 2) .. ".."
+    display_name = display_name:sub(1, max_chars - 2) .. '..'
   end
 
-  local text_color = included and hexrgb("#FFFFFF") or hexrgb("#666666")
+  local text_color = included and hexrgb('#FFFFFF') or hexrgb('#666666')
   local text_w, text_h = ImGui.CalcTextSize(ctx, display_name)
   local text_x = x1 + 6  -- Left-aligned with padding
   local text_y = y1 + (TILE_HEIGHT - text_h) * 0.5  -- Vertically centered
@@ -463,37 +463,37 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   if not included then
     local badge_x = x2 - 56
     local badge_y = y1 + TILE_HEIGHT * 0.5
-    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb("#CC3333"))
+    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb('#CC3333'))
   end
 
   -- Shadowed badge (orange circle) - overridden by higher priority package
   if shadowed_by and not is_pinned_elsewhere then
     local badge_x = x2 - 42
     local badge_y = y1 + TILE_HEIGHT * 0.5
-    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb("#E8A54A"))
+    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb('#E8A54A'))
   end
 
   -- Pinned elsewhere badge (yellow-orange dot) - different shade from shadowed
   if is_pinned_elsewhere then
     local badge_x = x2 - 28
     local badge_y = y1 + TILE_HEIGHT * 0.5
-    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb("#F5C542"))
+    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb('#F5C542'))
   end
 
   -- Pinned here badge (green dot)
   if is_pinned then
     local badge_x = x2 - 14
     local badge_y = y1 + TILE_HEIGHT * 0.5
-    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb("#4AE290"))
+    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb('#4AE290'))
   end
 
   -- DPI badge (top right, smaller text)
   if has_150 or has_200 then
-    local dpi_text = has_200 and "2x" or "1.5"
+    local dpi_text = has_200 and '2x' or '1.5'
     local dpi_w = ImGui.CalcTextSize(ctx, dpi_text)
     local dpi_x = x2 - dpi_w - 4
     local dpi_y = y1 + 2
-    ImGui.DrawList_AddText(dl, dpi_x, dpi_y, hexrgb("#666666"), dpi_text)
+    ImGui.DrawList_AddText(dl, dpi_x, dpi_y, hexrgb('#666666'), dpi_text)
   end
 
   -- Tooltip on hover
@@ -522,30 +522,30 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
 
     -- Status
     if not included then
-      ImGui.TextColored(ctx, hexrgb("#FF6666"), "EXCLUDED")
+      ImGui.TextColored(ctx, hexrgb('#FF6666'), 'EXCLUDED')
     end
     if is_pinned then
-      ImGui.TextColored(ctx, hexrgb("#4AE290"), "PINNED HERE")
+      ImGui.TextColored(ctx, hexrgb('#4AE290'), 'PINNED HERE')
     elseif is_pinned_elsewhere then
-      ImGui.TextColored(ctx, hexrgb("#F5C542"), "Pinned to: " .. pinned_to)
+      ImGui.TextColored(ctx, hexrgb('#F5C542'), 'Pinned to: ' .. pinned_to)
     end
     if shadowed_by and not is_pinned_elsewhere then
-      ImGui.TextColored(ctx, hexrgb("#E8A54A"), "Overridden by: " .. shadowed_by)
+      ImGui.TextColored(ctx, hexrgb('#E8A54A'), 'Overridden by: ' .. shadowed_by)
     end
 
     -- DPI info
     if has_150 or has_200 then
-      local dpi_str = "DPI: 100%"
-      if has_150 then dpi_str = dpi_str .. ", 150%" end
-      if has_200 then dpi_str = dpi_str .. ", 200%" end
-      ImGui.TextColored(ctx, hexrgb("#AAAAAA"), dpi_str)
+      local dpi_str = 'DPI: 100%'
+      if has_150 then dpi_str = dpi_str .. ', 150%' end
+      if has_200 then dpi_str = dpi_str .. ', 200%' end
+      ImGui.TextColored(ctx, hexrgb('#AAAAAA'), dpi_str)
     end
 
     -- Help text
     ImGui.Spacing(ctx)
-    ImGui.TextColored(ctx, hexrgb("#666666"), "Click: Toggle include/exclude")
-    ImGui.TextColored(ctx, hexrgb("#666666"), "Right-click: Pin options")
-    ImGui.TextColored(ctx, hexrgb("#666666"), "Shift+Click: Select")
+    ImGui.TextColored(ctx, hexrgb('#666666'), 'Click: Toggle include/exclude')
+    ImGui.TextColored(ctx, hexrgb('#666666'), 'Right-click: Pin options')
+    ImGui.TextColored(ctx, hexrgb('#666666'), 'Shift+Click: Select')
 
     ImGui.EndTooltip(ctx)
   end
@@ -572,7 +572,7 @@ function PackageModal:draw_grid_view(ctx, pkg)
 
     -- First pass: calculate total height and build render list
     local current_y = 0
-    local render_items = {}  -- {type = "header"/"tiles", y = ..., data = ...}
+    local render_items = {}  -- {type = 'header'/'tiles', y = ..., data = ...}
 
     for _, area in ipairs(group_order) do
       local keys = groups[area]
@@ -580,7 +580,7 @@ function PackageModal:draw_grid_view(ctx, pkg)
         -- Filter by search and status
         local filtered_keys = {}
         for _, key in ipairs(keys) do
-          local matches_search = self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true)
+          local matches_search = self.search_text == '' or key:lower():find(self.search_text:lower(), 1, true)
           local matches_status = self:passes_status_filter(key)
           if matches_search and matches_status then
             filtered_keys[#filtered_keys + 1] = key
@@ -592,7 +592,7 @@ function PackageModal:draw_grid_view(ctx, pkg)
 
           -- Header
           render_items[#render_items + 1] = {
-            type = "header",
+            type = 'header',
             y = current_y,
             height = header_height,
             area = area,
@@ -616,7 +616,7 @@ function PackageModal:draw_grid_view(ctx, pkg)
 
               if #row_keys > 0 then
                 render_items[#render_items + 1] = {
-                  type = "row",
+                  type = 'row',
                   y = current_y,
                   height = row_height,
                   keys = row_keys
@@ -646,17 +646,17 @@ function PackageModal:draw_grid_view(ctx, pkg)
         -- Position cursor
         ImGui.SetCursorPosY(ctx, item_top)
 
-        if item.type == "header" then
+        if item.type == 'header' then
           ImGui.Spacing(ctx)
           -- Clickable header for collapse/expand
-          local collapse_icon = item.collapsed and "▶" or "▼"
-          local header_text = collapse_icon .. " " .. item.area .. " (" .. item.count .. ")"
+          local collapse_icon = item.collapsed and '▶' or '▼'
+          local header_text = collapse_icon .. ' ' .. item.area .. ' (' .. item.count .. ')'
           if ImGui.Selectable(ctx, header_text, false, ImGui.SelectableFlags_None) then
             self.collapsed_groups[item.area] = not self.collapsed_groups[item.area]
           end
           ImGui.Separator(ctx)
           ImGui.Spacing(ctx)
-        elseif item.type == "row" then
+        elseif item.type == 'row' then
           for i, key in ipairs(item.keys) do
             if i > 1 then
               ImGui.SameLine(ctx, 0, TILE_SPACING)
@@ -675,7 +675,7 @@ function PackageModal:draw_grid_view(ctx, pkg)
     -- Flat view with virtualization
     local filtered_keys = {}
     for _, key in ipairs(pkg.keys_order or {}) do
-      local matches_search = self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true)
+      local matches_search = self.search_text == '' or key:lower():find(self.search_text:lower(), 1, true)
       local matches_status = self:passes_status_filter(key)
       if matches_search and matches_status then
         filtered_keys[#filtered_keys + 1] = key
@@ -726,7 +726,7 @@ function PackageModal:draw_content(ctx, bounds)
   if ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl) and ImGui.IsKeyPressed(ctx, ImGui.Key_A) then
     -- Ctrl+A: Select all visible
     for _, key in ipairs(pkg.keys_order or {}) do
-      local matches_search = self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true)
+      local matches_search = self.search_text == '' or key:lower():find(self.search_text:lower(), 1, true)
       local matches_status = self:passes_status_filter(key)
       if matches_search and matches_status then
         self.selected_assets[key] = true
@@ -741,35 +741,35 @@ function PackageModal:draw_content(ctx, bounds)
 
   -- Header with stats
   ImGui.SetCursorPosX(ctx, start_x)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
-  ImGui.Text(ctx, "Package: " .. (pkg.meta and pkg.meta.name or pkg.id))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
+  ImGui.Text(ctx, 'Package: ' .. (pkg.meta and pkg.meta.name or pkg.id))
   ImGui.PopStyleColor(ctx)
 
   if pkg.meta and pkg.meta.version then
     ImGui.SameLine(ctx, 0, 8)
-    ImGui.TextColored(ctx, hexrgb("#666666"), "v" .. pkg.meta.version)
+    ImGui.TextColored(ctx, hexrgb('#666666'), 'v' .. pkg.meta.version)
   end
 
   -- Stats display
   local stats = self._stats_cache
   if stats then
     ImGui.SameLine(ctx, 0, 20)
-    ImGui.TextColored(ctx, hexrgb("#4AE290"), tostring(stats.included) .. " included")
+    ImGui.TextColored(ctx, hexrgb('#4AE290'), tostring(stats.included) .. ' included')
     ImGui.SameLine(ctx, 0, 8)
-    ImGui.TextColored(ctx, hexrgb("#666666"), "/")
+    ImGui.TextColored(ctx, hexrgb('#666666'), '/')
     ImGui.SameLine(ctx, 0, 8)
-    ImGui.TextColored(ctx, hexrgb("#CC3333"), tostring(stats.excluded) .. " excluded")
+    ImGui.TextColored(ctx, hexrgb('#CC3333'), tostring(stats.excluded) .. ' excluded')
     if stats.pinned_here > 0 then
       ImGui.SameLine(ctx, 0, 12)
-      ImGui.TextColored(ctx, hexrgb("#4AE290"), tostring(stats.pinned_here) .. " pinned")
+      ImGui.TextColored(ctx, hexrgb('#4AE290'), tostring(stats.pinned_here) .. ' pinned')
     end
     if stats.pinned_elsewhere > 0 then
       ImGui.SameLine(ctx, 0, 8)
-      ImGui.TextColored(ctx, hexrgb("#F5C542"), tostring(stats.pinned_elsewhere) .. " contested")
+      ImGui.TextColored(ctx, hexrgb('#F5C542'), tostring(stats.pinned_elsewhere) .. ' contested')
     end
     if stats.shadowed > 0 then
       ImGui.SameLine(ctx, 0, 8)
-      ImGui.TextColored(ctx, hexrgb("#E8A54A"), tostring(stats.shadowed) .. " overridden")
+      ImGui.TextColored(ctx, hexrgb('#E8A54A'), tostring(stats.shadowed) .. ' overridden')
     end
   end
 
@@ -782,15 +782,15 @@ function PackageModal:draw_content(ctx, bounds)
   -- Search input using primitive
   local search_w = 220
   local search_h = 26
-  Ark.InputText.set_text("pkg_modal_search", self.search_text)
+  Ark.InputText.set_text('pkg_modal_search', self.search_text)
   Ark.InputText.search(ctx, {
-    id = "pkg_modal_search",
+    id = 'pkg_modal_search',
     x = toolbar_x,
     y = toolbar_y,
     width = search_w,
     height = search_h,
     draw_list = dl,
-    placeholder = "Search assets...",
+    placeholder = 'Search assets...',
     on_change = function(text)
       self.search_text = text
     end
@@ -802,29 +802,29 @@ function PackageModal:draw_content(ctx, bounds)
 
   -- View mode toggle
   local grid_result = Ark.Button.draw(ctx, {
-    id = "pkg_modal_view",
+    id = 'pkg_modal_view',
     draw_list = dl,
     x = btn_x,
     y = toolbar_y,
     width = 50,
     height = btn_h,
-    label = self.view_mode == "grid" and "Grid" or "Tree",
+    label = self.view_mode == 'grid' and 'Grid' or 'Tree',
     rounding = 3,
   })
   if grid_result.clicked then
-    self.view_mode = self.view_mode == "grid" and "tree" or "grid"
+    self.view_mode = self.view_mode == 'grid' and 'tree' or 'grid'
   end
   btn_x = btn_x + 50 + 4
 
   -- Group toggle
   local group_result = Ark.Button.draw(ctx, {
-    id = "pkg_modal_group",
+    id = 'pkg_modal_group',
     draw_list = dl,
     x = btn_x,
     y = toolbar_y,
     width = 65,
     height = btn_h,
-    label = self.group_by_area and "Grouped" or "Flat",
+    label = self.group_by_area and 'Grouped' or 'Flat',
     rounding = 3,
   })
   if group_result.clicked then
@@ -834,15 +834,15 @@ function PackageModal:draw_content(ctx, bounds)
 
   -- Status filter dropdown
   local filter_labels = {
-    all = "All",
-    excluded = "Excluded",
-    pinned = "Pinned",
-    pinned_elsewhere = "Contested",
-    shadowed = "Overridden"
+    all = 'All',
+    excluded = 'Excluded',
+    pinned = 'Pinned',
+    pinned_elsewhere = 'Contested',
+    shadowed = 'Overridden'
   }
-  local filter_label = "Filter: " .. filter_labels[self.status_filter]
+  local filter_label = 'Filter: ' .. filter_labels[self.status_filter]
   local filter_result = Ark.Button.draw(ctx, {
-    id = "pkg_modal_filter",
+    id = 'pkg_modal_filter',
     draw_list = dl,
     x = btn_x,
     y = toolbar_y,
@@ -852,25 +852,25 @@ function PackageModal:draw_content(ctx, bounds)
     rounding = 3,
   })
   if filter_result.clicked then
-    ImGui.OpenPopup(ctx, "status_filter_popup")
+    ImGui.OpenPopup(ctx, 'status_filter_popup')
   end
 
   -- Status filter popup menu
-  if ImGui.BeginPopup(ctx, "status_filter_popup") then
-    if ImGui.MenuItem(ctx, "All", nil, self.status_filter == "all") then
-      self.status_filter = "all"
+  if ImGui.BeginPopup(ctx, 'status_filter_popup') then
+    if ImGui.MenuItem(ctx, 'All', nil, self.status_filter == 'all') then
+      self.status_filter = 'all'
     end
-    if ImGui.MenuItem(ctx, "Excluded", nil, self.status_filter == "excluded") then
-      self.status_filter = "excluded"
+    if ImGui.MenuItem(ctx, 'Excluded', nil, self.status_filter == 'excluded') then
+      self.status_filter = 'excluded'
     end
-    if ImGui.MenuItem(ctx, "Pinned Here", nil, self.status_filter == "pinned") then
-      self.status_filter = "pinned"
+    if ImGui.MenuItem(ctx, 'Pinned Here', nil, self.status_filter == 'pinned') then
+      self.status_filter = 'pinned'
     end
-    if ImGui.MenuItem(ctx, "Contested (pinned elsewhere)", nil, self.status_filter == "pinned_elsewhere") then
-      self.status_filter = "pinned_elsewhere"
+    if ImGui.MenuItem(ctx, 'Contested (pinned elsewhere)', nil, self.status_filter == 'pinned_elsewhere') then
+      self.status_filter = 'pinned_elsewhere'
     end
-    if ImGui.MenuItem(ctx, "Overridden (by priority)", nil, self.status_filter == "shadowed") then
-      self.status_filter = "shadowed"
+    if ImGui.MenuItem(ctx, 'Overridden (by priority)', nil, self.status_filter == 'shadowed') then
+      self.status_filter = 'shadowed'
     end
     ImGui.EndPopup(ctx)
   end
@@ -883,25 +883,25 @@ function PackageModal:draw_content(ctx, bounds)
   end
   if selection_count > 0 then
     ImGui.SetCursorScreenPos(ctx, btn_x, toolbar_y + 5)
-    ImGui.TextColored(ctx, hexrgb("#4A90E2"), tostring(selection_count) .. " selected")
-    local text_w = ImGui.CalcTextSize(ctx, tostring(selection_count) .. " selected")
+    ImGui.TextColored(ctx, hexrgb('#4A90E2'), tostring(selection_count) .. ' selected')
+    local text_w = ImGui.CalcTextSize(ctx, tostring(selection_count) .. ' selected')
     btn_x = btn_x + text_w + 12
   end
 
   -- Bulk action buttons
   local sel_all_result = Ark.Button.draw(ctx, {
-    id = "pkg_modal_sel_all",
+    id = 'pkg_modal_sel_all',
     draw_list = dl,
     x = btn_x,
     y = toolbar_y,
     width = 65,
     height = btn_h,
-    label = "Select All",
+    label = 'Select All',
     rounding = 3,
   })
   if sel_all_result.clicked then
     for _, key in ipairs(pkg.keys_order or {}) do
-      if self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true) then
+      if self.search_text == '' or key:lower():find(self.search_text:lower(), 1, true) then
         self.selected_assets[key] = true
       end
     end
@@ -909,13 +909,13 @@ function PackageModal:draw_content(ctx, bounds)
   btn_x = btn_x + 65 + 4
 
   local clear_result = Ark.Button.draw(ctx, {
-    id = "pkg_modal_clear",
+    id = 'pkg_modal_clear',
     draw_list = dl,
     x = btn_x,
     y = toolbar_y,
     width = 45,
     height = btn_h,
-    label = "Clear",
+    label = 'Clear',
     rounding = 3,
   })
   if clear_result.clicked then
@@ -924,13 +924,13 @@ function PackageModal:draw_content(ctx, bounds)
   btn_x = btn_x + 45 + 4
 
   local inc_result = Ark.Button.draw(ctx, {
-    id = "pkg_modal_inc",
+    id = 'pkg_modal_inc',
     draw_list = dl,
     x = btn_x,
     y = toolbar_y,
     width = 35,
     height = btn_h,
-    label = "Inc.",
+    label = 'Inc.',
     rounding = 3,
   })
   if inc_result.clicked then
@@ -948,13 +948,13 @@ function PackageModal:draw_content(ctx, bounds)
   btn_x = btn_x + 35 + 4
 
   local exc_result = Ark.Button.draw(ctx, {
-    id = "pkg_modal_exc",
+    id = 'pkg_modal_exc',
     draw_list = dl,
     x = btn_x,
     y = toolbar_y,
     width = 35,
     height = btn_h,
-    label = "Exc.",
+    label = 'Exc.',
     rounding = 3,
   })
   if exc_result.clicked then
@@ -972,13 +972,13 @@ function PackageModal:draw_content(ctx, bounds)
   btn_x = btn_x + 35 + 4
 
   local pin_result = Ark.Button.draw(ctx, {
-    id = "pkg_modal_pin",
+    id = 'pkg_modal_pin',
     draw_list = dl,
     x = btn_x,
     y = toolbar_y,
     width = 35,
     height = btn_h,
-    label = "Pin",
+    label = 'Pin',
     rounding = 3,
   })
   if pin_result.clicked then
@@ -1002,8 +1002,8 @@ function PackageModal:draw_content(ctx, bounds)
   local child_h = bounds.h - ImGui.GetCursorPosY(ctx) - 8
 
   -- Use 0 width to fill remaining space (avoids right padding)
-  if ImGui.BeginChild(ctx, "##asset_view", 0, child_h) then
-    if self.view_mode == "grid" then
+  if ImGui.BeginChild(ctx, '##asset_view', 0, child_h) then
+    if self.view_mode == 'grid' then
       self:draw_grid_view(ctx, pkg)
     else
       self:draw_grid_view(ctx, pkg)  -- Use grid for both for now

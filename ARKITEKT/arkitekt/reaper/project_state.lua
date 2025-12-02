@@ -9,12 +9,12 @@ local Logger = require('arkitekt.debug.logger')
 local M = {}
 
 --- Creates a new project state storage manager
---- @param section string The ExtState section name (e.g., "ARK_MYAPP")
+--- @param section string The ExtState section name (e.g., 'ARK_MYAPP')
 --- @param proj? number Project number (default: 0 = current project)
 --- @return table Storage manager with save/load methods
 function M.new(section, proj)
-  if not section or section == "" then
-    error("ProjectState requires a non-empty section name")
+  if not section or section == '' then
+    error('ProjectState requires a non-empty section name')
   end
 
   local storage = {
@@ -36,7 +36,7 @@ function M.new(section, proj)
   --- @return any The loaded data, or default if not found
   function storage:load(key, default)
     local ok, json_str = reaper.GetProjExtState(self.proj, self.section, key)
-    if ok ~= 1 or not json_str or json_str == "" then
+    if ok ~= 1 or not json_str or json_str == '' then
       return default
     end
 
@@ -53,13 +53,13 @@ function M.new(section, proj)
   --- @return boolean True if key exists and has non-empty value
   function storage:exists(key)
     local ok, value = reaper.GetProjExtState(self.proj, self.section, key)
-    return ok == 1 and value and value ~= ""
+    return ok == 1 and value and value ~= ''
   end
 
   --- Delete a specific key from project ExtState
   --- @param key string The key to delete
   function storage:delete(key)
-    reaper.SetProjExtState(self.proj, self.section, key, "")
+    reaper.SetProjExtState(self.proj, self.section, key, '')
   end
 
   --- Clear all keys in this section
@@ -67,7 +67,7 @@ function M.new(section, proj)
     -- REAPER doesn't provide a way to enumerate keys, so we can't truly clear all
     -- Instead, we document common keys and let the caller specify them
     -- Or we could use a manifest key that tracks all keys used
-    Logger.warn("STORAGE", "ProjectState.clear_all() requires manual key specification")
+    Logger.warn('STORAGE', 'ProjectState.clear_all() requires manual key specification')
   end
 
   --- Get the section name

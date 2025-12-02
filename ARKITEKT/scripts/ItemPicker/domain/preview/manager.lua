@@ -23,7 +23,7 @@ function M.init(app_settings)
 end
 
 -- Start preview playback
--- force_mode: nil (use setting), "through_track" (force with FX), "direct" (force no FX)
+-- force_mode: nil (use setting), 'through_track' (force with FX), 'direct' (force no FX)
 function M.start_preview(item, force_mode)
   if not item then return end
 
@@ -34,7 +34,7 @@ function M.start_preview(item, force_mode)
   local item_guid = reaper.BR_GetMediaItemGUID(item)
 
   -- Get item duration for progress tracking
-  local item_len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+  local item_len = reaper.GetMediaItemInfo_Value(item, 'D_LENGTH')
 
   -- First, select the item for SWS commands to work
   reaper.SelectAllMediaItems(0, false)  -- Deselect all
@@ -44,11 +44,11 @@ function M.start_preview(item, force_mode)
   local take = reaper.GetActiveTake(item)
   if take and reaper.TakeIsMIDI(take) then
     -- MIDI requires timeline movement (limitation of Reaper API)
-    local item_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+    local item_pos = reaper.GetMediaItemInfo_Value(item, 'D_POSITION')
     reaper.SetEditCurPos(item_pos, false, false)
 
     -- Use SWS preview through track (required for MIDI)
-    local cmd_id = reaper.NamedCommandLookup("_SWS_PREVIEWTRACK")
+    local cmd_id = reaper.NamedCommandLookup('_SWS_PREVIEWTRACK')
     if cmd_id and cmd_id ~= 0 then
       reaper.Main_OnCommand(cmd_id, 0)
       state.previewing = true
@@ -60,15 +60,15 @@ function M.start_preview(item, force_mode)
   else
     -- Audio: Check force_mode or fall back to setting
     local use_through_track = settings and settings.play_item_through_track or false
-    if force_mode == "through_track" then
+    if force_mode == 'through_track' then
       use_through_track = true
-    elseif force_mode == "direct" then
+    elseif force_mode == 'direct' then
       use_through_track = false
     end
 
     if use_through_track then
       -- Preview through track with FX
-      local cmd_id = reaper.NamedCommandLookup("_SWS_PREVIEWTRACK")
+      local cmd_id = reaper.NamedCommandLookup('_SWS_PREVIEWTRACK')
       if cmd_id and cmd_id ~= 0 then
         reaper.Main_OnCommand(cmd_id, 0)
         state.previewing = true
@@ -79,7 +79,7 @@ function M.start_preview(item, force_mode)
       end
     else
       -- Direct preview (no FX, faster)
-      local cmd_id = reaper.NamedCommandLookup("_XENAKIOS_ITEMASPCM1")
+      local cmd_id = reaper.NamedCommandLookup('_XENAKIOS_ITEMASPCM1')
       if cmd_id and cmd_id ~= 0 then
         reaper.Main_OnCommand(cmd_id, 0)
         state.previewing = true
@@ -95,7 +95,7 @@ end
 function M.stop_preview()
   if state.previewing then
     -- Stop SWS preview
-    local cmd_id = reaper.NamedCommandLookup("_SWS_STOPPREVIEW")
+    local cmd_id = reaper.NamedCommandLookup('_SWS_STOPPREVIEW')
     if cmd_id and cmd_id ~= 0 then
       reaper.Main_OnCommand(cmd_id, 0)
     end

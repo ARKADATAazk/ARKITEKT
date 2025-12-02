@@ -87,22 +87,22 @@ end
 --- Get human-readable description of a Euclidean pattern
 -- @param pulses number Number of pulses
 -- @param steps number Total steps
--- @return string Description like "E(5,8)" or "E(3,8,2)" with rotation
+-- @return string Description like 'E(5,8)' or 'E(3,8,2)' with rotation
 function M.describe(pulses, steps, rotation)
   if rotation and rotation ~= 0 then
-    return string.format("E(%d,%d,%d)", pulses, steps, rotation)
+    return string.format('E(%d,%d,%d)', pulses, steps, rotation)
   else
-    return string.format("E(%d,%d)", pulses, steps)
+    return string.format('E(%d,%d)', pulses, steps)
   end
 end
 
 --- Convert pattern to visual representation
 -- @param pattern table Array of 1s and 0s
--- @return string Visual like "x..x..x." where x=pulse, .=rest
+-- @return string Visual like 'x..x..x.' where x=pulse, .=rest
 function M.visualize(pattern)
   local visual = {}
   for i, v in ipairs(pattern) do
-    visual[i] = (v == 1) and "x" or "."
+    visual[i] = (v == 1) and 'x' or '.'
   end
   return table.concat(visual)
 end

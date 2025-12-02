@@ -13,40 +13,40 @@ function M.create(callbacks, is_overlay_mode)
       elements = {
         -- Search field (left side)
         {
-          id = "search",
-          type = "inputtext",
+          id = 'search',
+          type = 'inputtext',
           width = 200,
           spacing_before = 0,
           config = {
-            placeholder = "Search templates...",
+            placeholder = 'Search templates...',
             get_value = callbacks.get_search_query,
             on_change = callbacks.on_search_changed,
           },
         },
         -- Spacer
         {
-          id = "spacer1",
-          type = "separator",
+          id = 'spacer1',
+          type = 'separator',
           flex = 1,
           spacing_before = 0,
           config = { show_line = false },
         },
         -- Sort dropdown (right side, grouped)
         {
-          id = "sort",
-          type = "combo",
+          id = 'sort',
+          type = 'combo',
           width = 120,
           spacing_before = 0,
           config = {
-            tooltip = "Sort by",
+            tooltip = 'Sort by',
             tooltip_delay = 0.5,
             enable_sort = false,
             get_value = callbacks.get_sort_mode,
             options = {
-              { value = "alphabetical", label = "Alphabetical" },
-              { value = "usage", label = "Most Used" },
-              { value = "insertion", label = "Recently Added" },
-              { value = "color", label = "Color" },
+              { value = 'alphabetical', label = 'Alphabetical' },
+              { value = 'usage', label = 'Most Used' },
+              { value = 'insertion', label = 'Recently Added' },
+              { value = 'color', label = 'Color' },
             },
             enable_mousewheel = true,
             on_change = callbacks.on_sort_changed,
@@ -54,14 +54,14 @@ function M.create(callbacks, is_overlay_mode)
         },
         -- Grid/List toggle button (grouped with sort, no spacing)
         {
-          id = "view_toggle",
-          type = "button",
+          id = 'view_toggle',
+          type = 'button',
           width = 60,
           spacing_before = 0,
           config = {
             label = callbacks.get_view_mode_label,
             on_click = callbacks.on_view_toggle,
-            tooltip = "Toggle view mode",
+            tooltip = 'Toggle view mode',
             tooltip_delay = 0.5,
           },
         },
