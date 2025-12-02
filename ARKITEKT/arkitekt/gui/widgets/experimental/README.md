@@ -176,6 +176,61 @@ Ark.StepSequencer.extended(ctx, { pattern = pattern })
 
 ---
 
+### Transport
+**File**: `transport.lua`
+**Status**: Prototype
+**Description**: Transport control buttons for play/stop/record/loop functionality.
+
+**Features**:
+- Standard transport buttons (play, stop, pause, record, loop, rewind, forward)
+- Configurable button set (choose which buttons to display)
+- State-aware button highlighting (playing = green, recording = red)
+- Icon-based buttons with circular design
+- Individual callbacks for each button action
+- Convenience constructors: `standard()`, `full()`, `minimal()`
+
+**Usage**:
+```lua
+-- Standard transport (play, stop, record)
+local result = Ark.Transport(ctx, {
+  state = transport_state,        -- STATE_STOPPED, STATE_PLAYING, STATE_RECORDING
+  is_loop_enabled = loop_enabled,
+  button_size = 32,
+  on_play = function()
+    transport_state = Ark.Transport.STATE_PLAYING
+  end,
+  on_stop = function()
+    transport_state = Ark.Transport.STATE_STOPPED
+  end,
+  on_record = function()
+    transport_state = Ark.Transport.STATE_RECORDING
+  end,
+  on_loop = function(enabled)
+    loop_enabled = enabled
+  end,
+})
+
+-- Custom button set
+Ark.Transport(ctx, {
+  buttons = {"rewind", "play", "stop", "forward"},
+  state = state,
+})
+
+-- Full transport with all buttons
+Ark.Transport.full(ctx, { state = state })
+
+-- Minimal (play/stop only)
+Ark.Transport.minimal(ctx, { state = state })
+```
+
+**Known Issues**:
+- Loop icon is simplified (not a true circular arrow)
+- No tooltips showing button functions
+- No keyboard shortcuts (space for play/stop, etc.)
+- Icons could be more polished
+
+---
+
 ### XYPad
 **File**: `xy_pad.lua`
 **Status**: Prototype

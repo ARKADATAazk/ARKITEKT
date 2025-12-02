@@ -41,6 +41,10 @@ local state = {
   sequencer_pattern = nil,
   sequencer_step = 1,
 
+  -- Transport state
+  transport_state = 0,  -- Ark.Transport.STATE_STOPPED
+  transport_loop = false,
+
   -- MediaItem selection
   media_selected = {false, true, false},
 
@@ -171,6 +175,38 @@ local function draw_gui(ctx)
     color = Colors.hexrgb("#33CCFF"),
   })
   if knob3.changed then state.knob3 = knob3.value end
+
+  ImGui.Spacing(ctx)
+
+  -- ========================================================================
+  -- TRANSPORT CONTROLS
+  -- ========================================================================
+  draw_section_header(ctx, "Transport - Play/Stop/Record controls")
+
+  Ark.Transport(ctx, {
+    buttons = {"rewind", "stop", "play", "record", "forward", "loop"},
+    state = state.transport_state,
+    is_loop_enabled = state.transport_loop,
+    button_size = 36,
+    on_play = function()
+      state.transport_state = Ark.Transport.STATE_PLAYING
+    end,
+    on_stop = function()
+      state.transport_state = Ark.Transport.STATE_STOPPED
+    end,
+    on_record = function()
+      state.transport_state = Ark.Transport.STATE_RECORDING
+    end,
+    on_loop = function(enabled)
+      state.transport_loop = enabled
+    end,
+    on_rewind = function()
+      print("Rewind pressed")
+    end,
+    on_forward = function()
+      print("Forward pressed")
+    end,
+  })
 
   ImGui.Spacing(ctx)
 

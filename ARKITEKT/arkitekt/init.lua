@@ -100,6 +100,7 @@ local MODULES = {
   Piano = 'arkitekt.gui.widgets.experimental.audio.piano',
   SpectrumAnalyzer = 'arkitekt.gui.widgets.experimental.spectrum_analyzer',
   StepSequencer = 'arkitekt.gui.widgets.experimental.step_sequencer',
+  Transport = 'arkitekt.gui.widgets.experimental.transport',
   VUMeter = 'arkitekt.gui.widgets.experimental.vu_meter',
   Waveform = 'arkitekt.gui.widgets.experimental.audio.waveform',
   XYPad = 'arkitekt.gui.widgets.experimental.xy_pad',
