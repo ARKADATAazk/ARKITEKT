@@ -29,7 +29,6 @@ local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT%-Dev[/\
 local ImGui = Ark.ImGui
 local Shell = require("arkitekt.app.shell")
 local Settings = require("arkitekt.core.settings")
-local RadioButton = require("arkitekt.gui.widgets.primitives.radio_button")
 local hexrgb = Ark.Colors.hexrgb
 
 local reaper = reaper
@@ -458,16 +457,15 @@ end
 -- UI - TILE RENDERING
 -- ============================================================================
 
-local TILE_HEIGHT = 32
-local TILE_PADDING = 6
-local COLUMN_GAP = 8
+local TILE_HEIGHT = 36
+local TILE_PADDING = 8
 
 local function render_app_tile(ctx, app_data, tile_width, shell_state)
   local x1, y1 = ImGui.GetCursorScreenPos(ctx)
   local x2, y2 = x1 + tile_width, y1 + TILE_HEIGHT
   local dl = ImGui.GetWindowDrawList(ctx)
 
-  -- Tile background - auto-color based on first letter
+  -- Tile background
   local bg_color = get_tile_color(app_data.name)
   local border_color = hexrgb("#2A2A2A")
 
@@ -478,10 +476,10 @@ local function render_app_tile(ctx, app_data, tile_width, shell_state)
   ImGui.SetCursorScreenPos(ctx, x1 + TILE_PADDING, y1 + (TILE_HEIGHT - 14) / 2)
   ImGui.PushFont(ctx, shell_state.fonts.bold, 12)
 
-  local max_name_width = 120
+  local max_name_width = 150
   local name_display = app_data.name
-  if #name_display > 18 then
-    name_display = name_display:sub(1, 15) .. "..."
+  if #name_display > 22 then
+    name_display = name_display:sub(1, 19) .. "..."
   end
   ImGui.Text(ctx, name_display)
   ImGui.PopFont(ctx)
@@ -490,92 +488,54 @@ local function render_app_tile(ctx, app_data, tile_width, shell_state)
     ImGui.SetTooltip(ctx, app_data.name)
   end
 
-  -- MIDDLE: Radio buttons for worktrees
-  local radio_start_x = x1 + TILE_PADDING + max_name_width + 8
-  ImGui.SetCursorScreenPos(ctx, radio_start_x, y1 + (TILE_HEIGHT - 18) / 2)
+  -- RIGHT: One button per worktree
+  local button_start_x = x1 + TILE_PADDING + max_name_width + 12
+  ImGui.SetCursorScreenPos(ctx, button_start_x, y1 + (TILE_HEIGHT - 28) / 2)
 
-  -- Find which worktrees have this app
+  -- Find available worktrees for this app
   local available_worktrees = {}
   for _, inst in ipairs(app_data.instances) do
-    available_worktrees[inst.worktree_idx] = true
-  end
-
-  for wt_idx, wt in ipairs(State.worktrees) do
-    if available_worktrees[wt_idx] then
-      local is_selected = (app_data.selected_wt_idx == wt_idx)
-
-      -- Find the instance for tooltip
-      local tooltip_text = nil
-      for _, inst in ipairs(app_data.instances) do
-        if inst.worktree_idx == wt_idx then
-          tooltip_text = inst.full_path
-          break
-        end
+    for wt_idx, wt in ipairs(State.worktrees) do
+      if wt_idx == inst.worktree_idx then
+        table.insert(available_worktrees, { wt_idx = wt_idx, wt = wt, path = inst.full_path })
+        break
       end
-
-      local result = RadioButton.draw(ctx, {
-        id = app_data.name .. "_wt" .. wt_idx,
-        label = wt.key,
-        selected = is_selected,
-        size = 18,
-        inner_size = 12,
-        selected_size = 8,
-        spacing = 6,
-        tooltip = tooltip_text,
-        on_click = function()
-          State:select_worktree_for_app(app_data.name, wt_idx)
-        end,
-        advance = "none",
-      })
-
-      ImGui.SameLine(ctx, 0, 6)
     end
   end
 
-  -- RIGHT: Debug + Launch buttons
-  local button_width = 54
-  local button_gap = 4
-  local buttons_total = button_width * 2 + button_gap
-  local buttons_x = x1 + tile_width - buttons_total - TILE_PADDING
-  ImGui.SetCursorScreenPos(ctx, buttons_x, y1 + (TILE_HEIGHT - 24) / 2)
+  -- Render one button per worktree
+  for i, wt_info in ipairs(available_worktrees) do
+    local tooltip = string.format("%s\n\nWorktree: %s\nPath: %s\n\nLeft Click: Launch\nRight Click: Debug",
+      app_data.name, wt_info.wt.key, wt_info.path)
 
-  -- Debug button (orange)
-  Ark.Button(ctx, {
-    id = "debug_" .. app_data.name,
-    label = "Debug",
-    width = button_width,
-    height = 24,
-    tooltip = "Launch with profiler enabled",
-    on_click = function()
+    -- Measure text width and add padding (button has internal padding of ~12px per side)
+    local text_w, text_h = ImGui.CalcTextSize(ctx, wt_info.wt.key)
+    local button_width = text_w + 24  -- Add padding for button chrome
+
+    local result = Ark.Button(ctx, {
+      id = app_data.name .. "_" .. wt_info.wt.key,
+      label = wt_info.wt.key,
+      width = button_width,
+      height = 28,
+      tooltip = tooltip,
+      on_click = function()
+        State:select_worktree_for_app(app_data.name, wt_info.wt_idx)
+        State:launch_app(app_data.name, { debug = false })
+      end,
+    })
+
+    -- Right click for debug launch
+    if ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right) then
+      State:select_worktree_for_app(app_data.name, wt_info.wt_idx)
       State:launch_app(app_data.name, { debug = true })
-    end,
-    colors = {
-      bg = hexrgb("#CC6600"),
-      bg_hover = hexrgb("#DD7711"),
-      bg_active = hexrgb("#BB5500"),
-    }
-  })
+    end
 
-  ImGui.SameLine(ctx, 0, button_gap)
+    if i < #available_worktrees then
+      ImGui.SameLine(ctx, 0, 4)
+    end
+  end
 
-  -- Launch button (green)
-  Ark.Button(ctx, {
-    id = "launch_" .. app_data.name,
-    label = "Launch",
-    width = button_width,
-    height = 24,
-    on_click = function()
-      State:launch_app(app_data.name)
-    end,
-    colors = {
-      bg = hexrgb("#00AA66"),
-      bg_hover = hexrgb("#00CC77"),
-      bg_active = hexrgb("#009955"),
-    }
-  })
-
-  -- Move cursor to below this tile, at the same X where the tile started
-  -- This ensures the next tile in the same column will render directly below
+  -- Move cursor below tile
   ImGui.SetCursorScreenPos(ctx, x1, y2 + 3)
   ImGui.Dummy(ctx, 0, 0)
 end
@@ -777,43 +737,14 @@ local function draw_main(ctx, shell_state)
       end
       ImGui.PopStyleColor(ctx)
     else
-      -- Two-column grid - fill left column first, then right column
-      local tile_width = (panel_w - COLUMN_GAP) / 2
-      local total_apps = #filtered_apps
-      local apps_per_col = math.ceil(total_apps / 2)
+      -- Single column layout
+      local tile_width = panel_w
 
-      -- Save starting position
-      local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
-      local left_x = start_x
-      local right_x = start_x + tile_width + COLUMN_GAP
-
-      -- Draw left column (first half of apps)
-      local current_y = start_y
-      for i = 1, apps_per_col do
-        if filtered_apps[i] then
-          ImGui.SetCursorScreenPos(ctx, left_x, current_y)
-          render_app_tile(ctx, filtered_apps[i], tile_width, shell_state)
-          current_y = current_y + TILE_HEIGHT + 3
+      for i, app_data in ipairs(filtered_apps) do
+        render_app_tile(ctx, app_data, tile_width, shell_state)
+        if i < #filtered_apps then
+          ImGui.Dummy(ctx, 0, 4)
         end
-      end
-      local left_end_y = current_y
-
-      -- Draw right column (second half of apps)
-      if total_apps > apps_per_col then
-        current_y = start_y
-        for i = apps_per_col + 1, total_apps do
-          ImGui.SetCursorScreenPos(ctx, right_x, current_y)
-          render_app_tile(ctx, filtered_apps[i], tile_width, shell_state)
-          current_y = current_y + TILE_HEIGHT + 3
-        end
-        local right_end_y = current_y
-
-        -- Set cursor to the lowest point
-        local final_y = math.max(left_end_y, right_end_y)
-        ImGui.SetCursorScreenPos(ctx, start_x, final_y)
-      else
-        -- Only left column, position cursor below it
-        ImGui.SetCursorScreenPos(ctx, start_x, left_end_y)
       end
     end
   end
