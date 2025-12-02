@@ -98,6 +98,7 @@ local MODULES = {
   Fader = 'arkitekt.gui.widgets.experimental.fader',
   MediaItem = 'arkitekt.gui.widgets.experimental.audio.media_item',
   MIDIPianoRoll = 'arkitekt.gui.widgets.experimental.audio.midi_piano_roll',
+  Nodes = 'arkitekt.gui.widgets.experimental.nodes',
   Piano = 'arkitekt.gui.widgets.experimental.audio.piano',
   SpectrumAnalyzer = 'arkitekt.gui.widgets.experimental.spectrum_analyzer',
   StepSequencer = 'arkitekt.gui.widgets.experimental.step_sequencer',
