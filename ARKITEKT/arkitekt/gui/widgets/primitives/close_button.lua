@@ -40,16 +40,16 @@ function M.new(opts)
     size = opts.size or 32,
     margin = opts.margin or 16,
     proximity_distance = opts.proximity_distance or 150,
-    
-    bg_color = opts.bg_color or hexrgb("#000000"),
+
+    bg_color = opts.bg_color or hexrgb('#000000'),
     bg_opacity = opts.bg_opacity or 0.6,
     bg_opacity_hover = opts.bg_opacity_hover or 0.8,
-    
-    icon_color = opts.icon_color or hexrgb("#FFFFFF"),
+
+    icon_color = opts.icon_color or hexrgb('#FFFFFF'),
     icon_opacity = opts.icon_opacity or 0.8,
-    
-    hover_color = opts.hover_color or hexrgb("#FF4444"),
-    active_color = opts.active_color or hexrgb("#FF0000"),
+
+    hover_color = opts.hover_color or hexrgb('#FF4444'),
+    active_color = opts.active_color or hexrgb('#FF0000'),
     
     alpha = create_alpha_tracker(12.0),
     hover_alpha = create_alpha_tracker(16.0),
@@ -89,9 +89,9 @@ function M.new(opts)
     
     local is_hovered = false
     local clicked = false
-    
+
     if alpha > 0.8 then
-      if ImGui.InvisibleButton(ctx, "##close_button", self.size, self.size) then
+      if ImGui.InvisibleButton(ctx, '##close_button', self.size, self.size) then
         clicked = true
       end
       is_hovered = ImGui.IsItemHovered(ctx)

@@ -22,15 +22,15 @@ M.DEFAULTS = {
   size = 18,  -- For icon badges
 
   -- Content
-  text = "",
+  text = '',
   icon = nil,
 
   -- Colors
-  base_color = Colors.hexrgb("#555555"),  -- For border derivation
+  base_color = Colors.hexrgb('#555555'),  -- For border derivation
   alpha = 255,
-  bg_color = Colors.hexrgb("#14181C"),
-  text_color = Colors.hexrgb("#FFFFFFDD"),
-  icon_color = Colors.hexrgb("#FFFFFF"),
+  bg_color = Colors.hexrgb('#14181C'),
+  text_color = Colors.hexrgb('#FFFFFFDD'),
+  icon_color = Colors.hexrgb('#FFFFFF'),
 
   -- Style
   padding_x = 5,
@@ -82,7 +82,7 @@ function M.text(ctx, opts)
 
   local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
   local x, y = opts.x, opts.y
-  local text = opts.text or ""
+  local text = opts.text or ''
   local base_color = opts.base_color
   local alpha = opts.alpha or 255
 
@@ -127,7 +127,7 @@ function M.icon(ctx, opts)
   local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
   local x, y = opts.x, opts.y
   local size = opts.size or 18
-  local icon_char = opts.icon or ""
+  local icon_char = opts.icon or ''
   local base_color = opts.base_color
   local alpha = opts.alpha or 255
 
@@ -176,9 +176,9 @@ function M.clickable(ctx, opts)
   local result = M.text(ctx, opts)
 
   -- Create invisible button over badge
-  local unique_id = opts.id or "badge"
+  local unique_id = opts.id or 'badge'
   ImGui.SetCursorScreenPos(ctx, result.x1, result.y1)
-  ImGui.InvisibleButton(ctx, "##badge_" .. unique_id, result.width, result.height)
+  ImGui.InvisibleButton(ctx, '##badge_' .. unique_id, result.width, result.height)
 
   -- Handle clicks
   local left_clicked = ImGui.IsItemClicked(ctx, 0)
@@ -219,7 +219,7 @@ function M.favorite(ctx, opts)
   if opts.icon_font then
     star_char = utf8.char(0xF186)  -- Remixicon star-fill
   else
-    star_char = "★"  -- U+2605 BLACK STAR
+    star_char = '★'  -- U+2605 BLACK STAR
   end
 
   opts.icon = star_char

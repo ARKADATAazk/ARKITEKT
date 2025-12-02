@@ -16,7 +16,7 @@ local M = {}
 
 local DEFAULTS = {
   -- Identity
-  id = "corner_button",
+  id = 'corner_button',
 
   -- Position (nil = use cursor)
   x = nil,
@@ -26,13 +26,13 @@ local DEFAULTS = {
   size = 24,
 
   -- Corner position and rounding
-  position = "tl",        -- Corner position: "tl", "tr", "bl", "br"
+  position = 'tl',        -- Corner position: 'tl', 'tr', 'bl', 'br'
   outer_rounding = 0,     -- Rounding for outer corner
   inner_rounding = 0,     -- Rounding for inner corner
 
   -- Content
-  label = "",
-  icon = "",
+  label = '',
+  icon = '',
 
   -- State
   disabled = false,
@@ -60,7 +60,7 @@ local DEFAULTS = {
   custom_draw = nil,
 
   -- Cursor control
-  advance = "vertical",
+  advance = 'vertical',
 
   -- Draw list
   draw_list = nil,
@@ -193,7 +193,7 @@ function M.draw(ctx, opts)
   end
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(ctx, opts, "corner_button")
+  local unique_id = Base.resolve_id(ctx, opts, 'corner_button')
 
   -- Get instance for animation
   local inst = get_instance(unique_id)
