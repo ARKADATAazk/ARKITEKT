@@ -34,12 +34,12 @@ end
 -- Validate UUID format
 -- Returns: true if valid UUID format, false otherwise
 function M.is_valid(uuid)
-  if type(uuid) ~= "string" then
+  if type(uuid) ~= 'string' then
     return false
   end
 
   -- UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
-  local pattern = "^%x%x%x%x%x%x%x%x%-%x%x%x%x%-4%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x$"
+  local pattern = '^%x%x%x%x%x%x%x%x%-%x%x%x%x%-4%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x$'
   return uuid:match(pattern) ~= nil
 end
 

@@ -24,7 +24,7 @@ local M = {}
 -- Convert hex string to 0xRRGGBBAA format
 -- Accepts #RRGGBB, #RRGGBBAA, RRGGBB, or RRGGBBAA
 function M.hexrgb(hex_string)
-  if hex_string:sub(1, 1) == "#" then
+  if hex_string:sub(1, 1) == '#' then
     hex_string = hex_string:sub(2)
   end
 
@@ -38,21 +38,21 @@ function M.hexrgb(hex_string)
   end
 end
 
--- Convert 0xRRGGBBAA color to hex string "#RRGGBB" (without alpha)
+-- Convert 0xRRGGBBAA color to hex string '#RRGGBB' (without alpha)
 function M.to_hexrgb(color)
   local r = (color >> 24) & 0xFF
   local g = (color >> 16) & 0xFF
   local b = (color >> 8) & 0xFF
-  return string.format("#%02X%02X%02X", r, g, b)
+  return string.format('#%02X%02X%02X', r, g, b)
 end
 
--- Convert 0xRRGGBBAA color to hex string "#RRGGBBAA" (with alpha)
+-- Convert 0xRRGGBBAA color to hex string '#RRGGBBAA' (with alpha)
 function M.to_hexrgba(color)
   local r = (color >> 24) & 0xFF
   local g = (color >> 16) & 0xFF
   local b = (color >> 8) & 0xFF
   local a = color & 0xFF
-  return string.format("#%02X%02X%02X%02X", r, g, b, a)
+  return string.format('#%02X%02X%02X%02X', r, g, b, a)
 end
 
 -- Convert hex string or color to 0xRRGGBBAA format with specified alpha
@@ -60,7 +60,7 @@ end
 -- Alpha is a float 0.0-1.0 that gets converted to 0-255 range
 function M.hexrgba(hex_or_color, alpha)
   local color
-  if type(hex_or_color) == "string" then
+  if type(hex_or_color) == 'string' then
     color = M.hexrgb(hex_or_color)
   else
     color = hex_or_color or 0xFFFFFFFF
@@ -200,7 +200,7 @@ end
 
 function M.auto_text_color(bg_color)
   local lum = M.luminance(bg_color)
-  return lum > 0.5 and M.hexrgb("#000000") or M.hexrgb("#FFFFFF")
+  return lum > 0.5 and M.hexrgb('#000000') or M.hexrgb('#FFFFFF')
 end
 
 -- ============================================================================
@@ -209,8 +209,8 @@ end
 
 function M.rgb_to_reaper(rgb_color)
   local rgb_hex
-  
-  if type(rgb_color) == "string" then
+
+  if type(rgb_color) == 'string' then
     rgb_hex = tonumber(rgb_color, 16)
   else
     rgb_hex = rgb_color
@@ -625,7 +625,7 @@ end
 
 function M.derive_marching_ants(base_color, opts)
   if not base_color or base_color == 0 then
-    return M.hexrgb("#42E896")
+    return M.hexrgb('#42E896')
   end
 
   opts = opts or {}
@@ -636,7 +636,7 @@ function M.derive_marching_ants(base_color, opts)
   local max_ch = max(r, g, b)
 
   if max_ch == 0 then
-    return M.hexrgb("#42E896")
+    return M.hexrgb('#42E896')
   end
   
   local boost = 255 / max_ch
@@ -794,7 +794,7 @@ end
 
 function M.tile_text_colors(base_color)
   local accent = M.same_hue_variant(base_color, 1.25, 1.15, 0xFF)
-  local name = M.hexrgb("#DDE3E9")
+  local name = M.hexrgb('#DDE3E9')
   return accent, name
 end
 

@@ -33,7 +33,7 @@ end
 --- @return any result The result or error message
 function M.try_call(fn, ...)
   if not fn then
-    return false, "Function is nil"
+    return false, 'Function is nil'
   end
 
   local ok, result = pcall(fn, ...)
@@ -42,7 +42,7 @@ end
 
 --- Call a function and log errors (requires Logger)
 --- @param fn? function The function to call
---- @param context? string Context for error logging (e.g., "OnClick")
+--- @param context? string Context for error logging (e.g., 'OnClick')
 --- @param ... any Arguments to pass to the function
 --- @return any|nil The result or nil on error
 function M.safe_call_with_log(fn, context, ...)

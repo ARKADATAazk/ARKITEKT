@@ -47,8 +47,8 @@ end
 --- @return table New table with deeply merged values
 function M.deepMerge(base, override)
   -- Handle non-table cases
-  if type(base) ~= "table" then return override end
-  if type(override) ~= "table" then return base end
+  if type(base) ~= 'table' then return override end
+  if type(override) ~= 'table' then return base end
 
   local result = {}
 
@@ -59,7 +59,7 @@ function M.deepMerge(base, override)
 
   -- Recursively merge override
   for k, v in pairs(override) do
-    if type(v) == "table" and type(result[k]) == "table" then
+    if type(v) == 'table' and type(result[k]) == 'table' then
       result[k] = M.deepMerge(result[k], v)
     else
       result[k] = v
@@ -87,7 +87,7 @@ function M.apply_defaults(defaults, user_config, deep_keys)
 
   -- Apply defaults
   for k, v in pairs(defaults) do
-    if deep_keys[k] and type(v) == "table" and type(user_config[k]) == "table" then
+    if deep_keys[k] and type(v) == 'table' and type(user_config[k]) == 'table' then
       -- Deep merge for specified keys (e.g., nested popup config)
       result[k] = M.deepMerge(v, user_config[k])
     else
@@ -121,13 +121,13 @@ function M.merge_safe(base, supplement)
 
   -- Deep copy helper (2 levels deep to handle options arrays)
   local function deep_copy_value(v)
-    if type(v) ~= "table" then
+    if type(v) ~= 'table' then
       return v  -- Primitives and functions copied by reference
     end
 
     local copy = {}
     for k2, v2 in pairs(v) do
-      if type(v2) == "table" then
+      if type(v2) == 'table' then
         -- Copy nested tables (e.g., options = {{value=x, label=y}, ...})
         local nested = {}
         for k3, v3 in pairs(v2) do
@@ -174,7 +174,7 @@ function M.apply_preset(base, user_config, presets, context_defaults)
   -- 1. Apply preset if specified (by name or direct table)
   if user_config.preset_name and presets[user_config.preset_name] then
     config = M.merge(config, presets[user_config.preset_name])
-  elseif user_config.preset and type(user_config.preset) == "table" then
+  elseif user_config.preset and type(user_config.preset) == 'table' then
     config = M.merge(config, user_config.preset)
   end
 
@@ -202,7 +202,7 @@ function M.validate(config, schema)
     local value = config[key]
 
     -- Handle optional keys
-    if expected_type:sub(-1) == "?" then
+    if expected_type:sub(-1) == '?' then
       expected_type = expected_type:sub(1, -2)
       if value == nil then
         goto continue
@@ -212,7 +212,7 @@ function M.validate(config, schema)
     -- Check type
     if type(value) ~= expected_type then
       return false, string.format(
-        "Invalid config: '%s' expected %s, got %s",
+        'Invalid config: \'%s\' expected %s, got %s',
         key, expected_type, type(value)
       )
     end
@@ -235,7 +235,7 @@ function M.freeze(t)
   return setmetatable({}, {
     __index = t,
     __newindex = function()
-      error("Attempt to modify read-only config")
+      error('Attempt to modify read-only config')
     end,
     __metatable = false,
   })
@@ -256,22 +256,22 @@ function M.diff(expected, actual)
   -- Check expected keys
   for k, v in pairs(expected) do
     if actual[k] ~= v then
-      if type(v) == "number" and type(actual[k]) == "number" then
+      if type(v) == 'number' and type(actual[k]) == 'number' then
         -- Format as hex if looks like color
         if v > 0xFFFFFF then
           differences[#differences + 1] = string.format(
-            "  %s: expected 0x%08X, got %s",
-            k, v, actual[k] and string.format("0x%08X", actual[k]) or "nil"
+            '  %s: expected 0x%08X, got %s',
+            k, v, actual[k] and string.format('0x%08X', actual[k]) or 'nil'
           )
         else
           differences[#differences + 1] = string.format(
-            "  %s: expected %s, got %s",
+            '  %s: expected %s, got %s',
             k, tostring(v), tostring(actual[k])
           )
         end
       else
         differences[#differences + 1] = string.format(
-          "  %s: expected %s, got %s",
+          '  %s: expected %s, got %s',
           k, tostring(v), tostring(actual[k])
         )
       end
@@ -282,7 +282,7 @@ function M.diff(expected, actual)
   for k, v in pairs(actual) do
     if expected[k] == nil then
       differences[#differences + 1] = string.format(
-        "  %s: not in expected, got %s",
+        '  %s: not in expected, got %s',
         k, tostring(v)
       )
     end

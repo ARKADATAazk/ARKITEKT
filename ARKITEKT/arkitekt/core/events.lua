@@ -3,14 +3,14 @@
 -- Generic event bus for decoupled pub/sub communication
 --
 -- Usage:
---   local Events = require("arkitekt.core.events")
+--   local Events = require('arkitekt.core.events')
 --   local bus = Events.new()
 --
 --   -- Subscribe
---   bus:on("user.clicked", function(data) print(data.x, data.y) end)
+--   bus:on('user.clicked', function(data) print(data.x, data.y) end)
 --
 --   -- Emit
---   bus:emit("user.clicked", { x = 100, y = 200 })
+--   bus:emit('user.clicked', { x = 100, y = 200 })
 
 local Logger = require('arkitekt.debug.logger')
 
@@ -30,16 +30,16 @@ function M.new(options)
   }
 
   --- Subscribe to an event
-  --- @param event_name string Event name (e.g., "playlist.changed")
+  --- @param event_name string Event name (e.g., 'playlist.changed')
   --- @param callback function Function to call when event fires
   --- @param priority number Optional priority (higher = earlier execution, default 0)
   --- @return function unsubscribe Function to remove this listener
   function bus:on(event_name, callback, priority)
-    if type(event_name) ~= "string" then
-      error("Event name must be a string")
+    if type(event_name) ~= 'string' then
+      error('Event name must be a string')
     end
-    if type(callback) ~= "function" then
-      error("Callback must be a function")
+    if type(callback) ~= 'function' then
+      error('Callback must be a function')
     end
 
     priority = priority or 0
@@ -62,7 +62,7 @@ function M.new(options)
     end)
 
     if self.debug then
-      Logger.debug("EVENTS", "Subscribed to '%s' (priority: %d)", event_name, priority)
+      Logger.debug('EVENTS', 'Subscribed to \'%s\' (priority: %d)', event_name, priority)
     end
 
     -- Return unsubscribe function
@@ -74,7 +74,7 @@ function M.new(options)
         if l.id == listener_id then
           table.remove(self.listeners[event_name], i)
           if self.debug then
-            Logger.debug("EVENTS", "Unsubscribed from '%s'", event_name)
+            Logger.debug('EVENTS', 'Unsubscribed from \'%s\'', event_name)
           end
           break
         end
@@ -110,7 +110,7 @@ function M.new(options)
     end
 
     if self.debug then
-      Logger.debug("EVENTS", "Emitting '%s'", event_name)
+      Logger.debug('EVENTS', 'Emitting \'%s\'', event_name)
     end
 
     -- Call specific listeners
@@ -124,8 +124,8 @@ function M.new(options)
       end
     end
 
-    -- Call wildcard listeners (subscribed to "*")
-    local wildcard_callbacks = self.listeners["*"]
+    -- Call wildcard listeners (subscribed to '*')
+    local wildcard_callbacks = self.listeners['*']
     if wildcard_callbacks then
       for _, listener in ipairs(wildcard_callbacks) do
         local ok, err = xpcall(listener.callback, debug.traceback, event_name, data)
@@ -141,7 +141,7 @@ function M.new(options)
   function bus:off(event_name)
     self.listeners[event_name] = nil
     if self.debug then
-      Logger.debug("EVENTS", "Removed all listeners for '%s'", event_name)
+      Logger.debug('EVENTS', 'Removed all listeners for \'%s\'', event_name)
     end
   end
 
@@ -149,7 +149,7 @@ function M.new(options)
   function bus:clear()
     self.listeners = {}
     if self.debug then
-      Logger.debug("EVENTS", "Cleared all listeners")
+      Logger.debug('EVENTS', 'Cleared all listeners')
     end
   end
 
@@ -169,18 +169,18 @@ function M.new(options)
   --- @param count number Optional max number of events to print
   function bus:print_history(count)
     count = count or 10
-    Logger.info("EVENTS", "Last %d events:", count)
+    Logger.info('EVENTS', 'Last %d events:', count)
     for i = 1, math.min(count, #self.history) do
       local event = self.history[i]
-      Logger.info("EVENTS", "  [%.3f] %s", event.timestamp, event.event)
+      Logger.info('EVENTS', '  [%.3f] %s', event.timestamp, event.event)
     end
   end
 
   --- Get listener count for an event
-  --- @param event_name string Event name (or "*" for all)
+  --- @param event_name string Event name (or '*' for all)
   --- @return number count Number of listeners
   function bus:listener_count(event_name)
-    if event_name == "*" then
+    if event_name == '*' then
       local total = 0
       for _, listeners in pairs(self.listeners) do
         total = total + #listeners
@@ -197,7 +197,7 @@ function M.new(options)
   function bus:set_debug(enabled)
     self.debug = enabled
     if enabled then
-      Logger.info("EVENTS", "Debug mode enabled")
+      Logger.info('EVENTS', 'Debug mode enabled')
     end
   end
 

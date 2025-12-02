@@ -12,11 +12,11 @@ function M.format_hms(seconds)
     local hours = (seconds / 3600) // 1
     local minutes = (seconds % 3600) // 60
     local secs = (seconds % 60) // 1
-    return string.format("%d:%02d:%02d", hours, minutes, secs)
+    return string.format('%d:%02d:%02d', hours, minutes, secs)
   else
     local minutes = (seconds / 60) // 1
     local secs = (seconds % 60) // 1
-    return string.format("%d:%02d", minutes, secs)
+    return string.format('%d:%02d', minutes, secs)
   end
 end
 
@@ -30,9 +30,9 @@ function M.format_hms_centiseconds(seconds)
   local cs = ((seconds % 1) * 100) // 1  -- centiseconds
 
   if hours > 0 then
-    return string.format("%d:%02d:%02d:%02d", hours, mins, secs, cs)
+    return string.format('%d:%02d:%02d:%02d', hours, mins, secs, cs)
   else
-    return string.format("%02d:%02d:%02d", mins, secs, cs)
+    return string.format('%02d:%02d:%02d', mins, secs, cs)
   end
 end
 
@@ -42,7 +42,7 @@ end
 function M.format_mmss(seconds)
   local minutes = (seconds / 60) // 1
   local secs = (seconds % 60) // 1
-  return string.format("%02d:%02d", minutes, secs)
+  return string.format('%02d:%02d', minutes, secs)
 end
 
 return M

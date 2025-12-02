@@ -6,19 +6,19 @@
 -- Supports guards, context, history, and per-state lifecycle hooks.
 --
 -- Usage:
---   local StateMachine = require("arkitekt.core.state_machine")
+--   local StateMachine = require('arkitekt.core.state_machine')
 --   local fsm = StateMachine.new({
---     initial = "idle",
+--     initial = 'idle',
 --     states = { idle = {}, playing = {}, paused = {} },
 --     transitions = {
---       idle = { play = "playing" },
---       playing = { pause = "paused", stop = "idle" },
---       paused = { play = "playing", stop = "idle" },
+--       idle = { play = 'playing' },
+--       playing = { pause = 'paused', stop = 'idle' },
+--       paused = { play = 'playing', stop = 'idle' },
 --     },
 --   })
 --
---   fsm:send("play")  -- idle → playing
---   fsm:is("playing") -- true
+--   fsm:send('play')  -- idle → playing
+--   fsm:is('playing') -- true
 
 local M = {}
 
@@ -38,11 +38,11 @@ local DEFAULT_MAX_HISTORY = 20
 --- @param payload any Payload from send()
 --- @return string|nil resolved_target Resolved target state or nil if guard fails
 local function _resolve_target(target, context, payload)
-  if type(target) == "function" then
+  if type(target) == 'function' then
     -- Guard function: returns target state or nil to block
     return target(context, payload)
-  elseif type(target) == "table" then
-    -- Table with guard: { target = "state", guard = fn }
+  elseif type(target) == 'table' then
+    -- Table with guard: { target = 'state', guard = fn }
     if target.guard then
       local allowed = target.guard(context, payload)
       if not allowed then
@@ -94,7 +94,7 @@ function M.new(config)
   config = config or {}
 
   if not config.initial then
-    error("StateMachine requires 'initial' state")
+    error('StateMachine requires \'initial\' state')
   end
 
   local fsm = {
@@ -157,23 +157,23 @@ function M.new(config)
   function fsm:send(action, payload)
     local from_transitions = self.transitions[self.state]
     if not from_transitions then
-      return false, string.format("No transitions defined for state '%s'", self.state)
+      return false, string.format('No transitions defined for state \'%s\'', self.state)
     end
 
     local target_def = from_transitions[action]
     if not target_def then
-      return false, string.format("No transition '%s' from state '%s'", action, self.state)
+      return false, string.format('No transition \'%s\' from state \'%s\'', action, self.state)
     end
 
     -- Resolve target (handles guards)
     local target = _resolve_target(target_def, self.context, payload)
     if not target then
-      return false, string.format("Guard blocked transition '%s' from '%s'", action, self.state)
+      return false, string.format('Guard blocked transition \'%s\' from \'%s\'', action, self.state)
     end
 
     -- Validate target state exists (if states are defined)
     if next(self.states) and not self.states[target] then
-      return false, string.format("Target state '%s' not defined", target)
+      return false, string.format('Target state \'%s\' not defined', target)
     end
 
     local prev_state = self.state
@@ -210,7 +210,7 @@ function M.new(config)
 
     -- Emit event if bus connected
     if self.events then
-      self.events:emit("state.changed", {
+      self.events:emit('state.changed', {
         from = prev_state,
         to = target,
         action = action,
@@ -239,7 +239,7 @@ function M.new(config)
     self.state = target
 
     -- Record history
-    _record_history(self._history, self._max_history, prev_state, target, "_force")
+    _record_history(self._history, self._max_history, prev_state, target, '_force')
 
     -- Enter new state
     local new_state_def = self.states[target]

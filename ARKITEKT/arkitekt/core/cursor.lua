@@ -12,7 +12,7 @@ local M = {}
 -- (for fast movement that might skip the hover zone)
 
 --- Check if cursor crossed through an edge between frames
---- @param edge string Edge direction ("left", "right", "top", "bottom")
+--- @param edge string Edge direction ('left', 'right', 'top', 'bottom')
 --- @param prev_x number Previous cursor X (or nil if not tracked)
 --- @param prev_y number Previous cursor Y (or nil if not tracked)
 --- @param curr_x number Current cursor X
@@ -27,28 +27,28 @@ function M.crossed_edge(edge, prev_x, prev_y, curr_x, curr_y, bounds, y_padding,
   y_padding = y_padding or 0
   x_padding = x_padding or 0
 
-  if edge == "left" then
+  if edge == 'left' then
     -- Was inside (right of left edge), now outside to the left
     local was_inside = prev_x > bounds.x
     local now_outside = curr_x < bounds.x
     local in_y_range = curr_y >= (bounds.y - y_padding) and curr_y <= (bounds.y + bounds.h + y_padding)
     return was_inside and now_outside and in_y_range
 
-  elseif edge == "right" then
+  elseif edge == 'right' then
     -- Was inside (left of right edge), now outside to the right
     local was_inside = prev_x < (bounds.x + bounds.w)
     local now_outside = curr_x > (bounds.x + bounds.w)
     local in_y_range = curr_y >= (bounds.y - y_padding) and curr_y <= (bounds.y + bounds.h + y_padding)
     return was_inside and now_outside and in_y_range
 
-  elseif edge == "top" then
+  elseif edge == 'top' then
     -- Was inside (below top edge), now outside above
     local was_inside = prev_y > bounds.y
     local now_outside = curr_y < bounds.y
     local in_x_range = curr_x >= (bounds.x - x_padding) and curr_x <= (bounds.x + bounds.w + x_padding)
     return was_inside and now_outside and in_x_range
 
-  elseif edge == "bottom" then
+  elseif edge == 'bottom' then
     -- Was inside (above bottom edge), now outside below
     local was_inside = prev_y < (bounds.y + bounds.h)
     local now_outside = curr_y > (bounds.y + bounds.h)
