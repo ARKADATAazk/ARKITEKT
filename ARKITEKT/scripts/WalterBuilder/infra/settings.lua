@@ -48,7 +48,7 @@ function M.get()
 end
 
 -- Get a setting with default fallback
-function M.get_value(key, default)
+function M.GetValue(key, default)
   local settings = M.get()
   local value = settings:get(key)
   if value == nil then
@@ -58,7 +58,7 @@ function M.get_value(key, default)
 end
 
 -- Set a setting
-function M.set_value(key, value)
+function M.SetValue(key, value)
   local settings = M.get()
   settings:set(key, value)
 end
@@ -79,35 +79,35 @@ end
 
 -- Convenience accessors
 function M.get_force_visible()
-  return M.get_value('force_visible', DEFAULTS.force_visible)
+  return M.GetValue('force_visible', DEFAULTS.force_visible)
 end
 
 function M.set_force_visible(value)
-  M.set_value('force_visible', value)
+  M.SetValue('force_visible', value)
 end
 
 function M.get_active_tab()
-  return M.get_value('active_tab', DEFAULTS.active_tab)
+  return M.GetValue('active_tab', DEFAULTS.active_tab)
 end
 
 function M.set_active_tab(value)
-  M.set_value('active_tab', value)
+  M.SetValue('active_tab', value)
 end
 
 function M.get_splitter_pos()
-  return M.get_value('splitter_pos', DEFAULTS.splitter_pos)
+  return M.GetValue('splitter_pos', DEFAULTS.splitter_pos)
 end
 
 function M.set_splitter_pos(value)
-  M.set_value('splitter_pos', value)
+  M.SetValue('splitter_pos', value)
 end
 
 function M.get_filter_non_visual()
-  return M.get_value('filter_non_visual', DEFAULTS.filter_non_visual)
+  return M.GetValue('filter_non_visual', DEFAULTS.filter_non_visual)
 end
 
 function M.set_filter_non_visual(value)
-  M.set_value('filter_non_visual', value)
+  M.SetValue('filter_non_visual', value)
 end
 
 return M

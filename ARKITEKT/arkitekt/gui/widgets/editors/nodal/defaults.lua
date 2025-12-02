@@ -6,7 +6,7 @@ local Colors = require('arkitekt.core.colors')
 local ConfigUtil = require('arkitekt.core.config')
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 M.DEFAULT = {
   node = {

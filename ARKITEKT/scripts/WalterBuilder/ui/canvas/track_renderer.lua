@@ -6,7 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local TrackDefaults = require('WalterBuilder.defs.track_defaults')
 
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 local Renderer = {}

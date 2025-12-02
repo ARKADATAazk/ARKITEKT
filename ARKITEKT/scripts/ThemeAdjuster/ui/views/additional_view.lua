@@ -5,7 +5,7 @@
 local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 local Constants = require('ThemeAdjuster.defs.constants')
 local ParamDiscovery = require('ThemeAdjuster.domain.theme.discovery')
 local ThemeMapper = require('ThemeAdjuster.domain.theme.mapper')
@@ -469,14 +469,15 @@ function AdditionalView:draw(ctx, shell_state)
   ImGui.SameLine(ctx, 0, 20)
 
   -- Filter Groups button
-  if Ark.Button.draw_at_cursor(ctx, {
+  if Ark.Button(ctx, {
+    id = 'filter_groups',
     label = 'Filter Groups',
     width = 120,
     height = 24,
     on_click = function()
       self.show_group_filter = not self.show_group_filter
     end
-  }, 'filter_groups') then
+  }).clicked then
   end
 
   if ImGui.IsItemHovered(ctx) then
@@ -490,14 +491,15 @@ function AdditionalView:draw(ctx, shell_state)
   ImGui.SameLine(ctx, 0, 8)
 
   -- Export button
-  if Ark.Button.draw_at_cursor(ctx, {
+  if Ark.Button(ctx, {
+    id = 'export_json',
     label = 'Export to JSON',
     width = 120,
     height = 24,
     on_click = function()
       self:export_parameters()
     end
-  }, 'export_json') then
+  }).clicked then
   end
 
   ImGui.Dummy(ctx, 0, 8)
@@ -525,7 +527,7 @@ function AdditionalView:draw(ctx, shell_state)
       primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
       secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
     }
-    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Indent(ctx, 8)
     ImGui.Dummy(ctx, 0, 4)
@@ -591,7 +593,7 @@ function AdditionalView:draw(ctx, shell_state)
       primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
       secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
     }
-    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Indent(ctx, 8)
     ImGui.Dummy(ctx, 0, 4)
@@ -644,7 +646,7 @@ function AdditionalView:draw(ctx, shell_state)
       primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
       secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
     }
-    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Indent(ctx, 8)
     ImGui.Dummy(ctx, 0, 4)
@@ -790,7 +792,8 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 8)
 
     -- Action buttons
-    if Ark.Button.draw_at_cursor(ctx, {
+    if Ark.Button(ctx, {
+      id = 'enable_all_groups',
       label = 'Enable All',
       width = 100,
       height = 24,
@@ -801,12 +804,13 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
         self:apply_group_filter()
         self:save_group_filter()
       end
-    }, 'enable_all_groups') then
+    }).clicked then
     end
 
     ImGui.SameLine(ctx, 0, 8)
 
-    if Ark.Button.draw_at_cursor(ctx, {
+    if Ark.Button(ctx, {
+      id = 'disable_all_groups',
       label = 'Disable All',
       width = 100,
       height = 24,
@@ -817,12 +821,13 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
         self:apply_group_filter()
         self:save_group_filter()
       end
-    }, 'disable_all_groups') then
+    }).clicked then
     end
 
     ImGui.SameLine(ctx, 0, 8)
 
-    if Ark.Button.draw_at_cursor(ctx, {
+    if Ark.Button(ctx, {
+      id = 'reset_groups',
       label = 'Reset to Defaults',
       width = 130,
       height = 24,
@@ -834,7 +839,7 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
         self:apply_group_filter()
         self:save_group_filter()
       end
-    }, 'reset_groups') then
+    }).clicked then
     end
 
     ImGui.Dummy(ctx, 0, 8)
@@ -850,7 +855,7 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
         local param_count = #group.params
 
         -- Checkbox
-        if Ark.Checkbox.draw_at_cursor(ctx, '', is_enabled, nil, 'group_check_' .. i) then
+        if Ark.Checkbox(ctx, {id = 'group_check_' .. i, label = '', is_checked = is_enabled}).clicked then
           self.enabled_groups[group.name] = not is_enabled
           self:apply_group_filter()
           self:save_group_filter()

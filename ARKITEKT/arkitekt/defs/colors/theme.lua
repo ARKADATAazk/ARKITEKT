@@ -50,8 +50,8 @@ end
 --- @param color2 number RGBA color
 --- @return number Contrast ratio (1.0 to 21.0)
 local function contrast_ratio(color1, color2)
-  local l1 = Colors.luminance(color1)
-  local l2 = Colors.luminance(color2)
+  local l1 = Colors.Luminance(color1)
+  local l2 = Colors.Luminance(color2)
   local lighter = math.max(l1, l2)
   local darker = math.min(l1, l2)
   return (lighter + 0.05) / (darker + 0.05)
@@ -64,8 +64,8 @@ end
 --- @param min_ratio number Minimum contrast ratio (default 4.5 for WCAG AA)
 local function warn_low_contrast(fg_hex, bg_hex, name, min_ratio)
   min_ratio = min_ratio or 4.5
-  local fg = Colors.hexrgb(fg_hex)
-  local bg = Colors.hexrgb(bg_hex)
+  local fg = Colors.Hexrgb(fg_hex)
+  local bg = Colors.Hexrgb(bg_hex)
   local ratio = contrast_ratio(fg, bg)
   if ratio < min_ratio then
     reaper.ShowConsoleMsg(string.format(
@@ -88,8 +88,8 @@ end
 -- =============================================================================
 
 local function compute_lightness(hex)
-  local color = Colors.hexrgb(hex)
-  local _, _, l = Colors.rgb_to_hsl(color)
+  local color = Colors.Hexrgb(hex)
+  local _, _, l = Colors.RgbToHsl(color)
   return l
 end
 

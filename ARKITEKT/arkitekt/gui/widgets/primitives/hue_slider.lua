@@ -6,7 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 
 local Colors = require('arkitekt.core.colors')
 local CoreMath = require('arkitekt.core.math')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 local clamp = CoreMath.clamp
 
 local M = {}
@@ -165,10 +165,10 @@ function M.draw_hue(ctx, id, hue, opt)
       local c1 = hsv_rgba_u32(t1, SAT, VAL, 1)
       
       if Colors then
-        c0 = Colors.desaturate(c0, 0.10)
-        c1 = Colors.desaturate(c1, 0.10)
-        c0 = Colors.adjust_brightness(c0, 0.88)
-        c1 = Colors.adjust_brightness(c1, 0.88)
+        c0 = Colors.Desaturate(c0, 0.10)
+        c1 = Colors.Desaturate(c1, 0.10)
+        c0 = Colors.AdjustBrightness(c0, 0.88)
+        c1 = Colors.AdjustBrightness(c1, 0.88)
       end
       
       local sx0 = x0 + i * segw
@@ -202,8 +202,8 @@ function M.draw_saturation(ctx, id, saturation, base_hue, opt)
       local c1 = hsv_rgba_u32(h, t1, VAL, 1)
       
       if Colors then
-        c0 = Colors.adjust_brightness(c0, 0.88)
-        c1 = Colors.adjust_brightness(c1, 0.88)
+        c0 = Colors.AdjustBrightness(c0, 0.88)
+        c1 = Colors.AdjustBrightness(c1, 0.88)
       end
       
       local sx0 = x0 + i * segw
@@ -238,8 +238,8 @@ function M.draw_gamma(ctx, id, gamma, opt)
       local c1 = (gray1 << 24) | (gray1 << 16) | (gray1 << 8) | 0xFF
       
       if Colors then
-        c0 = Colors.adjust_brightness(c0, 0.88)
-        c1 = Colors.adjust_brightness(c1, 0.88)
+        c0 = Colors.AdjustBrightness(c0, 0.88)
+        c1 = Colors.AdjustBrightness(c1, 0.88)
       end
       
       local sx0 = x0 + i * segw
@@ -263,6 +263,6 @@ end
 -- Make module callable
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

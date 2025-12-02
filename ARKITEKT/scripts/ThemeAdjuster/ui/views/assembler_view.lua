@@ -9,7 +9,7 @@ local PackageManager = require('ThemeAdjuster.data.packages.manager')
 local Config = require('ThemeAdjuster.app.config')
 local Theme = require('ThemeAdjuster.domain.theme.reader')
 local PackageModal = require('ThemeAdjuster.ui.views.package_modal')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 local AssemblerView = {}
@@ -732,7 +732,7 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
 
       -- Set current value before drawing
       if current_value then
-        Ark.Combo.set_value("zip_picker_state", current_value)
+        Ark.Combo.SetValue("zip_picker_state", current_value)
       end
 
       -- Position for dropdown (on same line after status)
@@ -744,8 +744,8 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
       -- Draw dropdown using arkitekt widget
       local dropdown_width = 220
       local dropdown_height = 20
-      local result = Ark.Combo.draw(ctx, {
-        id = "zip_picker",
+      local result = Ark.Combo(ctx, {
+        id = 'zip_picker',
         draw_list = dl,
         x = screen_x,
         y = screen_y,

@@ -1,3 +1,7 @@
 *local/
 **/cache/
 *.json
+
+# Windows reserved device names (cannot be deleted normally)
+nul
+NUL

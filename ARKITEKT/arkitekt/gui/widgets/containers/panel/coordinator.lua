@@ -235,7 +235,7 @@ function Panel:begin_draw(ctx)
 
     local clip_rounding = math.max(0, self.config.rounding - border_inset)
     ImGui.DrawList_PushClipRect(dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, true)
-    Pattern.draw(ctx, dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, pattern_cfg)
+    Pattern.Draw(ctx, dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, pattern_cfg)
     ImGui.DrawList_PopClipRect(dl)
   end
 
@@ -433,7 +433,7 @@ function Panel:end_draw(ctx)
         if overlay_cfg and overlay_cfg.enabled then
           local anim_state = self.overlay_toolbar_animations[position]
           if anim_state then
-            OverlayToolbar.draw(
+            OverlayToolbar.Draw(
               ctx, dl, panel_bounds, regular_toolbar_bounds[position],
               overlay_cfg, anim_state, self, self.id, position, self.config.rounding
             )
@@ -451,7 +451,7 @@ function Panel:end_draw(ctx)
     local top_toolbar = Toolbar.get_toolbar_config(self.config, 'top')
     if not top_toolbar or self.config.corner_buttons_always_visible then
       local x1, y1, w, h = table.unpack(self._corner_button_bounds)
-      CornerButtons.draw(ctx, x1, y1, w, h, self.config, self.id)
+      CornerButtons.Draw(ctx, x1, y1, w, h, self.config, self.id)
     end
   end
 
@@ -527,7 +527,7 @@ Panel.close_overflow_modal = function(self) State.close_overflow_modal(self) end
 --- @param content_fn function Content render function
 --- @param config table Panel config
 --- @return table Panel instance
-function M.draw(ctx, id, width, height, content_fn, config)
+function M.Draw(ctx, id, width, height, content_fn, config)
   local panel = M.new({
     id = id,
     width = width,

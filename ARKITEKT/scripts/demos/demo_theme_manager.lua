@@ -33,7 +33,7 @@ local function draw_theme_selector(ctx)
   for _, theme_name in ipairs(themes) do
     local is_current = (theme_name == state.current_theme)
 
-    if Ark.Button.draw(ctx, {
+    if Ark.Button(ctx, {
       label = theme_name,
       width = 120,
       preset_name = is_current and 'BUTTON_TOGGLE_WHITE' or nil,
@@ -56,7 +56,7 @@ local function draw_reaper_sync(ctx)
   ImGui.Spacing(ctx)
 
   -- Manual sync button
-  if Ark.Button.draw(ctx, {
+  if Ark.Button(ctx, {
     label = 'Sync with REAPER Theme',
     width = 180,
   }).clicked then
@@ -68,7 +68,7 @@ local function draw_reaper_sync(ctx)
   ImGui.SameLine(ctx)
 
   -- Live sync toggle
-  local live_sync_result = Ark.Button.draw(ctx, {
+  local live_sync_result = Ark.Button(ctx, {
     label = 'Live Sync',
     width = 100,
     preset_name = 'BUTTON_TOGGLE_TEAL',
@@ -94,7 +94,7 @@ local function draw_color_preview(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  if Ark.Button.draw(ctx, {
+  if Ark.Button(ctx, {
     label = state.show_color_values and 'Hide Color Values' or 'Show Color Values',
     width = 160,
   }).clicked then
@@ -135,7 +135,7 @@ local function draw_color_preview(ctx)
 
       -- Draw label and hex value
       ImGui.SameLine(ctx)
-      local r, g, b, a = Colors.rgba_to_components(color)
+      local r, g, b, a = Colors.RgbaToComponents(color)
       ImGui.Text(ctx, string.format('%s: #%02X%02X%02X%02X', label, r, g, b, a))
     end
   end
@@ -152,12 +152,12 @@ local function draw_custom_theme(ctx)
   -- TODO: Add color picker when we implement it
   -- For now, just show some example colors to click
   local example_colors = {
-    {Colors.hexrgb('#FF6B6BFF'), 'Coral Red'},
-    {Colors.hexrgb('#4ECDC4FF'), 'Turquoise'},
-    {Colors.hexrgb('#95E1D3FF'), 'Mint'},
-    {Colors.hexrgb('#F38181FF'), 'Pink'},
-    {Colors.hexrgb('#AA96DAFF'), 'Purple'},
-    {Colors.hexrgb('#FCBAD3FF'), 'Rose'},
+    {Colors.Hexrgb('#FF6B6BFF'), 'Coral Red'},
+    {Colors.Hexrgb('#4ECDC4FF'), 'Turquoise'},
+    {Colors.Hexrgb('#95E1D3FF'), 'Mint'},
+    {Colors.Hexrgb('#F38181FF'), 'Pink'},
+    {Colors.Hexrgb('#AA96DAFF'), 'Purple'},
+    {Colors.Hexrgb('#FCBAD3FF'), 'Rose'},
   }
 
   for _, pair in ipairs(example_colors) do
@@ -168,14 +168,14 @@ local function draw_custom_theme(ctx)
     local x, y = ImGui.GetCursorScreenPos(ctx)
 
     local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + 100, y + 30)
-    local bg_color = is_hovered and Colors.adjust_brightness(color, 1.2) or color
+    local bg_color = is_hovered and Colors.AdjustBrightness(color, 1.2) or color
 
     ImGui.DrawList_AddRectFilled(dl, x, y, x + 100, y + 30, bg_color, 2)
     ImGui.DrawList_AddRect(dl, x, y, x + 100, y + 30, 0x000000FF, 2, 0, 2)
 
     -- Text
     ImGui.SetCursorScreenPos(ctx, x + 5, y + 8)
-    local text_color = Colors.auto_text_color(color)
+    local text_color = Colors.AutoTextColor(color)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
     ImGui.Text(ctx, name)
     ImGui.PopStyleColor(ctx)

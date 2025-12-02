@@ -9,7 +9,7 @@ local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 -- State for each picker instance (strong tables with access tracking for cleanup)
 local instances = Base.create_instance_registry()
@@ -132,7 +132,7 @@ local function render_picker_contents(ctx, id, on_change)
                        ImGui.ColorEditFlags_NoLabel
 
   -- Convert our RGBA to ImGui's ARGB format
-  local argb_color = Colors.rgba_to_argb(inst.current_color)
+  local argb_color = Colors.RgbaToArgb(inst.current_color)
 
   -- Draw the color picker (hue wheel + triangle)
   local rv, new_argb_color = ImGui.ColorPicker4(ctx, '##picker_' .. id, argb_color, picker_flags)
@@ -143,7 +143,7 @@ local function render_picker_contents(ctx, id, on_change)
   -- Track color changes during dragging, but only apply on mouse release
   if rv then
     -- Convert ImGui's ARGB back to our RGBA format
-    local new_rgba = Colors.argb_to_rgba(new_argb_color)
+    local new_rgba = Colors.ArgbToRgba(new_argb_color)
     inst.current_color = new_rgba
     changed = true
 
@@ -287,13 +287,13 @@ function M.render_inline(ctx, id, config)
   end
 
   -- Convert RGBA to ARGB for ImGui
-  local argb_color = Colors.rgba_to_argb(inst.current_color)
+  local argb_color = Colors.RgbaToArgb(inst.current_color)
 
   local rv, new_argb_color = ImGui.ColorPicker3(ctx, '##picker_inline_' .. id, argb_color, picker_flags)
 
 
   if rv then
-    inst.current_color = Colors.argb_to_rgba(new_argb_color)
+    inst.current_color = Colors.ArgbToRgba(new_argb_color)
     inst.pending_change = true
   end
 

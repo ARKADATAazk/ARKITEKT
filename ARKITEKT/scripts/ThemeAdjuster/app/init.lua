@@ -65,7 +65,7 @@ function M.is_initialized()
 end
 
 -- Reset for testing (clears initialization state)
-function M.reset()
+function M.Reset()
   _initialized = false
   _settings = nil
 end

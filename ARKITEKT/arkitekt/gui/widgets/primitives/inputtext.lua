@@ -9,7 +9,7 @@ local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 
@@ -31,12 +31,12 @@ local DEFAULTS = {
 
   -- State
   text = '',
-  disabled = false,
+  is_disabled = false,
 
   -- Content
   hint = nil,
   placeholder = nil,  -- Alias for hint (search compatibility)
-  multiline = false,
+  is_multiline = false,
   flags = nil,  -- ImGui.InputTextFlags_*
 
   -- Style
@@ -167,8 +167,8 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
     text_color = config.text_color
   elseif state.hover_alpha > 0.01 then
     -- Hover with smooth lerp (like combo/dropdown)
-    bg_color = Colors.lerp(config.bg_color, config.bg_hover_color or config.bg_color, state.hover_alpha)
-    border_inner = Colors.lerp(
+    bg_color = Colors.Lerp(config.bg_color, config.bg_hover_color or config.bg_color, state.hover_alpha)
+    border_inner = Colors.Lerp(
       config.border_inner_color or config.border_color,
       config.border_hover_color or config.border_inner_color,
       state.hover_alpha
@@ -229,7 +229,7 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   -- Get hint text (support both hint and placeholder)
   local hint_text = config.hint or config.placeholder
 
-  if config.multiline then
+  if config.is_multiline then
     local input_height = height - padding_y * 2
     changed, new_text = ImGui.InputTextMultiline(
       ctx,
@@ -290,7 +290,7 @@ end
 --- @param text string|nil Current text (positional only)
 --- @param width number|nil Field width (positional only)
 --- @return table Result { changed, value, width, height, hovered, active }
-function M.draw(ctx, label_or_opts, text, width)
+function M.Draw(ctx, label_or_opts, text, width)
   -- Hybrid parameter detection
   local opts
   if type(label_or_opts) == 'table' then
@@ -335,7 +335,7 @@ function M.draw(ctx, label_or_opts, text, width)
   local height = opts.height or 24
 
   -- Render text field
-  local changed, is_hovered = render_text_field(ctx, dl, x, y, width, height, config, state, unique_id, opts.disabled, opts.corner_rounding)
+  local changed, is_hovered = render_text_field(ctx, dl, x, y, width, height, config, state, unique_id, opts.is_disabled, opts.corner_rounding)
 
   -- Handle tooltip
   if is_hovered and opts.tooltip then
@@ -360,17 +360,17 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result
-function M.search(ctx, opts)
+function M.Search(ctx, opts)
   opts = opts or {}
   opts.preset = opts.preset or 'search'
   opts.id = opts.id or 'search'
-  return M.draw(ctx, opts)
+  return M.Draw(ctx, opts)
 end
 
 --- Get text value for a field
 --- @param id string Field identifier
 --- @return string Current text value
-function M.get_text(id)
+function M.GetText(id)
   if field_state[id] then
     return field_state[id].text or ''
   end
@@ -380,7 +380,7 @@ end
 --- Set text value for a field
 --- @param id string Field identifier
 --- @param text string New text value
-function M.set_text(id, text)
+function M.SetText(id, text)
   if not field_state[id] then
     field_state[id] = {
       text = '',
@@ -393,36 +393,19 @@ end
 
 --- Clear text for a field
 --- @param id string Field identifier
-function M.clear(id)
+function M.Clear(id)
   if field_state[id] then
     field_state[id].text = ''
   end
 end
 
 -- ============================================================================
--- DEPRECATED / REMOVED FUNCTIONS
--- ============================================================================
-
---- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
-function M.draw_at_cursor(ctx, opts, id)
-  opts = opts or {}
-  if id then opts.id = id end
-  local result = M.draw(ctx, opts)
-  return result.value, result.changed
-end
-
---- @deprecated Cleanup is automatic via Base, no need to call manually
-function M.cleanup()
-  -- No-op: cleanup happens automatically via Base.cleanup_registry
-end
-
--- ============================================================================
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.InputText(ctx, ...) → M.draw(ctx, ...)
+-- Make module callable: Ark.InputText(ctx, ...) → M.Draw(ctx, ...)
 return setmetatable(M, {
   __call = function(_, ctx, ...)
-    return M.draw(ctx, ...)
+    return M.Draw(ctx, ...)
   end
 })

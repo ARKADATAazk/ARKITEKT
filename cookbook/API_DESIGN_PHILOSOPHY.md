@@ -80,13 +80,13 @@ ImGui.BeginCombo(ctx, 'combo', preview, combo_flags)
 ### 1. Opts-Based API for Widgets
 ```lua
 -- ARKITEKT uses opts tables for clarity and extensibility
-Ark.Button.draw(ctx, {
+Ark.Button(ctx, {
   label = "Click Me",
   width = 100,
   height = 30,
   on_click = function() end,
   tooltip = "Click this button",
-  disabled = false,
+  is_disabled = false,
   preset_name = "BUTTON_SUCCESS",
 })
 ```
@@ -100,10 +100,10 @@ Ark.Button.draw(ctx, {
 ### 2. Standardized Result Objects
 ```lua
 -- ARKITEKT returns structured results
-local result = Ark.Button.draw(ctx, {...})
+local result = Ark.Button(ctx, {...})
 -- result.clicked, result.hovered, result.width, result.height
 
-local result = Ark.Checkbox.draw(ctx, {...})
+local result = Ark.Checkbox(ctx, {...})
 -- result.changed, result.value, result.clicked
 ```
 
@@ -115,7 +115,7 @@ local result = Ark.Checkbox.draw(ctx, {...})
 ### 3. Automatic State Management
 ```lua
 -- ARKITEKT manages widget state internally
-Ark.Button.draw(ctx, {
+Ark.Button(ctx, {
   id = "my_button",
   -- state (hover, animation) handled automatically
 })
@@ -176,8 +176,8 @@ Ark.Layout.separator(ctx)              -- like ImGui.Separator
 -- ✅ GOOD: Call every frame like ImGui
 function my_app(ctx)
   -- Immediate mode: draw every frame
-  Ark.Button.draw(ctx, {label = "Click"})
-  Ark.Checkbox.draw(ctx, {checked = app.enabled})
+  Ark.Button(ctx, {label = "Click"})
+  Ark.Checkbox(ctx, {is_checked = app.enabled})
 end
 ```
 
@@ -190,12 +190,12 @@ end
 
 ```lua
 -- ❌ BAD: Mimicking ImGui's positional params
-Ark.Button.draw(ctx, "Click", 100, 30, false, nil, nil, on_click)
+Ark.Button(ctx, 'Click', 100, 30, false, nil, nil, on_click)
                                       -- ^ lots of nils for optional params
 
 -- ✅ GOOD: Use opts for clarity
-Ark.Button.draw(ctx, {
-  label = "Click",
+Ark.Button(ctx, {
+  label = 'Click',
   width = 100,
   height = 30,
   on_click = on_click,
@@ -214,7 +214,7 @@ ImGui.Button(ctx, 'Click')
 ImGui.PopStyleColor(ctx)
 
 -- ✅ GOOD: Use presets and theme-aware colors
-Ark.Button.draw(ctx, {
+Ark.Button(ctx, {
   label = 'Click',
   preset_name = 'BUTTON_DANGER',
   -- Colors automatically adapt to theme
@@ -233,13 +233,13 @@ if ImGui.Button(ctx, 'Click') then
 end
 
 -- ARKITEKT: Can use callback OR poll
-Ark.Button.draw(ctx, {
+Ark.Button(ctx, {
   label = 'Click',
   on_click = handle_click,  -- Callback style
 })
 
 -- OR poll the result
-local result = Ark.Button.draw(ctx, {label = 'Click'})
+local result = Ark.Button(ctx, {label = 'Click'})
 if result.clicked then
   handle_click()
 end
@@ -256,12 +256,12 @@ ImGui.SetCursorPos(ctx, x, y)
 ImGui.Button(ctx, 'Click')
 
 -- ARKITEKT: Auto-cursor by default, manual when needed
-Ark.Button.draw(ctx, {
+Ark.Button(ctx, {
   label = 'Click',
   -- x, y optional - uses cursor by default
 })
 
-Ark.Button.draw(ctx, {
+Ark.Button(ctx, {
   label = 'Positioned',
   x = 100, y = 50,  -- Manual override when needed
 })
@@ -277,7 +277,7 @@ When creating or refactoring a widget, ask:
 
 ### 1. Is it stateful with lifecycle?
 - ✅ YES → Use `begin_xxx()` / `end_xxx()` pattern (match ImGui)
-- ❌ NO → Use single `draw()` call (ARKITEKT style)
+- ❌ NO → Use single callable `Ark.Widget(ctx, ...)` (ARKITEKT style)
 
 ### 2. Does it have >3 optional parameters?
 - ✅ YES → Use opts table (ARKITEKT style)
@@ -303,7 +303,7 @@ When creating or refactoring a widget, ask:
 ### Button (Single-Frame Widget)
 ```lua
 -- ✅ GOOD: opts-based, but return value still boolean-like
-local result = Ark.Button.draw(ctx, {
+local result = Ark.Button(ctx, {
   label = "Click",
   on_click = function() end,  -- ARKITEKT: convenience callback
 })
@@ -323,7 +323,7 @@ end
 ### Splitter (Utility Widget)
 ```lua
 -- ✅ GOOD: Single draw call, clear result
-local result = Ark.Splitter.draw(ctx, {
+local result = Ark.Splitter(ctx, {
   orientation = "horizontal",
   width = 400,
   thickness = 8,
@@ -348,7 +348,7 @@ if Ark.Table.begin_table(ctx, 'data', {
   for _, item in ipairs(items) do
     Ark.Table.next_row(ctx)
     Ark.Table.next_column(ctx)
-    Ark.Text.draw(ctx, {text = item.name})
+    Ark.Text(ctx, {text = item.name})
     -- ...
   end
 
@@ -375,7 +375,7 @@ When documenting ARKITEKT APIs:
 ---
 --- **ARKITEKT improvement:**
 --- ```lua
---- local result = Ark.Button.draw(ctx, {
+--- local result = Ark.Button(ctx, {
 ---   label = 'Click',
 ---   width = 100,
 ---   height = 30,
@@ -398,7 +398,7 @@ For widgets that diverge significantly, add migration notes:
 ```lua
 --- **Migrating from ImGui:**
 --- - Instead of: `ImGui.Button(ctx, label, w, h)`
---- - Use: `Ark.Button.draw(ctx, {label = label, width = w, height = h})`
+--- - Use: `Ark.Button(ctx, {label = label, width = w, height = h})`
 --- - Optional: Add `on_click` callback to avoid polling
 ```
 

@@ -90,7 +90,7 @@ function M.get_drag_delta(ctx, id)
 end
 
 -- Clear tracking state for an ID
-function M.clear(id)
+function M.Clear(id)
   drag_states[id] = nil
 end
 

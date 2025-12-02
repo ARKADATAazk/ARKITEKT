@@ -3,36 +3,15 @@
 -- Hatched Fill Effects Demo
 
 -- ============================================================================
--- BOOTSTRAP ARKITEKT FRAMEWORK
+-- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local Ark
-do
-  local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, 'S').source:sub(2)
-  local path = src:match('(.*'..sep..')')
-  while path and #path > 3 do
-    local bootstrap = path .. 'arkitekt' .. sep .. 'app' .. sep .. 'bootstrap.lua'
-    local f = io.open(bootstrap, 'r')
-    if f then
-      f:close()
-      package.path = path .. '?.lua;' .. path .. '?' .. sep .. 'init.lua;' .. package.path
-      package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-      ark = require('arkitekt')
-      break
-    end
-    path = path:match('(.*'..sep..')[^'..sep..']-'..sep..'$')
-  end
-  if not ark then
-    reaper.MB('ARKITEKT framework not found!', 'FATAL ERROR', 0)
-    return
-  end
-end
+local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 local HatchedFill = require('arkitekt.gui.widgets.effects.hatched_fill')
 
 local ImGui = Ark.ImGui
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 -- Demo state
 local demo_state = {
@@ -174,7 +153,7 @@ Shell.run({
       for i, pat in ipairs(patterns) do
         local px = win_x + (i - 1) * (box_w + gap)
         ImGui.DrawList_AddRectFilled(dl, px, win_y, px + box_w, win_y + box_h, hexrgb('#1a1a1aFF'), 4)
-        HatchedFill.draw(ctx, {
+        HatchedFill.Draw(ctx, {
           x = px, y = win_y, w = box_w, h = box_h,
           direction = pat.dir,
           color = hexrgb(pat.color),

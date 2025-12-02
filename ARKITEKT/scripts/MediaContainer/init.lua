@@ -18,9 +18,9 @@ function M.initialize()
 end
 
 -- Main update loop - call this from deferred
-function M.update(ctx, draw_list)
+function M.Update(ctx, draw_list)
   -- Check for project changes
-  local project_changed = State.update()
+  local project_changed = State.Update()
   if project_changed then
     return
   end

@@ -10,7 +10,7 @@ local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ColorPickerMenu = require('arkitekt.gui.widgets.menus.color_picker_menu')
 
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 
@@ -422,7 +422,7 @@ function M.draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, height
       local chip_x = content_x + 2
       local chip_y = render_y + render_h * 0.5
 
-      Chip.draw(ctx, {
+      Chip.Draw(ctx, {
         style = Chip.STYLE.INDICATOR,
         color = chip_color,
         draw_list = dl,

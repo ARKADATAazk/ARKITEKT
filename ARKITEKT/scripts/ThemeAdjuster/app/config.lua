@@ -6,7 +6,7 @@ local Constants = require('ThemeAdjuster.defs.constants')
 local Ark = require('arkitekt')
 local Defaults = require('ThemeAdjuster.defs.defaults')
 local Strings = require('ThemeAdjuster.defs.strings')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 
@@ -75,26 +75,26 @@ function M.get_assembler_container_config(callbacks, filters)
               {
                 value = 'tcp',
                 label = 'TCP',
-                checkbox = true,
-                checked = filters.TCP,
+                is_checkbox = true,
+                is_checked = filters.TCP,
               },
               {
                 value = 'mcp',
                 label = 'MCP',
-                checkbox = true,
-                checked = filters.MCP,
+                is_checkbox = true,
+                is_checked = filters.MCP,
               },
               {
                 value = 'transport',
                 label = 'Transport',
-                checkbox = true,
-                checked = filters.Transport,
+                is_checkbox = true,
+                is_checked = filters.Transport,
               },
               {
                 value = 'global',
                 label = 'Global',
-                checkbox = true,
-                checked = filters.Global,
+                is_checkbox = true,
+                is_checked = filters.Global,
               },
             },
             on_checkbox_change = callbacks.on_filter_changed,

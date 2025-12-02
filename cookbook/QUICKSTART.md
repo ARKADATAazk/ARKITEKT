@@ -72,7 +72,7 @@ Shell.run({
   initial_pos  = { x = 100, y = 100 },
   initial_size = { w = 900, h = 600 },
   min_size     = { w = 600, h = 400 },
-  icon_color   = Ark.Colors.hexrgb("#4A90D9"),
+  icon_color   = Ark.Colors.Hexrgb('#4A90D9'),
 
   draw = function(ctx, shell_state)
     gui:draw(ctx, shell_state.window, shell_state)
@@ -313,8 +313,8 @@ local M = {}
 
 -- Colors (use theme colors when possible)
 M.COLORS = {
-  HIGHLIGHT = Ark.Colors.hexrgb("#4A90D9"),
-  WARNING = Ark.Colors.hexrgb("#D9A84A"),
+  HIGHLIGHT = Ark.Colors.Hexrgb('#4A90D9'),
+  WARNING = Ark.Colors.Hexrgb('#D9A84A'),
 }
 
 -- Sizes
@@ -368,36 +368,55 @@ local result = Ark.Button(ctx, {
 if result.clicked then ... end
 if result.right_clicked then ... end
 
--- Input text
-local result = Ark.InputText.draw(ctx, {
-  id = "search",
-  value = current_value,
-  hint = "Search...",
+-- Input text - positional mode
+local r = Ark.InputText(ctx, 'Search', current_value, 200)
+if r.changed then
+  current_value = r.value
+end
+
+-- Input text - opts mode
+local r = Ark.InputText(ctx, {
+  id = 'search',
+  text = current_value,
+  hint = 'Search...',
   width = 200,
 })
-if result.changed then
-  current_value = result.value
+if r.changed then
+  current_value = r.value
 end
 
--- Checkbox
-local result = Ark.Checkbox.draw(ctx, {
-  label = "Enable feature",
-  value = is_enabled,
-})
-if result.changed then
-  is_enabled = result.value
+-- Checkbox - positional mode
+local r = Ark.Checkbox(ctx, 'Enable feature', is_enabled)
+if r.changed then
+  is_enabled = r.value
 end
 
--- Combo/Dropdown
-local result = Ark.Combo.draw(ctx, {
-  id = "mode",
-  items = {"Option A", "Option B", "Option C"},
-  selected = selected_index,
-  width = 150,
+-- Checkbox - opts mode
+local r = Ark.Checkbox(ctx, {
+  label = 'Enable feature',
+  is_checked = is_enabled,
 })
-if result.changed then
-  selected_index = result.selected
+if r.changed then
+  is_enabled = r.value
 end
+
+-- Combo/Dropdown - positional mode
+local r = Ark.Combo(ctx, 'Mode', selected_index, {'Option A', 'Option B', 'Option C'})
+if r.changed then
+  selected_index = r.value
+end
+
+-- Combo - opts mode
+local r = Ark.Combo(ctx, {
+  id = 'mode',
+  options = {
+    { value = 'a', label = 'Option A' },
+    { value = 'b', label = 'Option B' },
+  },
+  get_value = function() return selected_value end,
+  on_change = function(v) selected_value = v end,
+})
+-- No need to check r.changed when using on_change callback
 
 -- Panel container
 local panel = Ark.Panel.new({
@@ -411,8 +430,8 @@ panel:begin_draw(ctx)
 panel:end_draw(ctx)
 
 -- Colors
-local color = Ark.Colors.hexrgb("#FF5500")
-local with_alpha = Ark.Colors.hexrgba("#FF5500", 0.5)
+local color = Ark.Colors.Hexrgb('#FF5500')
+local with_alpha = Ark.Colors.Hexrgba('#FF5500', 0.5)
 
 -- ID Stack (ImGui-style PushID/PopID)
 -- Useful for loops with multiple widgets
@@ -496,7 +515,7 @@ Shell.run({
   min_size = { w = 400, h = 300 },
 
   -- Optional - Appearance
-  icon_color = Ark.Colors.hexrgb("#4A90D9"),
+  icon_color = Ark.Colors.Hexrgb('#4A90D9'),
   icon_size = 18,
 
   -- Optional - Persistence

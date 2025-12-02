@@ -797,7 +797,7 @@ Based on the [Lua Style Guide](http://lua-users.org/wiki/LuaStyleGuide):
 
 1. **Indentation**: 2 spaces (no tabs)
 2. **Line length**: Max 100 characters (flexible, break at 120 for readability)
-3. **Strings**: Double quotes for display strings, single quotes for identifiers
+3. **Strings**: Single quotes preferred (`'text'`), double quotes when string contains single quotes (`"it's"`)
 4. **Tables**: Trailing comma on multi-line tables
 5. **Operators**: Spaces around binary operators
 6. **Comments**: Space after `--`
@@ -806,11 +806,11 @@ Based on the [Lua Style Guide](http://lua-users.org/wiki/LuaStyleGuide):
 -- Example following all conventions
 local M = {}
 
-local DEFAULT_NAME = "Untitled"
+local DEFAULT_NAME = 'Untitled'
 local MAX_ITEMS = 100
 
 local function _validate(input)
-  return input ~= nil and input ~= ""
+  return input ~= nil and input ~= ''
 end
 
 --- Create a new item

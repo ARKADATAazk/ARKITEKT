@@ -5,7 +5,7 @@
 local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 
@@ -62,7 +62,7 @@ function M.error(message, ...)
 end
 
 -- Clear all logs
-function M.clear()
+function M.Clear()
   logs = {}
 end
 
@@ -81,12 +81,12 @@ function M.get_count()
 end
 
 -- Draw the console panel
-function M.draw(ctx)
+function M.Draw(ctx)
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
 
   -- Header with buttons
   if ImGui.Button(ctx, 'Clear', 60, 0) then
-    M.clear()
+    M.Clear()
   end
 
   ImGui.SameLine(ctx)

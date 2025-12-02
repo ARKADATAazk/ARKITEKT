@@ -7,7 +7,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local M = {}
 
 -- Draw status bar at the bottom of the window
-function M.draw(ctx, state, width, height)
+function M.Draw(ctx, state, width, height)
   -- Update notification timeouts
   if state.notification then
     state.notification:update()

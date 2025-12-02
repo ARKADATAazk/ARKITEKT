@@ -98,8 +98,8 @@ function M.generate_chip_color()
   local saturation = 0.65 + math.random() * 0.25
   local lightness = 0.50 + math.random() * 0.15
   
-  local r, g, b = Ark.Colors.hsl_to_rgb(hue, saturation, lightness)
-  return Ark.Colors.components_to_rgba(r, g, b, 0xFF)
+  local r, g, b = Ark.Colors.HslToRgb(hue, saturation, lightness)
+  return Ark.Colors.ComponentsToRgba(r, g, b, 0xFF)
 end
 
 return M

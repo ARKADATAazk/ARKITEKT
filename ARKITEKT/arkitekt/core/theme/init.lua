@@ -30,7 +30,7 @@
 -- =============================================================================
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 
@@ -117,7 +117,7 @@ M.current_mode = nil
 --- Get current theme's base lightness (0.0-1.0)
 function M.get_theme_lightness()
   if not M.COLORS.BG_BASE then return Palette.anchors.dark end
-  local _, _, l = Colors.rgb_to_hsl(M.COLORS.BG_BASE)
+  local _, _, l = Colors.RgbToHsl(M.COLORS.BG_BASE)
   return l
 end
 
@@ -342,12 +342,12 @@ end
 function M.adapt_color(base_color, pull_factor)
   pull_factor = pull_factor or 0.5
   local theme_l = M.get_theme_lightness()
-  local base_h, base_s, base_l = Colors.rgb_to_hsl(base_color)
+  local base_h, base_s, base_l = Colors.RgbToHsl(base_color)
   local target_l = base_l + (theme_l - base_l) * pull_factor
   target_l = math.max(0, math.min(1, target_l))
-  local r, g, b = Colors.hsl_to_rgb(base_h, base_s, target_l)
-  local _, _, _, a = Colors.rgba_to_components(base_color)
-  return Colors.components_to_rgba(r, g, b, a)
+  local r, g, b = Colors.HslToRgb(base_h, base_s, target_l)
+  local _, _, _, a = Colors.RgbaToComponents(base_color)
+  return Colors.ComponentsToRgba(r, g, b, a)
 end
 
 -- =============================================================================
@@ -384,12 +384,12 @@ function M.build_button_config()
     bg_color = M.COLORS.BG_BASE,
     bg_hover_color = M.COLORS.BG_HOVER,
     bg_active_color = M.COLORS.BG_ACTIVE,
-    bg_disabled_color = Colors.adjust_lightness(M.COLORS.BG_BASE, -0.05),
+    bg_disabled_color = Colors.AdjustLightness(M.COLORS.BG_BASE, -0.05),
     border_outer_color = M.COLORS.BORDER_OUTER,
     border_inner_color = M.COLORS.BORDER_INNER,
     border_hover_color = M.COLORS.BORDER_HOVER,
     border_active_color = M.COLORS.BORDER_ACTIVE,
-    border_inner_disabled_color = Colors.adjust_lightness(M.COLORS.BORDER_INNER, -0.05),
+    border_inner_disabled_color = Colors.AdjustLightness(M.COLORS.BORDER_INNER, -0.05),
     border_outer_disabled_color = M.COLORS.BORDER_OUTER,
     text_color = M.COLORS.TEXT_NORMAL,
     text_hover_color = M.COLORS.TEXT_HOVER,
@@ -417,17 +417,17 @@ function M.build_colored_button_config(variant)
     bg_color = bg,
     bg_hover_color = hover,
     bg_active_color = active,
-    bg_disabled_color = Colors.adjust_saturation(Colors.adjust_lightness(bg, -0.1), -0.4),
-    border_outer_color = Colors.adjust_lightness(bg, -0.18),
-    border_inner_color = Colors.adjust_lightness(bg, 0.12),
-    border_hover_color = Colors.adjust_lightness(hover, 0.10),
-    border_active_color = Colors.adjust_lightness(active, -0.10),
-    border_inner_disabled_color = Colors.adjust_lightness(bg, -0.15),
-    border_outer_disabled_color = Colors.adjust_lightness(bg, -0.20),
+    bg_disabled_color = Colors.AdjustSaturation(Colors.AdjustLightness(bg, -0.1), -0.4),
+    border_outer_color = Colors.AdjustLightness(bg, -0.18),
+    border_inner_color = Colors.AdjustLightness(bg, 0.12),
+    border_hover_color = Colors.AdjustLightness(hover, 0.10),
+    border_active_color = Colors.AdjustLightness(active, -0.10),
+    border_inner_disabled_color = Colors.AdjustLightness(bg, -0.15),
+    border_outer_disabled_color = Colors.AdjustLightness(bg, -0.20),
     text_color = text,
     text_hover_color = text,
     text_active_color = text,
-    text_disabled_color = Colors.adjust_lightness(text, -0.3),
+    text_disabled_color = Colors.AdjustLightness(text, -0.3),
     padding_x = 10,
     padding_y = 6,
     rounding = 0,
@@ -460,8 +460,8 @@ function M.build_dropdown_config()
       enable_mousewheel = true,
       tooltip_delay = 0.5,
       popup = {
-        bg_color = Colors.adjust_lightness(M.COLORS.BG_BASE, -0.02),
-        border_color = Colors.adjust_lightness(M.COLORS.BORDER_OUTER, -0.05),
+        bg_color = Colors.AdjustLightness(M.COLORS.BG_BASE, -0.02),
+        border_color = Colors.AdjustLightness(M.COLORS.BORDER_OUTER, -0.05),
         item_bg_color = M.COLORS.BG_TRANSPARENT,
         item_hover_color = M.COLORS.BG_HOVER,
         item_active_color = M.COLORS.BG_ACTIVE,
@@ -538,7 +538,7 @@ function M.build_panel_colors()
     bg_panel = M.COLORS.BG_PANEL,
     border_panel = M.COLORS.BORDER_OUTER,
     bg_header = M.COLORS.BG_HEADER,
-    border_header = Colors.with_alpha(hexrgb('#000000'), 0x66),
+    border_header = Colors.WithAlpha(hexrgb('#000000'), 0x66),
     bg_tab = M.COLORS.BG_BASE,
     bg_tab_hover = M.COLORS.BG_HOVER,
     bg_tab_active = M.COLORS.BG_ACTIVE,
@@ -550,7 +550,7 @@ function M.build_panel_colors()
     border_tab_focus = M.COLORS.BORDER_FOCUS,
     bg_tab_track = M.COLORS.BG_PANEL,
     border_tab_track = M.COLORS.BORDER_OUTER,
-    separator_line = Colors.with_alpha(hexrgb('#303030'), 0x80),
+    separator_line = Colors.WithAlpha(hexrgb('#303030'), 0x80),
     bg_scrollbar = M.COLORS.BG_TRANSPARENT,
     pattern_primary = M.COLORS.PATTERN_PRIMARY,
     pattern_secondary = M.COLORS.PATTERN_SECONDARY,
@@ -578,7 +578,7 @@ function M.build_action_chip_config(variant)
   _action_chip_caches[variant] = {
     bg_color = base.bg_color,
     text_color = base.text_color,
-    border_color = Colors.with_alpha(hexrgb('#000000'), 100),
+    border_color = Colors.WithAlpha(hexrgb('#000000'), 100),
     rounding = 2,
     padding_h = 8,
   }

@@ -5,7 +5,7 @@
 local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
@@ -207,7 +207,7 @@ function ColorsView:draw(ctx, shell_state)
       },
     }
 
-    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Dummy(ctx, 0, 8)
     ImGui.Indent(ctx, 12)
@@ -287,7 +287,7 @@ function ColorsView:draw(ctx, shell_state)
     ImGui.Text(ctx, 'Select Palette')
     ImGui.SameLine(ctx, 140)
 
-    local spinner_result = Ark.Spinner.draw(ctx, {
+    local spinner_result = Ark.Spinner(ctx, {
       id = 'palette_selector',
       value = self.current_palette_idx,
       options = PALETTE_NAMES,
@@ -301,14 +301,15 @@ function ColorsView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 12)
 
     -- Recolor all tracks button
-    if Ark.Button.draw_at_cursor(ctx, {
+    if Ark.Button(ctx, {
+      id = 'recolor_all',
       label = 'Recolor All Tracks Using This Palette',
       width = 320,
       height = 32,
       on_click = function()
         recolor_all_tracks(self.current_palette_idx)
       end
-    }, 'recolor_all') then
+    }).clicked then
     end
 
     if ImGui.IsItemHovered(ctx) then
@@ -330,51 +331,55 @@ function ColorsView:draw(ctx, shell_state)
     ImGui.BeginGroup(ctx)
 
     -- Row 1: Darken buttons
-    if Ark.Button.draw_at_cursor(ctx, {
+    if Ark.Button(ctx, {
+      id = 'darken_selected',
       label = 'Darken Selected',
       width = btn_width,
       height = btn_height,
       on_click = function()
         adjust_track_brightness(true, true)
       end
-    }, 'darken_selected') then
+    }).clicked then
     end
 
     ImGui.SameLine(ctx, 0, 12)
 
-    if Ark.Button.draw_at_cursor(ctx, {
+    if Ark.Button(ctx, {
+      id = 'darken_all',
       label = 'Darken All',
       width = btn_width,
       height = btn_height,
       on_click = function()
         adjust_track_brightness(false, true)
       end
-    }, 'darken_all') then
+    }).clicked then
     end
 
     ImGui.Dummy(ctx, 0, 8)
 
     -- Row 2: Brighten buttons
-    if Ark.Button.draw_at_cursor(ctx, {
+    if Ark.Button(ctx, {
+      id = 'brighten_selected',
       label = 'Brighten Selected',
       width = btn_width,
       height = btn_height,
       on_click = function()
         adjust_track_brightness(true, false)
       end
-    }, 'brighten_selected') then
+    }).clicked then
     end
 
     ImGui.SameLine(ctx, 0, 12)
 
-    if Ark.Button.draw_at_cursor(ctx, {
+    if Ark.Button(ctx, {
+      id = 'brighten_all',
       label = 'Brighten All',
       width = btn_width,
       height = btn_height,
       on_click = function()
         adjust_track_brightness(false, false)
       end
-    }, 'brighten_all') then
+    }).clicked then
     end
 
     ImGui.EndGroup(ctx)

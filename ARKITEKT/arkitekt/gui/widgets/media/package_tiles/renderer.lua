@@ -23,7 +23,7 @@ local function get_script_colors()
 end
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 -- Performance: Cache frequently-called ImGui functions (15-25% improvement in hot paths)
 local CalcTextSize = ImGui.CalcTextSize
@@ -230,11 +230,11 @@ function M.TileRenderer.background(dl, rect, bg_color, hover_factor)
     local shadow_alpha = (hover_factor * M.CONFIG.tile.hover_shadow.max_alpha) // 1
     local shadow_col = (0x000000 << 8) | shadow_alpha
     for i = M.CONFIG.tile.hover_shadow.max_offset, 1, -1 do
-      Draw.rect_filled(dl, x1 - i, y1 - i + 2, x2 + i, y2 + i + 2, shadow_col, M.CONFIG.tile.rounding)
+      Draw.RectFilled(dl, x1 - i, y1 - i + 2, x2 + i, y2 + i + 2, shadow_col, M.CONFIG.tile.rounding)
     end
   end
   
-  Draw.rect_filled(dl, x1, y1, x2, y2, bg_color, M.CONFIG.tile.rounding)
+  Draw.RectFilled(dl, x1, y1, x2, y2, bg_color, M.CONFIG.tile.rounding)
 end
 
 function M.TileRenderer.border(dl, rect, base_color, is_selected, is_active, is_hovered)
@@ -245,14 +245,14 @@ function M.TileRenderer.border(dl, rect, base_color, is_selected, is_active, is_
     if M.CONFIG.selection.ant_color then
       ant_color = M.CONFIG.selection.ant_color
     else
-      ant_color = Colors.generate_marching_ants_color(
+      ant_color = Colors.GenerateMarchingAntsColor(
         base_color,
         M.CONFIG.selection.brightness_factor,
         M.CONFIG.selection.saturation_factor
       )
     end
     
-    MarchingAnts.draw(
+    MarchingAnts.Draw(
       dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5,
       ant_color, M.CONFIG.colors.border.thickness, M.CONFIG.tile.rounding,
       M.CONFIG.selection.ant_dash, M.CONFIG.selection.ant_gap, M.CONFIG.selection.ant_speed
@@ -264,23 +264,23 @@ function M.TileRenderer.border(dl, rect, base_color, is_selected, is_active, is_
       if M.CONFIG.colors.border.hover then
         border_color = M.CONFIG.colors.border.hover
       else
-        border_color = Colors.generate_active_border(base_color, 0.6, 1.8)
+        border_color = Colors.GenerateActiveBorder(base_color, 0.6, 1.8)
       end
     elseif is_active then
       if M.CONFIG.colors.border.active then
         border_color = M.CONFIG.colors.border.active
       else
-        border_color = Colors.generate_active_border(base_color, 0.7, 1.6)
+        border_color = Colors.GenerateActiveBorder(base_color, 0.7, 1.6)
       end
     else
       if M.CONFIG.colors.border.inactive then
         border_color = M.CONFIG.colors.border.inactive
       else
-        border_color = Colors.generate_border(base_color, 0.2, 0.8)
+        border_color = Colors.GenerateBorder(base_color, 0.2, 0.8)
       end
     end
     
-    Draw.rect(dl, x1, y1, x2, y2, border_color, M.CONFIG.tile.rounding, M.CONFIG.colors.border.thickness)
+    Draw.Rect(dl, x1, y1, x2, y2, border_color, M.CONFIG.tile.rounding, M.CONFIG.colors.border.thickness)
   end
 end
 
@@ -304,8 +304,8 @@ function M.TileRenderer.order_badge(ctx, dl, pkg, P, tile_x, tile_y)
   local is_active = pkg.active[P.id] == true
   local bg = is_active and M.CONFIG.colors.badge.bg_active or M.CONFIG.colors.badge.bg_inactive
   
-  Draw.rect_filled(dl, x1, y1, x2, y2, bg, M.CONFIG.badge.rounding)
-  Draw.centered_text(ctx, badge, x1, y1, x2, y2, M.CONFIG.colors.badge.text)
+  Draw.RectFilled(dl, x1, y1, x2, y2, bg, M.CONFIG.badge.rounding)
+  Draw.CenteredText(ctx, badge, x1, y1, x2, y2, M.CONFIG.colors.badge.text)
   
   ImGui.SetCursorScreenPos(ctx, x1, y1)
   ImGui.InvisibleButton(ctx, '##ordtip-' .. P.id, x2 - x1, y2 - y1)
@@ -324,7 +324,7 @@ function M.TileRenderer.conflicts(ctx, dl, pkg, P, tile_x, tile_y, tile_w)
   local x = tile_x + (tile_w - tw) // 2
   local y = tile_y + M.CONFIG.badge.margin
 
-  Draw.text(dl, x, y, M.CONFIG.colors.text.conflict, text)
+  Draw.Text(dl, x, y, M.CONFIG.colors.text.conflict, text)
 
   ImGui.SetCursorScreenPos(ctx, x, y)
   ImGui.InvisibleButton(ctx, '##conftip-' .. P.id, tw, th)
@@ -409,10 +409,10 @@ function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w, tile_h)
     end
 
     -- Draw chip background
-    Draw.rect_filled(dl, x, y, x + chip.width, y + chip_h, bg_color, M.CONFIG.tags.rounding)
+    Draw.RectFilled(dl, x, y, x + chip.width, y + chip_h, bg_color, M.CONFIG.tags.rounding)
 
     -- Draw text centered in chip
-    Draw.centered_text(ctx, chip.text, x, y, x + chip.width, y + chip_h, M.CONFIG.tags.text_color)
+    Draw.CenteredText(ctx, chip.text, x, y, x + chip.width, y + chip_h, M.CONFIG.tags.text_color)
 
     -- Move to next chip position
     x = x + chip.width + M.CONFIG.tags.gap
@@ -508,7 +508,7 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
       if ok then
         preview_drawn = true
         -- Draw border around clipped area
-        Draw.rect(dl, clip_x1, clip_y1, clip_x2, clip_y2,
+        Draw.Rect(dl, clip_x1, clip_y1, clip_x2, clip_y2,
                   M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
       end
     end
@@ -585,7 +585,7 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
           if ok then
             img_drawn = true
             -- Draw border around cell (not image)
-            Draw.rect(dl, cx, cy, cx + cell_size, cy + cell_size,
+            Draw.Rect(dl, cx, cy, cx + cell_size, cy + cell_size,
                       M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
           end
         end
@@ -594,12 +594,12 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
       -- Fallback to colored square if image didn't load
       if not img_drawn then
         local col = theme.color_from_key(key:gsub('%.%w+$', ''))
-        Draw.rect_filled(dl, cx, cy, cx + cell_size, cy + cell_size, col, M.CONFIG.mosaic.rounding)
-        Draw.rect(dl, cx, cy, cx + cell_size, cy + cell_size,
+        Draw.RectFilled(dl, cx, cy, cx + cell_size, cy + cell_size, col, M.CONFIG.mosaic.rounding)
+        Draw.Rect(dl, cx, cy, cx + cell_size, cy + cell_size,
                   M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
 
         local label = key:sub(1, 3):upper()
-        Draw.centered_text(ctx, label, cx, cy, cx + cell_size, cy + cell_size, hexrgb('#FFFFFF'))
+        Draw.CenteredText(ctx, label, cx, cy, cx + cell_size, cy + cell_size, hexrgb('#FFFFFF'))
       end
     end
   end
@@ -607,7 +607,7 @@ end
 
 function M.TileRenderer.footer(ctx, dl, pkg, P, tile_x, tile_y, tile_w, tile_h)
   local footer_y = tile_y + tile_h - M.CONFIG.footer.height
-  Draw.rect_filled(dl, tile_x, footer_y, tile_x + tile_w, tile_y + tile_h, M.CONFIG.colors.footer.gradient, 0)
+  Draw.RectFilled(dl, tile_x, footer_y, tile_x + tile_w, tile_y + tile_h, M.CONFIG.colors.footer.gradient, 0)
   
   local name = P.meta and P.meta.name or P.id
   local is_active = pkg.active[P.id] == true
@@ -621,8 +621,8 @@ function M.TileRenderer.footer(ctx, dl, pkg, P, tile_x, tile_y, tile_w, tile_h)
   local name_max_width = tile_w - (M.CONFIG.footer.padding_x * 3) - count_w
   local truncated_name = truncate_text(ctx, name, name_max_width)
   
-  Draw.text(dl, tile_x + M.CONFIG.footer.padding_x, footer_y + 6, name_color, truncated_name)
-  Draw.text_right(ctx, tile_x + tile_w - M.CONFIG.footer.padding_x, footer_y + 6, M.CONFIG.colors.text.secondary, count_text)
+  Draw.Text(dl, tile_x + M.CONFIG.footer.padding_x, footer_y + 6, name_color, truncated_name)
+  Draw.TextRight(ctx, tile_x + tile_w - M.CONFIG.footer.padding_x, footer_y + 6, M.CONFIG.colors.text.secondary, count_text)
 end
 
 -- Clear image cache to avoid invalid image handle errors

@@ -4,7 +4,7 @@
 
 local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 
@@ -220,8 +220,8 @@ function M.handle_inline_edit_input(ctx, dl, state, id, x, y, width, height, chi
   local bg_color
   if chip_color then
     -- Create darker version of chip color for backdrop
-    bg_color = Colors.adjust_brightness(chip_color, 0.15)
-    bg_color = Colors.with_opacity(bg_color, 0.88)
+    bg_color = Colors.AdjustBrightness(chip_color, 0.15)
+    bg_color = Colors.WithOpacity(bg_color, 0.88)
   else
     bg_color = hexrgb('#1A1A1AE0')
   end
@@ -242,9 +242,9 @@ function M.handle_inline_edit_input(ctx, dl, state, id, x, y, width, height, chi
   -- Calculate text and selection colors
   local text_color, selection_color
   if chip_color then
-    text_color = Colors.adjust_brightness(chip_color, 1.8)
-    selection_color = Colors.adjust_brightness(chip_color, 0.8)
-    selection_color = Colors.with_opacity(selection_color, 0.67)
+    text_color = Colors.AdjustBrightness(chip_color, 1.8)
+    selection_color = Colors.AdjustBrightness(chip_color, 0.8)
+    selection_color = Colors.WithOpacity(selection_color, 0.67)
   else
     text_color = hexrgb('#FFFFFFDD')
     selection_color = hexrgb('#4444AAAA')

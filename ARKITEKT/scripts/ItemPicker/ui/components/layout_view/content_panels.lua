@@ -26,12 +26,12 @@ local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
   local Theme = get_theme()
   local ThemeColors = Theme and Theme.COLORS or {}
 
-  local bg_color = ThemeColors.BG_PANEL or Ark.Colors.hexrgb('#1A1A1A')
-  bg_color = Ark.Colors.with_opacity(bg_color, alpha * 0.6)
+  local bg_color = ThemeColors.BG_PANEL or Ark.Colors.Hexrgb('#1A1A1A')
+  bg_color = Ark.Colors.WithOpacity(bg_color, alpha * 0.6)
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, rounding)
 
-  local border_color = ThemeColors.BORDER_OUTER or Ark.Colors.hexrgb('#2A2A2A')
-  border_color = Ark.Colors.with_opacity(border_color, alpha * 0.67)
+  local border_color = ThemeColors.BORDER_OUTER or Ark.Colors.Hexrgb('#2A2A2A')
+  border_color = Ark.Colors.WithOpacity(border_color, alpha * 0.67)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
 end
 
@@ -52,8 +52,8 @@ local function draw_panel_title(ctx, draw_list, title_font, title, panel_x, pane
     end
   end
 
-  local text_color = config.COLORS.SECTION_HEADER_TEXT or Ark.Colors.hexrgb('#FFFFFF')
-  text_color = Ark.Colors.with_alpha(text_color, Ark.Colors.opacity(final_alpha))
+  local text_color = config.COLORS.SECTION_HEADER_TEXT or Ark.Colors.Hexrgb('#FFFFFF')
+  text_color = Ark.Colors.WithAlpha(text_color, Ark.Colors.Opacity(final_alpha))
   ImGui.DrawList_AddText(draw_list, title_x, title_y, text_color, title)
   ImGui.PopFont(ctx)
 end
@@ -313,12 +313,12 @@ function M.draw_track_filter_bar(ctx, draw_list, coord_offset_x, panels_start_y,
           local current_width = bounds.w
 
           local strip_alpha = (0x44 * section_fade) // 1
-          local strip_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb('#3A3A3A'), strip_alpha)
+          local strip_color = Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#3A3A3A'), strip_alpha)
           ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + track_bar_collapsed_width, bar_y + bar_height, strip_color, 2)
 
           if visibility > 0.1 then
             local bar_alpha = visibility * section_fade
-            TrackFilterBar.draw(zone_ctx, dl, bar_x, bar_y, bar_height, state, bar_alpha)
+            TrackFilterBar.Draw(zone_ctx, dl, bar_x, bar_y, bar_height, state, bar_alpha)
           end
         end,
       })

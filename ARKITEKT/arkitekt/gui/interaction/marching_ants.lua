@@ -95,7 +95,7 @@ local function draw_path_segment(dl, x1, y1, x2, y2, r, s, e, color, thickness, 
   return pos
 end
 
-function M.draw(dl, x1, y1, x2, y2, color, thickness, radius, dash, gap, speed_px, selection_count)
+function M.Draw(dl, x1, y1, x2, y2, color, thickness, radius, dash, gap, speed_px, selection_count)
   if x2 <= x1 or y2 <= y1 then return end
 
   thickness = thickness or 1

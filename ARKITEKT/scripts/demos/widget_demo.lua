@@ -51,13 +51,13 @@ addpath(join(PARENT,'?.lua')); addpath(join(PARENT,'?/init.lua'))
 addpath(join(HERE,  '?.lua')); addpath(join(HERE,  '?/init.lua'))
 
 -- Your modules
-local Shell        = require('arkitekt.app.shell')
+local Shell        = require('arkitekt.runtime.shell')
 local Settings     = (function() local ok,m=pcall(require,'arkitekt.core.settings'); return ok and m or nil end)()
 local okStyle,Style= pcall(require,'arkitekt.gui.style.imgui')
 local ColorBlocks  = require('Arkitekt.gui.widgets.colorblocks')
 local Effects      = require('arkitekt.gui.draw.effects')
 local Math         = require('arkitekt.core.math')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 
 -- Small helpers
@@ -118,15 +118,15 @@ local function render_color_tile(ctx, rect, item, state)
   local x1,y1,x2,y2 = rect[1],rect[2],rect[3],rect[4]
 
   -- swatch
-  Ark.Draw.rect_filled(dl, x1, y1, x2, y2, item.color, 6)
-  Ark.Draw.rect(dl, x1+0.5, y1+0.5, x2-0.5, y2-0.5, hexrgb('#00000055'), 6, 1)
+  Ark.Draw.RectFilled(dl, x1, y1, x2, y2, item.color, 6)
+  Ark.Draw.Rect(dl, x1+0.5, y1+0.5, x2-0.5, y2-0.5, hexrgb('#00000055'), 6, 1)
 
   -- selection / hover
   if state.selected then
     local a = model.ants
     Effects.marching_ants_rounded(dl, x1, y1, x2, y2, a.color_enabled, a.thickness, a.radius, a.dash, a.gap, a.speed)
   elseif state.hover then
-    Ark.Draw.rect(dl, x1, y1, x2, y2, hexrgb('#FFFFFF40'), 6, 1)
+    Ark.Draw.Rect(dl, x1, y1, x2, y2, hexrgb('#FFFFFF40'), 6, 1)
   end
 
   if model.show_labels then

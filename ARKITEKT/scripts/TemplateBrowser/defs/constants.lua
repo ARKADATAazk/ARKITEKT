@@ -4,7 +4,7 @@
 
 local ColorDefs = require('arkitekt.defs.colors')
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 

@@ -103,7 +103,7 @@ end
 --- @param panel_id string Panel ID
 --- @param side string 'left' or 'right'
 --- @return number Sidebar width consumed
-function M.draw(ctx, dl, panel_x, panel_y, panel_width, panel_height, sidebar_cfg, panel_id, side)
+function M.Draw(ctx, dl, panel_x, panel_y, panel_width, panel_height, sidebar_cfg, panel_id, side)
   if not sidebar_cfg or not sidebar_cfg.enabled then
     return 0
   end
@@ -154,7 +154,7 @@ function M.draw(ctx, dl, panel_x, panel_y, panel_width, panel_height, sidebar_cf
     btn_config.corner_rounding = corner_rounding
     btn_config.panel_state = { _panel_id = panel_id }
 
-    Button.draw(ctx, btn_config)
+    Button.Draw(ctx, btn_config)
   end
 
   return sidebar_cfg.width or M.DEFAULTS.width

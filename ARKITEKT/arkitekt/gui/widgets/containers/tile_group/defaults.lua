@@ -3,7 +3,7 @@
 -- Default styling for tile group headers and containers
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 

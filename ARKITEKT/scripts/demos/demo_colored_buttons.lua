@@ -147,7 +147,7 @@ local function draw_custom_preview(ctx)
     ImGui.Dummy(ctx, 40, 20)
 
     ImGui.SameLine(ctx)
-    local r, g, b, a = Colors.rgba_to_components(color)
+    local r, g, b, a = Colors.RgbaToComponents(color)
     ImGui.Text(ctx, string.format('%s: #%02X%02X%02X', label, r, g, b))
   end
 end

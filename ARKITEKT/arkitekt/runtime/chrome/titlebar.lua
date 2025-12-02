@@ -1,9 +1,6 @@
 -- @noindex
--- Arkitekt/app/titlebar.lua
--- MODIFIED: Stylized titlebar with centered 'AZK' branding
--- ADDED: Context menu on right-click icon (Hub, Metrics, Debug Console, Profiler)
--- REMOVED: Keyboard shortcuts and tooltips for cleaner interface
--- UPDATED: ImGui 0.10 font size handling
+-- arkitekt/runtime/chrome/titlebar.lua
+-- Custom titlebar with branding, version, and window controls
 
 local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
@@ -25,11 +22,11 @@ do
 end
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local Icon = nil
 do
-  local ok, mod = pcall(require, 'arkitekt.app.chrome.icon')
+  local ok, mod = pcall(require, 'arkitekt.runtime.chrome.icon')
   if ok then Icon = mod end
 end
 
@@ -226,8 +223,8 @@ function M.new(opts)
     
     local text_color = self.text_color or ImGui.GetColor(ctx, ImGui.Col_Text)
     -- Version color: auto-contrast based on chrome background, with transparency
-    local auto_version_base = Colors.auto_text_color(bg_color)
-    local version_color = self.version_color or Colors.with_opacity(auto_version_base, 0.36)
+    local auto_version_base = Colors.AutoTextColor(bg_color)
+    local version_color = self.version_color or Colors.WithOpacity(auto_version_base, 0.36)
     
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, self.button_spacing, 0)

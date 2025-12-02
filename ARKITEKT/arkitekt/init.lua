@@ -1,9 +1,10 @@
 -- ARKITEKT Namespace
 -- Provides ImGui-style access to all widgets via lazy loading
--- Auto-loads ImGui and bootstrap utilities
+-- Auto-loads ImGui and bootstraps the framework
 -- Usage: local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 --        local ctx = Ark.ImGui.CreateContext('My Script')
---        Ark.Button.draw(ctx, {label = 'Click'})
+--        Ark.Button(ctx, 'Click')
+--        Ark.Shell.run({ title = 'My App', draw = function(ctx) end })
 
 -- ============================================================================
 -- SINGLETON PATTERN
@@ -24,26 +25,177 @@ for key in pairs(package.loaded) do
 end
 
 -- ============================================================================
--- AUTO-BOOTSTRAP
+-- BOOTSTRAP
 -- ============================================================================
--- Run bootstrap to set up package paths and validate dependencies
+
 local sep = package.config:sub(1,1)
 local src = debug.getinfo(1,'S').source:sub(2)
+
 -- Get the directory containing this init.lua (arkitekt/)
-local arkitekt_dir = src:match('(.-arkitekt)[/\\]') or src:match('(.*)[/\\]')
+local arkitekt_dir = src:match('(.*)[/\\]init%.lua$')
 if not arkitekt_dir then
   error('ARKITEKT init.lua: Cannot determine arkitekt directory from: ' .. tostring(src))
 end
-local bootstrap_path = arkitekt_dir .. sep .. 'arkitekt' .. sep .. 'app' .. sep .. 'bootstrap.lua'
--- If this file IS in arkitekt/, adjust path
-if src:match('arkitekt[/\\]init%.lua$') then
-  bootstrap_path = arkitekt_dir .. sep .. 'app' .. sep .. 'bootstrap.lua'
-end
-local bootstrap_context = dofile(bootstrap_path).init()
 
-if not bootstrap_context then
-  error('ARKITEKT bootstrap failed - cannot continue')
+-- Get root path (parent of arkitekt/)
+local root_path = arkitekt_dir:match('(.*)[/\\]arkitekt$') or arkitekt_dir:match('(.*)[/\\]')
+if not root_path then
+  error('ARKITEKT init.lua: Cannot determine root path from: ' .. tostring(arkitekt_dir))
 end
+root_path = root_path .. sep
+
+-- ============================================================================
+-- PACKAGE PATH SETUP
+-- ============================================================================
+
+package.path =
+    root_path .. '?.lua;' ..
+    root_path .. '?' .. sep .. 'init.lua;' ..
+    root_path .. 'scripts' .. sep .. '?.lua;' ..
+    root_path .. 'scripts' .. sep .. '?' .. sep .. 'init.lua;' ..
+    package.path
+
+-- Add ReaImGui builtin path (required for extension to be found)
+package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
+
+-- ============================================================================
+-- REAIMGUI SHIM LOADING
+-- ============================================================================
+
+local shim_path = reaper.GetResourcePath() .. '/Scripts/ReaTeam Extensions/API/imgui.lua'
+if reaper.file_exists(shim_path) then
+  dofile(shim_path)('0.10')
+end
+
+-- ============================================================================
+-- DEPENDENCY VALIDATION
+-- ============================================================================
+
+-- ImGui
+local has_imgui, imgui_result = pcall(require, 'imgui')
+if not has_imgui then
+  reaper.MB(
+    'Missing dependency: ReaImGui extension.\n\n' ..
+    'Install via ReaPack:\n' ..
+    'Extensions > ReaPack > Browse packages\n' ..
+    'Search: ReaImGui',
+    'ARKITEKT Bootstrap Error',
+    0
+  )
+  return nil
+end
+
+-- SWS Extension
+local has_sws = reaper.BR_GetMediaItemGUID and
+                reaper.BR_GetMouseCursorContext and
+                reaper.SNM_GetIntConfigVar
+
+if not has_sws then
+  reaper.MB(
+    'Missing dependency: SWS Extension.\n\n' ..
+    'ARKITEKT requires SWS for:\n' ..
+    '- Media item tracking (BR_GetMediaItemGUID)\n' ..
+    '- Mouse cursor detection (BR_GetMouseCursorContext)\n' ..
+    '- Configuration management (SNM_GetIntConfigVar)\n\n' ..
+    'Install from: https://www.sws-extension.org/\n' ..
+    'Or via ReaPack: Extensions > ReaPack > Browse packages',
+    'ARKITEKT Bootstrap Error',
+    0
+  )
+  return nil
+end
+
+-- JS_ReaScriptAPI
+local has_js_api = reaper.JS_Mouse_GetState and
+                   reaper.JS_Window_Find and
+                   reaper.JS_Window_GetRect
+
+if not has_js_api then
+  reaper.MB(
+    'Missing dependency: js_ReaScriptAPI extension.\n\n' ..
+    'ARKITEKT requires JS API for:\n' ..
+    '- Mouse state detection outside ImGui\n' ..
+    '- Window positioning and multi-monitor support\n' ..
+    '- Drag & drop functionality in Item Picker\n\n' ..
+    'Install via ReaPack:\n' ..
+    'Extensions > ReaPack > Browse packages\n' ..
+    'Search: js_ReaScriptAPI',
+    'ARKITEKT Bootstrap Error',
+    0
+  )
+  return nil
+end
+
+-- ============================================================================
+-- UTILITY FUNCTIONS
+-- ============================================================================
+
+local function dirname(p)
+  return p:match('^(.*)[/\\]')
+end
+
+local function join(a, b)
+  return (a:sub(-1) == sep) and (a .. b) or (a .. sep .. b)
+end
+
+-- Get REAPER Data directory for ARKITEKT app storage
+-- Returns: REAPER_RESOURCE_PATH/Data/ARKITEKT/{app_name}/
+-- Creates the directory if it doesn't exist
+local function get_data_dir(app_name)
+  if not app_name or app_name == '' then
+    error('get_data_dir: app_name is required')
+  end
+
+  local resource_path = reaper.GetResourcePath()
+  local data_dir = resource_path .. sep .. 'Data' .. sep .. 'ARKITEKT' .. sep .. app_name
+
+  -- Create directory if it doesn't exist
+  if reaper.RecursiveCreateDirectory then
+    reaper.RecursiveCreateDirectory(data_dir, 0)
+  end
+
+  return data_dir
+end
+
+-- ============================================================================
+-- LAUNCH ARGUMENTS (from DevKit or other launchers)
+-- ============================================================================
+
+local function get_launch_args()
+  local args = {
+    debug = reaper.GetExtState('ARKITEKT_LAUNCH', 'debug') == '1',
+    profiler = reaper.GetExtState('ARKITEKT_LAUNCH', 'profiler') == '1',
+    script_path = reaper.GetExtState('ARKITEKT_LAUNCH', 'script_path'),
+  }
+
+  -- Clear the ExtState after reading (consume once)
+  reaper.DeleteExtState('ARKITEKT_LAUNCH', 'debug', false)
+  reaper.DeleteExtState('ARKITEKT_LAUNCH', 'profiler', false)
+  reaper.DeleteExtState('ARKITEKT_LAUNCH', 'script_path', false)
+
+  return args
+end
+
+-- ============================================================================
+-- BOOTSTRAP CONTEXT (for backward compat and advanced use)
+-- ============================================================================
+
+local bootstrap_context = {
+  root_path = root_path,
+  sep = sep,
+  dirname = dirname,
+  join = join,
+  get_data_dir = get_data_dir,
+  ImGui = require('arkitekt.platform.imgui'),
+  launch_args = get_launch_args(),
+  require_framework = function(module_name)
+    return require(module_name)
+  end,
+}
+
+-- ============================================================================
+-- ARK NAMESPACE
+-- ============================================================================
 
 local Ark = {}
 
@@ -54,7 +206,6 @@ Ark.ImGui = bootstrap_context.ImGui
 Ark._bootstrap = bootstrap_context
 
 -- Expose launch arguments (from DevKit or other launchers)
--- Contains: { debug = bool, script_path = string }
 Ark.launch_args = bootstrap_context.launch_args
 
 -- ID Stack for ImGui-style PushID/PopID (loaded eagerly for performance)
@@ -65,6 +216,9 @@ Ark.PopID = IdStack.pop
 -- Module registry - maps names to module paths
 -- Lazy loaded on first access to minimize startup overhead
 local MODULES = {
+  -- Runtime (app shell)
+  Shell = 'arkitekt.runtime.shell',
+
   -- Primitives (alphabetically sorted)
   Badge = 'arkitekt.gui.widgets.primitives.badge',
   Button = 'arkitekt.gui.widgets.primitives.button',

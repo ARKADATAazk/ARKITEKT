@@ -10,7 +10,7 @@ local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local DEFAULTS = {
   width = 250,
@@ -37,7 +37,7 @@ local function _measure_text(ctx, text)
 end
 
 local function _draw_text_clipped(ctx, text, x, y, max_w, color)
-  Draw.text_clipped(ctx, text, x, y, max_w, color)
+  Draw.TextClipped(ctx, text, x, y, max_w, color)
 end
 
 local StatusPad = {}
@@ -100,7 +100,7 @@ function StatusPad:draw(ctx, x, y)
   local cfg = self.config
 
   local mx, my   = ImGui.GetMousePos(ctx)
-  local hovered  = Draw.point_in_rect(mx, my, x1, y1, x2, y2)
+  local hovered  = Draw.PointInRect(mx, my, x1, y1, x2, y2)
   local dt = ImGui.GetDeltaTime(ctx)
   local target_alpha = hovered and 1.0 or 0.0
   self.hover_alpha = self.hover_alpha + (target_alpha - self.hover_alpha) * cfg.hover_animation_speed * dt

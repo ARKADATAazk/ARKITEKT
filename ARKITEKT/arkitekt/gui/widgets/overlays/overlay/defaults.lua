@@ -12,7 +12,7 @@ local Constants = require('arkitekt.defs.app')
 local Timing = require('arkitekt.defs.timing')
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 -- Lazy load Theme to avoid circular dependency
 local _Theme
@@ -132,7 +132,7 @@ function M.override(overrides)
   return ConfigUtil.deepMerge(config, overrides)
 end
 
-function M.reset()
+function M.Reset()
   current_config = nil
 end
 
@@ -163,8 +163,8 @@ end
 --   - scrim_opacity: Optional, 0.0-1.0
 -- @return Complete overlay configuration table
 function M.create_overlay_config(opts)
-  assert(opts and opts.id, "Overlay config requires 'id' field")
-  assert(opts.render, "Overlay config requires 'render' function")
+  assert(opts and opts.id, 'Overlay config requires "id" field')
+  assert(opts.render, 'Overlay config requires "render" function')
 
   local C = Constants.OVERLAY
   local config = M.get()

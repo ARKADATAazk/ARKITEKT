@@ -4,7 +4,7 @@
 
 local Ark = require('arkitekt')
 local LibraryTile = require('ThemeAdjuster.ui.grids.renderers.library_tile')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 

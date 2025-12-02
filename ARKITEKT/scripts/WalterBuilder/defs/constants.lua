@@ -4,7 +4,7 @@
 
 local Ark = require('arkitekt')
 local Lookup = require('arkitekt.core.lookup')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 

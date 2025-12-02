@@ -7,7 +7,7 @@ local Lifecycle = require('arkitekt.gui.animation.lifecycle')
 local SpawnAnim = Lifecycle.SpawnTracker
 local DestroyAnim = Lifecycle.DestroyAnim
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 
 local M = {}

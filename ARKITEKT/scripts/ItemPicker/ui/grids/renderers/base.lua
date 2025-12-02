@@ -4,7 +4,7 @@
 
 local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local Easing = require('arkitekt.gui.animation.easing')
@@ -22,21 +22,21 @@ local IsItemClicked = ImGui.IsItemClicked
 local floor = math.floor
 
 -- PERF: Localize color functions (called many times per tile)
-local Colors_desaturate = Ark.Colors.desaturate
-local Colors_adjust_brightness = Ark.Colors.adjust_brightness
-local Colors_with_alpha = Ark.Colors.with_alpha
-local Colors_opacity = Ark.Colors.opacity
-local Colors_rgba_to_components = Ark.Colors.rgba_to_components
-local Colors_rgb_to_hsl = Ark.Colors.rgb_to_hsl
-local Colors_hsl_to_rgb = Ark.Colors.hsl_to_rgb
-local Colors_components_to_rgba = Ark.Colors.components_to_rgba
+local Colors_desaturate = Ark.Colors.Desaturate
+local Colors_AdjustBrightness = Ark.Colors.AdjustBrightness
+local Colors_WithAlpha = Ark.Colors.WithAlpha
+local Colors_Opacity = Ark.Colors.Opacity
+local Colors_RgbaToComponents = Ark.Colors.RgbaToComponents
+local Colors_RgbToHsl = Ark.Colors.RgbToHsl
+local Colors_HslToRgb = Ark.Colors.HslToRgb
+local Colors_ComponentsToRgba = Ark.Colors.ComponentsToRgba
 
 -- PERF: Inline pixel snapping (avoids function call overhead)
 local function snap(x)
   return (x + 0.5) // 1
 end
 
--- PERF: Inline with_alpha (avoids Ark.Colors.with_alpha function call)
+-- PERF: Inline with_alpha (avoids Ark.Colors.WithAlpha function call)
 local function with_alpha(color, alpha)
   return (color & 0xFFFFFF00) | (alpha & 0xFF)
 end
@@ -51,12 +51,12 @@ M.tile_spawn_times = MediaGridBase.tile_spawn_times
 
 -- Ensure color has minimum lightness for readability
 function M.ensure_min_lightness(color, min_lightness)
-  local h, s, l = Ark.Colors.rgb_to_hsl(color)
+  local h, s, l = Ark.Colors.RgbToHsl(color)
   if l < min_lightness then
     l = min_lightness
   end
-  local r, g, b = Ark.Colors.hsl_to_rgb(h, s, l)
-  return Ark.Colors.components_to_rgba(r, g, b, 0xFF)
+  local r, g, b = Ark.Colors.HslToRgb(h, s, l)
+  return Ark.Colors.ComponentsToRgba(r, g, b, 0xFF)
 end
 
 -- Calculate cascade animation factor (delegates to MediaGridBase)
@@ -168,9 +168,9 @@ function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, c
   local final_alpha
   if is_small_tile then
     -- In small tile mode, alpha is already pre-multiplied by header_alpha in the caller
-    final_alpha = Ark.Colors.opacity(alpha)
+    final_alpha = Ark.Colors.Opacity(alpha)
   else
-    final_alpha = Ark.Colors.opacity(base_header_alpha * alpha)
+    final_alpha = Ark.Colors.Opacity(base_header_alpha * alpha)
   end
 
   local header_color = ImGui.ColorConvertDouble4ToU32(r, g, b, final_alpha / 255)
@@ -208,7 +208,7 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
   -- Dark spinner color from palette (slightly lighter than background)
   local palette = Palette.get()
   local spinner_alpha = (alpha * 100) // 1
-  local spinner_color = Ark.Colors.with_alpha(palette.placeholder_spinner or 0x808080FF, spinner_alpha)
+  local spinner_color = Ark.Colors.WithAlpha(palette.placeholder_spinner or 0x808080FF, spinner_alpha)
   local thickness = math.max(2, size * 0.2)
 
   Ark.LoadingSpinner.draw_direct(dl, center_x, center_y, {
@@ -228,15 +228,15 @@ function M.apply_state_effects(base_color, muted_factor, enabled_factor, config)
 
   -- Apply muted state first (lighter effect than disabled)
   if muted_factor > 0.001 then
-    render_color = Ark.Colors.desaturate(render_color, c.muted_desaturate * muted_factor)
-    render_color = Ark.Colors.adjust_brightness(render_color,
+    render_color = Ark.Colors.Desaturate(render_color, c.muted_desaturate * muted_factor)
+    render_color = Ark.Colors.AdjustBrightness(render_color,
       1.0 - (1.0 - c.muted_brightness) * muted_factor)
   end
 
   -- Apply disabled state (stronger effect, overrides muted)
   if enabled_factor < 1.0 then
-    render_color = Ark.Colors.desaturate(render_color, c.disabled_desaturate * (1.0 - enabled_factor))
-    render_color = Ark.Colors.adjust_brightness(render_color,
+    render_color = Ark.Colors.Desaturate(render_color, c.disabled_desaturate * (1.0 - enabled_factor))
+    render_color = Ark.Colors.AdjustBrightness(render_color,
       1.0 - (1.0 - c.disabled_brightness) * (1.0 - enabled_factor))
   end
 
@@ -287,13 +287,13 @@ function M.get_cached_tile_color(base_color, is_compact, config, palette)
     -- Normal mode color
     local normal = base_color
     normal = Colors_desaturate(normal, 1.0 - sat_factor)
-    normal = Colors_adjust_brightness(normal, bright_factor)
+    normal = Colors_AdjustBrightness(normal, bright_factor)
     normal = M._ensure_min_lightness_fast(normal, min_lightness)
 
     -- Compact mode color
     local compact = base_color
     compact = Colors_desaturate(compact, 1.0 - compact_sat_factor)
-    compact = Colors_adjust_brightness(compact, compact_bright_factor)
+    compact = Colors_AdjustBrightness(compact, compact_bright_factor)
     compact = M._ensure_min_lightness_fast(compact, min_lightness)
 
     cached = { normal = normal, compact = compact }
@@ -305,16 +305,16 @@ end
 
 -- Fast min lightness check (simplified HSL)
 function M._ensure_min_lightness_fast(color, min_lightness)
-  local r, g, b, a = Colors_rgba_to_components(color)
+  local r, g, b, a = Colors_RgbaToComponents(color)
   -- Quick luminance approximation
   local lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255
   if lum >= min_lightness then
     return color
   end
   -- Only do full HSL conversion if needed
-  local h, s, l = Colors_rgb_to_hsl(color)
-  local r_new, g_new, b_new = Colors_hsl_to_rgb(h, s, min_lightness)
-  return Colors_components_to_rgba(r_new, g_new, b_new, a)
+  local h, s, l = Colors_RgbToHsl(color)
+  local r_new, g_new, b_new = Colors_HslToRgb(h, s, min_lightness)
+  return Colors_ComponentsToRgba(r_new, g_new, b_new, a)
 end
 
 -- Simplified color pipeline: cached base + dynamic effects (boolean states, no animation)
@@ -329,24 +329,24 @@ function M.compute_tile_color_fast(base_color, is_compact, is_muted, is_disabled
 
   -- Apply dynamic state effects (only when actually muted/disabled)
   if is_muted then
-    render_color = Ark.Colors.desaturate(render_color, c.muted_desaturate)
-    render_color = Ark.Colors.adjust_brightness(render_color, c.muted_brightness)
+    render_color = Ark.Colors.Desaturate(render_color, c.muted_desaturate)
+    render_color = Ark.Colors.AdjustBrightness(render_color, c.muted_brightness)
   end
 
   if is_disabled then
-    render_color = Ark.Colors.desaturate(render_color, c.disabled_desaturate)
-    render_color = Ark.Colors.adjust_brightness(render_color, c.disabled_brightness)
+    render_color = Ark.Colors.Desaturate(render_color, c.disabled_desaturate)
+    render_color = Ark.Colors.AdjustBrightness(render_color, c.disabled_brightness)
   end
 
   -- Apply hover effect (simple brightness boost) - use palette if available
   if is_hovered then
     local hover_boost = p.hover_brightness or c.hover_brightness_boost
-    render_color = Ark.Colors.adjust_brightness(render_color, 1.0 + hover_boost)
+    render_color = Ark.Colors.AdjustBrightness(render_color, 1.0 + hover_boost)
   end
 
   -- Apply selection effect
   if is_selected then
-    render_color = Ark.Colors.adjust_brightness(render_color, 1.0 + c.selection_tile_brightness_boost)
+    render_color = Ark.Colors.AdjustBrightness(render_color, 1.0 + c.selection_tile_brightness_boost)
   end
 
   -- Apply alpha
@@ -359,7 +359,7 @@ function M.compute_tile_color_fast(base_color, is_compact, is_muted, is_disabled
     alpha = alpha * c.muted_alpha_factor
   end
 
-  render_color = Ark.Colors.with_alpha(render_color, Ark.Colors.opacity(alpha))
+  render_color = Ark.Colors.WithAlpha(render_color, Ark.Colors.Opacity(alpha))
 
   return render_color, alpha
 end
@@ -378,7 +378,7 @@ function M.compute_tile_color(base_color, is_compact, hover_factor, muted_factor
   -- Apply muted effect (only if animating or muted)
   if muted_factor > 0.001 then
     render_color = Colors_desaturate(render_color, c.muted_desaturate * muted_factor)
-    render_color = Colors_adjust_brightness(render_color,
+    render_color = Colors_AdjustBrightness(render_color,
       1.0 - (1.0 - c.muted_brightness) * muted_factor)
   end
 
@@ -386,19 +386,19 @@ function M.compute_tile_color(base_color, is_compact, hover_factor, muted_factor
   if enabled_factor < 0.999 then
     local disabled_factor = 1.0 - enabled_factor
     render_color = Colors_desaturate(render_color, c.disabled_desaturate * disabled_factor)
-    render_color = Colors_adjust_brightness(render_color,
+    render_color = Colors_AdjustBrightness(render_color,
       1.0 - (1.0 - c.disabled_brightness) * disabled_factor)
   end
 
   -- Apply hover effect - use palette if available
   if hover_factor > 0.001 then
     local hover_boost = (p.hover_brightness or c.hover_brightness_boost) * hover_factor
-    render_color = Colors_adjust_brightness(render_color, 1.0 + hover_boost)
+    render_color = Colors_AdjustBrightness(render_color, 1.0 + hover_boost)
   end
 
   -- Apply selection effect
   if is_selected then
-    render_color = Colors_adjust_brightness(render_color, 1.0 + c.selection_tile_brightness_boost)
+    render_color = Colors_AdjustBrightness(render_color, 1.0 + c.selection_tile_brightness_boost)
   end
 
   -- Calculate combined alpha (matches original calculate_combined_alpha)
@@ -415,7 +415,7 @@ function M.compute_tile_color(base_color, is_compact, hover_factor, muted_factor
   -- final_alpha for the render_color includes base_alpha from the color itself
   local base_alpha = (render_color & 0xFF) / 255
   local final_alpha = base_alpha * combined_alpha
-  render_color = Colors_with_alpha(render_color, Colors_opacity(final_alpha))
+  render_color = Colors_WithAlpha(render_color, Colors_Opacity(final_alpha))
 
   return render_color, combined_alpha
 end
@@ -645,7 +645,7 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
   end
 
   -- Use custom text color if provided, otherwise use primary color
-  -- PERF: Inlined text rendering - bypasses Ark.Draw.text function call overhead
+  -- PERF: Inlined text rendering - bypasses Ark.Draw.Text function call overhead
   local final_text_color = text_color or c.text_primary_color
   DrawList_AddText(dl, snap(text_x), snap(text_y), with_alpha(final_text_color, text_alpha), truncated_name or '')
 
@@ -672,7 +672,7 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
     DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, bg_color, c.badge_cycle_rounding)
 
     -- Border using darker tile color
-    local border_color = Ark.Colors.adjust_brightness(base_color, c.badge_cycle_border_darken)
+    local border_color = Ark.Colors.AdjustBrightness(base_color, c.badge_cycle_border_darken)
     border_color = with_alpha(border_color, c.badge_cycle_border_alpha)
     DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, border_color, c.badge_cycle_rounding, 0, 0.5)
 

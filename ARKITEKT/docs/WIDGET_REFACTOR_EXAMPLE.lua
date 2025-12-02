@@ -202,14 +202,14 @@ local function resolve_config(opts)
   -- Step 5: Derive disabled colors if not explicitly set
   if opts.disabled then
     config.bg_disabled_color = config.bg_disabled_color or
-      Colors.adjust_lightness(config.bg_color, -0.05)
+      Colors.AdjustLightness(config.bg_color, -0.05)
   end
 
   return config
 end
 
 -- Usage example:
-function Button.draw(ctx, opts)
+function Button.Draw(ctx, opts)
   local config = resolve_config(opts)
   -- config now has CURRENT theme colors!
 

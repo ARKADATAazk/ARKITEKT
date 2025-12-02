@@ -372,7 +372,7 @@ end
 
 -- Draw pattern with automatic texture baking for dot patterns
 -- Set pattern_cfg.use_texture = false to disable texture baking
-function M.draw(ctx, dl, x1, y1, x2, y2, pattern_cfg)
+function M.Draw(ctx, dl, x1, y1, x2, y2, pattern_cfg)
   if not pattern_cfg or not pattern_cfg.enabled then
     return
   end

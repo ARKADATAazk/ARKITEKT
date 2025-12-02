@@ -7,7 +7,7 @@ local C = Theme.COLORS          -- Shared primitives
 local PC = Theme.build_panel_colors()   -- Panel-specific colors
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local Config = require('arkitekt.core.config')
 
@@ -277,7 +277,7 @@ M.TAB_MODE_WITH_CORNER_BUTTONS = {
     bottom_left = {
       icon = '+',
       tooltip = 'Add item',
-      on_click = function() print('Add clicked') end,
+      on_click = nil,  -- Override in implementation
     },
   },
   

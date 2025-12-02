@@ -7,7 +7,7 @@
 -- The get() function returns cached config to avoid per-tile overhead.
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 

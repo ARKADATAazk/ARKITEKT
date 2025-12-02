@@ -6,7 +6,7 @@
 local ImGui = require('arkitekt.platform.imgui')
 local Easing = require('arkitekt.gui.animation.easing')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 

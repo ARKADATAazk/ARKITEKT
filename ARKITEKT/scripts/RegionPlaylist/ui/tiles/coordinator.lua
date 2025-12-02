@@ -373,7 +373,7 @@ function Coordinator:draw_active(ctx, playlist, height, shell_state)
       selected_count = self.active_grid.selection:count()
     end
     -- Pass window object to enable overlay mode and shell_state for fonts
-    BatchRenameModal.draw(ctx, selected_count, window, shell_state)
+    BatchRenameModal.Draw(ctx, selected_count, window, shell_state)
   end
 
   if self.bridge:is_drag_active() and self.bridge:get_source_grid() == 'active' and ImGui.IsMouseReleased(ctx, 0) then
@@ -523,7 +523,7 @@ function Coordinator:draw_ghosts(ctx)
     end
   end
 
-  DragIndicator.draw(ctx, fg_dl, mx, my, count, self.config.ghost_config, colors, is_copy_mode, is_delete_mode)
+  DragIndicator.Draw(ctx, fg_dl, mx, my, count, self.config.ghost_config, colors, is_copy_mode, is_delete_mode)
 end
 
 return M

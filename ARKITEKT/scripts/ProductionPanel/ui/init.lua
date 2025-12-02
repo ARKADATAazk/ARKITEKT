@@ -31,7 +31,7 @@ end
 ---Draw tabbed interface
 ---@param ctx userdata ImGui context
 ---@param shell_state table Shell state
-function M.draw(ctx, shell_state)
+function M.Draw(ctx, shell_state)
   if not state.initialized then
     M.init()
   end
@@ -45,7 +45,7 @@ function M.draw(ctx, shell_state)
     if ImGui.BeginTabItem(ctx, '🎛️ Macro Controls') then
       state.current_tab = 1
       ImGui.Spacing(ctx)
-      MacroControls.draw(ctx)
+      MacroControls.Draw(ctx)
       ImGui.EndTabItem(ctx)
     end
 
@@ -53,7 +53,7 @@ function M.draw(ctx, shell_state)
     if ImGui.BeginTabItem(ctx, '🥁 Drum Rack') then
       state.current_tab = 2
       ImGui.Spacing(ctx)
-      DrumRack.draw(ctx)
+      DrumRack.Draw(ctx)
       ImGui.EndTabItem(ctx)
     end
 

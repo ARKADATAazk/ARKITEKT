@@ -60,7 +60,7 @@ function M.profile(category, duration_ms)
   add_entry('PROFILE', category, string.format('%.2fms', duration_ms))
 end
 
-function M.clear()
+function M.Clear()
   buffer = {}
   start_index = 1
   count = 0

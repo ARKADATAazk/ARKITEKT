@@ -4,7 +4,7 @@
 
 local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 
 local M = {}

@@ -16,7 +16,7 @@ function M.create_tag(metadata, tag_name, color)
 
   metadata.tags[tag_name] = {
     name = tag_name,
-    color = color or Ark.Colors.hexrgb('#646464'),  -- Default dark grey
+    color = color or Ark.Colors.Hexrgb('#646464'),  -- Default dark grey
     created = os.time()
   }
 

@@ -14,7 +14,7 @@ local M = {}
 -- Color preset palette from centralized colors
 local PRESET_COLORS = {}
 for i, color in ipairs(ColorDefs.PALETTE) do
-  PRESET_COLORS[i] = Ark.Colors.hexrgb(color.hex)
+  PRESET_COLORS[i] = Ark.Colors.Hexrgb(color.hex)
 end
 
 -- Draw template context menu (color picker)
@@ -68,7 +68,7 @@ function M.draw_template_context_menu(ctx, state)
         -- Draw chip
         local chip_x = start_x + chip_radius
         local chip_y = start_y + chip_radius
-        Chip.draw(ctx, {
+        Chip.Draw(ctx, {
           style = Chip.STYLE.INDICATOR,
           x = chip_x,
           y = chip_y,
@@ -86,11 +86,12 @@ function M.draw_template_context_menu(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Remove color button
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = 'remove_color',
         label = 'Remove Color',
         width = -1,
         height = UI.BUTTON.HEIGHT_DEFAULT
-      }, 'remove_color') then
+      }).clicked then
         if tmpl_metadata then
           tmpl_metadata.chip_color = nil
           local Persistence = require('TemplateBrowser.data.storage')
@@ -108,11 +109,12 @@ function M.draw_template_context_menu(ctx, state)
           ImGui.Separator(ctx)
           ImGui.Spacing(ctx)
 
-          if Ark.Button.draw_at_cursor(ctx, {
+          if Ark.Button(ctx, {
+            id = 'remove_from_vfolder',
             label = 'Remove from ' .. vfolder.name,
             width = -1,
             height = UI.BUTTON.HEIGHT_DEFAULT
-          }, 'remove_from_vfolder') then
+          }).clicked then
             local Persistence = require('TemplateBrowser.data.storage')
 
             -- Remove template UUID from virtual folder's template_refs
@@ -158,18 +160,19 @@ function M.draw_template_rename_modal(ctx, state)
     ImGui.Spacing(ctx)
 
     -- Initialize field with current name
-    if Ark.InputText.get_text('template_rename_modal') == '' then
-      Ark.InputText.set_text('template_rename_modal', state.rename_buffer)
+    if Ark.InputText.GetText('template_rename_modal') == '' then
+      Ark.InputText.SetText('template_rename_modal', state.rename_buffer)
     end
 
-    local changed, new_name = Ark.InputText.draw_at_cursor(ctx, {
+    local input_result = Ark.InputText(ctx, {
+      id = 'template_rename_modal',
       width = UI.FIELD.RENAME_WIDTH,
       height = UI.FIELD.RENAME_HEIGHT,
       text = state.rename_buffer,
-    }, 'template_rename_modal')
+    })
 
-    if changed then
-      state.rename_buffer = new_name
+    if input_result.changed then
+      state.rename_buffer = input_result.value
     end
 
     -- Auto-focus input on first frame
@@ -182,12 +185,13 @@ function M.draw_template_rename_modal(ctx, state)
     ImGui.Spacing(ctx)
 
     -- Buttons
-    local ok_clicked = Ark.Button.draw_at_cursor(ctx, {
+    local ok_result = Ark.Button(ctx, {
+      id = 'rename_ok',
       label = 'OK',
       width = 140,
       height = UI.BUTTON.HEIGHT_DEFAULT
-    }, 'rename_ok')
-    if ok_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
+    })
+    if ok_result.clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
       if state.rename_buffer ~= '' and state.rename_buffer ~= tmpl.name then
         local old_path = tmpl.path
         local success, new_path = FileOps.rename_template(tmpl.path, state.rename_buffer)
@@ -224,12 +228,13 @@ function M.draw_template_rename_modal(ctx, state)
     end
 
     ImGui.SameLine(ctx)
-    local cancel_clicked = Ark.Button.draw_at_cursor(ctx, {
+    local cancel_result = Ark.Button(ctx, {
+      id = 'rename_cancel',
       label = 'Cancel',
       width = 140,
       height = UI.BUTTON.HEIGHT_DEFAULT
-    }, 'rename_cancel')
-    if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+    })
+    if cancel_result.clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
       state.renaming_item = nil
       state.renaming_type = nil
       state.rename_buffer = ''
@@ -285,7 +290,7 @@ function M.draw_tag_context_menu(ctx, state)
 
         local chip_x = start_x + chip_radius
         local chip_y = start_y + chip_radius
-        Chip.draw(ctx, {
+        Chip.Draw(ctx, {
           style = Chip.STYLE.INDICATOR,
           x = chip_x,
           y = chip_y,
@@ -303,12 +308,13 @@ function M.draw_tag_context_menu(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Reset to default (dark grey)
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = 'tag_reset_color',
         label = 'Reset to Default',
         width = -1,
         height = UI.BUTTON.HEIGHT_DEFAULT
-      }, 'tag_reset_color') then
-        tag_data.color = Ark.Colors.hexrgb('#646464')
+      }).clicked then
+        tag_data.color = Ark.Colors.Hexrgb('#646464')
         local Persistence = require('TemplateBrowser.data.storage')
         Persistence.save_metadata(state.metadata)
         state.context_menu_tag = nil
@@ -372,7 +378,7 @@ function M.draw_vst_context_menu(ctx, state)
 
         local chip_x = start_x + chip_radius
         local chip_y = start_y + chip_radius
-        Chip.draw(ctx, {
+        Chip.Draw(ctx, {
           style = Chip.STYLE.INDICATOR,
           x = chip_x,
           y = chip_y,
@@ -390,11 +396,12 @@ function M.draw_vst_context_menu(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Reset to default (dark grey)
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = 'vst_reset_color',
         label = 'Reset to Default',
         width = -1,
         height = UI.BUTTON.HEIGHT_DEFAULT
-      }, 'vst_reset_color') then
+      }).clicked then
         vst_data.color = nil
         local Persistence = require('TemplateBrowser.data.storage')
         Persistence.save_metadata(state.metadata)
@@ -438,13 +445,14 @@ function M.draw_conflict_resolution_modal(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Overwrite button
-      local overwrite_clicked = Ark.Button.draw_at_cursor(ctx, {
+      local overwrite_result = Ark.Button(ctx, {
+        id = 'conflict_overwrite',
         label = 'Overwrite (Archives existing)',
         width = UI.MODAL.CONFLICT_WIDTH,
         height = UI.BUTTON.HEIGHT_MODAL
-      }, 'conflict_overwrite')
+      })
 
-      if overwrite_clicked then
+      if overwrite_result.clicked then
         state.conflict_resolution = 'overwrite'
         ImGui.CloseCurrentPopup(ctx)
       end
@@ -452,13 +460,14 @@ function M.draw_conflict_resolution_modal(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Keep Both button
-      local keep_both_clicked = Ark.Button.draw_at_cursor(ctx, {
+      local keep_both_result = Ark.Button(ctx, {
+        id = 'conflict_keep_both',
         label = 'Keep Both (Rename new)',
         width = UI.MODAL.CONFLICT_WIDTH,
         height = UI.BUTTON.HEIGHT_MODAL
-      }, 'conflict_keep_both')
+      })
 
-      if keep_both_clicked then
+      if keep_both_result.clicked then
         state.conflict_resolution = 'keep_both'
         ImGui.CloseCurrentPopup(ctx)
       end
@@ -466,13 +475,14 @@ function M.draw_conflict_resolution_modal(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Cancel button
-      local cancel_clicked = Ark.Button.draw_at_cursor(ctx, {
+      local cancel_result = Ark.Button(ctx, {
+        id = 'conflict_cancel',
         label = 'Cancel',
         width = UI.MODAL.CONFLICT_WIDTH,
         height = UI.BUTTON.HEIGHT_MODAL
-      }, 'conflict_cancel')
+      })
 
-      if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+      if cancel_result.clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
         state.conflict_resolution = 'cancel'
         state.conflict_pending = nil  -- Clear pending conflict
         ImGui.CloseCurrentPopup(ctx)

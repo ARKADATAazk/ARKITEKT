@@ -116,7 +116,7 @@ function M.draw_window(ctx, pkg, settings)
 end
 
 -- Reset state (useful for cleanup)
-function M.reset()
+function M.Reset()
   state.open = false
   state.pkg_id = nil
   state.search = ''

@@ -34,7 +34,7 @@ local DEFAULTS = {
   draw_icon = nil,     -- Custom icon callback: function(dl, x, y, w, h, color)
 
   -- State
-  disabled = false,
+  is_disabled = false,
   is_toggled = false,
   is_blocking = false,
 
@@ -110,7 +110,7 @@ end
 -- Determine if current theme is light based on BG_BASE lightness
 local function is_light_theme()
   local bg = Theme.COLORS.BG_BASE
-  local _, _, l = Colors.rgb_to_hsl(bg)
+  local _, _, l = Colors.RgbToHsl(bg)
   return l > 0.5
 end
 
@@ -122,11 +122,11 @@ local function derive_state_color(base, state)
   local sign = light and -1 or 1
 
   if state == 'hover' then
-    return Colors.adjust_lightness(base, sign * 0.06)
+    return Colors.AdjustLightness(base, sign * 0.06)
   elseif state == 'active' then
-    return Colors.adjust_lightness(base, sign * 0.12)
+    return Colors.AdjustLightness(base, sign * 0.12)
   elseif state == 'disabled' then
-    return Colors.with_opacity(Colors.desaturate(base, 0.5), 0.5)
+    return Colors.WithOpacity(Colors.Desaturate(base, 0.5), 0.5)
   end
   return base
 end
@@ -151,13 +151,13 @@ local function get_simple_colors(is_toggled, is_hovered, is_active, is_disabled,
   -- Toggle ON state uses accent color
   if is_toggled then
     bg_base = accent_color or C.ACCENT_WHITE
-    bg_hover = Colors.adjust_lightness(bg_base, 0.06)
-    bg_active = Colors.adjust_lightness(bg_base, 0.12)
+    bg_hover = Colors.AdjustLightness(bg_base, 0.06)
+    bg_active = Colors.AdjustLightness(bg_base, 0.12)
     text_base = C.TEXT_BRIGHT
     text_hover = C.TEXT_BRIGHT
     border_inner = accent_color or C.ACCENT_WHITE_BRIGHT
-    border_hover = Colors.adjust_lightness(border_inner, 0.08)
-    border_active = Colors.adjust_lightness(border_inner, -0.05)
+    border_hover = Colors.AdjustLightness(border_inner, 0.08)
+    border_active = Colors.AdjustLightness(border_inner, -0.05)
   end
 
   -- Derive final colors based on state
@@ -173,9 +173,9 @@ local function get_simple_colors(is_toggled, is_hovered, is_active, is_disabled,
     border = border_active
   elseif hover_alpha > 0.01 then
     -- Hover with smooth lerp (like combo/dropdown)
-    bg = Colors.lerp(bg_base, bg_hover, hover_alpha)
-    text = Colors.lerp(text_base, text_hover, hover_alpha)
-    border = Colors.lerp(border_inner, border_hover, hover_alpha)
+    bg = Colors.Lerp(bg_base, bg_hover, hover_alpha)
+    text = Colors.Lerp(text_base, text_hover, hover_alpha)
+    border = Colors.Lerp(border_inner, border_hover, hover_alpha)
   else
     -- Normal state
     bg = bg_base
@@ -210,9 +210,9 @@ local function get_state_colors(config, is_disabled, is_toggled, is_active, hove
     local hover_bg = config['bg' .. hover_suffix] or derive_state_color(bg, 'hover')
     local hover_border = config['border' .. (is_toggled and '_on_hover_color' or '_hover_color')] or derive_state_color(border_inner, 'hover')
     local hover_text = config['text' .. hover_suffix] or text
-    bg = Colors.lerp(bg, hover_bg, hover_alpha)
-    border_inner = Colors.lerp(border_inner, hover_border, hover_alpha)
-    text = Colors.lerp(text, hover_text, hover_alpha)
+    bg = Colors.Lerp(bg, hover_bg, hover_alpha)
+    border_inner = Colors.Lerp(border_inner, hover_border, hover_alpha)
+    text = Colors.Lerp(text, hover_text, hover_alpha)
   end
 
   return bg, border_inner, border_outer, text
@@ -344,7 +344,7 @@ end
 -- ============================================================================
 
 local function render_button(ctx, dl, x, y, width, height, config, instance, unique_id)
-  local is_disabled = config.disabled or false
+  local is_disabled = config.is_disabled or false
   local is_toggled = config.is_toggled or false
 
   -- Create InvisibleButton FIRST so IsItemHovered works for everything
@@ -371,15 +371,15 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
 
     -- Apply hover/active state modulation
     if is_disabled then
-      bg_color = Colors.darken(base_bg, 0.3)
-      text_color = Colors.darken(base_text, 0.5)
+      bg_color = Colors.Darken(base_bg, 0.3)
+      text_color = Colors.Darken(base_text, 0.5)
     elseif is_active then
-      bg_color = Colors.darken(base_bg, 0.15)
+      bg_color = Colors.Darken(base_bg, 0.15)
       text_color = base_text
     elseif is_hovered then
       -- Smooth hover blend using instance.hover_alpha
-      local hover_bg = Colors.lighten(base_bg, 0.1)
-      bg_color = Colors.blend(base_bg, hover_bg, instance.hover_alpha)
+      local hover_bg = Colors.Lighten(base_bg, 0.1)
+      bg_color = Colors.Blend(base_bg, hover_bg, instance.hover_alpha)
       text_color = base_text
     else
       bg_color = base_bg
@@ -387,8 +387,8 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
     end
 
     -- Preset buttons have subtle borders
-    border_inner = Colors.lighten(bg_color, 0.15)
-    border_outer = Colors.darken(bg_color, 0.2)
+    border_inner = Colors.Lighten(bg_color, 0.15)
+    border_outer = Colors.Darken(bg_color, 0.2)
 
   elseif config._use_simple_colors then
     -- Simplified approach with smooth hover animation (like combo/dropdown)
@@ -501,7 +501,7 @@ end
 --- @param width number|nil Button width (positional only)
 --- @param height number|nil Button height (positional only)
 --- @return table Result { clicked, right_clicked, width, height, hovered, active }
-function M.draw(ctx, label_or_opts, width, height)
+function M.Draw(ctx, label_or_opts, width, height)
   -- Hybrid parameter detection
   local opts
   if type(label_or_opts) == 'table' then
@@ -570,39 +570,21 @@ function M.draw(ctx, label_or_opts, width, height)
 end
 
 -- ============================================================================
--- DEPRECATED FUNCTIONS (Backward Compatibility Shims)
--- ============================================================================
-
---- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
-function M.draw_at_cursor(ctx, opts, id)
-  opts = opts or {}
-  if id then opts.id = id end
-  -- Don't set x/y so it uses cursor position
-  local result = M.draw(ctx, opts)
-  return result.clicked
-end
-
---- @deprecated Cleanup is automatic via Base, no need to call manually
-function M.cleanup()
-  -- No-op: cleanup happens automatically via Base.cleanup_registry
-end
-
--- ============================================================================
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.Button(ctx, ...) → M.draw(ctx, ...)
+-- Make module callable: Ark.Button(ctx, ...) → M.Draw(ctx, ...)
 -- Hybrid return: positional mode returns boolean (ImGui style), opts mode returns result object
 return setmetatable(M, {
   __call = function(_, ctx, label_or_opts, width, height)
     -- Detect mode based on first parameter type
     if type(label_or_opts) == 'table' then
       -- Opts mode: Return full result object for power users
-      return M.draw(ctx, label_or_opts)
+      return M.Draw(ctx, label_or_opts)
     else
       -- Positional mode: Return boolean like ImGui for ergonomics
       -- Create new opts table (can't reuse - causes ID conflicts)
-      local result = M.draw(ctx, {
+      local result = M.Draw(ctx, {
         label = label_or_opts,
         width = width,
         height = height,

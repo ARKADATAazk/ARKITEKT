@@ -66,7 +66,7 @@ end
 --- @param h number Panel height
 --- @param config table Panel config
 --- @param panel_id string Panel ID
-function M.draw(ctx, x, y, w, h, config, panel_id)
+function M.Draw(ctx, x, y, w, h, config, panel_id)
   local cb_config = config.corner_buttons
   if not cb_config then return end
 
@@ -123,7 +123,7 @@ function M.draw(ctx, x, y, w, h, config, panel_id)
       opts.inner_rounding = inner_rounding
       opts.position = position_key
 
-      CornerButton.draw(ctx, opts)
+      CornerButton.Draw(ctx, opts)
 
       -- Inform ImGui of bounds
       ImGui.Dummy(ctx, size, size)
@@ -155,11 +155,6 @@ function M.draw(ctx, x, y, w, h, config, panel_id)
   end
 
   ImGui.DrawList_PopClipRect(dl)
-end
-
---- Cleanup corner button instances
-function M.cleanup()
-  Base.cleanup_registry(instances)
 end
 
 return M

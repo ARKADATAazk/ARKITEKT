@@ -42,12 +42,12 @@ addpath(join(PARENT,'?.lua')); addpath(join(PARENT,'?/init.lua'))
 addpath(join(HERE,  '?.lua')); addpath(join(HERE,  '?/init.lua'))
 addpath(join(HERE,  'Arkitekt/?.lua')); addpath(join(HERE, 'Arkitekt/?/init.lua'))
 
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 local StatusPad = require('arkitekt.gui.widgets.data.status_pad')
-local StatusBar = require('arkitekt.app.chrome.status_bar')
+local StatusBar = require('arkitekt.runtime.chrome.status_bar')
 
 local style_ok, Style = pcall(require, 'arkitekt.gui.style.imgui')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 
 -- Initial states for the pads

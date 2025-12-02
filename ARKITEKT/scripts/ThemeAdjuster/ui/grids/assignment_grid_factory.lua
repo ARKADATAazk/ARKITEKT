@@ -4,7 +4,7 @@
 
 local Ark = require('arkitekt')
 local AssignmentTile = require('ThemeAdjuster.ui.grids.renderers.assignment_tile')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 

@@ -1,16 +1,15 @@
-# arkitekt/app — Framework Application Layer
+# arkitekt/runtime — Framework Runtime Layer
 
-**Purpose:** Core framework components for bootstrapping, runtime execution, and window chrome.
+**Purpose:** Application shell, window chrome, and runtime components.
 
-The `app/` folder contains the foundation that all ARKITEKT applications are built on. It handles initialization, the main defer loop, and window management.
+The `runtime/` folder contains the execution environment that all ARKITEKT applications are built on. It handles the main defer loop, window management, and UI chrome.
 
 ---
 
 ## Folder Structure
 
 ```
-app/
-├── bootstrap.lua          # Framework initialization (finds itself, sets up paths, validates deps)
+runtime/
 ├── shell.lua              # High-level app runner (main entry point for most apps)
 └── chrome/                # Window chrome components
     ├── fonts.lua          # Font loading (Noto Sans + JetBrains Mono + icons)
@@ -30,27 +29,29 @@ All ARKITEKT apps start with this bootstrap pattern:
 
 ```lua
 -- Bootstrap ARKITEKT framework
-local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/bootstrap.lua").init()
-if not ARK then return end
+local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 
--- Load framework modules
-local Shell = require('arkitekt.app.shell')
+-- Use Shell directly from Ark namespace
+Ark.Shell.run({
+  title = 'My App',
+  draw = function(ctx) end,
+})
 
--- Your app code...
+-- Or require explicitly
+local Shell = require('arkitekt.runtime.shell')
 ```
 
 ### Simple App Example
 
 ```lua
-local Shell = require('arkitekt.app.shell')
+local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 
-Shell.run({
-  title = "My App",
-  version = "1.0.0",
-  app_name = "my_app",  -- For settings persistence
+Ark.Shell.run({
+  title = 'My App',
+  version = '1.0.0',
 
   draw = function(ctx, shell_state)
-    ImGui.Text(ctx, "Hello, ARKITEKT!")
+    Ark.ImGui.Text(ctx, 'Hello, ARKITEKT!')
   end,
 })
 ```
@@ -59,35 +60,7 @@ Shell.run({
 
 ## File Descriptions
 
-### `bootstrap.lua` (200 lines)
-
-**Framework initialization.** Scans upward to find itself, sets up `package.path`, validates dependencies (ReaImGui, SWS, JS API), returns ARK context.
-
-**Key features:**
-- Self-discovering (no hardcoded paths)
-- Dependency validation with helpful error messages
-- Sets up package paths for framework and scripts
-- Returns utility functions and pre-loaded ImGui
-
-**API:**
-```lua
-local ARK = dofile("path/to/bootstrap.lua").init()
-
--- ARK context contains:
-{
-  root_path = string,            -- Absolute path to ARKITEKT root
-  sep = string,                  -- Platform path separator ("/" or "\\")
-  ImGui = module,                -- Pre-loaded ReaImGui 0.10
-  dirname = function(path),      -- Get directory from path
-  join = function(a, b),         -- Join path segments
-  get_data_dir = function(name), -- Get app data directory
-  require_framework = function(module), -- Load framework module
-}
-```
-
----
-
-### `shell.lua` (424 lines)
+### `shell.lua`
 
 **High-level app runner.** Main entry point for most ARKITEKT apps. Integrates window, fonts, settings, profiling, and runtime loop.
 
@@ -101,19 +74,21 @@ local ARK = dofile("path/to/bootstrap.lua").init()
 
 **API:**
 ```lua
+local Shell = require('arkitekt.runtime.shell')
+
 Shell.run({
   -- Basic
-  title = "My App",              -- Window title (required)
-  version = "1.0.0",             -- Version string (optional)
-  app_name = "my_app",           -- For settings file (optional)
+  title = 'My App',              -- Window title (required)
+  version = '1.0.0',             -- Version string (optional)
+  app_name = 'my_app',           -- For settings file (optional)
   draw = function(ctx, state),   -- Draw callback (required)
 
   -- Window config
   initial_size = { w = 900, h = 600 },
   min_size = { w = 400, h = 300 },
-  show_titlebar = true,
-  show_status_bar = true,
-  show_icon = true,
+
+  -- Chrome presets: 'window', 'overlay', 'hud'
+  chrome = 'window',
 
   -- Advanced
   settings = settings_instance,  -- Custom settings (optional)
@@ -126,26 +101,17 @@ Shell.run({
 })
 ```
 
-**Also provides:**
-```lua
-Shell.run_loop({
-  ctx = ctx,                     -- ImGui context
-  on_frame = function(ctx),      -- Frame callback
-  on_close = function(),         -- Cleanup callback
-})
-```
-
 ---
 
 ## Chrome Components
 
-### `chrome/window.lua` (~600 lines)
+### `chrome/window.lua`
 
 **Main window management.** Handles window lifecycle, titlebar, status bar, tabs, fullscreen mode, and profiling.
 
 Used internally by `Shell.run()`. Most apps don't interact with this directly.
 
-### `chrome/titlebar.lua` (590 lines)
+### `chrome/titlebar.lua`
 
 **Custom titlebar widget.** Draggable window, app icon, title/version text, branding, maximize/close buttons, and context menu.
 
@@ -155,7 +121,7 @@ Features:
 - Icon with context menu (Hub, Metrics, Console, Profiler)
 - DPI-aware rendering
 
-### `chrome/status_bar.lua` (275 lines)
+### `chrome/status_bar.lua`
 
 **Status bar widget.** Shows status text, optional buttons, and resize handle.
 
@@ -164,7 +130,7 @@ Features:
 - Optional button widgets (right-aligned)
 - Resize handle (bottom-right corner)
 
-### `chrome/fonts.lua` (90 lines)
+### `chrome/fonts.lua`
 
 **Font loading utility.** Loads framework fonts and attaches to ImGui context.
 
@@ -176,7 +142,7 @@ Features:
 
 **API:**
 ```lua
-local Fonts = require('arkitekt.app.chrome.fonts')
+local Fonts = require('arkitekt.runtime.chrome.fonts')
 
 local fonts = Fonts.load(ImGui, ctx, {
   default_size = 13,
@@ -189,27 +155,27 @@ local fonts = Fonts.load(ImGui, ctx, {
 -- fonts.default, fonts.title, fonts.monospace, fonts.orbitron, fonts.icons
 ```
 
-### `chrome/icon.lua` (247 lines)
+### `chrome/icon.lua`
 
 **App icon drawing.** Supports DPI-aware PNG loading and vector fallbacks.
 
 **Features:**
 - PNG icon loading with DPI variants (@2x, @4x, @8x, @16x)
-- Vector fallbacks (arkitekt logo, simple "A")
+- Vector fallbacks (arkitekt logo, simple 'A')
 - 22×22 logical pixel size
 
 **API:**
 ```lua
-local Icon = require('arkitekt.app.chrome.icon')
+local Icon = require('arkitekt.runtime.chrome.icon')
 
 -- Load PNG icon
-local image = Icon.load_image(ctx, "ARKITEKT", dpi_scale)
+local image = Icon.load_image(ctx, 'ARKITEKT', dpi_scale)
 Icon.draw_png(ctx, x, y, size, image)
 
 -- Vector fallbacks
 Icon.draw_arkitekt(ctx, x, y, size, color)     -- Original logo
 Icon.draw_arkitekt_v2(ctx, x, y, size, color)  -- Refined logo
-Icon.draw_simple_a(ctx, x, y, size, color)     -- Simple "A"
+Icon.draw_simple_a(ctx, x, y, size, color)     -- Simple 'A'
 ```
 
 ---
@@ -227,7 +193,7 @@ Constants.WINDOW.content_padding = 12
 
 -- Titlebar
 Constants.TITLEBAR.height = 26
-Constants.TITLEBAR.branding_text = "AZK"  -- Stylized branding
+Constants.TITLEBAR.branding_text = 'AZK'  -- Stylized branding
 
 -- Status bar
 Constants.STATUS_BAR.height = 20
@@ -245,52 +211,9 @@ Typography.SIZE.md = 13        -- Default body text
 Typography.SIZE.lg = 16        -- Headings
 Typography.SEMANTIC.code = 12  -- Code/monospace
 
-Typography.FAMILY.regular = "NotoSans-Regular.ttf"
-Typography.FAMILY.bold = "NotoSans-Bold.ttf"
-Typography.FAMILY.mono = "JetBrainsMono-Regular.ttf"
-```
-
----
-
-## Migration Notes
-
-### From Old Structure (Pre-2025-01)
-
-**Bootstrap:**
-```lua
--- Old
-local ARK = dofile("arkitekt/app/init/init.lua").bootstrap()
-
--- New
-local ARK = dofile("arkitekt/app/bootstrap.lua").init()
-```
-
-**Require Paths:**
-```lua
--- Old
-require('arkitekt.app.runtime.shell')
-require('arkitekt.app.assets.fonts')
-require('arkitekt.app.assets.icon')
-require('arkitekt.app.chrome.window.window')
-require('arkitekt.app.chrome.titlebar.titlebar')
-require('arkitekt.app.chrome.status_bar.widget')
-
--- New
-require('arkitekt.app.shell')
-require('arkitekt.app.chrome.fonts')
-require('arkitekt.app.chrome.icon')
-require('arkitekt.app.chrome.window')
-require('arkitekt.app.chrome.titlebar')
-require('arkitekt.app.chrome.status_bar')
-```
-
-**Fonts:**
-```lua
--- Old (Inter/DejaVu)
-Typography.FAMILY.regular = "Inter_18pt-Regular.ttf"
-
--- New (Noto Sans)
-Typography.FAMILY.regular = "NotoSans-Regular.ttf"
+Typography.FAMILY.regular = 'NotoSans-Regular.ttf'
+Typography.FAMILY.bold = 'NotoSans-Bold.ttf'
+Typography.FAMILY.mono = 'JetBrainsMono-Regular.ttf'
 ```
 
 ---
@@ -298,9 +221,9 @@ Typography.FAMILY.regular = "NotoSans-Regular.ttf"
 ## Design Principles
 
 1. **Flat hierarchy** - No single-file subdirectories
-2. **Self-discovering bootstrap** - No hardcoded paths
+2. **Self-discovering bootstrap** - Merged into init.lua
 3. **Centralized configuration** - Use `defs/` modules
-4. **Minimal API surface** - Most apps only need `Shell.run()`
+4. **Minimal API surface** - Most apps only need `Ark.Shell.run()`
 5. **Font consistency** - Noto Sans + Remix icons as baseline
 
 ---

@@ -146,9 +146,9 @@ function M.create_options(config, state, visualization, animator, disable_animat
       -- Grays (sat < 0.08) are grouped at the end
       table.sort(filtered, function(a, b)
         if sort_reverse then
-          return Ark.Colors.compare_colors(b.color, a.color)
+          return Ark.Colors.CompareColors(b.color, a.color)
         else
-          return Ark.Colors.compare_colors(a.color, b.color)
+          return Ark.Colors.CompareColors(a.color, b.color)
         end
       end)
     elseif sort_mode == 'name' then

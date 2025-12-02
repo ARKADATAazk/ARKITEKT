@@ -272,12 +272,12 @@ function M.generate_container_color()
   local saturation = 0.65 + math.random() * 0.25
   local lightness = 0.50 + math.random() * 0.15
 
-  local r, g, b = Ark.Colors.hsl_to_rgb(hue, saturation, lightness)
-  return Ark.Colors.components_to_rgba(r, g, b, 0xFF)
+  local r, g, b = Ark.Colors.HslToRgb(hue, saturation, lightness)
+  return Ark.Colors.ComponentsToRgba(r, g, b, 0xFF)
 end
 
 -- Check for project changes
-function M.update()
+function M.Update()
   local current_project_filename = get_current_project_filename()
   local current_project_ptr = get_current_project_ptr()
 

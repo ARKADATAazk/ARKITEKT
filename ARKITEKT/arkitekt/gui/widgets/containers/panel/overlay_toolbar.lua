@@ -322,7 +322,7 @@ end
 --- @param panel_id string Panel ID
 --- @param position string Position ('top', 'bottom', 'left', 'right')
 --- @param rounding number Corner rounding
-function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_state, panel_state, panel_id, position, rounding)
+function M.Draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_state, panel_state, panel_id, position, rounding)
   if not config or not config.enabled then
     return
   end
@@ -477,7 +477,7 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
     else
       -- Use Sidebars renderer for vertical overlay toolbars (left/right)
       local side = (position == 'left') and 'left' or 'right'
-      Sidebars.draw(ctx, dl, bounds.x, bounds.y, bounds.w, bounds.h, config, panel_id, side)
+      Sidebars.Draw(ctx, dl, bounds.x, bounds.y, bounds.w, bounds.h, config, panel_id, side)
 
       -- Add dummy to establish window bounds for SetCursorPos calls
       ImGui.SetCursorScreenPos(ctx, bounds.x, bounds.y)

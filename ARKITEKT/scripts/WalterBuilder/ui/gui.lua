@@ -20,7 +20,7 @@ local Constants = require('WalterBuilder.defs.constants')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local WalterSettings = require('WalterBuilder.infra.settings')
 
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 local GUI = {}
@@ -136,8 +136,8 @@ function GUI:initialize_once(ctx)
   self:sync_canvas()
 
   -- Load settings from WalterSettings
-  self.left_panel_width = WalterSettings.get_value('left_panel_width', Constants.PANEL.LEFT_WIDTH)
-  self.right_panel_width = WalterSettings.get_value('right_panel_width', Constants.PANEL.RIGHT_WIDTH)
+  self.left_panel_width = WalterSettings.GetValue('left_panel_width', Constants.PANEL.LEFT_WIDTH)
+  self.right_panel_width = WalterSettings.GetValue('right_panel_width', Constants.PANEL.RIGHT_WIDTH)
 
   self.initialized = true
 end
@@ -396,7 +396,7 @@ function GUI:draw_toolbar(ctx)
     local can_undo = self.controller:can_undo()
     local can_redo = self.controller:can_redo()
 
-    local undo_result = Button.draw(ctx, {
+    local undo_result = Button.Draw(ctx, {
       id = 'toolbar_undo',
       x = btn_x,
       y = y,
@@ -412,7 +412,7 @@ function GUI:draw_toolbar(ctx)
     end
     btn_x = btn_x + 54
 
-    local redo_result = Button.draw(ctx, {
+    local redo_result = Button.Draw(ctx, {
       id = 'toolbar_redo',
       x = btn_x,
       y = y,
@@ -441,7 +441,7 @@ function GUI:draw_toolbar(ctx)
   for _, ctx_name in ipairs(contexts) do
     local is_active = ctx_name == current
 
-    local ctx_result = Button.draw(ctx, {
+    local ctx_result = Button.Draw(ctx, {
       id = 'ctx_' .. ctx_name,
       x = btn_x,
       y = y,
@@ -462,7 +462,7 @@ function GUI:draw_toolbar(ctx)
   btn_x = btn_x + 16
 
   -- Load Defaults button
-  local load_result = Button.draw(ctx, {
+  local load_result = Button.Draw(ctx, {
     id = 'toolbar_load_defaults',
     x = btn_x,
     y = y,
@@ -484,7 +484,7 @@ function GUI:draw_toolbar(ctx)
   btn_x = btn_x + 108
 
   -- Clear All button
-  local clear_result = Button.draw(ctx, {
+  local clear_result = Button.Draw(ctx, {
     id = 'toolbar_clear_all',
     x = btn_x,
     y = y,
@@ -507,7 +507,7 @@ function GUI:draw_toolbar(ctx)
   btn_x = btn_x + 88
 
   -- Reset Tracks button
-  local reset_result = Button.draw(ctx, {
+  local reset_result = Button.Draw(ctx, {
     id = 'toolbar_reset_tracks',
     x = btn_x,
     y = y,
@@ -623,7 +623,7 @@ function GUI:draw(ctx, window, shell_state)
   -- Save position when drag ends
   if ImGui.IsMouseReleased(ctx, 0) and self.left_splitter_drag_start ~= 0 then
     if self.left_panel_width ~= self.left_splitter_drag_start then
-      WalterSettings.set_value('left_panel_width', self.left_panel_width)
+      WalterSettings.SetValue('left_panel_width', self.left_panel_width)
       WalterSettings.maybe_flush()
     end
     self.left_splitter_drag_start = 0
@@ -730,7 +730,7 @@ function GUI:draw(ctx, window, shell_state)
   -- Save position when drag ends
   if ImGui.IsMouseReleased(ctx, 0) and self.right_splitter_drag_start ~= 0 then
     if self.right_panel_width ~= self.right_splitter_drag_start then
-      WalterSettings.set_value('right_panel_width', self.right_panel_width)
+      WalterSettings.SetValue('right_panel_width', self.right_panel_width)
       WalterSettings.maybe_flush()
     end
     self.right_splitter_drag_start = 0
@@ -834,7 +834,7 @@ function GUI:draw(ctx, window, shell_state)
     -- Debug console tab
     if ImGui.BeginTabItem(ctx, 'Console') then
       ImGui.Dummy(ctx, 0, 4)
-      DebugConsole.draw(ctx)
+      DebugConsole.Draw(ctx)
       ImGui.EndTabItem(ctx)
     end
 

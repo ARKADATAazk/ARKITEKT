@@ -34,7 +34,7 @@ function M.TileHelpers.render_hover_shadow(dl, x1, y1, x2, y2, hover_factor, rou
   local shadow_col = (0x000000 << 8) | shadow_alpha
   
   for i = (config.max_offset or 2), 1, -1 do
-    Draw.rect_filled(dl, x1 - i, y1 - i + 2, x2 + i, y2 + i + 2, shadow_col, rounding)
+    Draw.RectFilled(dl, x1 - i, y1 - i + 2, x2 + i, y2 + i + 2, shadow_col, rounding)
   end
 end
 
@@ -43,15 +43,15 @@ function M.TileHelpers.render_border(dl, x1, y1, x2, y2, is_selected, base_color
   thickness = thickness or 1
 
   if is_selected then
-    local ant_color = Colors.derive_marching_ants(base_color)
+    local ant_color = Colors.DeriveMarchingAnts(base_color)
     -- No inset, same pixel line as the normal border:
-    MarchingAnts.draw(
+    MarchingAnts.Draw(
       dl, x1, y1, x2, y2,
       ant_color, thickness, rounding,
       config.ant_dash or 8, config.ant_gap or 6, config.ant_speed or 20
     )
   else
-    Draw.rect(dl, x1, y1, x2, y2, border_color, rounding, thickness)
+    Draw.Rect(dl, x1, y1, x2, y2, border_color, rounding, thickness)
   end
 end
 
@@ -59,21 +59,21 @@ end
 function M.TileHelpers.compute_border_color(base_color, is_hovered, is_active, hover_factor, hover_lerp, color_mode)
   color_mode = color_mode or DEFAULTS.color_mode
   
-  local border_color = Colors.derive_border(base_color, {
+  local border_color = Colors.DeriveBorder(base_color, {
     mode = (color_mode == 'grayscale') and 'brighten' or 'normalize',
     pullback = (color_mode == 'bright') and 0.85 or 0.95,
   })
   
   if is_hovered and hover_factor and hover_lerp then
-    local selection_color = Colors.derive_selection(base_color)
-    return Colors.lerp(border_color, selection_color, hover_factor * hover_lerp)
+    local selection_color = Colors.DeriveSelection(base_color)
+    return Colors.Lerp(border_color, selection_color, hover_factor * hover_lerp)
   end
   
   return border_color
 end
 
 function M.TileHelpers.compute_fill_color(base_color, hover_factor, hover_config)
-  local base_fill = Colors.derive_fill(base_color, {
+  local base_fill = Colors.DeriveFill(base_color, {
     desaturate = hover_config and hover_config.base_fill_desaturation or 0.5,
     brightness = hover_config and hover_config.base_fill_brightness or 0.45,
     alpha = hover_config and hover_config.base_fill_alpha or 0xCC,
@@ -81,8 +81,8 @@ function M.TileHelpers.compute_fill_color(base_color, hover_factor, hover_config
   
   if hover_factor and hover_factor > 0 then
     local hover_brightness = hover_config and hover_config.hover_brightness_factor or 0.65
-    local hover_fill = Colors.adjust_brightness(base_fill, hover_brightness)
-    return Colors.lerp(base_fill, hover_fill, hover_factor)
+    local hover_fill = Colors.AdjustBrightness(base_fill, hover_brightness)
+    return Colors.Lerp(base_fill, hover_fill, hover_factor)
   end
   
   return base_fill

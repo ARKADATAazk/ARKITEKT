@@ -5,7 +5,7 @@
 
 local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 
 local M = {}
@@ -40,7 +40,7 @@ local function get_waveform_color(base_color)
   v = v * bright_mult
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local col_wave = Ark.Colors.components_to_rgba(r*255, g*255, b*255, 255)
+  local col_wave = Ark.Colors.ComponentsToRgba(r*255, g*255, b*255, 255)
   waveform_color_cache[base_color] = col_wave
   return col_wave
 end

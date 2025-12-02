@@ -226,9 +226,9 @@ function M.create_opts(deps)
         duration = 0.2,
       },
       marquee = {
-        fill_color = Ark.Colors.hexrgb('#FFFFFF22'),
-        fill_color_add = Ark.Colors.hexrgb('#FFFFFF33'),
-        stroke_color = Ark.Colors.hexrgb('#FFFFFF'),
+        fill_color = Ark.Colors.Hexrgb('#FFFFFF22'),
+        fill_color_add = Ark.Colors.Hexrgb('#FFFFFF33'),
+        stroke_color = Ark.Colors.Hexrgb('#FFFFFF'),
         stroke_thickness = 1,
         rounding = 0,
       },

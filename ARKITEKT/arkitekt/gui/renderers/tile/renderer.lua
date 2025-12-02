@@ -22,7 +22,7 @@ local DrawFlags_RoundCornersAll = ImGui.DrawFlags_RoundCornersAll
 local DrawFlags_RoundCornersLeft = ImGui.DrawFlags_RoundCornersLeft
 
 -- Performance: Parse hex colors once at module load (~10-20% faster)
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 local BASE_NEUTRAL = hexrgb('#0F0F0F')
 
 local M = {}
@@ -32,7 +32,7 @@ function M.render_base_fill(dl, x1, y1, x2, y2, rounding)
 end
 
 function M.render_color_fill(dl, x1, y1, x2, y2, base_color, opacity, saturation, brightness, rounding)
-  local r, g, b, _ = Colors.rgba_to_components(base_color)
+  local r, g, b, _ = Colors.RgbaToComponents(base_color)
 
   if saturation ~= 1.0 then
     local gray = r * 0.299 + g * 0.587 + b * 0.114
@@ -48,12 +48,12 @@ function M.render_color_fill(dl, x1, y1, x2, y2, base_color, opacity, saturation
   end
 
   local alpha = (255 * opacity)//1
-  local fill_color = Colors.components_to_rgba(r, g, b, alpha)
+  local fill_color = Colors.ComponentsToRgba(r, g, b, alpha)
   AddRectFilled(dl, x1, y1, x2, y2, fill_color, rounding, DrawFlags_RoundCornersAll)
 end
 
 function M.render_gradient(dl, x1, y1, x2, y2, base_color, intensity, opacity, rounding)
-  local r, g, b, _ = Colors.rgba_to_components(base_color)
+  local r, g, b, _ = Colors.RgbaToComponents(base_color)
 
   local boost_top = 1.0 + intensity
   local boost_bottom = 1.0 - (intensity * 0.4)
@@ -67,8 +67,8 @@ function M.render_gradient(dl, x1, y1, x2, y2, base_color, intensity, opacity, r
   local b_bottom = max(0, (b * boost_bottom)//1)
 
   local alpha = (255 * opacity)//1
-  local color_top = Colors.components_to_rgba(r_top, g_top, b_top, alpha)
-  local color_bottom = Colors.components_to_rgba(r_bottom, g_bottom, b_bottom, alpha)
+  local color_top = Colors.ComponentsToRgba(r_top, g_top, b_top, alpha)
+  local color_bottom = Colors.ComponentsToRgba(r_bottom, g_bottom, b_bottom, alpha)
 
   -- Inset on all sides to stay inside rounded corners (AddRectFilledMultiColor doesn't support corner flags)
   local inset = min(2, rounding * 0.3)
@@ -83,7 +83,7 @@ function M.render_specular(dl, x1, y1, x2, y2, base_color, strength, coverage, r
   local band_height = height * coverage
   local band_y2 = y1 + band_height
 
-  local r, g, b, _ = Colors.rgba_to_components(base_color)
+  local r, g, b, _ = Colors.RgbaToComponents(base_color)
 
   local boost = 1.3
   local r_spec = min(255, (r * boost + 20)//1)
@@ -93,8 +93,8 @@ function M.render_specular(dl, x1, y1, x2, y2, base_color, strength, coverage, r
   local alpha_top = (255 * strength * 0.6)//1
   local alpha_bottom = 0
 
-  local color_top = Colors.components_to_rgba(r_spec, g_spec, b_spec, alpha_top)
-  local color_bottom = Colors.components_to_rgba(r_spec, g_spec, b_spec, alpha_bottom)
+  local color_top = Colors.ComponentsToRgba(r_spec, g_spec, b_spec, alpha_top)
+  local color_bottom = Colors.ComponentsToRgba(r_spec, g_spec, b_spec, alpha_bottom)
 
   -- Inset on all sides to stay inside rounded corners (AddRectFilledMultiColor doesn't support corner flags)
   local inset = min(2, rounding * 0.3)
@@ -107,7 +107,7 @@ end
 function M.render_inner_shadow(dl, x1, y1, x2, y2, strength, rounding)
   local shadow_size = 3  -- Increased to 3px to be visible under 1px border
   local shadow_alpha = (255 * strength * 0.4)//1
-  local shadow_color = Colors.components_to_rgba(0, 0, 0, shadow_alpha)
+  local shadow_color = Colors.ComponentsToRgba(0, 0, 0, shadow_alpha)
 
   -- Clip to rounded rect bounds (AddRectFilledMultiColor doesn't support corner flags)
   PushClipRect(dl, x1, y1, x2, y2, true)
@@ -115,12 +115,12 @@ function M.render_inner_shadow(dl, x1, y1, x2, y2, strength, rounding)
   AddRectFilledMultiColor(dl,
     x1, y1, x2, y1 + shadow_size,
     shadow_color, shadow_color,
-    Colors.components_to_rgba(0, 0, 0, 0), Colors.components_to_rgba(0, 0, 0, 0))
+    Colors.ComponentsToRgba(0, 0, 0, 0), Colors.ComponentsToRgba(0, 0, 0, 0))
 
   AddRectFilledMultiColor(dl,
     x1, y1, x1 + shadow_size, y2,
-    shadow_color, Colors.components_to_rgba(0, 0, 0, 0),
-    Colors.components_to_rgba(0, 0, 0, 0), shadow_color)
+    shadow_color, Colors.ComponentsToRgba(0, 0, 0, 0),
+    Colors.ComponentsToRgba(0, 0, 0, 0), shadow_color)
 
   PopClipRect(dl)
 end
@@ -128,9 +128,9 @@ end
 function M.render_diagonal_stripes(ctx, dl, x1, y1, x2, y2, stripe_color, spacing, thickness, opacity, rounding)
   if opacity <= 0 then return end
 
-  local r, g, b, _ = Colors.rgba_to_components(stripe_color)
+  local r, g, b, _ = Colors.RgbaToComponents(stripe_color)
   local alpha = (255 * opacity)//1
-  local line_color = Colors.components_to_rgba(r, g, b, alpha)
+  local line_color = Colors.ComponentsToRgba(r, g, b, alpha)
 
   -- Use baked texture for performance (25+ lines → 1 draw call)
   Background.draw_diagonal_stripes(ctx, dl, x1, y1, x2, y2, spacing, line_color, thickness)
@@ -146,7 +146,7 @@ function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fa
 
   -- Use override color if provided (for playlist chip color)
   local color_source = progress_color_override or base_color
-  local r, g, b, _ = Colors.rgba_to_components(color_source)
+  local r, g, b, _ = Colors.RgbaToComponents(color_source)
 
   local brightness = 1.15
   r = min(255, (r * brightness)//1)
@@ -155,7 +155,7 @@ function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fa
 
   local base_alpha = 0x80  -- Doubled from 0x40 for more visible progress bar
   local alpha = (base_alpha * fade_alpha)//1
-  local progress_color = Colors.components_to_rgba(r, g, b, alpha)
+  local progress_color = Colors.ComponentsToRgba(r, g, b, alpha)
 
   -- Inset to stay inside rounded corners (same approach as specular highlight)
   local inset = min(2, rounding * 0.3)
@@ -168,7 +168,7 @@ function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fa
   if progress >= 0.02 and progress < 0.98 then
     local base_bar_alpha = 0xAA
     local bar_alpha = (base_bar_alpha * fade_alpha)//1
-    local bar_color = Colors.components_to_rgba(r, g, b, bar_alpha)
+    local bar_color = Colors.ComponentsToRgba(r, g, b, bar_alpha)
     local bar_thickness = 1
 
     -- Cursor line at progress position
@@ -179,7 +179,7 @@ function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fa
     local fade_progress = (1.0 - progress) / fade_range
     local base_bar_alpha = 0xAA
     local bar_alpha = (base_bar_alpha * fade_alpha * fade_progress)//1
-    local bar_color = Colors.components_to_rgba(r, g, b, bar_alpha)
+    local bar_color = Colors.ComponentsToRgba(r, g, b, bar_alpha)
     local bar_thickness = 1
 
     ImGui.DrawList_AddLine(dl, progress_x, y1 + inset, progress_x, y2 - inset, bar_color, bar_thickness)
@@ -190,13 +190,13 @@ function M.render_border(dl, x1, y1, x2, y2, base_color, saturation, brightness,
   local alpha = (255 * opacity)//1
   -- Use override color if provided (for playlist chip color)
   local color_source = border_color_override or base_color
-  local border_color = Colors.same_hue_variant(color_source, saturation, brightness, alpha)
+  local border_color = Colors.SameHueVariant(color_source, saturation, brightness, alpha)
 
   if is_selected and glow_layers > 0 then
-    local r, g, b, _ = Colors.rgba_to_components(border_color)
+    local r, g, b, _ = Colors.RgbaToComponents(border_color)
     for i = glow_layers, 1, -1 do
       local glow_alpha = (glow_strength * 30 / i)//1
-      local glow_color = Colors.components_to_rgba(r, g, b, glow_alpha)
+      local glow_color = Colors.ComponentsToRgba(r, g, b, glow_alpha)
       AddRect(dl, x1 - i, y1 - i, x2 + i, y2 + i, glow_color, rounding, DrawFlags_RoundCornersAll, thickness)
     end
   end

@@ -8,7 +8,7 @@
 --   - get() returns resolved colors at render time
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 

@@ -1,10 +1,10 @@
 -- @noindex
 -- arkitekt/core/notification.lua
 -- Manages timed status messages with automatic timeouts
--- Integrates with arkitekt/app/chrome/status_bar.lua via get_status() callback
+-- Integrates with arkitekt/runtime/chrome/status_bar.lua via get_status() callback
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 
@@ -183,7 +183,7 @@ function main_loop()
 end
 
 -- Status bar integration:
-local StatusBar = require('arkitekt.app.chrome.status_bar')
+local StatusBar = require('arkitekt.runtime.chrome.status_bar')
 local notif = Notification.new()
 
 local status_bar = StatusBar.new({

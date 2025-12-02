@@ -10,7 +10,7 @@ local Slider = require('arkitekt.gui.widgets.primitives.slider')
 local TrackDefaults = require('WalterBuilder.defs.track_defaults')
 local Constants = require('WalterBuilder.defs.constants')
 
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 local Panel = {}
@@ -52,7 +52,7 @@ function Panel:draw_height_presets(ctx)
     local is_current = track.height == preset.height
     local x, y = ImGui.GetCursorScreenPos(ctx)
 
-    local result = Button.draw(ctx, {
+    local result = Button.Draw(ctx, {
       id = 'height_preset_' .. preset.name,
       x = x,
       y = y,
@@ -86,7 +86,7 @@ function Panel:draw_state_toggles(ctx)
   local x, y = ImGui.GetCursorScreenPos(ctx)
 
   -- Armed (R)
-  local armed_result = Button.draw(ctx, {
+  local armed_result = Button.Draw(ctx, {
     id = 'track_armed',
     x = x,
     y = y,
@@ -104,7 +104,7 @@ function Panel:draw_state_toggles(ctx)
   end
 
   -- Muted (M)
-  local muted_result = Button.draw(ctx, {
+  local muted_result = Button.Draw(ctx, {
     id = 'track_muted',
     x = x + 34,
     y = y,
@@ -122,7 +122,7 @@ function Panel:draw_state_toggles(ctx)
   end
 
   -- Soloed (S)
-  local soloed_result = Button.draw(ctx, {
+  local soloed_result = Button.Draw(ctx, {
     id = 'track_soloed',
     x = x + 68,
     y = y,
@@ -175,7 +175,7 @@ function Panel:draw_folder_settings(ctx)
   for i, state in ipairs(folder_states) do
     local is_current = track.folder_state == state.value
 
-    local result = Button.draw(ctx, {
+    local result = Button.Draw(ctx, {
       id = 'folder_state_' .. state.name,
       x = x + (i - 1) * 44,
       y = y,
@@ -204,7 +204,7 @@ function Panel:draw_folder_settings(ctx)
 
   x, y = ImGui.GetCursorScreenPos(ctx)
 
-  local depth_result = Slider.int(ctx, {
+  local depth_result = Slider.Int(ctx, {
     id = 'folder_depth',
     x = x,
     y = y,
@@ -234,7 +234,7 @@ function Panel:draw(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
   -- Add track button at top
-  local add_result = Button.draw(ctx, {
+  local add_result = Button.Draw(ctx, {
     id = 'add_track',
     x = x,
     y = y,
@@ -305,7 +305,7 @@ function Panel:draw(ctx)
 
   x, y = ImGui.GetCursorScreenPos(ctx)
 
-  local height_result = Slider.int(ctx, {
+  local height_result = Slider.Int(ctx, {
     id = 'track_height',
     x = x,
     y = y,
@@ -357,7 +357,7 @@ function Panel:draw(ctx)
   -- Delete button
   x, y = ImGui.GetCursorScreenPos(ctx)
 
-  local delete_result = Button.draw(ctx, {
+  local delete_result = Button.Draw(ctx, {
     id = 'remove_track',
     x = x,
     y = y,

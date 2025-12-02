@@ -6,7 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -68,8 +68,8 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
 
   -- Use dynamic colors from Ark.Style.COLORS
   local C = Ark.Style.COLORS
-  local bg = Ark.Colors.lerp(cfg.bg_color or C.BG_BASE, cfg.bg_hover or C.BG_HOVER, self.hover_alpha)
-  local border_inner = Ark.Colors.lerp(cfg.border_inner or C.BORDER_INNER, cfg.border_hover or C.BORDER_HOVER, self.hover_alpha)
+  local bg = Ark.Colors.Lerp(cfg.bg_color or C.BG_BASE, cfg.bg_hover or C.BG_HOVER, self.hover_alpha)
+  local border_inner = Ark.Colors.Lerp(cfg.border_inner or C.BORDER_INNER, cfg.border_hover or C.BORDER_HOVER, self.hover_alpha)
   local border_outer = cfg.border_outer or C.BORDER_OUTER
 
   local rounding = cfg.rounding or 4
@@ -142,8 +142,8 @@ function SimpleToggleButton:draw(ctx, x, y, state, on_click, color)
   local bg_off = C.BG_BASE
   local bg_off_hover = C.BG_HOVER
   local accent = color or C.ACCENT_PRIMARY
-  local bg_on = Ark.Colors.with_opacity(accent, 0.25)
-  local bg_on_hover = Ark.Colors.with_opacity(accent, 0.31)
+  local bg_on = Ark.Colors.WithOpacity(accent, 0.25)
+  local bg_on_hover = Ark.Colors.WithOpacity(accent, 0.31)
 
   local bg = state and (is_hovered and bg_on_hover or bg_on) or (is_hovered and bg_off_hover or bg_off)
 

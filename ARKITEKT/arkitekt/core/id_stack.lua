@@ -78,7 +78,7 @@ end
 
 --- Clear the stack for this context (for cleanup/testing)
 -- @param ctx ImGui context
-function M.clear(ctx)
+function M.Clear(ctx)
   _stacks[ctx] = nil
 end
 

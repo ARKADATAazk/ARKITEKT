@@ -202,15 +202,15 @@ function M.compute_fill_color(base_color, hover_factor, config)
   local alpha = config.alpha or 0xCC
   local hover_brightness = config.hover_brightness or 0.65
 
-  local base_fill = Colors.derive_fill(base_color, {
+  local base_fill = Colors.DeriveFill(base_color, {
     desaturate = desaturation,
     brightness = brightness,
     alpha = alpha,
   })
 
   if hover_factor and hover_factor > 0 then
-    local hover_fill = Colors.adjust_brightness(base_fill, hover_brightness)
-    return Colors.lerp(base_fill, hover_fill, hover_factor)
+    local hover_fill = Colors.AdjustBrightness(base_fill, hover_brightness)
+    return Colors.Lerp(base_fill, hover_fill, hover_factor)
   end
 
   return base_fill
@@ -222,14 +222,14 @@ function M.compute_border_color(base_color, is_hovered, is_active, hover_factor,
   local hover_lerp = config.hover_lerp or 0.4
   local mode = config.color_mode or 'auto'
 
-  local border_color = Colors.derive_border(base_color, {
+  local border_color = Colors.DeriveBorder(base_color, {
     mode = (mode == 'grayscale') and 'brighten' or 'normalize',
     pullback = (mode == 'bright') and 0.85 or 0.95,
   })
 
   if is_hovered and hover_factor then
-    local selection_color = Colors.derive_selection(base_color)
-    return Colors.lerp(border_color, selection_color, hover_factor * hover_lerp)
+    local selection_color = Colors.DeriveSelection(base_color)
+    return Colors.Lerp(border_color, selection_color, hover_factor * hover_lerp)
   end
 
   return border_color

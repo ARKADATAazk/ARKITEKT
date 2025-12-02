@@ -6,12 +6,12 @@ local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 -- Import system
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 
 -- Import base controls
 -- Import panel system
 local Config = require('arkitekt.gui.widgets.containers.panel.defaults')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 
 -- ============================================================================
@@ -194,7 +194,7 @@ local function draw_standalone_test(ctx)
   ImGui.Text(ctx, 'Button (standalone):')
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  local button_result = Ark.Button.draw(ctx, {
+  local button_result = Ark.Button(ctx, {
     id = 'standalone_button',
     draw_list = dl,
     x = cursor_x,
@@ -215,7 +215,7 @@ local function draw_standalone_test(ctx)
   ImGui.Text(ctx, 'Search Input (standalone):')
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  local search_result = Ark.InputText.search(ctx, {
+  local search_result = Ark.InputText.Search(ctx, {
     id = 'standalone_search',
     draw_list = dl,
     x = cursor_x,
@@ -243,7 +243,7 @@ local function draw_standalone_test(ctx)
   ImGui.Text(ctx, 'Dropdown (standalone):')
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  local dropdown_result = Ark.Combo.draw(ctx, {
+  local dropdown_result = Ark.Combo(ctx, {
     id = 'standalone_dropdown',
     draw_list = dl,
     x = cursor_x,

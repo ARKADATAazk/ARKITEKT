@@ -22,7 +22,7 @@ local COMPONENTS = {
   separator = require('arkitekt.gui.widgets.containers.panel.header.separator'),
   custom = {
     -- Custom element type that accepts a draw callback
-    draw = function(ctx, dl, x, y, width, height, config, state)
+    Draw = function(ctx, dl, x, y, width, height, config, state)
       if config.on_draw then
         config.on_draw(ctx, dl, x, y, width, height, state)
       end
@@ -40,7 +40,7 @@ local Combo = require('arkitekt.gui.widgets.primitives.combo')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
 COMPONENTS.template_header_controls = {
-  draw = function(ctx, dl, x, y, width, height, config, state)
+  Draw = function(ctx, dl, x, y, width, height, config, state)
     local row1_height = 26
     local row_spacing = 4
     local row2_y = y + row1_height + row_spacing
@@ -53,7 +53,7 @@ COMPONENTS.template_header_controls = {
       local count = config.get_template_count()
       local label = string.format('%d template%s', count, count == 1 and '' or 's')
 
-      Button.draw(ctx, {
+      Button.Draw(ctx, {
         id = 'template_count',
         draw_list = dl,
         x = cursor_x,
@@ -61,7 +61,7 @@ COMPONENTS.template_header_controls = {
         width = 120,
         height = row1_height,
         label = label,
-        interactive = false,
+        is_blocking = true,
         style = {
           bg_color = 0x00000000,  -- Transparent
           text_color = 0xAAAAAAFF,
@@ -77,7 +77,7 @@ COMPONENTS.template_header_controls = {
     local search_x = x + width - sort_width - search_width - 8
 
     if config.get_search_query and config.on_search_changed then
-      InputText.search(ctx, {
+      InputText.Search(ctx, {
         x = search_x,
         y = y,
         width = search_width,
@@ -93,7 +93,7 @@ COMPONENTS.template_header_controls = {
     -- Sort dropdown (140px, right side)
     if config.get_sort_mode and config.on_sort_changed then
       local sort_x = search_x + search_width + 8
-      Combo.draw(ctx, {
+      Combo.Draw(ctx, {
         x = sort_x,
         y = y,
         width = sort_width,
@@ -120,7 +120,7 @@ COMPONENTS.template_header_controls = {
       local items = config.get_filter_items()
       if #items > 0 then
         ImGui.SetCursorScreenPos(ctx, x, row2_y)
-        local clicked_id = ChipList.draw(ctx, items, {
+        local clicked_id = ChipList.Draw(ctx, items, {
           max_width = width,
           chip_height = 18,
           chip_spacing = 4,
@@ -137,7 +137,7 @@ COMPONENTS.template_header_controls = {
     return width
   end,
 
-  measure = function(ctx, config, state)
+  Measure = function(ctx, config, state)
     return 0  -- Dynamic width
   end,
 }
@@ -158,8 +158,8 @@ local function calculate_element_width(ctx, element, state)
     return nil
   end
   
-  if component.measure then
-    return component.measure(ctx, element.config or {}, state)
+  if component.Measure then
+    return component.Measure(ctx, element.config or {}, state)
   end
   
   return 0
@@ -457,7 +457,11 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
     end
 
     local component = COMPONENTS[element.type]
-    if component and component.draw then
+    -- Check if component exists and is either callable or has Draw method
+    local is_callable = type(component) == 'table' and getmetatable(component) and getmetatable(component).__call
+    local has_draw = type(component) == 'table' and component.Draw
+
+    if component and (is_callable or has_draw) then
       -- Merge panel ELEMENT_STYLE as fallback (won't override preset colors)
       local style_defaults = PanelConfig.ELEMENT_STYLE[element.type] or {}
       local element_config = ConfigUtil.merge_safe(element.config or {}, style_defaults)
@@ -487,15 +491,15 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
 
       -- Evaluate get_value for checkboxes (dynamic checked state)
       if element.type == 'checkbox' and element_config.get_value and type(element_config.get_value) == 'function' then
-        element_config.checked = element_config.get_value()
+        element_config.is_checked = element_config.get_value()
       end
 
       local element_state = get_or_create_element_state(state, element)
 
       local used_width
 
-      -- Use new opts-based API for standardized widgets
-      if STANDARDIZED_WIDGETS[element.type] then
+      -- Use callable module API for standardized widgets (preferred)
+      if STANDARDIZED_WIDGETS[element.type] and is_callable then
         -- Build opts table for standardized widget API
         local opts = element_config
         opts.x = cursor_x
@@ -505,11 +509,12 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
         opts.draw_list = dl
         opts.panel_state = element_state
 
-        local result = component.draw(ctx, opts)
+        -- Call module directly via __call metamethod: component(ctx, opts)
+        local result = component(ctx, opts)
         used_width = result and result.width or element_width
       else
-        -- Use old positional API for non-standardized widgets
-        used_width = component.draw(
+        -- Use positional API for non-standardized widgets (tab_strip, separator, custom)
+        used_width = component.Draw(
           ctx, dl,
           cursor_x, y,
           element_width, height,
@@ -574,7 +579,7 @@ end
 -- MAIN DRAW FUNCTION
 -- ============================================================================
 
-function M.draw(ctx, dl, x, y, width, height, state, config)
+function M.Draw(ctx, dl, x, y, width, height, state, config)
   if not config or not config.elements or #config.elements == 0 then
     return 0
   end

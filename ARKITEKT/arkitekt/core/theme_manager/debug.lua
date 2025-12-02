@@ -103,7 +103,7 @@ local function restore_original(key)
   local original_def = Palette.colors[key]
   if not original_def then return end
 
-  local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
+  local _, _, bg_lightness = Colors.RgbToHsl(base_bg)
   local t = Engine.compute_t(bg_lightness)
 
   local original_value = Engine.derive_entry(base_bg, original_def, t)
@@ -145,7 +145,7 @@ function M.apply_overrides()
   local base_bg = Theme.COLORS.BG_BASE
   if not base_bg then return end
 
-  local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
+  local _, _, bg_lightness = Colors.RgbToHsl(base_bg)
   local t = Engine.compute_t(bg_lightness)
 
   -- Regenerate each overridden key

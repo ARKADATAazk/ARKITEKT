@@ -5,7 +5,7 @@
 local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 local Strings = require('ThemeAdjuster.defs.strings')
 
@@ -139,7 +139,7 @@ function GlobalView:draw(ctx, shell_state)
       },
     }
 
-    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Dummy(ctx, 0, 8)
 
@@ -331,7 +331,7 @@ function GlobalView:draw(ctx, shell_state)
     local dl = ImGui.GetWindowDrawList(ctx)
     local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
 
-    if Ark.Checkbox.draw_at_cursor(ctx, 'Custom color track names', self.custom_track_names, nil, 'custom_track_names') then
+    if Ark.Checkbox(ctx, {label = 'Custom color track names', is_checked = self.custom_track_names}).clicked then
       self.custom_track_names = not self.custom_track_names
       ThemeParams.set_param('glb_track_label_color', self.custom_track_names and 1 or 0, true)
     end
@@ -342,7 +342,7 @@ function GlobalView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 4)
 
-    if Ark.Checkbox.draw_at_cursor(ctx, 'Also affect project custom colors', self.affect_project_colors, nil, 'affect_project_colors') then
+    if Ark.Checkbox(ctx, {label = 'Also affect project custom colors', is_checked = self.affect_project_colors}).clicked then
       self.affect_project_colors = not self.affect_project_colors
       self:set_param(-1006, self.affect_project_colors and 1 or 0, true)
     end

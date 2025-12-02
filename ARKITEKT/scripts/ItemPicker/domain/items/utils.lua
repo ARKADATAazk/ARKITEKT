@@ -26,7 +26,7 @@ function M.RGBvalues(RGB)
 end
 
 function M.Color(ImGui, r, g, b, a)
-  return Ark.Colors.components_to_rgba(r*255, g*255, b*255, (a or 1)*255)
+  return Ark.Colors.ComponentsToRgba(r*255, g*255, b*255, (a or 1)*255)
 end
 
 function M.SampleLimit(spl)

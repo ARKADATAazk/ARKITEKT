@@ -8,7 +8,7 @@ local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.core.theme')
 local Base = require('arkitekt.gui.widgets.base')
 
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 
@@ -31,8 +31,8 @@ local DEFAULTS = {
   spacing = 12,        -- Space between circle and label
 
   -- State
-  selected = false,
-  disabled = false,
+  is_selected = false,
+  is_disabled = false,
 
   -- Content
   label = '',
@@ -85,7 +85,7 @@ end
 --- @param label_or_opts string|table Label string or opts table
 --- @param active boolean|nil Active state (positional only)
 --- @return table Result { clicked, width, height, hovered, active }
-function M.draw(ctx, label_or_opts, active)
+function M.Draw(ctx, label_or_opts, active)
   -- Hybrid parameter detection
   local opts
   if type(label_or_opts) == 'table' then
@@ -133,8 +133,8 @@ function M.draw(ctx, label_or_opts, active)
   local total_h = math.max(outer_radius * 2, text_h)
 
   -- Get state
-  local disabled = opts.disabled or false
-  local selected = opts.selected or false
+  local disabled = opts.is_disabled or false
+  local selected = opts.is_selected or false
 
   -- Check interaction
   local hovered, active = Base.get_interaction_state(ctx, x, y, total_w, total_h, opts)
@@ -153,27 +153,27 @@ function M.draw(ctx, label_or_opts, active)
 
   -- Base colors
   bg_color = opts.bg_color or Theme.COLORS.BG_BASE
-  inner_color = Colors.adjust_brightness(opts.inner_color or Theme.COLORS.BG_BASE, 0.85)
+  inner_color = Colors.AdjustBrightness(opts.inner_color or Theme.COLORS.BG_BASE, 0.85)
   selected_color = opts.selected_color or hexrgb('#7e7e7e')
   text_color = opts.text_color or Theme.COLORS.TEXT_NORMAL
   border_inner = opts.border_inner_color or Theme.COLORS.BORDER_INNER
   border_outer = opts.border_outer_color or Theme.COLORS.BORDER_OUTER
 
   if disabled then
-    bg_color = Colors.with_opacity(Colors.desaturate(bg_color, 0.5), 0.5)
-    inner_color = Colors.with_opacity(Colors.desaturate(inner_color, 0.5), 0.5)
-    selected_color = Colors.with_opacity(Colors.desaturate(selected_color, 0.5), 0.5)
-    text_color = Colors.with_opacity(Colors.desaturate(text_color, 0.5), 0.5)
-    border_inner = Colors.with_opacity(Colors.desaturate(border_inner, 0.5), 0.5)
-    border_outer = Colors.with_opacity(Colors.desaturate(border_outer, 0.5), 0.5)
+    bg_color = Colors.WithOpacity(Colors.Desaturate(bg_color, 0.5), 0.5)
+    inner_color = Colors.WithOpacity(Colors.Desaturate(inner_color, 0.5), 0.5)
+    selected_color = Colors.WithOpacity(Colors.Desaturate(selected_color, 0.5), 0.5)
+    text_color = Colors.WithOpacity(Colors.Desaturate(text_color, 0.5), 0.5)
+    border_inner = Colors.WithOpacity(Colors.Desaturate(border_inner, 0.5), 0.5)
+    border_outer = Colors.WithOpacity(Colors.Desaturate(border_outer, 0.5), 0.5)
   else
     -- Apply hover effects to the visible layer (selected indicator when selected, inner circle when not)
     if active and hovered then
       -- Active and hovered: brighten whichever circle is visible
       if selected then
-        selected_color = Colors.lerp(selected_color, white_overlay, 0.5)
+        selected_color = Colors.Lerp(selected_color, white_overlay, 0.5)
       else
-        inner_color = Colors.lerp(inner_color, white_overlay, 0.5)
+        inner_color = Colors.Lerp(inner_color, white_overlay, 0.5)
       end
       text_color = opts.text_hover_color or Theme.COLORS.TEXT_HOVER
     elseif active then
@@ -181,11 +181,11 @@ function M.draw(ctx, label_or_opts, active)
     elseif inst.hover_alpha > 0.01 then
       -- Hover: lighten whichever circle is visible
       if selected then
-        selected_color = Colors.lerp(selected_color, white_overlay, inst.hover_alpha * 0.4)
+        selected_color = Colors.Lerp(selected_color, white_overlay, inst.hover_alpha * 0.4)
       else
-        inner_color = Colors.lerp(inner_color, white_overlay, inst.hover_alpha * 0.15)
+        inner_color = Colors.Lerp(inner_color, white_overlay, inst.hover_alpha * 0.15)
       end
-      text_color = Colors.lerp(text_color, opts.text_hover_color or Theme.COLORS.TEXT_HOVER, inst.hover_alpha)
+      text_color = Colors.Lerp(text_color, opts.text_hover_color or Theme.COLORS.TEXT_HOVER, inst.hover_alpha)
     end
   end
 
@@ -236,29 +236,12 @@ function M.draw(ctx, label_or_opts, active)
 end
 
 -- ============================================================================
--- DEPRECATED / REMOVED FUNCTIONS
--- ============================================================================
-
---- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
-function M.draw_at_cursor(ctx, opts, id)
-  opts = opts or {}
-  if id then opts.id = id end
-  local result = M.draw(ctx, opts)
-  return result.selected
-end
-
---- @deprecated Cleanup is automatic via Base, no need to call manually
-function M.cleanup()
-  -- No-op: cleanup happens automatically via Base.cleanup_registry
-end
-
--- ============================================================================
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.RadioButton(ctx, ...) → M.draw(ctx, ...)
+-- Make module callable: Ark.RadioButton(ctx, ...) → M.Draw(ctx, ...)
 return setmetatable(M, {
   __call = function(_, ctx, ...)
-    return M.draw(ctx, ...)
+    return M.Draw(ctx, ...)
   end
 })

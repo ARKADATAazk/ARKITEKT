@@ -8,7 +8,7 @@ local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.core.theme')
 local Base = require('arkitekt.gui.widgets.base')
 
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 
@@ -51,7 +51,7 @@ local DEFAULTS = {
   -- State
   value = 1,         -- Current index (1-based)
   options = {},      -- Array of values to cycle through
-  disabled = false,
+  is_disabled = false,
 
   -- Callbacks
   on_change = nil,
@@ -110,20 +110,20 @@ local function draw_spinner_button(ctx, id, x, y, w, h, direction, disabled, hov
   local bg_color, border_inner, border_outer, arrow_color
 
   if disabled then
-    bg_color = Colors.with_opacity(Theme.COLORS.BG_BASE, 0.5)
-    border_inner = Colors.with_opacity(Theme.COLORS.BORDER_INNER, 0.5)
-    border_outer = Colors.with_opacity(Theme.COLORS.BORDER_OUTER, 0.5)
-    arrow_color = Colors.with_opacity(Theme.COLORS.TEXT_NORMAL, 0.5)
+    bg_color = Colors.WithOpacity(Theme.COLORS.BG_BASE, 0.5)
+    border_inner = Colors.WithOpacity(Theme.COLORS.BORDER_INNER, 0.5)
+    border_outer = Colors.WithOpacity(Theme.COLORS.BORDER_OUTER, 0.5)
+    arrow_color = Colors.WithOpacity(Theme.COLORS.TEXT_NORMAL, 0.5)
   elseif active then
     bg_color = Theme.COLORS.BG_ACTIVE
     border_inner = Theme.COLORS.BORDER_HOVER
     border_outer = Theme.COLORS.BORDER_OUTER
     arrow_color = Theme.COLORS.TEXT_HOVER
   elseif hover_alpha > 0.01 then
-    bg_color = Colors.lerp(Theme.COLORS.BG_BASE, Theme.COLORS.BG_HOVER, hover_alpha)
+    bg_color = Colors.Lerp(Theme.COLORS.BG_BASE, Theme.COLORS.BG_HOVER, hover_alpha)
     border_inner = Theme.COLORS.BORDER_HOVER
     border_outer = Theme.COLORS.BORDER_OUTER
-    arrow_color = Colors.lerp(Theme.COLORS.TEXT_NORMAL, Theme.COLORS.TEXT_HOVER, hover_alpha)
+    arrow_color = Colors.Lerp(Theme.COLORS.TEXT_NORMAL, Theme.COLORS.TEXT_HOVER, hover_alpha)
   else
     bg_color = Theme.COLORS.BG_BASE
     border_inner = Theme.COLORS.BORDER_INNER
@@ -153,20 +153,20 @@ local function draw_value_display(ctx, dl, x, y, w, h, text, hover_alpha, active
   local bg_color, border_inner, border_outer, text_color
 
   if disabled then
-    bg_color = Colors.with_opacity(Theme.COLORS.BG_BASE, 0.5)
-    border_inner = Colors.with_opacity(Theme.COLORS.BORDER_INNER, 0.5)
-    border_outer = Colors.with_opacity(Theme.COLORS.BORDER_OUTER, 0.5)
-    text_color = Colors.with_opacity(Theme.COLORS.TEXT_NORMAL, 0.5)
+    bg_color = Colors.WithOpacity(Theme.COLORS.BG_BASE, 0.5)
+    border_inner = Colors.WithOpacity(Theme.COLORS.BORDER_INNER, 0.5)
+    border_outer = Colors.WithOpacity(Theme.COLORS.BORDER_OUTER, 0.5)
+    text_color = Colors.WithOpacity(Theme.COLORS.TEXT_NORMAL, 0.5)
   elseif active then
     bg_color = Theme.COLORS.BG_ACTIVE
     border_inner = Theme.COLORS.BORDER_HOVER
     border_outer = Theme.COLORS.BORDER_OUTER
     text_color = Theme.COLORS.TEXT_HOVER
   elseif hover_alpha > 0.01 then
-    bg_color = Colors.lerp(Theme.COLORS.BG_BASE, Theme.COLORS.BG_HOVER, hover_alpha)
+    bg_color = Colors.Lerp(Theme.COLORS.BG_BASE, Theme.COLORS.BG_HOVER, hover_alpha)
     border_inner = Theme.COLORS.BORDER_HOVER
     border_outer = Theme.COLORS.BORDER_OUTER
-    text_color = Colors.lerp(Theme.COLORS.TEXT_NORMAL, Theme.COLORS.TEXT_HOVER, hover_alpha)
+    text_color = Colors.Lerp(Theme.COLORS.TEXT_NORMAL, Theme.COLORS.TEXT_HOVER, hover_alpha)
   else
     bg_color = Theme.COLORS.BG_BASE
     border_inner = Theme.COLORS.BORDER_INNER
@@ -212,7 +212,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result { changed, value, width, height }
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Resolve unique ID
@@ -233,7 +233,7 @@ function M.draw(ctx, opts)
   -- Get state
   local current_index = opts.value or 1
   local options = opts.options or {}
-  local disabled = opts.disabled or false
+  local disabled = opts.is_disabled or false
 
   current_index = math.max(1, math.min(current_index, #options))
 
@@ -327,18 +327,12 @@ function M.draw(ctx, opts)
 end
 
 -- ============================================================================
--- DEPRECATED / REMOVED FUNCTIONS
--- ============================================================================
-
--- M.cleanup() - REMOVED (automatic via Base.cleanup_registry, no manual call needed)
-
--- ============================================================================
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.Spinner(ctx, opts) → M.draw(ctx, opts)
+-- Make module callable: Ark.Spinner(ctx, opts) → M.Draw(ctx, opts)
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

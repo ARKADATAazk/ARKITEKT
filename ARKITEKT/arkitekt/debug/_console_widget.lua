@@ -8,7 +8,7 @@ local Panel = require('arkitekt.gui.widgets.containers.panel')
 local Config = require('arkitekt.gui.widgets.containers.panel.defaults')
 local ColoredTextView = require('arkitekt.gui.widgets.text.colored_text_view')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 
 local M = {}
@@ -190,7 +190,7 @@ function M.new(config)
             label = 'Clear',
             width = 50,
             on_click = function()
-              Logger.clear()
+              Logger.Clear()
               console.text_view:set_lines({})
               console.last_entry_count = 0
             end,
@@ -446,7 +446,7 @@ function M.new(config)
         -- Pulsing indicator for active slots
         if not stale then
           local pulse = math.abs(math.sin(now * 4)) * 0.3 + 0.7
-          local indicator_color = (color & 0xFFFFFF00) | Colors.opacity(pulse)
+          local indicator_color = (color & 0xFFFFFF00) | Colors.Opacity(pulse)
           ImGui.TextColored(ctx, indicator_color, '>')
         else
           ImGui.TextColored(ctx, COLORS.grey_40, ' ')
@@ -554,7 +554,7 @@ function M.new(config)
         ImGui.TextColored(ctx, COLORS.grey_40, '[stale]')
       else
         local pulse = math.abs(math.sin(now * 4)) * 0.5 + 0.5
-        local active_color = (COLORS.teal & 0xFFFFFF00) | Colors.opacity(pulse)
+        local active_color = (COLORS.teal & 0xFFFFFF00) | Colors.Opacity(pulse)
         ImGui.TextColored(ctx, active_color, '[active]')
       end
 
@@ -579,7 +579,7 @@ function M.new(config)
         -- Pulsing indicator
         if not stale then
           local pulse = math.abs(math.sin(now * 4)) * 0.3 + 0.7
-          local indicator_color = (color & 0xFFFFFF00) | Colors.opacity(pulse)
+          local indicator_color = (color & 0xFFFFFF00) | Colors.Opacity(pulse)
           ImGui.TextColored(ctx, indicator_color, '>')
           ImGui.SameLine(ctx)
         end

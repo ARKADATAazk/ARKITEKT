@@ -25,7 +25,7 @@ local ANGLE_RANGE = MAX_ANGLE - MIN_ANGLE
 ---@param ctx userdata ImGui context
 ---@param opts table { id, label, value, min, max, size, color }
 ---@return table { changed, value, hovered, active }
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = opts or {}
 
   local id = opts.id or 'knob'
@@ -44,8 +44,8 @@ function M.draw(ctx, opts)
   local dot_color = opts.dot_color or Theme.COLORS.TEXT_BRIGHT
 
   if disabled then
-    value_color = Colors.with_opacity(value_color, 0.4)
-    text_color = Colors.with_opacity(text_color, 0.5)
+    value_color = Colors.WithOpacity(value_color, 0.4)
+    text_color = Colors.WithOpacity(text_color, 0.5)
   end
 
   -- State

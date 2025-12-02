@@ -8,7 +8,7 @@
 local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 
 -- Load required modules
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 
 -- Load TemplateBrowser modules (using canonical paths)
 local Config = require('TemplateBrowser.app.config')
@@ -17,7 +17,7 @@ local GUI = require('TemplateBrowser.ui.init')
 local Scanner = require('TemplateBrowser.domain.template.scanner')
 local Constants = require('TemplateBrowser.defs.constants')
 
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 -- Initialize state
 State.initialize(Config)
@@ -64,6 +64,6 @@ Shell.run({
   end,
 
   on_close = function()
-    State.cleanup()
+    State.Cleanup()
   end,
 })

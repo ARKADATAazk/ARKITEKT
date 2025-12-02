@@ -13,7 +13,7 @@ local M = {}
 
 -- Set to true to enable resize grip debugging
 local DEBUG_RESIZE = false
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local function add_text(dl, x, y, col_u32, s)
   if dl and ImGui.DrawList_AddText then
@@ -140,7 +140,7 @@ function M.new(config)
       ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNWSE)
     end
 
-    local grip_color = (is_hovering or resize_dragging) and Colors.adjust_lightness(colors.resize_handle, 0.1) or colors.resize_handle
+    local grip_color = (is_hovering or resize_dragging) and Colors.AdjustLightness(colors.resize_handle, 0.1) or colors.resize_handle
 
     local row1_y = center_y + 3
     ImGui.DrawList_AddRectFilled(dl, handle_right - (sz * 3) - (gap * 2), row1_y, handle_right - (sz * 2) - (gap * 2), row1_y + sz, grip_color, 0, 0)

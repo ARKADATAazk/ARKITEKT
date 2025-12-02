@@ -14,7 +14,7 @@ local Constants = require('TemplateBrowser.defs.constants')
 local M = {}
 
 -- Draw mini tags list with filtering
-function M.draw(ctx, state, config, width, height)
+function M.Draw(ctx, state, config, width, height)
   if not Helpers.begin_child_compat(ctx, 'ConvenienceTags', width, height, false) then
     return
   end
@@ -26,11 +26,12 @@ function M.draw(ctx, state, config, width, height)
   local button_x = width - UI.BUTTON.WIDTH_SMALL - 8
   ImGui.SetCursorPosX(ctx, button_x)
 
-  if Ark.Button.draw_at_cursor(ctx, {
+  if Ark.Button(ctx, {
+    id = 'createtag_conv',
     label = '+',
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
-  }, 'createtag_conv') then
+  }).clicked then
     -- Create new tag - prompt for name
     local tag_num = 1
     local new_tag_name = 'Tag ' .. tag_num
@@ -84,7 +85,7 @@ function M.draw(ctx, state, config, width, height)
         -- Draw tags using justified chip_list (ACTION style)
         -- Unselected tags at 30% opacity (77 = 0.3 * 255)
         local content_w = ImGui.GetContentRegionAvail(ctx)
-        local clicked_id, _, right_clicked_id = ChipList.draw(ctx, tag_items, {
+        local clicked_id, _, right_clicked_id = ChipList.Draw(ctx, tag_items, {
           justified = true,
           max_stretch_ratio = 1.5,
           selected_ids = selected_ids,

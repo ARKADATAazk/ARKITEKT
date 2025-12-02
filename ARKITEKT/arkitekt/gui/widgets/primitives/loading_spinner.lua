@@ -46,7 +46,7 @@ local DEFAULTS = {
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result { width, height }
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Get position and draw list
@@ -123,9 +123,9 @@ end
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.LoadingSpinner(ctx, opts) → M.draw(ctx, opts)
+-- Make module callable: Ark.LoadingSpinner(ctx, opts) → M.Draw(ctx, opts)
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

@@ -114,8 +114,8 @@ Brief one-sentence description of what this widget does.
 local Ark = require('arkitekt')
 
 -- Minimal working example
-local result = Ark.WidgetName.draw(ctx, {
-    required_param = "value",
+local result = Ark.WidgetName(ctx, {
+    required_param = 'value',
 })
 \`\`\`
 
@@ -127,10 +127,10 @@ local result = Ark.WidgetName.draw(ctx, {
 
 \`\`\`lua
 -- Most common use case
-Ark.WidgetName.draw(ctx, {
-    label = "Example",
+Ark.WidgetName(ctx, {
+    label = 'Example',
     on_click = function()
-        print("Clicked!")
+        print('Clicked!')
     end,
 })
 \`\`\`
@@ -139,14 +139,14 @@ Ark.WidgetName.draw(ctx, {
 
 \`\`\`lua
 -- Using a preset
-Ark.WidgetName.draw(ctx, {
-    label = "Styled",
-    preset_name = "WIDGET_PRESET_NAME",
+Ark.WidgetName(ctx, {
+    label = 'Styled',
+    preset_name = 'WIDGET_PRESET_NAME',
 })
 
 -- With custom colors
-Ark.WidgetName.draw(ctx, {
-    label = "Custom",
+Ark.WidgetName(ctx, {
+    label = 'Custom',
     bg_color = 0xFF0000FF,  -- Red background
     text_color = 0xFFFFFFFF,  -- White text
 })
@@ -156,17 +156,17 @@ Ark.WidgetName.draw(ctx, {
 
 \`\`\`lua
 -- All options example
-local result = Ark.WidgetName.draw(ctx, {
-    id = "unique_id",
-    label = "Full Example",
-    icon = "\u{F00C}",  -- Remix icon
+local result = Ark.WidgetName(ctx, {
+    id = 'unique_id',
+    label = 'Full Example',
+    icon = '\u{F00C}',  -- Remix icon
     width = 120,
     height = 32,
     disabled = state.is_loading,
-    preset_name = "WIDGET_TOGGLE_TEAL",
+    preset_name = 'WIDGET_TOGGLE_TEAL',
     on_click = function() handle_click() end,
     on_right_click = function() show_context_menu() end,
-    tooltip = "Click to perform action",
+    tooltip = 'Click to perform action',
 })
 
 if result.clicked then
@@ -253,7 +253,7 @@ local my_preset = {
     rounding = 4,
 }
 
-Ark.WidgetName.draw(ctx, {
+Ark.WidgetName(ctx, {
     label = "Custom",
     preset = my_preset,
 })
@@ -426,7 +426,7 @@ Use these terms consistently:
 local Ark = require('arkitekt')
 
 -- Show complete, runnable examples
-Ark.Button.draw(ctx, {
+Ark.Button(ctx, {
   label = "Click Me",
   on_click = function()
     print("Clicked!")
@@ -446,7 +446,7 @@ Always show parameter tables with one field per line for clarity:
 
 ```lua
 -- GOOD: Easy to read, easy to modify
-Ark.Button.draw(ctx, {
+Ark.Button(ctx, {
   label = "Save",
   icon = "\u{F00C}",
   width = 100,
@@ -455,7 +455,7 @@ Ark.Button.draw(ctx, {
 })
 
 -- BAD: Hard to read
-Ark.Button.draw(ctx, {label = "Save", icon = "\u{F00C}", width = 100, preset_name = "BUTTON_SUCCESS", on_click = save_handler})
+Ark.Button(ctx, {label = "Save", icon = "\u{F00C}", width = 100, preset_name = "BUTTON_SUCCESS", on_click = save_handler})
 ```
 
 ---
@@ -473,12 +473,12 @@ Ark.Button.draw(ctx, {label = "Save", icon = "\u{F00C}", width = 100, preset_nam
 
 #### Minimal Example
 ```lua
-Ark.Button.draw(ctx, { label = "OK" })
+Ark.Button(ctx, { label = "OK" })
 ```
 
 #### Common Example
 ```lua
-Ark.Button.draw(ctx, {
+Ark.Button(ctx, {
   label = "Save",
   on_click = function()
     save_data()
@@ -488,7 +488,7 @@ Ark.Button.draw(ctx, {
 
 #### Full Example
 ```lua
-local result = Ark.Button.draw(ctx, {
+local result = Ark.Button(ctx, {
   id = "save_button",
   label = "Save",
   icon = "\u{F0C7}",  -- floppy disk icon
@@ -521,7 +521,7 @@ end
 ```lua
 -- Toolbar with multiple buttons
 local function draw_toolbar(ctx)
-  Ark.Button.draw(ctx, {
+  Ark.Button(ctx, {
     icon = "\u{EA13}",  -- plus icon
     tooltip = "New",
     on_click = function() create_new() end,
@@ -529,7 +529,7 @@ local function draw_toolbar(ctx)
 
   ImGui.SameLine(ctx)
 
-  Ark.Button.draw(ctx, {
+  Ark.Button(ctx, {
     icon = "\u{EB7D}",  -- folder icon
     tooltip = "Open",
     on_click = function() open_file() end,
@@ -537,7 +537,7 @@ local function draw_toolbar(ctx)
 
   ImGui.SameLine(ctx)
 
-  Ark.Button.draw(ctx, {
+  Ark.Button(ctx, {
     icon = "\u{F0C7}",  -- save icon
     tooltip = "Save",
     disabled = not state.has_changes,
@@ -789,16 +789,13 @@ Create a new file `my_first_script.lua`:
 
 \`\`\`lua
 -- Bootstrap ARKITEKT
-local script_path = debug.getinfo(1, "S").source:sub(2)
-local arkitekt_path = script_path:match("(.-ARKITEKT[/\\])")
-local ARK = dofile(arkitekt_path .. "arkitekt/app/bootstrap.lua").init()
+local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 
-local Ark = require('arkitekt')
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 
 -- Define your app
 local function app(ctx)
-  Ark.Button.draw(ctx, {
+  Ark.Button(ctx, {
     label = "Hello ARKITEKT!",
     on_click = function()
       reaper.ShowMessageBox("It works!", "Success", 0)

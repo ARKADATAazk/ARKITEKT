@@ -13,7 +13,7 @@ local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local Port = require('arkitekt.gui.widgets.editors.nodal.core.port')
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 -- Store available nodes for dropdowns (set by canvas)
 M.available_nodes = {}
@@ -53,8 +53,8 @@ function M.render(ctx, node, animator, config)
   TileFX.render_complete(ctx, dl, x1, y1, x2, y2, bg_color, fx_config, node.selected, hover_factor)
   
   if node.selected and fx_config.ants_enabled then
-    local ants_color = Colors.same_hue_variant(chip_color, fx_config.border_saturation, fx_config.border_brightness, fx_config.ants_alpha)
-    MarchingAnts.draw(dl, x1, y1, x2, y2, ants_color, fx_config.ants_thickness, config.node.rounding, fx_config.ants_dash, fx_config.ants_gap, fx_config.ants_speed)
+    local ants_color = Colors.SameHueVariant(chip_color, fx_config.border_saturation, fx_config.border_brightness, fx_config.ants_alpha)
+    MarchingAnts.Draw(dl, x1, y1, x2, y2, ants_color, fx_config.ants_thickness, config.node.rounding, fx_config.ants_dash, fx_config.ants_gap, fx_config.ants_speed)
   end
   
   M.render_header(ctx, dl, node, config, chip_color)
@@ -68,7 +68,7 @@ function M.render_header(ctx, dl, node, config, chip_color)
   local x1 = node.x + config.node.padding
   local y1 = node.y + (config.node.header_height - 16) / 2
   
-  Chip.draw(ctx, {
+  Chip.Draw(ctx, {
     style = Chip.STYLE.INDICATOR,
     color = chip_color,
     draw_list = dl,
@@ -86,11 +86,11 @@ function M.render_header(ctx, dl, node, config, chip_color)
   local seq_w, seq_h = ImGui.CalcTextSize(ctx, sequence_text)
   local seq_x = x1 + 24
   local seq_y = y1
-  Draw.text(dl, seq_x, seq_y, hexrgb('#888888'), sequence_text)
+  Draw.Text(dl, seq_x, seq_y, hexrgb('#888888'), sequence_text)
   
   local name_x = seq_x + seq_w + 8
   local name_y = y1
-  Draw.text(dl, name_x, name_y, config.colors.text.header, node.name)
+  Draw.Text(dl, name_x, name_y, config.colors.text.header, node.name)
 end
 
 function M.render_body(ctx, dl, node, config)
@@ -100,15 +100,15 @@ function M.render_body(ctx, dl, node, config)
   local text_color = config.colors.text.body
   
   local line1 = 'Wwise: ' .. node.properties.wwise_state
-  Draw.text(dl, x1, y1, text_color, line1)
+  Draw.Text(dl, x1, y1, text_color, line1)
   y1 = y1 + config.node.body_line_height
   
   local line2 = 'Loops: ×' .. node.properties.loop_count
-  Draw.text(dl, x1, y1, text_color, line2)
+  Draw.Text(dl, x1, y1, text_color, line2)
   y1 = y1 + config.node.body_line_height
   
   local line3 = 'Transition: ' .. node.properties.transition_type .. ' (' .. node.properties.transition_duration .. 's)'
-  Draw.text(dl, x1, y1, text_color, line3)
+  Draw.Text(dl, x1, y1, text_color, line3)
 end
 
 function M.render_loop_badge(ctx, dl, node, config, chip_color)
@@ -136,10 +136,10 @@ function M.render_loop_badge(ctx, dl, node, config, chip_color)
   
   ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_config.bg, badge_config.rounding)
   ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, 
-    Colors.with_alpha(chip_color, badge_config.border_alpha), 
+    Colors.WithAlpha(chip_color, badge_config.border_alpha), 
     badge_config.rounding, 0, 0.5)
   
-  Draw.text(dl, badge_x + badge_config.padding_x, badge_y + badge_config.padding_y, 
+  Draw.Text(dl, badge_x + badge_config.padding_x, badge_y + badge_config.padding_y, 
     hexrgb('#FFFFFFDD'), badge_text)
 end
 
@@ -157,7 +157,7 @@ function M.render_triggers_ui(ctx, dl, node, config, chip_color)
                    config.node.trigger_section_padding_top
   
   -- Section label
-  Draw.text(dl, x1, y_offset, config.colors.text.trigger_section, '⚡ TRIGGERS')
+  Draw.Text(dl, x1, y_offset, config.colors.text.trigger_section, '⚡ TRIGGERS')
   y_offset = y_offset + trigger_config.section_label_height
   
   -- Render each trigger
@@ -202,7 +202,7 @@ function M.render_trigger_item(ctx, node, trigger, index, x, y, config, chip_col
   local item_width = node.width - config.node.padding * 2 - trigger_config.indent - trigger_config.delete_button_size - 4
   
   -- Event name (editable)
-  Draw.text(dl, indent, y, config.colors.text.body, 'Event:')
+  Draw.Text(dl, indent, y, config.colors.text.body, 'Event:')
   ImGui.SetCursorScreenPos(ctx, indent + 50, y - 2)
   ImGui.PushItemWidth(ctx, item_width - 50)
   ImGui.PushID(ctx, 'trigger_event_' .. node.guid .. '_' .. index)
@@ -219,7 +219,7 @@ function M.render_trigger_item(ctx, node, trigger, index, x, y, config, chip_col
   y = y + trigger_config.item_height
   
   -- Target dropdown
-  Draw.text(dl, indent, y, config.colors.text.body, '→')
+  Draw.Text(dl, indent, y, config.colors.text.body, '→')
   ImGui.SetCursorScreenPos(ctx, indent + trigger_config.label_width, y - 2)
   ImGui.PushItemWidth(ctx, item_width - trigger_config.label_width - trigger_config.mode_width - 4)
   ImGui.PushID(ctx, 'trigger_target_' .. node.guid .. '_' .. index)

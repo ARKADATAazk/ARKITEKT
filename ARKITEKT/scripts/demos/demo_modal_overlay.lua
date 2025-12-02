@@ -45,13 +45,13 @@ addpath(join(HERE,  'Arkitekt/?.lua'))
 addpath(join(HERE,  'Arkitekt/?/init.lua'))
 addpath(join(HERE,  'Arkitekt/?/?.lua'))
 
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 local Sheet = require('arkitekt.gui.widgets.overlays.overlay.sheet')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local OverlayConfig = require('arkitekt.gui.widgets.overlays.overlay.defaults')
 
 local style_ok, Style = pcall(require, 'arkitekt.gui.style.imgui')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 
 local demo_state = {
@@ -147,7 +147,7 @@ local function create_tag_selector_modal(window)
         ImGui.Dummy(ctx, 0, 12)
         
         ImGui.SetCursorPosX(ctx, padding_h)
-        local clicked_tag = ChipList.draw(ctx, demo_state.tags, {
+        local clicked_tag = ChipList.Draw(ctx, demo_state.tags, {
           max_width = w - padding_h * 2,
           selected_ids = demo_state.selected_tags,
           search_text = demo_state.search_text,
@@ -291,7 +291,7 @@ local function create_preset_browser_modal(window)
             item_spacing = 3,
           })
         else
-          clicked_preset = ChipList.draw(ctx, demo_state.presets, {
+          clicked_preset = ChipList.Draw(ctx, demo_state.presets, {
             max_width = w - padding_h * 2,
             selected_ids = demo_state.selected_presets,
             search_text = demo_state.search_text,
@@ -360,7 +360,7 @@ local function draw_mock_content(ctx)
   end
   
   if #selected_tag_items > 0 then
-    local clicked_tag = ChipList.draw(ctx, selected_tag_items, {
+    local clicked_tag = ChipList.Draw(ctx, selected_tag_items, {
       chip_spacing = 8,
       line_spacing = 8,
       justified = true,
@@ -381,7 +381,7 @@ local function draw_mock_content(ctx)
   ImGui.Text(ctx, 'Available Tags (inline justified example):')
   ImGui.Dummy(ctx, 0, 8)
   
-  local inline_clicked = ChipList.draw(ctx, demo_state.tags, {
+  local inline_clicked = ChipList.Draw(ctx, demo_state.tags, {
     chip_spacing = 8,
     line_spacing = 8,
     selected_ids = demo_state.selected_tags,

@@ -11,7 +11,7 @@ local ButtonWidgets = require('RegionPlaylist.ui.views.transport.button_widgets'
 local DisplayWidget = require('RegionPlaylist.ui.views.transport.display_widget')
 local CoreConfig = require('RegionPlaylist.app.config')
 local Strings = require('RegionPlaylist.defs.strings')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 
@@ -722,7 +722,7 @@ end
 --- @param ctx ImGui_Context
 --- @param shell_state table Shell state with fonts, etc.
 --- @param is_blocking boolean Whether UI should be blocked
-function M.draw(ctx, shell_state, is_blocking)
+function M.Draw(ctx, shell_state, is_blocking)
   is_blocking = is_blocking or false
   local bridge = view.state.get_bridge()
   local engine = bridge.engine

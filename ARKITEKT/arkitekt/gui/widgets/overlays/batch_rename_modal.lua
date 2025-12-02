@@ -14,7 +14,7 @@ local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local RadioButton = require('arkitekt.gui.widgets.primitives.radio_button')
 local Unicode = require('arkitekt.core.unicode')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 
@@ -300,9 +300,9 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   end
 
   -- Set text in SearchInput component
-  InputText.set_text('batch_rename_pattern', self.pattern)
+  InputText.SetText('batch_rename_pattern', self.pattern)
 
-  local result = InputText.search(ctx, {
+  local result = InputText.Search(ctx, {
     id = 'batch_rename_pattern',
     x = screen_x,
     y = screen_y,
@@ -341,10 +341,10 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     end
 
     local wildcard_config = Theme.build_action_chip_config('wildcard')
-    local clicked, right_clicked = Chip.draw(ctx, {
+    local clicked, right_clicked = Chip.Draw(ctx, {
       label = chip_data.label,
       style = Chip.STYLE.ACTION,
-      interactive = true,
+      is_interactive = true,
       id = 'wildcard_' .. i,
       bg_color = wildcard_config.bg_color,
       text_color = wildcard_config.text_color,
@@ -452,7 +452,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local dropdown_w = 120
   local dropdown_h = 24
 
-  local result = Combo.draw(ctx, {
+  local result = Combo.Draw(ctx, {
     id = 'names_category',
     draw_list = dl,
     x = dropdown_x,
@@ -580,10 +580,10 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
       -- Set cursor position for this chip
       ImGui.SetCursorPos(ctx, cur_line_x, cur_line_y)
 
-      local clicked = Chip.draw(ctx, {
+      local clicked = Chip.Draw(ctx, {
         label = name,
         style = Chip.STYLE.ACTION,
-        interactive = true,
+        is_interactive = true,
         id = 'common_name_' .. i,
         bg_color = color,
         text_color = tag_config.text_color,
@@ -638,7 +638,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.SetCursorPosX(ctx, right_col_x)
 
   -- Radio button for 'None'
-  if RadioButton.draw(ctx, {
+  if RadioButton.Draw(ctx, {
     id = 'sep_none',
     label = 'None',
     selected = self.separator == 'none',
@@ -651,7 +651,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.SameLine(ctx, 0, 12)
 
   -- Radio button for 'Underscore'
-  if RadioButton.draw(ctx, {
+  if RadioButton.Draw(ctx, {
     id = 'sep_underscore',
     label = 'Underscore (_)',
     selected = self.separator == 'underscore',
@@ -664,7 +664,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.SameLine(ctx, 0, 12)
 
   -- Radio button for 'Space'
-  if RadioButton.draw(ctx, {
+  if RadioButton.Draw(ctx, {
     id = 'sep_space',
     label = 'Space ( )',
     selected = self.separator == 'space',
@@ -726,7 +726,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local can_rename = self.pattern ~= ''
 
   -- Cancel button
-  local cancel_result = Button.draw(ctx, {
+  local cancel_result = Button.Draw(ctx, {
     id = 'batch_rename_cancel',
     draw_list = dl,
     x = screen_x,
@@ -743,7 +743,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   end
 
   -- Rename button (disabled when no pattern)
-  local rename_result = Button.draw(ctx, {
+  local rename_result = Button.Draw(ctx, {
     id = 'batch_rename_rename',
     draw_list = dl,
     x = screen_x + button_w_small + spacing,
@@ -765,7 +765,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Rename & Recolor button (disabled when no pattern) - WIDER
   local rename_recolor_x = screen_x + (button_w_small + spacing) * 2
-  local rename_recolor_result = Button.draw(ctx, {
+  local rename_recolor_result = Button.Draw(ctx, {
     id = 'batch_rename_both',
     draw_list = dl,
     x = rename_recolor_x,
@@ -787,7 +787,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Recolor button (always enabled)
   local recolor_x = rename_recolor_x + button_w_large + spacing
-  local recolor_result = Button.draw(ctx, {
+  local recolor_result = Button.Draw(ctx, {
     id = 'batch_rename_recolor',
     draw_list = dl,
     x = recolor_x,
@@ -972,7 +972,7 @@ end
 --- @param shell_state table Shell state (for fonts)
 --- @param id string|nil Optional ID (defaults to '##batch_rename_modal')
 --- @return boolean handled Whether the modal was drawn
-function M.draw(ctx, item_count, window, shell_state, id)
+function M.Draw(ctx, item_count, window, shell_state, id)
   id = id or '##batch_rename_modal'
   if not _open_instances[id] then return false end
   return _open_instances[id]:draw(ctx, item_count, window, shell_state)

@@ -7,7 +7,7 @@ local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 local Strings = require('ThemeAdjuster.defs.strings')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
@@ -91,7 +91,7 @@ function TransportView:draw(ctx, shell_state)
       primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
       secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
     }
-    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Dummy(ctx, 0, 4)
 
@@ -110,7 +110,8 @@ function TransportView:draw(ctx, shell_state)
 
     for _, layout in ipairs({'A', 'B', 'C'}) do
       local is_active = (self.active_layout == layout)
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = 'trans_layout_' .. layout,
         label = layout,
         width = 50,
         height = 24,
@@ -121,7 +122,7 @@ function TransportView:draw(ctx, shell_state)
           ThemeParams.set_active_layout('trans', layout)
           self:load_from_theme()
         end
-      }, 'trans_layout_' .. layout) then
+      }).clicked then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -135,7 +136,8 @@ function TransportView:draw(ctx, shell_state)
     ImGui.SameLine(ctx, 120)
 
     for _, size in ipairs({'100%', '150%', '200%'}) do
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = 'trans_size_' .. size,
         label = size,
         width = 70,
         height = 24,
@@ -143,7 +145,7 @@ function TransportView:draw(ctx, shell_state)
           local scale = (size == '100%') and '' or (size .. '_')
           ThemeParams.apply_layout_to_tracks('trans', 'A', scale)
         end
-      }, 'trans_size_' .. size) then
+      }).clicked then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -173,7 +175,7 @@ function TransportView:draw(ctx, shell_state)
 
       -- Spinner (fixed position, fixed width)
       ImGui.SameLine(ctx, 0, 8)
-      local spinner_result = Ark.Spinner.draw(ctx, {
+      local spinner_result = Ark.Spinner(ctx, {
         id = id,
         value = idx,
         options = values,
@@ -210,7 +212,8 @@ function TransportView:draw(ctx, shell_state)
       local state = reaper.GetToggleCommandState(command_id)
       local is_on = (state == 1)
 
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = button_id,
         label = label,
         width = 220,
         height = 28,
@@ -219,7 +222,7 @@ function TransportView:draw(ctx, shell_state)
         on_click = function()
           reaper.Main_OnCommand(command_id, 0)
         end
-      }, button_id) then
+      }).clicked then
       end
       return is_on
     end
@@ -269,7 +272,7 @@ function TransportView:draw(ctx, shell_state)
     -- Helper function for checkbox rows
     local function draw_checkbox_row(label, checked, id)
       local result = checked
-      if Ark.Checkbox.draw_at_cursor(ctx, label, checked, nil, id) then
+      if Ark.Checkbox(ctx, {id = id, label = label, is_checked = checked}).clicked then
         result = not checked
       end
       ImGui.NewLine(ctx)

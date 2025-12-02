@@ -38,7 +38,7 @@
 
 local Ark = require('arkitekt')
 local ActiveTile = require('RegionPlaylist.ui.tiles.renderers.active')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 

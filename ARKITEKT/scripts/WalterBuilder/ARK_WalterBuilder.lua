@@ -18,13 +18,13 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 -- LOAD MODULES
 -- ============================================================================
 
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 local Settings = require('arkitekt.core.settings')
 local State = require('WalterBuilder.app.state')
 local Controller = require('WalterBuilder.core.controller')
 local GUI = require('WalterBuilder.ui.gui')
 
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 -- ============================================================================
 -- INITIALIZE SETTINGS AND STATE

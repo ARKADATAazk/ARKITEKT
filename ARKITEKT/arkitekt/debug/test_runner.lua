@@ -185,7 +185,7 @@ function M.get_results()
 end
 
 --- Clear all registered test suites
-function M.clear()
+function M.Clear()
   test_suites = {}
   results = {
     total = 0,

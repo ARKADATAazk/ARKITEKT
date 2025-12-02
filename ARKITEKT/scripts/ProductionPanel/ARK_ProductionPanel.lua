@@ -27,7 +27,7 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 -- ============================================================================
 -- IMPORTS
 -- ============================================================================
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 local Settings = require('arkitekt.core.settings')
 local State = require('scripts.ProductionPanel.app.state')
 local GUI = require('scripts.ProductionPanel.ui.init')
@@ -51,13 +51,13 @@ Shell.run({
   settings     = settings,
   initial_size = { w = Defaults.WINDOW.WIDTH, h = Defaults.WINDOW.HEIGHT },
   min_size     = { w = Defaults.WINDOW.MIN_WIDTH, h = Defaults.WINDOW.MIN_HEIGHT },
-  icon_color   = Colors.hexrgb('#D94A4A'),
+  icon_color   = Colors.Hexrgb('#D94A4A'),
 
   draw = function(ctx, shell_state)
-    GUI.draw(ctx, shell_state)
+    GUI.Draw(ctx, shell_state)
   end,
 
   on_close = function()
-    State.cleanup()
+    State.Cleanup()
   end,
 })

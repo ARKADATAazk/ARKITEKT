@@ -27,9 +27,9 @@ function M.draw_convenience_panel(ctx, gui, width, height)
 
     -- Draw content based on active tab
     if state.convenience_panel_tab == 'tags' then
-      ConvTagsTab.draw(ctx, state, gui.config, width, content_height)
+      ConvTagsTab.Draw(ctx, state, gui.config, width, content_height)
     elseif state.convenience_panel_tab == 'vsts' then
-      ConvVstsTab.draw(ctx, state, gui.config, width, content_height)
+      ConvVstsTab.Draw(ctx, state, gui.config, width, content_height)
     end
 
     gui.convenience_panel_container:end_draw(ctx)

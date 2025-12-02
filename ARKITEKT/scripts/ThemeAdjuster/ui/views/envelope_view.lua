@@ -6,7 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
@@ -106,7 +106,7 @@ function EnvelopeView:draw(ctx, shell_state)
       primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
       secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
     }
-    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Dummy(ctx, 0, 4)
 
@@ -125,7 +125,8 @@ function EnvelopeView:draw(ctx, shell_state)
 
     for _, layout in ipairs({'A', 'B', 'C'}) do
       local is_active = (self.active_layout == layout)
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = 'env_layout_' .. layout,
         label = layout,
         width = 50,
         height = 24,
@@ -136,7 +137,7 @@ function EnvelopeView:draw(ctx, shell_state)
           ThemeParams.set_active_layout('envcp', layout)
           self:load_from_theme()
         end
-      }, 'env_layout_' .. layout) then
+      }).clicked then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -150,7 +151,8 @@ function EnvelopeView:draw(ctx, shell_state)
     ImGui.SameLine(ctx, 120)
 
     for _, size in ipairs({'100%', '150%', '200%'}) do
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = 'env_size_' .. size,
         label = size,
         width = 70,
         height = 24,
@@ -158,7 +160,7 @@ function EnvelopeView:draw(ctx, shell_state)
           local scale = (size == '100%') and '' or (size .. '_')
           ThemeParams.apply_layout_to_tracks('envcp', 'A', scale)
         end
-      }, 'env_size_' .. size) then
+      }).clicked then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -191,7 +193,7 @@ function EnvelopeView:draw(ctx, shell_state)
 
       -- Spinner (fixed position, fixed width)
       ImGui.SameLine(ctx, 0, 8)
-      local spinner_result = Ark.Spinner.draw(ctx, {
+      local spinner_result = Ark.Spinner(ctx, {
         id = id,
         value = idx,
         options = values,
@@ -234,7 +236,7 @@ function EnvelopeView:draw(ctx, shell_state)
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
 
-    if Ark.Checkbox.draw_at_cursor(ctx, 'Match folder indent', self.envcp_folder_indent, nil, 'envcp_folder_indent') then
+    if Ark.Checkbox(ctx, {label = 'Match folder indent', is_checked = self.envcp_folder_indent}).clicked then
       self.envcp_folder_indent = not self.envcp_folder_indent
       ThemeParams.set_param('envcp_folder_indent', self.envcp_folder_indent and 1 or 0, true)
     end
@@ -257,7 +259,7 @@ function EnvelopeView:draw(ctx, shell_state)
     -- Helper function for checkbox rows
     local function draw_checkbox_row(label, checked, id)
       local result = checked
-      if Ark.Checkbox.draw_at_cursor(ctx, label, checked, nil, id) then
+      if Ark.Checkbox(ctx, {id = id, label = label, is_checked = checked}).clicked then
         result = not checked
       end
       ImGui.NewLine(ctx)

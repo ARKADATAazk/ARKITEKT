@@ -6,7 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local PackageTilesGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
 local PackageManager = require('ThemeAdjuster.data.packages.manager')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 local PackagesView = {}

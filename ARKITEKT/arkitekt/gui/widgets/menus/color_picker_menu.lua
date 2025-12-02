@@ -10,7 +10,7 @@ local Draw = require('arkitekt.gui.draw.primitives')
 local Unicode = require('arkitekt.core.unicode')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
-local hexrgb = ColorUtils.hexrgb
+local hexrgb = ColorUtils.Hexrgb
 
 -- Remix icon for checkbox (selection indicator)
 local ICON_CHECK = Unicode.utf8(0xEC69)
@@ -133,7 +133,7 @@ function M.render(ctx, opts)
     local border_col = ColorUtils.components_to_rgba(br, bg, bb, 255)
 
     -- Draw chip (no glow - using icon for selection)
-    Chip.draw(ctx, {
+    Chip.Draw(ctx, {
       style = Chip.STYLE.INDICATOR,
       shape = shape,
       color = color,
@@ -163,7 +163,7 @@ function M.render(ctx, opts)
       local text_w, text_h = ImGui.CalcTextSize(ctx, ICON_CHECK)
       local icon_x = chip_cx - text_w * 0.5  -- Centered (even chip size)
       local icon_y = chip_cy - text_h * 0.5
-      Draw.text(dl, icon_x, icon_y, icon_color, ICON_CHECK)
+      Draw.Text(dl, icon_x, icon_y, icon_color, ICON_CHECK)
       ImGui.PopFont(ctx)
     end
   end
@@ -180,12 +180,13 @@ function M.render(ctx, opts)
     local button_x = ImGui.GetCursorPosX(ctx) + 8
     ImGui.SetCursorPosX(ctx, button_x)
 
-    local clicked = Button.draw_at_cursor(ctx, {
+    local result = Button(ctx, {
       label = button_text,
       width = button_width - 16,
       height = button_height,
-    }, 'remove_color_btn', 'vertical')  -- Use vertical advancement for menu context
-    if clicked then
+      advance = 'vertical',
+    })
+    if result.clicked then
       if opts.on_select then
         opts.on_select(nil, nil, nil)
       end

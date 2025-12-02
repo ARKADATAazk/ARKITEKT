@@ -3,7 +3,7 @@
 -- REAPER Region API wrapper - uses native markrgnindexnumber as stable RID
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 
@@ -23,7 +23,7 @@ local function convert_reaper_color_to_rgba(native_color)
 end
 
 local function convert_rgba_to_reaper_color(rgba_color)
-  return Colors.rgba_to_reaper_native(rgba_color)
+  return Colors.RgbaToReaperNative(rgba_color)
 end
 
 -- Get GUID for a marker/region by its enumeration index

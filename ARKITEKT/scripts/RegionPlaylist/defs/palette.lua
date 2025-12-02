@@ -54,14 +54,14 @@ function M.get_circular()
   if not p then
     -- Fallback if not registered
     return {
-      base = Ark.Colors.hexrgb('#240C0CFF'),
-      stripe = Ark.Colors.hexrgb('#430D0D33'),
-      border = Ark.Colors.hexrgb('#240F0FFF'),
-      text = Ark.Colors.hexrgb('#901B1BFF'),
-      lock = Ark.Colors.hexrgb('#901B1BFF'),
-      chip = Ark.Colors.hexrgb('#901B1BFF'),
-      badge_bg = Ark.Colors.hexrgb('#240C0CFF'),
-      badge_border = Ark.Colors.hexrgb('#652A2AFF'),
+      base = Ark.Colors.Hexrgb('#240C0CFF'),
+      stripe = Ark.Colors.Hexrgb('#430D0D33'),
+      border = Ark.Colors.Hexrgb('#240F0FFF'),
+      text = Ark.Colors.Hexrgb('#901B1BFF'),
+      lock = Ark.Colors.Hexrgb('#901B1BFF'),
+      chip = Ark.Colors.Hexrgb('#901B1BFF'),
+      badge_bg = Ark.Colors.Hexrgb('#240C0CFF'),
+      badge_border = Ark.Colors.Hexrgb('#652A2AFF'),
       stripe_width = 8,
       stripe_spacing = 16,
     }
@@ -69,7 +69,7 @@ function M.get_circular()
 
   return {
     base         = p.CIRCULAR_BASE,
-    stripe       = Ark.Colors.with_opacity(p.CIRCULAR_STRIPE, p.CIRCULAR_STRIPE_OPACITY),
+    stripe       = Ark.Colors.WithOpacity(p.CIRCULAR_STRIPE, p.CIRCULAR_STRIPE_OPACITY),
     border       = p.CIRCULAR_BORDER,
     text         = p.CIRCULAR_TEXT,
     lock         = p.CIRCULAR_LOCK,
@@ -86,7 +86,7 @@ end
 function M.get_fallback_chip()
   local p = ThemeManager.get_script_palette('RegionPlaylist')
   if not p then
-    return Ark.Colors.hexrgb('#FF5733FF')
+    return Ark.Colors.Hexrgb('#FF5733FF')
   end
   return p.FALLBACK_CHIP
 end
@@ -101,8 +101,8 @@ end
 function M.get_badge()
   local S = Ark.Style.COLORS or {}
   return {
-    bg = S.BADGE_BG or Ark.Colors.hexrgb('#14181CDD'),
-    text = S.BADGE_TEXT or Ark.Colors.hexrgb('#FFFFFFDD'),
+    bg = S.BADGE_BG or Ark.Colors.Hexrgb('#14181CDD'),
+    text = S.BADGE_TEXT or Ark.Colors.Hexrgb('#FFFFFFDD'),
     border_opacity = S.BADGE_BORDER_OPACITY or 0.20,
   }
 end
@@ -112,9 +112,9 @@ end
 function M.get_playlist_tile()
   local S = Ark.Style.COLORS or {}
   return {
-    base  = S.PLAYLIST_TILE_COLOR or Ark.Colors.hexrgb('#3A3A3AFF'),
-    name  = S.PLAYLIST_NAME_COLOR or Ark.Colors.hexrgb('#CCCCCCFF'),
-    badge = S.PLAYLIST_BADGE_COLOR or Ark.Colors.hexrgb('#999999FF'),
+    base  = S.PLAYLIST_TILE_COLOR or Ark.Colors.Hexrgb('#3A3A3AFF'),
+    name  = S.PLAYLIST_NAME_COLOR or Ark.Colors.Hexrgb('#CCCCCCFF'),
+    badge = S.PLAYLIST_BADGE_COLOR or Ark.Colors.Hexrgb('#999999FF'),
   }
 end
 

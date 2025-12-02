@@ -8,7 +8,7 @@ local Ark = require('arkitekt')
 
 local Panel = require('arkitekt.gui.widgets.containers.panel.init')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -179,7 +179,7 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
     if not to then
       to = get_ready_color()
     end
-    return Ark.Colors.lerp(from, to, t)
+    return Ark.Colors.Lerp(from, to, t)
   end
 
   local lerp_factor = min(1.0, fade_speed * dt)
@@ -295,7 +295,7 @@ function TransportPanel:get_panel_state()
   return self.panel
 end
 
-function M.draw(ctx, id, width, height, content_fn, config, region_colors, current_rid)
+function M.Draw(ctx, id, width, height, content_fn, config, region_colors, current_rid)
   if not config then
     error('TransportContainer.draw requires config parameter')
   end

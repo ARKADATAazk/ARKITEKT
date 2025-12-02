@@ -3,7 +3,7 @@
 -- Parameter linking and synchronization system (GROUP-BASED)
 
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 
@@ -425,7 +425,7 @@ end
 -- RESET
 -- ============================================================================
 
-function M.reset()
+function M.Reset()
   state.groups = {}
   state.param_to_group = {}
   state.link_modes = {}

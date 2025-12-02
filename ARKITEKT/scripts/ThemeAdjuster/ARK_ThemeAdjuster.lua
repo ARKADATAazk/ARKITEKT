@@ -11,7 +11,7 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 -- LOAD MODULES
 -- ============================================================================
 
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 local Config = require('ThemeAdjuster.app.config')
 local State = require('ThemeAdjuster.app.state')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
@@ -19,7 +19,7 @@ local GUI = require('ThemeAdjuster.ui.gui')
 local StatusConfig = require('ThemeAdjuster.ui.status')
 local Settings = require('arkitekt.core.settings')
 
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 -- ============================================================================
 -- INITIALIZE SETTINGS

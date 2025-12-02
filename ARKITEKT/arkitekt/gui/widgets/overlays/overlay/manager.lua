@@ -15,7 +15,7 @@ local Constants = require('arkitekt.defs.app')
 
 local M = {}
 M.__index = M
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 local clamp = CoreMath.clamp
 
 -- Global state to track if ANY overlay manager has active overlays
@@ -367,7 +367,7 @@ function M:render(ctx, dt)
 
     -- Draw the scrim explicitly so debug colors remain even if later style pushes
     -- override WindowBg/ModalWindowDimBg (e.g. TemplateBrowser style stack)
-    Draw.rect_filled(dl, x, y, x + w, y + h, scrim_color, 0)
+    Draw.RectFilled(dl, x, y, x + w, y + h, scrim_color, 0)
 
     -- Check for escape key
     if top.esc_to_close and ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then

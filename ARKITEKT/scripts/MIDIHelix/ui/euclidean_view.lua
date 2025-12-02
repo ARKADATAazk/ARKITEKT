@@ -30,7 +30,7 @@ function M.init(Ark)
 end
 
 --- Draw the view
-function M.draw(ctx)
+function M.Draw(ctx)
   local Ark = M.Ark
   local ImGui = Ark.ImGui
 

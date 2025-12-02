@@ -15,9 +15,9 @@ local profiler_enabled = ProfilerInit.init()
 -- LOAD APPLICATION
 -- ============================================================================
 
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 local App = require('RegionPlaylist.app.init')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 -- Register script palette (for Theme Debugger)
 require('RegionPlaylist.defs.palette')

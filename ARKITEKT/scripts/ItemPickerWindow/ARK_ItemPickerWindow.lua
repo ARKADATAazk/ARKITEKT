@@ -18,11 +18,11 @@ if profiler_enabled then
 end
 
 -- Load required modules
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 local Colors = require('arkitekt.core.colors')
 local Settings = require('arkitekt.core.settings')
 
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 -- Load ItemPicker core modules (reuse data layer)
 local Config = require('scripts.ItemPicker.core.config')
@@ -79,6 +79,6 @@ Shell.run({
   },
   on_close = function()
     reaper.Main_OnCommand(reaper.NamedCommandLookup('_SWS_STOPPREVIEW'), 0)
-    State.cleanup()
+    State.Cleanup()
   end,
 })

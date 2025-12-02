@@ -37,19 +37,11 @@ local DEFAULTS = {
   collapsed_ratio = 0.0,    -- Collapsed size as ratio of full size (0.0-1.0)
                             -- 0.0 = fully hidden, 0.08 = 8% visible (e.g., 12px of 150px)
 
-  -- Deprecated (backward compat)
-  min_visible = nil,        -- DEPRECATED: Use collapsed_ratio instead
-
   -- Animation
   fade_speed = 5.0,         -- Visibility fade in/out speed
   slide_speed = 6.0,        -- Slide animation speed (panel movement)
   expand_speed = 6.0,       -- Scale expansion speed (if expand_scale > 1.0)
   snap_epsilon = 0.001,     -- Threshold for considering animation settled
-
-  -- Deprecated (backward compat)
-  animation_speed = nil,    -- DEPRECATED: Use fade_speed instead
-  scale_speed = nil,        -- DEPRECATED: Use expand_speed instead
-  slide_distance = nil,     -- DEPRECATED: Auto-calculated from collapsed_ratio
 
   -- Retract delays
   retract_delay = 0.3,      -- Base delay (used when directional_delay = false)
@@ -69,9 +61,6 @@ local DEFAULTS = {
                               -- If set, uses this when panel is expanded (is_expanded=true)
                               -- Useful for keeping panel open while hovering below it
 
-  -- Deprecated (backward compat)
-  hover_extend_outside = nil, -- DEPRECATED: Use trigger_extension instead
-  hover_extend_inside = nil,  -- DEPRECATED: Removed (dead code)
   hover_padding = 30,         -- Y-axis padding for hover detection (advanced use)
 
   -- Custom Retraction
@@ -97,8 +86,7 @@ local DEFAULTS = {
   window_bounds = nil,      -- {x, y, w, h} - if provided, enables 'exited toward edge' detection
 
   -- Callbacks
-  draw = nil,               -- function(ctx, dl, bounds, visibility) - NEW: preferred name
-  on_draw = nil,            -- function(ctx, dl, bounds, visibility, state) - DEPRECATED: use 'draw'
+  draw = nil,               -- function(ctx, dl, bounds, visibility) - content drawing
   on_expand = nil,          -- function(state) - called when expanding
   on_collapse = nil,        -- function(state) - called when collapsing
 
@@ -600,23 +588,11 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result { expanded, visibility, bounds, hovered, settled }
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
-  -- ============================================================================
-  -- BACKWARD COMPATIBILITY SHIMS
-  -- ============================================================================
-
-  -- Callback rename: on_draw → draw
-  opts.draw = opts.draw or opts.on_draw
-
-  -- Parameter renames with fallbacks
-  opts.collapsed_ratio = opts.collapsed_ratio or opts.min_visible or DEFAULTS.collapsed_ratio
-  opts.fade_speed = opts.fade_speed or opts.animation_speed or DEFAULTS.fade_speed
-  opts.expand_speed = opts.expand_speed or opts.scale_speed or DEFAULTS.expand_speed
-
-  -- trigger_extension: support both number and table
-  local trigger_ext = opts.trigger_extension or opts.hover_extend_outside or DEFAULTS.trigger_extension
+  -- Normalize trigger_extension: support both number and table
+  local trigger_ext = opts.trigger_extension or DEFAULTS.trigger_extension
   if type(trigger_ext) == 'number' then
     -- Convert number to directional table
     opts.trigger_extension = {
@@ -648,8 +624,8 @@ function M.draw(ctx, opts)
   -- Auto-calculate reveal offset from collapsed_ratio
   -- Panel slides from collapsed size to full size during reveal
   local size = opts.size or DEFAULTS.size
-  local collapsed_ratio = opts.collapsed_ratio
-  local reveal_offset = opts.slide_distance or (size * (1 - collapsed_ratio))
+  local collapsed_ratio = opts.collapsed_ratio or DEFAULTS.collapsed_ratio
+  local reveal_offset = size * (1 - collapsed_ratio)
   opts._reveal_offset = reveal_offset  -- Store calculated value
 
   -- Validate required opts
@@ -778,7 +754,7 @@ function M.draw(ctx, opts)
       -- Check if delay has passed
       if state.hover_leave_time and (current_time - state.hover_leave_time) >= delay then
         -- Retract
-        state:set_targets(opts.min_visible or 0.0, 0, 1.0)
+        state:set_targets(collapsed_ratio, 0, 1.0)
         state.is_in_hover_zone = false
         state.hover_leave_time = nil
         state.exit_direction = nil
@@ -801,7 +777,7 @@ function M.draw(ctx, opts)
     if state.is_expanded then
       state:set_targets(1.0, reveal_offset, opts.expand_scale or 1.0)
     else
-      state:set_targets(opts.min_visible or 0.0, 0, 1.0)
+      state:set_targets(collapsed_ratio, 0, 1.0)
     end
   end
 
@@ -904,12 +880,16 @@ function M.teleport(ctx, opts, expanded)
   local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new, ctx)
 
   state.is_expanded = expanded
-  local reveal_offset = opts._reveal_offset
+
+  -- Calculate reveal_offset (same as in Draw)
+  local size = opts.size or DEFAULTS.size
+  local collapsed_ratio = opts.collapsed_ratio or DEFAULTS.collapsed_ratio
+  local reveal_offset = size * (1 - collapsed_ratio)
 
   if expanded then
     state:teleport(1.0, reveal_offset, opts.expand_scale or 1.0)
   else
-    state:teleport(opts.min_visible or 0.0, 0, 1.0)
+    state:teleport(collapsed_ratio, 0, 1.0)
   end
 end
 
@@ -978,21 +958,12 @@ function M.is_group_active(group_name)
   return false
 end
 
---- Clean up sliding zone instances
-function M.cleanup()
-  Base.cleanup_registry(instances)
-  -- Also clear groups
-  for k in pairs(groups) do
-    groups[k] = nil
-  end
-end
-
 -- ============================================================================
 -- CALLABLE PATTERN
 -- ============================================================================
 
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

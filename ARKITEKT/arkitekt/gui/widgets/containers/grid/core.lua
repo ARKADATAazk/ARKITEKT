@@ -26,7 +26,7 @@ local DnDState   = require('arkitekt.gui.widgets.containers.grid.dnd_state')
 local DropZones  = require('arkitekt.gui.widgets.containers.grid.drop_zones')
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 -- ============================================================================
 -- HIDDEN STATE REGISTRY (ImGui-style API)
@@ -304,15 +304,15 @@ function Grid:_draw_drag_visuals(ctx, dl)
   if (not all_items_dragged) and target_index and coord and alt1 and alt2 and orientation and self.render_drop_zones then
     local is_copy_mode = self.is_copy_mode_check and self.is_copy_mode_check() or false
     if orientation == 'horizontal' then
-      DropIndicator.draw(ctx, dl, cfg.drop or DEFAULTS.drop, is_copy_mode, orientation, alt1, alt2, coord)
+      DropIndicator.Draw(ctx, dl, cfg.drop or DEFAULTS.drop, is_copy_mode, orientation, alt1, alt2, coord)
     else
-      DropIndicator.draw(ctx, dl, cfg.drop or DEFAULTS.drop, is_copy_mode, orientation, coord, alt1, alt2)
+      DropIndicator.Draw(ctx, dl, cfg.drop or DEFAULTS.drop, is_copy_mode, orientation, coord, alt1, alt2)
     end
   end
 
   if num_dragged > 0 then
     local fg_dl = ImGui.GetForegroundDrawList(ctx)
-    DragIndicator.draw(ctx, fg_dl, mx, my, num_dragged, cfg.ghost or DEFAULTS.ghost)
+    DragIndicator.Draw(ctx, fg_dl, mx, my, num_dragged, cfg.ghost or DEFAULTS.ghost)
   end
 end
 
@@ -325,7 +325,7 @@ function Grid:_draw_external_drop_visuals(ctx, dl)
   local is_copy_mode = self.is_copy_mode_check and self.is_copy_mode_check() or false
   
   if self.external_drop_target.orientation == 'horizontal' then
-    DropIndicator.draw(
+    DropIndicator.Draw(
       ctx, dl,
       cfg.drop or DEFAULTS.drop,
       is_copy_mode,
@@ -335,7 +335,7 @@ function Grid:_draw_external_drop_visuals(ctx, dl)
       self.external_drop_target.coord
     )
   else
-    DropIndicator.draw(
+    DropIndicator.Draw(
       ctx, dl,
       cfg.drop or DEFAULTS.drop,
       is_copy_mode,
@@ -562,10 +562,10 @@ function Grid:_draw_virtual(ctx, items, num_items)
     self.render_item(ctx, rect, item, state, self)
 
     -- Check for double-click on tile
-    if bg_double_clicked and Draw.point_in_rect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
+    if bg_double_clicked and Draw.PointInRect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
       mouse_over_tile = true
       double_clicked_tile_key = key
-    elseif deferred_marquee_start and Draw.point_in_rect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
+    elseif deferred_marquee_start and Draw.PointInRect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
       mouse_over_tile = true
     end
   end
@@ -1068,7 +1068,7 @@ function Grid:draw(ctx)
       local item = items[i]
       local key = self.key(item)
       local r = self.rect_track:get(key)
-      if r and Draw.point_in_rect(mx, my, r[1], r[2], r[3], r[4]) then
+      if r and Draw.PointInRect(mx, my, r[1], r[2], r[3], r[4]) then
         mouse_over_tile = true
         if bg_double_clicked then
           double_clicked_tile_key = key
@@ -1436,7 +1436,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Options table (id required)
 --- @return table Result object with selection, drag, reorder state
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   -- Reset frame tracking
   reset_frame_tracking(ctx)
 
@@ -1514,9 +1514,9 @@ end
 -- MODULE EXPORT
 -- ============================================================================
 
--- Make module callable: Ark.Grid(ctx, opts) → M.draw(ctx, opts)
+-- Make module callable: Ark.Grid(ctx, opts) → M.Draw(ctx, opts)
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

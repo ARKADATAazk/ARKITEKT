@@ -3,7 +3,7 @@
 -- Node data structure and logic with trigger UI height calculation
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 

@@ -39,7 +39,7 @@ local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.core.theme')
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 -- Get dynamic defaults from Theme.COLORS
 local function get_defaults()
@@ -222,7 +222,7 @@ function M.MenuItem(ctx, label, shortcut, selected, enabled, config)
 
   -- Draw shortcut (right-aligned, dimmed)
   if shortcut and shortcut ~= '' then
-    local shortcut_color = Colors.with_opacity(text_color, enabled and 0.6 or 0.4)
+    local shortcut_color = Colors.WithOpacity(text_color, enabled and 0.6 or 0.4)
     local shortcut_x = item_x + item_w - shortcut_w - item_padding_x
     ImGui.DrawList_AddText(dl, shortcut_x, text_y, shortcut_color, shortcut)
   end

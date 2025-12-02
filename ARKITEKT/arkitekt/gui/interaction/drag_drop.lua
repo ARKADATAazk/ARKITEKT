@@ -30,10 +30,10 @@ M.FLAGS = {
 
 -- Default colors for drop indicators
 M.COLORS = {
-  POTENTIAL_TARGET = Colors.hexrgb('#FFFFFF30'),  -- Subtle highlight for all potential targets
-  ACTIVE_TARGET = Colors.hexrgb('#FFFFFFAA'),     -- Brighter when hovering
-  ACTIVE_FILL = Colors.hexrgb('#FFFFFF10'),       -- Fill for active target
-  GLOW_COLOR = Colors.hexrgb('#FFFFFF'),          -- White glow
+  POTENTIAL_TARGET = Colors.Hexrgb('#FFFFFF30'),  -- Subtle highlight for all potential targets
+  ACTIVE_TARGET = Colors.Hexrgb('#FFFFFFAA'),     -- Brighter when hovering
+  ACTIVE_FILL = Colors.Hexrgb('#FFFFFF10'),       -- Fill for active target
+  GLOW_COLOR = Colors.Hexrgb('#FFFFFF'),          -- White glow
 }
 
 -- Track active drag type globally
@@ -143,14 +143,14 @@ end
 
 -- Draw a simple text preview during drag
 function M.draw_preview_text(ctx, text, color)
-  color = color or Colors.hexrgb('#FFFFFF')
+  color = color or Colors.Hexrgb('#FFFFFF')
   ImGui.Text(ctx, text)
 end
 
 -- Draw a chip-style preview during drag
 function M.draw_preview_chip(ctx, label, bg_color, text_color)
-  bg_color = bg_color or Colors.hexrgb('#5B8FB9')
-  text_color = text_color or Colors.hexrgb('#FFFFFF')
+  bg_color = bg_color or Colors.Hexrgb('#5B8FB9')
+  text_color = text_color or Colors.Hexrgb('#FFFFFF')
 
   local dl = ImGui.GetForegroundDrawList(ctx)
   local text_w, text_h = ImGui.CalcTextSize(ctx, label)
@@ -166,7 +166,7 @@ function M.draw_preview_chip(ctx, label, bg_color, text_color)
   ImGui.DrawList_AddRectFilled(dl, x, y, x + chip_w, y + chip_h, bg_color, 3)
 
   -- Text
-  Draw.text(dl, x + padding, y + 3, text_color, label)
+  Draw.Text(dl, x + padding, y + 3, text_color, label)
 end
 
 -- Draw highlight for a potential drop target (shown on all valid targets while dragging)
@@ -191,7 +191,7 @@ function M.draw_active_target(ctx, rect, border_color, fill_color, glow_color)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
 
   -- Extract RGB from glow color for alpha manipulation
-  local gr, gg, gb = Colors.rgba_to_components(glow_color)
+  local gr, gg, gb = Colors.RgbaToComponents(glow_color)
 
   -- Draw glow layers (outer to inner) - reduced by 80%
   local glow_layers = {
@@ -202,7 +202,7 @@ function M.draw_active_target(ctx, rect, border_color, fill_color, glow_color)
 
   for _, layer in ipairs(glow_layers) do
     local e = layer.expand
-    local glow = Colors.components_to_rgba(gr, gg, gb, layer.alpha)
+    local glow = Colors.ComponentsToRgba(gr, gg, gb, layer.alpha)
     ImGui.DrawList_AddRectFilled(dl, x1 - e, y1 - e, x2 + e, y2 + e, glow, 6)
   end
 

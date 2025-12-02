@@ -6,7 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local Math = require('arkitekt.core.math')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 
@@ -47,14 +47,14 @@ function M.render(ctx, rect, item, state, view)
   end
 
   -- Background
-  local bg_color = Ark.Colors.lerp(BG_BASE, BG_HOVER, hover_t * 0.5)
+  local bg_color = Ark.Colors.Lerp(BG_BASE, BG_HOVER, hover_t * 0.5)
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, 3)
 
   -- Border / Selection
   if state.selected then
     Visuals.draw_marching_ants_rounded(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5, ANT_COLOR, 1, 3)
   else
-    local border_color = Ark.Colors.lerp(BRD_BASE, BRD_HOVER, hover_t)
+    local border_color = Ark.Colors.Lerp(BRD_BASE, BRD_HOVER, hover_t)
     ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 3, 0, 1)
   end
 

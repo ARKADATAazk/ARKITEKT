@@ -6,7 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local Scrollbar = {}
 Scrollbar.__index = Scrollbar
@@ -245,6 +245,6 @@ end
 -- Make module callable
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

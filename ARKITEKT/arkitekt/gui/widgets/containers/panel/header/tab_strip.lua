@@ -15,7 +15,7 @@ Animation.set_width_calculators(Rendering.calculate_responsive_tab_widths, Rende
 
 local M = {}
 
-function M.draw(ctx, dl, x, y, available_width, height, config, state)
+function M.Draw(ctx, dl, x, y, available_width, height, config, state)
   config = config or {}
   state = state or {}
 
@@ -415,7 +415,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   return plus_width + (spacing > 0 and spacing or -1) + tabs_total_width
 end
 
-function M.measure(ctx, config, state)
+function M.Measure(ctx, config, state)
   state = state or {}
   config = config or {}
 

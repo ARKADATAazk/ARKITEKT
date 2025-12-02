@@ -8,7 +8,7 @@ local Fs = require('arkitekt.core.fs')
 local Constants = require('ThemeAdjuster.defs.constants')
 local ImageCache = require('arkitekt.platform.images')
 local PackageManager = require('ThemeAdjuster.data.packages.manager')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 local PackageModal = {}
@@ -782,8 +782,8 @@ function PackageModal:draw_content(ctx, bounds)
   -- Search input using primitive
   local search_w = 220
   local search_h = 26
-  Ark.InputText.set_text('pkg_modal_search', self.search_text)
-  Ark.InputText.search(ctx, {
+  Ark.InputText.SetText('pkg_modal_search', self.search_text)
+  Ark.InputText.Search(ctx, {
     id = 'pkg_modal_search',
     x = toolbar_x,
     y = toolbar_y,
@@ -801,7 +801,7 @@ function PackageModal:draw_content(ctx, bounds)
   local btn_h = 26
 
   -- View mode toggle
-  local grid_result = Ark.Button.draw(ctx, {
+  local grid_result = Ark.Button(ctx, {
     id = 'pkg_modal_view',
     draw_list = dl,
     x = btn_x,
@@ -817,7 +817,7 @@ function PackageModal:draw_content(ctx, bounds)
   btn_x = btn_x + 50 + 4
 
   -- Group toggle
-  local group_result = Ark.Button.draw(ctx, {
+  local group_result = Ark.Button(ctx, {
     id = 'pkg_modal_group',
     draw_list = dl,
     x = btn_x,
@@ -841,7 +841,7 @@ function PackageModal:draw_content(ctx, bounds)
     shadowed = 'Overridden'
   }
   local filter_label = 'Filter: ' .. filter_labels[self.status_filter]
-  local filter_result = Ark.Button.draw(ctx, {
+  local filter_result = Ark.Button(ctx, {
     id = 'pkg_modal_filter',
     draw_list = dl,
     x = btn_x,
@@ -889,7 +889,7 @@ function PackageModal:draw_content(ctx, bounds)
   end
 
   -- Bulk action buttons
-  local sel_all_result = Ark.Button.draw(ctx, {
+  local sel_all_result = Ark.Button(ctx, {
     id = 'pkg_modal_sel_all',
     draw_list = dl,
     x = btn_x,
@@ -908,7 +908,7 @@ function PackageModal:draw_content(ctx, bounds)
   end
   btn_x = btn_x + 65 + 4
 
-  local clear_result = Ark.Button.draw(ctx, {
+  local clear_result = Ark.Button(ctx, {
     id = 'pkg_modal_clear',
     draw_list = dl,
     x = btn_x,
@@ -923,7 +923,7 @@ function PackageModal:draw_content(ctx, bounds)
   end
   btn_x = btn_x + 45 + 4
 
-  local inc_result = Ark.Button.draw(ctx, {
+  local inc_result = Ark.Button(ctx, {
     id = 'pkg_modal_inc',
     draw_list = dl,
     x = btn_x,
@@ -947,7 +947,7 @@ function PackageModal:draw_content(ctx, bounds)
   end
   btn_x = btn_x + 35 + 4
 
-  local exc_result = Ark.Button.draw(ctx, {
+  local exc_result = Ark.Button(ctx, {
     id = 'pkg_modal_exc',
     draw_list = dl,
     x = btn_x,
@@ -971,7 +971,7 @@ function PackageModal:draw_content(ctx, bounds)
   end
   btn_x = btn_x + 35 + 4
 
-  local pin_result = Ark.Button.draw(ctx, {
+  local pin_result = Ark.Button(ctx, {
     id = 'pkg_modal_pin',
     draw_list = dl,
     x = btn_x,

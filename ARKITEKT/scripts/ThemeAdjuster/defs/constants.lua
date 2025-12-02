@@ -3,7 +3,7 @@
 -- Pure value constants: colors, dimensions, tabs
 
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 

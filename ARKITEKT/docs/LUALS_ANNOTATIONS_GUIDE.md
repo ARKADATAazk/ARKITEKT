@@ -38,10 +38,10 @@ LuaLS reads special comments (annotations) in your code to understand types.
 ### Before Annotations
 
 ```lua
--- User types: Ark.Button.draw(ctx, {
+-- User types: Ark.Button(ctx, {
 -- IDE shows: Nothing helpful, just generic "table"
 
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   -- opts.??? - IDE has no idea what fields exist
 end
 ```
@@ -49,7 +49,7 @@ end
 ### After Annotations
 
 ```lua
--- User types: Ark.Button.draw(ctx, {
+-- User types: Ark.Button(ctx, {
 -- IDE shows dropdown with all valid options:
 --   label, icon, width, height, on_click, disabled, preset_name...
 

@@ -118,8 +118,8 @@ function M.recalculate_palette()
       end
       
       -- Convert HSL to RGB
-      local r, g, b = Ark.Colors.hsl_to_rgb(hue, sat, lum)
-      local color = Ark.Colors.components_to_rgba(r, g, b, 0xFF)
+      local r, g, b = Ark.Colors.HslToRgb(hue, sat, lum)
+      local color = Ark.Colors.ComponentsToRgba(r, g, b, 0xFF)
       
       state.palette_colors[#state.palette_colors + 1] = color
     end

@@ -8,15 +8,15 @@ local M = {}
 
 -- Ensure color has minimum lightness for readability
 local function ensure_min_lightness(color, min_lightness)
-  local h, s, l = Ark.Colors.rgb_to_hsl(color)
+  local h, s, l = Ark.Colors.RgbToHsl(color)
   if l < min_lightness then
     l = min_lightness
   end
-  local r, g, b = Ark.Colors.hsl_to_rgb(h, s, l)
-  return Ark.Colors.components_to_rgba(r, g, b, 0xFF)
+  local r, g, b = Ark.Colors.HslToRgb(h, s, l)
+  return Ark.Colors.ComponentsToRgba(r, g, b, 0xFF)
 end
 
-function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
+function M.Draw(ctx, draw_list, x, y, width, state, config, alpha)
   alpha = alpha or 1.0  -- Default to fully visible if not specified
   local chip_cfg = config.REGION_TAGS.chip
 
@@ -113,7 +113,7 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
       -- Chip background (dark grey, dimmed by default, bright when selected)
       local bg_alpha = is_selected and 0xFF or 0x66  -- 40% opacity when unselected
       if is_hovered and not is_selected then
-        bg_alpha = Ark.Colors.opacity(0.6)  -- 60% opacity when hovered
+        bg_alpha = Ark.Colors.Opacity(0.6)  -- 60% opacity when hovered
       end
       bg_alpha = (bg_alpha * alpha) // 1  -- Apply hover fade
       local bg_color = (chip_cfg.bg_color & 0xFFFFFF00) | bg_alpha

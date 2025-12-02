@@ -64,14 +64,14 @@ local function run_test()
   }
 
   -- Test 6: Change M.COLORS directly and rebuild
-  Style.COLORS.ACCENT_TEAL = Colors.hexrgb('#FF0000FF')  -- Red
+  Style.COLORS.ACCENT_TEAL = Colors.Hexrgb('#FF0000FF')  -- Red
   local config5 = Style.build_button_config()
   Style.apply_dynamic_preset(config5, 'BUTTON_TOGGLE_TEAL')
 
   state.test_results[#state.test_results + 1] = {
     test = 'Preset adapts to M.COLORS change',
     value = string.format('New color = 0x%08X', config5.bg_on_color or 0),
-    passed = (config5.bg_on_color == Colors.hexrgb('#FF0000FF')),
+    passed = (config5.bg_on_color == Colors.Hexrgb('#FF0000FF')),
   }
 
   -- Restore original theme
@@ -154,7 +154,7 @@ local function main()
       draw_color_swatch(ctx, color, 20)
       ImGui.SameLine(ctx)
 
-      local r, g, b, a = Colors.rgba_to_components(color)
+      local r, g, b, a = Colors.RgbaToComponents(color)
       ImGui.Text(ctx, string.format('%s: #%02X%02X%02X', label, r, g, b))
     end
   end

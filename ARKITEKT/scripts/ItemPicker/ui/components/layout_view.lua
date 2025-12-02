@@ -114,7 +114,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Draw dotted pattern
   local Theme = get_theme()
   local ThemeColors = Theme and Theme.COLORS or {}
-  local pattern_color = ThemeColors.PATTERN_PRIMARY or Ark.Colors.hexrgb('#2A2A2A')
+  local pattern_color = ThemeColors.PATTERN_PRIMARY or Ark.Colors.Hexrgb('#2A2A2A')
 
   local overlay_pattern_config = {
     enabled = true,
@@ -123,12 +123,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       type = 'dots',
       spacing = 16,
       dot_size = 1.5,
-      color = Ark.Colors.with_alpha(pattern_color, math.floor(overlay_alpha * 180)),
+      color = Ark.Colors.WithAlpha(pattern_color, math.floor(overlay_alpha * 180)),
       offset_x = 0,
       offset_y = 0,
     }
   }
-  Background.draw(ctx, draw_list, coord_offset_x, coord_offset_y,
+  Background.Draw(ctx, draw_list, coord_offset_x, coord_offset_y,
       coord_offset_x + screen_w, coord_offset_y + screen_h, overlay_pattern_config)
 
   local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
@@ -198,7 +198,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       local settings_height = bounds.h
       local settings_alpha = visibility * ui_fade
       local settings_y = bounds.y
-      SettingsPanel.draw(zone_ctx, dl, coord_offset_x, settings_y, settings_height, settings_alpha, self.state, self.config)
+      SettingsPanel.Draw(zone_ctx, dl, coord_offset_x, settings_y, settings_height, settings_alpha, self.state, self.config)
     end,
   })
 
@@ -208,7 +208,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Draw search toolbar
   self.state.focus_search = self.focus_search
-  SearchToolbar.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_fade, title_font, self.state, self.config)
+  SearchToolbar.Draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_fade, title_font, self.state, self.config)
   self.focus_search = false
 
   -- Region filter bar
@@ -282,7 +282,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       draw = function(zone_ctx, dl, bounds, visibility)
         local filter_alpha = visibility * ui_fade
         if filter_alpha > 0.01 then
-          RegionFilterBar.draw(zone_ctx, dl, coord_offset_x, filter_bar_base_y, screen_w, self.state, self.config, filter_alpha)
+          RegionFilterBar.Draw(zone_ctx, dl, coord_offset_x, filter_bar_base_y, screen_w, self.state, self.config, filter_alpha)
         end
       end,
     })

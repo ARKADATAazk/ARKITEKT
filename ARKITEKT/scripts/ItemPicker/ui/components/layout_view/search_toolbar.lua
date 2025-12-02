@@ -69,7 +69,7 @@ local function make_layout_icon_drawer(is_vertical)
   end
 end
 
-function M.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_fade, title_font, state, config)
+function M.Draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_fade, title_font, state, config)
   local button_height = search_height
   local button_gap = 4
 
@@ -222,7 +222,7 @@ function M.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
     state.focus_search = false
   end
 
-  Ark.InputText.search(ctx, {
+  Ark.InputText.Search(ctx, {
     id = 'item_picker_search',
     x = search_x,
     y = search_y,
@@ -259,8 +259,8 @@ function M.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
   ImGui.SetCursorScreenPos(ctx, sort_section_x, search_y)
 
   -- Sorting label
-  local sort_label_color = Ark.Colors.hexrgb('#AAAAAA')
-  sort_label_color = Ark.Colors.with_alpha(sort_label_color, (search_fade * 200) // 1)
+  local sort_label_color = Ark.Colors.Hexrgb('#AAAAAA')
+  sort_label_color = Ark.Colors.WithAlpha(sort_label_color, (search_fade * 200) // 1)
   local dl = ImGui.GetWindowDrawList(ctx)
   ImGui.DrawList_AddText(dl, sort_section_x, search_y + 4, sort_label_color, sort_label)
 

@@ -9,7 +9,7 @@ local Colors = require('arkitekt.core.colors')
 local Connection = require('arkitekt.gui.widgets.editors.nodal.core.connection')
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 function M.render(ctx, connection, nodes, config)
   local dl = ImGui.GetWindowDrawList(ctx)
@@ -187,7 +187,7 @@ function M.render_connection_label_manhattan(ctx, dl, connection, points, config
       ImGui.DrawList_AddRect(dl, bg_x1, bg_y1, bg_x2, bg_y2, connection.color, 
         config.connection.label_bg_rounding or 4, 0, 1.0)
       
-      Draw.text(dl, mid_x - text_w / 2, mid_y - text_h / 2, config.colors.text.port_label, label)
+      Draw.Text(dl, mid_x - text_w / 2, mid_y - text_h / 2, config.colors.text.port_label, label)
       return
     end
     accumulated = accumulated + seg.length

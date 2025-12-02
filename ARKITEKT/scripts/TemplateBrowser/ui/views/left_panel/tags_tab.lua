@@ -14,7 +14,7 @@ local Constants = require('TemplateBrowser.defs.constants')
 local M = {}
 
 -- Draw TAGS content (full tag management)
-function M.draw(ctx, state, config, width, height)
+function M.Draw(ctx, state, config, width, height)
   -- Header with '+' button
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
 
@@ -22,11 +22,12 @@ function M.draw(ctx, state, config, width, height)
   local button_x = width - UI.BUTTON.WIDTH_SMALL - config.PANEL_PADDING * 2
   ImGui.SetCursorPosX(ctx, button_x)
 
-  if Ark.Button.draw_at_cursor(ctx, {
+  if Ark.Button(ctx, {
+    id = 'createtag',
     label = '+',
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
-  }, 'createtag') then
+  }).clicked then
     -- Create new tag - prompt for name
     local tag_num = 1
     local new_tag_name = 'Tag ' .. tag_num
@@ -77,7 +78,7 @@ function M.draw(ctx, state, config, width, height)
         -- Draw tags using justified chip_list (ACTION style)
         -- Unselected tags at 30% opacity (77 = 0.3 * 255)
         local content_w = ImGui.GetContentRegionAvail(ctx)
-        local clicked_id, _, right_clicked_id = ChipList.draw(ctx, tag_items, {
+        local clicked_id, _, right_clicked_id = ChipList.Draw(ctx, tag_items, {
           justified = true,
           max_stretch_ratio = 1.5,
           style = Chip.STYLE.ACTION,
@@ -109,21 +110,22 @@ function M.draw(ctx, state, config, width, height)
         -- Handle rename mode separately (show input field overlay)
         if renaming_tag then
           -- Initialize field with current name
-          if Ark.InputText.get_text('tag_rename_' .. renaming_tag) == '' then
-            Ark.InputText.set_text('tag_rename_' .. renaming_tag, state.rename_buffer)
+          if Ark.InputText.GetText('tag_rename_' .. renaming_tag) == '' then
+            Ark.InputText.SetText('tag_rename_' .. renaming_tag, state.rename_buffer)
           end
 
           ImGui.Spacing(ctx)
           ImGui.Text(ctx, 'Renaming: ' .. renaming_tag)
 
-          local changed, new_name = Ark.InputText.draw_at_cursor(ctx, {
+          local result = Ark.InputText(ctx, {
+            id = 'tag_rename_' .. renaming_tag,
             width = -1,
             height = UI.CHIP.HEIGHT_SMALL,
             text = state.rename_buffer,
-          }, 'tag_rename_' .. renaming_tag)
+          })
 
-          if changed then
-            state.rename_buffer = new_name
+          if result.changed then
+            state.rename_buffer = result.value
           end
 
           -- Auto-focus on first frame

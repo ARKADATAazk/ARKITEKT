@@ -32,7 +32,7 @@ function M.save()
 end
 
 ---Cleanup on close
-function M.cleanup()
+function M.Cleanup()
   M.save()
 end
 

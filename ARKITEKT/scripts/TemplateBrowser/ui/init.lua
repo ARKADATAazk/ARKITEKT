@@ -407,7 +407,7 @@ function GUI:draw(ctx, shell_state)
       local bar_width = 300
 
       -- Progress bar using new widget
-      Ark.ProgressBar.draw(ctx, {
+      Ark.ProgressBar(ctx, {
         x = (window_width - bar_width) * 0.5,
         y = window_height * 0.5,
         width = bar_width,
@@ -559,7 +559,7 @@ function GUI:draw(ctx, shell_state)
     local status_w = ImGui.CalcTextSize(ctx, status)
 
     ImGui.SetCursorPos(ctx, (SCREEN_W - status_w) * 0.5, status_y)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Ark.Colors.hexrgb('#B3B3B3'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Ark.Colors.Hexrgb('#B3B3B3'))
     ImGui.Text(ctx, status)
     ImGui.PopStyleColor(ctx)
 
@@ -606,7 +606,7 @@ function GUI:draw(ctx, shell_state)
   local content_y_screen = window_screen_y + cursor_y
 
   -- Handle separator 1 dragging
-  local sep1_result = Ark.Splitter.draw(ctx, {
+  local sep1_result = Ark.Splitter(ctx, {
     id = 'template_sep1',
     x = sep1_x_screen,
     y = content_y_screen,
@@ -631,7 +631,7 @@ function GUI:draw(ctx, shell_state)
   end
 
   -- Handle separator 2 dragging
-  local sep2_result = Ark.Splitter.draw(ctx, {
+  local sep2_result = Ark.Splitter(ctx, {
     id = 'template_sep2',
     x = sep2_x_screen,
     y = content_y_screen,
@@ -684,7 +684,7 @@ function GUI:draw(ctx, shell_state)
   
   local status_bar_y = SCREEN_H - padding_bottom - status_bar_height
   ImGui.SetCursorPos(ctx, padding_left, status_bar_y)
-  StatusBar.draw(ctx, self.state, content_width, status_bar_height)
+  StatusBar.Draw(ctx, self.state, content_width, status_bar_height)
 
   -- Handle exit
   if self.state.exit or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then

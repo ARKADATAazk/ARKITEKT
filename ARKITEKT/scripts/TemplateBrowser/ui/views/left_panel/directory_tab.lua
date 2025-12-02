@@ -29,7 +29,7 @@ local function draw_custom_collapsible_header(ctx, label, is_open, width, config
 
   -- Very subtle hover background (optional - can be removed for pure minimal)
   if hovered then
-    local hover_color = Ark.Colors.hexrgba(config.COLORS.header_hover or config.COLORS.header_bg, 0.3) -- 30% alpha
+    local hover_color = Ark.Colors.Hexrgba(config.COLORS.header_hover or config.COLORS.header_bg, 0.3) -- 30% alpha
     ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + header_height, hover_color, 0)
   end
 
@@ -48,7 +48,7 @@ local function draw_custom_collapsible_header(ctx, label, is_open, width, config
   local text_y = chevron_y
 
   -- Draw text with slight shadow for bold effect
-  ImGui.DrawList_AddText(dl, text_x + 0.5, text_y + 0.5, Ark.Colors.hexrgba(config.COLORS.text, 0.5), label)
+  ImGui.DrawList_AddText(dl, text_x + 0.5, text_y + 0.5, Ark.Colors.Hexrgba(config.COLORS.text, 0.5), label)
   ImGui.DrawList_AddText(dl, text_x, text_y, config.COLORS.text, label)
 
   return clicked
@@ -67,11 +67,12 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
   local button_x = width - UI.BUTTON.WIDTH_SMALL - 8
   ImGui.SetCursorPosX(ctx, button_x)
 
-  if Ark.Button.draw_at_cursor(ctx, {
+  if Ark.Button(ctx, {
+    id = 'createtag_dir',
     label = '+',
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
-  }, 'createtag_dir') then
+  }).clicked then
     -- Create new tag - prompt for name
     local tag_num = 1
     local new_tag_name = 'Tag ' .. tag_num
@@ -113,16 +114,16 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
         local is_selected = state.filter_tags[tag_name] or false
 
         -- Draw tag using Chip component (ACTION style)
-        local clicked, chip_w, chip_h = Chip.draw(ctx, {
+        local clicked, chip_w, chip_h = Chip.Draw(ctx, {
           style = Chip.STYLE.ACTION,
           label = tag_name,
           bg_color = tag_data.color,
-          text_color = Ark.Colors.auto_text_color(tag_data.color),
+          text_color = Ark.Colors.AutoTextColor(tag_data.color),
           height = UI.CHIP.HEIGHT_DEFAULT,
           padding_h = 8,
           rounding = 2,
           is_selected = is_selected,
-          interactive = true,
+          is_interactive = true,
         })
 
         if clicked then
@@ -151,7 +152,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
 end
 
 -- Draw directory content (folder trees only - tags moved to convenience panel)
-function M.draw(ctx, state, config, width, height, gui)
+function M.Draw(ctx, state, config, width, height, gui)
   -- Use full height for directory trees
   local folder_section_height = height
 
@@ -164,11 +165,12 @@ function M.draw(ctx, state, config, width, height, gui)
   ImGui.SetCursorPosX(ctx, button_x)
 
   -- Physical folder button
-  if Ark.Button.draw_at_cursor(ctx, {
+  if Ark.Button(ctx, {
+    id = 'folder_physical',
     label = '+',
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
-  }, 'folder_physical') then
+  }).clicked then
     -- Create new folder inside selected folder (or root if nothing selected)
     local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. 'TrackTemplates'
     local parent_path = template_path
@@ -277,11 +279,12 @@ function M.draw(ctx, state, config, width, height, gui)
 
   -- Virtual folder button
   ImGui.SameLine(ctx, 0, UI.BUTTON.SPACING)
-  if Ark.Button.draw_at_cursor(ctx, {
+  if Ark.Button(ctx, {
+    id = 'folder_virtual',
     label = 'V',
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
-  }, 'folder_virtual') then
+  }).clicked then
     -- Create new virtual folder
     local Persistence = require('TemplateBrowser.data.storage')
 
@@ -486,11 +489,11 @@ function M.draw(ctx, state, config, width, height, gui)
 
   -- Helper function to draw thin separator line above header
   local function draw_thin_separator(ctx, dl, x, y, width, is_hovered, hover_time)
-    local line_color = Ark.Colors.hexrgb('#333333')  -- Default dark
+    local line_color = Ark.Colors.Hexrgb('#333333')  -- Default dark
 
     -- If hovered for more than 1 second, highlight light grey
     if is_hovered and hover_time >= hover_threshold then
-      line_color = Ark.Colors.hexrgb('#666666')  -- Light grey highlight
+      line_color = Ark.Colors.Hexrgb('#666666')  -- Light grey highlight
     end
 
     -- Draw thin horizontal line

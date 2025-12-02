@@ -124,7 +124,7 @@ function M.get_computed_palette(script_name, current_t)
       local resolved = Engine.resolve_value(def, current_t)
       if type(resolved) == 'string' then
         -- Hex string → convert to RGBA
-        computed[key] = Colors.hexrgb(resolved .. 'FF')
+        computed[key] = Colors.Hexrgb(resolved .. 'FF')
       elseif type(resolved) == 'number' then
         -- Number → apply normalization if key matches pattern
         if should_normalize(key) then

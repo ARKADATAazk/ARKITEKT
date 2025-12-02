@@ -3,7 +3,7 @@
 -- App-level defaults for window, titlebar, status bar, overlay, etc.
 
 local CoreColors = require('arkitekt.core.colors')
-local hexrgb = CoreColors.hexrgb
+local hexrgb = CoreColors.Hexrgb
 
 local M = {}
 

@@ -45,13 +45,13 @@ addpath(join(HERE,  'Arkitekt/?/init.lua'))
 addpath(join(HERE,  'Arkitekt/?/?.lua'))
 
 -- Libs
-local Shell         = require('arkitekt.app.shell')
+local Shell         = require('arkitekt.runtime.shell')
 local ColorSliders  = require('arkitekt.gui.widgets.primitives.hue_slider')
 local TilesContainer = require('arkitekt.gui.widgets.containers.panel')
 
 -- Fallback style
 local style_ok, Style = pcall(require, 'arkitekt.gui.style.imgui')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 
 -- State variables - ALL AT THE TOP
@@ -205,9 +205,9 @@ Shell.run({
   initial_pos  = { x = 140, y = 140 },
   initial_size = { w = 520, h = 720 },
   min_size     = { w = 420, h = 500 },
-  
-  -- Pass status bar config directly to the shell/window.
-  show_status_bar   = true,
+
+  -- Status bar config
+  chrome = 'window',  -- Full chrome with titlebar and statusbar
   get_status_func   = get_status,
-  status_bar_height = 28,  -- FIXED at 28px
+  status_bar_height = 28,
 })

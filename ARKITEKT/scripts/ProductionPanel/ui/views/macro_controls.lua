@@ -47,7 +47,7 @@ end
 
 ---Draw macro controls view
 ---@param ctx userdata ImGui context
-function M.draw(ctx)
+function M.Draw(ctx)
   if #state.macros == 0 then
     M.init()
   end
@@ -105,7 +105,7 @@ function M.draw(ctx)
     local knob_color = is_selected and Theme.COLORS.ACCENT_DANGER or nil
 
     -- Draw knob
-    local result = Knob.draw(ctx, {
+    local result = Knob.Draw(ctx, {
       id = 'macro_' .. i,
       label = macro.name,
       value = macro.value,

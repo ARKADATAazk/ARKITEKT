@@ -73,7 +73,7 @@ function M.get_color_sort_key(color)
     return 999, 0, 0  -- No color sorts to end
   end
 
-  local h, s, l = Colors.rgb_to_hsl(color)
+  local h, s, l = Colors.RgbToHsl(color)
 
   -- Grayscale (low saturation) sorts to end
   if s < 0.08 then

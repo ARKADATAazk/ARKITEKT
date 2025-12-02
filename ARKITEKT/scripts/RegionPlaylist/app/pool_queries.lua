@@ -22,8 +22,8 @@ function M.deterministic_color_from_id(id)
   local hue = (hash % 360) / 360
   local saturation = 0.65 + ((hash % 100) / 400)  -- 0.65-0.90
   local lightness = 0.50 + ((hash % 60) / 400)    -- 0.50-0.65
-  local r, g, b = Ark.Colors.hsl_to_rgb(hue, saturation, lightness)
-  return Ark.Colors.components_to_rgba(r, g, b, 0xFF)
+  local r, g, b = Ark.Colors.HslToRgb(hue, saturation, lightness)
+  return Ark.Colors.ComponentsToRgba(r, g, b, 0xFF)
 end
 
 -- =============================================================================

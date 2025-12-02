@@ -111,7 +111,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Options: x, y, w, h, direction, spacing, thickness, color, bg_color, offset, use_clip, draw_list
 --- @return table Result { width, height }
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = opts or {}
 
   -- Merge with defaults

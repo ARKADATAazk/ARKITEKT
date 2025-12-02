@@ -46,7 +46,7 @@ function M.draw_background(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, po
   local orientation = get_orientation(position)
 
   if orientation == 'horizontal' then
-    return Header.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, position)
+    return Header.Draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, position)
   else
     -- Vertical toolbars (left/right) don't have backgrounds - they're just button stacks
     return 0
@@ -83,7 +83,7 @@ function M.draw_elements(ctx, dl, x, y, w, h, state, toolbar_cfg, panel_id, posi
       return 0
     end
 
-    return Sidebars.draw(ctx, dl, x, y, w, h, toolbar_cfg, panel_id, side)
+    return Sidebars.Draw(ctx, dl, x, y, w, h, toolbar_cfg, panel_id, side)
   end
 end
 
@@ -106,7 +106,7 @@ end
 --- @param panel_id string Panel ID
 --- @param position string Toolbar position ('top', 'bottom', 'left', 'right')
 --- @return number Size consumed (width for vertical, height for horizontal)
-function M.draw(ctx, dl, x, y, w, h, toolbar_cfg, state, panel_config, panel_id, position)
+function M.Draw(ctx, dl, x, y, w, h, toolbar_cfg, state, panel_config, panel_id, position)
   if not toolbar_cfg or not toolbar_cfg.enabled then
     return 0
   end

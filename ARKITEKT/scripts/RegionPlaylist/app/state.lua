@@ -684,7 +684,7 @@ function M.cleanup_deleted_regions()
   return removed_any
 end
 
-function M.update()
+function M.Update()
   -- Use project monitor to detect changes
   local project_changed = M.project_monitor:update()
 

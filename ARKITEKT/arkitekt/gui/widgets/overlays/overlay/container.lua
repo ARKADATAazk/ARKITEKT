@@ -4,7 +4,7 @@
 
 local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 
@@ -52,7 +52,7 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, r)
 
   -- Dark background color for child
-  local bg_color = Colors.with_alpha(config.bg_color, (255 * config.bg_opacity * alpha) // 1)
+  local bg_color = Colors.WithAlpha(config.bg_color, (255 * config.bg_opacity * alpha) // 1)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, bg_color)
 
   -- CRITICAL: AlwaysUseWindowPadding flag ensures WindowPadding style var is applied
@@ -63,7 +63,7 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
 
   -- Draw simple 1px black border
   local dl = ImGui.GetWindowDrawList(ctx)
-  local border_color = Colors.with_alpha(config.border_color, (255 * config.border_opacity * alpha) // 1)
+  local border_color = Colors.WithAlpha(config.border_color, (255 * config.border_opacity * alpha) // 1)
   ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_color, r, 0, config.border_thickness)
 
   ImGui.PopStyleColor(ctx, 1)

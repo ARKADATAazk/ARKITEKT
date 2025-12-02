@@ -172,7 +172,7 @@ function M.get_queue_stats(job_queue)
   }
 end
 
-function M.clear(job_queue)
+function M.Clear(job_queue)
   job_queue.waveform_queue = {}
   job_queue.midi_queue = {}
   job_queue.waveform_queue_priority = {}

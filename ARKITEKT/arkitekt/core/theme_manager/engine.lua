@@ -116,10 +116,10 @@ local function resolve_value(def, t)
       return dark_val + (light_val - dark_val) * t
     elseif type(dark_val) == 'string' and type(light_val) == 'string' then
       -- RGB color lerp
-      local color_a = Colors.hexrgb(dark_val .. (#dark_val == 7 and 'FF' or ''))
-      local color_b = Colors.hexrgb(light_val .. (#light_val == 7 and 'FF' or ''))
-      local lerped = Colors.lerp(color_a, color_b, t)
-      local r, g, b = Colors.rgba_to_components(lerped)
+      local color_a = Colors.Hexrgb(dark_val .. (#dark_val == 7 and 'FF' or ''))
+      local color_b = Colors.Hexrgb(light_val .. (#light_val == 7 and 'FF' or ''))
+      local lerped = Colors.Lerp(color_a, color_b, t)
+      local r, g, b = Colors.RgbaToComponents(lerped)
       return string.format('#%02X%02X%02X', r, g, b)
     else
       return t < 0.5 and dark_val or light_val
@@ -146,10 +146,10 @@ local function resolve_value(def, t)
       return val_a + (val_b - val_a) * local_t
     elseif type(val_a) == 'string' and type(val_b) == 'string' then
       -- RGB color lerp
-      local color_a = Colors.hexrgb(val_a .. (#val_a == 7 and 'FF' or ''))
-      local color_b = Colors.hexrgb(val_b .. (#val_b == 7 and 'FF' or ''))
-      local lerped = Colors.lerp(color_a, color_b, local_t)
-      local r, g, b = Colors.rgba_to_components(lerped)
+      local color_a = Colors.Hexrgb(val_a .. (#val_a == 7 and 'FF' or ''))
+      local color_b = Colors.Hexrgb(val_b .. (#val_b == 7 and 'FF' or ''))
+      local lerped = Colors.Lerp(color_a, color_b, local_t)
+      local r, g, b = Colors.RgbaToComponents(lerped)
       return string.format('#%02X%02X%02X', r, g, b)
     else
       return local_t < 0.5 and val_a or val_b
@@ -187,7 +187,7 @@ local function derive_entry(base_bg, key, def, t)
     local delta = resolve_value(def, t)
     -- Clamp delta to valid range
     delta = math.max(-1, math.min(1, delta))
-    return Colors.adjust_lightness(base_bg, delta)
+    return Colors.AdjustLightness(base_bg, delta)
   end
 
   -- SNAP/SNAP3/LERP/LERP3: Check value type
@@ -195,7 +195,7 @@ local function derive_entry(base_bg, key, def, t)
 
   if type(resolved) == 'string' then
     -- Hex string → convert to RGBA
-    return Colors.hexrgb(resolved .. 'FF')
+    return Colors.Hexrgb(resolved .. 'FF')
   elseif type(resolved) == 'number' then
     -- Number → apply normalization if key matches pattern
     if should_normalize(key) then
@@ -217,7 +217,7 @@ end
 --- @param base_bg number Background color in RGBA format
 --- @return table Color palette
 function M.generate_palette(base_bg)
-  local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
+  local _, _, bg_lightness = Colors.RgbToHsl(base_bg)
   local t = M.compute_t(bg_lightness)
 
   local result = {}

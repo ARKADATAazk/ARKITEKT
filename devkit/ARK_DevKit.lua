@@ -29,7 +29,7 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT%-Dev[/\
 local ImGui = Ark.ImGui
 local Shell = require('arkitekt.app.shell')
 local Settings = require('arkitekt.core.settings')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local reaper = reaper
 local sep = package.config:sub(1,1)
@@ -674,7 +674,7 @@ local function draw_main(ctx, shell_state)
 
   -- Profiler checkbox (right side of tab row) - only affects Debug button
   ImGui.SameLine(ctx, 0, 20)
-  local result = Checkbox.draw(ctx, {
+  local result = Checkbox.Draw(ctx, {
     id = 'profiler_checkbox',
     label = 'Profiler',
     checked = State.profiler_enabled,

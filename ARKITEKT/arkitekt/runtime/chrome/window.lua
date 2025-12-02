@@ -1,7 +1,6 @@
 -- @noindex
--- Arkitekt/app/window.lua
--- FIXED: Smooth ease-in-out curve + click-through during fade-out
--- ADDED: Profiler support via titlebar
+-- arkitekt/runtime/chrome/window.lua
+-- Main window management with titlebar, status bar, and chrome
 
 local ImGui = require('arkitekt.platform.imgui')
 local Config = require('arkitekt.core.config')
@@ -15,7 +14,7 @@ local hexrgb
 
 local Hub = nil
 do
-  local ok, mod = pcall(require, 'arkitekt.app.hub')
+  local ok, mod = pcall(require, 'arkitekt.runtime.hub')
   if ok then Hub = mod end
 end
 
@@ -30,7 +29,7 @@ do
   local ok, mod = pcall(require, 'arkitekt.core.colors')
   if ok then
     Colors = mod
-    hexrgb = Colors.hexrgb
+    hexrgb = Colors.Hexrgb
   end
 end
 
@@ -117,9 +116,6 @@ function M.new(opts)
   -- If user provided custom flags, use them directly
   if config.imgui_flags ~= nil then
     base_flags = Constants.build_imgui_flags(ImGui, config.imgui_flags)
-  -- LEGACY_COMPAT: Remove in v2.0 - Use imgui_flags instead of flags
-  elseif config.flags then
-    base_flags = config.flags
   end
 
   -- ============================================================================
@@ -141,14 +137,6 @@ function M.new(opts)
       enable_maximize = nil,
     }
   end
-
-  -- LEGACY_COMPAT: Remove in v2.0 - Use chrome preset or chrome.{option} instead
-  if opts.show_titlebar ~= nil then chrome.show_titlebar = opts.show_titlebar end
-  if opts.show_status_bar ~= nil then chrome.show_statusbar = opts.show_status_bar end
-  if opts.show_statusbar ~= nil then chrome.show_statusbar = opts.show_statusbar end
-  if opts.show_icon ~= nil then chrome.show_icon = opts.show_icon end
-  if opts.show_version ~= nil then chrome.show_version = opts.show_version end
-  if opts.enable_maximize ~= nil then chrome.enable_maximize = opts.enable_maximize end
 
   -- Fallback to TITLEBAR defaults if still nil
   if chrome.show_titlebar == nil then chrome.show_titlebar = true end
@@ -321,7 +309,7 @@ function M.new(opts)
   if not is_fullscreen then
     -- Status bar (only if enabled in chrome config)
     if win.chrome.show_statusbar then
-      local ok, StatusBar = pcall(require, 'arkitekt.app.chrome.status_bar')
+      local ok, StatusBar = pcall(require, 'arkitekt.runtime.chrome.status_bar')
       if ok and StatusBar and StatusBar.new then
         win.status_bar = StatusBar.new({
           height = Constants.STATUS_BAR.height + Constants.STATUS_BAR.compensation,
@@ -343,7 +331,7 @@ function M.new(opts)
     -- Titlebar (only if enabled in chrome config)
     if win.chrome.show_titlebar then
       do
-        local ok, Titlebar = pcall(require, 'arkitekt.app.chrome.titlebar')
+        local ok, Titlebar = pcall(require, 'arkitekt.runtime.chrome.titlebar')
         if ok and Titlebar and Titlebar.new then
           win.titlebar_opts.title = win.title
           win.titlebar_opts.version = win.version
@@ -702,7 +690,7 @@ function M.new(opts)
       if self.fullscreen.window_bg_override then
         local alpha_val = self.fullscreen.alpha:value()
         local bg_alpha = (255 * alpha_val + 0.5) // 1
-        local bg_color = Colors and Colors.with_alpha(
+        local bg_color = Colors and Colors.WithAlpha(
           self.fullscreen.window_bg_override, 
           bg_alpha
         ) or self.fullscreen.window_bg_override
@@ -745,9 +733,9 @@ function M.new(opts)
           local alpha_val = self.fullscreen.alpha:value()
           local scrim_opacity = self.fullscreen.scrim_opacity * alpha_val
           local scrim_alpha = (255 * scrim_opacity + 0.5) // 1
-          local scrim_color = Colors.with_alpha(self.fullscreen.scrim_color, scrim_alpha)
+          local scrim_color = Colors.WithAlpha(self.fullscreen.scrim_color, scrim_alpha)
           
-          Draw.rect_filled(dl, wx, wy, wx + ww, wy + wh, scrim_color, 0)
+          Draw.RectFilled(dl, wx, wy, wx + ww, wy + wh, scrim_color, 0)
         end
         
         if not self.fullscreen.is_closing then

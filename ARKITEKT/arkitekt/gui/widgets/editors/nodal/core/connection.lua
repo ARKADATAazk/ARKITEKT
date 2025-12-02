@@ -3,7 +3,7 @@
 -- Connection data structure with Manhattan routing
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 

@@ -29,7 +29,7 @@ local DEFAULTS = {
 
   -- Interaction
   thickness = 8,  -- Hit area thickness for dragging
-  disabled = false,
+  is_disabled = false,
 
   -- Callbacks
   on_drag = nil,       -- Called while dragging: function(new_pos)
@@ -144,7 +144,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result { action, position, dragging, width, height }
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Resolve unique ID
@@ -163,14 +163,14 @@ function M.draw(ctx, opts)
     if not height then
       error('splitter: height required for vertical orientation')
     end
-    action, position = render_vertical(ctx, instance, x, y, height, opts.thickness, opts.disabled)
+    action, position = render_vertical(ctx, instance, x, y, height, opts.thickness, opts.is_disabled)
   else
     -- Horizontal (default)
     local width = opts.width
     if not width then
       error('splitter: width required for horizontal orientation')
     end
-    action, position = render_horizontal(ctx, instance, x, y, width, opts.thickness, opts.disabled)
+    action, position = render_horizontal(ctx, instance, x, y, width, opts.thickness, opts.is_disabled)
   end
 
   -- Handle callbacks
@@ -212,18 +212,12 @@ function M.is_dragging(ctx, opts)
 end
 
 -- ============================================================================
--- DEPRECATED / REMOVED FUNCTIONS
--- ============================================================================
-
--- M.cleanup() - REMOVED (automatic via Base.cleanup_registry, no manual call needed)
-
--- ============================================================================
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.Splitter(ctx, opts) → M.draw(ctx, opts)
+-- Make module callable: Ark.Splitter(ctx, opts) → M.Draw(ctx, opts)
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

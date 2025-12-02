@@ -8,7 +8,7 @@ local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 
@@ -37,7 +37,7 @@ local DEFAULTS = {
   step = nil,     -- Step for keyboard control (default: range/100)
 
   -- State
-  disabled = false,
+  is_disabled = false,
 
   -- Style
   rounding = 0,
@@ -96,7 +96,7 @@ local function render_grab(dl, gx, y, h, grab_w, active, hovered, disabled, conf
   -- Determine grab color
   local grab_color
   if disabled then
-    grab_color = Colors.with_opacity(Colors.desaturate(config.grab_color or hexrgb('#383C45'), 0.5), 0.5)
+    grab_color = Colors.WithOpacity(Colors.Desaturate(config.grab_color or hexrgb('#383C45'), 0.5), 0.5)
   elseif active then
     grab_color = config.grab_active_color or hexrgb('#585C65')
   elseif hovered then
@@ -132,7 +132,7 @@ end
 --- @param min number|nil Minimum value (positional only)
 --- @param max number|nil Maximum value (positional only)
 --- @return table Result { changed, value, width, height, hovered, active }
-function M.draw(ctx, label_or_opts, value, min, max)
+function M.Draw(ctx, label_or_opts, value, min, max)
   -- Hybrid parameter detection
   local opts
   if type(label_or_opts) == 'table' then
@@ -172,7 +172,7 @@ function M.draw(ctx, label_or_opts, value, min, max)
   local value = Base.clamp(opts.value or default_val, min_val, max_val)
 
   -- State
-  local disabled = opts.disabled or false
+  local disabled = opts.is_disabled or false
   local changed = false
 
   -- Create invisible button for interaction
@@ -271,7 +271,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result
-function M.percent(ctx, opts)
+function M.Percent(ctx, opts)
   opts = opts or {}
   opts.min = opts.min or 0
   opts.max = opts.max or 100
@@ -279,48 +279,31 @@ function M.percent(ctx, opts)
   opts.tooltip_fn = opts.tooltip_fn or function(v)
     return string.format('%.0f%%', v)
   end
-  return M.draw(ctx, opts)
+  return M.Draw(ctx, opts)
 end
 
 --- Draw an integer slider
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result
-function M.int(ctx, opts)
+function M.Int(ctx, opts)
   opts = opts or {}
   opts.step = opts.step or 1
   opts.format = opts.format or '%.0f'
 
-  local result = M.draw(ctx, opts)
+  local result = M.Draw(ctx, opts)
   result.value = (result.value + 0.5) // 1  -- Round to integer
   return result
-end
-
--- ============================================================================
--- DEPRECATED / REMOVED FUNCTIONS
--- ============================================================================
-
---- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
-function M.draw_at_cursor(ctx, opts, id)
-  opts = opts or {}
-  if id then opts.id = id end
-  local result = M.draw(ctx, opts)
-  return result.value, result.changed
-end
-
---- @deprecated Cleanup is automatic, no need to call manually
-function M.cleanup()
-  -- No-op: slider_locks are auto-managed
 end
 
 -- ============================================================================
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.Slider(ctx, ...) → M.draw(ctx, ...)
+-- Make module callable: Ark.Slider(ctx, ...) → M.Draw(ctx, ...)
 return setmetatable(M, {
   __call = function(_, ctx, ...)
-    local result = M.draw(ctx, ...)
+    local result = M.Draw(ctx, ...)
 
     -- Detect mode: positional (string label) vs opts (table)
     local first_arg = select(1, ...)

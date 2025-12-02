@@ -17,7 +17,7 @@ local DragIndicator = Dnd.DragIndicator
 local DropIndicator = Dnd.DropIndicator
 local Background = require('arkitekt.gui.draw.patterns')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 
 local M = {}
@@ -122,7 +122,7 @@ function M.render(canvas, ctx, bounds_x, bounds_y, bounds_w, bounds_h)
   ImGui.DrawList_PushClipRect(dl, viewport_x, viewport_y, viewport_x + viewport_w, viewport_y + viewport_h, true)
   
   -- IMPORTANT: Update viewport first to handle pan/zoom before anything else
-  local viewport_handled = Viewport.update(canvas.viewport, ctx)
+  local viewport_handled = Viewport.Update(canvas.viewport, ctx)
   
   -- Only update hover states and handle node input if viewport isn't being manipulated
   if not viewport_handled and not canvas.viewport.is_panning then
@@ -212,7 +212,7 @@ function M.render_grid(canvas, ctx, dl, bounds_x, bounds_y, bounds_w, bounds_h)
   end
   
   -- Make sure we're drawing the grid over the entire canvas bounds
-  Background.draw(ctx, dl, bounds_x, bounds_y, bounds_x + bounds_w, bounds_y + bounds_h, scaled_pattern)
+  Background.Draw(ctx, dl, bounds_x, bounds_y, bounds_x + bounds_w, bounds_y + bounds_h, scaled_pattern)
 end
 
 function M.render_container(canvas, ctx, dl)
@@ -333,7 +333,7 @@ function M.render_drag_ghost(canvas, ctx, dl, mx, my)
   local base_color = Node.get_base_color(canvas.drag_node, canvas.config)
   local drag_config = canvas.config.drag_indicator
   
-  DragIndicator.draw(ctx, dl, mx, my, 1, drag_config, {base_color}, false, false)
+  DragIndicator.Draw(ctx, dl, mx, my, 1, drag_config, {base_color}, false, false)
 end
 
 function M.render_drop_indicator(canvas, ctx, dl)
@@ -532,7 +532,7 @@ function M.center_on_content(canvas)
 end
 
 function M.reset_viewport(canvas)
-  Viewport.reset(canvas.viewport)
+  Viewport.Reset(canvas.viewport)
 end
 
 return M

@@ -11,7 +11,7 @@ local Button = require('arkitekt.gui.widgets.primitives.button')
 local Slider = require('arkitekt.gui.widgets.primitives.slider')
 local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
 
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 local Panel = {}
@@ -62,7 +62,7 @@ function Panel:draw_attachment_toggle(ctx, label, value, id_suffix)
   local is_attached = value > 0
   local x, y = ImGui.GetCursorScreenPos(ctx)
 
-  local result = Button.draw(ctx, {
+  local result = Button.Draw(ctx, {
     id = id_suffix,
     x = x,
     y = y,
@@ -224,7 +224,7 @@ function Panel:draw_attachment_presets(ctx)
   }
 
   for _, p in ipairs(presets) do
-    local result = Button.draw(ctx, {
+    local result = Button.Draw(ctx, {
       id = 'preset_' .. p.id,
       x = x + p.x,
       y = y,
@@ -249,7 +249,7 @@ function Panel:draw_attachment_presets(ctx)
   }
 
   for _, p in ipairs(presets2) do
-    local result = Button.draw(ctx, {
+    local result = Button.Draw(ctx, {
       id = 'preset_' .. p.id,
       x = x + p.x,
       y = y,
@@ -332,7 +332,7 @@ function Panel:draw(ctx)
   ImGui.Dummy(ctx, 0, 4)
 
   -- Advanced toggle using Checkbox widget
-  local check_result = Checkbox.draw(ctx, {
+  local check_result = Checkbox.Draw(ctx, {
     id = 'show_advanced',
     label = 'Show advanced options',
     checked = self.show_advanced,
@@ -348,7 +348,7 @@ function Panel:draw(ctx)
   local x, y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
-  local delete_result = Button.draw(ctx, {
+  local delete_result = Button.Draw(ctx, {
     id = 'remove_element',
     x = x,
     y = y,

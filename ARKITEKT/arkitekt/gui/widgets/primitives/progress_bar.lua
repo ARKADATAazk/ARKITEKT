@@ -57,7 +57,7 @@ local DEFAULTS = {
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result { width, height, progress }
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Get position and draw list
@@ -128,6 +128,6 @@ end
 -- Make module callable
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

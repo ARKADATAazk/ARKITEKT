@@ -69,7 +69,7 @@ end
 
 -- Draw the vertical track filter bar
 -- Returns width used by the bar (0 if no tracks to show)
-function M.draw(ctx, draw_list, x, y, height, state, alpha)
+function M.Draw(ctx, draw_list, x, y, height, state, alpha)
   alpha = alpha or 1.0
 
   -- Check if we have track data
@@ -151,12 +151,12 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
     if state.persist_track_filter then state.persist_track_filter() end
   end
 
-  local all_bg = all_hovered and Ark.Colors.hexrgb('#3A3A3A') or Ark.Colors.hexrgb('#2A2A2A')
-  all_bg = Ark.Colors.with_alpha(all_bg, (0xEE * alpha) // 1)
+  local all_bg = all_hovered and Ark.Colors.Hexrgb('#3A3A3A') or Ark.Colors.Hexrgb('#2A2A2A')
+  all_bg = Ark.Colors.WithAlpha(all_bg, (0xEE * alpha) // 1)
   ImGui.DrawList_AddRectFilled(draw_list, all_x, button_y, all_x + button_width, button_y + button_height, all_bg, 3)
 
   local all_text_w = ImGui.CalcTextSize(ctx, 'ALL')
-  local all_text_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb('#FFFFFF'), (0xEE * alpha) // 1)
+  local all_text_color = Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#FFFFFF'), (0xEE * alpha) // 1)
   ImGui.DrawList_AddText(draw_list,
     all_x + (button_width - all_text_w) / 2,
     button_y + (button_height - ImGui.GetTextLineHeight(ctx)) / 2,
@@ -176,12 +176,12 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
     if state.persist_track_filter then state.persist_track_filter() end
   end
 
-  local none_bg = none_hovered and Ark.Colors.hexrgb('#3A3A3A') or Ark.Colors.hexrgb('#2A2A2A')
-  none_bg = Ark.Colors.with_alpha(none_bg, (0xEE * alpha) // 1)
+  local none_bg = none_hovered and Ark.Colors.Hexrgb('#3A3A3A') or Ark.Colors.Hexrgb('#2A2A2A')
+  none_bg = Ark.Colors.WithAlpha(none_bg, (0xEE * alpha) // 1)
   ImGui.DrawList_AddRectFilled(draw_list, none_x, button_y, none_x + button_width, button_y + button_height, none_bg, 3)
 
   local none_text_w = ImGui.CalcTextSize(ctx, 'NONE')
-  local none_text_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb('#FFFFFF'), (0xEE * alpha) // 1)
+  local none_text_color = Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#FFFFFF'), (0xEE * alpha) // 1)
   ImGui.DrawList_AddText(draw_list,
     none_x + (button_width - none_text_w) / 2,
     button_y + (button_height - ImGui.GetTextLineHeight(ctx)) / 2,
@@ -229,14 +229,14 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
         bg_alpha = is_enabled and 0xDD or 0x66
       end
       bg_alpha = (bg_alpha * alpha) // 1
-      local bg_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb('#2A2A2A'), bg_alpha)
+      local bg_color = Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#2A2A2A'), bg_alpha)
 
       ImGui.DrawList_AddRectFilled(draw_list, tag_x, tag_top, tag_x + tag_width, tag_bottom, bg_color, TAG.ROUNDING)
 
       -- Color bar
       local bar_alpha = is_enabled and 0xFF or 0x66
       bar_alpha = (bar_alpha * alpha) // 1
-      local bar_color = Ark.Colors.with_alpha(track.display_color, bar_alpha)
+      local bar_color = Ark.Colors.WithAlpha(track.display_color, bar_alpha)
 
       ImGui.DrawList_AddRectFilled(draw_list,
         tag_x, tag_top,
@@ -248,7 +248,7 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
       local text_y = tag_top + (TAG.HEIGHT - ImGui.GetTextLineHeight(ctx)) / 2
       local text_alpha = is_enabled and 0xFF or 0x66
       text_alpha = (text_alpha * alpha) // 1
-      local text_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb('#FFFFFF'), text_alpha)
+      local text_color = Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#FFFFFF'), text_alpha)
 
       -- Truncate name if too long
       local max_text_width = tag_width - TAG.COLOR_BAR_WIDTH - 8

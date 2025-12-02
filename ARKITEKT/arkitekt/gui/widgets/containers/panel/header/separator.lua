@@ -6,7 +6,7 @@ local Theme = require('arkitekt.core.theme')
 
 local M = {}
 
-function M.draw(ctx, dl, x, y, width, height, config)
+function M.Draw(ctx, dl, x, y, width, height, config)
   -- Separator is just empty space
   -- The layout engine will handle corner rounding of adjacent elements
 
@@ -28,7 +28,7 @@ function M.draw(ctx, dl, x, y, width, height, config)
   return width
 end
 
-function M.measure(ctx, config)
+function M.Measure(ctx, config)
   -- Separators can be fixed width or flex
   return config.width or 0
 end

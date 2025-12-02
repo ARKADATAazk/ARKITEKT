@@ -207,10 +207,10 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
     border_inner = cfg.border_active_color
     arrow_color = cfg.arrow_hover_color
   elseif self.hover_alpha > 0.01 then
-    bg_color = Colors.lerp(cfg.bg_color, cfg.bg_hover_color, self.hover_alpha)
-    text_color = Colors.lerp(cfg.text_color, cfg.text_hover_color, self.hover_alpha)
-    border_inner = Colors.lerp(cfg.border_inner_color, cfg.border_hover_color, self.hover_alpha)
-    arrow_color = Colors.lerp(cfg.arrow_color, cfg.arrow_hover_color, self.hover_alpha)
+    bg_color = Colors.Lerp(cfg.bg_color, cfg.bg_hover_color, self.hover_alpha)
+    text_color = Colors.Lerp(cfg.text_color, cfg.text_hover_color, self.hover_alpha)
+    border_inner = Colors.Lerp(cfg.border_inner_color, cfg.border_hover_color, self.hover_alpha)
+    arrow_color = Colors.Lerp(cfg.arrow_color, cfg.arrow_hover_color, self.hover_alpha)
   end
   
   -- Calculate rounding
@@ -268,7 +268,7 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
     })
   else
     if not is_hovered then
-      Tooltip.reset()
+      Tooltip.Reset()
     end
   end
   
@@ -312,8 +312,8 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
     for i, opt in ipairs(options) do
       local value = type(opt) == 'table' and opt.value or opt
       local label = type(opt) == 'table' and opt.label or tostring(opt)
-      local is_checkbox = type(opt) == 'table' and opt.checkbox or false
-      local is_checked = type(opt) == 'table' and opt.checked or false
+      local is_checkbox = type(opt) == 'table' and opt.is_checkbox or false
+      local is_checked = type(opt) == 'table' and opt.is_checked or false
 
       local is_selected = value == self.current_value
 
@@ -531,7 +531,7 @@ end
 --- @param selected number|nil Selected index (positional only)
 --- @param items table|nil Items array (positional only)
 --- @return table Result { changed, value, item, width, height, hovered, active, open }
-function M.draw(ctx, label_or_opts, selected, items)
+function M.Draw(ctx, label_or_opts, selected, items)
   -- Hybrid parameter detection
   local opts
   if type(label_or_opts) == 'table' then
@@ -609,7 +609,7 @@ function M.draw(ctx, label_or_opts, selected, items)
   }
 end
 
-function M.measure(ctx, user_config)
+function M.Measure(ctx, user_config)
   local config = Theme.build_dropdown_config()
   for k, v in pairs(user_config or {}) do
     if v ~= nil then config[k] = v end
@@ -621,24 +621,24 @@ end
 -- STATE ACCESSORS (for standalone use)
 -- ============================================================================
 
-function M.get_value(id)
+function M.GetValue(id)
   local instance = get_inst(id)
   return instance and instance.current_value or nil
 end
 
-function M.set_value(id, value)
+function M.SetValue(id, value)
   local instance = get_inst(id)
   if instance then
     instance.current_value = value
   end
 end
 
-function M.get_direction(id)
+function M.GetDirection(id)
   local instance = get_inst(id)
   return instance and instance.sort_direction or 'asc'
 end
 
-function M.set_direction(id, direction)
+function M.SetDirection(id, direction)
   local instance = get_inst(id)
   if instance then
     instance.sort_direction = direction
@@ -646,30 +646,13 @@ function M.set_direction(id, direction)
 end
 
 -- ============================================================================
--- DEPRECATED / REMOVED FUNCTIONS
--- ============================================================================
-
---- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
-function M.draw_at_cursor(ctx, opts, id)
-  opts = opts or {}
-  if id then opts.id = id end
-  local result = M.draw(ctx, opts)
-  return result.value, result.changed
-end
-
---- @deprecated Cleanup is automatic via Base, no need to call manually
-function M.cleanup()
-  -- No-op: cleanup happens automatically via Base.cleanup_registry
-end
-
--- ============================================================================
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.Combo(ctx, ...) → M.draw(ctx, ...)
+-- Make module callable: Ark.Combo(ctx, ...) → M.Draw(ctx, ...)
 return setmetatable(M, {
   __call = function(_, ctx, ...)
-    local result = M.draw(ctx, ...)
+    local result = M.Draw(ctx, ...)
 
     -- Detect mode: positional (string label) vs opts (table)
     local first_arg = select(1, ...)

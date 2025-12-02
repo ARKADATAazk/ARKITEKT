@@ -43,7 +43,7 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 local ImGui = Ark.ImGui
 local script_dir = Ark._bootstrap.root_path
 
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 local Hub = require('hub.hub')
 local PackageGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
 local Micromanage = require('arkitekt.gui.widgets.media.package_tiles.micromanage')
@@ -51,7 +51,7 @@ local SelRect = require('arkitekt.gui.widgets.data.selection_rectangle')
 
 local SettingsOK, Settings = pcall(require, 'arkitekt.core.settings')
 local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 
 local settings = nil

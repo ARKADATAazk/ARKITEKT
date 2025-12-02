@@ -27,9 +27,8 @@ local DEFAULTS = {
   size = 22,
 
   -- State
-  checked = false,
-  is_checked = false,  -- Alias for 'checked' (for compatibility)
-  disabled = false,
+  is_checked = false,
+  is_disabled = false,
   is_blocking = false,
 
   -- Content
@@ -114,7 +113,7 @@ local function resolve_config(opts)
   local config = {
     -- Non-color settings (from opts, which has defaults merged in)
     size = opts.size or DEFAULTS.size,
-    disabled = opts.disabled or DEFAULTS.disabled,
+    is_disabled = opts.is_disabled or DEFAULTS.is_disabled,
     is_blocking = opts.is_blocking or DEFAULTS.is_blocking,
     rounding = opts.rounding or DEFAULTS.rounding,
     alpha = opts.alpha or DEFAULTS.alpha,
@@ -142,7 +141,7 @@ local function resolve_config(opts)
     check_color = Theme.COLORS.TEXT_DIMMED,
     label_color = Theme.COLORS.TEXT_NORMAL,
     label_hover_color = Theme.COLORS.TEXT_HOVER,
-    label_disabled_color = Colors.with_opacity(Theme.COLORS.TEXT_NORMAL, 0.5),
+    label_disabled_color = Colors.WithOpacity(Theme.COLORS.TEXT_NORMAL, 0.5),
 
   }
 
@@ -165,7 +164,7 @@ end
 
 local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, total_width)
   local size = config.size
-  local is_disabled = config.disabled or false
+  local is_disabled = config.is_disabled or false
   local is_blocking = config.is_blocking or false
 
   -- Check hover using IsMouseHoveringRect (ImGui built-in, respects clipping)
@@ -183,33 +182,33 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, tota
 
   if is_disabled then
     -- Disabled state
-    bg_color = config.bg_disabled_color or Colors.with_opacity(Colors.desaturate(config.bg_color, 0.5), 0.5)
-    border_inner = Colors.with_opacity(Colors.desaturate(config.border_inner_color, 0.5), 0.5)
-    border_outer = Colors.with_opacity(Colors.desaturate(config.border_outer_color, 0.5), 0.5)
+    bg_color = config.bg_disabled_color or Colors.WithOpacity(Colors.Desaturate(config.bg_color, 0.5), 0.5)
+    border_inner = Colors.WithOpacity(Colors.Desaturate(config.border_inner_color, 0.5), 0.5)
+    border_outer = Colors.WithOpacity(Colors.Desaturate(config.border_outer_color, 0.5), 0.5)
   elseif is_checked or instance.check_alpha > 0.01 then
     -- Checked or animating to checked
     local base_bg = is_active and config.bg_on_active_color or
                     (instance.hover_alpha > 0.01 and
-                      Colors.lerp(config.bg_on_color, config.bg_on_hover_color, instance.hover_alpha) or
+                      Colors.Lerp(config.bg_on_color, config.bg_on_hover_color, instance.hover_alpha) or
                       config.bg_on_color)
     local base_border = is_active and config.border_on_active_color or
                         (instance.hover_alpha > 0.01 and
-                          Colors.lerp(config.border_inner_on_color, config.border_on_hover_color, instance.hover_alpha) or
+                          Colors.Lerp(config.border_inner_on_color, config.border_on_hover_color, instance.hover_alpha) or
                           config.border_inner_on_color)
 
     -- Blend with unchecked colors if animating
     if instance.check_alpha < 0.99 then
       local unchecked_bg = is_active and config.bg_active_color or
                            (instance.hover_alpha > 0.01 and
-                             Colors.lerp(config.bg_color, config.bg_hover_color, instance.hover_alpha) or
+                             Colors.Lerp(config.bg_color, config.bg_hover_color, instance.hover_alpha) or
                              config.bg_color)
       local unchecked_border = is_active and config.border_active_color or
                                (instance.hover_alpha > 0.01 and
-                                 Colors.lerp(config.border_inner_color, config.border_hover_color, instance.hover_alpha) or
+                                 Colors.Lerp(config.border_inner_color, config.border_hover_color, instance.hover_alpha) or
                                  config.border_inner_color)
 
-      bg_color = Colors.lerp(unchecked_bg, base_bg, instance.check_alpha)
-      border_inner = Colors.lerp(unchecked_border, base_border, instance.check_alpha)
+      bg_color = Colors.Lerp(unchecked_bg, base_bg, instance.check_alpha)
+      border_inner = Colors.Lerp(unchecked_border, base_border, instance.check_alpha)
     else
       bg_color = base_bg
       border_inner = base_border
@@ -220,11 +219,11 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, tota
     -- Unchecked
     bg_color = is_active and config.bg_active_color or
                (instance.hover_alpha > 0.01 and
-                 Colors.lerp(config.bg_color, config.bg_hover_color, instance.hover_alpha) or
+                 Colors.Lerp(config.bg_color, config.bg_hover_color, instance.hover_alpha) or
                  config.bg_color)
     border_inner = is_active and config.border_active_color or
                    (instance.hover_alpha > 0.01 and
-                     Colors.lerp(config.border_inner_color, config.border_hover_color, instance.hover_alpha) or
+                     Colors.Lerp(config.border_inner_color, config.border_hover_color, instance.hover_alpha) or
                      config.border_inner_color)
     border_outer = config.border_outer_color
   end
@@ -234,9 +233,9 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, tota
 
   -- Apply visual alpha
   local visual_alpha = config.alpha or 1.0
-  bg_color = Colors.with_alpha(bg_color, Colors.opacity((bg_color & 0xFF) / 255 * visual_alpha))
-  border_inner = Colors.with_alpha(border_inner, Colors.opacity((border_inner & 0xFF) / 255 * visual_alpha))
-  border_outer = Colors.with_alpha(border_outer, Colors.opacity((border_outer & 0xFF) / 255 * visual_alpha))
+  bg_color = Colors.WithAlpha(bg_color, Colors.Opacity((bg_color & 0xFF) / 255 * visual_alpha))
+  border_inner = Colors.WithAlpha(border_inner, Colors.Opacity((border_inner & 0xFF) / 255 * visual_alpha))
+  border_outer = Colors.WithAlpha(border_outer, Colors.Opacity((border_outer & 0xFF) / 255 * visual_alpha))
 
   -- Draw background
   ImGui.DrawList_AddRectFilled(dl, x, y, x + size, y + size, bg_color, inner_rounding)
@@ -249,9 +248,9 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, tota
   if instance.check_alpha > 0.01 then
     local check_color = config.check_color
     if is_disabled then
-      check_color = Colors.with_opacity(Colors.desaturate(check_color, 0.5), 0.5)
+      check_color = Colors.WithOpacity(Colors.Desaturate(check_color, 0.5), 0.5)
     end
-    check_color = Colors.with_alpha(check_color, Colors.opacity(instance.check_alpha * visual_alpha))
+    check_color = Colors.WithAlpha(check_color, Colors.Opacity(instance.check_alpha * visual_alpha))
 
     local padding = size * 0.25
     local check_size = size - padding * 2
@@ -276,13 +275,13 @@ end
 
 --- Draw a checkbox widget
 --- Supports both positional and opts-based parameters:
---- - Positional: Ark.Checkbox(ctx, label, checked)
---- - Opts table: Ark.Checkbox(ctx, {label = '...', checked = true, ...})
+--- - Positional: Ark.Checkbox(ctx, label, is_checked)
+--- - Opts table: Ark.Checkbox(ctx, {label = '...', is_checked = true, ...})
 --- @param ctx userdata ImGui context
 --- @param label_or_opts string|table Label string or opts table
---- @param checked boolean|nil Checked state (positional only)
+--- @param is_checked boolean|nil Checked state (positional only)
 --- @return table Result { clicked, changed, value, width, height, hovered, active }
-function M.draw(ctx, label_or_opts, checked)
+function M.Draw(ctx, label_or_opts, is_checked)
   -- Hybrid parameter detection
   local opts
   if type(label_or_opts) == 'table' then
@@ -292,7 +291,7 @@ function M.draw(ctx, label_or_opts, checked)
     -- Positional params - map to opts
     opts = {
       label = label_or_opts,
-      checked = checked,
+      is_checked = is_checked,
     }
   else
     -- No params or just ctx - empty opts
@@ -312,8 +311,8 @@ function M.draw(ctx, label_or_opts, checked)
   local x, y = Base.get_position(ctx, opts)
   local dl = Base.get_draw_list(ctx, opts)
 
-  -- Get checked state (accept both 'checked' and 'is_checked' for compatibility)
-  local is_checked = opts.checked or opts.is_checked
+  -- Get checked state
+  local is_checked = opts.is_checked
   if opts.panel_state and opts.panel_state.checkbox_value ~= nil then
     is_checked = opts.panel_state.checkbox_value
   end
@@ -337,17 +336,17 @@ function M.draw(ctx, label_or_opts, checked)
     local label_y = y + (size - ImGui.GetTextLineHeight(ctx)) * 0.5
 
     local label_color
-    if opts.disabled then
+    if opts.is_disabled then
       label_color = config.label_disabled_color
     elseif instance.hover_alpha > 0.01 then
-      label_color = Colors.lerp(config.label_color, config.label_hover_color, instance.hover_alpha)
+      label_color = Colors.Lerp(config.label_color, config.label_hover_color, instance.hover_alpha)
     else
       label_color = config.label_color
     end
 
     -- Apply visual alpha
     local visual_alpha = config.alpha or 1.0
-    label_color = Colors.with_alpha(label_color, Colors.opacity((label_color & 0xFF) / 255 * visual_alpha))
+    label_color = Colors.WithAlpha(label_color, Colors.Opacity((label_color & 0xFF) / 255 * visual_alpha))
 
     ImGui.DrawList_AddText(dl, label_x, label_y, label_color, label)
   end
@@ -360,7 +359,7 @@ function M.draw(ctx, label_or_opts, checked)
   local changed = false
   local new_value = is_checked
 
-  if not opts.disabled and not opts.is_blocking then
+  if not opts.is_disabled and not opts.is_blocking then
     clicked = ImGui.IsItemClicked(ctx, 0)
 
     if clicked then
@@ -402,7 +401,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return number Total width
-function M.measure(ctx, opts)
+function M.Measure(ctx, opts)
   opts = opts or {}
   local size = opts.size or DEFAULTS.size
   local label = opts.label or ''
@@ -417,44 +416,13 @@ function M.measure(ctx, opts)
 end
 
 -- ============================================================================
--- DEPRECATED / REMOVED FUNCTIONS
--- ============================================================================
-
---- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
---- Supports both old signature (ctx, label, is_checked, _, id) and new (ctx, opts, id)
-function M.draw_at_cursor(ctx, label_or_opts, is_checked, _, id)
-  local opts
-  if type(label_or_opts) == 'table' then
-    -- New style: (ctx, opts, id)
-    opts = label_or_opts
-    if is_checked then opts.id = is_checked end  -- is_checked is actually id in this case
-  else
-    -- Old style: (ctx, label, is_checked, _, id)
-    opts = {
-      label = label_or_opts or '',
-      checked = is_checked,
-      id = id,
-    }
-  end
-  local result = M.draw(ctx, opts)
-  return result.changed
-end
-
---- @deprecated Cleanup is automatic via Base, no need to call manually
-function M.cleanup()
-  -- No-op: cleanup happens automatically via Base.cleanup_registry
-end
-
--- M.measure() - Already local/internal (not exposed)
-
--- ============================================================================
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.Checkbox(ctx, ...) → M.draw(ctx, ...)
+-- Make module callable: Ark.Checkbox(ctx, ...) → M.Draw(ctx, ...)
 return setmetatable(M, {
   __call = function(_, ctx, ...)
-    local result = M.draw(ctx, ...)
+    local result = M.Draw(ctx, ...)
 
     -- Detect mode: positional (string label) vs opts (table)
     local first_arg = select(1, ...)

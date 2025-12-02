@@ -8,7 +8,7 @@
 
 local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 local Draw = require('arkitekt.gui.draw.primitives')
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
@@ -145,7 +145,7 @@ function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha)
 
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local final_alpha = Colors.opacity((_cfg.header_alpha / 255) * alpha)
+  local final_alpha = Colors.Opacity((_cfg.header_alpha / 255) * alpha)
   local header_color = ImGui.ColorConvertDouble4ToU32(r, g, b, final_alpha / 255)
 
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, header_color, _cfg.tile_rounding or 0)
@@ -171,7 +171,7 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
   local size = math.min(x2 - x1, y2 - y1) * 0.15
 
   local spinner_alpha = (alpha * 128) // 1
-  local spinner_color = Colors.with_alpha(hexrgb('#FFFFFF'), spinner_alpha)
+  local spinner_color = Colors.WithAlpha(hexrgb('#FFFFFF'), spinner_alpha)
 
   local time = reaper.time_precise()
   local angle = (time * 2) % (math.pi * 2)
@@ -205,7 +205,7 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
   local available_width = right_bound_x - text_x
   local truncated_name = M.truncate_text(ctx, item_name, available_width)
 
-  Draw.text(dl, text_x, text_y, Colors.with_alpha(_cfg.text_primary_color, text_alpha), truncated_name)
+  Draw.Text(dl, text_x, text_y, Colors.WithAlpha(_cfg.text_primary_color, text_alpha), truncated_name)
 
   -- Render badge
   if show_badge and total and total > 1 then
@@ -222,11 +222,11 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
 
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg_color, _cfg.badge_rounding)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2,
-      Colors.with_alpha(base_color, _cfg.badge_border_alpha),
+      Colors.WithAlpha(base_color, _cfg.badge_border_alpha),
       _cfg.badge_rounding, 0, 0.5)
 
-    Draw.text(dl, badge_x + _cfg.badge_padding_x, badge_y + _cfg.badge_padding_y,
-      Colors.with_alpha(hexrgb('#FFFFFFDD'), text_alpha), badge_text)
+    Draw.Text(dl, badge_x + _cfg.badge_padding_x, badge_y + _cfg.badge_padding_y,
+      Colors.WithAlpha(hexrgb('#FFFFFFDD'), text_alpha), badge_text)
   end
 end
 

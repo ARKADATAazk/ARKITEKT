@@ -295,7 +295,7 @@ function M:draw(ctx, window, shell_state)
 
   -- Render UI
   for _, pl in ipairs(playlists) do
-    if Ark.Button.draw(ctx, {label = pl.name}).clicked then
+    if Ark.Button(ctx, {label = pl.name}).clicked then
       self.state.services.playlist:activate(pl.id)
     end
   end
@@ -314,7 +314,7 @@ return M
 local M = {}
 
 M.COLORS = {
-  HIGHLIGHT = Ark.Colors.hexrgb("#4A90D9"),
+  HIGHLIGHT = Ark.Colors.Hexrgb('#4A90D9'),
 }
 
 M.SIZES = {

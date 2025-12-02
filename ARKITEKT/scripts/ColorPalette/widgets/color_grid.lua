@@ -6,7 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 
 local M = {}
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local ColorGrid = {}
 ColorGrid.__index = ColorGrid
@@ -87,11 +87,11 @@ function ColorGrid:draw(ctx, colors, config, allow_interaction)
     
     -- Use full color directly
     local fill_color = color
-    local border_color = Ark.Colors.with_alpha(color, 0xFF)
+    local border_color = Ark.Colors.WithAlpha(color, 0xFF)
     
     -- Apply hover brightening
     if is_hovered and self.hover_alpha > 0.01 then
-      fill_color = Ark.Colors.lerp(fill_color, Ark.Colors.adjust_brightness(color, 1.2), self.hover_alpha)
+      fill_color = Ark.Colors.Lerp(fill_color, Ark.Colors.AdjustBrightness(color, 1.2), self.hover_alpha)
     end
     
     -- Draw hover shadow
@@ -100,19 +100,19 @@ function ColorGrid:draw(ctx, colors, config, allow_interaction)
       local shadow_color = (0x000000 << 8) | shadow_alpha
       
       for offset = 2, 1, -1 do
-        Ark.Draw.rect_filled(dl, x1 - offset, y1 - offset, x2 + offset, y2 + offset, shadow_color, rounding)
+        Ark.Draw.RectFilled(dl, x1 - offset, y1 - offset, x2 + offset, y2 + offset, shadow_color, rounding)
       end
     end
     
     -- Draw tile fill
-    Ark.Draw.rect_filled(dl, x1, y1, x2, y2, fill_color, rounding)
+    Ark.Draw.RectFilled(dl, x1, y1, x2, y2, fill_color, rounding)
     
     -- Draw black border (1px)
-    Ark.Draw.rect(dl, x1, y1, x2, y2, hexrgb('#000000'), rounding, 1)
+    Ark.Draw.Rect(dl, x1, y1, x2, y2, hexrgb('#000000'), rounding, 1)
     
     -- Draw color border on top for hover effect
     if is_hovered then
-      Ark.Draw.rect(dl, x1, y1, x2, y2, border_color, rounding, 2)
+      Ark.Draw.Rect(dl, x1, y1, x2, y2, border_color, rounding, 2)
     end
     
     -- Create invisible button for interaction

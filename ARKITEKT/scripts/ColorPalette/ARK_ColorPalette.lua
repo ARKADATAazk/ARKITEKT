@@ -14,7 +14,7 @@ local SRC = debug.getinfo(1,'S').source:sub(2)
 local HERE = Ark._bootstrap.dirname(SRC) or '.'
 
 -- Load dependencies
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 local State = require('ColorPalette.app.state')
 local GUI = require('ColorPalette.app.gui')
 local OverlayManager = require('arkitekt.gui.widgets.overlays.overlay.manager')
@@ -28,7 +28,7 @@ local cache_dir = reaper.GetResourcePath() .. SEP .. 'Scripts' .. SEP .. 'Arkite
 
 -- Initialize settings and state
 local Settings = require('arkitekt.core.settings')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local settings = Settings.open(cache_dir, 'settings.json')
 
@@ -59,12 +59,11 @@ Shell.run({
   initial_size = { w = 600, h = 320 },
   min_size = { w = 480, h = 240 },
   content_padding = 0,
-  show_status_bar = false,
-  show_titlebar = false,
   raw_content = true,
-  
-  -- Make window frameless
-  flags = ImGui.WindowFlags_NoBackground,
+
+  -- Frameless overlay window
+  chrome = 'overlay',
+  imgui_flags = ImGui.WindowFlags_NoBackground,
   bg_color_floating = hexrgb('#00000000'),
   bg_color_docked = hexrgb('#00000000'),
   

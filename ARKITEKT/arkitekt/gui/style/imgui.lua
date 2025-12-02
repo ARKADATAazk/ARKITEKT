@@ -7,7 +7,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 local style_color_stack = {}
 
 -- Static colors that don't change with theme
@@ -198,8 +198,8 @@ M.palette = setmetatable({}, {
       white = hexrgb('#FFFFFFFF'),
       black = hexrgb('#000000FF'),
       -- Very dark greys map to chrome colors (titlebar/statusbar)
-      grey_05 = Colors.adjust_lightness(T.COLORS.BG_CHROME, -0.02),
-      grey_06 = Colors.adjust_lightness(T.COLORS.BG_CHROME, -0.01),
+      grey_05 = Colors.AdjustLightness(T.COLORS.BG_CHROME, -0.02),
+      grey_06 = Colors.AdjustLightness(T.COLORS.BG_CHROME, -0.01),
       grey_07 = T.COLORS.BG_CHROME,
       grey_08 = T.COLORS.BG_CHROME,  -- statusbar bg
       -- Lighter greys map to content/panel colors

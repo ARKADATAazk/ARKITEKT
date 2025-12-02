@@ -51,8 +51,8 @@ local function draw_package_tile(ctx, pkg, theme, P, rect, state, settings, cust
   local hover_factor = custom_state.animator:get(P.id, 'hover')
   local active_factor = custom_state.animator:get(P.id, 'active')
   
-  local bg_active = Colors.lerp(Renderer.CONFIG.colors.bg.inactive, Renderer.CONFIG.colors.bg.active, active_factor)
-  local bg_final = Colors.lerp(bg_active, Renderer.CONFIG.colors.bg.hover_tint, hover_factor * Renderer.CONFIG.colors.bg.hover_influence)
+  local bg_active = Colors.Lerp(Renderer.CONFIG.colors.bg.inactive, Renderer.CONFIG.colors.bg.active, active_factor)
+  local bg_final = Colors.Lerp(bg_active, Renderer.CONFIG.colors.bg.hover_tint, hover_factor * Renderer.CONFIG.colors.bg.hover_influence)
   
   local base_color = get_tile_base_color(pkg, P)
   

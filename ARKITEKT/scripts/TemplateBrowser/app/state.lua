@@ -129,7 +129,7 @@ function M.initialize(config)
   M.undo_manager = Undo.new()
 end
 
-function M.cleanup()
+function M.Cleanup()
   -- Save state/preferences if needed
 end
 

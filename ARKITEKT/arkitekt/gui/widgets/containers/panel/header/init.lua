@@ -58,7 +58,7 @@ end
 --- @param rounding number Corner rounding
 --- @param position string|nil Position ('top' or 'bottom'), defaults to toolbar_cfg.position or 'top'
 --- @return number Height consumed
-function M.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, position)
+function M.Draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, position)
   if not toolbar_cfg or not toolbar_cfg.enabled then
     return 0
   end
@@ -139,7 +139,7 @@ function M.draw_elements(ctx, dl, x, y, w, h, state, toolbar_cfg, position)
   -- Draw toolbar elements with validated state
   -- The layout engine will pass corner_rounding info to each element
   -- and elements will detect panel context via state._panel_id
-  Layout.draw(ctx, dl, x, y, w, h, state, toolbar_cfg)
+  Layout.Draw(ctx, dl, x, y, w, h, state, toolbar_cfg)
 end
 
 return M

@@ -5,7 +5,7 @@
 local ImGui = require('arkitekt.platform.imgui')
 local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local M = {}
 
@@ -88,20 +88,22 @@ end
 --   - edit_border_color: Border color in edit mode
 --   - rounding: Corner rounding (default: 4)
 --   - padding: Padding for view mode (default: 8)
--- @param id Unique identifier for this field
--- @return changed, new_text (changed is true when text is updated)
-function M.draw_at_cursor(ctx, config, id)
+-- @param opts Options table with id, width, height, text, placeholder, colors, etc.
+-- @return result table with { changed, value, width, height }
+function M.Draw(ctx, opts)
+  opts = opts or {}
+  local id = opts.id or 'markdown_field'
   local state = get_or_create_state(id)
 
   -- Update text if changed externally
-  if config.text ~= state.text and not state.editing then
-    state.text = config.text or ''
+  if opts.text ~= state.text and not state.editing then
+    state.text = opts.text or ''
   end
 
-  local width = config.width or -1
-  local height = config.height or 120
-  local padding = config.padding or 8
-  local rounding = config.rounding or 4
+  local width = opts.width or -1
+  local height = opts.height or 120
+  local padding = opts.padding or 8
+  local rounding = opts.rounding or 4
 
   -- Get current cursor position
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
@@ -120,9 +122,9 @@ function M.draw_at_cursor(ctx, config, id)
     -- EDIT MODE: Show multiline text input
     -- ========================================================================
 
-    local edit_bg = config.edit_bg_color or hexrgb('#1A1A1A')
-    local edit_border = config.edit_border_color or hexrgb('#4A9EFF')
-    local text_color = config.text_color or hexrgb('#FFFFFF')
+    local edit_bg = opts.edit_bg_color or hexrgb('#1A1A1A')
+    local edit_border = opts.edit_border_color or hexrgb('#4A9EFF')
+    local text_color = opts.text_color or hexrgb('#FFFFFF')
 
     -- Draw background
     local dl = ImGui.GetWindowDrawList(ctx)
@@ -198,9 +200,9 @@ function M.draw_at_cursor(ctx, config, id)
     -- VIEW MODE: Show rendered markdown
     -- ========================================================================
 
-    local view_bg = config.view_bg_color or hexrgb('#0D0D0D')
-    local placeholder_color = config.placeholder_color or hexrgb('#666666')
-    local placeholder_text = config.placeholder or 'Double-click to edit...'
+    local view_bg = opts.view_bg_color or hexrgb('#0D0D0D')
+    local placeholder_color = opts.placeholder_color or hexrgb('#666666')
+    local placeholder_text = opts.placeholder or 'Double-click to edit...'
 
     -- Check if hovering over the view area
     local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
@@ -218,7 +220,7 @@ function M.draw_at_cursor(ctx, config, id)
     -- Draw background only when hovering (faded in)
     if state.hover_alpha > 0.01 then
       local dl = ImGui.GetWindowDrawList(ctx)
-      local hover_bg = Colors.with_opacity(view_bg, state.hover_alpha * 0.19)  -- Very subtle
+      local hover_bg = Colors.WithOpacity(view_bg, state.hover_alpha * 0.19)  -- Very subtle
       ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + actual_width, cursor_y + height, hover_bg, rounding)
     end
 
@@ -255,13 +257,18 @@ function M.draw_at_cursor(ctx, config, id)
     ImGui.Dummy(ctx, actual_width, 0)  -- Ensure proper layout
   end
 
-  return changed, new_text
+  return {
+    changed = changed,
+    value = new_text,
+    width = actual_width,
+    height = height,
+  }
 end
 
 --- Get current text for a field
 -- @param id Field identifier
 -- @return text Current text content
-function M.get_text(id)
+function M.GetText(id)
   local state = field_state[id]
   return state and state.text or ''
 end
@@ -269,7 +276,7 @@ end
 --- Set text for a field (updates internal state)
 -- @param id Field identifier
 -- @param text New text content
-function M.set_text(id, text)
+function M.SetText(id, text)
   local state = get_or_create_state(id)
   state.text = text or ''
 end
@@ -300,6 +307,6 @@ end
 -- Make module callable
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

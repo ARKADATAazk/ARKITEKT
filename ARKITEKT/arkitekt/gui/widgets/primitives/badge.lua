@@ -26,11 +26,11 @@ M.DEFAULTS = {
   icon = nil,
 
   -- Colors
-  base_color = Colors.hexrgb('#555555'),  -- For border derivation
+  base_color = Colors.Hexrgb('#555555'),  -- For border derivation
   alpha = 255,
-  bg_color = Colors.hexrgb('#14181C'),
-  text_color = Colors.hexrgb('#FFFFFFDD'),
-  icon_color = Colors.hexrgb('#FFFFFF'),
+  bg_color = Colors.Hexrgb('#14181C'),
+  text_color = Colors.Hexrgb('#FFFFFFDD'),
+  icon_color = Colors.Hexrgb('#FFFFFF'),
 
   -- Style
   padding_x = 5,
@@ -76,7 +76,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result { x1, y1, x2, y2, width, height }
-function M.text(ctx, opts)
+function M.Text(ctx, opts)
   opts = Base.parse_opts(opts, M.DEFAULTS)
   local cfg = merge_config(opts)
 
@@ -100,14 +100,14 @@ function M.text(ctx, opts)
   ImGui.DrawList_AddRectFilled(dl, x, y, x2, y2, bg_color, cfg.rounding)
 
   -- Border using darker tile color
-  local border_color = Colors.adjust_brightness(base_color, cfg.border_darken)
-  border_color = Colors.with_alpha(border_color, cfg.border_alpha)
+  local border_color = Colors.AdjustBrightness(base_color, cfg.border_darken)
+  border_color = Colors.WithAlpha(border_color, cfg.border_alpha)
   ImGui.DrawList_AddRect(dl, x, y, x2, y2, border_color, cfg.rounding, 0, 0.5)
 
   -- Text
   local text_x = x + cfg.padding_x
   local text_y = y + cfg.padding_y
-  local text_final = Colors.with_alpha(cfg.text_color, alpha)
+  local text_final = Colors.WithAlpha(cfg.text_color, alpha)
   ImGui.DrawList_AddText(dl, text_x, text_y, text_final, text)
 
   return {
@@ -140,8 +140,8 @@ function M.icon(ctx, opts)
   ImGui.DrawList_AddRectFilled(dl, x, y, x2, y2, bg_color, cfg.rounding)
 
   -- Border using darker tile color
-  local border_color = Colors.adjust_brightness(base_color, cfg.border_darken)
-  border_color = Colors.with_alpha(border_color, cfg.border_alpha)
+  local border_color = Colors.AdjustBrightness(base_color, cfg.border_darken)
+  border_color = Colors.WithAlpha(border_color, cfg.border_alpha)
   ImGui.DrawList_AddRect(dl, x, y, x2, y2, border_color, cfg.rounding, 0, 0.5)
 
   -- Icon
@@ -149,7 +149,7 @@ function M.icon(ctx, opts)
     ImGui.PushFont(ctx, opts.icon_font, opts.icon_font_size or 14)
   end
 
-  local icon_color = Colors.with_alpha(cfg.icon_color, alpha)
+  local icon_color = Colors.WithAlpha(cfg.icon_color, alpha)
   local icon_w, icon_h = ImGui.CalcTextSize(ctx, icon_char)
   local icon_x = x + (size - icon_w) / 2
   local icon_y = y + (size - icon_h) / 2
@@ -173,7 +173,7 @@ function M.clickable(ctx, opts)
   opts = Base.parse_opts(opts, M.DEFAULTS)
 
   -- Render the text badge first
-  local result = M.text(ctx, opts)
+  local result = M.Text(ctx, opts)
 
   -- Create invisible button over badge
   local unique_id = opts.id or 'badge'
@@ -230,10 +230,10 @@ end
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.Badge(ctx, opts) → M.text(ctx, opts)
+-- Make module callable: Ark.Badge(ctx, opts) → M.Text(ctx, opts)
 -- Default to text badge as it's the most common variant
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.text(ctx, opts)
+    return M.Text(ctx, opts)
   end
 })

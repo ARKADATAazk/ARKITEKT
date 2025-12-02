@@ -10,7 +10,7 @@ local ThemeConnector = require('WalterBuilder.domain.theme_connector')
 local Colors = require('WalterBuilder.defs.colors')
 local WalterSettings = require('WalterBuilder.infra.settings')
 
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 local Panel = {}

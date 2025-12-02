@@ -1,17 +1,13 @@
 -- @noindex
--- Arkitekt/app/shell.lua
--- MODIFIED: Made font loading robust against older configuration files.
--- ADDED: Support for titlebar_version size override (uses regular font family)
--- ADDED: Integrated Lua profiler support via global config flag
--- ADDED: Support for show_icon option to disable titlebar icon
--- UPDATED: ImGui 0.10 font size handling
+-- arkitekt/runtime/shell.lua
+-- Application shell runner - main entry point for ARKITEKT apps
 
 local ImGui   = require('arkitekt.platform.imgui')
 local Config = require('arkitekt.core.config')
 local Constants = require('arkitekt.defs.app')
 local Typography = require('arkitekt.defs.typography')
-local Fonts = require('arkitekt.app.chrome.fonts')
-local Window  = require('arkitekt.app.chrome.window')
+local Fonts = require('arkitekt.runtime.chrome.fonts')
+local Window  = require('arkitekt.runtime.chrome.window')
 local Logger = require('arkitekt.debug.logger')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -458,24 +454,15 @@ function M.run(opts)
     min_size        = config.min_size,
     app_name        = config.app_name,  -- Pass app name for per-app theme overrides
 
-    -- Chrome configuration (new)
+    -- Chrome configuration
     chrome          = config.chrome,
     imgui_flags     = config.imgui_flags,
-
-    -- LEGACY_COMPAT: Remove in v2.0 - Use chrome/imgui_flags instead
-    show_status_bar = config.show_status_bar,
-    show_statusbar  = config.show_statusbar,
-    show_titlebar   = config.show_titlebar,
-    show_icon       = show_icon,
-    show_version    = config.show_version,
-    enable_maximize = config.enable_maximize,
 
     get_status_func = config.get_status_func,
     status_bar_height = Constants.STATUS_BAR.height,
     content_padding = config.content_padding,
     titlebar_pad_h  = config.titlebar_pad_h,
     titlebar_pad_v  = config.titlebar_pad_v,
-    flags           = config.flags,  -- LEGACY_COMPAT: Use imgui_flags
     style           = style,
     tabs            = config.tabs,
     bg_color_floating = config.bg_color_floating,

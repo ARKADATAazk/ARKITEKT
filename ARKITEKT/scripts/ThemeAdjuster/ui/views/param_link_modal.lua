@@ -6,7 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 local Logger = require('arkitekt.debug.logger')
 local log = Logger.new('ParamLinkModal')
 

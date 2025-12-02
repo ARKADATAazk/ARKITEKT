@@ -93,7 +93,7 @@ function M.sync_with_reaper_no_offset()
   -- Clamp to safe range (prevents extreme REAPER themes from breaking DSL)
   local range_l = Palette.value_ranges.BG_LIGHTNESS
   local range_s = Palette.value_ranges.BG_SATURATION
-  local clamped_bg, was_clamped = Colors.clamp_bg_color(
+  local clamped_bg, was_clamped = Colors.ClampBgColor(
     main_bg,
     range_l.min,
     range_l.max,
@@ -133,12 +133,12 @@ function M.sync_with_reaper()
   end
 
   -- Apply lightness offset for subtle visual separation
-  local offset_bg = Colors.adjust_lightness(main_bg, REAPER_SYNC_OFFSET)
+  local offset_bg = Colors.AdjustLightness(main_bg, REAPER_SYNC_OFFSET)
 
   -- Clamp to safe range (prevents extreme REAPER themes from breaking DSL)
   local range_l = Palette.value_ranges.BG_LIGHTNESS
   local range_s = Palette.value_ranges.BG_SATURATION
-  local clamped_bg, was_clamped = Colors.clamp_bg_color(
+  local clamped_bg, was_clamped = Colors.ClampBgColor(
     offset_bg,
     range_l.min,
     range_l.max,
@@ -335,7 +335,7 @@ function M.apply_custom_color(color)
   -- Clamp to safe range (guardrail for user-provided colors)
   local range_l = Palette.value_ranges.BG_LIGHTNESS
   local range_s = Palette.value_ranges.BG_SATURATION
-  local clamped_color, was_clamped = Colors.clamp_bg_color(
+  local clamped_color, was_clamped = Colors.ClampBgColor(
     color,
     range_l.min,
     range_l.max,
@@ -372,7 +372,7 @@ function M.transition_to_palette(target_palette, duration, on_complete)
     for key, target_color in pairs(target_palette) do
       local start_color = start_colors[key]
       if start_color and type(target_color) == 'number' and type(start_color) == 'number' then
-        Theme.COLORS[key] = Colors.lerp(start_color, target_color, t)
+        Theme.COLORS[key] = Colors.Lerp(start_color, target_color, t)
       elseif target_color then
         Theme.COLORS[key] = target_color
       end

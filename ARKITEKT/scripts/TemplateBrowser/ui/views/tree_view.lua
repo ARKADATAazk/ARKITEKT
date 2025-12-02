@@ -275,7 +275,7 @@ function M.draw_physical_tree(ctx, state, config)
   }
 
   -- Draw tree with callbacks
-  TreeView.draw(ctx, physical_nodes, tree_state, {
+  TreeView.Draw(ctx, physical_nodes, tree_state, {
     enable_rename = true,
     show_colors = true,
     show_template_count = true,  -- Enable template count badges on folders
@@ -605,7 +605,7 @@ function M.draw_physical_tree(ctx, state, config)
         for _, palette_color in ipairs(ColorDefs.PALETTE) do
           color_options[#color_options + 1] = {
             name = palette_color.name,
-            color = Colors.hexrgb(palette_color.hex)
+            color = Colors.Hexrgb(palette_color.hex)
           }
         end
 
@@ -931,7 +931,7 @@ function M.draw_virtual_tree(ctx, state, config)
   }
 
   -- Draw tree with same callbacks as physical tree (they handle both types)
-  TreeView.draw(ctx, virtual_nodes, tree_state, {
+  TreeView.Draw(ctx, virtual_nodes, tree_state, {
     enable_rename = true,
     show_colors = true,
     enable_drag_drop = true,
@@ -1031,7 +1031,7 @@ function M.draw_virtual_tree(ctx, state, config)
         for _, palette_color in ipairs(ColorDefs.PALETTE) do
           color_options[#color_options + 1] = {
             name = palette_color.name,
-            color = Colors.hexrgb(palette_color.hex)
+            color = Colors.Hexrgb(palette_color.hex)
           }
         end
 
@@ -1144,7 +1144,7 @@ function M.draw_inbox_tree(ctx, state, config)
   }
 
   -- Draw tree with callbacks for inbox
-  TreeView.draw(ctx, inbox_nodes, tree_state, {
+  TreeView.Draw(ctx, inbox_nodes, tree_state, {
     enable_rename = false,  -- No renaming in inbox tree
     show_colors = false,
     show_template_count = false,
@@ -1214,7 +1214,7 @@ function M.draw_archive_tree(ctx, state, config)
   }
 
   -- Draw tree with minimal callbacks (archive is read-only)
-  TreeView.draw(ctx, archive_nodes, tree_state, {
+  TreeView.Draw(ctx, archive_nodes, tree_state, {
     enable_rename = false,  -- No renaming in archive
     show_colors = false,  -- No colors for archive
     enable_drag_drop = false,  -- No drag-drop in archive

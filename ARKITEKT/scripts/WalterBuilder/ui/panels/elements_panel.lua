@@ -9,7 +9,7 @@ local Colors = require('WalterBuilder.defs.colors')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 local Panel = {}
@@ -101,7 +101,7 @@ function Panel:draw_element_item(ctx, def)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
   -- Draw element as DOT style chip
-  local clicked, chip_w, chip_h = Chip.draw(ctx, {
+  local clicked, chip_w, chip_h = Chip.Draw(ctx, {
     id = 'elem_' .. def.id,
     style = Chip.STYLE.DOT,
     label = label,
@@ -109,7 +109,7 @@ function Panel:draw_element_item(ctx, def)
     height = 26,
     explicit_width = avail_w - 8,
     is_selected = is_selected,
-    interactive = true,
+    is_interactive = true,
     rounding = 4,
     dot_shape = Chip.SHAPE.SQUARE,
     dot_rounding = 2,
@@ -188,7 +188,7 @@ function Panel:draw_custom_element_item(ctx, elem)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
   -- Draw as DOT style chip
-  local clicked, chip_w, chip_h = Chip.draw(ctx, {
+  local clicked, chip_w, chip_h = Chip.Draw(ctx, {
     id = 'custom_' .. elem.id,
     style = Chip.STYLE.DOT,
     label = label,
@@ -196,7 +196,7 @@ function Panel:draw_custom_element_item(ctx, elem)
     height = 26,
     explicit_width = avail_w - 8,
     is_selected = false,
-    interactive = true,
+    is_interactive = true,
     rounding = 4,
     dot_shape = Chip.SHAPE.SQUARE,
     dot_rounding = 2,
@@ -359,7 +359,7 @@ function Panel:draw(ctx)
     local x, y = ImGui.GetCursorScreenPos(ctx)
     local avail_w = ImGui.GetContentRegionAvail(ctx)
 
-    local add_result = Button.draw(ctx, {
+    local add_result = Button.Draw(ctx, {
       id = 'add_element_btn',
       x = x,
       y = y,

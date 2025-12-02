@@ -7,7 +7,7 @@ local Ark = require('arkitekt')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
 local Math = require('arkitekt.core.math')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 local Logger = require('arkitekt.debug.logger')
 local log = Logger.new('LibraryTile')
 
@@ -63,7 +63,7 @@ function M.render(ctx, rect, param, state, view)
 
   -- Background color (with smooth transitions)
   local bg_color = (assignment_count > 0) and BG_ASSIGNED or BG_BASE
-  bg_color = Ark.Colors.lerp(bg_color, BG_HOVER, hover_t * 0.5)
+  bg_color = Ark.Colors.Lerp(bg_color, BG_HOVER, hover_t * 0.5)
 
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, 3)
 
@@ -73,7 +73,7 @@ function M.render(ctx, rect, param, state, view)
     Visuals.draw_marching_ants_rounded(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5, ANT_COLOR, 1, 3)
   else
     -- Normal border with hover highlight
-    local border_color = Ark.Colors.lerp(BRD_BASE, BRD_HOVER, hover_t)
+    local border_color = Ark.Colors.Lerp(BRD_BASE, BRD_HOVER, hover_t)
     ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 3, 0, 1)
   end
 
@@ -151,7 +151,7 @@ function M.render(ctx, rect, param, state, view)
     local current_idx = math.floor(param.value - param.min + 1)
     current_idx = math.max(1, math.min(current_idx, #values))
 
-    local spinner_result = Ark.Spinner.draw(ctx, {
+    local spinner_result = Ark.Spinner(ctx, {
       id = '##lib_spinner_' .. param.index,
       value = current_idx,
       options = values,

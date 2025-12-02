@@ -45,19 +45,19 @@ Lua 5.3 framework for building ReaImGui apps in REAPER. It provides widgets, win
 
 ```lua
 -- Button - ImGui-style positional mode
-if Ark.Button(ctx, "Save") then ... end
-if Ark.Button(ctx, "Save", 100) then ... end  -- with width
+if Ark.Button(ctx, 'Save') then ... end
+if Ark.Button(ctx, 'Save', 100) then ... end  -- with width
 
 -- Button - Opts mode with semantic presets
-if Ark.Button(ctx, { label = "Delete", preset = "danger" }) then ... end
--- Presets: "primary", "danger", "success", "secondary"
+if Ark.Button(ctx, { label = 'Delete', preset = 'danger' }) then ... end
+-- Presets: 'primary', 'danger', 'success', 'secondary'
 
 -- ID Stack (for loops with multiple widgets)
 for i, track in ipairs(tracks) do
   Ark.PushID(ctx, i)
-    if Ark.Button(ctx, "M") then ... end  -- ID = "1/M", "2/M", ...
-    if Ark.Button(ctx, "S") then ... end  -- ID = "1/S", "2/S", ...
-    Ark.Grid(ctx, { items = track.items })  -- ID = "1/grid", "2/grid", ...
+    if Ark.Button(ctx, 'M') then ... end  -- ID = '1/M', '2/M', ...
+    if Ark.Button(ctx, 'S') then ... end  -- ID = '1/S', '2/S', ...
+    Ark.Grid(ctx, { items = track.items })  -- ID = '1/grid', '2/grid', ...
   Ark.PopID(ctx)
 end
 ```
@@ -71,14 +71,14 @@ For full widget API, see `cookbook/QUICKSTART.md` and `cookbook/WIDGETS.md`.
 | You want to…                       | Go to…                                           |
 |-----------------------------------|--------------------------------------------------|
 | Add/modify a **widget**           | `arkitekt/gui/widgets/[category]/`              |
-| Change **app bootstrap/runtime**  | `arkitekt/app/` (init/, runtime/, chrome/)      |
+| Change **app bootstrap/runtime**  | `arkitekt/runtime/` (shell.lua, chrome/)        |
 | Add **constants/defaults**        | `arkitekt/defs/` or `scripts/[AppName]/defs/`   |
 | Modify **theming**                | `arkitekt/core/theme_manager/`                  |
 | Work on **animations**            | `arkitekt/gui/animation/`                       |
 | Work on **drawing/rendering**     | `arkitekt/gui/draw/` or `arkitekt/gui/renderers/` |
 | Add **interaction handlers**      | `arkitekt/gui/interaction/` (drag-drop, selection, reorder) |
 | Add **layout utilities**          | `arkitekt/gui/layout/`                          |
-| Change **font loading**           | `arkitekt/app/chrome/fonts.lua`                 |
+| Change **font loading**           | `arkitekt/runtime/chrome/fonts.lua`             |
 | Edit a **specific app**           | `scripts/[AppName]/`                            |
 | Add **reusable utilities**        | `arkitekt/core/` (fs, json, settings, etc.)     |
 | Add **platform abstractions**     | `arkitekt/platform/`                            |

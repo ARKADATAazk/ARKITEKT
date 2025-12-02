@@ -412,7 +412,7 @@ function M.is_mouse_in_exclusion(grid, ctx, item, rect)
 
   local mx, my = ImGui.GetMousePos(ctx)
   for _, z in ipairs(zones) do
-    if Draw.point_in_rect(mx, my, z[1], z[2], z[3], z[4]) then
+    if Draw.PointInRect(mx, my, z[1], z[2], z[3], z[4]) then
       return true
     end
   end
@@ -422,14 +422,14 @@ end
 function M.find_hovered_item(grid, ctx, items)
   local mx, my = ImGui.GetMousePos(ctx)
   if grid.visual_bounds then
-    if not Draw.point_in_rect(mx, my, grid.visual_bounds[1], grid.visual_bounds[2], grid.visual_bounds[3], grid.visual_bounds[4]) then
+    if not Draw.PointInRect(mx, my, grid.visual_bounds[1], grid.visual_bounds[2], grid.visual_bounds[3], grid.visual_bounds[4]) then
       return nil, nil, false
     end
   end
   for _, item in ipairs(items) do
     local key = grid.key(item)
     local rect = grid.rect_track:get(key)
-    if rect and M.is_rect_in_grid_bounds(grid, rect) and Draw.point_in_rect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
+    if rect and M.is_rect_in_grid_bounds(grid, rect) and Draw.PointInRect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
       if not M.is_mouse_in_exclusion(grid, ctx, item, rect) then
         return item, key, grid.selection:is_selected(key)
       end
@@ -585,7 +585,7 @@ function M.handle_tile_input(grid, ctx, item, rect)
 
   if grid.visual_bounds then
     local mx, my = ImGui.GetMousePos(ctx)
-    if not Draw.point_in_rect(mx, my, grid.visual_bounds[1], grid.visual_bounds[2], grid.visual_bounds[3], grid.visual_bounds[4]) then
+    if not Draw.PointInRect(mx, my, grid.visual_bounds[1], grid.visual_bounds[2], grid.visual_bounds[3], grid.visual_bounds[4]) then
       return false
     end
   end
@@ -597,7 +597,7 @@ function M.handle_tile_input(grid, ctx, item, rect)
   end
 
   local mx, my = ImGui.GetMousePos(ctx)
-  local is_hovered = Draw.point_in_rect(mx, my, rect[1], rect[2], rect[3], rect[4])
+  local is_hovered = Draw.PointInRect(mx, my, rect[1], rect[2], rect[3], rect[4])
   if is_hovered then grid.hover_id = key end
 
   if is_hovered and not grid.sel_rect:is_active() and not grid.drag.active and not M.is_external_drag_active(grid) then
@@ -668,7 +668,7 @@ function M.handle_tile_input(grid, ctx, item, rect)
       local in_text_zone = false
       if grid.text_zones and grid.text_zones[key] then
         local text_zone = grid.text_zones[key]
-        if Draw.point_in_rect(mx, my, text_zone[1], text_zone[2], text_zone[3], text_zone[4]) then
+        if Draw.PointInRect(mx, my, text_zone[1], text_zone[2], text_zone[3], text_zone[4]) then
           in_text_zone = true
         end
       end
@@ -770,18 +770,18 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
   local bg_color, text_color, selection_color
   if tile_color then
     -- Create darker version of tile color for backdrop
-    bg_color = Colors.adjust_brightness(tile_color, 0.15)
-    bg_color = Colors.with_opacity(bg_color, 0.88)
+    bg_color = Colors.AdjustBrightness(tile_color, 0.15)
+    bg_color = Colors.WithOpacity(bg_color, 0.88)
 
     -- Use brighter version for text
-    text_color = Colors.adjust_brightness(tile_color, 1.8)
+    text_color = Colors.AdjustBrightness(tile_color, 1.8)
 
     -- Selection highlight - medium bright variant
-    selection_color = Colors.adjust_brightness(tile_color, 0.8)
-    selection_color = Colors.with_opacity(selection_color, 0.67)
+    selection_color = Colors.AdjustBrightness(tile_color, 0.8)
+    selection_color = Colors.WithOpacity(selection_color, 0.67)
   else
     -- Fallback colors
-    local hexrgb = Colors.hexrgb
+    local hexrgb = Colors.Hexrgb
     bg_color = hexrgb('#1A1A1AE0')
     text_color = hexrgb('#FFFFFFDD')
     selection_color = hexrgb('#4444AAAA')
@@ -801,10 +801,10 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
   end
 
   -- Style the input field to be transparent (we drew our own backdrop)
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, Colors.hexrgb('#00000000'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.Hexrgb('#00000000'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.Hexrgb('#00000000'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.Hexrgb('#00000000'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, Colors.Hexrgb('#00000000'))
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
   ImGui.PushStyleColor(ctx, ImGui.Col_TextSelectedBg, selection_color)
 

@@ -464,7 +464,7 @@ function M.persist_all()
 end
 
 -- Cleanup
-function M.cleanup()
+function M.Cleanup()
   M.persist_all()
 
   -- Skip disk cache flush - causes 5 second UI freeze

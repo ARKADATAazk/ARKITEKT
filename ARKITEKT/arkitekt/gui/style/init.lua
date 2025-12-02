@@ -9,7 +9,7 @@
 
 local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 local ConfigUtil = require('arkitekt.core.config')
 
 local M = {}
@@ -135,7 +135,7 @@ M.TOOLTIP_COLORS = {
 M.ACTION_CHIP_WILDCARD = {
   bg_color = hexrgb('#5B8FB9'),  -- Muted blue for technical wildcards
   text_color = hexrgb('#1a1a1a'),  -- Dark text
-  border_color = Colors.with_alpha(hexrgb('#000000'), 100),
+  border_color = Colors.WithAlpha(hexrgb('#000000'), 100),
   rounding = 2,
   padding_h = 8,
 }
@@ -143,7 +143,7 @@ M.ACTION_CHIP_WILDCARD = {
 M.ACTION_CHIP_TAG = {
   bg_color = hexrgb('#8B7355'),  -- Warm amber for tags/names
   text_color = hexrgb('#1a1a1a'),  -- Dark text
-  border_color = Colors.with_alpha(hexrgb('#000000'), 100),
+  border_color = Colors.WithAlpha(hexrgb('#000000'), 100),
   rounding = 2,
   padding_h = 8,
 }
@@ -261,14 +261,14 @@ function M.build_button_config()
     bg_color = M.COLORS.BG_BASE,
     bg_hover_color = M.COLORS.BG_HOVER,
     bg_active_color = M.COLORS.BG_ACTIVE,
-    bg_disabled_color = Colors.adjust_lightness(M.COLORS.BG_BASE, -0.05),
+    bg_disabled_color = Colors.AdjustLightness(M.COLORS.BG_BASE, -0.05),
 
     -- Borders
     border_outer_color = M.COLORS.BORDER_OUTER,
     border_inner_color = M.COLORS.BORDER_INNER,
     border_hover_color = M.COLORS.BORDER_HOVER,
     border_active_color = M.COLORS.BORDER_ACTIVE,
-    border_inner_disabled_color = Colors.adjust_lightness(M.COLORS.BORDER_INNER, -0.05),
+    border_inner_disabled_color = Colors.AdjustLightness(M.COLORS.BORDER_INNER, -0.05),
     border_outer_disabled_color = M.COLORS.BORDER_OUTER,
 
     -- Text
@@ -302,21 +302,21 @@ function M.build_colored_button_config(variant)
     bg_color = bg,
     bg_hover_color = hover,
     bg_active_color = active,
-    bg_disabled_color = Colors.adjust_saturation(Colors.adjust_lightness(bg, -0.1), -0.4),
+    bg_disabled_color = Colors.AdjustSaturation(Colors.AdjustLightness(bg, -0.1), -0.4),
 
     -- Borders (derived from bg)
-    border_outer_color = Colors.adjust_lightness(bg, -0.18),
-    border_inner_color = Colors.adjust_lightness(bg, 0.12),
-    border_hover_color = Colors.adjust_lightness(hover, 0.10),
-    border_active_color = Colors.adjust_lightness(active, -0.10),
-    border_inner_disabled_color = Colors.adjust_lightness(bg, -0.15),
-    border_outer_disabled_color = Colors.adjust_lightness(bg, -0.20),
+    border_outer_color = Colors.AdjustLightness(bg, -0.18),
+    border_inner_color = Colors.AdjustLightness(bg, 0.12),
+    border_hover_color = Colors.AdjustLightness(hover, 0.10),
+    border_active_color = Colors.AdjustLightness(active, -0.10),
+    border_inner_disabled_color = Colors.AdjustLightness(bg, -0.15),
+    border_outer_disabled_color = Colors.AdjustLightness(bg, -0.20),
 
     -- Text
     text_color = text,
     text_hover_color = text,
     text_active_color = text,
-    text_disabled_color = Colors.adjust_lightness(text, -0.3),
+    text_disabled_color = Colors.AdjustLightness(text, -0.3),
 
     -- Geometry
     padding_x = 10,
@@ -355,8 +355,8 @@ function M.build_dropdown_config()
 
     -- Popup menu
     popup = {
-      bg_color = Colors.adjust_lightness(M.COLORS.BG_BASE, -0.02),
-      border_color = Colors.adjust_lightness(M.COLORS.BORDER_OUTER, -0.05),
+      bg_color = Colors.AdjustLightness(M.COLORS.BG_BASE, -0.02),
+      border_color = Colors.AdjustLightness(M.COLORS.BORDER_OUTER, -0.05),
       item_bg_color = M.COLORS.BG_TRANSPARENT,
       item_hover_color = M.COLORS.BG_HOVER,
       item_active_color = M.COLORS.BG_ACTIVE,
@@ -461,7 +461,7 @@ M.DYNAMIC_PRESETS = {
   ACTION_CHIP_WILDCARD = {
     bg_color = hexrgb('#5B8FB9'),  -- Direct value (not theme-dependent)
     text_color = hexrgb('#1a1a1a'),
-    border_color = Colors.with_alpha(hexrgb('#000000'), 100),
+    border_color = Colors.WithAlpha(hexrgb('#000000'), 100),
     rounding = 2,
     padding_h = 8,
   },
@@ -469,7 +469,7 @@ M.DYNAMIC_PRESETS = {
   ACTION_CHIP_TAG = {
     bg_color = hexrgb('#8B7355'),
     text_color = hexrgb('#1a1a1a'),
-    border_color = Colors.with_alpha(hexrgb('#000000'), 100),
+    border_color = Colors.WithAlpha(hexrgb('#000000'), 100),
     rounding = 2,
     padding_h = 8,
   },

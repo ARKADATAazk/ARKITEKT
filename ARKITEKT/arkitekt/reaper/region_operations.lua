@@ -241,7 +241,7 @@ function M.append_playlist_to_project(playlist_items)
         local new_region_end = current_position + region_length
 
         -- Convert RGBA color to native REAPER color
-        local native_color = region.color and Colors.rgba_to_reaper_native(region.color) or 0
+        local native_color = region.color and Colors.RgbaToReaperNative(region.color) or 0
 
         reaper.AddProjectMarker2(proj, true, new_region_start, new_region_end, region.name or '', -1, native_color)
 
@@ -323,7 +323,7 @@ function M.paste_playlist_at_cursor(playlist_items)
         local new_region_start = current_position
         local new_region_end = current_position + region_length
 
-        local native_color = region.color and Colors.rgba_to_reaper_native(region.color) or 0
+        local native_color = region.color and Colors.RgbaToReaperNative(region.color) or 0
 
         reaper.AddProjectMarker2(proj, true, new_region_start, new_region_end, region.name or '', -1, native_color)
 
@@ -404,7 +404,7 @@ function M.crop_to_playlist(playlist_items)
 
   -- Create region markers
   for _, rgn in ipairs(regions_to_create) do
-    local native_color = rgn.color and Colors.rgba_to_reaper_native(rgn.color) or 0
+    local native_color = rgn.color and Colors.RgbaToReaperNative(rgn.color) or 0
 
     reaper.AddProjectMarker2(proj, true, rgn.start, rgn['end'], rgn.name or '', -1, native_color)
   end

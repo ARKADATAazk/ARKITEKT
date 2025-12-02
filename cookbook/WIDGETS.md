@@ -18,13 +18,37 @@ How to create and extend ARKITEKT widgets.
 
 ## Widget API Contract
 
-### Signature
+### Callable Module Pattern (Preferred)
+
+Widgets are **callable modules** - users call them directly without `.Draw`:
+
 ```lua
-function M.draw(ctx, opts)
+-- User API (no .Draw!)
+local r = Ark.Button(ctx, 'Save')
+local r = Ark.Button(ctx, { label = 'Save', preset = 'success' })
+
+-- NOT: Ark.Button.Draw(ctx, ...)  -- Wrong!
+```
+
+### Internal Signature
+```lua
+function M.Draw(ctx, opts)
   -- ctx: ImGui context (userdata)
   -- opts: Configuration table (optional fields)
   return result  -- State table for caller
 end
+
+-- Make module callable via __call metamethod
+return setmetatable(M, {
+  __call = function(_, ctx, label_or_opts, ...)
+    -- Detect positional vs opts mode
+    if type(label_or_opts) == 'table' then
+      return M.Draw(ctx, label_or_opts)
+    else
+      return M.Draw(ctx, { label = label_or_opts, ... })
+    end
+  end
+})
 ```
 
 ### opts Table Convention
@@ -35,9 +59,19 @@ end
 ---@field y? number            Y position (nil = cursor position)
 ---@field width? number        Widget width
 ---@field height? number       Widget height
----@field disabled? boolean    Disable interactions
+---@field is_disabled? boolean Disable interactions
 ---@field preset_name? string  Style preset name
 ```
+
+### Boolean Property Naming (is_ prefix)
+All boolean config properties use the `is_` prefix for clarity and autocomplete:
+- `is_disabled` - Widget cannot be interacted with
+- `is_checked` - Checkbox checked state
+- `is_selected` - Item selection state
+- `is_toggled` - Toggle button state
+- `is_blocking` - Block interaction without visual change
+- `is_multiline` - InputText multiline mode
+- `is_interactive` - Chip/item can be clicked
 
 ### Result Table Convention
 ```lua
@@ -64,7 +98,7 @@ local M = {}
 ---@param ctx userdata
 ---@param opts table
 ---@return table
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = opts or {}
   local ImGui = reaper.ImGui
 
@@ -115,7 +149,12 @@ function M.draw(ctx, opts)
   }
 end
 
-return M
+-- Make module callable: Ark.MyWidget(ctx, opts) -> M.Draw(ctx, opts)
+return setmetatable(M, {
+  __call = function(_, ctx, opts)
+    return M.Draw(ctx, opts)
+  end
+})
 ```
 
 ---

@@ -17,7 +17,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.core.theme')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 -- ============================================================================
 -- PERFORMANCE OPTIMIZATIONS
@@ -60,7 +60,7 @@ end
 
 -- Get glow version of a color (33% alpha)
 local function get_glow_color(color)
-  return Colors.with_alpha(color, 0x33)
+  return Colors.WithAlpha(color, 0x33)
 end
 
 -- ============================================================================
@@ -157,7 +157,7 @@ M.INNER_GLOW_DEFAULTS = {
 
 -- Get inner glow color (lazy evaluation)
 function M.get_inner_glow_color()
-  return Colors.with_alpha(get_op_color('OP_MOVE'), 0x22)
+  return Colors.WithAlpha(get_op_color('OP_MOVE'), 0x22)
 end
 
 function M.get_mode_config(config, is_copy, is_delete)
@@ -176,7 +176,7 @@ local DragIndicator = {}
 local function apply_alpha_factor(color, factor)
   local current_alpha = color & 0xFF
   local new_alpha = (current_alpha * factor)//1
-  return Colors.with_alpha(color, min(255, max(0, new_alpha)))
+  return Colors.WithAlpha(color, min(255, max(0, new_alpha)))
 end
 
 local function draw_shadow(dl, x1, y1, x2, y2, rounding, config)
@@ -234,7 +234,7 @@ local function draw_copy_indicator(ctx, dl, mx, my, config)
   AddCircle(dl, ix + size/2, iy + size/2, size/2, indicator_color, 0, 2)
 
   local tw, th = CalcTextSize(ctx, indicator_text)
-  Draw.text(dl, ix + (size - tw)/2, iy + (size - th)/2, indicator_color, indicator_text)
+  Draw.Text(dl, ix + (size - tw)/2, iy + (size - th)/2, indicator_color, indicator_text)
 end
 
 local function draw_delete_indicator(ctx, dl, mx, my, config)
@@ -250,7 +250,7 @@ local function draw_delete_indicator(ctx, dl, mx, my, config)
   AddCircle(dl, ix + size/2, iy + size/2, size/2, indicator_color, 0, 2)
 
   local tw, th = CalcTextSize(ctx, indicator_text)
-  Draw.text(dl, ix + (size - tw)/2, iy + (size - th)/2, indicator_color, indicator_text)
+  Draw.Text(dl, ix + (size - tw)/2, iy + (size - th)/2, indicator_color, indicator_text)
 end
 
 function DragIndicator.draw_badge(ctx, dl, mx, my, count, config, is_copy_mode, is_delete_mode)
@@ -304,7 +304,7 @@ function DragIndicator.draw_badge(ctx, dl, mx, my, count, config, is_copy_mode, 
   AddText(dl, text_x, text_y, accent_color, label)
 end
 
-function DragIndicator.draw(ctx, dl, mx, my, count, config, colors, is_copy_mode, is_delete_mode)
+function DragIndicator.Draw(ctx, dl, mx, my, count, config, colors, is_copy_mode, is_delete_mode)
   local tile_cfg = (config and config.tile) or M.TILE_DEFAULTS
   local stack_cfg = (config and config.stack) or M.STACK_DEFAULTS
   local shadow_cfg = (config and config.shadow) or M.SHADOW_DEFAULTS
@@ -478,7 +478,7 @@ function DropIndicator.draw_horizontal(ctx, dl, x1, x2, y, config, is_copy_mode)
                                 pulsed_line, cap_rounding)
 end
 
-function DropIndicator.draw(ctx, dl, config, is_copy_mode, orientation, ...)
+function DropIndicator.Draw(ctx, dl, config, is_copy_mode, orientation, ...)
   if orientation == 'horizontal' then
     local x1, x2, y = ...
     DropIndicator.draw_horizontal(ctx, dl, x1, x2, y, config, is_copy_mode)

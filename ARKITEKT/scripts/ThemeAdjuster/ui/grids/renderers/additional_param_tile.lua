@@ -5,7 +5,7 @@
 local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 
@@ -201,7 +201,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
         spinner_state.last_value = current_value
       end
 
-      local spinner_result = Ark.Spinner.draw(ctx, {
+      local spinner_result = Ark.Spinner(ctx, {
         id = '##preset_spinner_' .. param.name,
         value = spinner_state.current_idx,
         options = preset_labels,
@@ -226,7 +226,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
   elseif param_type == 'bool' then
     -- Checkbox
     local checked = current_value ~= 0
-    if Ark.Checkbox.draw_at_cursor(ctx, param_name, checked, nil, 'param_' .. param_name) then
+    if Ark.Checkbox(ctx, {id = 'param_' .. param_name, label = param_name, is_checked = checked}).clicked then
       new_value = checked and 0 or 1
       value_changed = true
       was_deactivated = true  -- Immediate
@@ -472,7 +472,7 @@ function M.render_group(ctx, group_param, tab_color, shell_state, view)
 
   local spinner_state = M._preset_spinner_states[group_id]
 
-  local spinner_result = Ark.Spinner.draw(ctx, {
+  local spinner_result = Ark.Spinner(ctx, {
     id = '##group_spinner_' .. group_id,
     value = spinner_state.current_idx,
     options = preset_labels,

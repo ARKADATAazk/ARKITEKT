@@ -22,13 +22,13 @@ local DrawList_AddRectFilled = ImGui.DrawList_AddRectFilled
 local DrawList_AddRect = ImGui.DrawList_AddRect
 local DrawList_AddText = ImGui.DrawList_AddText
 local CalcTextSize = ImGui.CalcTextSize
-local Colors_with_alpha = Ark.Colors.with_alpha
-local Colors_opacity = Ark.Colors.opacity
-local Colors_adjust_brightness = Ark.Colors.adjust_brightness
-local Colors_luminance = Ark.Colors.luminance
-local Colors_same_hue_variant = Ark.Colors.same_hue_variant
-local Colors_rgba_to_components = Ark.Colors.rgba_to_components
-local Colors_components_to_rgba = Ark.Colors.components_to_rgba
+local Colors_WithAlpha = Ark.Colors.WithAlpha
+local Colors_Opacity = Ark.Colors.Opacity
+local Colors_AdjustBrightness = Ark.Colors.AdjustBrightness
+local Colors_luminance = Ark.Colors.Luminance
+local Colors_SameHueVariant = Ark.Colors.SameHueVariant
+local Colors_RgbaToComponents = Ark.Colors.RgbaToComponents
+local Colors_ComponentsToRgba = Ark.Colors.ComponentsToRgba
 
 -- PERF: Cache constant values computed once
 local _cached = {
@@ -217,7 +217,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   -- Capture animation color for disable animation (without alpha)
-  local animation_color = Colors_with_alpha(render_color, 0xFF)
+  local animation_color = Colors_WithAlpha(render_color, 0xFF)
 
   local text_alpha = (0xFF * combined_alpha) // 1
   local text_color = BaseRenderer.get_text_color(muted_factor, config)
@@ -253,7 +253,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Render dark backdrop for disabled items (skip if show_disabled_items = false, animation handles it)
   if enabled_factor < 0.999 and state.settings.show_disabled_items then
     local backdrop_alpha = cfg.disabled_backdrop_alpha * (1.0 - enabled_factor) * cascade_factor
-    local backdrop_color = Colors_with_alpha(cfg.disabled_backdrop_color, backdrop_alpha // 1)
+    local backdrop_color = Colors_WithAlpha(cfg.disabled_backdrop_color, backdrop_alpha // 1)
     DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, backdrop_color, config.TILE.ROUNDING)
   end
 
@@ -293,7 +293,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       midi_alpha = midi_alpha * cfg.small_tile_visualization_alpha
     end
 
-    dark_color = Colors_with_alpha(dark_color, Colors_opacity(midi_alpha))
+    dark_color = Colors_WithAlpha(dark_color, Colors_Opacity(midi_alpha))
 
     -- Skip all MIDI thumbnail rendering if skip_visualizations is enabled (fast mode)
     if not state.skip_visualizations then
@@ -341,7 +341,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     -- Use palette values if available for theme-reactive ants
     local ants_sat = palette.ants_saturation or cfg.selection_border_saturation
     local ants_bright = palette.ants_brightness or cfg.selection_border_brightness
-    local ant_color = Colors_same_hue_variant(
+    local ant_color = Colors_SameHueVariant(
       base_color,
       ants_sat,
       ants_bright,
@@ -350,15 +350,15 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
     -- Mix with white to make marching ants lighter but still tinted
     local white_mix = 0.40  -- Mix 40% white - lighter but keeps more color
-    local r, g, b, a = Colors_rgba_to_components(ant_color)
+    local r, g, b, a = Colors_RgbaToComponents(ant_color)
     r = r + (255 - r) * white_mix
     g = g + (255 - g) * white_mix
     b = b + (255 - b) * white_mix
-    ant_color = Colors_components_to_rgba(floor(r), floor(g), floor(b), a)
+    ant_color = Colors_ComponentsToRgba(floor(r), floor(g), floor(b), a)
 
     local inset = cfg.selection_ants_inset
     local selection_count = state.midi_selection_count or 1
-    MarchingAnts.draw(
+    MarchingAnts.Draw(
       dl,
       scaled_x1 + inset, scaled_y1 + inset, scaled_x2 - inset, scaled_y2 - inset,
       ant_color,
@@ -681,7 +681,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
       -- Chip text (region color with minimum lightness for readability)
       local chip_text_color = BaseRenderer.ensure_min_lightness(region_color, chip_cfg.text_min_lightness)
-      local text_alpha_val = Colors_opacity(combined_alpha)
+      local text_alpha_val = Colors_Opacity(combined_alpha)
       chip_text_color = (chip_text_color & 0xFFFFFF00) | text_alpha_val
       local chip_text_x = chip_x + chip_pad_x
       local chip_text_y = chip_y + (chip_h - text_h) / 2
@@ -736,12 +736,12 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, cfg.badge_pool_rounding)
 
     -- Border using darker tile color
-    local border_color = Colors_adjust_brightness(render_color, cfg.badge_pool_border_darken)
-    border_color = Colors_with_alpha(border_color, cfg.badge_pool_border_alpha)
+    local border_color = Colors_AdjustBrightness(render_color, cfg.badge_pool_border_darken)
+    border_color = Colors_WithAlpha(border_color, cfg.badge_pool_border_alpha)
     DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, border_color, cfg.badge_pool_rounding, 0, 0.5)
 
     -- Pool count text (match cycle badge brightness)
-    local pool_text_color = Colors_with_alpha(palette.pool_badge_text or 0xFFFFFFDD, Colors_opacity(combined_alpha))
+    local pool_text_color = Colors_WithAlpha(palette.pool_badge_text or 0xFFFFFFDD, Colors_Opacity(combined_alpha))
     DrawList_AddText(dl, badge_x + cfg.badge_pool_padding_x, badge_y + cfg.badge_pool_padding_y, pool_text_color, pool_text)
   end
 
@@ -790,10 +790,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local dur_text_color
       if luminance < cfg.duration_text_dark_tile_threshold then
         -- Very dark tile only: use light text
-        dur_text_color = Colors_same_hue_variant(render_color, cfg.duration_text_light_saturation, cfg.duration_text_light_value, Colors_opacity(combined_alpha))
+        dur_text_color = Colors_SameHueVariant(render_color, cfg.duration_text_light_saturation, cfg.duration_text_light_value, Colors_Opacity(combined_alpha))
       else
         -- All other tiles: dark grey with subtle tile color
-        dur_text_color = Colors_same_hue_variant(render_color, cfg.duration_text_dark_saturation, cfg.duration_text_dark_value, Colors_opacity(combined_alpha))
+        dur_text_color = Colors_SameHueVariant(render_color, cfg.duration_text_dark_saturation, cfg.duration_text_dark_value, Colors_Opacity(combined_alpha))
       end
 
       -- Draw duration text (PERF: use localized DrawList function)

@@ -6,7 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local Ark = require('arkitekt')
 local Theme = require('ThemeAdjuster.domain.theme.reader')
 local ImageCache = require('arkitekt.platform.images')  -- Use ARKITEKT's central image system
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 local DebugView = {}

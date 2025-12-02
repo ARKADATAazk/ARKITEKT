@@ -10,7 +10,7 @@ local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local STYLE = {
   PILL = 'pill',
@@ -64,7 +64,7 @@ local function _render_square_glow(dl, center_x, center_y, size, color, rounding
     
     if current_alpha > 0 then
       local glow_color = base_color_rgb | current_alpha
-      Draw.rect_filled(dl, 
+      Draw.RectFilled(dl, 
         center_x - current_half, 
         center_y - current_half, 
         center_x + current_half, 
@@ -89,16 +89,16 @@ local function _render_border_glow(dl, x1, y1, x2, y2, color, rounding, layers)
     
     if current_alpha > 0 then
       local glow_color = base_color_rgb | current_alpha
-      Draw.rect_filled(dl, x1 - expand, y1 - expand, x2 + expand, y2 + expand, 
+      Draw.RectFilled(dl, x1 - expand, y1 - expand, x2 + expand, y2 + expand, 
         glow_color, rounding + expand)
     end
   end
 end
 
 local function _apply_state(color, is_active, is_hovered, is_selected)
-  if is_active then return Colors.adjust_brightness(color, 1.4) end
-  if is_hovered then return Colors.adjust_brightness(color, 1.2) end
-  if is_selected then return Colors.adjust_brightness(color, 1.15) end
+  if is_active then return Colors.AdjustBrightness(color, 1.4) end
+  if is_hovered then return Colors.AdjustBrightness(color, 1.2) end
+  if is_selected then return Colors.AdjustBrightness(color, 1.15) end
   return color
 end
 
@@ -119,7 +119,7 @@ function M.calculate_width(ctx, label, opts)
   return base
 end
 
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = opts or {}
   local style = opts.style or STYLE.PILL
   local label = opts.label or ''
@@ -162,7 +162,7 @@ function M.draw(ctx, opts)
           x + shadow_offset_x, 
           y + shadow_offset_y, 
           radius + shadow_blur, 
-          Colors.with_alpha(hexrgb('#000000'), shadow_alpha_final))
+          Colors.WithAlpha(hexrgb('#000000'), shadow_alpha_final))
       end
       
       if show_glow then
@@ -183,12 +183,12 @@ function M.draw(ctx, opts)
 
       if shadow then
         local shadow_alpha_final = (shadow_alpha * alpha_factor) // 1
-        Draw.rect_filled(dl,
+        Draw.RectFilled(dl,
           x1 + shadow_offset_x - shadow_blur,
           y1 + shadow_offset_y - shadow_blur,
           x2 + shadow_offset_x + shadow_blur,
           y2 + shadow_offset_y + shadow_blur,
-          Colors.with_alpha(hexrgb('#000000'), shadow_alpha_final),
+          Colors.WithAlpha(hexrgb('#000000'), shadow_alpha_final),
           rounding)
       end
 
@@ -198,11 +198,11 @@ function M.draw(ctx, opts)
 
       -- Draw border as outer fill, then inner fill (avoids corner stacking)
       if border then
-        Draw.rect_filled(dl, x1, y1, x2, y2, border_color, rounding)
+        Draw.RectFilled(dl, x1, y1, x2, y2, border_color, rounding)
         local inset = border_thickness
-        Draw.rect_filled(dl, x1 + inset, y1 + inset, x2 - inset, y2 - inset, draw_color, rounding > 0 and rounding - inset or 0)
+        Draw.RectFilled(dl, x1 + inset, y1 + inset, x2 - inset, y2 - inset, draw_color, rounding > 0 and rounding - inset or 0)
       else
-        Draw.rect_filled(dl, x1, y1, x2, y2, draw_color, rounding)
+        Draw.RectFilled(dl, x1, y1, x2, y2, draw_color, rounding)
       end
     end
     
@@ -213,7 +213,7 @@ function M.draw(ctx, opts)
   local padding_h = opts.padding_h or (style == STYLE.DOT and 12 or (style == STYLE.ACTION and 8 or 14))
   local explicit_width = opts.explicit_width
   local text_align = opts.text_align or 'center'
-  local interactive = opts.interactive ~= false
+  local is_interactive = opts.is_interactive ~= false
   
   local text_w, text_h = ImGui.CalcTextSize(ctx, label)
   local chip_w = explicit_width or M.calculate_width(ctx, label, opts)
@@ -221,14 +221,14 @@ function M.draw(ctx, opts)
   
   local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
   
-  if interactive then
+  if is_interactive then
     local button_id = opts.id or ('##chip_' .. style .. '_' .. label)
     ImGui.InvisibleButton(ctx, button_id, chip_w, chip_h)
     is_hovered = ImGui.IsItemHovered(ctx)
     is_active = ImGui.IsItemActive(ctx)
   end
   
-  local is_clicked = interactive and ImGui.IsItemClicked(ctx) or false
+  local is_clicked = is_interactive and ImGui.IsItemClicked(ctx) or false
   local dl = ImGui.GetWindowDrawList(ctx)
   
   if style == STYLE.DOT then
@@ -256,8 +256,8 @@ function M.draw(ctx, opts)
                            border_outer, rounding, 0, 1)
 
     if is_hovered or is_selected then
-      local inner_shadow = Colors.with_alpha(hexrgb('#000000'), 40)
-      Draw.rect_filled(dl, start_x, start_y, start_x + chip_w, start_y + 2, inner_shadow, 0)
+      local inner_shadow = Colors.WithAlpha(hexrgb('#000000'), 40)
+      Draw.RectFilled(dl, start_x, start_y, start_x + chip_w, start_y + 2, inner_shadow, 0)
     end
 
     local dot_x = start_x + padding_h + (dot_size * 0.5)
@@ -265,7 +265,7 @@ function M.draw(ctx, opts)
     local dot_color = _apply_state(color, false, is_hovered, is_selected)
 
     if dot_shape == SHAPE.CIRCLE then
-      ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, (dot_size * 0.5) + 1, Colors.with_alpha(hexrgb('#000000'), 80))
+      ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, (dot_size * 0.5) + 1, Colors.WithAlpha(hexrgb('#000000'), 80))
 
       if is_selected or is_hovered then
         _render_glow(dl, dot_x, dot_y, dot_size * 0.5, dot_color, 4)
@@ -274,19 +274,19 @@ function M.draw(ctx, opts)
       ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_size * 0.5, dot_color)
     elseif dot_shape == SHAPE.SQUARE then
       local half_dot = dot_size * 0.5
-      Draw.rect_filled(dl,
+      Draw.RectFilled(dl,
         dot_x - half_dot,
         dot_y - half_dot,
         dot_x + half_dot,
         dot_y + half_dot,
-        Colors.with_alpha(hexrgb('#000000'), 80),
+        Colors.WithAlpha(hexrgb('#000000'), 80),
         dot_rounding)
 
       if is_selected or is_hovered then
         _render_square_glow(dl, dot_x, dot_y, dot_size, dot_color, dot_rounding, 4)
       end
 
-      Draw.rect_filled(dl,
+      Draw.RectFilled(dl,
         dot_x - half_dot + 1,
         dot_y - half_dot + 1,
         dot_x + half_dot - 1,
@@ -295,26 +295,26 @@ function M.draw(ctx, opts)
         dot_rounding)
     end
 
-    local text_color = (is_hovered or is_selected) and hexrgb('#FFFFFF') or Colors.with_alpha(hexrgb('#FFFFFF'), 200)
+    local text_color = (is_hovered or is_selected) and hexrgb('#FFFFFF') or Colors.WithAlpha(hexrgb('#FFFFFF'), 200)
     local content_x = start_x + padding_h + dot_size + dot_spacing
     local available_w = chip_w - (content_x - start_x) - padding_h
 
     local text_x = content_x + (text_align == 'right' and (available_w - text_w) or
                                  text_align == 'center' and ((available_w - text_w) * 0.5) or 0) - 3  -- Move left 3px
     local text_y = start_y + (chip_h - text_h) * 0.5 - 1  -- Move up 1px
-    Draw.text(dl, text_x, text_y, text_color, label)
+    Draw.Text(dl, text_x, text_y, text_color, label)
   elseif style == STYLE.ACTION then
     -- Simple colored rectangles with dark text for action chips
     local bg_color = opts.bg_color or hexrgb('#5B8FB9')
     local text_color = opts.text_color or hexrgb('#1a1a1a')
-    local border_color = opts.border_color or Colors.with_alpha(hexrgb('#000000'), 100)
+    local border_color = opts.border_color or Colors.WithAlpha(hexrgb('#000000'), 100)
 
     -- Apply state changes to background
     local draw_bg = bg_color
     if is_active then
-      draw_bg = Colors.adjust_brightness(bg_color, 0.85)  -- Darken on click
+      draw_bg = Colors.AdjustBrightness(bg_color, 0.85)  -- Darken on click
     elseif is_hovered then
-      draw_bg = Colors.adjust_brightness(bg_color, 1.15)  -- Brighten on hover
+      draw_bg = Colors.AdjustBrightness(bg_color, 1.15)  -- Brighten on hover
     end
 
     -- Filled background
@@ -327,14 +327,14 @@ function M.draw(ctx, opts)
 
     -- Subtle inner shadow when active
     if is_active then
-      local inner_shadow = Colors.with_alpha(hexrgb('#000000'), 60)
-      Draw.rect_filled(dl, start_x, start_y, start_x + chip_w, start_y + 2, inner_shadow, 0)
+      local inner_shadow = Colors.WithAlpha(hexrgb('#000000'), 60)
+      Draw.RectFilled(dl, start_x, start_y, start_x + chip_w, start_y + 2, inner_shadow, 0)
     end
 
     -- Centered text
     local text_x = start_x + (chip_w - text_w) * 0.5
     local text_y = start_y + (chip_h - text_h) * 0.5
-    Draw.text(dl, text_x, text_y, text_color, label)
+    Draw.Text(dl, text_x, text_y, text_color, label)
   else
     local hover_factor = is_active and 1.3 or (is_hovered and 1.0 or 0.0)
     
@@ -356,18 +356,18 @@ function M.draw(ctx, opts)
     TileFX.render_complete(ctx, dl, start_x, start_y, start_x + chip_w, start_y + chip_h,
       color, fx_config, is_selected, hover_factor, nil, nil)
     
-    local text_color = Colors.auto_text_color(color)
+    local text_color = Colors.AutoTextColor(color)
     if is_selected or is_hovered then
-      text_color = Colors.adjust_brightness(text_color, 1.2)
+      text_color = Colors.AdjustBrightness(text_color, 1.2)
     end
     
     local text_x = start_x + (text_align == 'right' and (chip_w - text_w - padding_h) or 
                               text_align == 'center' and ((chip_w - text_w) * 0.5) or padding_h)
     local text_y = start_y + (chip_h - text_h) * 0.5
-    Draw.text(dl, text_x, text_y, text_color, label)
+    Draw.Text(dl, text_x, text_y, text_color, label)
   end
   
-  if not interactive then
+  if not is_interactive then
     ImGui.SetCursorScreenPos(ctx, start_x, start_y + chip_h)
   end
   

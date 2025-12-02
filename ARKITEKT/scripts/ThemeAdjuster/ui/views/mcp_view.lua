@@ -10,7 +10,7 @@ local ThemeMapper = require('ThemeAdjuster.domain.theme.mapper')
 local ParamDiscovery = require('ThemeAdjuster.domain.theme.discovery')
 local Strings = require('ThemeAdjuster.defs.strings')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
@@ -238,7 +238,7 @@ function MCPView:draw_additional_param(ctx, param)
 
   if param.type == 'toggle' then
     local is_checked = (param.value ~= 0)
-    if Ark.Checkbox.draw_at_cursor(ctx, '', is_checked, nil, 'mcp_add_' .. param.index) then
+    if Ark.Checkbox(ctx, {id = 'mcp_add_' .. param.index, label = '', is_checked = is_checked}).clicked then
       changed = true
       new_value = is_checked and 0 or 1
     end
@@ -252,7 +252,7 @@ function MCPView:draw_additional_param(ctx, param)
     local current_idx = math.floor(param.value - param.min + 1)
     current_idx = math.max(1, math.min(current_idx, #values))
 
-    local spinner_result = Ark.Spinner.draw(ctx, {
+    local spinner_result = Ark.Spinner(ctx, {
       id = '##mcp_add_spinner_' .. param.index,
       value = current_idx,
       options = values,
@@ -315,7 +315,7 @@ function MCPView:draw(ctx, shell_state)
   -- Default 6.0 params toggle (right-aligned)
   ImGui.SameLine(ctx, avail_w - 180)
   local show_d60 = self.State.get_show_default_60_params()
-  if Ark.Checkbox.draw_at_cursor(ctx, 'Default 6.0 params', show_d60, nil, 'mcp_d60_toggle') then
+  if Ark.Checkbox(ctx, {label = 'Default 6.0 params', is_checked = show_d60}).clicked then
     self.State.set_show_default_60_params(not show_d60)
   end
   if ImGui.IsItemHovered(ctx) then
@@ -341,7 +341,7 @@ function MCPView:draw(ctx, shell_state)
       primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
       secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
     }
-    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Dummy(ctx, 0, 4)
 
@@ -360,7 +360,8 @@ function MCPView:draw(ctx, shell_state)
 
     for _, layout in ipairs({'A', 'B', 'C'}) do
       local is_active = (self.active_layout == layout)
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = 'mcp_layout_' .. layout,
         label = layout,
         width = 50,
         height = 24,
@@ -371,7 +372,7 @@ function MCPView:draw(ctx, shell_state)
           ThemeParams.set_active_layout('mcp', layout)
           self:load_from_theme()
         end
-      }, 'mcp_layout_' .. layout) then
+      }).clicked then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -385,7 +386,8 @@ function MCPView:draw(ctx, shell_state)
     ImGui.SameLine(ctx, 120)
 
     for _, size in ipairs({'100%', '150%', '200%'}) do
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = 'mcp_size_' .. size,
         label = size,
         width = 70,
         height = 24,
@@ -393,7 +395,7 @@ function MCPView:draw(ctx, shell_state)
           local scale = (size == '100%') and '' or (size .. '_')
           ThemeParams.apply_layout_to_tracks('mcp', self.active_layout, scale)
         end
-      }, 'mcp_size_' .. size) then
+      }).clicked then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -415,7 +417,8 @@ function MCPView:draw(ctx, shell_state)
     end
     ImGui.SameLine(ctx, 120)
 
-    if Ark.Button.draw_at_cursor(ctx, {
+    if Ark.Button(ctx, {
+      id = 'mcp_set_default',
       label = is_default and ('✓ ' .. self.active_layout .. ' is Default') or ('Set ' .. self.active_layout .. ' as Default'),
       width = 200,
       height = 24,
@@ -426,7 +429,7 @@ function MCPView:draw(ctx, shell_state)
           self:set_default_layout(self.active_layout)
         end
       end
-    }, 'mcp_set_default') then
+    }).clicked then
     end
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetTooltip(ctx, Strings.format(Strings.MCP.set_default_layout, self.active_layout))
@@ -461,7 +464,7 @@ function MCPView:draw(ctx, shell_state)
 
       -- Spinner (fixed position, fixed width)
       ImGui.SameLine(ctx, 0, 8)
-      local spinner_result = Ark.Spinner.draw(ctx, {
+      local spinner_result = Ark.Spinner(ctx, {
         id = id,
         value = idx,
         options = values,
@@ -585,7 +588,7 @@ function MCPView:draw(ctx, shell_state)
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    if Ark.Checkbox.draw_at_cursor(ctx, 'Hide MCP of master track', self.hide_mcp_master, nil, 'mcp_hide_master') then
+    if Ark.Checkbox(ctx, {label = 'Hide MCP of master track', is_checked = self.hide_mcp_master}).clicked then
       self.hide_mcp_master = not self.hide_mcp_master
       reaper.Main_OnCommand(41588, 0)  -- Toggle hide master track in mixer
     end
@@ -593,7 +596,7 @@ function MCPView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 3)
 
-    if Ark.Checkbox.draw_at_cursor(ctx, 'Indicate tracks that are folder parents', self.folder_parent_indicator, nil, 'mcp_folder_indicator') then
+    if Ark.Checkbox(ctx, {label = 'Indicate tracks that are folder parents', is_checked = self.folder_parent_indicator}).clicked then
       self.folder_parent_indicator = not self.folder_parent_indicator
       reaper.Main_OnCommand(40864, 0)  -- Toggle folder parent indicator in mixer
     end
@@ -617,7 +620,8 @@ function MCPView:draw(ctx, shell_state)
       local state = reaper.GetToggleCommandState(command_id)
       local is_on = (state == 1)
 
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = button_id,
         label = label,
         width = 220,
         height = 28,
@@ -626,7 +630,7 @@ function MCPView:draw(ctx, shell_state)
         on_click = function()
           reaper.Main_OnCommand(command_id, 0)
         end
-      }, button_id) then
+      }).clicked then
       end
       return is_on
     end
@@ -754,7 +758,7 @@ function MCPView:draw(ctx, shell_state)
         primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
         secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
       }
-      Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+      Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
       ImGui.Dummy(ctx, 0, 4)
       ImGui.Indent(ctx, 8)

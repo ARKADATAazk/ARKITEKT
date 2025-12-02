@@ -13,7 +13,7 @@ The ARKITEKT Shell supports three primary window modes, each with pre-configured
 ### Basic Mode Selection
 
 ```lua
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 
 -- Window mode (default)
 Shell.run({
@@ -100,13 +100,15 @@ Shell.run({
   -- ...
 })
 
--- Using individual flags
+-- Using custom chrome config
 Shell.run({
-  show_titlebar = true,
-  show_statusbar = false,
-  show_icon = false,
-  show_version = false,
-  enable_maximize = false,
+  chrome = {
+    show_titlebar = true,
+    show_statusbar = false,
+    show_icon = false,
+    show_version = false,
+    enable_maximize = false,
+  },
   -- ...
 })
 ```
@@ -159,25 +161,16 @@ Shell.run({
 })
 ```
 
-## Migration Guide
+## Examples
 
-### From Legacy API
-
-The old API is still supported for backward compatibility:
-
+### Custom Chrome Configuration
 ```lua
--- Old way
 Shell.run({
-  show_status_bar = false,
-  show_titlebar = true,
-  flags = ImGui.WindowFlags_NoTitleBar,
-  -- ...
-})
-
--- New way (equivalent)
-Shell.run({
-  chrome = "hud",
-  imgui_flags = "window",
+  chrome = {
+    show_titlebar = true,
+    show_statusbar = false,
+  },
+  imgui_flags = 'window',
   -- ...
 })
 ```
@@ -230,5 +223,5 @@ CHROME = {
 ## See Also
 
 - `arkitekt.defs.app` - Constants and presets
-- `arkitekt.app.chrome.window` - Window implementation
-- `arkitekt.app.chrome.titlebar` - Titlebar implementation
+- `arkitekt.runtime.chrome.window` - Window implementation
+- `arkitekt.runtime.chrome.titlebar` - Titlebar implementation

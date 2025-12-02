@@ -8,7 +8,7 @@ local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local function create_alpha_tracker(speed)
   return {
@@ -106,10 +106,10 @@ function M.new(opts)
     local hover_alpha = self.hover_alpha:value()
     
     local bg_opacity = self.bg_opacity + (self.bg_opacity_hover - self.bg_opacity) * hover_alpha
-    local bg_color = Colors.with_alpha(self.bg_color, (255 * bg_opacity * alpha) // 1)
+    local bg_color = Colors.WithAlpha(self.bg_color, (255 * bg_opacity * alpha) // 1)
     
     local corner_radius = self.size / 2
-    Draw.rect_filled(dl, button_x, button_y, button_x + self.size, button_y + self.size, bg_color, corner_radius)
+    Draw.RectFilled(dl, button_x, button_y, button_x + self.size, button_y + self.size, bg_color, corner_radius)
     
     local icon_color = self.icon_color
     if hover_alpha > 0.5 then
@@ -119,18 +119,18 @@ function M.new(opts)
       icon_color = self.active_color
     end
     
-    local final_icon_color = Colors.with_alpha(icon_color, (255 * self.icon_opacity * alpha) // 1)
+    local final_icon_color = Colors.WithAlpha(icon_color, (255 * self.icon_opacity * alpha) // 1)
     
     local center_x = button_x + self.size / 2
     local center_y = button_y + self.size / 2
     local cross_size = self.size * 0.35
     local thickness = 2.0
     
-    Draw.line(dl, 
+    Draw.Line(dl, 
       center_x - cross_size, center_y - cross_size,
       center_x + cross_size, center_y + cross_size,
       final_icon_color, thickness)
-    Draw.line(dl, 
+    Draw.Line(dl, 
       center_x + cross_size, center_y - cross_size,
       center_x - cross_size, center_y + cross_size,
       final_icon_color, thickness)
@@ -153,6 +153,6 @@ end
 -- Make module callable
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

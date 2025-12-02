@@ -21,7 +21,7 @@ else
 end
 
 -- Load required modules
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 
 -- Load new refactored modules
 local Config = require('ItemPicker.app.config')
@@ -65,7 +65,7 @@ end
 local function cleanup()
   SetButtonState()
   reaper.Main_OnCommand(reaper.NamedCommandLookup('_SWS_STOPPREVIEW'), 0)
-  State.cleanup()
+  State.Cleanup()
 end
 
 SetButtonState(1)

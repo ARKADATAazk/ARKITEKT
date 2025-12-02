@@ -19,7 +19,7 @@ function M.remap(value, in_min, in_max, out_min, out_max)
   return out_min + (value - in_min) * (out_max - out_min) / (in_max - in_min)
 end
 
-function M.snap(value, step)
+function M.Snap(value, step)
   return (value / step + 0.5) // 1 * step
 end
 

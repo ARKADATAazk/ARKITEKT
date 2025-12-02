@@ -5,7 +5,7 @@
 local Ark = require('arkitekt')
 local TemplateTile = require('ThemeAdjuster.ui.grids.renderers.template_tile')
 local TemplateGroupConfig = require('ThemeAdjuster.ui.grids.renderers.template_group_config')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 

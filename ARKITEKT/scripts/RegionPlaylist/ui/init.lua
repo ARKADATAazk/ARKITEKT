@@ -327,7 +327,7 @@ function GUI:update_state(ctx, window)
   end
 
   self.State.get_bridge():update()
-  self.State.update()
+  self.State.Update()
 
   -- Sync layout_mode from State to region_tiles when it changes
   local current_layout_mode = self.State.get_layout_mode()
@@ -393,7 +393,7 @@ function GUI:draw(ctx, window, shell_state)
   local transport_start_x, transport_start_y = ImGui.GetCursorScreenPos(ctx)
 
   local is_blocking = self.region_tiles:is_modal_blocking(ctx)
-  TransportView.draw(ctx, shell_state, is_blocking)  -- Module function, not method
+  TransportView.Draw(ctx, shell_state, is_blocking)  -- Module function, not method
 
   -- Position cursor after transport with separator gap
   local sep_gap = self.Config.SEPARATOR.horizontal.gap

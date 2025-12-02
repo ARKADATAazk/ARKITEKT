@@ -321,7 +321,7 @@ end
 --- @param opts table Widget options
 --- @return boolean True if widget can be interacted with
 function M.is_interactive(opts)
-  return not opts.disabled and not opts.is_blocking
+  return not opts.is_disabled and not opts.is_blocking
 end
 
 --- Get hover and active state for a rectangular region
@@ -361,34 +361,34 @@ function M.get_state_colors(base_colors, opts, is_hovered, is_active, hover_alph
   local text = base_colors.text or base_colors.text_color
 
   -- Disabled state
-  if opts.disabled then
+  if opts.is_disabled then
     return
-      base_colors.bg_disabled or Colors.with_opacity(Colors.desaturate(bg, 0.5), 0.5),
-      base_colors.border_inner_disabled or Colors.with_opacity(Colors.desaturate(border_inner, 0.5), 0.5),
-      base_colors.border_outer_disabled or Colors.with_opacity(Colors.desaturate(border_outer, 0.5), 0.5),
-      base_colors.text_disabled or Colors.with_opacity(Colors.desaturate(text, 0.5), 0.5)
+      base_colors.bg_disabled or Colors.WithOpacity(Colors.Desaturate(bg, 0.5), 0.5),
+      base_colors.border_inner_disabled or Colors.WithOpacity(Colors.Desaturate(border_inner, 0.5), 0.5),
+      base_colors.border_outer_disabled or Colors.WithOpacity(Colors.Desaturate(border_outer, 0.5), 0.5),
+      base_colors.text_disabled or Colors.WithOpacity(Colors.Desaturate(text, 0.5), 0.5)
   end
 
   -- Active state
   if is_active then
     return
-      base_colors.bg_active or Colors.adjust_brightness(bg, 0.85),
-      base_colors.border_inner_active or Colors.adjust_brightness(border_inner, 0.85),
+      base_colors.bg_active or Colors.AdjustBrightness(bg, 0.85),
+      base_colors.border_inner_active or Colors.AdjustBrightness(border_inner, 0.85),
       border_outer,
       base_colors.text_active or text
   end
 
   -- Hover state (with animation)
   if hover_alpha > 0.01 then
-    local hover_bg = base_colors.bg_hover or Colors.adjust_brightness(bg, 1.15)
-    local hover_border = base_colors.border_inner_hover or Colors.adjust_brightness(border_inner, 1.15)
+    local hover_bg = base_colors.bg_hover or Colors.AdjustBrightness(bg, 1.15)
+    local hover_border = base_colors.border_inner_hover or Colors.AdjustBrightness(border_inner, 1.15)
     local hover_text = base_colors.text_hover or text
 
     return
-      Colors.lerp(bg, hover_bg, hover_alpha),
-      Colors.lerp(border_inner, hover_border, hover_alpha),
+      Colors.Lerp(bg, hover_bg, hover_alpha),
+      Colors.Lerp(border_inner, hover_border, hover_alpha),
       border_outer,
-      Colors.lerp(text, hover_text, hover_alpha)
+      Colors.Lerp(text, hover_text, hover_alpha)
   end
 
   return bg, border_inner, border_outer, text
@@ -400,7 +400,7 @@ end
 --- @return number Modified color
 function M.apply_disabled_effect(color, opts)
   if opts.disabled then
-    return Colors.with_opacity(Colors.desaturate(color, 0.5), 0.5)
+    return Colors.WithOpacity(Colors.Desaturate(color, 0.5), 0.5)
   end
   return color
 end
@@ -579,7 +579,7 @@ M.DEFAULTS = {
   draw_list = nil,
 
   -- State
-  disabled = false,
+  is_disabled = false,
   is_blocking = false,
 
   -- Style

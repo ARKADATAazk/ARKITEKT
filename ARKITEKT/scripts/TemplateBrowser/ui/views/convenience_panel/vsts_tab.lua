@@ -11,7 +11,7 @@ local UI = require('TemplateBrowser.ui.config.constants')
 local M = {}
 
 -- Draw mini VSTS content (list of all FX with filtering, no reparse button)
-function M.draw(ctx, state, config, width, height)
+function M.Draw(ctx, state, config, width, height)
   -- Get all FX from templates
   local FXParser = require('TemplateBrowser.domain.fx.parser')
   local all_fx = FXParser.get_all_fx(state.templates)
@@ -40,20 +40,20 @@ function M.draw(ctx, state, config, width, height)
       -- Use stored color or default dark grey with 80% transparency
       local bg_color
       if vst_color then
-        bg_color = is_selected and vst_color or Ark.Colors.with_opacity(vst_color, 0.8)
+        bg_color = is_selected and vst_color or Ark.Colors.WithOpacity(vst_color, 0.8)
       else
-        bg_color = is_selected and Ark.Colors.hexrgb('#4A4A4ACC') or Ark.Colors.hexrgb('#3A3A3ACC')
+        bg_color = is_selected and Ark.Colors.Hexrgb('#4A4A4ACC') or Ark.Colors.Hexrgb('#3A3A3ACC')
       end
 
-      local clicked, chip_w, chip_h = Chip.draw(ctx, {
+      local clicked, chip_w, chip_h = Chip.Draw(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
         bg_color = bg_color,
-        text_color = vst_color and Ark.Colors.auto_text_color(vst_color) or Ark.Colors.hexrgb('#FFFFFF'),
+        text_color = vst_color and Ark.Colors.AutoTextColor(vst_color) or Ark.Colors.Hexrgb('#FFFFFF'),
         height = 22,
         padding_h = 8,
         rounding = 2,
-        interactive = true,
+        is_interactive = true,
       })
 
       if clicked then

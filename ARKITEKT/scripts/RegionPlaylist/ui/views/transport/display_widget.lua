@@ -9,7 +9,7 @@ local Duration = require('arkitekt.core.duration')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
 local Chip = require('arkitekt.gui.widgets.data.chip')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -82,18 +82,18 @@ end
 local function ensure_minimum_brightness(color, min_luminance)
   min_luminance = min_luminance or 0.15
 
-  local lum = Ark.Colors.luminance(color)
+  local lum = Ark.Colors.Luminance(color)
   if lum >= min_luminance then
     return color
   end
 
   local boost_factor = min_luminance / max(lum, 0.01)
-  return Ark.Colors.adjust_brightness(color, boost_factor)
+  return Ark.Colors.AdjustBrightness(color, boost_factor)
 end
 
 local function ensure_progress_bar_brightness(color)
   -- Ensure progress bar is never too dark (min 30% brightness)
-  local r, g, b, a = Ark.Colors.rgba_to_components(color)
+  local r, g, b, a = Ark.Colors.RgbaToComponents(color)
   local lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255.0
 
   if lum < 0.30 then
@@ -103,7 +103,7 @@ local function ensure_progress_bar_brightness(color)
     b = min(255, (b * boost)//1)
   end
 
-  return Ark.Colors.components_to_rgba(r, g, b, a)
+  return Ark.Colors.ComponentsToRgba(r, g, b, a)
 end
 
 function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_region, next_region, playlist_data, region_colors, time_font)
@@ -181,7 +181,7 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
     local chip_x = x + LC.padding + LC.playlist_chip_offset_x
     local chip_y = row_y + row_height / 2 + LC.playlist_chip_offset_y
 
-    Chip.draw(ctx, {
+    Chip.Draw(ctx, {
       style = Chip.STYLE.INDICATOR,
       color = playlist_data.color,
       draw_list = dl,
@@ -233,7 +233,7 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
       name_str = truncate_text(name_str, truncate_len)
     end
 
-    local index_color = Ark.Colors.same_hue_variant(current_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
+    local index_color = Ark.Colors.SameHueVariant(current_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
     -- Dynamic region name color from theme
     local name_color = Ark.Style.COLORS.TEXT_BRIGHT
 
@@ -265,7 +265,7 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
       name_str = truncate_text(name_str, truncate_len)
     end
 
-    local index_color = Ark.Colors.same_hue_variant(next_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
+    local index_color = Ark.Colors.SameHueVariant(next_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
     -- Dynamic region name color from theme
     local name_color = Ark.Style.COLORS.TEXT_BRIGHT
 

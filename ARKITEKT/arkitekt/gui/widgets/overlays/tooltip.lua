@@ -5,7 +5,7 @@
 local ImGui = require('arkitekt.platform.imgui')
 local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.core.theme')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 
 local M = {}
@@ -133,7 +133,7 @@ function M.show_at_mouse(ctx, text, config)
   ImGui.DrawList_AddText(dl, x + padding_x, y + padding_y, text_color, text)
 end
 
-function M.reset()
+function M.Reset()
   tooltip_state.hover_start_time = 0
   tooltip_state.last_text = ''
   tooltip_state.is_visible = false

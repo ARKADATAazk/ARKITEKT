@@ -4,39 +4,18 @@
 --   Perfect for glitch percussion and repetitive patterns.
 
 -- ============================================================================
--- BOOTSTRAP ARKITEKT FRAMEWORK
+-- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local Ark
-do
-  local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, 'S').source:sub(2)
-  local path = src:match('(.*'..sep..')')
-  while path and #path > 3 do
-    local bootstrap = path .. 'arkitekt' .. sep .. 'app' .. sep .. 'bootstrap.lua'
-    local f = io.open(bootstrap, 'r')
-    if f then
-      f:close()
-      -- Set up package path first
-      package.path = path .. '?.lua;' .. path .. '?' .. sep .. 'init.lua;' .. package.path
-      ark = require('arkitekt')
-      break
-    end
-    path = path:match('(.*'..sep..')[^'..sep..']-'..sep..'$')
-  end
-  if not ark then
-    reaper.MB('ARKITEKT framework not found!', 'FATAL ERROR', 0)
-    return
-  end
-end
+local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 
 -- ============================================================================
 -- LOAD MODULES
 -- ============================================================================
 
 local ImGui = require('arkitekt.platform.imgui')
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 local MediaContainer = require('MediaContainer.init')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 -- Initialize
 MediaContainer.initialize()
@@ -50,7 +29,7 @@ Shell.run({
   version      = 'v0.1.0',
   draw         = function(ctx, shell_state)
     local draw_list = ImGui.GetBackgroundDrawList(ctx)
-    MediaContainer.update(ctx, draw_list)
+    MediaContainer.Update(ctx, draw_list)
 
     local containers = MediaContainer.get_containers()
 
@@ -81,7 +60,7 @@ Shell.run({
           local label = string.format('%s%s (%d items)', container.name, linked_text, #container.items)
 
           -- Color indicator
-          local r, g, b, a = Ark.Colors.rgba_to_components(container.color or 0xFF6600FF)
+          local r, g, b, a = Ark.Colors.RgbaToComponents(container.color or 0xFF6600FF)
           ImGui.PushStyleColor(ctx, ImGui.Col_Text, ImGui.ColorConvertDouble4ToU32(r/255, g/255, b/255, 1))
           ImGui.Bullet(ctx)
           ImGui.PopStyleColor(ctx, 1)

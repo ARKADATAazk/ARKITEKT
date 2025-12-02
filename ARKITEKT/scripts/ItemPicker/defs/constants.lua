@@ -7,7 +7,7 @@
 -- This ensures ItemPicker respects the persisted theme mode.
 
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.hexrgb
+local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}
 

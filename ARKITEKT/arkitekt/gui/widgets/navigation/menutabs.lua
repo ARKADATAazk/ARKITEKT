@@ -9,7 +9,7 @@ local Theme = require('arkitekt.core.theme')
 
 local M = {}
 M.__index = M
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.Hexrgb
 
 local DEFAULTS = {
   style = {
