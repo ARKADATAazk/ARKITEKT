@@ -29,9 +29,9 @@ do
         local error_msg = tostring(err)
         local stack = debug.traceback()
         -- Log to debug console
-        Logger.error("SYSTEM", "%s\n%s", error_msg, stack)
+        Logger.error('SYSTEM', '%s\n%s', error_msg, stack)
         -- Also output to REAPER console for immediate visibility
-        reaper.ShowConsoleMsg("ERROR: " .. error_msg .. '\n\n' .. stack .. '\n')
+        reaper.ShowConsoleMsg('ERROR: ' .. error_msg .. '\n\n' .. stack .. '\n')
       end)
     end)
   end
@@ -186,7 +186,7 @@ local function run_overlay_mode(config)
     end
   end
 
-  local title = config.title or "ARKITEKT Overlay"
+  local title = config.title or 'ARKITEKT Overlay'
   local draw_fn = config.draw or function(ctx) ImGui.Text(ctx, 'No draw function provided') end
 
   -- Handle toolbar button state
@@ -218,7 +218,7 @@ local function run_overlay_mode(config)
   do
     local ok, ThemeManager = pcall(require, 'arkitekt.core.theme_manager')
     if ok and ThemeManager and ThemeManager.init then
-      ThemeManager.init("adapt", config.app_name)
+      ThemeManager.init('adapt', config.app_name)
 
       -- Create live sync functions (polled in main loop)
       if ThemeManager.create_live_sync then
@@ -242,7 +242,7 @@ local function run_overlay_mode(config)
 
   -- Push overlay with framework defaults
   overlay_mgr:push(OverlayDefaults.create_overlay_config({
-    id = overlay_cfg.id or (config.app_name or "app") .. "_overlay",
+    id = overlay_cfg.id or (config.app_name or 'app') .. '_overlay',
 
     -- Close behavior
     esc_to_close = overlay_cfg.esc_to_close,
@@ -333,7 +333,7 @@ function M.run(opts)
   -- ============================================================================
   -- Overlay mode uses OverlayManager for fullscreen, scrim, and proper multi-monitor support.
   -- This must be checked BEFORE applying imgui_flags presets.
-  if config.mode == "overlay" then
+  if config.mode == 'overlay' then
     return run_overlay_mode(config)
   end
 
@@ -341,7 +341,7 @@ function M.run(opts)
   -- MODE-BASED PRESETS: Apply ImGui flags and chrome configuration
   -- ============================================================================
   -- If mode is specified (hud, window), apply the corresponding presets (unless explicitly overridden)
-  if config.mode and (config.mode == "hud" or config.mode == "window") then
+  if config.mode and (config.mode == 'hud' or config.mode == 'window') then
     -- Apply ImGui flags preset if not already specified
     if not opts.imgui_flags and not opts.flags then
       config.imgui_flags = config.mode
@@ -394,14 +394,14 @@ function M.run(opts)
   -- THEME INITIALIZATION
   -- ============================================================================
   -- Initialize theme on app startup to ensure Theme.COLORS is properly set
-  -- before any UI renders. This prevents the "dark defaults on light theme" bug.
+  -- before any UI renders. This prevents the 'dark defaults on light theme' bug.
   -- Theme preferences are persisted via REAPER ExtState and restored automatically.
   local reaper_theme_sync, cross_app_theme_sync
   do
     local ok, ThemeManager = pcall(require, 'arkitekt.core.theme_manager')
     if ok and ThemeManager and ThemeManager.init then
-      -- init() loads saved preference or defaults to "adapt" mode
-      ThemeManager.init("adapt", config.app_name)
+      -- init() loads saved preference or defaults to 'adapt' mode
+      ThemeManager.init('adapt', config.app_name)
 
       -- Create live sync functions (polled in main loop)
       if ThemeManager.create_live_sync then
@@ -507,13 +507,13 @@ function M.run(opts)
 
   local function draw_with_profiling(ctx, state)
     if enable_profiling and window.start_timer then
-      window:start_timer("draw")
+      window:start_timer('draw')
     end
-    
+
     local result = draw_fn(ctx, state)
-    
+
     if enable_profiling and window.end_timer then
-      state.profiling.draw_time = window:end_timer("draw")
+      state.profiling.draw_time = window:end_timer('draw')
     end
     
     return result
@@ -532,11 +532,11 @@ function M.run(opts)
 
     if style and style.PushMyStyle then
       if enable_profiling and window.start_timer then
-        window:start_timer("style_push")
+        window:start_timer('style_push')
       end
       style.PushMyStyle(ctx)
       if enable_profiling and window.end_timer then
-        window:end_timer("style_push")
+        window:end_timer('style_push')
       end
     end
 
@@ -559,11 +559,11 @@ function M.run(opts)
 
     if style and style.PopMyStyle then
       if enable_profiling and window.start_timer then
-        window:start_timer("style_pop")
+        window:start_timer('style_pop')
       end
       style.PopMyStyle(ctx)
       if enable_profiling and window.end_timer then
-        window:end_timer("style_pop")
+        window:end_timer('style_pop')
       end
     end
 
@@ -577,18 +577,18 @@ function M.run(opts)
 
     if settings and settings.maybe_flush then
       if enable_profiling and window.start_timer then
-        window:start_timer("settings_flush")
+        window:start_timer('settings_flush')
       end
       settings:maybe_flush()
       if enable_profiling and window.end_timer then
-        window:end_timer("settings_flush")
+        window:end_timer('settings_flush')
       end
     end
 
     if enable_profiling then
       state.profiling.total_time = (reaper.time_precise() - state.profiling.frame_start) * 1000
       if window.profiling then
-        window.profiling.custom_timers["total_frame"] = state.profiling.total_time
+        window.profiling.custom_timers['total_frame'] = state.profiling.total_time
       end
     end
 
