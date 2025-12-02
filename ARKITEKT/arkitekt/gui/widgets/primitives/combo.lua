@@ -666,6 +666,16 @@ end
 -- Make module callable: Ark.Combo(ctx, ...) → M.draw(ctx, ...)
 return setmetatable(M, {
   __call = function(_, ctx, ...)
-    return M.draw(ctx, ...)
+    local result = M.draw(ctx, ...)
+
+    -- Detect mode: positional (string label) vs opts (table)
+    local first_arg = select(1, ...)
+    if type(first_arg) == 'string' then
+      -- Positional mode: Return ImGui-compatible tuple (changed, value)
+      return result.changed, result.value
+    else
+      -- Opts mode: Return full result table
+      return result
+    end
   end
 })
