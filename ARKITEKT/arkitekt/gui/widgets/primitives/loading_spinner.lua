@@ -16,7 +16,7 @@ local M = {}
 
 local DEFAULTS = {
   -- Identity
-  id = "loading_spinner",
+  id = 'loading_spinner',
 
   -- Position (nil = use cursor)
   x = nil,
@@ -32,7 +32,7 @@ local DEFAULTS = {
   speed = 3.0,         -- Rotation speed multiplier
 
   -- Cursor control
-  advance = "vertical",
+  advance = 'vertical',
 
   -- Draw list
   draw_list = nil,

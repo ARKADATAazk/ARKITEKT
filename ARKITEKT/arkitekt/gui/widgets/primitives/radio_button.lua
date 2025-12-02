@@ -18,7 +18,7 @@ local M = {}
 
 local DEFAULTS = {
   -- Identity
-  id = "radio",
+  id = 'radio',
 
   -- Position (nil = use cursor)
   x = nil,
@@ -35,7 +35,7 @@ local DEFAULTS = {
   disabled = false,
 
   -- Content
-  label = "",
+  label = '',
 
   -- Colors
   bg_color = nil,
@@ -53,7 +53,7 @@ local DEFAULTS = {
   tooltip = nil,
 
   -- Cursor control
-  advance = "vertical",
+  advance = 'vertical',
 
   -- Draw list
   draw_list = nil,
@@ -80,7 +80,7 @@ end
 --- Draw a radio button widget
 --- Supports both positional and opts-based parameters:
 --- - Positional: Ark.RadioButton(ctx, label, active)
---- - Opts table: Ark.RadioButton(ctx, {label = "...", selected = true, ...})
+--- - Opts table: Ark.RadioButton(ctx, {label = '...', selected = true, ...})
 --- @param ctx userdata ImGui context
 --- @param label_or_opts string|table Label string or opts table
 --- @param active boolean|nil Active state (positional only)
@@ -88,10 +88,10 @@ end
 function M.draw(ctx, label_or_opts, active)
   -- Hybrid parameter detection
   local opts
-  if type(label_or_opts) == "table" then
+  if type(label_or_opts) == 'table' then
     -- Opts table passed directly
     opts = label_or_opts
-  elseif type(label_or_opts) == "string" then
+  elseif type(label_or_opts) == 'string' then
     -- Positional params - map to opts
     opts = {
       label = label_or_opts,
@@ -105,7 +105,7 @@ function M.draw(ctx, label_or_opts, active)
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(ctx, opts, "radio")
+  local unique_id = Base.resolve_id(ctx, opts, 'radio')
 
   -- Get instance for animation
   local inst = get_instance(unique_id)
@@ -120,14 +120,14 @@ function M.draw(ctx, label_or_opts, active)
   local selected_radius = (opts.selected_size or 10) / 2
 
   -- Calculate dimensions
-  local label = opts.label or ""
+  local label = opts.label or ''
   local text_w, text_h = 0, 0
-  if label ~= "" then
+  if label ~= '' then
     text_w, text_h = Base.measure_text(ctx, label)
   end
 
   local total_w = outer_radius * 2
-  if label ~= "" then
+  if label ~= '' then
     total_w = total_w + opts.spacing + text_w
   end
   local total_h = math.max(outer_radius * 2, text_h)
@@ -141,7 +141,7 @@ function M.draw(ctx, label_or_opts, active)
 
   -- Update animation (slower fade for smoother effect)
   local dt = ImGui.GetDeltaTime(ctx)
-  Base.update_hover_animation(inst, dt, hovered, active, "hover_alpha", 6.0)
+  Base.update_hover_animation(inst, dt, hovered, active, 'hover_alpha', 6.0)
 
   -- Calculate center of circle
   local center_x = x + outer_radius
@@ -149,12 +149,12 @@ function M.draw(ctx, label_or_opts, active)
 
   -- Determine colors
   local bg_color, inner_color, selected_color, text_color, border_inner, border_outer
-  local white_overlay = hexrgb("#FFFFFF")
+  local white_overlay = hexrgb('#FFFFFF')
 
   -- Base colors
   bg_color = opts.bg_color or Theme.COLORS.BG_BASE
   inner_color = Colors.adjust_brightness(opts.inner_color or Theme.COLORS.BG_BASE, 0.85)
-  selected_color = opts.selected_color or hexrgb("#7e7e7e")
+  selected_color = opts.selected_color or hexrgb('#7e7e7e')
   text_color = opts.text_color or Theme.COLORS.TEXT_NORMAL
   border_inner = opts.border_inner_color or Theme.COLORS.BORDER_INNER
   border_outer = opts.border_outer_color or Theme.COLORS.BORDER_OUTER
@@ -204,7 +204,7 @@ function M.draw(ctx, label_or_opts, active)
   end
 
   -- Draw label
-  if label ~= "" then
+  if label ~= '' then
     local label_x = x + outer_radius * 2 + opts.spacing
     local label_y = y + (total_h - text_h) * 0.5
     ImGui.DrawList_AddText(dl, label_x, label_y, text_color, label)

@@ -19,7 +19,7 @@ local field_state = {}
 local function get_or_create_state(id)
   if not field_state[id] then
     field_state[id] = {
-      text = "",
+      text = '',
       editing = false,
       markdown_renderer = nil,
       focus_set = false,
@@ -39,8 +39,8 @@ local function get_markdown_renderer(ctx, id, state)
     local ReaImGuiMd = require('arkitekt.external.talagan_ReaImGui Markdown.reaimgui_markdown')
 
     -- Teal accent color from style defaults (as hex strings for markdown lib)
-    local teal_accent = "#41E0A3"
-    local teal_dim = "#37775F"
+    local teal_accent = '#41E0A3'
+    local teal_dim = '#37775F'
 
     -- Create markdown renderer with custom teal-accented style
     state.markdown_renderer = ReaImGuiMd:new(ctx, id, {
@@ -81,7 +81,7 @@ end
 --   - width: Field width (-1 for available width)
 --   - height: Field height in edit mode
 --   - text: Current text content
---   - placeholder: Text to show when empty (default: "Double-click to edit...")
+--   - placeholder: Text to show when empty (default: 'Double-click to edit...')
 --   - view_bg_color: Background color in view mode
 --   - view_border_color: Border color in view mode
 --   - edit_bg_color: Background color in edit mode
@@ -95,7 +95,7 @@ function M.draw_at_cursor(ctx, config, id)
 
   -- Update text if changed externally
   if config.text ~= state.text and not state.editing then
-    state.text = config.text or ""
+    state.text = config.text or ''
   end
 
   local width = config.width or -1
@@ -120,9 +120,9 @@ function M.draw_at_cursor(ctx, config, id)
     -- EDIT MODE: Show multiline text input
     -- ========================================================================
 
-    local edit_bg = config.edit_bg_color or hexrgb("#1A1A1A")
-    local edit_border = config.edit_border_color or hexrgb("#4A9EFF")
-    local text_color = config.text_color or hexrgb("#FFFFFF")
+    local edit_bg = config.edit_bg_color or hexrgb('#1A1A1A')
+    local edit_border = config.edit_border_color or hexrgb('#4A9EFF')
+    local text_color = config.text_color or hexrgb('#FFFFFF')
 
     -- Draw background
     local dl = ImGui.GetWindowDrawList(ctx)
@@ -139,15 +139,15 @@ function M.draw_at_cursor(ctx, config, id)
     end
 
     -- Style the input to be transparent (we draw our own background)
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, hexrgb("#00000000"))
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, hexrgb("#00000000"))
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, hexrgb("#00000000"))
-    ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#00000000"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, hexrgb('#00000000'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, hexrgb('#00000000'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, hexrgb('#00000000'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb('#00000000'))
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
 
     local input_changed, input_text = ImGui.InputTextMultiline(
       ctx,
-      "##edit_" .. id,
+      '##edit_' .. id,
       state.text,
       actual_width - padding * 2,
       height - padding * 2,
@@ -177,7 +177,7 @@ function M.draw_at_cursor(ctx, config, id)
     if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
       state.editing = false
       state.focus_set = false
-      state.text = config.text or ""  -- Restore original
+      state.text = config.text or ''  -- Restore original
       new_text = state.text
     end
 
@@ -198,9 +198,9 @@ function M.draw_at_cursor(ctx, config, id)
     -- VIEW MODE: Show rendered markdown
     -- ========================================================================
 
-    local view_bg = config.view_bg_color or hexrgb("#0D0D0D")
-    local placeholder_color = config.placeholder_color or hexrgb("#666666")
-    local placeholder_text = config.placeholder or "Double-click to edit..."
+    local view_bg = config.view_bg_color or hexrgb('#0D0D0D')
+    local placeholder_color = config.placeholder_color or hexrgb('#666666')
+    local placeholder_text = config.placeholder or 'Double-click to edit...'
 
     -- Check if hovering over the view area
     local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
@@ -225,7 +225,7 @@ function M.draw_at_cursor(ctx, config, id)
     -- Position cursor for content (don't create extra BeginChild - markdown renderer creates its own)
     ImGui.SetCursorScreenPos(ctx, cursor_x + padding, cursor_y + padding)
 
-    if state.text == "" or state.text == nil then
+    if state.text == '' or state.text == nil then
       -- Show placeholder text
       ImGui.PushStyleColor(ctx, ImGui.Col_Text, placeholder_color)
       ImGui.PushTextWrapPos(ctx, cursor_x + actual_width - padding)
@@ -263,7 +263,7 @@ end
 -- @return text Current text content
 function M.get_text(id)
   local state = field_state[id]
-  return state and state.text or ""
+  return state and state.text or ''
 end
 
 --- Set text for a field (updates internal state)
@@ -271,7 +271,7 @@ end
 -- @param text New text content
 function M.set_text(id, text)
   local state = get_or_create_state(id)
-  state.text = text or ""
+  state.text = text or ''
 end
 
 --- Check if a field is currently being edited

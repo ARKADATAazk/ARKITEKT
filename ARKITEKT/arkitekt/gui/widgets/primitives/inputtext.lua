@@ -19,7 +19,7 @@ local M = {}
 
 local DEFAULTS = {
   -- Identity
-  id = "field",
+  id = 'field',
 
   -- Position (nil = use cursor)
   x = nil,
@@ -30,7 +30,7 @@ local DEFAULTS = {
   height = 24,
 
   -- State
-  text = "",
+  text = '',
   disabled = false,
 
   -- Content
@@ -45,7 +45,7 @@ local DEFAULTS = {
   padding_y = 4,
   fade_speed = 8.0,
   border_thickness = 1,
-  preset = nil,  -- "search" or custom preset table
+  preset = nil,  -- 'search' or custom preset table
 
   -- Colors
   bg_color = nil,
@@ -70,7 +70,7 @@ local DEFAULTS = {
   tooltip = nil,
 
   -- Cursor control
-  advance = "vertical",
+  advance = 'vertical',
 
   -- Draw list
   draw_list = nil,
@@ -86,7 +86,7 @@ local field_state = {}
 local function get_or_create_state(id)
   if not field_state[id] then
     field_state[id] = {
-      text = "",
+      text = '',
       focused = false,
       hover_alpha = 0.0,
     }
@@ -103,9 +103,9 @@ local function resolve_config(opts)
   local config = Theme.build_search_input_config()
 
   -- Apply preset if specified
-  if opts.preset == "search" then
+  if opts.preset == 'search' then
     -- Already using search_input_config as base
-  elseif type(opts.preset) == "table" then
+  elseif type(opts.preset) == 'table' then
     for k, v in pairs(opts.preset) do
       config[k] = v
     end
@@ -212,14 +212,14 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   ImGui.PushItemWidth(ctx, width - padding_x * 2)
 
   -- Make input background transparent
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, hexrgb('#00000000'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, hexrgb('#00000000'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, hexrgb('#00000000'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb('#00000000'))
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
 
   local changed, new_text
-  local input_id = "##" .. id
+  local input_id = '##' .. id
 
   -- Handle disabled state
   if is_disabled then
@@ -284,7 +284,7 @@ end
 --- Draw a text field widget
 --- Supports both positional and opts-based parameters:
 --- - Positional: Ark.InputText(ctx, label, text, width)
---- - Opts table: Ark.InputText(ctx, {label = "...", text = "...", width = 200, ...})
+--- - Opts table: Ark.InputText(ctx, {label = '...', text = '...', width = 200, ...})
 --- @param ctx userdata ImGui context
 --- @param label_or_opts string|table Label string or opts table
 --- @param text string|nil Current text (positional only)
@@ -293,10 +293,10 @@ end
 function M.draw(ctx, label_or_opts, text, width)
   -- Hybrid parameter detection
   local opts
-  if type(label_or_opts) == "table" then
+  if type(label_or_opts) == 'table' then
     -- Opts table passed directly
     opts = label_or_opts
-  elseif type(label_or_opts) == "string" then
+  elseif type(label_or_opts) == 'string' then
     -- Positional params - map to opts
     opts = {
       label = label_or_opts,
@@ -312,16 +312,16 @@ function M.draw(ctx, label_or_opts, text, width)
   local config = resolve_config(opts)
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(ctx, opts, "field")
+  local unique_id = Base.resolve_id(ctx, opts, 'field')
 
   -- Get or create state
   local state = get_or_create_state(unique_id)
 
   -- Support get_value callback pattern for panel integration
   -- This allows external state management (e.g., app_state.search_query)
-  if opts.get_value and type(opts.get_value) == "function" then
-    state.text = opts.get_value() or ""
-  elseif opts.text and state.text == "" then
+  if opts.get_value and type(opts.get_value) == 'function' then
+    state.text = opts.get_value() or ''
+  elseif opts.text and state.text == '' then
     -- Set initial text if provided and state is empty
     state.text = opts.text
   end
@@ -362,8 +362,8 @@ end
 --- @return table Result
 function M.search(ctx, opts)
   opts = opts or {}
-  opts.preset = opts.preset or "search"
-  opts.id = opts.id or "search"
+  opts.preset = opts.preset or 'search'
+  opts.id = opts.id or 'search'
   return M.draw(ctx, opts)
 end
 
@@ -372,9 +372,9 @@ end
 --- @return string Current text value
 function M.get_text(id)
   if field_state[id] then
-    return field_state[id].text or ""
+    return field_state[id].text or ''
   end
-  return ""
+  return ''
 end
 
 --- Set text value for a field
@@ -383,19 +383,19 @@ end
 function M.set_text(id, text)
   if not field_state[id] then
     field_state[id] = {
-      text = "",
+      text = '',
       focused = false,
       hover_alpha = 0.0,
     }
   end
-  field_state[id].text = text or ""
+  field_state[id].text = text or ''
 end
 
 --- Clear text for a field
 --- @param id string Field identifier
 function M.clear(id)
   if field_state[id] then
-    field_state[id].text = ""
+    field_state[id].text = ''
   end
 end
 
