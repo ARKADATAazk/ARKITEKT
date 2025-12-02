@@ -87,7 +87,7 @@ function Graph:rebuild()
   end
 
   -- Phase 2: Build disabled relationships
-  -- A node is "disabled for" another if adding it would create a cycle
+  -- A node is 'disabled for' another if adding it would create a cycle
   for target_id, target_node in pairs(self.nodes) do
     target_node.is_disabled_for = {}
 
@@ -136,7 +136,7 @@ function Graph:would_create_cycle(target_id, source_id)
       path[#path + 1] = target_id  -- Complete the cycle
       return true, path
     end
-    return true, {source_id, "...", target_id}
+    return true, {source_id, '...', target_id}
   end
 
   return false
