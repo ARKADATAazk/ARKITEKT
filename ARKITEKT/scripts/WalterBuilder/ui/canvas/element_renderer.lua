@@ -2,8 +2,8 @@
 -- WalterBuilder/ui/canvas/element_renderer.lua
 -- Renders individual elements with attachment visualization
 
-local ImGui = require('arkitekt.platform.imgui')
-local Colors = require('WalterBuilder.defs.colors')
+local ImGui = require('arkitekt.core.imgui')
+local Colors = require('WalterBuilder.config.colors')
 local Simulator = require('WalterBuilder.domain.simulator')
 
 local M = {}

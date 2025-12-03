@@ -12,7 +12,7 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 -- LOAD MODULES
 -- ============================================================================
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Shell = require('arkitekt.runtime.shell')
 local MediaContainer = require('MediaContainer.init')
 local hexrgb = Ark.Colors.Hexrgb

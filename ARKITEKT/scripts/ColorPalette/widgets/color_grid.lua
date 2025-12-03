@@ -2,7 +2,7 @@
 -- Arkitekt/ColorPalette/widgets/color_grid.lua
 -- Simple color button grid widget with drag-to-move support
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local M = {}

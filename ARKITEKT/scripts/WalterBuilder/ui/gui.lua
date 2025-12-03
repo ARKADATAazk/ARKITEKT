@@ -2,7 +2,7 @@
 -- WalterBuilder/ui/gui.lua
 -- Main GUI orchestrator - combines all panels
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local State = require('WalterBuilder.app.state')
 local PreviewCanvas = require('WalterBuilder.ui.canvas.preview_canvas')
@@ -14,8 +14,8 @@ local CodePanel = require('WalterBuilder.ui.panels.code_panel')
 local RtconfigPanel = require('WalterBuilder.ui.panels.rtconfig_panel')
 local RtconfigConverter = require('WalterBuilder.domain.rtconfig_converter')
 local DebugConsole = require('WalterBuilder.ui.panels.debug_console')
-local TCPElements = require('WalterBuilder.defs.tcp_elements')
-local Constants = require('WalterBuilder.defs.constants')
+local TCPElements = require('WalterBuilder.config.tcp_elements')
+local Constants = require('WalterBuilder.config.constants')
 -- Notification migrated to framework (was: WalterBuilder.domain.notification)
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local WalterSettings = require('WalterBuilder.infra.settings')

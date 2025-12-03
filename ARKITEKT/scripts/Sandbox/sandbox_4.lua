@@ -13,7 +13,7 @@ if not root_path:match('[\\/]$') then root_path = root_path .. '/' end
 local arkitekt_path = root_path .. 'ARKITEKT/'
 package.path = arkitekt_path .. '?.lua;' .. arkitekt_path .. '?/init.lua;' .. package.path
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Shell = require('arkitekt.runtime.shell')
 local Colors = require('arkitekt.core.colors')
 local InputText = require('arkitekt.gui.widgets.primitives.inputtext')

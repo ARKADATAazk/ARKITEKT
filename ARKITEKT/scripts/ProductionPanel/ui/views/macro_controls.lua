@@ -7,7 +7,7 @@ local M = {}
 -- DEPENDENCIES
 local Ark = require('arkitekt')
 local Knob = require('scripts.ProductionPanel.ui.widgets.knob')
-local Defaults = require('scripts.ProductionPanel.defs.defaults')
+local Defaults = require('scripts.ProductionPanel.config.defaults')
 local ImGui = Ark.ImGui
 local Colors = Ark.Colors
 local Theme = require('arkitekt.core.theme')

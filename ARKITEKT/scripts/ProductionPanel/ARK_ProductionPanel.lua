@@ -31,7 +31,7 @@ local Shell = require('arkitekt.runtime.shell')
 local Settings = require('arkitekt.core.settings')
 local State = require('scripts.ProductionPanel.app.state')
 local GUI = require('scripts.ProductionPanel.ui.init')
-local Defaults = require('scripts.ProductionPanel.defs.defaults')
+local Defaults = require('scripts.ProductionPanel.config.defaults')
 local Colors = require('arkitekt.core.colors')
 
 -- ============================================================================

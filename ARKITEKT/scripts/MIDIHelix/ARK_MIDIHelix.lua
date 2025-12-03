@@ -31,7 +31,7 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 local Shell = require('arkitekt.runtime.shell')
 local State = require('scripts.MIDIHelix.app.state')
 local EuclideanView = require('scripts.MIDIHelix.ui.euclidean_view')
-local Defaults = require('scripts.MIDIHelix.defs.defaults')
+local Defaults = require('scripts.MIDIHelix.config.defaults')
 
 -- APP STATE
 local app_state = State.new(Ark)

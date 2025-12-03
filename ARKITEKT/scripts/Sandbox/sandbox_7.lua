@@ -10,7 +10,7 @@ local arkitekt_root = script_path .. '../../'  -- From scripts/Sandbox/ to ARKIT
 package.path = package.path .. ';' .. arkitekt_root .. '?.lua'
 package.path = package.path .. ';' .. arkitekt_root .. '?/init.lua'
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Panel = require('arkitekt.gui.widgets.containers.panel')
 
 -- ============================================================================

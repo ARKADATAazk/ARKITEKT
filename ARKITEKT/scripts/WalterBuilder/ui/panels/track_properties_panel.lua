@@ -3,12 +3,12 @@
 -- Properties panel for editing selected track settings
 -- Uses Arkitekt widgets for consistent styling
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local Slider = require('arkitekt.gui.widgets.primitives.slider')
-local TrackDefaults = require('WalterBuilder.defs.track_defaults')
-local Constants = require('WalterBuilder.defs.constants')
+local TrackDefaults = require('WalterBuilder.config.track_defaults')
+local Constants = require('WalterBuilder.config.constants')
 
 local hexrgb = Ark.Colors.Hexrgb
 

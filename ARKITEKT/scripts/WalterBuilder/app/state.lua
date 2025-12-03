@@ -3,8 +3,8 @@
 -- Application state management
 
 local Element = require('WalterBuilder.domain.element')
-local TCPElements = require('WalterBuilder.defs.tcp_elements')
-local TrackDefaults = require('WalterBuilder.defs.track_defaults')
+local TCPElements = require('WalterBuilder.config.tcp_elements')
+local TrackDefaults = require('WalterBuilder.config.track_defaults')
 
 local M = {}
 

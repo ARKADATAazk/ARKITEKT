@@ -2,7 +2,7 @@
 -- WalterBuilder/ui/panels/code_panel.lua
 -- Code preview panel - shows generated WALTER code
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Serializer = require('WalterBuilder.domain.serializer')
 

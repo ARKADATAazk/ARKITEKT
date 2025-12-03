@@ -7,7 +7,7 @@ local M = {}
 -- DEPENDENCIES
 local Euclidean = require('scripts.MIDIHelix.domain.euclidean')
 local MidiWriter = require('scripts.MIDIHelix.app.midi_writer')
-local Defaults = require('scripts.MIDIHelix.defs.defaults')
+local Defaults = require('scripts.MIDIHelix.config.defaults')
 
 -- STATE
 local state = {

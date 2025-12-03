@@ -2,7 +2,7 @@
 -- Arkitekt/ColorPalette/app/gui.lua
 -- Main GUI orchestrator for Color Palette (Frameless Edition)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local ColorGrid = require('ColorPalette.widgets.color_grid')

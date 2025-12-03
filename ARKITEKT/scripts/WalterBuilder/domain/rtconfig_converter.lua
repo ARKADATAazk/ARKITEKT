@@ -20,7 +20,7 @@ local Coordinate = require('WalterBuilder.domain.coordinate')
 local RtconfigParser = require('WalterBuilder.domain.rtconfig_parser')
 local ExpressionEval = require('WalterBuilder.domain.expression_eval')
 local Console = require('WalterBuilder.ui.panels.debug_console')
-local TCPElements = require('WalterBuilder.defs.tcp_elements')
+local TCPElements = require('WalterBuilder.config.tcp_elements')
 
 local M = {}
 

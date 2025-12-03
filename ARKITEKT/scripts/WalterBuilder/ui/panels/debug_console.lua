@@ -2,7 +2,7 @@
 -- WalterBuilder/ui/panels/debug_console.lua
 -- Debug console for logging conversion/loading operations
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local hexrgb = Ark.Colors.Hexrgb

@@ -2,7 +2,7 @@
 -- WalterBuilder/core/controller.lua
 -- Business logic controller - separates UI from state mutations
 
-local Constants = require('WalterBuilder.defs.constants')
+local Constants = require('WalterBuilder.config.constants')
 local UndoManager = require('arkitekt.core.undo_manager')
 local Logger = require('arkitekt.debug.logger')
 
