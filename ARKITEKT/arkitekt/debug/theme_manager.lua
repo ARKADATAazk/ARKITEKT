@@ -281,19 +281,19 @@ function M.export_global_as_lua()
 
         if def.mode == 'bg' then
           lines[#lines + 1] = string.format('  %s = bg(),%s', key, modified)
-        elseif def.mode == 'lerp' then
-          lines[#lines + 1] = string.format('  %s = lerp(%s, %s),%s',
+        elseif def.mode == 'lerp2' then
+          lines[#lines + 1] = string.format('  %s = lerp2(%s, %s),%s',
             key, format_value(def.dark), format_value(def.light), modified)
-        elseif def.mode == 'offset' then
+        elseif def.mode == 'offset2' then
           if def.dark == def.light then
-            lines[#lines + 1] = string.format('  %s = offset(%s),%s',
+            lines[#lines + 1] = string.format('  %s = offset2(%s),%s',
               key, format_value(def.dark), modified)
           else
-            lines[#lines + 1] = string.format('  %s = offset(%s, %s),%s',
+            lines[#lines + 1] = string.format('  %s = offset2(%s, %s),%s',
               key, format_value(def.dark), format_value(def.light), modified)
           end
-        elseif def.mode == 'snap' then
-          lines[#lines + 1] = string.format('  %s = snap(%s, %s),%s',
+        elseif def.mode == 'snap2' then
+          lines[#lines + 1] = string.format('  %s = snap2(%s, %s),%s',
             key, format_value(def.dark), format_value(def.light), modified)
         end
       end
@@ -307,11 +307,11 @@ function M.export_global_as_lua()
     for _, item in ipairs(categories.OTHER) do
       local key, def = item.key, item.def
       local modified = M.modified_keys[key] and ' -- MODIFIED' or ''
-      if def.mode == 'lerp' then
-        lines[#lines + 1] = string.format('  %s = lerp(%s, %s),%s',
+      if def.mode == 'lerp2' then
+        lines[#lines + 1] = string.format('  %s = lerp2(%s, %s),%s',
           key, format_value(def.dark), format_value(def.light), modified)
-      elseif def.mode == 'snap' then
-        lines[#lines + 1] = string.format('  %s = snap(%s, %s),%s',
+      elseif def.mode == 'snap2' then
+        lines[#lines + 1] = string.format('  %s = snap2(%s, %s),%s',
           key, format_value(def.dark), format_value(def.light), modified)
       end
     end
@@ -340,19 +340,19 @@ function M.export_modified_as_lua()
   for _, key in ipairs(sorted_keys) do
     local def = M.overrides[key]
     if def then
-      if def.mode == 'lerp' then
-        lines[#lines + 1] = string.format('  %s = lerp(%s, %s),',
+      if def.mode == 'lerp2' then
+        lines[#lines + 1] = string.format('  %s = lerp2(%s, %s),',
           key, format_value(def.dark), format_value(def.light))
-      elseif def.mode == 'offset' then
+      elseif def.mode == 'offset2' then
         if def.dark == def.light then
-          lines[#lines + 1] = string.format('  %s = offset(%s),',
+          lines[#lines + 1] = string.format('  %s = offset2(%s),',
             key, format_value(def.dark))
         else
-          lines[#lines + 1] = string.format('  %s = offset(%s, %s),',
+          lines[#lines + 1] = string.format('  %s = offset2(%s, %s),',
             key, format_value(def.dark), format_value(def.light))
         end
-      elseif def.mode == 'snap' then
-        lines[#lines + 1] = string.format('  %s = snap(%s, %s),',
+      elseif def.mode == 'snap2' then
+        lines[#lines + 1] = string.format('  %s = snap2(%s, %s),',
           key, format_value(def.dark), format_value(def.light))
       end
     end
@@ -452,7 +452,7 @@ local function draw_entry_editor(ctx, ImGui, key, original_def, current_def)
     ImGui.SameLine(ctx)
     ImGui.TextDisabled(ctx, '(passthrough)')
 
-  elseif mode == 'offset' then
+  elseif mode == 'offset2' or mode == 'offset3' then
     ImGui.SameLine(ctx)
 
     -- Dark offset
@@ -467,7 +467,7 @@ local function draw_entry_editor(ctx, ImGui, key, original_def, current_def)
     local changed_l, new_l = draw_slider(ctx, ImGui, '##light', def.light or 0, -0.5, 0.5, 'L:%+.3f')
     if changed_l then M.set_override(key, 'light', new_l) end
 
-  elseif mode == 'snap' or mode == 'lerp' then
+  elseif mode == 'snap2' or mode == 'lerp2' or mode == 'snap3' or mode == 'lerp3' then
     ImGui.SameLine(ctx)
 
     -- Get appropriate range for this key
@@ -771,11 +771,11 @@ function M.render_debug_window(ctx, ImGui, state)
               ImGui.TextDisabled(ctx, string.format('[%s]', def.mode))
 
               -- Show values (read-only for now)
-              if def.mode == 'lerp' or def.mode == 'snap' then
+              if def.mode == 'lerp2' or def.mode == 'snap2' or def.mode == 'lerp3' or def.mode == 'snap3' then
                 ImGui.SameLine(ctx)
                 ImGui.TextDisabled(ctx, string.format('D:%s L:%s',
                   format_value(def.dark), format_value(def.light)))
-              elseif def.mode == 'offset' then
+              elseif def.mode == 'offset2' or def.mode == 'offset3' then
                 ImGui.SameLine(ctx)
                 ImGui.TextDisabled(ctx, string.format('D:%+.3f L:%+.3f',
                   def.dark or 0, def.light or 0))

@@ -89,9 +89,12 @@ M.COLORS = {
 local Palette = require('arkitekt.config.colors')
 
 -- Re-export DSL wrappers
-M.snap = Palette.snap
-M.lerp = Palette.lerp
-M.offset = Palette.offset
+M.snap2 = Palette.snap2
+M.lerp2 = Palette.lerp2
+M.offset2 = Palette.offset2
+M.snap3 = Palette.snap3
+M.lerp3 = Palette.lerp3
+M.offset3 = Palette.offset3
 M.bg = Palette.bg
 
 -- Re-export palette structure

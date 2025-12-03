@@ -101,8 +101,8 @@ local function resolve_value(def, t)
 
   local mode = def.mode
 
-  -- snap/offset: discrete switch at midpoint (t=0.5)
-  if mode == 'offset' or mode == 'snap' then
+  -- snap2/offset2: discrete switch at midpoint (t=0.5)
+  if mode == 'offset2' or mode == 'snap2' then
     return t < 0.5 and def.dark or def.light
 
   -- snap3/offset3: discrete 3-zone switch (t=0.33, 0.67)
@@ -115,8 +115,8 @@ local function resolve_value(def, t)
       return def.light
     end
 
-  -- lerp: smooth interpolation
-  elseif mode == 'lerp' then
+  -- lerp2: smooth interpolation
+  elseif mode == 'lerp2' then
     local dark_val, light_val = def.dark, def.light
 
     -- Byte colors: use Colors.Lerp for proper RGBA interpolation
@@ -187,8 +187,8 @@ local function derive_entry(base_bg, key, def, t)
     return base_bg
   end
 
-  -- OFFSET/OFFSET3: Apply delta to BG_BASE
-  if mode == 'offset' or mode == 'offset3' then
+  -- OFFSET2/OFFSET3: Apply delta to BG_BASE
+  if mode == 'offset2' or mode == 'offset3' then
     local delta = resolve_value(def, t)
     -- Clamp delta to valid range
     delta = math.max(-1, math.min(1, delta))

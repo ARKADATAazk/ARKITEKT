@@ -29,9 +29,9 @@ All UI colors are then available via `Style.COLORS.*`.
 │                  generate_palette(base_bg)                  │
 │                            ↓                                │
 │                   Flat palette with:                        │
-│           offset() - BG-derived colors                      │
-│           snap()   - discrete dark/light                    │
-│           lerp()   - smooth interpolation                   │
+│           offset2() - BG-derived colors                     │
+│           snap2()   - discrete dark/light                   │
+│           lerp2()   - smooth interpolation                  │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -49,34 +49,42 @@ All UI colors are then available via `Style.COLORS.*`.
 
 ## DSL Wrappers
 
-Three wrappers define HOW values adapt to theme lightness:
+Wrappers define HOW values adapt to theme lightness (2-zone and 3-zone variants):
 
-### `offset(dark, light, [threshold])` - Delta from BG_BASE
+### `offset2(dark, light)` - Delta from BG_BASE (2-zone)
 
-Applies a lightness offset to BG_BASE. **Snaps** between deltas at threshold.
+Applies a lightness offset to BG_BASE. **Snaps** between deltas at t=0.5.
 
 ```lua
-BG_HOVER = offset(0.03, -0.04)     -- +3% dark, -4% light (snap at 0.5)
-BG_PANEL = offset(-0.04)           -- -4% both (constant)
-SPECIAL  = offset(0.05, -0.05, 0.3) -- snap at t=0.3
+BG_HOVER = offset2(0.03, -0.04)     -- +3% dark, -4% light (snap at 0.5)
+BG_PANEL = offset2(-0.04)           -- -4% both (constant)
 ```
 
-### `lerp(dark, light)` - Smooth Interpolation
+### `lerp2(dark, light)` - Smooth Interpolation (2-zone)
 
 Linearly interpolates between values based on `t`.
 
 ```lua
-OPACITY = lerp(0.87, 0.60)                       -- smooth transition
-ACCENT  = lerp(0x334455FF, 0xAABBCCFF)           -- RGB color lerp
+OPACITY = lerp2(0.87, 0.60)                       -- smooth transition
+ACCENT  = lerp2(0x334455FF, 0xAABBCCFF)           -- RGB color lerp
 ```
 
-### `snap(dark, light, [threshold])` - Discrete Snap
+### `snap2(dark, light)` - Discrete Snap (2-zone)
 
-No interpolation. Picks one value or the other.
+No interpolation. Picks one value or the other at t=0.5.
 
 ```lua
-TEXT_NORMAL = snap(0xFFFFFFFF, 0x000000FF)   -- snap at 0.5
-SPECIAL     = snap(0xAAAAAAFF, 0x555555FF, 0.3)  -- snap at t=0.3
+TEXT_NORMAL = snap2(0xFFFFFFFF, 0x000000FF)   -- snap at 0.5
+```
+
+### 3-Zone Variants
+
+For finer control over mid-range themes, use the 3-zone variants with transitions at t=0.33 and t=0.67:
+
+```lua
+snap3(dark, mid, light)   -- discrete 3-zone switch
+lerp3(dark, mid, light)   -- piecewise interpolation
+offset3(dark, mid, light) -- 3-zone BG-relative delta
 ```
 
 ---
@@ -103,23 +111,23 @@ All colors in one flat table. The mode determines processing:
 M.palette = {
   -- === BACKGROUNDS (offset = BG-derived) ===
   BG_BASE   = "base",
-  BG_HOVER  = offset(0.03, -0.04),
-  BG_PANEL  = offset(-0.04),
+  BG_HOVER  = offset2(0.03, -0.04),
+  BG_PANEL  = offset2(-0.04),
 
   -- === TEXT (snap on bytes = color) ===
-  TEXT_NORMAL = snap(0xFFFFFFFF, 0x000000FF),
-  TEXT_DIMMED = snap(0xA0A0A0FF, 0x606060FF),
+  TEXT_NORMAL = snap2(0xFFFFFFFF, 0x000000FF),
+  TEXT_DIMMED = snap2(0xA0A0A0FF, 0x606060FF),
 
   -- === VALUES (lerp on numbers = value) ===
-  TILE_BRIGHTNESS = lerp(0.5, 1.4),
-  BORDER_OPACITY  = lerp(0.87, 0.60),
+  TILE_BRIGHTNESS = lerp2(0.5, 1.4),
+  BORDER_OPACITY  = lerp2(0.87, 0.60),
 }
 ```
 
 Type inference:
-- `offset` → Apply delta to BG_BASE → RGBA color
-- `snap`/`lerp` on byte colors (>255) → RGBA color
-- `snap`/`lerp` on small numbers → numeric value
+- `offset2` → Apply delta to BG_BASE → RGBA color
+- `snap2`/`lerp2` on byte colors (>255) → RGBA color
+- `snap2`/`lerp2` on small numbers → numeric value
 
 ---
 
@@ -129,19 +137,19 @@ Type inference:
 
 | Behavior | Wrapper |
 |----------|---------|
-| Delta from BG_BASE | `offset(d, l)` |
-| Smooth gradient | `lerp(d, l)` |
-| Discrete snap | `snap(d, l)` |
-| Custom threshold | `snap(d, l, t)` or `offset(d, l, t)` |
+| Delta from BG_BASE (2-zone) | `offset2(d, l)` |
+| Smooth gradient (2-zone) | `lerp2(d, l)` |
+| Discrete snap (2-zone) | `snap2(d, l)` |
+| 3-zone variants | `snap3(d, m, l)`, `lerp3(d, m, l)`, `offset3(d, m, l)` |
 
 ### 2. Add to palette:
 
 ```lua
 M.palette = {
   -- ...existing...
-  MY_NEW_BG = offset(0.08, -0.06),
-  MY_NEW_OPACITY = lerp(0.9, 0.7),
-  MY_NEW_COLOR = snap(0xFF0000FF, 0x00FF00FF),
+  MY_NEW_BG = offset2(0.08, -0.06),
+  MY_NEW_OPACITY = lerp2(0.9, 0.7),
+  MY_NEW_COLOR = snap2(0xFF0000FF, 0x00FF00FF),
 }
 ```
 
@@ -162,25 +170,25 @@ Scripts can register their own theme-reactive palettes using the same DSL:
 -- MyScript/defs/palette.lua
 local ThemeManager = require('arkitekt.theme.manager')
 
-local snap = ThemeManager.snap
-local lerp = ThemeManager.lerp
-local offset = ThemeManager.offset
+local snap2 = ThemeManager.snap2
+local lerp2 = ThemeManager.lerp2
+local offset2 = ThemeManager.offset2
 
 local M = {}
 
 -- Register flat palette at load time
 ThemeManager.register_script_palette("MyScript", {
   -- Colors (snap/lerp on bytes)
-  HIGHLIGHT = snap(0xFF6B6BFF, 0xCC4444FF),
-  BADGE_TEXT = snap(0xFFFFFFFF, 0x1A1A1AFF),
-  ERROR_BG = snap(0x240C0CFF, 0xFFDDDDFF),
+  HIGHLIGHT = snap2(0xFF6B6BFF, 0xCC4444FF),
+  BADGE_TEXT = snap2(0xFFFFFFFF, 0x1A1A1AFF),
+  ERROR_BG = snap2(0x240C0CFF, 0xFFDDDDFF),
 
   -- Values (lerp on numbers)
-  GLOW_OPACITY = lerp(0.8, 0.5),
-  STRIPE_WIDTH = lerp(8, 8),  -- constant
+  GLOW_OPACITY = lerp2(0.8, 0.5),
+  STRIPE_WIDTH = lerp2(8, 8),  -- constant
 
   -- BG-derived (offset)
-  PANEL_BG = offset(-0.06),
+  PANEL_BG = offset2(-0.06),
 })
 
 -- Access computed values (cached, auto-invalidated on theme change)
@@ -201,7 +209,7 @@ end
 return M
 ```
 
-Script palettes support all three modes including `offset` for BG-derived colors.
+Script palettes support all modes including `offset2` for BG-derived colors and 3-zone variants.
 
 ---
 
@@ -220,14 +228,23 @@ ThemeManager.set_mode("dark")  -- Same as set_dark()
 ### DSL Wrappers
 
 ```lua
-local snap = ThemeManager.snap
-local lerp = ThemeManager.lerp
-local offset = ThemeManager.offset
+-- 2-zone variants (transition at t=0.5)
+local snap2 = ThemeManager.snap2
+local lerp2 = ThemeManager.lerp2
+local offset2 = ThemeManager.offset2
+
+-- 3-zone variants (transitions at t=0.33 and t=0.67)
+local snap3 = ThemeManager.snap3
+local lerp3 = ThemeManager.lerp3
+local offset3 = ThemeManager.offset3
 
 -- Usage
-snap(dark, light, [threshold])   -- discrete snap (default t=0.5)
-lerp(dark, light)                -- smooth interpolation
-offset(dark, [light], [threshold]) -- BG-relative delta
+snap2(dark, light)              -- discrete snap at t=0.5
+lerp2(dark, light)              -- smooth interpolation
+offset2(dark, [light])          -- BG-relative delta
+snap3(dark, mid, light)         -- discrete 3-zone snap
+lerp3(dark, mid, light)         -- piecewise interpolation
+offset3(dark, mid, light)       -- 3-zone BG-relative delta
 ```
 
 ### REAPER Integration

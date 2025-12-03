@@ -2,16 +2,16 @@
 -- RegionPlaylist/defs/palette.lua
 -- Script-specific theme-reactive palette
 --
--- Uses ThemeManager's DSL (snap/lerp/offset) for theme-reactive colors.
+-- Uses ThemeManager's DSL (snap2/lerp2/offset2) for theme-reactive colors.
 -- Register at load time, access computed values via get_colors().
 
 local Ark = require('arkitekt')
 local ThemeManager = require('arkitekt.theme.manager')
 
 -- DSL wrappers (short names)
-local snap = ThemeManager.snap
-local lerp = ThemeManager.lerp
-local offset = ThemeManager.offset
+local snap2 = ThemeManager.snap2
+local lerp2 = ThemeManager.lerp2
+local offset2 = ThemeManager.offset2
 
 local M = {}
 
@@ -22,25 +22,25 @@ local M = {}
 
 ThemeManager.register_script_palette('RegionPlaylist', {
   -- === CIRCULAR DEPENDENCY (error state) ===
-  CIRCULAR_BASE         = snap(0x240C0CFF, 0xFFDDDDFF),  -- dark red / light pink
-  CIRCULAR_STRIPE       = snap(0x430D0DFF, 0xFFCCCCFF),
-  CIRCULAR_BORDER       = snap(0x240F0FFF, 0xFFCCCCFF),
-  CIRCULAR_TEXT         = snap(0x901B1BFF, 0xCC0000FF),  -- muted red / vivid red
-  CIRCULAR_LOCK         = snap(0x901B1BFF, 0xCC0000FF),
-  CIRCULAR_CHIP         = snap(0x901B1BFF, 0xCC0000FF),
-  CIRCULAR_BADGE_BG     = snap(0x240C0CFF, 0xFFE0E0FF),
-  CIRCULAR_BADGE_BORDER = snap(0x652A2AFF, 0xCC8888FF),
+  CIRCULAR_BASE         = snap2(0x240C0CFF, 0xFFDDDDFF),  -- dark red / light pink
+  CIRCULAR_STRIPE       = snap2(0x430D0DFF, 0xFFCCCCFF),
+  CIRCULAR_BORDER       = snap2(0x240F0FFF, 0xFFCCCCFF),
+  CIRCULAR_TEXT         = snap2(0x901B1BFF, 0xCC0000FF),  -- muted red / vivid red
+  CIRCULAR_LOCK         = snap2(0x901B1BFF, 0xCC0000FF),
+  CIRCULAR_CHIP         = snap2(0x901B1BFF, 0xCC0000FF),
+  CIRCULAR_BADGE_BG     = snap2(0x240C0CFF, 0xFFE0E0FF),
+  CIRCULAR_BADGE_BORDER = snap2(0x652A2AFF, 0xCC8888FF),
 
   -- === CIRCULAR VALUES ===
-  CIRCULAR_STRIPE_OPACITY = lerp(0.20, 0.30),
-  CIRCULAR_STRIPE_WIDTH   = lerp(8, 8),      -- constant
-  CIRCULAR_STRIPE_SPACING = lerp(16, 16),    -- constant
+  CIRCULAR_STRIPE_OPACITY = lerp2(0.20, 0.30),
+  CIRCULAR_STRIPE_WIDTH   = lerp2(8, 8),      -- constant
+  CIRCULAR_STRIPE_SPACING = lerp2(16, 16),    -- constant
 
   -- === FALLBACK ===
-  FALLBACK_CHIP = snap(0xFF5733FF, 0xE64A19FF),  -- orange-red
+  FALLBACK_CHIP = snap2(0xFF5733FF, 0xE64A19FF),  -- orange-red
 
   -- === CUSTOM PANEL (example of offset) ===
-  -- CUSTOM_PANEL_BG = offset(-0.06),  -- Would derive from BG_BASE
+  -- CUSTOM_PANEL_BG = offset2(-0.06),  -- Would derive from BG_BASE
 })
 
 -- =============================================================================

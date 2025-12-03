@@ -5,7 +5,7 @@
 -- Exports:
 --   Theme-reactive (from theme.lua):
 --     - presets, anchors, colors
---     - DSL: snap, lerp, offset, bg
+--     - DSL: snap2/3, lerp2/3, offset2/3, bg
 --     - get_all_keys()
 --
 --   Static (from static.lua):
@@ -25,11 +25,16 @@ local M = {}
 M.presets = Theme.presets
 M.anchors = Theme.anchors
 
--- DSL wrappers
-M.snap = Theme.snap
-M.lerp = Theme.lerp
-M.offset = Theme.offset
+-- DSL wrappers (2-zone)
+M.snap2 = Theme.snap2
+M.lerp2 = Theme.lerp2
+M.offset2 = Theme.offset2
 M.bg = Theme.bg
+
+-- DSL wrappers (3-zone)
+M.snap3 = Theme.snap3
+M.lerp3 = Theme.lerp3
+M.offset3 = Theme.offset3
 
 -- Color definitions
 M.colors = Theme.colors
