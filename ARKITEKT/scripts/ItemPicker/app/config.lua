@@ -3,7 +3,7 @@
 -- Centralized configuration (re-exports from defs for backward compatibility)
 -- @migrated 2024-11-27 from core/config.lua
 
-local Constants = require('ItemPicker.defs.constants')
+local Constants = require('ItemPicker.config.constants')
 
 local M = {}
 

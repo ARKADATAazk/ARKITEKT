@@ -3,7 +3,7 @@
 -- Settings panel with checkboxes and waveform quality slider
 -- Uses cursor flow for checkbox layout
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local M = {}

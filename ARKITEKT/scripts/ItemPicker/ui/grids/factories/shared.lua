@@ -3,7 +3,7 @@
 -- Shared utilities for audio and MIDI grid factories
 -- Extracts common filtering, sorting, and conversion logic
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local pool_utils = require('ItemPicker.domain.filters.pool')
 

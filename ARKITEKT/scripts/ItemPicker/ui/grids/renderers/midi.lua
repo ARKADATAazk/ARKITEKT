@@ -2,14 +2,14 @@
 -- ItemPicker/ui/tiles/renderers/midi.lua
 -- MIDI tile renderer with piano roll visualization
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local BaseRenderer = require('ItemPicker.ui.grids.renderers.base')
 local Shapes = require('arkitekt.gui.draw.shapes')
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local Duration = require('arkitekt.core.duration')
-local Palette = require('ItemPicker.defs.palette')
+local Palette = require('ItemPicker.config.palette')
 
 local M = {}
 

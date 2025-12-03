@@ -2,14 +2,14 @@
 -- ItemPicker/ui/tiles/renderers/base.lua
 -- Base tile renderer with shared functionality
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local hexrgb = Ark.Colors.Hexrgb
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local Easing = require('arkitekt.gui.animation.easing')
 local MediaGridBase = require('arkitekt.gui.widgets.media.media_grid.renderers.base')
-local Palette = require('ItemPicker.defs.palette')
+local Palette = require('ItemPicker.config.palette')
 local M = {}
 
 -- PERF: Localize frequently used functions to avoid table lookups in hot paths

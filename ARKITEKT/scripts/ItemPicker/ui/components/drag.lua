@@ -2,7 +2,7 @@
 -- ItemPicker/ui/components/drag.lua
 -- Drag and drop handler with visual preview
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local hexrgb = Ark.Colors.Hexrgb
 

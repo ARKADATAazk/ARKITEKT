@@ -3,10 +3,10 @@
 -- Search input, sort buttons, layout toggle, and toolbar controls
 -- Uses ImGui cursor flow for horizontal layout
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local Defaults = require('ItemPicker.defs.defaults')
-local Constants = require('ItemPicker.defs.constants')
+local Defaults = require('ItemPicker.config.defaults')
+local Constants = require('ItemPicker.config.constants')
 
 -- Search modes
 local SEARCH_MODES = Defaults.SEARCH_MODES

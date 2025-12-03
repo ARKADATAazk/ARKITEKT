@@ -2,10 +2,10 @@
 -- ItemPicker/ui/components/track_filter.lua
 -- Track whitelist filter modal with tile-style TreeView
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local TrackFilter = require('ItemPicker.domain.filters.track')
-local Palette = require('ItemPicker.defs.palette')
+local Palette = require('ItemPicker.config.palette')
 
 local M = {}
 

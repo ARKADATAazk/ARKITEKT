@@ -2,7 +2,7 @@
 -- ItemPicker/ui/grids/factories/audio.lua
 -- Factory for creating audio items grid
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
 local shared = require('ItemPicker.ui.grids.factories.shared')

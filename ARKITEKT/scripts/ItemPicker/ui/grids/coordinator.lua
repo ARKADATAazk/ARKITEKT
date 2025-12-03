@@ -2,7 +2,7 @@
 -- ItemPicker/ui/grids/coordinator.lua
 -- Coordinator for managing audio and MIDI grids
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
 local Lifecycle = require('arkitekt.gui.animation.lifecycle')

@@ -2,7 +2,7 @@
 -- ItemPicker/ui/components/filters/region.lua
 -- Region filter bar - clickable chips to filter items by region
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local M = {}
 

@@ -2,7 +2,7 @@
 -- ItemPickerWindow/ui/toolbar_view.lua
 -- Top toolbar with search, sort, and layout controls
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local SearchWithMode = require('ItemPicker.ui.components.search_with_mode')
 local M = {}

@@ -4,11 +4,11 @@
 -- @migrated 2024-11-27 from core/app_state.lua
 
 local Persistence = require('ItemPicker.data.storage')
-local Defaults = require('ItemPicker.defs.defaults')
+local Defaults = require('ItemPicker.config.defaults')
 local PreviewManager = require('ItemPicker.domain.preview.manager')
 local TrackFilterDomain = require('ItemPicker.domain.filters.track')
 local TrackFilterUI = require('ItemPicker.ui.components.track_filter')
-local Palette = require('ItemPicker.defs.palette')
+local Palette = require('ItemPicker.config.palette')
 
 local M = {}
 

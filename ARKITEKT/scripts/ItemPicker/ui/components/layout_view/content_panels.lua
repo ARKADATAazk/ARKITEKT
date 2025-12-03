@@ -2,7 +2,7 @@
 -- ItemPicker/ui/components/layout_view/content_panels.lua
 -- MIDI/Audio/Mixed panel rendering logic
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local TrackFilterBar = require('ItemPicker.ui.components.filters.track')
 

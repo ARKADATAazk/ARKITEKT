@@ -2,7 +2,7 @@
 -- ItemPickerWindow/ui/coordinator.lua
 -- Coordinator using TilesContainer panels for Audio and MIDI grids
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
 local AudioGridFactory = require('ItemPicker.ui.grids.factories.audio_grid_factory')
