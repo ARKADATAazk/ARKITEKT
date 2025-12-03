@@ -29,10 +29,8 @@ local function get_default_settings()
     separator_position_horizontal = nil,
     sort_mode = 'none',
     sort_reverse = false,
-    waveform_quality = 1.0,
+    waveform_quality = 0.2,
     waveform_filled = true,
-    waveform_zero_line = false,
-    show_visualization_in_small_tiles = false,
     enable_tile_fx = true,
     layout_mode = 'vertical',
     enable_region_processing = false,  -- Enable region detection and filtering

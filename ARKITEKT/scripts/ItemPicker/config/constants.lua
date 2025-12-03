@@ -196,7 +196,7 @@ function M.get_tile_render()
 
     -- Hover effect
     hover = {
-      brightness_boost = 0.50,
+      brightness_boost = 0.20,
     },
 
     -- Minimum lightness
@@ -220,10 +220,14 @@ function M.get_tile_render()
       ants_alpha = 0xFF,
       ants_thickness = 1,
       ants_inset = 0,
-      ants_dash = 24,
-      ants_gap = 11,
+      ants_dash = 60,
+      ants_gap = 35,
       ants_speed = 30,
       tile_brightness_boost = 0.35,
+      -- Pulsing glow effect
+      pulse_speed = 1.0,           -- Oscillations per second
+      pulse_brightness_min = 0.15, -- Minimum brightness boost
+      pulse_brightness_max = 0.30, -- Maximum brightness boost
     },
 
     -- Disabled state

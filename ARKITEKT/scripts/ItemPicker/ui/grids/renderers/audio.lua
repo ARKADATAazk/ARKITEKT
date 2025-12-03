@@ -13,17 +13,66 @@ local Palette = require('ItemPicker.config.palette')
 
 local M = {}
 
+-- =============================================================================
+-- PROFILER (toggle via M.profile_enabled or settings panel)
+-- =============================================================================
+M.profile_enabled = false
+local _profile = {
+  animator = 0, color = 0, draw_base = 0, wave = 0,
+  header = 0, ants = 0, text = 0, badges = 0, regions = 0,
+  count = 0, last_report = 0,
+}
+local time_precise = reaper.time_precise
+local format = string.format
+
+local function profile_report()
+  if not M.profile_enabled then return end
+  local now = time_precise()
+  if now - _profile.last_report > 1.0 then
+    local cnt = _profile.count
+    if cnt > 0 then
+      reaper.ShowConsoleMsg(format(
+        '[AUDIO] %d tiles | anim:%.1fms | color:%.1fms | base:%.1fms | wave:%.1fms | hdr:%.1fms | ants:%.1fms | txt:%.1fms | badge:%.1fms | rgn:%.1fms\n',
+        cnt,
+        _profile.animator * 1000,
+        _profile.color * 1000,
+        _profile.draw_base * 1000,
+        _profile.wave * 1000,
+        _profile.header * 1000,
+        _profile.ants * 1000,
+        _profile.text * 1000,
+        _profile.badges * 1000,
+        _profile.regions * 1000
+      ))
+    end
+    _profile.animator = 0
+    _profile.color = 0
+    _profile.draw_base = 0
+    _profile.wave = 0
+    _profile.header = 0
+    _profile.ants = 0
+    _profile.text = 0
+    _profile.badges = 0
+    _profile.regions = 0
+    _profile.count = 0
+    _profile.last_report = now
+  end
+end
+
+-- =============================================================================
+
 -- PERF: Localize frequently used functions
-local floor = math.floor
 local min = math.min
 local max = math.max
-local format = string.format
+local tostring = tostring
 local DrawList_AddRectFilled = ImGui.DrawList_AddRectFilled
 local DrawList_AddRect = ImGui.DrawList_AddRect
 local DrawList_AddText = ImGui.DrawList_AddText
 local CalcTextSize = ImGui.CalcTextSize
 local Colors_WithAlpha = Ark.Colors.WithAlpha
 local Colors_Opacity = Ark.Colors.Opacity
+-- PERF: Localize REAPER API for hot paths
+local GetMediaItemInfo_Value = reaper.GetMediaItemInfo_Value
 local Colors_AdjustBrightness = Ark.Colors.AdjustBrightness
 local Colors_luminance = Ark.Colors.Luminance
 local Colors_SameHueVariant = Ark.Colors.SameHueVariant
@@ -39,6 +88,8 @@ local _cached = {
   palette_frame = -1,    -- Frame counter for palette cache
   -- PERF: Pool badge cache (limited set of values)
   pool_badges = {},      -- pool_count -> {text, width, height}
+  -- PERF: Cycle badge cache (limited set: index/total combos)
+  cycle_badges = {},     -- (index * 10000 + total) -> {text, width, height}
 }
 
 -- PERF: Call once per frame before rendering tiles (avoids per-tile overhead)
@@ -63,6 +114,10 @@ local _tile_state_cache = {}
 local _truncated_text_cache = {}
 
 function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects, disable_animator)
+  -- PROFILER: Start timing
+  local t0, t1, t2, t3, t4, t5, t6, t7, t8
+  if M.profile_enabled then t0 = time_precise() end
+
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local tile_w, tile_h = x2 - x1, y2 - y1
   local center_x, center_y = (x1 + x2) / 2, (y1 + y2) / 2
@@ -152,6 +207,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     compact_factor = is_small_tile and 1.0 or 0.0
   end
 
+  -- PROFILER: After animator
+  if M.profile_enabled then t1 = time_precise() end
 
   -- Track playback progress (PERF: only track if preview system is active)
   local playback_progress, playback_fade = 0, 0
@@ -187,14 +244,18 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local palette = _cached.palette
   local base_color = item_data.color or palette.default_tile_color or 0xFF555555
 
+  -- Calculate selection pulse (0 if not selected, 0-1 oscillating if selected)
+  local selection_pulse = BaseRenderer.get_selection_pulse(tile_state.selected)
+
   -- PERF: Use cached color for settled tiles (skips all color computations)
   -- Only cache when cascade is 1.0 (fully visible) to avoid float comparison issues
+  -- Don't cache selected tiles since they pulse every frame
   local render_color, combined_alpha
   local cached_state = _tile_state_cache[key]
   local can_use_cache = cached_state and cached_state.settled
                         and cached_state.render_color
                         and cached_state.base_color == base_color
-                        and cached_state.selected == tile_state.selected
+                        and not tile_state.selected  -- Don't cache selected (pulsing) tiles
                         and cascade_factor >= 0.999  -- Only cache fully visible tiles
 
   if can_use_cache then
@@ -202,17 +263,16 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     render_color = cached_state.render_color
     combined_alpha = cached_state.combined_alpha
   else
-    -- Compute colors
+    -- Compute colors (pass selection_pulse instead of boolean)
     render_color, combined_alpha = BaseRenderer.compute_tile_color(
       base_color, is_small_tile, hover_factor, muted_factor, enabled_factor,
-      tile_state.selected, cascade_factor, config, palette
+      selection_pulse, cascade_factor, config, palette
     )
-    -- Cache if settled and fully visible
-    if cached_state and cached_state.settled and cascade_factor >= 0.999 then
+    -- Cache if settled, fully visible, and not selected
+    if cached_state and cached_state.settled and cascade_factor >= 0.999 and not tile_state.selected then
       cached_state.render_color = render_color
       cached_state.combined_alpha = combined_alpha
       cached_state.base_color = base_color
-      cached_state.selected = tile_state.selected
     end
   end
 
@@ -222,6 +282,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local text_alpha = (0xFF * combined_alpha) // 1
   local text_color = BaseRenderer.get_text_color(muted_factor, config)
 
+  -- PROFILER: After color computation
+  if M.profile_enabled then t2 = time_precise() end
 
   -- Calculate header height with animated transition
   local normal_header_height = max(
@@ -257,28 +319,20 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, backdrop_color, config.TILE.ROUNDING)
   end
 
+  -- PROFILER: After base draw
+  if M.profile_enabled then t3 = time_precise() end
 
   -- Render waveform BEFORE header so header can overlay with transparency
   -- (show even when disabled, just with toned down color)
   if item_data.item and cascade_factor > 0.2 then
-    -- In small tile mode with visualization disabled, skip entirely for performance
-    local show_viz_in_small = is_small_tile and (state.settings.show_visualization_in_small_tiles ~= false)
-    if is_small_tile and not show_viz_in_small then
-      -- Skip waveform rendering in small tile mode when visualization is disabled
+    -- Skip waveform rendering entirely in small tile mode
+    if is_small_tile then
       goto skip_waveform
     end
 
-    local content_y1, content_h
-
-    if show_viz_in_small then
-      -- Render visualization over entire tile (header will overlay with transparency)
-      content_y1 = scaled_y1
-      content_h = scaled_h
-    else
-      -- Normal mode: render in content area below header
-      content_y1 = scaled_y1 + header_height
-      content_h = scaled_y2 - content_y1
-    end
+    -- Normal mode: render in content area below header
+    local content_y1 = scaled_y1 + header_height
+    local content_h = scaled_y2 - content_y1
 
     local content_w = scaled_w
 
@@ -287,12 +341,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
     local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config, palette)
     local waveform_alpha = combined_alpha * cfg.waveform_line_alpha
-
-    -- In small tile mode, apply very low opacity for subtle visualization
-    if show_viz_in_small then
-      waveform_alpha = waveform_alpha * cfg.small_tile_visualization_alpha
-    end
-
     dark_color = Colors_WithAlpha(dark_color, Colors_Opacity(waveform_alpha))
 
     -- Skip all waveform rendering if skip_visualizations is enabled (fast mode)
@@ -302,12 +350,11 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       if waveform then
         if visualization.DisplayWaveformTransparent then
           -- Apply waveform quality multiplier to reduce resolution (better performance with many items)
-          local quality = state.settings.waveform_quality or 1.0
+          local quality = state.settings.waveform_quality or 0.2
           local target_width = (content_w * quality) // 1
           local use_filled = state.settings.waveform_filled
           if use_filled == nil then use_filled = true end
-          local show_zero_line = state.settings.waveform_zero_line or false
-          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache, use_filled, show_zero_line)
+          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache, use_filled)
         end
       else
         -- Show placeholder and queue waveform generation
@@ -323,6 +370,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   ::skip_waveform::
 
+  -- PROFILER: After waveform
+  if M.profile_enabled then t4 = time_precise() end
 
   -- Render playback progress bar (after visualization, before header)
   if playback_progress > 0 and playback_fade > 0 then
@@ -339,6 +388,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   BaseRenderer.render_header_bar(dl, scaled_x1, scaled_y1, scaled_x2, header_height,
     render_color, header_alpha, config, is_small_tile, palette)
 
+  -- PROFILER: After header
+  if M.profile_enabled then t5 = time_precise() end
 
   -- Render marching ants for selection
   if tile_state.selected and cascade_factor > 0.5 then
@@ -349,16 +400,16 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       base_color,
       ants_sat,
       ants_bright,
-      floor(cfg.selection_ants_alpha * combined_alpha)
+      (cfg.selection_ants_alpha * combined_alpha) // 1
     )
 
     -- Mix with white to make marching ants lighter but still tinted
-    local white_mix = 0.40  -- Mix 40% white - lighter but keeps more color
+    local white_mix = 0.65  -- Mix 65% white - whiter, less colored
     local r, g, b, a = Colors_RgbaToComponents(ant_color)
     r = r + (255 - r) * white_mix
     g = g + (255 - g) * white_mix
     b = b + (255 - b) * white_mix
-    ant_color = Colors_ComponentsToRgba(floor(r), floor(g), floor(b), a)
+    ant_color = Colors_ComponentsToRgba(r // 1, g // 1, b // 1, a)
 
     local inset = cfg.selection_ants_inset
     local selection_count = state.audio_selection_count or 1
@@ -375,6 +426,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     )
   end
 
+  -- PROFILER: After marching ants
+  if M.profile_enabled then t6 = time_precise() end
 
   -- Check if item is favorited
   local is_favorite = state.favorites and state.favorites.audio and state.favorites.audio[item_data.filename]
@@ -569,15 +622,31 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     end
   end
 
+  -- PROFILER: After text
+  if M.profile_enabled then t7 = time_precise() end
+
+  -- PERF: Pre-compute cycle badge dimensions once (reused for star and pool positioning)
+  local cycle_badge_w, cycle_text
+  local has_cycle = item_data.total and item_data.total > 1
+  if has_cycle then
+    local idx = item_data.index or 1
+    local cache_key = idx * 10000 + item_data.total
+    local cached = _cached.cycle_badges[cache_key]
+    if cached then
+      cycle_text, cycle_badge_w = cached[1], cached[2] + cfg.badge_cycle_padding_x * 2
+    else
+      cycle_text = format('%d/%d', idx, item_data.total)
+      local w = CalcTextSize(ctx, cycle_text)
+      _cached.cycle_badges[cache_key] = {cycle_text, w}
+      cycle_badge_w = w + cfg.badge_cycle_padding_x * 2
+    end
+  end
+
   -- Render favorite star badge (vertically centered in header, to the left of cycle badge)
   if cascade_factor > 0.5 and is_favorite then
     local star_x
     -- Position favorite to the left of cycle badge (if it exists)
-    if item_data.total and item_data.total > 1 then
-      -- Calculate where cycle badge will be positioned
-      local cycle_text = format('%d/%d', item_data.index or 1, item_data.total)
-      local cycle_w = CalcTextSize(ctx, cycle_text)
-      local cycle_badge_w = cycle_w + cfg.badge_cycle_padding_x * 2
+    if has_cycle then
       local cycle_x = scaled_x2 - cycle_badge_w - cfg.badge_cycle_margin
       -- Position favorite to the left of cycle badge
       star_x = cycle_x - star_badge_size - cfg.badge_favorite_spacing
@@ -613,7 +682,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       if dur_cache then
         max_chip_x = max_chip_x - dur_cache[2] - cfg.duration_text_margin_x - chip_cfg.margin_x
       else
-        local duration = reaper.GetMediaItemInfo_Value(item_data.item, 'D_LENGTH')
+        local duration = GetMediaItemInfo_Value(item_data.item, 'D_LENGTH')
         if duration > 0 then
           -- Conservative estimate
           max_chip_x = max_chip_x - 50 - cfg.duration_text_margin_x - chip_cfg.margin_x
@@ -677,7 +746,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       end
 
       -- Chip background (dark grey)
-      local bg_alpha = floor(chip_cfg.alpha * combined_alpha)
+      local bg_alpha = (chip_cfg.alpha * combined_alpha) // 1
       local bg_color = (chip_cfg.bg_color & 0xFFFFFF00) | bg_alpha
       DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, bg_color, chip_cfg.rounding)
 
@@ -722,18 +791,15 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       badge_x = badge_x - star_badge_size_adj - cfg.badge_favorite_spacing
     end
 
-    -- Adjust position if cycle badge is visible
-    if item_data.total and item_data.total > 1 then
-      local cycle_badge_text = format('%d/%d', item_data.index or 1, item_data.total)
-      local cycle_w = CalcTextSize(ctx, cycle_badge_text)
-      local cycle_badge_w = cycle_w + cfg.badge_cycle_padding_x * 2
+    -- Adjust position if cycle badge is visible (use pre-computed dimensions)
+    if has_cycle then
       badge_x = badge_x - cycle_badge_w - cfg.badge_cycle_margin
     end
 
     local badge_y = scaled_y1 + (header_height - badge_h) / 2
 
     -- Badge background
-    local badge_bg_alpha = floor((cfg.badge_pool_bg & 0xFF) * combined_alpha)
+    local badge_bg_alpha = ((cfg.badge_pool_bg & 0xFF) * combined_alpha) // 1
     local badge_bg = (cfg.badge_pool_bg & 0xFFFFFF00) | badge_bg_alpha
     DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, cfg.badge_pool_rounding)
 
@@ -752,7 +818,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local show_duration = state.settings.show_duration
   if show_duration == nil then show_duration = true end
   if show_duration and cascade_factor > 0.3 and compact_factor < 0.5 and item_data.item then
-    local duration = reaper.GetMediaItemInfo_Value(item_data.item, 'D_LENGTH')
+    local duration = GetMediaItemInfo_Value(item_data.item, 'D_LENGTH')
     if duration > 0 then
       -- PERF: Cache duration text and dimensions by UUID (consistent with region chips)
       local dur_cache = _cached.duration_text[item_data.uuid]
@@ -783,6 +849,21 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Draw duration text (PERF: use localized DrawList function)
       DrawList_AddText(dl, dur_x, dur_y, dur_text_color, duration_text)
     end
+  end
+
+  -- PROFILER: Accumulate and report
+  if M.profile_enabled then
+    t8 = time_precise()
+    _profile.animator = _profile.animator + (t1 - t0)
+    _profile.color = _profile.color + (t2 - t1)
+    _profile.draw_base = _profile.draw_base + (t3 - t2)
+    _profile.wave = _profile.wave + (t4 - t3)
+    _profile.header = _profile.header + (t5 - t4)
+    _profile.ants = _profile.ants + (t6 - t5)
+    _profile.text = _profile.text + (t7 - t6)
+    _profile.badges = _profile.badges + (t8 - t7)
+    _profile.count = _profile.count + 1
+    profile_report()
   end
 end
 

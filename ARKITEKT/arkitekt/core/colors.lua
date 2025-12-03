@@ -30,7 +30,8 @@ function M.RgbaToComponents(color)
 end
 
 function M.ComponentsToRgba(r, g, b, a)
-  return (r << 24) | (g << 16) | (b << 8) | a
+  -- Coerce to integers (handles floats safely, //1 is essentially free)
+  return ((r//1) << 24) | ((g//1) << 16) | ((b//1) << 8) | (a//1)
 end
 
 -- ImGui uses ARGB format, convert to/from our RGBA format
