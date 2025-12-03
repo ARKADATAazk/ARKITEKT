@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/panel/header/init.lua
 -- Header coordinator - supports top and bottom positioning
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Layout = require('arkitekt.gui.widgets.containers.panel.header.layout')
 local Theme = require('arkitekt.core.theme')

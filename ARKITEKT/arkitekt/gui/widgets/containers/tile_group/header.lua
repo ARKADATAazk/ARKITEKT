@@ -2,7 +2,7 @@
 -- arkitekt/gui/widgets/containers/tile_group/header.lua
 -- Renders collapsible group headers for tile groups
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local Defaults = require('arkitekt.gui.widgets.containers.tile_group.defaults')
 local hexrgb = Colors.Hexrgb

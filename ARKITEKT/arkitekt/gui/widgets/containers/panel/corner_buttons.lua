@@ -2,10 +2,10 @@
 -- panel/corner_buttons.lua
 -- Corner button rendering with asymmetric rounding
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Base = require('arkitekt.gui.widgets.base')
 local CornerButton = require('arkitekt.gui.widgets.primitives.corner_button')
-local ConfigUtil = require('arkitekt.core.config')
+local ConfigUtil = require('arkitekt.core.merge')
 local Rendering = require('arkitekt.gui.widgets.containers.panel.rendering')
 
 local M = {}

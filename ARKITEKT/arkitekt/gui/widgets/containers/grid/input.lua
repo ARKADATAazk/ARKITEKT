@@ -3,7 +3,7 @@
 -- Input handling for grid widgets - unified shortcut system
 -- FIXED: Tiles outside grid bounds are no longer interactive
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Draw = require('arkitekt.gui.draw.primitives')
 

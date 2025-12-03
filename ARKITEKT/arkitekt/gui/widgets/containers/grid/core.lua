@@ -6,7 +6,7 @@
 -- FIXED: Respects parent panel scrollable bounds
 -- API_MATCHING: Added ImGui-style Ark.Grid(ctx, opts) API with hidden state
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local IdStack = require('arkitekt.core.id_stack')
 
 local LayoutGrid = require('arkitekt.gui.widgets.containers.grid.layout')

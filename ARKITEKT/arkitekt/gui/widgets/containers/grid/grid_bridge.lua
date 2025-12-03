@@ -4,7 +4,7 @@
 -- FIXED: Proper payload preparation in registration flow
 -- FIXED: Clear selection in other grids when clicking a different grid
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

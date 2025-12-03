@@ -3,7 +3,7 @@
 -- Unified toolbar system for all four sides (top, bottom, left, right)
 -- Replaces the confusing header/footer/sidebar terminology with consistent 'toolbar' concept
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 -- Delegate to existing specialized renderers
 local Header = require('arkitekt.gui.widgets.containers.panel.header')

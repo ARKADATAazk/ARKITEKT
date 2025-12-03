@@ -2,7 +2,7 @@
 -- panel/scrolling.lua
 -- Scrollbar management and anti-jitter logic
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Scrollbar = require('arkitekt.gui.widgets.primitives.scrollbar')
 
 local M = {}

@@ -3,7 +3,7 @@
 -- Overlay toolbar system - floating toolbars with auto-hide and animations
 -- All 4 sides supported: top, bottom, left, right
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 -- Delegate to existing renderers for element drawing
 local Header = require('arkitekt.gui.widgets.containers.panel.header')

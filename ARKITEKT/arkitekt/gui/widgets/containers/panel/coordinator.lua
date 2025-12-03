@@ -2,7 +2,7 @@
 -- panel/coordinator.lua
 -- Main panel rendering coordinator - orchestrates all panel subsystems
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 -- Module dependencies
 local Toolbar = require('arkitekt.gui.widgets.containers.panel.toolbar')
@@ -14,7 +14,7 @@ local CornerButtons = require('arkitekt.gui.widgets.containers.panel.corner_butt
 local Scrolling = require('arkitekt.gui.widgets.containers.panel.scrolling')
 local State = require('arkitekt.gui.widgets.containers.panel.state')
 local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
-local ConfigUtil = require('arkitekt.core.config')
+local ConfigUtil = require('arkitekt.core.merge')
 local Theme = require('arkitekt.core.theme')
 
 local M = {}

@@ -3,9 +3,9 @@
 -- Layout engine for header elements with corner detection
 -- Enhanced with left/right alignment support
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
-local ConfigUtil = require('arkitekt.core.config')
+local ConfigUtil = require('arkitekt.core.merge')
 
 local M = {}
 

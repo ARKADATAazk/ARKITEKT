@@ -3,7 +3,7 @@
 -- Clean, modular tab strip with improved animation control
 -- Refactored: Now uses separate modules for animations and rendering
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 -- Load sub-modules
 local Rendering = require('arkitekt.gui.widgets.containers.panel.header.tab_strip.rendering')

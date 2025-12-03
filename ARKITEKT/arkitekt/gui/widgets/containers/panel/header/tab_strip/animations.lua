@@ -2,7 +2,7 @@
 -- arkitekt/gui/widgets/containers/panel/header/tab_strip/animations.lua
 -- Tab animation logic: position tracking, slide animations, drag reorder
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.Hexrgb
 

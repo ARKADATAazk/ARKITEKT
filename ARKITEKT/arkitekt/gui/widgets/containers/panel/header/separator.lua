@@ -21,7 +21,7 @@ function M.Draw(ctx, dl, x, y, width, height, config)
     local line_y2 = line_y1 + line_height
     
     -- DrawList_AddLine expects: dl, x1, y1, x2, y2, color, thickness
-    local ImGui = require('arkitekt.platform.imgui')
+    local ImGui = require('arkitekt.core.imgui')
     ImGui.DrawList_AddLine(dl, line_x, line_y1, line_x, line_y2, line_color, line_thickness)
   end
   

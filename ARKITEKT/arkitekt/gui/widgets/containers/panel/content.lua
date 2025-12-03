@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/panel/content.lua
 -- Scrollable content area management
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Theme = require('arkitekt.core.theme')
 
 

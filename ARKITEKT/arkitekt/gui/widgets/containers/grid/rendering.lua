@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/grid/rendering.lua
 -- Generic tile rendering helpers for grid widgets (using new color system)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
