@@ -6,7 +6,7 @@
 -- Register at load time, access computed values via get_colors().
 
 local Ark = require('arkitekt')
-local ThemeManager = require('arkitekt.core.theme.manager')
+local ThemeManager = require('arkitekt.theme.manager')
 
 -- DSL wrappers (short names)
 local snap = ThemeManager.snap

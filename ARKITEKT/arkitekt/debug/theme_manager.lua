@@ -10,8 +10,8 @@
 
 local Colors = require('arkitekt.core.colors')
 local Palette = require('arkitekt.config.colors')
-local Engine = require('arkitekt.core.theme.manager.engine')
-local Registry = require('arkitekt.core.theme.manager.registry')
+local Engine = require('arkitekt.theme.manager.engine')
+local Registry = require('arkitekt.theme.manager.registry')
 
 local M = {}
 
@@ -19,7 +19,7 @@ local M = {}
 local _Theme
 local function get_theme()
   if not _Theme then
-    _Theme = require('arkitekt.core.theme')
+    _Theme = require('arkitekt.theme')
   end
   return _Theme
 end

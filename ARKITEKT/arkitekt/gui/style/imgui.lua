@@ -25,7 +25,7 @@ end
 local Theme
 local function get_theme()
   if not Theme then
-    Theme = require('arkitekt.core.theme')
+    Theme = require('arkitekt.theme')
   end
   return Theme
 end

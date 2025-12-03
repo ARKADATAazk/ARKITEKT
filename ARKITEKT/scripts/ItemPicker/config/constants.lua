@@ -15,7 +15,7 @@ local M = {}
 local _Theme
 local function get_theme()
   if not _Theme then
-    local ok, theme = pcall(require, 'arkitekt.core.theme')
+    local ok, theme = pcall(require, 'arkitekt.theme')
     if ok then _Theme = theme end
   end
   return _Theme

@@ -4,7 +4,7 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local ThemeManager = require('arkitekt.core.theme.manager')
+local ThemeManager = require('arkitekt.theme.manager')
 local Style = require('arkitekt.gui.style')
 local Colors = require('arkitekt.core.colors')
 

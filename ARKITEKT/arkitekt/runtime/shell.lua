@@ -212,7 +212,7 @@ local function run_overlay_mode(config)
   -- persisted theme preference from the titlebar context menu.
   local reaper_theme_sync, cross_app_theme_sync
   do
-    local ok, ThemeManager = pcall(require, 'arkitekt.core.theme.manager')
+    local ok, ThemeManager = pcall(require, 'arkitekt.theme.manager')
     if ok and ThemeManager and ThemeManager.init then
       ThemeManager.init('adapt', config.app_name)
 
@@ -394,7 +394,7 @@ function M.run(opts)
   -- Theme preferences are persisted via REAPER ExtState and restored automatically.
   local reaper_theme_sync, cross_app_theme_sync
   do
-    local ok, ThemeManager = pcall(require, 'arkitekt.core.theme.manager')
+    local ok, ThemeManager = pcall(require, 'arkitekt.theme.manager')
     if ok and ThemeManager and ThemeManager.init then
       -- init() loads saved preference or defaults to 'adapt' mode
       ThemeManager.init('adapt', config.app_name)
@@ -556,7 +556,7 @@ function M.run(opts)
 
     -- Render theme debug overlay (if enabled via titlebar menu or F12)
     do
-      local ok, ThemeManager = pcall(require, 'arkitekt.core.theme.manager')
+      local ok, ThemeManager = pcall(require, 'arkitekt.theme.manager')
       if ok and ThemeManager and ThemeManager.render_debug_overlay then
         ThemeManager.render_debug_overlay(ctx, ImGui)
       end

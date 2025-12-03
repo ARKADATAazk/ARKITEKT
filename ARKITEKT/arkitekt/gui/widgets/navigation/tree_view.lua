@@ -5,7 +5,7 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local IdStack = require('arkitekt.core.id_stack')
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 local Logger = require('arkitekt.debug.logger')

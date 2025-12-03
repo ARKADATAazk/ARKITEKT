@@ -5,7 +5,7 @@
 local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local Config = require('arkitekt.core.merge')
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 local M = {}
 M.__index = M

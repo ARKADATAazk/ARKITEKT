@@ -5,7 +5,7 @@ Dynamic theme system with algorithmic color palette generation for ARKITEKT.
 ## Quick Start
 
 ```lua
-local ThemeManager = require('arkitekt.core.theme.manager')
+local ThemeManager = require('arkitekt.theme.manager')
 
 -- Pick a mode
 ThemeManager.set_dark()   -- Dark preset (~14% lightness)
@@ -160,7 +160,7 @@ Scripts can register their own theme-reactive palettes using the same DSL:
 
 ```lua
 -- MyScript/defs/palette.lua
-local ThemeManager = require('arkitekt.core.theme.manager')
+local ThemeManager = require('arkitekt.theme.manager')
 local Colors = require('arkitekt.core.colors')
 
 local snap = ThemeManager.snap

@@ -41,7 +41,7 @@ end
 
 local Theme = nil
 do
-  local ok, mod = pcall(require, 'arkitekt.core.theme')
+  local ok, mod = pcall(require, 'arkitekt.theme')
   if ok then Theme = mod end
 end
 

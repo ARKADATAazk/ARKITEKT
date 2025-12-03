@@ -8,7 +8,7 @@ local M = {}
 local Ark = require('arkitekt')
 local ImGui = Ark.ImGui
 local Colors = Ark.Colors
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 local Base = require('arkitekt.gui.widgets.base')
 
 -- CONSTANTS

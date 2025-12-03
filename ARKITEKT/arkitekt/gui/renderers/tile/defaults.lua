@@ -88,7 +88,7 @@ M.DEFAULT = M.STATIC_DEFAULTS
 --- Build fresh config from theme (internal, called by begin_frame)
 local function _build_config()
   -- Try to get Theme (may not be loaded yet on first frame)
-  local ok, Theme = pcall(require, 'arkitekt.core.theme')
+  local ok, Theme = pcall(require, 'arkitekt.theme')
   if not ok or not Theme or not Theme.COLORS then
     return M.STATIC_DEFAULTS
   end

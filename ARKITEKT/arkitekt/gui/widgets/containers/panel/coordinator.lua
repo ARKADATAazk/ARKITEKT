@@ -15,7 +15,7 @@ local Scrolling = require('arkitekt.gui.widgets.containers.panel.scrolling')
 local State = require('arkitekt.gui.widgets.containers.panel.state')
 local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
 local ConfigUtil = require('arkitekt.core.merge')
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 local M = {}
 local DEFAULTS = PanelConfig.DEFAULTS

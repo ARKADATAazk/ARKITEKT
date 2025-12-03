@@ -11,7 +11,7 @@
 --   local palette = Theme.get_script_palette('ItemPicker')
 --   local color = palette.favorite_star
 
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 local M = {}
 

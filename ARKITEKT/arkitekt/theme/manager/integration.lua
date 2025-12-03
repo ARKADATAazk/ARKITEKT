@@ -6,7 +6,7 @@
 -- animated transitions, and live sync polling.
 
 local Colors = require('arkitekt.core.colors')
-local Engine = require('arkitekt.core.theme.manager.engine')
+local Engine = require('arkitekt.theme.manager.engine')
 local Palette = require('arkitekt.config.colors.theme')
 
 local M = {}
@@ -15,7 +15,7 @@ local M = {}
 local _Theme
 local function get_theme()
   if not _Theme then
-    _Theme = require('arkitekt.core.theme')
+    _Theme = require('arkitekt.theme')
   end
   return _Theme
 end
@@ -401,7 +401,7 @@ end
 --- @param on_complete function|nil Optional callback
 --- @return boolean Success (true if theme exists)
 function M.transition_to_theme(name, duration, on_complete)
-  local Presets = require('arkitekt.core.theme.manager.presets')
+  local Presets = require('arkitekt.theme.manager.presets')
   local palette = Presets.get_palette(name)
 
   if not palette then

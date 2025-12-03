@@ -10,7 +10,7 @@ local MacroControls = require('scripts.ProductionPanel.ui.views.macro_controls')
 local DrumRack = require('scripts.ProductionPanel.ui.views.drum_rack')
 local ImGui = Ark.ImGui
 local Colors = Ark.Colors
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 -- STATE
 local state = {

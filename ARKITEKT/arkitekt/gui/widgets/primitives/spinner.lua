@@ -5,7 +5,7 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 local Base = require('arkitekt.gui.widgets.base')
 
 local hexrgb = Colors.Hexrgb

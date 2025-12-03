@@ -12,7 +12,7 @@
 -- USAGE
 -- =============================================================================
 --
---   local Theme = require('arkitekt.core.theme')
+--   local Theme = require('arkitekt.theme')
 --
 --   -- Read colors (widgets do this every frame)
 --   local bg = Theme.COLORS.BG_BASE
@@ -105,10 +105,10 @@ M.colors = Palette.colors
 -- ENGINE (color generation)
 -- =============================================================================
 
-local Engine = require('arkitekt.core.theme.manager.engine')
-local Presets = require('arkitekt.core.theme.manager.presets')
-local Integration = require('arkitekt.core.theme.manager.integration')
-local Registry = require('arkitekt.core.theme.manager.registry')
+local Engine = require('arkitekt.theme.manager.engine')
+local Presets = require('arkitekt.theme.manager.presets')
+local Integration = require('arkitekt.theme.manager.integration')
+local Registry = require('arkitekt.theme.manager.registry')
 local Debug = require('arkitekt.debug.theme_manager')
 
 -- Current theme mode

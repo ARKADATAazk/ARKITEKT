@@ -274,7 +274,7 @@ local function build_quantize_dropdown(bridge_state)
         local padding = footer_ctx.padding
 
         -- Get theme colors
-        local Theme = require('arkitekt.core.theme')
+        local Theme = require('arkitekt.theme')
         local C = Theme.COLORS
 
         local label = 'Jump Lookahead'

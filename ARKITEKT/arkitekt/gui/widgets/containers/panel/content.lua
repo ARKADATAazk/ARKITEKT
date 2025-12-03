@@ -3,7 +3,7 @@
 -- Scrollable content area management
 
 local ImGui = require('arkitekt.core.imgui')
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 
 local M = {}

@@ -7,7 +7,7 @@ local Config = require('arkitekt.core.merge')
 local Constants = require('arkitekt.config.app')
 local Colors = require('arkitekt.core.colors')
 local Logger = require('arkitekt.debug.logger')
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 local M = {}
 

@@ -4,7 +4,7 @@
 -- Uses unified opts-based API with double-click to reset
 
 local ImGui = require('arkitekt.core.imgui')
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 

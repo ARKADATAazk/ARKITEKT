@@ -4,7 +4,7 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 local Container = require('arkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('arkitekt.gui.widgets.tools.color_picker_window')
 local Button = require('arkitekt.gui.widgets.primitives.button')

@@ -13,7 +13,7 @@ local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local ThemeManager = nil
 local ThemeManagerError = nil
 do
-  local ok, mod = pcall(require, 'arkitekt.core.theme.manager')
+  local ok, mod = pcall(require, 'arkitekt.theme.manager')
   if ok then
     ThemeManager = mod
   else

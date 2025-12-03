@@ -281,7 +281,7 @@ When refactoring each widget:
 
 ```lua
 -- User script
-local ThemeManager = require('arkitekt.core.theme.manager')
+local ThemeManager = require('arkitekt.theme.manager')
 
 -- Option 1: Sync with REAPER
 ThemeManager.sync_with_reaper()

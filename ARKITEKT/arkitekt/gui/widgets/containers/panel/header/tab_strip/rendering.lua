@@ -3,7 +3,7 @@
 -- Tab rendering logic: drawing tabs, buttons, track background
 
 local ImGui = require('arkitekt.core.imgui')
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 local InteractionBlocking = require('arkitekt.gui.interaction.blocking')
 local Colors = require('arkitekt.core.colors')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')

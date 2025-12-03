@@ -5,7 +5,7 @@
 local ImGui = require('arkitekt.core.imgui')
 
 local Layout = require('arkitekt.gui.widgets.containers.panel.header.layout')
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 local C = Theme.COLORS          -- Shared primitives
 local PC = Theme.build_panel_colors()   -- Panel-specific colors
 

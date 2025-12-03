@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/panel/header/separator.lua
 -- Separator element for header layout
 
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 local M = {}
 

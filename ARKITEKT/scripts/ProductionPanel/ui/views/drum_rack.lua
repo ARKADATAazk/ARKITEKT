@@ -9,7 +9,7 @@ local Ark = require('arkitekt')
 local Defaults = require('scripts.ProductionPanel.config.defaults')
 local ImGui = Ark.ImGui
 local Colors = Ark.Colors
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 -- MOCK DATA
 local mock_pads = {
