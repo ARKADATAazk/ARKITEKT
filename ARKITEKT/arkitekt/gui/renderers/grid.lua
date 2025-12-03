@@ -3,7 +3,7 @@
 -- Centralized grid/tile rendering utilities
 -- Consolidates duplicate code from package_tiles, media_grid, RegionPlaylist renderers
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 
 local M = {}

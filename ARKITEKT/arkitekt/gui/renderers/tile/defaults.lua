@@ -120,7 +120,7 @@ end
 --- Call once per frame before rendering tiles
 --- @param ctx userdata ImGui context (used to get frame count)
 function M.begin_frame(ctx)
-  local ImGui = require('arkitekt.platform.imgui')
+  local ImGui = require('arkitekt.core.imgui')
   local frame = ImGui.GetFrameCount(ctx)
   if frame ~= _cached_frame then
     _cached_config = _build_config()

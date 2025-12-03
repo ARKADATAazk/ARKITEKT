@@ -3,7 +3,7 @@
 -- Generic icon drawing library for transport controls and common UI icons
 -- Extracted from RegionPlaylist for framework-wide reuse
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

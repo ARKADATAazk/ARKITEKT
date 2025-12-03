@@ -3,7 +3,7 @@
 -- Simple inline visual effects (hover shadows, glows, etc.)
 -- For advanced multi-layer tile rendering, see Arkitekt/gui/fx/tile_fx.lua
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

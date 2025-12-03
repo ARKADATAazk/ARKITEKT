@@ -2,7 +2,7 @@
 -- Arkitekt/gui/rendering/shapes.lua
 -- Shape rendering utilities for UI elements
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local Badge = require('arkitekt.gui.widgets.primitives.badge')
 

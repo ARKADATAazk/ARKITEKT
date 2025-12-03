@@ -7,7 +7,7 @@
 local max = math.max
 local min = math.min
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local Hexrgb = Colors.Hexrgb
 
