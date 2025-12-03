@@ -7,10 +7,10 @@
 local ImGui = require('arkitekt.core.imgui')
 local Base = require('arkitekt.gui.widgets.base')
 local Tracks = require('arkitekt.gui.animation.tracks')
-local Anim = require('arkitekt.core.animation')
+local Anim = require('arkitekt.config.animation')
 local Math = require('arkitekt.core.math')
 local Logger = require('arkitekt.debug.logger')
-local Cursor = require('arkitekt.core.cursor')
+local Cursor = require('arkitekt.gui.interaction.cursor')
 
 local M = {}
 

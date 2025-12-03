@@ -6,7 +6,7 @@
 local ImGui = require('arkitekt.core.imgui')
 local IdStack = require('arkitekt.core.id_stack')
 local Colors = require('arkitekt.core.colors')
-local Anim = require('arkitekt.core.animation')
+local Anim = require('arkitekt.config.animation')
 local CoreMath = require('arkitekt.core.math')
 
 local M = {}
@@ -15,7 +15,7 @@ local M = {}
 local CalcTextSize = ImGui.CalcTextSize
 
 -- ============================================================================
--- CONSTANTS (deprecated - use arkitekt.core.animation instead)
+-- CONSTANTS (deprecated - use arkitekt.config.animation instead)
 -- ============================================================================
 
 --- Default animation speed for hover/focus transitions

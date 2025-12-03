@@ -7,7 +7,7 @@ local ImGui = require('arkitekt.core.imgui')
 local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
-local Anim = require('arkitekt.core.animation')
+local Anim = require('arkitekt.config.animation')
 
 local M = {}
 

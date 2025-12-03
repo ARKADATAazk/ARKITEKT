@@ -247,9 +247,9 @@ local MODULES = {
   Tree = 'arkitekt.gui.widgets.navigation.tree_view',
 
   -- Utilities (commonly used modules)
-  Anim = 'arkitekt.core.animation',
+  Anim = 'arkitekt.config.animation',
   Colors = 'arkitekt.core.colors',
-  Cursor = 'arkitekt.core.cursor',
+  Cursor = 'arkitekt.gui.interaction.cursor',
   Style = 'arkitekt.gui.style',
   Draw = 'arkitekt.gui.draw.primitives',
   Pattern = 'arkitekt.gui.draw.patterns',
