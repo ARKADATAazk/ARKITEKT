@@ -202,7 +202,7 @@ function M.draw(ctx, opts)
     s = s * 0.64
     v = v * 0.35
     r, g, b = ImGui.ColorConvertHSVtoRGB(h_hsv, s, v)
-    waveform_color = Colors.ComponentsToRgba(r * 255, g * 255, b * 255, 255)
+    waveform_color = ImGui.ColorConvertDouble4ToU32(r, g, b, 1.0)
   end
 
   -- Render base tile

@@ -42,7 +42,7 @@ M.definition = {
   region_chip_default = Theme.snap(0x4A5A6AFF, 0x8A9AAAFF),
 
   -- Default tile color (when item has no color)
-  default_tile_color = Theme.snap(0x555555FF, 0xAAAAAAFF),
+  default_tile_color = Theme.snap(0x353535FF, 0x858585FF),
 
   -- Placeholder spinner color
   placeholder_spinner = Theme.snap(0x808080FF, 0x606060FF),
@@ -77,7 +77,7 @@ M.definition = {
   ants_brightness = Theme.snap(1.0, 0.0),         -- Selection border brightness (1.0 = max boost)
 
   -- Hover brightness boost
-  hover_brightness = Theme.snap(0.75, 0.65),      -- How much brighter on hover
+  hover_brightness = Theme.snap(0.20, 0.15),      -- How much brighter on hover
 
   -- Waveform/MIDI visualization (dark lines on tile)
   viz_saturation = Theme.snap(0.15, 0.0),         -- Visualization saturation (low = desaturated)

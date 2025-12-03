@@ -6,11 +6,15 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local M = {}
 
+-- PERF: Localize math functions
+local min = math.min
+local max = math.max
+
 -- Helper function to apply alpha to color
 local function apply_alpha(color, alpha_factor)
   local current_alpha = color & 0xFF
   local new_alpha = (current_alpha * alpha_factor) // 1
-  return (color & 0xFFFFFF00) | math.min(255, math.max(0, new_alpha))
+  return (color & 0xFFFFFF00) | min(255, max(0, new_alpha))
 end
 
 -- Get item data and color for stacked items
@@ -212,16 +216,14 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
 
           -- Apply base fill adjustments for consistency with tiles
           if item_color then
-            -- Convert to RGB components and desaturate/adjust brightness
             local r, g, b = ImGui.ColorConvertU32ToDouble4(item_color)
             local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
             s = s * 0.7  -- Desaturate a bit
             v = v * 0.5  -- Darken for preview
             r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
-            item_color = Ark.Colors.WithOpacity(Ark.Colors.ComponentsToRgba(r*255, g*255, b*255, 255), 0.8)
+            item_color = ImGui.ColorConvertDouble4ToU32(r, g, b, 0.8)
           else
-            -- Fallback to grey
-            item_color = Ark.Colors.WithOpacity(0xB1B4B4FF, 0.8)
+            item_color = 0xB1B4B4CC  -- Grey at 80% opacity
           end
 
           -- Draw base rectangle with item color
@@ -239,7 +241,7 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
             s = 0.3
             v = 0.15
             r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
-            local viz_color = Ark.Colors.WithOpacity(Ark.Colors.ComponentsToRgba(r*255, g*255, b*255, 255), 0.7)
+            local viz_color = ImGui.ColorConvertDouble4ToU32(r, g, b, 0.7)
 
             if item_data.is_midi then
               -- MIDI visualization
@@ -302,7 +304,7 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
     ImGui.PushFont(ctx, mini_font, 13)
 
     local dragging_count = (state.dragging_keys and #state.dragging_keys) or 1
-    local visible_count = math.min(dragging_count, 4)  -- Show max 4 stacked items
+    local visible_count = min(dragging_count, 4)  -- Show max 4 stacked items
 
     -- Reserve space at top for badge if dragging multiples (so it doesn't get clipped)
     if dragging_count > 1 then
@@ -393,7 +395,7 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
         s = waveform_sat
         v = waveform_bright
         r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
-        local dark_color = Ark.Colors.WithOpacity(Ark.Colors.ComponentsToRgba(r*255, g*255, b*255, 255), opacity * waveform_alpha)
+        local dark_color = ImGui.ColorConvertDouble4ToU32(r, g, b, opacity * waveform_alpha)
 
         if item_data.is_midi then
           -- MIDI visualization from runtime cache
@@ -427,7 +429,7 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
         v = v * config.TILE_RENDER.header.brightness_factor
         r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
         local header_alpha = (config.TILE_RENDER.header.alpha / 255) * opacity
-        header_color = Ark.Colors.WithOpacity(Ark.Colors.ComponentsToRgba(r*255, g*255, b*255, 255), header_alpha)
+        header_color = ImGui.ColorConvertDouble4ToU32(r, g, b, header_alpha)
       else
         -- Fallback: dark overlay
         header_color = apply_alpha(0x00000040, opacity)

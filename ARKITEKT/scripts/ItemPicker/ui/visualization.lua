@@ -37,7 +37,7 @@ local function get_waveform_color(base_color)
   v = v * bright_mult
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local col_wave = Ark.Colors.ComponentsToRgba(r*255, g*255, b*255, 255)
+  local col_wave = ImGui.ColorConvertDouble4ToU32(r, g, b, 1.0)
   waveform_color_cache[base_color] = col_wave
   return col_wave
 end
@@ -388,16 +388,14 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
   ImGui.DrawList_PopClipRect(draw_list)
 end
 
-function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_width, uuid, cache, use_filled, show_zero_line)
+function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_width, uuid, cache, use_filled)
   -- Default to filled if not specified (for backwards compatibility)
   if use_filled == nil then use_filled = true end
-  if show_zero_line == nil then show_zero_line = false end
 
   -- Cache ImGui functions for performance
   local GetItemRectMin = ImGui.GetItemRectMin
   local GetItemRectMax = ImGui.GetItemRectMax
   local GetItemRectSize = ImGui.GetItemRectSize
-  local DrawList_AddLine = ImGui.DrawList_AddLine
   local DrawList_AddPolyline = ImGui.DrawList_AddPolyline
 
   local item_x1, item_y1 = GetItemRectMin(ctx)
@@ -411,15 +409,9 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
 
   -- Use the color directly - it's already been transformed by get_dark_waveform_color
   local col_wave = color
-  local col_zero_line = col_wave
 
   local waveform_height = item_h / 2 * 0.95
   local zero_line = item_y1 + item_h / 2
-
-  -- Draw zero line (optional)
-  if show_zero_line then
-    DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
-  end
 
   -- Performance: Cache normalized point coordinates (20x faster)
   local cache_key = uuid and (uuid .. '_' .. width) or nil

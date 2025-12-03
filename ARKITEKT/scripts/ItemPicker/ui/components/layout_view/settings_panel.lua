@@ -6,6 +6,10 @@
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
+-- Renderers for profiler toggle
+local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
+local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')
+
 local M = {}
 
 -- Checkbox with cursor flow
@@ -105,14 +109,6 @@ function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   )
   ImGui.SameLine(ctx, 0, spacing)
 
-  local show_viz_small = state.settings.show_visualization_in_small_tiles
-  if show_viz_small == nil then show_viz_small = true end
-  checkbox(ctx, 'show_viz_small',
-    'Show Viz in Small Tiles',
-    show_viz_small, settings_alpha,
-    function() state.set_setting('show_visualization_in_small_tiles', not show_viz_small) end
-  )
-  ImGui.SameLine(ctx, 0, spacing)
 
   local enable_regions = state.settings.enable_region_processing
   if enable_regions == nil then enable_regions = false end
@@ -164,8 +160,11 @@ function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   local track_color = Ark.Colors.WithAlpha(0x1A1A1AFF, (settings_alpha * 200) // 1)
   ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + slider_width, track_y + track_h, track_color, track_rounding)
 
-  local quality = state.settings.waveform_quality or 1.0
-  local fill_width = slider_width * quality
+  local quality = state.settings.waveform_quality or 0.2
+  -- Map quality (0.05-0.70) to slider position (0-1)
+  local slider_min, slider_max = 0.05, 0.70
+  local slider_pos = (quality - slider_min) / (slider_max - slider_min)
+  local fill_width = slider_width * slider_pos
   local fill_color = Ark.Colors.WithAlpha(0x4A9EFFFF, (settings_alpha * 200) // 1)
   if fill_width > 1 then
     ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + fill_width, track_y + track_h, fill_color, track_rounding)
@@ -185,7 +184,9 @@ function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   -- Slider interaction
   local is_slider_hovered = mouse_x >= track_x and mouse_x < track_x + slider_width and mouse_y >= track_y - 4 and mouse_y < track_y + track_h + 4
   if is_slider_hovered and ImGui.IsMouseDown(ctx, 0) then
-    local new_quality = math.max(0.1, math.min(1.0, (mouse_x - track_x) / slider_width))
+    -- Map slider position (0-1) back to quality (0.05-0.70)
+    local new_slider_pos = math.max(0, math.min(1.0, (mouse_x - track_x) / slider_width))
+    local new_quality = slider_min + new_slider_pos * (slider_max - slider_min)
     state.set_setting('waveform_quality', new_quality)
     if state.runtime_cache and state.runtime_cache.waveforms then
       state.runtime_cache.waveforms = {}
@@ -218,13 +219,6 @@ function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   )
   ImGui.SameLine(ctx, 0, spacing)
 
-  local waveform_zero_line = state.settings.waveform_zero_line or false
-  checkbox(ctx, 'waveform_zero_line',
-    'Zero Line',
-    waveform_zero_line, settings_alpha,
-    function() state.set_setting('waveform_zero_line', not waveform_zero_line) end
-  )
-  ImGui.SameLine(ctx, 0, spacing)
 
   local show_duration = state.settings.show_duration
   if show_duration == nil then show_duration = true end
@@ -240,6 +234,21 @@ function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
     'Auto-Preview on Hover',
     auto_preview, settings_alpha,
     function() state.set_setting('auto_preview_on_hover', not auto_preview) end
+  )
+  ImGui.SameLine(ctx, 0, spacing)
+
+  -- Profiler checkboxes (outputs to console)
+  checkbox(ctx, 'profile_audio',
+    'Profile Audio',
+    AudioRenderer.profile_enabled, settings_alpha,
+    function() AudioRenderer.profile_enabled = not AudioRenderer.profile_enabled end
+  )
+  ImGui.SameLine(ctx, 0, spacing)
+
+  checkbox(ctx, 'profile_midi',
+    'Profile MIDI',
+    MidiRenderer.profile_enabled, settings_alpha,
+    function() MidiRenderer.profile_enabled = not MidiRenderer.profile_enabled end
   )
 end
 
