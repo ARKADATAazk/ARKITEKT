@@ -81,8 +81,10 @@ local function scan_directory(path, relative_path, metadata)
 
       local uuid
       local fx_list = {}
+      local tracks = {}
       local track_count = 1
       local needs_fx_parse = false
+      local parse_reason = nil
 
       if existing then
         uuid = existing.uuid
@@ -111,6 +113,7 @@ local function scan_directory(path, relative_path, metadata)
         if size_changed then
           Logger.debug('SCANNER', 'FX: File changed (size): %s (%s -> %s)', template_name, tostring(existing.file_size), tostring(file_size))
           needs_fx_parse = true
+          parse_reason = 'size_changed'
           fx_list = {}
           -- Re-count tracks on file change
           track_count = count_tracks(full_path)
@@ -118,6 +121,7 @@ local function scan_directory(path, relative_path, metadata)
         elseif missing_fx then
           Logger.debug('SCANNER', 'FX: Missing FX data: %s', template_name)
           needs_fx_parse = true
+          parse_reason = 'missing_fx'
           fx_list = {}
           -- Count tracks if missing
           if not existing.track_count then
@@ -130,6 +134,7 @@ local function scan_directory(path, relative_path, metadata)
           -- File unchanged - use cached data
           fx_list = existing.fx or {}
           track_count = existing.track_count or 1
+          tracks = existing.tracks or {}
         end
 
         -- Update file size in metadata
@@ -139,6 +144,7 @@ local function scan_directory(path, relative_path, metadata)
       else
         -- Create new UUID and metadata entry
         uuid = Persistence.generate_uuid()
+        parse_reason = 'new_template'
 
         -- Count tracks for new template
         track_count = count_tracks(full_path)
@@ -176,8 +182,10 @@ local function scan_directory(path, relative_path, metadata)
         relative_path = relative_path,
         folder = relative_path ~= '' and relative_path or 'Root',
         fx = fx_list,
+        tracks = tracks,
         track_count = track_count,
         needs_fx_parse = needs_fx_parse,  -- Flag for queue
+        parse_reason = parse_reason,       -- Reason for parsing (debugging)
       }
     end
 
@@ -587,9 +595,6 @@ end
 function M.scan_init(state)
   local template_path = get_template_path()
 
-  Logger.info('SCANNER', '=== Starting incremental scan ===')
-  Logger.info('SCANNER', 'Template path: %s', template_path)
-
   -- Load metadata
   local metadata = Persistence.load_metadata()
   state.metadata = metadata
@@ -693,8 +698,10 @@ function M.scan_batch(state, batch_size)
 
     local uuid
     local fx_list = {}
+    local tracks = {}
     local track_count = 1
     local needs_fx_parse = false
+    local parse_reason = nil
 
     if existing then
       uuid = existing.uuid
@@ -714,13 +721,17 @@ function M.scan_batch(state, batch_size)
 
       if size_changed then
         needs_fx_parse = true
+        parse_reason = 'size_changed'
         fx_list = {}
+        tracks = {}
         -- Re-count tracks on file change
         track_count = count_tracks(full_path)
         existing.track_count = track_count
       elseif missing_fx then
         needs_fx_parse = true
+        parse_reason = 'missing_fx'
         fx_list = {}
+        tracks = {}
         -- Count tracks if missing
         if not existing.track_count then
           track_count = count_tracks(full_path)
@@ -731,6 +742,7 @@ function M.scan_batch(state, batch_size)
       else
         -- File unchanged - use cached data
         fx_list = existing.fx or {}
+        tracks = existing.tracks or {}
         track_count = existing.track_count or 1
       end
 
@@ -740,6 +752,7 @@ function M.scan_batch(state, batch_size)
     else
       -- Create new UUID
       uuid = Persistence.generate_uuid()
+      parse_reason = 'new_template'
 
       -- Count tracks for new template
       track_count = count_tracks(full_path)
@@ -775,8 +788,10 @@ function M.scan_batch(state, batch_size)
       relative_path = relative_path,
       folder = relative_path ~= '' and relative_path or 'Root',
       fx = fx_list,
+      tracks = tracks,
       track_count = track_count,
       needs_fx_parse = needs_fx_parse,
+      parse_reason = parse_reason,
     }
   end
 

@@ -39,7 +39,7 @@ M.TOOLTIPS = {
 
   -- VSTs
   vst_filter = 'Click to filter templates with this VST',
-  vst_reparse = 'Force re-scan all templates for VSTs\nClick twice to confirm',
+  vst_reparse = 'Force re-scan all templates for VSTs and tracks',
 
   -- Virtual folders
   virtual_folder_info = 'Virtual folder - templates can be in multiple virtual folders',

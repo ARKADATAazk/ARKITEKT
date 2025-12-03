@@ -85,8 +85,19 @@ end
 
 -- ===== DECODE =====
 -- Lightweight recursive descent parser (good enough for settings)
-local sp = '[ \n\r\t]*'
 local function parse_err(msg, s, i) error(('json decode error @%d: %s'):format(i, msg)) end
+
+-- Skip whitespace starting at position i, return new position
+local function skip_ws(s, i)
+  while true do
+    local c = s:sub(i, i)
+    if c == ' ' or c == '\n' or c == '\r' or c == '\t' then
+      i = i + 1
+    else
+      return i
+    end
+  end
+end
 
 -- Convert Unicode code point to UTF-8 string
 local function codepoint_to_utf8(cp)
@@ -107,7 +118,7 @@ local function codepoint_to_utf8(cp)
 end
 
 local function parse_val(s, i)
-  i = s:find(sp, i) or i
+  i = skip_ws(s, i)
   local c = s:sub(i,i)
   if c == '"' then -- string
     local j, out = i+1, {}
@@ -145,37 +156,64 @@ local function parse_val(s, i)
     end
   elseif c == '{' then
     local obj = {}; i = i + 1
-    i = s:find(sp, i) or i
+    i = skip_ws(s, i)
     if s:sub(i,i) == '}' then return obj, i+1 end
     while true do
       local key; key, i = parse_val(s, i)
       if type(key) ~= 'string' then parse_err('object key must be string', s, i) end
-      i = s:match('^'..sp..':()' , i) or parse_err('\':\'  expected', s, i)
+      i = skip_ws(s, i)
+      if s:sub(i,i) ~= ':' then parse_err('colon expected', s, i) end
+      i = i + 1
       local val; val, i = parse_val(s, i)
       obj[key] = val
-      i = s:match('^'..sp..',()' , i) or i
-      if s:sub(i,i) == '}' then return obj, i+1 end
-      if s:sub(i-1,i-1) ~= ',' then parse_err('\',\' or \'}\' expected', s, i) end
+      i = skip_ws(s, i)
+      local sep = s:sub(i,i)
+      if sep == '}' then return obj, i+1 end
+      if sep ~= ',' then parse_err('comma or } expected', s, i) end
+      i = i + 1
     end
   elseif c == '[' then
     local arr = {}; i = i + 1
-    i = s:find(sp, i) or i
+    i = skip_ws(s, i)
     if s:sub(i,i) == ']' then return arr, i+1 end
     local k = 1
     while true do
       local val; val, i = parse_val(s, i)
       arr[k] = val; k = k + 1
-      i = s:match('^'..sp..',()' , i) or i
-      if s:sub(i,i) == ']' then return arr, i+1 end
-      if s:sub(i-1,i-1) ~= ',' then parse_err('\',\' or \']\' expected', s, i) end
+      i = skip_ws(s, i)
+      local sep = s:sub(i,i)
+      if sep == ']' then return arr, i+1 end
+      if sep ~= ',' then parse_err('comma or ] expected', s, i) end
+      i = i + 1
     end
+  elseif s:sub(i,i+3) == 'true' then
+    return true, i+4
+  elseif s:sub(i,i+4) == 'false' then
+    return false, i+5
+  elseif s:sub(i,i+3) == 'null' then
+    return nil, i+4
   else
-    local lit = s:match('^true', i); if lit then return true, i+4 end
-    lit = s:match('^false', i); if lit then return false, i+5 end
-    lit = s:match('^null', i); if lit then return nil, i+4 end
-    local num = s:match('^%-?%d+%.?%d*[eE]?[+%-]?%d*', i)
-    if num and #num > 0 then return tonumber(num), i + #num end
-    parse_err('unexpected token', s, i)
+    -- Try to parse number
+    local j = i
+    if s:sub(j,j) == '-' then j = j + 1 end
+    if s:sub(j,j) == '0' then
+      j = j + 1
+    elseif s:sub(j,j):match('[1-9]') then
+      while s:sub(j,j):match('%d') do j = j + 1 end
+    else
+      parse_err('unexpected token', s, i)
+    end
+    if s:sub(j,j) == '.' then
+      j = j + 1
+      while s:sub(j,j):match('%d') do j = j + 1 end
+    end
+    if s:sub(j,j):match('[eE]') then
+      j = j + 1
+      if s:sub(j,j):match('[+-]') then j = j + 1 end
+      while s:sub(j,j):match('%d') do j = j + 1 end
+    end
+    if j == i then parse_err('unexpected token', s, i) end
+    return tonumber(s:sub(i,j-1)), j
   end
 end
 

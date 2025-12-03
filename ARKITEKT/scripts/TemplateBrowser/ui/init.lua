@@ -385,44 +385,24 @@ function GUI:draw(ctx, shell_state)
       window_height = 600  -- Fallback height
     end
 
-    -- Title text
+    -- Loading spinner with status text
+    local spinner_size = 24
     local text = self.state.scan_in_progress and 'Scanning templates...' or 'Initializing...'
     local text_width = ImGui.CalcTextSize(ctx, text)
+
+    -- Spinner centered
+    Ark.LoadingSpinner(ctx, {
+      x = (window_width - spinner_size * 2) * 0.5,
+      y = window_height * 0.5 - spinner_size - 10,
+      size = spinner_size,
+      thickness = 3,
+      advance = 'none',
+    })
+
+    -- Status text below spinner
     ImGui.SetCursorPosX(ctx, (window_width - text_width) * 0.5)
-    ImGui.SetCursorPosY(ctx, window_height * 0.5 - 30)
+    ImGui.SetCursorPosY(ctx, window_height * 0.5 + spinner_size)
     ImGui.Text(ctx, text)
-
-    -- Progress bar and percentage (only during actual scanning)
-    if self.state.scan_in_progress then
-      local progress = self.state.scan_progress or 0
-
-      -- Guard against NaN/inf
-      if progress ~= progress or progress == math.huge or progress == -math.huge then
-        progress = 0
-      end
-
-      -- Clamp to 0-1 range
-      progress = math.max(0, math.min(1, progress))
-
-      local bar_width = 300
-
-      -- Progress bar using new widget
-      Ark.ProgressBar(ctx, {
-        x = (window_width - bar_width) * 0.5,
-        y = window_height * 0.5,
-        width = bar_width,
-        height = 4,
-        progress = progress,
-        advance = 'none',
-      })
-
-      -- Percentage text (use math.floor to ensure integer)
-      local percent_text = string.format('%d%%', math.floor(progress * 100))
-      local percent_width = ImGui.CalcTextSize(ctx, percent_text)
-      ImGui.SetCursorPosX(ctx, (window_width - percent_width) * 0.5)
-      ImGui.SetCursorPosY(ctx, window_height * 0.5 + 10)
-      ImGui.Text(ctx, percent_text)
-    end
 
     return  -- Don't render main UI until scan is complete
   end
@@ -549,28 +529,6 @@ function GUI:draw(ctx, shell_state)
   ImGui.SetCursorPos(ctx, (SCREEN_W - title_w) * 0.5, title_y)
   ImGui.Text(ctx, title)
   ImGui.PopFont(ctx)
-
-  -- FX parsing progress indicator
-  if not FXQueue.is_complete(self.state) then
-    local status = FXQueue.get_status(self.state)
-    local progress = FXQueue.get_progress(self.state)
-
-    local status_y = title_y + 25
-    local status_w = ImGui.CalcTextSize(ctx, status)
-
-    ImGui.SetCursorPos(ctx, (SCREEN_W - status_w) * 0.5, status_y)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xB3B3B3FF)
-    ImGui.Text(ctx, status)
-    ImGui.PopStyleColor(ctx)
-
-    -- Small progress bar
-    local bar_width = 200
-    local bar_height = 3
-    ImGui.SetCursorPos(ctx, (SCREEN_W - bar_width) * 0.5, status_y + 18)
-    ImGui.PushStyleColor(ctx, ImGui.Col_PlotHistogram, self.config.COLORS.selected_bg)
-    ImGui.ProgressBar(ctx, progress, bar_width, bar_height, '')
-    ImGui.PopStyleColor(ctx)
-  end
 
   -- Adjust spacing after title
   ImGui.SetCursorPosY(ctx, title_y + 30)
