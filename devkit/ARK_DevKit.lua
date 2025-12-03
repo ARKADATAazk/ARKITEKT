@@ -182,33 +182,6 @@ local function detect_default_base_dir()
   return base_dir
 end
 
--- Detect the current worktree key (e.g., 'main', 'TemplateBrowser', etc.)
-local function detect_current_worktree_key()
-  local src = debug.getinfo(1, 'S').source:sub(2)
-  local devkit_dir = dirname(src)
-  if not devkit_dir then return nil end
-  local repo_root = dirname(devkit_dir)
-  if not repo_root then return nil end
-
-  -- Get the folder name (e.g., 'ARKITEKT-Dev' or 'ARKITEKT-Dev-TemplateBrowser')
-  local folder_name = repo_root:match('([^'..sep..']+)$')
-  if not folder_name then return nil end
-
-  if folder_name == 'ARKITEKT' then
-    return 'stable'
-  elseif folder_name == 'ARKITEKT-Dev' then
-    return 'main'
-  elseif folder_name:match('^ARKITEKT%-Dev%-') then
-    return folder_name:sub(#'ARKITEKT-Dev-' + 1)
-  end
-
-  return nil
-end
-
-local CURRENT_WORKTREE_KEY = detect_current_worktree_key()
-
--- Debug: print current worktree detection
-print('[DevKit] Current worktree key:', CURRENT_WORKTREE_KEY or 'nil')
 
 local function find_worktrees(base_dir)
   base_dir = normalize(base_dir)
@@ -537,10 +510,9 @@ local function render_app_tile(ctx, app_data, tile_width, shell_state)
     local text_w, text_h = ImGui.CalcTextSize(ctx, wt_info.wt.key)
     local button_width = text_w + 24  -- Add padding for button chrome
 
-    -- Highlight with 'success' preset if worktree matches app name AND we're in that worktree
-    local is_matching = (wt_info.wt.key == app_data.name) and (CURRENT_WORKTREE_KEY == wt_info.wt.key)
-    -- TEST: Force ALL buttons to success to verify preset works
-    local button_preset = 'success'  -- was: is_matching and 'success' or nil
+    -- Highlight with 'success' preset if worktree key matches app name (case-insensitive)
+    local is_matching = (wt_info.wt.key:lower() == app_data.name:lower())
+    local button_preset = is_matching and 'success' or nil
 
     local result = Ark.Button(ctx, {
       id = app_data.name .. '_' .. wt_info.wt.key,
