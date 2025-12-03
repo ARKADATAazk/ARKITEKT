@@ -52,7 +52,7 @@ find scripts/ -name "*sort*.lua"
 | UI component | `arkitekt/gui/widgets/` | buttons, inputs, status bars |
 | Interaction | `arkitekt/gui/interaction/` | drag-drop, selection, reorder |
 | Data pattern | `arkitekt/core/` | incremental loader, cache |
-| Platform wrapper | `arkitekt/platform/` | REAPER/ImGui abstractions |
+| Platform wrapper | `arkitekt/core/` | REAPER/ImGui abstractions (images, imgui) |
 
 ### Step 3: Design the API
 
@@ -238,7 +238,7 @@ end
 
 - [ ] Pattern found in 2+ scripts
 - [ ] Implementations compared, common API identified
-- [ ] Module created in correct location (`core/`, `gui/`, `platform/`)
+- [ ] Module created in correct location (`core/`, `gui/`, `config/`, `theme/`)
 - [ ] One script migrated as reference
 - [ ] Tests pass
 - [ ] Remaining scripts migrated
@@ -301,15 +301,16 @@ end
 
 ## Framework Module Locations
 
-| Type | Location | Pure? |
-|------|----------|-------|
-| Utilities | `arkitekt/core/` | Yes |
-| Widgets | `arkitekt/gui/widgets/` | No |
-| Interactions | `arkitekt/gui/interaction/` | No |
-| Animations | `arkitekt/gui/animation/` | No |
-| Platform | `arkitekt/platform/` | No |
-| REAPER | `arkitekt/reaper/` | No |
-| Definitions | `arkitekt/defs/` | Yes |
+| Type | Location |
+|------|----------|
+| Utilities | `arkitekt/core/` |
+| Widgets | `arkitekt/gui/widgets/` |
+| Interactions | `arkitekt/gui/interaction/` |
+| Animations | `arkitekt/gui/animation/` |
+| Theming | `arkitekt/theme/` |
+| REAPER | `arkitekt/reaper/` |
+| Configuration | `arkitekt/config/` |
+| Assets | `arkitekt/assets/` |
 
 ---
 

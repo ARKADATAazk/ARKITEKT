@@ -14,7 +14,7 @@ scripts/MyApp/
 │   └── state.lua           # App state management
 ├── data/                   # Persistence, API calls
 │   └── storage.lua
-├── defs/
+├── config/
 │   ├── constants.lua       # App constants
 │   └── defaults.lua        # Default values
 ├── domain/                 # Business logic (no UI)
@@ -303,7 +303,7 @@ return M
 
 ## 6. Constants
 
-Create `scripts/MyApp/defs/constants.lua`:
+Create `scripts/MyApp/config/constants.lua`:
 
 ```lua
 -- @noindex
@@ -460,7 +460,7 @@ Ark.PopID(ctx)
 | `data/` | Persistence, external APIs | `reaper.*`, no ImGui |
 | `domain/` | Business logic | `reaper.*`, no ImGui |
 | `ui/` | Views, components | Everything |
-| `defs/` | Constants only | Nothing (pure data) |
+| `config/` | Constants only | Nothing (pure data) |
 
 **Key Rule:** Keep ImGui/UI code out of `domain/` - business logic should be testable without UI.
 
@@ -601,7 +601,7 @@ settings:save()
 ### Theme-Aware Colors
 
 ```lua
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 -- Read colors every frame (they may change)
 local bg = Theme.COLORS.BG_BASE

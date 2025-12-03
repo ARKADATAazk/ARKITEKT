@@ -5,7 +5,7 @@
 ## Quick Start
 
 ```lua
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 -- Set theme
 Theme.set_dark()                    -- Dark preset
@@ -199,8 +199,8 @@ BG_PANEL = offset(-0.04)        -- -4% both (light defaults to dark)
 Register app-specific theme colors that react to theme changes.
 
 ```lua
--- In scripts/MyApp/defs/palette.lua
-local Theme = require('arkitekt.core.theme')
+-- In scripts/MyApp/config/palette.lua
+local Theme = require('arkitekt.theme')
 local snap, lerp, offset = Theme.snap, Theme.lerp, Theme.offset
 
 -- Register at module load
@@ -228,7 +228,7 @@ Theme.unregister_script_palette("MyApp")
 
 ```lua
 -- In scripts/MyApp/ARK_MyApp.lua
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 -- Initialize theme
 Theme.init("adapt")  -- Load saved or default to REAPER sync
@@ -251,17 +251,15 @@ main_loop()
 
 ```
 arkitekt/
-├── core/
-│   ├── theme/                 # Main theme module
-│   │   ├── init.lua           # Public API entry point
-│   │   ├── engine.lua         # Palette generation
-│   │   ├── integration.lua    # REAPER sync, persistence
-│   │   ├── registry.lua       # Script palette registration
-│   │   ├── debug.lua          # Live debugging
-│   │   └── presets.lua        # Preset application
-│   └── theme_manager/         # Compatibility wrapper (deprecated)
-│       └── init.lua           # Forwards to core.theme
-└── defs/
+├── theme/                     # Main theme module
+│   ├── init.lua               # Public API entry point
+│   └── manager/
+│       ├── engine.lua         # Palette generation
+│       ├── integration.lua    # REAPER sync, persistence
+│       ├── registry.lua       # Script palette registration
+│       └── presets.lua        # Preset application
+│
+└── config/
     └── colors/
         ├── init.lua           # Entry point
         ├── theme.lua          # DSL definitions & palette
@@ -274,7 +272,7 @@ arkitekt/
 
 ### Add a New Theme Color
 
-Edit `arkitekt/defs/colors/theme.lua`:
+Edit `arkitekt/config/colors/theme.lua`:
 
 ```lua
 M.colors = {
@@ -337,7 +335,7 @@ Theme.toggle_debug()  -- Opens debug window
 
 ```lua
 -- Import
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 -- Set theme
 Theme.set_dark() / Theme.set_light() / Theme.adapt()

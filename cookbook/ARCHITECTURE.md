@@ -21,35 +21,40 @@ ARKITEKT code runs **exclusively inside REAPER**. This shapes our architecture p
 
 ```
 arkitekt/
-├── core/           # Pure utilities - NO reaper.*, NO ImGui.*
+├── core/           # General utilities (fs, json, settings, colors, etc.)
 │   ├── json.lua
 │   ├── uuid.lua
 │   ├── settings.lua
-│   └── theme/
+│   ├── colors.lua
+│   ├── images.lua
+│   └── imgui.lua
 │
-├── platform/       # REAPER/ImGui abstractions
-│   ├── imgui.lua   # Version compatibility (0.8/0.9)
-│   └── images.lua  # Image loading with cache
+├── config/         # Constants and configuration
+│   ├── animation.lua
+│   ├── colors/
+│   └── typography.lua
 │
-├── gui/            # Widgets and rendering (uses ImGui)
+├── theme/          # Theming system
+│   ├── init.lua
+│   └── manager/
+│
+├── gui/            # Widgets and rendering
 │   ├── widgets/
 │   ├── animation/
 │   └── interaction/
 │
-├── app/            # Bootstrap and runtime
+├── runtime/        # Bootstrap and runtime
 │   ├── shell.lua
 │   └── chrome/
+│
+├── assets/         # Fonts and icons
+│
+├── vendor/         # External dependencies
 │
 └── debug/          # Logger, test runner
 ```
 
-**Framework Rules:**
-
-| Folder | May use `reaper.*` | May use `ImGui.*` |
-|--------|-------------------|-------------------|
-| `core/` | ❌ No | ❌ No |
-| `platform/` | ✅ Yes | ✅ Yes |
-| `gui/`, `app/`, `debug/` | ✅ Yes | ✅ Yes |
+**Note:** Since ARKITEKT runs exclusively in REAPER, strict "purity" in `core/` isn't enforced. All modules may use `reaper.*` and `ImGui.*` as needed.
 
 ---
 
@@ -83,7 +88,7 @@ scripts/MyApp/
 ├── data/                 # Persistence
 │   └── persistence.lua   # JSON/ExtState
 │
-├── defs/                 # Constants
+├── config/               # Constants
 │   └── constants.lua
 │
 └── tests/                # Integration tests (run in REAPER)
@@ -109,7 +114,7 @@ Scripts can have multiple `domain/` subfolders for different concerns:
 **Files:**
 - `init.lua` - Wire dependencies, return configured app
 - `state.lua` - Hold service references (container only, no logic)
-- `config.lua` - Pure re-exports of constants from `defs/`
+- `config.lua` - Pure re-exports of constants from `config/`
 - `config_factory.lua` - Factory functions for dynamic configs (optional)
 
 **Example `app/state.lua`:**
@@ -139,8 +144,8 @@ Split static constants from dynamic factories for clarity:
 
 ```lua
 -- app/config.lua (pure re-exports)
-local Constants = require('MyApp.defs.constants')
-local Defaults = require('MyApp.defs.defaults')
+local Constants = require('MyApp.config.constants')
+local Defaults = require('MyApp.config.defaults')
 
 local M = {}
 M.ANIMATION = Constants.ANIMATION
@@ -306,7 +311,7 @@ return M
 
 ---
 
-### `defs/` - Static Definitions
+### `config/` - Static Definitions
 
 **Purpose:** Constants, defaults, UI strings. Never changes at runtime.
 
@@ -340,7 +345,7 @@ return M
 | **`data/` handles persistence** | ExtState, JSON files |
 | **`ui/init.lua`** | Always the UI orchestrator entry point |
 | **`ui/state/`** | UI-only state (preferences, NOT business data) |
-| **Keep `defs/`** | Clear name, doesn't collide |
+| **Keep `config/`** | Clear name, doesn't collide |
 
 ---
 
@@ -563,7 +568,7 @@ Common script folders:
 | `ui/`, `views/` | Rendering, interaction | Yes (via ImGui) |
 | `domain/` | Business logic | Yes (pragmatic) |
 | `data/` | Persistence | Yes (ExtState, files) |
-| `defs/` | Constants | No |
+| `config/` | Constants | No |
 | `tests/` | Integration tests | Yes (runs in REAPER) |
 
 **The real rule:** Organize so it's **easy to find and understand**, not to satisfy abstract purity.

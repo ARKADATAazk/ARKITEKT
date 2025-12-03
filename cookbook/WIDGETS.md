@@ -90,7 +90,7 @@ All boolean config properties use the `is_` prefix for clarity and autocomplete:
 -- @noindex
 -- arkitekt/gui/widgets/primitives/my_widget.lua
 
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 local Base = require('arkitekt.gui.widgets.base')
 
 local M = {}
@@ -166,7 +166,7 @@ return setmetatable(M, {
 **Critical**: Read `Theme.COLORS` during render, not at module load.
 
 ```lua
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 local function resolve_config(opts)
   -- Base config from theme (fresh every frame)

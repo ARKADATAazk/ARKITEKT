@@ -216,7 +216,7 @@ function M.create(config) end
 | **data/ handles persistence** | ExtState, JSON files |
 | **ui/init.lua** | Always the UI orchestrator entry point |
 | **ui/state/** | UI-only state (preferences, animation, NOT business data) |
-| **Keep defs/** | This name is clear and doesn't collide |
+| **Keep config/** | This name is clear and doesn't collide |
 
 > **Note:** Scripts take a pragmatic approach - `domain/` can use `reaper.*` directly since all code runs in REAPER anyway. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the framework vs scripts distinction.
 
