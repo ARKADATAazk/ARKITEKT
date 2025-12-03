@@ -2,11 +2,11 @@
 -- arkitekt/runtime/chrome/window.lua
 -- Main window management with titlebar, status bar, and chrome
 
-local ImGui = require('arkitekt.platform.imgui')
-local Config = require('arkitekt.core.config')
-local Constants = require('arkitekt.defs.app')
-local Typography = require('arkitekt.defs.typography')
-local Timing = require('arkitekt.defs.timing')
+local ImGui = require('arkitekt.core.imgui')
+local Config = require('arkitekt.core.merge')
+local Constants = require('arkitekt.config.app')
+local Typography = require('arkitekt.config.typography')
+local Timing = require('arkitekt.config.timing')
 local Logger = require('arkitekt.debug.logger')
 
 local M = {}

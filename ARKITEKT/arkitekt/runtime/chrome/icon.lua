@@ -2,7 +2,7 @@
 -- Arkitekt/app/icon.lua
 -- App icon drawing functions (DPI-aware vector graphics and PNG images)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 
@@ -11,11 +11,13 @@ local image_cache = {}
 
 -- Find icons directory
 local function find_icons_dir()
+  local sep = package.config:sub(1,1)
+
   -- Try to find from package path
   for path in package.path:gmatch('[^;]+') do
     local dir = path:match('(.-)%?')
     if dir then
-      local icons_path = dir .. 'arkitekt/icons/'
+      local icons_path = dir .. 'arkitekt' .. sep .. 'assets' .. sep .. 'icons' .. sep
       local f = io.open(icons_path .. 'ARKITEKT.png', 'r')
       if f then
         f:close()
@@ -24,13 +26,17 @@ local function find_icons_dir()
     end
   end
 
-  -- Fallback: use script path
+  -- Fallback: use script path (runtime/chrome/icon.lua -> arkitekt/assets/icons/)
   local info = debug.getinfo(1, 'S')
   if info and info.source then
-    local path = info.source:match('@?(.+)[/\\]')
-    if path then
-      return path:gsub('[/\\]app[/\\]assets$', '') .. '/icons/'
-    end
+    local src = info.source:match('@?(.+)')
+    local this_dir = src:match('(.*'..sep..')') or ('.'..sep)
+    -- Go up from runtime/chrome/ to runtime/
+    local runtime_dir = this_dir:match('^(.*'..sep..')[^'..sep..']*'..sep..'$') or this_dir
+    -- Go up from runtime/ to arkitekt/
+    local arkitekt_dir = runtime_dir:match('^(.*'..sep..')[^'..sep..']*'..sep..'$') or runtime_dir
+    -- Now add assets/icons/
+    return arkitekt_dir .. 'assets' .. sep .. 'icons' .. sep
   end
 
   return nil

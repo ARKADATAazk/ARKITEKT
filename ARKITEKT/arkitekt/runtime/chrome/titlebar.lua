@@ -2,18 +2,18 @@
 -- arkitekt/runtime/chrome/titlebar.lua
 -- Custom titlebar with branding, version, and window controls
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
-local Config = require('arkitekt.core.config')
-local Constants = require('arkitekt.defs.app')
-local Typography = require('arkitekt.defs.typography')
+local Config = require('arkitekt.core.merge')
+local Constants = require('arkitekt.config.app')
+local Typography = require('arkitekt.config.typography')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 
 -- Theme manager for theme switching
 local ThemeManager = nil
 local ThemeManagerError = nil
 do
-  local ok, mod = pcall(require, 'arkitekt.core.theme_manager')
+  local ok, mod = pcall(require, 'arkitekt.core.theme.manager')
   if ok then
     ThemeManager = mod
   else

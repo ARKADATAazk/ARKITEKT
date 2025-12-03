@@ -2,10 +2,10 @@
 -- arkitekt/runtime/shell.lua
 -- Application shell runner - main entry point for ARKITEKT apps
 
-local ImGui   = require('arkitekt.platform.imgui')
-local Config = require('arkitekt.core.config')
-local Constants = require('arkitekt.defs.app')
-local Typography = require('arkitekt.defs.typography')
+local ImGui   = require('arkitekt.core.imgui')
+local Config = require('arkitekt.core.merge')
+local Constants = require('arkitekt.config.app')
+local Typography = require('arkitekt.config.typography')
 local Fonts = require('arkitekt.runtime.chrome.fonts')
 local Window  = require('arkitekt.runtime.chrome.window')
 local Logger = require('arkitekt.debug.logger')
@@ -212,7 +212,7 @@ local function run_overlay_mode(config)
   -- persisted theme preference from the titlebar context menu.
   local reaper_theme_sync, cross_app_theme_sync
   do
-    local ok, ThemeManager = pcall(require, 'arkitekt.core.theme_manager')
+    local ok, ThemeManager = pcall(require, 'arkitekt.core.theme.manager')
     if ok and ThemeManager and ThemeManager.init then
       ThemeManager.init('adapt', config.app_name)
 
@@ -394,7 +394,7 @@ function M.run(opts)
   -- Theme preferences are persisted via REAPER ExtState and restored automatically.
   local reaper_theme_sync, cross_app_theme_sync
   do
-    local ok, ThemeManager = pcall(require, 'arkitekt.core.theme_manager')
+    local ok, ThemeManager = pcall(require, 'arkitekt.core.theme.manager')
     if ok and ThemeManager and ThemeManager.init then
       -- init() loads saved preference or defaults to 'adapt' mode
       ThemeManager.init('adapt', config.app_name)
@@ -556,7 +556,7 @@ function M.run(opts)
 
     -- Render theme debug overlay (if enabled via titlebar menu or F12)
     do
-      local ok, ThemeManager = pcall(require, 'arkitekt.core.theme_manager')
+      local ok, ThemeManager = pcall(require, 'arkitekt.core.theme.manager')
       if ok and ThemeManager and ThemeManager.render_debug_overlay then
         ThemeManager.render_debug_overlay(ctx, ImGui)
       end

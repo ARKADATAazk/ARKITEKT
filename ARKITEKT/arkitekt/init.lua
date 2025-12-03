@@ -186,7 +186,7 @@ local bootstrap_context = {
   dirname = dirname,
   join = join,
   get_data_dir = get_data_dir,
-  ImGui = require('arkitekt.platform.imgui'),
+  ImGui = require('arkitekt.core.imgui'),
   launch_args = get_launch_args(),
   require_framework = function(module_name)
     return require(module_name)
@@ -254,14 +254,14 @@ local MODULES = {
   Draw = 'arkitekt.gui.draw.primitives',
   Pattern = 'arkitekt.gui.draw.patterns',
   Easing = 'arkitekt.gui.animation.easing',
-  Features = 'arkitekt.defs.features',
+  Features = 'arkitekt.config.features',
   Lookup = 'arkitekt.core.lookup',
   Math = 'arkitekt.core.math',
   Notification = 'arkitekt.core.notification',
   UUID = 'arkitekt.core.uuid',
 
   -- Platform (REAPER + ImGui specific utilities)
-  Images = 'arkitekt.platform.images',
+  Images = 'arkitekt.core.images',
 }
 
 -- Lazy loading with metatable

@@ -2,7 +2,7 @@
 -- Centralized font loading for ARKITEKT applications
 -- Eliminates duplication of font loading logic across entry points
 
-local Typography = require('arkitekt.defs.typography')
+local Typography = require('arkitekt.config.typography')
 
 local M = {}
 
@@ -19,15 +19,15 @@ end
 -- Find fonts directory relative to fonts.lua location
 local function find_fonts_dir()
   local sep = package.config:sub(1,1)
-  -- Get the path to this file (fonts.lua)
+  -- Get the path to this file (runtime/chrome/fonts.lua)
   local src = debug.getinfo(1, 'S').source:sub(2)
   local this_dir = src:match('(.*'..sep..')') or ('.'..sep)
-  -- Go up from app/assets/ to app/
-  local app_dir = this_dir:match('^(.*'..sep..')[^'..sep..']*'..sep..'$') or this_dir
-  -- Go up from app/ to arkitekt/
-  local arkitekt_dir = app_dir:match('^(.*'..sep..')[^'..sep..']*'..sep..'$') or app_dir
-  -- Now add fonts/
-  local fonts_dir = arkitekt_dir .. 'fonts' .. sep
+  -- Go up from runtime/chrome/ to runtime/
+  local runtime_dir = this_dir:match('^(.*'..sep..')[^'..sep..']*'..sep..'$') or this_dir
+  -- Go up from runtime/ to arkitekt/
+  local arkitekt_dir = runtime_dir:match('^(.*'..sep..')[^'..sep..']*'..sep..'$') or runtime_dir
+  -- Now add assets/fonts/
+  local fonts_dir = arkitekt_dir .. 'assets' .. sep .. 'fonts' .. sep
   return fonts_dir
 end
 
