@@ -65,7 +65,6 @@ M.grid_navigation = nil      -- Grid navigation action: 'navigate_left', 'naviga
 -- Internal
 M.exit = false
 M.overlay_alpha = 1.0
-M.reparse_armed = false  -- Force reparse button armed state
 
 -- Scanner state (for deferred loading)
 M.scan_complete = false
@@ -78,7 +77,6 @@ function M.initialize(config)
   M.templates = {}
   M.filtered_templates = {}
   M.metadata = nil
-  M.reparse_armed = false
   M.selected_folder = nil
   M.selected_folders = {}
   M.last_clicked_folder = nil

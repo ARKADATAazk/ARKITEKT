@@ -6,8 +6,18 @@ local Logger = require('arkitekt.debug.logger')
 
 local M = {}
 
+-- Convert REAPER COLORREF (decimal BGR) to ImGui RGBA (0xRRGGBBAA)
+-- PEAKCOL is stored as decimal: 0x00BBGGRR
+local function colorref_to_rgba(colorref)
+  if not colorref or colorref == 0 then return nil end
+  local r = colorref % 256
+  local g = math.floor(colorref / 256) % 256
+  local b = math.floor(colorref / 65536) % 256
+  return (r * 0x1000000) + (g * 0x10000) + (b * 0x100) + 0xFF
+end
+
 -- Parse a track template file and extract track names with hierarchy
--- Returns array of track entries: { name = string, depth = number, is_folder = boolean }
+-- Returns array of track entries: { name = string, depth = number, is_folder = boolean, color = number|nil }
 function M.parse_track_tree(filepath)
   local file = io.open(filepath, "r")
   if not file then
@@ -31,12 +41,19 @@ function M.parse_track_tree(filepath)
           name = nil,
           depth = current_depth,
           is_folder = false,
+          color = nil,
         }
       elseif in_track then
         -- Parse NAME within track
         local name = line:match('^%s*NAME%s+"([^"]*)"')
         if name and current_track then
           current_track.name = name
+        end
+
+        -- Parse PEAKCOL (track color as decimal COLORREF)
+        local peakcol = line:match('^%s*PEAKCOL%s+(%d+)')
+        if peakcol and current_track then
+          current_track.color = colorref_to_rgba(tonumber(peakcol))
         end
 
         -- Parse ISBUS to detect folder tracks
@@ -115,6 +132,7 @@ function M.parse_track_tree(filepath)
       name = track.name,
       depth = current_depth_level,
       is_folder = track.is_folder,
+      color = track.color,
     }
     if track.is_folder then
       -- Push new depth for children

@@ -62,32 +62,24 @@ function M.save_json(filename, data)
 
   -- Ensure directory exists
   if reaper.RecursiveCreateDirectory then
-    local success = reaper.RecursiveCreateDirectory(data_dir, 0)
-    if not success then
-      Logger.error('STORAGE', 'Failed to create directory: %s', data_dir)
-    end
+    reaper.RecursiveCreateDirectory(data_dir, 0)
   end
 
   local file, err = io.open(filepath, 'w')
   if not file then
-    Logger.error('STORAGE', 'Failed to open file for writing: %s', filepath)
-    if err then
-      Logger.error('STORAGE', '%s', err)
-    end
+    Logger.error('STORAGE', 'Cannot write to: %s (%s)', filepath, tostring(err))
     return false
   end
 
   local json_str = JSON.encode(data, {pretty = true})
   local write_ok, write_err = file:write(json_str)
   if not write_ok then
-    Logger.error('STORAGE', 'Failed to write data: %s', tostring(write_err))
+    Logger.error('STORAGE', 'Write failed: %s', tostring(write_err))
     file:close()
     return false
   end
 
   file:close()
-
-  Logger.debug('STORAGE', 'Saved metadata: %s', filepath)
   return true
 end
 
@@ -99,16 +91,26 @@ function M.load_json(filename)
 
   local file = io.open(filepath, 'r')
   if not file then
-    Logger.debug('STORAGE', 'No existing data: %s', filepath)
-    return nil
+    return nil  -- No file is normal on first run
   end
 
   local content = file:read('*all')
   file:close()
 
+  if not content or content == '' then
+    return nil
+  end
+
   local data = JSON.decode(content)
-  Logger.debug('STORAGE', 'Loaded: %s', filepath)
-  return data
+  if data then
+    return data
+  end
+
+  -- JSON decode failed - file might be corrupted, delete and start fresh
+  Logger.warn('STORAGE', 'JSON decode failed, deleting corrupt file: %s', filepath)
+  os.remove(filepath)
+
+  return nil
 end
 
 -- Data structure for template metadata
@@ -239,23 +241,6 @@ function M.find_template(metadata, uuid, name, path)
   for _, tmpl in pairs(metadata.templates) do
     if tmpl.name == name and tmpl.path == path then
       return tmpl
-    end
-  end
-
-  -- Debug: log first failed lookup
-  if not M._logged_first_miss then
-    M._logged_first_miss = true
-    M.log("DEBUG find_template: Looking for name='' .. tostring(name) .. '', path='' .. tostring(path) .. ''")
-
-    -- Show first 5 templates from metadata for comparison
-    local count = 0
-    for _, tmpl in pairs(metadata.templates) do
-      if count < 5 then
-        M.log("  Metadata has: name='' .. tostring(tmpl.name) .. '', path='' .. tostring(tmpl.path) .. ''")
-        count = count + 1
-      else
-        break
-      end
     end
   end
 

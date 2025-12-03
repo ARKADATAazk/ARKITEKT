@@ -22,54 +22,26 @@ function M.Draw(ctx, state, config, width, height)
 
   ImGui.SameLine(ctx, width - UI.BUTTON.WIDTH_MEDIUM - config.PANEL_PADDING * 2)
 
-  -- Force Reparse button (two-click confirmation)
-  local button_label = 'Force Reparse All'
-  local button_config = {
-    label = button_label,
-    width = UI.BUTTON.WIDTH_MEDIUM,
-    height = UI.BUTTON.HEIGHT_DEFAULT
-  }
+  -- Force Reparse button
+  if Ark.Button(ctx, { label = 'Force Reparse All', width = UI.BUTTON.WIDTH_MEDIUM, height = UI.BUTTON.HEIGHT_DEFAULT }).clicked then
+    Logger.info('VSTSTAB', 'Force reparsing all templates...')
 
-  if state.reparse_armed then
-    button_label = 'CONFIRM REPARSE?'
-    button_config = {
-      label = button_label,
-      width = UI.BUTTON.WIDTH_MEDIUM,
-      height = UI.BUTTON.HEIGHT_DEFAULT,
-      bg_color = 0xCC3333FF
-    }
-  end
-
-  if Ark.Button(ctx, { label = button_label, width = button_config.width, height = button_config.height, bg_color = button_config.bg_color }).clicked then
-    if state.reparse_armed then
-      -- Second click - execute reparse
-      Logger.info('VSTSTAB', 'Force reparsing all templates...')
-
-      -- Clear file_size from all templates in metadata to force re-parse
-      if state.metadata and state.metadata.templates then
-        for uuid, tmpl in pairs(state.metadata.templates) do
-          tmpl.file_size = nil
-        end
+    -- Clear file_size and tracks from all templates in metadata to force re-parse
+    if state.metadata and state.metadata.templates then
+      for uuid, tmpl in pairs(state.metadata.templates) do
+        tmpl.file_size = nil
+        tmpl.fx = nil
+        tmpl.tracks = nil
       end
-
-      -- Save metadata and trigger rescan
-      local Persistence = require('TemplateBrowser.data.storage')
-      Persistence.save_metadata(state.metadata)
-
-      -- Trigger rescan which will re-parse everything
-      local Scanner = require('TemplateBrowser.domain.template.scanner')
-      Scanner.scan_templates(state)
-
-      state.reparse_armed = false
-    else
-      -- First click - arm the button
-      state.reparse_armed = true
     end
-  end
 
-  -- Auto-disarm after hovering away
-  if state.reparse_armed and not ImGui.IsItemHovered(ctx) then
-    state.reparse_armed = false
+    -- Save metadata and trigger rescan
+    local Persistence = require('TemplateBrowser.data.storage')
+    Persistence.save_metadata(state.metadata)
+
+    -- Trigger rescan which will re-parse everything
+    local Scanner = require('TemplateBrowser.domain.template.scanner')
+    Scanner.scan_templates(state)
   end
 
   ImGui.Separator(ctx)

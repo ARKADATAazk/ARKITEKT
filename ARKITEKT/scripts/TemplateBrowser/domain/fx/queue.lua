@@ -5,6 +5,7 @@
 local M = {}
 local Logger = require('arkitekt.debug.logger')
 local FXParser = require('TemplateBrowser.domain.fx.parser')
+local TrackParser = require('TemplateBrowser.domain.template.track_parser')
 
 -- Initialize parsing queue
 function M.init_queue(state)
@@ -36,9 +37,7 @@ function M.add_to_queue(state, templates)
   state.fx_queue.complete = (added == 0)  -- If nothing to parse, mark as complete
 
   if added > 0 then
-    Logger.debug('FXQUEUE', 'Added %d templates for parsing (%d cached)', added, #templates - added)
-  else
-    Logger.debug('FXQUEUE', 'All templates cached, no parsing needed')
+    Logger.debug('FXQUEUE', 'Added %d/%d templates for parsing', added, #templates)
   end
 end
 
@@ -59,18 +58,24 @@ function M.process_batch(state, batch_size)
     -- Parse FX from template file
     local fx_list = FXParser.parse_template_fx(tmpl.path)
 
-    -- Update template FX
+    -- Parse track tree from template file
+    local tracks = TrackParser.parse_track_tree(tmpl.path) or {}
+
+    -- Update template data
     tmpl.fx = fx_list
+    tmpl.tracks = tracks
 
     -- Update metadata if it exists
     if state.metadata and state.metadata.templates and state.metadata.templates[tmpl.uuid] then
-      state.metadata.templates[tmpl.uuid].fx = fx_list
+      local meta = state.metadata.templates[tmpl.uuid]
+      meta.fx = fx_list
+      meta.tracks = tracks
       -- Ensure file_size is stored (should already be set during scan, but just to be safe)
-      if not state.metadata.templates[tmpl.uuid].file_size then
+      if not meta.file_size then
         local file_handle = io.open(tmpl.path, 'r')
         if file_handle then
           file_handle:seek('end')
-          state.metadata.templates[tmpl.uuid].file_size = file_handle:seek()
+          meta.file_size = file_handle:seek()
           file_handle:close()
         end
       end
