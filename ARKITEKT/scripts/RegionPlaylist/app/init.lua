@@ -92,9 +92,9 @@ M.status = require('RegionPlaylist.ui.status')
 --- Constants
 -- Animation timings, button configs, quantize modes
 M.defs = {
-  constants = require('RegionPlaylist.defs.constants'),
-  defaults = require('RegionPlaylist.defs.defaults'),
-  strings = require('RegionPlaylist.defs.strings'),
+  constants = require('RegionPlaylist.config.constants'),
+  defaults = require('RegionPlaylist.config.defaults'),
+  strings = require('RegionPlaylist.config.strings'),
 }
 
 return M

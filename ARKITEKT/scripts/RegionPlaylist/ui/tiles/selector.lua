@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/tiles/selector.lua
 -- Playlist selector widget with animated chips
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local TileAnim = require('arkitekt.gui.animation.tile_animator')

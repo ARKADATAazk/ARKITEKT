@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/views/transport/transport_view.lua
 -- Transport section view orchestrator (ImGui-style module functions)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local TransportContainer = require('RegionPlaylist.ui.views.transport.transport_container')
@@ -10,7 +10,7 @@ local TransportIcons = require('arkitekt.gui.draw.icons')
 local ButtonWidgets = require('RegionPlaylist.ui.views.transport.button_widgets')
 local DisplayWidget = require('RegionPlaylist.ui.views.transport.display_widget')
 local CoreConfig = require('RegionPlaylist.app.config')
-local Strings = require('RegionPlaylist.defs.strings')
+local Strings = require('RegionPlaylist.config.strings')
 local hexrgb = Ark.Colors.Hexrgb
 
 local M = {}

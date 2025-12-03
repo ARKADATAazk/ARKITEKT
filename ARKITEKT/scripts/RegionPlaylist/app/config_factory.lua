@@ -7,8 +7,8 @@
 
 local TransportIcons = require('arkitekt.gui.draw.icons')
 local Ark = require('arkitekt')
-local Defaults = require('RegionPlaylist.defs.defaults')
-local Strings = require('RegionPlaylist.defs.strings')
+local Defaults = require('RegionPlaylist.config.defaults')
+local Strings = require('RegionPlaylist.config.strings')
 local Logger = require('arkitekt.debug.logger')
 
 local M = {}
@@ -189,8 +189,8 @@ end
 
 -- Transport config builder (returns configured transport table)
 function M.get_transport_config(state_module)
-  local Defaults = require('RegionPlaylist.defs.defaults')
-  local Strings = require('RegionPlaylist.defs.strings')
+  local Defaults = require('RegionPlaylist.config.defaults')
+  local Strings = require('RegionPlaylist.config.strings')
 
   return {
     height = Defaults.TRANSPORT.height,

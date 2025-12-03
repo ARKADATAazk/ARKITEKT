@@ -3,7 +3,7 @@
 -- Glass transport effects with region gradient background
 -- MOVED FROM LIBRARY: Project-specific visual effects for RegionPlaylist
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')

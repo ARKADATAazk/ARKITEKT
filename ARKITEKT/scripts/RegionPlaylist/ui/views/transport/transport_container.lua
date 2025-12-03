@@ -3,7 +3,7 @@
 -- Transport panel with bottom header and gradient background
 -- MOVED FROM LIBRARY: Project-specific transport panel (no other scripts use this)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local Panel = require('arkitekt.gui.widgets.containers.panel.init')

@@ -5,8 +5,8 @@
 -- For factory functions (get_active_container_config, get_pool_container_config, etc.),
 -- see app/config_factory.lua
 
-local Constants = require('RegionPlaylist.defs.constants')
-local Defaults = require('RegionPlaylist.defs.defaults')
+local Constants = require('RegionPlaylist.config.constants')
+local Defaults = require('RegionPlaylist.config.defaults')
 
 local M = {}
 

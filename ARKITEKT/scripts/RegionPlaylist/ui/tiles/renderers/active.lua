@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/tiles/renderers/active.lua
 -- MODIFIED: Lowered responsive threshold for text.
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')

@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/views/transport/display_widget.lua
 -- Transport display widget showing time, regions, and progress
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Duration = require('arkitekt.core.duration')
 

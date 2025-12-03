@@ -2,9 +2,9 @@
 -- RegionPlaylist/defs/defaults.lua
 -- Default configuration values
 
-local ColorDefs = require('arkitekt.defs.colors')
+local ColorDefs = require('arkitekt.config.colors')
 local Ark = require('arkitekt')
-local Constants = require('RegionPlaylist.defs.constants')
+local Constants = require('RegionPlaylist.config.constants')
 local hexrgb = Ark.Colors.Hexrgb
 
 -- Helper for glow colors

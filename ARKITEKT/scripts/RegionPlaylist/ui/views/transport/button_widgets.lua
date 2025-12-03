@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/views/transport/button_widgets.lua
 -- Transport button widgets (view mode, toggle buttons, jump controls)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')

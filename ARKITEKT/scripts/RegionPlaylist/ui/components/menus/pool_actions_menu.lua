@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/components/menus/pool_actions_menu.lua
 -- Pool Grid Actions Menu - Context menu for batch operations on pool selection
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 
 local M = {}

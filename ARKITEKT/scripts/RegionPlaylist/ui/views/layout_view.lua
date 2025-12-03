@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/views/layout_view.lua
 -- Layout view handling horizontal and vertical split layouts
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Logger = require('arkitekt.debug.logger')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')

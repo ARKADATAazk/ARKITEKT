@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/tiles/renderers/base.lua
 -- MODIFIED: Dynamic index overflow - reserves space for 2 digits, extends right for 3+
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')

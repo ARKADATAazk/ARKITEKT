@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/views/overflow_modal_view.lua
 -- Overflow modal for playlist picker
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local Container = require('arkitekt.gui.widgets.overlays.overlay.container')

@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/components/menus/pool_tile_context_menu.lua
 -- Pool Tile Context Menu - Right-click context menu for pool tiles (regions/playlists)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local ColorPickerMenu = require('arkitekt.gui.widgets.menus.color_picker_menu')
 local BatchRenameModal = require('arkitekt.gui.widgets.overlays.batch_rename_modal')

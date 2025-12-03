@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/components/menus/active_actions_menu.lua
 -- Active Grid Actions Menu - Context menu for batch operations on active playlist
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local ModalDialog = require('arkitekt.gui.widgets.overlays.overlay.modal_dialog')
 local SWSImporter = require('RegionPlaylist.data.sws_import')

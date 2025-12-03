@@ -20,7 +20,7 @@ local App = require('RegionPlaylist.app.init')
 local hexrgb = Ark.Colors.Hexrgb
 
 -- Register script palette (for Theme Debugger)
-require('RegionPlaylist.defs.palette')
+require('RegionPlaylist.config.palette')
 
 -- Initialize settings
 local Settings = require('arkitekt.core.settings')

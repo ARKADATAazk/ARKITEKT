@@ -3,7 +3,7 @@
 -- Status bar configuration
 
 local StatusBar = require('arkitekt.runtime.chrome.status_bar')
-local Constants = require('RegionPlaylist.defs.constants')
+local Constants = require('RegionPlaylist.config.constants')
 
 local M = {}
 

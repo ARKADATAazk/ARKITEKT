@@ -1,7 +1,7 @@
 -- @noindex
 -- RegionPlaylist/ui/tiles/coordinator.lua
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local CoordinatorFactory = require('RegionPlaylist.ui.tiles.coordinator_factory')

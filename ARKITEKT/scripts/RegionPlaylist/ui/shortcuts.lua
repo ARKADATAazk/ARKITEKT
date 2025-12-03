@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/shortcuts.lua
 -- Keyboard shortcut handling using sequence-aware bridge helpers
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Logger = require('arkitekt.debug.logger')
 
 local M = {}

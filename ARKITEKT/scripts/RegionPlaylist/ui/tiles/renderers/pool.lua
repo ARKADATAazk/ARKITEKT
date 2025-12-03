@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/tiles/renderers/pool.lua
 -- MODIFIED: Using Ark.Colors.Hexrgb() for all color definitions
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
