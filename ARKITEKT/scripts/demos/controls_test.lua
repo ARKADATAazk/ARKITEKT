@@ -2,7 +2,7 @@
 -- Arkitekt Controls Test
 -- Tests all refactored base components in both standalone and panel contexts
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 -- Import system

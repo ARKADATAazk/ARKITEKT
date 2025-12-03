@@ -1,7 +1,7 @@
 *local/
 **/cache/
 *.json
-
+.obsidian/
 # Windows reserved device names (cannot be deleted normally)
 nul
 NUL

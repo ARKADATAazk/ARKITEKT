@@ -29,7 +29,7 @@ root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
 if not root_path:match('[\\/]$') then root_path = root_path .. '/' end
 package.path = root_path .. '?.lua;' .. root_path .. '?/init.lua;' .. package.path
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Fs = require('arkitekt.core.fs')
 

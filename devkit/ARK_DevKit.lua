@@ -27,7 +27,6 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT%-Dev[/\
 -- LOAD MODULES
 -- ============================================================================
 local ImGui = Ark.ImGui
-local Shell = require('arkitekt.app.shell')
 local Settings = require('arkitekt.core.settings')
 local hexrgb = Ark.Colors.Hexrgb
 
@@ -777,7 +776,7 @@ end
 
 State:initialize()
 
-Shell.run({
+Ark.Shell.run({
   title = 'ARKITEKT DevKit',
   version = 'v2.0.0',
   draw = draw_main,

@@ -2,10 +2,10 @@
 -- Demo: Colored Button Presets (Algorithmic Hue Variations)
 -- Showcase the new create_colored_button_preset system
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Style = require('arkitekt.gui.style')
 local Colors = require('arkitekt.core.colors')
-local ThemeManager = require('arkitekt.core.theme_manager')
+local ThemeManager = require('arkitekt.core.theme.manager')
 
 -- ============================================================================
 -- STATE

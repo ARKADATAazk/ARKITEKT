@@ -2,9 +2,9 @@
 -- Demo: Dynamic Config Builders
 -- Test the new dynamic config system without modifying widgets
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Style = require('arkitekt.gui.style')
-local ThemeManager = require('arkitekt.core.theme_manager')
+local ThemeManager = require('arkitekt.core.theme.manager')
 local Colors = require('arkitekt.core.colors')
 
 -- ============================================================================

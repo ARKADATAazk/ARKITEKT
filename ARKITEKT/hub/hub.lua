@@ -2,7 +2,7 @@
 -- Arkitekt/app/hub.lua
 -- Embedded hub for launching apps and managing settings
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

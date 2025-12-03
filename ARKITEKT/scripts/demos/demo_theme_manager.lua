@@ -2,9 +2,9 @@
 -- Demo: Theme Manager
 -- Test the new dynamic theme system with algorithmic palette generation
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local ThemeManager = require('arkitekt.core.theme_manager')
+local ThemeManager = require('arkitekt.core.theme.manager')
 local Style = require('arkitekt.gui.style')
 local Colors = require('arkitekt.core.colors')
 
