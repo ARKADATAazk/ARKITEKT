@@ -13,6 +13,38 @@ local hexrgb = Colors.Hexrgb
 local M = {}
 
 -- ============================================================================
+-- HSV COLOR UTILITIES (for gradient sliders)
+-- ============================================================================
+
+--- Convert HSV to RGBA u32 color
+--- @param h number Hue (0-1)
+--- @param s number Saturation (0-1)
+--- @param v number Value/brightness (0-1)
+--- @param a number|nil Alpha (0-1, default 1)
+--- @return number RGBA color as u32
+local function hsv_to_rgba(h, s, v, a)
+  local i = (h * 6) // 1
+  local f = h * 6 - i
+  local p = v * (1 - s)
+  local q = v * (1 - f * s)
+  local t = v * (1 - (1 - f) * s)
+  local r, g, b
+  i = i % 6
+  if     i == 0 then r, g, b = v, t, p
+  elseif i == 1 then r, g, b = q, v, p
+  elseif i == 2 then r, g, b = p, v, t
+  elseif i == 3 then r, g, b = p, q, v
+  elseif i == 4 then r, g, b = t, p, v
+  else               r, g, b = v, p, q
+  end
+  local R = (r * 255 + 0.5) // 1
+  local G = (g * 255 + 0.5) // 1
+  local B = (b * 255 + 0.5) // 1
+  local A = math.floor((a or 1) * 255 + 0.5)
+  return (R << 24) | (G << 16) | (B << 8) | A
+end
+
+-- ============================================================================
 -- DEFAULTS
 -- ============================================================================
 
@@ -294,6 +326,221 @@ function M.Int(ctx, opts)
   local result = M.Draw(ctx, opts)
   result.value = (result.value + 0.5) // 1  -- Round to integer
   return result
+end
+
+-- ============================================================================
+-- GRADIENT GENERATORS
+-- ============================================================================
+
+local GRADIENT_SEGMENTS = 120  -- Number of segments for smooth gradients
+
+--- Create a hue gradient function
+--- @param saturation number|nil Saturation 0-100 (default 75)
+--- @param brightness number|nil Brightness 0-100 (default 80)
+--- @return function Gradient function for slider
+local function create_hue_gradient(saturation, brightness)
+  local sat = Base.clamp(saturation or 75, 0, 100) / 100.0
+  local val = Base.clamp(brightness or 80, 0, 100) / 100.0
+
+  return function(dl, x0, y0, x1, y1)
+    local w = x1 - x0
+    local seg_w = w / GRADIENT_SEGMENTS
+
+    for i = 0, GRADIENT_SEGMENTS - 1 do
+      local t0 = i / GRADIENT_SEGMENTS
+      local t1 = (i + 1) / GRADIENT_SEGMENTS
+      local c0 = hsv_to_rgba(t0, sat, val, 1)
+      local c1 = hsv_to_rgba(t1, sat, val, 1)
+
+      -- Slight desaturation and brightness adjustment for better visibility
+      c0 = Colors.Desaturate(c0, 0.10)
+      c1 = Colors.Desaturate(c1, 0.10)
+      c0 = Colors.AdjustBrightness(c0, 0.88)
+      c1 = Colors.AdjustBrightness(c1, 0.88)
+
+      local sx0 = x0 + i * seg_w
+      local sx1 = x0 + (i + 1) * seg_w
+      ImGui.DrawList_AddRectFilledMultiColor(dl, sx0, y0, sx1, y1, c0, c1, c1, c0)
+    end
+  end
+end
+
+--- Create a saturation gradient function
+--- @param base_hue number Base hue in degrees (0-360)
+--- @param brightness number|nil Brightness 0-100 (default 80)
+--- @return function Gradient function for slider
+local function create_saturation_gradient(base_hue, brightness)
+  local h = ((base_hue or 210) % 360) / 360.0
+  local val = Base.clamp(brightness or 80, 0, 100) / 100.0
+
+  return function(dl, x0, y0, x1, y1)
+    local w = x1 - x0
+    local seg_w = w / GRADIENT_SEGMENTS
+
+    for i = 0, GRADIENT_SEGMENTS - 1 do
+      local t0 = i / GRADIENT_SEGMENTS
+      local t1 = (i + 1) / GRADIENT_SEGMENTS
+      local c0 = hsv_to_rgba(h, t0, val, 1)
+      local c1 = hsv_to_rgba(h, t1, val, 1)
+
+      c0 = Colors.AdjustBrightness(c0, 0.88)
+      c1 = Colors.AdjustBrightness(c1, 0.88)
+
+      local sx0 = x0 + i * seg_w
+      local sx1 = x0 + (i + 1) * seg_w
+      ImGui.DrawList_AddRectFilledMultiColor(dl, sx0, y0, sx1, y1, c0, c1, c1, c0)
+    end
+  end
+end
+
+--- Create a brightness/grayscale gradient function
+--- @return function Gradient function for slider
+local function create_brightness_gradient()
+  return function(dl, x0, y0, x1, y1)
+    local w = x1 - x0
+    local seg_w = w / GRADIENT_SEGMENTS
+
+    for i = 0, GRADIENT_SEGMENTS - 1 do
+      local t0 = i / GRADIENT_SEGMENTS
+      local t1 = (i + 1) / GRADIENT_SEGMENTS
+
+      local gray0 = (t0 * 255 + 0.5) // 1
+      local gray1 = (t1 * 255 + 0.5) // 1
+
+      local c0 = (gray0 << 24) | (gray0 << 16) | (gray0 << 8) | 0xFF
+      local c1 = (gray1 << 24) | (gray1 << 16) | (gray1 << 8) | 0xFF
+
+      c0 = Colors.AdjustBrightness(c0, 0.88)
+      c1 = Colors.AdjustBrightness(c1, 0.88)
+
+      local sx0 = x0 + i * seg_w
+      local sx1 = x0 + (i + 1) * seg_w
+      ImGui.DrawList_AddRectFilledMultiColor(dl, sx0, y0, sx1, y1, c0, c1, c1, c0)
+    end
+  end
+end
+
+-- ============================================================================
+-- COLOR SLIDER VARIANTS
+-- ============================================================================
+
+--- Draw a hue slider (0-360 degrees)
+--- @param ctx userdata ImGui context
+--- @param opts table Widget options (value = hue in degrees)
+---   - saturation: Gradient saturation 0-100 (default 75)
+---   - brightness: Gradient brightness 0-100 (default 80)
+--- @return table Result { changed, value (hue 0-360), ... }
+function M.Hue(ctx, opts)
+  opts = opts or {}
+  opts.min = 0
+  opts.max = 359.999
+  opts.default = opts.default or 180
+  opts.gradient_fn = create_hue_gradient(opts.saturation, opts.brightness)
+  opts.tooltip_fn = opts.tooltip_fn or function(v)
+    return string.format('Hue: %.1f°', v)
+  end
+  return M.Draw(ctx, opts)
+end
+
+--- Draw a saturation slider (0-100%)
+--- @param ctx userdata ImGui context
+--- @param opts table Widget options (value = saturation 0-100)
+---   - base_hue: Hue for gradient in degrees (default 210)
+---   - brightness: Gradient brightness 0-100 (default 80)
+--- @return table Result { changed, value (saturation 0-100), ... }
+function M.Saturation(ctx, opts)
+  opts = opts or {}
+  opts.min = 0
+  opts.max = 100
+  opts.default = opts.default or 50
+  opts.gradient_fn = create_saturation_gradient(opts.base_hue, opts.brightness)
+  opts.tooltip_fn = opts.tooltip_fn or function(v)
+    return string.format('Saturation: %.0f%%', v)
+  end
+  return M.Draw(ctx, opts)
+end
+
+--- Draw a brightness slider (0-100%)
+--- @param ctx userdata ImGui context
+--- @param opts table Widget options (value = brightness 0-100)
+--- @return table Result { changed, value (brightness 0-100), ... }
+function M.Brightness(ctx, opts)
+  opts = opts or {}
+  opts.min = 0
+  opts.max = 100
+  opts.default = opts.default or 50
+  opts.gradient_fn = create_brightness_gradient()
+  opts.tooltip_fn = opts.tooltip_fn or function(v)
+    return string.format('Brightness: %.0f%%', v)
+  end
+  return M.Draw(ctx, opts)
+end
+
+-- Alias for backwards compatibility with hue_slider.draw_gamma
+M.Gamma = M.Brightness
+
+-- ============================================================================
+-- LEGACY API (for compatibility with old hue_slider)
+-- Old signature: draw_hue(ctx, id, value, opt) -> changed, new_value
+-- ============================================================================
+
+--- Legacy hue slider API (for backwards compatibility)
+--- @param ctx userdata ImGui context
+--- @param id string Slider ID
+--- @param value number Hue value (0-360)
+--- @param opt table|nil Options (w, h, default, saturation, brightness)
+--- @return boolean, number changed, new_value
+function M.draw_hue(ctx, id, value, opt)
+  opt = opt or {}
+  local result = M.Hue(ctx, {
+    id = id,
+    value = value,
+    width = opt.w,
+    height = opt.h,
+    default = opt.default,
+    saturation = opt.saturation,
+    brightness = opt.brightness,
+  })
+  return result.changed, result.value
+end
+
+--- Legacy saturation slider API (for backwards compatibility)
+--- @param ctx userdata ImGui context
+--- @param id string Slider ID
+--- @param value number Saturation value (0-100)
+--- @param base_hue number|nil Base hue in degrees
+--- @param opt table|nil Options (w, h, default, brightness)
+--- @return boolean, number changed, new_value
+function M.draw_saturation(ctx, id, value, base_hue, opt)
+  opt = opt or {}
+  local result = M.Saturation(ctx, {
+    id = id,
+    value = value,
+    base_hue = base_hue,
+    width = opt.w,
+    height = opt.h,
+    default = opt.default,
+    brightness = opt.brightness,
+  })
+  return result.changed, result.value
+end
+
+--- Legacy brightness/gamma slider API (for backwards compatibility)
+--- @param ctx userdata ImGui context
+--- @param id string Slider ID
+--- @param value number Brightness value (0-100)
+--- @param opt table|nil Options (w, h, default)
+--- @return boolean, number changed, new_value
+function M.draw_gamma(ctx, id, value, opt)
+  opt = opt or {}
+  local result = M.Brightness(ctx, {
+    id = id,
+    value = value,
+    width = opt.w,
+    height = opt.h,
+    default = opt.default,
+  })
+  return result.changed, result.value
 end
 
 -- ============================================================================

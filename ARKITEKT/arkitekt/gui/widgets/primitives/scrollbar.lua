@@ -239,12 +239,7 @@ end
 
 
 -- ============================================================================
--- MODULE EXPORT (Callable)
+-- MODULE EXPORT (Factory pattern - use M.new() to create instances)
 -- ============================================================================
 
--- Make module callable
-return setmetatable(M, {
-  __call = function(_, ctx, opts)
-    return M.Draw(ctx, opts)
-  end
-})
+return M

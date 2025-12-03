@@ -226,13 +226,13 @@ local MODULES = {
   CloseButton = 'arkitekt.gui.widgets.primitives.close_button',
   Combo = 'arkitekt.gui.widgets.primitives.combo',
   CornerButton = 'arkitekt.gui.widgets.primitives.corner_button',
-  HueSlider = 'arkitekt.gui.widgets.primitives.hue_slider',
+  HueSlider = 'arkitekt.gui.widgets.primitives.hue_slider',  -- DEPRECATED: Use Slider.Hue/Saturation/Brightness
   InputText = 'arkitekt.gui.widgets.primitives.inputtext',
   LoadingSpinner = 'arkitekt.gui.widgets.primitives.loading_spinner',
   MarkdownField = 'arkitekt.gui.widgets.primitives.markdown_field',
   ProgressBar = 'arkitekt.gui.widgets.primitives.progress_bar',
   RadioButton = 'arkitekt.gui.widgets.primitives.radio_button',
-  Scrollbar = 'arkitekt.gui.widgets.primitives.scrollbar',
+  -- Scrollbar is factory pattern (M.new), not callable - use require() directly
   Slider = 'arkitekt.gui.widgets.primitives.slider',
   Spinner = 'arkitekt.gui.widgets.primitives.spinner',
   Splitter = 'arkitekt.gui.widgets.primitives.splitter',
