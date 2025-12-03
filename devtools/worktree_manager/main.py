@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QComboBox, QStyle, QMenu, QTabWidget, QTableWidget, QTableWidgetItem,
     QHeaderView, QAbstractItemView, QProgressDialog
 )
-from PySide6.QtCore import Qt, QDir, QModelIndex, QSettings, QByteArray, QThread, QObject, Signal, QMimeData
+from PySide6.QtCore import Qt, QDir, QModelIndex, QSettings, QByteArray, QThread, QObject, Signal, QMimeData, QSize
 from PySide6.QtGui import QFont, QPalette, QColor, QAction, QDrag
 
 
@@ -847,6 +847,16 @@ class WorktreeManager(QMainWindow):
         self.remove_btn.setEnabled(False)
         action_layout.addWidget(self.remove_btn)
 
+        action_layout.addStretch()
+
+        action_layout.addWidget(QLabel("Reset from:"))
+        self.reset_source_combo = QComboBox()
+        self.reset_source_combo.addItems(["dev", "main"])
+        self.reset_source_combo.setToolTip("Branch to reset from (applies to all reset buttons)")
+        self.reset_source_combo.setFixedWidth(80)
+        self.reset_source_combo.currentTextChanged.connect(self._update_reset_buttons)
+        action_layout.addWidget(self.reset_source_combo)
+
         layout.addLayout(action_layout)
 
         # Separator
@@ -1147,13 +1157,16 @@ class WorktreeManager(QMainWindow):
             pass  # Silently ignore errors for individual worktrees
 
     def _add_worktree_item(self, info: dict):
-        """Add a worktree to the list."""
+        """Add a worktree to the list with inline reset button."""
         path = info.get("path", "")
         branch = info.get("branch", "detached")
         head = info.get("head", "")
 
+        is_main = path == str(self.repo_root)
+        is_protected = is_main or branch in ["dev", "main"]
+
         # Build display text
-        display_parts = [branch]
+        display_parts = []
 
         # Add ahead/behind indicators
         if "ahead_behind" in info:
@@ -1177,12 +1190,73 @@ class WorktreeManager(QMainWindow):
             display_parts.append(f"({commit['time']})")
 
         # Add worktree name
-        is_main = path == str(self.repo_root)
         worktree_name = "main repo" if is_main else Path(path).name
-        display = f"{display_parts[0]}  [{worktree_name}]\n    {' '.join(display_parts[1:])}"
+        status_line = ' '.join(display_parts) if display_parts else ""
 
-        item = QListWidgetItem(display)
+        # Create custom widget for this item
+        item_widget = QWidget()
+        item_layout = QHBoxLayout(item_widget)
+        item_layout.setContentsMargins(4, 2, 4, 2)
+        item_layout.setSpacing(8)
+
+        # Left side: branch info
+        info_layout = QVBoxLayout()
+        info_layout.setSpacing(0)
+        info_layout.setContentsMargins(0, 0, 0, 0)
+
+        branch_label = QLabel(f"{branch}  [{worktree_name}]")
+        branch_label.setStyleSheet("font-weight: 500; font-size: 9pt;")
+
+        # Color coding for branch label
+        if is_main:
+            branch_label.setStyleSheet("font-weight: 500; font-size: 9pt; color: #569cd6;")
+        elif branch in ["dev", "main"]:
+            branch_label.setStyleSheet("font-weight: 500; font-size: 9pt; color: #4ec9b0;")
+        elif info.get("dirty"):
+            branch_label.setStyleSheet("font-weight: 500; font-size: 9pt; color: #d7ba7d;")
+        elif "ahead_behind" in info and (info["ahead_behind"]["ahead"] > 0 or info["ahead_behind"]["behind"] > 0):
+            branch_label.setStyleSheet("font-weight: 500; font-size: 9pt; color: #ce9178;")
+
+        info_layout.addWidget(branch_label)
+
+        if status_line:
+            status_label = QLabel(status_line)
+            status_label.setStyleSheet("font-size: 8pt; color: #888888;")
+            info_layout.addWidget(status_label)
+
+        item_layout.addLayout(info_layout, 1)
+
+        # Right side: reset button (only for non-protected)
+        if not is_protected:
+            source_branch = self.reset_source_combo.currentText()
+            reset_btn = QPushButton(f"Reset from {source_branch}")
+            reset_btn.setObjectName("resetButton")
+            reset_btn.setFixedWidth(110)
+            reset_btn.setFixedHeight(24)
+            reset_btn.setStyleSheet("""
+                QPushButton#resetButton {
+                    background-color: #3d4544;
+                    border: none;
+                    border-radius: 2px;
+                    padding: 2px 8px;
+                    color: #cccccc;
+                    font-size: 8pt;
+                }
+                QPushButton#resetButton:hover {
+                    background-color: #B0891E;
+                    color: #ffffff;
+                }
+            """)
+            reset_btn.clicked.connect(lambda checked, p=path, b=branch: self._reset_single_worktree(p, b))
+            item_layout.addWidget(reset_btn)
+
+        # Create list item with appropriate height
+        item = QListWidgetItem()
         item.setData(Qt.ItemDataRole.UserRole, path)
+
+        # Set size hint based on content
+        height = 48 if status_line else 32
+        item.setSizeHint(QSize(0, height))
 
         # Build detailed tooltip
         tooltip_parts = [f"Path: {path}", f"Branch: {branch}"]
@@ -1197,25 +1271,94 @@ class WorktreeManager(QMainWindow):
         if info.get("dirty"):
             tooltip_parts.append("Status: Uncommitted changes")
 
-        item.setToolTip("\n".join(tooltip_parts))
-
-        # Color coding
-        if is_main:
-            item.setForeground(QColor("#569cd6"))  # Blue for main
-        elif info.get("dirty"):
-            item.setForeground(QColor("#d7ba7d"))  # Yellow for dirty
-        elif "ahead_behind" in info and (info["ahead_behind"]["ahead"] > 0 or info["ahead_behind"]["behind"] > 0):
-            item.setForeground(QColor("#ce9178"))  # Orange for ahead/behind
+        item_widget.setToolTip("\n".join(tooltip_parts))
 
         self.worktree_list.addItem(item)
+        self.worktree_list.setItemWidget(item, item_widget)
 
     def _on_worktree_selected(self, item: QListWidgetItem):
         """Handle worktree selection."""
-        path = item.data(Qt.ItemDataRole.UserRole)
-        is_main = path == str(self.repo_root)
+        selected_items = self.worktree_list.selectedItems()
 
-        self.remove_btn.setEnabled(not is_main)
-        self.sync_btn.setEnabled(True)
+        # Check if any non-protected worktrees are selected (for remove button)
+        has_removable = False
+        for sel_item in selected_items:
+            path = sel_item.data(Qt.ItemDataRole.UserRole)
+            if path and path != str(self.repo_root):
+                # Check if branch is dev or main (protected from removal)
+                try:
+                    result = subprocess.run(
+                        ["git", "branch", "--show-current"],
+                        capture_output=True, text=True, cwd=path
+                    )
+                    branch = result.stdout.strip() if result.returncode == 0 else ""
+                    if branch not in ["dev", "main"]:
+                        has_removable = True
+                        break
+                except Exception:
+                    pass
+
+        self.remove_btn.setEnabled(has_removable)
+        self.sync_btn.setEnabled(len(selected_items) > 0)
+
+    def _update_reset_buttons(self):
+        """Update all inline reset button labels when source branch changes."""
+        self._refresh_worktrees()
+
+    def _reset_single_worktree(self, path: str, branch: str):
+        """Reset a single worktree to the selected source branch."""
+        source_branch = self.reset_source_combo.currentText()
+
+        reply = QMessageBox.question(
+            self, "Confirm Hard Reset",
+            f"Hard reset '{branch}' to match '{source_branch}'?\n\n"
+            f"Worktree: {Path(path).name}\n\n"
+            "⚠️ WARNING: This will:\n"
+            "  • Discard ALL uncommitted changes\n"
+            f"  • Reset branch to match {source_branch} exactly\n"
+            "  • Remove untracked files\n\n"
+            "This cannot be undone!",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.No:
+            return
+
+        try:
+            # Hard reset to local source branch
+            result = subprocess.run(
+                ["git", "reset", "--hard", source_branch],
+                capture_output=True, text=True, cwd=path
+            )
+
+            if result.returncode != 0:
+                QMessageBox.critical(
+                    self, "Reset Failed",
+                    f"Failed to reset '{branch}':\n\n{result.stderr}"
+                )
+                return
+
+            # Clean untracked files
+            result = subprocess.run(
+                ["git", "clean", "-fd"],
+                capture_output=True, text=True, cwd=path
+            )
+
+            if result.returncode != 0:
+                QMessageBox.warning(
+                    self, "Clean Warning",
+                    f"Reset succeeded but failed to clean untracked files:\n\n{result.stderr}"
+                )
+            else:
+                QMessageBox.information(
+                    self, "Success",
+                    f"Successfully reset '{branch}' to {source_branch}!"
+                )
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to reset: {e}")
+
+        self._refresh_worktrees()
 
     def _on_worktree_double_clicked(self, item: QListWidgetItem):
         """Handle double-click on worktree - open in VS Code."""
@@ -1226,6 +1369,21 @@ class WorktreeManager(QMainWindow):
         item = self.worktree_list.itemAt(position)
         if not item:
             return
+
+        path = item.data(Qt.ItemDataRole.UserRole)
+        is_main = path == str(self.repo_root)
+
+        # Get current branch
+        try:
+            result = subprocess.run(
+                ["git", "branch", "--show-current"],
+                capture_output=True, text=True, cwd=path
+            )
+            current_branch = result.stdout.strip() if result.returncode == 0 else ""
+        except Exception:
+            current_branch = ""
+
+        is_protected = is_main or current_branch in ["dev", "main"]
 
         menu = QMenu(self)
 
@@ -1244,6 +1402,16 @@ class WorktreeManager(QMainWindow):
         open_explorer_action = QAction("Open in Explorer", self)
         open_explorer_action.triggered.connect(self._open_in_explorer)
         menu.addAction(open_explorer_action)
+
+        menu.addSeparator()
+
+        # Remove action (only for non-protected)
+        remove_action = QAction("Remove Worktree", self)
+        remove_action.triggered.connect(self._remove_worktree)
+        remove_action.setEnabled(not is_protected)
+        if is_protected:
+            remove_action.setText("Remove Worktree (protected)")
+        menu.addAction(remove_action)
 
         menu.exec(self.worktree_list.mapToGlobal(position))
 
@@ -1314,6 +1482,27 @@ class WorktreeManager(QMainWindow):
             return
 
         path = item.data(Qt.ItemDataRole.UserRole)
+
+        # Check if protected
+        if path == str(self.repo_root):
+            QMessageBox.warning(self, "Protected", "Cannot remove main repository worktree.")
+            return
+
+        try:
+            result = subprocess.run(
+                ["git", "branch", "--show-current"],
+                capture_output=True, text=True, cwd=path
+            )
+            branch = result.stdout.strip() if result.returncode == 0 else ""
+        except Exception:
+            branch = ""
+
+        if branch in ["dev", "main"]:
+            QMessageBox.warning(
+                self, "Protected",
+                f"Cannot remove '{branch}' worktree.\n\ndev and main branches are protected."
+            )
+            return
 
         reply = QMessageBox.question(
             self, "Confirm Remove",
