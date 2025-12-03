@@ -3,8 +3,8 @@
 -- EXPERIMENTAL: General-purpose node editor for visual programming / patching
 -- Inspired by imnodes but using ARKITEKT conventions
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -400,11 +400,11 @@ local function render_node(ctx, dl, node, pan_x, pan_y, zoom, editor_x, editor_y
   local pin_color = opts.pin_color or Theme.COLORS.ACCENT_SECONDARY
 
   -- Lerp colors for hover effect
-  local hover_bg = Colors.adjust_brightness(base_bg, 1.15)
-  local hover_border = Colors.adjust_brightness(base_border, 1.3)
+  local hover_bg = Colors.AdjustBrightness(base_bg, 1.15)
+  local hover_border = Colors.AdjustBrightness(base_border, 1.3)
 
-  local bg_color = Colors.lerp(base_bg, hover_bg, anim_state.hover_alpha)
-  local border_color = Colors.lerp(base_border, hover_border, anim_state.hover_alpha)
+  local bg_color = Colors.Lerp(base_bg, hover_bg, anim_state.hover_alpha)
+  local border_color = Colors.Lerp(base_border, hover_border, anim_state.hover_alpha)
 
   -- Selection overrides border
   if node.is_selected then
@@ -431,7 +431,7 @@ local function render_node(ctx, dl, node, pan_x, pan_y, zoom, editor_x, editor_y
 
       -- Highlight if hovered
       local is_hovered = (state.hovered_pin_node == node and state.hovered_pin == pin)
-      local current_pin_color = is_hovered and Colors.adjust_brightness(pin_color, 1.3) or pin_color
+      local current_pin_color = is_hovered and Colors.AdjustBrightness(pin_color, 1.3) or pin_color
 
       DrawList_AddCircleFilled(dl, spx, spy, PIN_RADIUS * zoom, current_pin_color, 12)
 
@@ -449,7 +449,7 @@ local function render_node(ctx, dl, node, pan_x, pan_y, zoom, editor_x, editor_y
 
       -- Highlight if hovered
       local is_hovered = (state.hovered_pin_node == node and state.hovered_pin == pin)
-      local current_pin_color = is_hovered and Colors.adjust_brightness(pin_color, 1.3) or pin_color
+      local current_pin_color = is_hovered and Colors.AdjustBrightness(pin_color, 1.3) or pin_color
 
       DrawList_AddCircleFilled(dl, spx, spy, PIN_RADIUS * zoom, current_pin_color, 12)
 
@@ -563,12 +563,12 @@ function M.draw(ctx, opts)
   local new_zoom = opts.zoom
 
   -- Background
-  local bg_color = opts.bg_color or Colors.with_opacity(Theme.COLORS.BG_BASE, 0.5)
+  local bg_color = opts.bg_color or Colors.WithOpacity(Theme.COLORS.BG_BASE, 0.5)
   DrawList_AddRectFilled(dl, x, y, x + w, y + h, bg_color, 0)
 
   -- Grid
   if opts.show_grid then
-    local grid_color = opts.grid_color or Colors.with_opacity(Theme.COLORS.TEXT_NORMAL, 0.1)
+    local grid_color = opts.grid_color or Colors.WithOpacity(Theme.COLORS.TEXT_NORMAL, 0.1)
     render_grid(dl, x, y, w, h, opts.pan_x, opts.pan_y, opts.zoom, grid_color)
   end
 
@@ -591,7 +591,7 @@ function M.draw(ctx, opts)
     local spx, spy = canvas_to_screen(px, py, opts.pan_x, opts.pan_y, opts.zoom, x, y)
 
     local mx, my = GetMousePos(ctx)
-    local preview_color = opts.link_preview_color or Colors.with_opacity(link_color, 0.6)
+    local preview_color = opts.link_preview_color or Colors.WithOpacity(link_color, 0.6)
     render_link_preview(dl, spx, spy, mx, my, opts.zoom, preview_color)
   end
 

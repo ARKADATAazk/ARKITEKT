@@ -3,8 +3,8 @@
 -- EXPERIMENTAL: VU meter widget for audio level visualization
 -- Shows peak and RMS levels with color gradient (green → yellow → red)
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -96,13 +96,13 @@ end
 
 local function get_level_color(db, opts)
   if db >= DB_RED then
-    return opts.color_red or Colors.hexrgb("#FF3333")
+    return opts.color_red or 0xFF3333FF
   elseif db >= DB_YELLOW then
-    return opts.color_orange or Colors.hexrgb("#FF9933")
+    return opts.color_orange or 0xFF9933FF
   elseif db >= DB_GREEN then
-    return opts.color_yellow or Colors.hexrgb("#FFFF33")
+    return opts.color_yellow or 0xFFFF33FF
   else
-    return opts.color_green or Colors.hexrgb("#33FF33")
+    return opts.color_green or 0x33FF33FF
   end
 end
 
@@ -142,7 +142,7 @@ local function render_vertical_meter(ctx, dl, x, y, w, h, peak_db, rms_db, min_d
         local color = get_level_color(seg_db, opts)
 
         -- Dim for RMS
-        color = Colors.with_opacity(color, 0.6)
+        color = Colors.WithOpacity(color, 0.6)
 
         ImGui.DrawList_AddRectFilled(dl, x + 1, math.max(seg_y2, rms_y), x + w - 1, seg_y1, color)
       end
@@ -173,15 +173,15 @@ local function render_vertical_meter(ctx, dl, x, y, w, h, peak_db, rms_db, min_d
   -- Peak hold indicator
   if opts.show_peak_hold and state.peak_hold_value > min_db then
     local hold_y = db_to_y(state.peak_hold_value)
-    local hold_color = opts.peak_hold_color or Colors.hexrgb("#FFFFFF")
+    local hold_color = opts.peak_hold_color or 0xFFFFFFFF
     ImGui.DrawList_AddLine(dl, x + 1, hold_y, x + w - 1, hold_y, hold_color, 2)
   end
 
   -- Clip indicator (top)
   if opts.show_clip_indicator and state.clipped then
-    local clip_color = opts.color_clip or Colors.hexrgb("#FF0000")
+    local clip_color = opts.color_clip or 0xFF0000FF
     local clip_alpha = math.max(0, 1.0 - (state.clip_time / 2.0))  -- Fade over 2 seconds
-    clip_color = Colors.with_opacity(clip_color, clip_alpha)
+    clip_color = Colors.WithOpacity(clip_color, clip_alpha)
     ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + 4, clip_color)
   end
 

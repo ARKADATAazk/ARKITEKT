@@ -4,8 +4,8 @@
 -- Extracted from ItemPicker visualization system
 -- Displays audio waveform from peak data array with optional filling
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -285,7 +285,7 @@ function M.draw(ctx, opts)
   local peaks = opts.peaks
   if not peaks or #peaks == 0 then
     -- No data - just draw placeholder
-    local bg_color = Colors.with_opacity(Theme.COLORS.BG_BASE, 0.3)
+    local bg_color = Colors.WithOpacity(Theme.COLORS.BG_BASE, 0.3)
     ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, bg_color)
 
     -- Advance cursor

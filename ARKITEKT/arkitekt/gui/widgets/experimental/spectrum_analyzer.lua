@@ -3,8 +3,8 @@
 -- EXPERIMENTAL: Spectrum analyzer visualization for frequency domain analysis
 -- Displays FFT bins as vertical bars with logarithmic frequency and dB scaling
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -112,25 +112,25 @@ local function get_level_color(db, opts)
     return opts.color or Theme.COLORS.ACCENT_PRIMARY
   end
 
-  local color_green = opts.color_green or Colors.hexrgb("#33FF66")
-  local color_yellow = opts.color_yellow or Colors.hexrgb("#FFFF33")
-  local color_orange = opts.color_orange or Colors.hexrgb("#FF9933")
-  local color_red = opts.color_red or Colors.hexrgb("#FF3333")
+  local color_green = opts.color_green or 0x33FF66FF
+  local color_yellow = opts.color_yellow or 0xFFFF33FF
+  local color_orange = opts.color_orange or 0xFF9933FF
+  local color_red = opts.color_red or 0xFF3333FF
 
   if db >= DB_RED then
     return color_red
   elseif db >= DB_ORANGE then
     -- Interpolate between orange and red
     local t = (db - DB_ORANGE) / (DB_RED - DB_ORANGE)
-    return Colors.lerp_color(color_orange, color_red, t)
+    return Colors.Lerp(color_orange, color_red, t)
   elseif db >= DB_YELLOW then
     -- Interpolate between yellow and orange
     local t = (db - DB_YELLOW) / (DB_ORANGE - DB_YELLOW)
-    return Colors.lerp_color(color_yellow, color_orange, t)
+    return Colors.Lerp(color_yellow, color_orange, t)
   elseif db >= DB_GREEN then
     -- Interpolate between green and yellow
     local t = (db - DB_GREEN) / (DB_YELLOW - DB_GREEN)
-    return Colors.lerp_color(color_green, color_yellow, t)
+    return Colors.Lerp(color_green, color_yellow, t)
   else
     return color_green
   end
@@ -200,7 +200,7 @@ end
 local function render_grid(ctx, dl, x, y, w, h, opts)
   -- Standard frequency markers: 100Hz, 1kHz, 10kHz
   local markers = {100, 1000, 10000}
-  local grid_color = Colors.with_opacity(Theme.COLORS.TEXT_NORMAL or Colors.hexrgb("#FFFFFF"), 0.2)
+  local grid_color = Colors.WithOpacity(Theme.COLORS.TEXT_NORMAL or 0xFFFFFFFF, 0.2)
 
   for _, freq in ipairs(markers) do
     if freq >= opts.min_freq and freq <= opts.max_freq then
@@ -236,7 +236,7 @@ function M.draw(ctx, opts)
   local bins = opts.bins
   if not bins or #bins == 0 then
     -- No data - draw placeholder
-    local bg_color = Colors.with_opacity(Theme.COLORS.BG_BASE, 0.3)
+    local bg_color = Colors.WithOpacity(Theme.COLORS.BG_BASE, 0.3)
     ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, bg_color)
 
     -- Advance cursor

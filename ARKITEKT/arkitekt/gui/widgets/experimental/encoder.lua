@@ -3,8 +3,8 @@
 -- EXPERIMENTAL: Rotary encoder with endless rotation (no bounds)
 -- Tracks relative changes rather than absolute values, useful for tempo, shuttle, parameter offsets
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -81,9 +81,9 @@ local DEFAULTS = {
 
 --- Draw encoder visualization
 local function render_encoder(ctx, dl, cx, cy, radius, angle, opts)
-  local track_color = opts.color_track or Colors.with_opacity(Theme.COLORS.BG_BASE, 0.5)
+  local track_color = opts.color_track or Colors.WithOpacity(Theme.COLORS.BG_BASE, 0.5)
   local indicator_color = opts.color_indicator or Theme.COLORS.ACCENT_PRIMARY
-  local center_color = opts.color_center or Colors.with_opacity(Theme.COLORS.BG_BASE, 0.8)
+  local center_color = opts.color_center or Colors.WithOpacity(Theme.COLORS.BG_BASE, 0.8)
   local line_width = opts.line_width or 3
 
   -- Draw track (full circle)
@@ -161,7 +161,7 @@ function M.draw(ctx, opts)
 
   -- Hover effect (subtle outer glow)
   if hovered and not opts.disabled then
-    local hover_color = Colors.with_opacity(Theme.COLORS.TEXT_NORMAL, 0.15)
+    local hover_color = Colors.WithOpacity(Theme.COLORS.TEXT_NORMAL, 0.15)
     DrawList_AddCircle(dl, cx, cy, radius + 2, hover_color, 32, 2)
   end
 

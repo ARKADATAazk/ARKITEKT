@@ -3,8 +3,8 @@
 -- EXPERIMENTAL: Transport controls for play/stop/record/loop
 -- Common transport buttons for media players and audio applications
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -220,16 +220,16 @@ local function render_button(ctx, dl, button_type, x, y, size, opts, unique_id)
   local bg_color
   if is_active then
     if button_type == "play" then
-      bg_color = opts.color_play or Colors.hexrgb("#33DD55")
+      bg_color = opts.color_play or 0x33DD55FF
     elseif button_type == "record" then
-      bg_color = opts.color_record or Colors.hexrgb("#DD3333")
+      bg_color = opts.color_record or 0xDD3333FF
     else
       bg_color = opts.color_active or Theme.COLORS.ACCENT_PRIMARY
     end
   elseif is_toggled then
-    bg_color = opts.color_loop or Colors.hexrgb("#3366DD")
+    bg_color = opts.color_loop or 0x3366DDFF
   else
-    bg_color = opts.color_normal or Colors.with_opacity(Theme.COLORS.BG_BASE, 0.5)
+    bg_color = opts.color_normal or Colors.WithOpacity(Theme.COLORS.BG_BASE, 0.5)
   end
 
   -- Draw button background (circle)
@@ -244,13 +244,13 @@ local function render_button(ctx, dl, button_type, x, y, size, opts, unique_id)
 
   -- Hover highlight
   if hovered and not opts.disabled then
-    local hover_color = opts.color_hover or Colors.with_opacity(Theme.COLORS.TEXT_NORMAL, 0.1)
+    local hover_color = opts.color_hover or Colors.WithOpacity(Theme.COLORS.TEXT_NORMAL, 0.1)
     DrawList_AddCircleFilled(dl, cx, cy, radius, hover_color, 24)
   end
 
   -- Draw icon
   local icon_size = size * (opts.icon_scale or 0.5)
-  local icon_color = Theme.COLORS.TEXT_NORMAL or Colors.hexrgb("#FFFFFF")
+  local icon_color = Theme.COLORS.TEXT_NORMAL or 0xFFFFFFFF
 
   if button_type == "play" then
     if opts.state == M.STATE_PAUSED then

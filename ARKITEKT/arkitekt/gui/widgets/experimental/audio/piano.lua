@@ -3,8 +3,8 @@
 -- EXPERIMENTAL: Piano keyboard widget for note input and visualization
 -- Interactive or display-only piano keyboard with horizontal/vertical orientation
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -121,13 +121,13 @@ local function render_horizontal_piano(ctx, dl, x, y, notes, opts)
   local black_w = white_w * opts.black_key_width_ratio
   local black_h = white_h * opts.black_key_height_ratio
 
-  local white_color = opts.white_key_color or Colors.hexrgb("#FFFFFF")
-  local white_hover = opts.white_key_hover_color or Colors.hexrgb("#F0F0F0")
-  local white_active = opts.white_key_active_color or Colors.hexrgb("#4A90D9")
-  local black_color = opts.black_key_color or Colors.hexrgb("#000000")
-  local black_hover = opts.black_key_hover_color or Colors.hexrgb("#333333")
-  local black_active = opts.black_key_active_color or Colors.hexrgb("#2A6099")
-  local border_color = opts.border_color or Colors.hexrgb("#000000")
+  local white_color = opts.white_key_color or 0xFFFFFFFF
+  local white_hover = opts.white_key_hover_color or 0xF0F0F0FF
+  local white_active = opts.white_key_active_color or 0x4A90D9FF
+  local black_color = opts.black_key_color or 0x000000FF
+  local black_hover = opts.black_key_hover_color or 0x333333FF
+  local black_active = opts.black_key_active_color or 0x2A6099FF
+  local border_color = opts.border_color or 0x000000FF
 
   local result = {
     note_pressed = nil,
@@ -216,13 +216,13 @@ local function render_vertical_piano(ctx, dl, x, y, notes, opts)
   local black_w = white_w * opts.black_key_width_ratio
   local black_h = white_h * opts.black_key_height_ratio
 
-  local white_color = opts.white_key_color or Colors.hexrgb("#FFFFFF")
-  local white_hover = opts.white_key_hover_color or Colors.hexrgb("#F0F0F0")
-  local white_active = opts.white_key_active_color or Colors.hexrgb("#4A90D9")
-  local black_color = opts.black_key_color or Colors.hexrgb("#000000")
-  local black_hover = opts.black_key_hover_color or Colors.hexrgb("#333333")
-  local black_active = opts.black_key_active_color or Colors.hexrgb("#2A6099")
-  local border_color = opts.border_color or Colors.hexrgb("#000000")
+  local white_color = opts.white_key_color or 0xFFFFFFFF
+  local white_hover = opts.white_key_hover_color or 0xF0F0F0FF
+  local white_active = opts.white_key_active_color or 0x4A90D9FF
+  local black_color = opts.black_key_color or 0x000000FF
+  local black_hover = opts.black_key_hover_color or 0x333333FF
+  local black_active = opts.black_key_active_color or 0x2A6099FF
+  local border_color = opts.border_color or 0x000000FF
 
   local result = {
     note_pressed = nil,

@@ -3,8 +3,8 @@
 -- EXPERIMENTAL: Vertical fader widget with dB scaling
 -- Common in audio mixers - vertical slider with logarithmic (dB) scale
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -129,7 +129,7 @@ local function render_fader_track(dl, x, y, w, h, opts)
 end
 
 local function render_fader_fill(dl, x, y, w, h, cap_y, cap_h, opts)
-  local fill_color = opts.fill_color or Colors.with_opacity(Theme.COLORS.ACCENT_PRIMARY, 0.3)
+  local fill_color = opts.fill_color or Colors.WithOpacity(Theme.COLORS.ACCENT_PRIMARY, 0.3)
 
   -- Fill from bottom to cap
   local fill_top = cap_y + cap_h / 2
@@ -145,11 +145,11 @@ end
 local function render_fader_cap(dl, x, y, w, cap_y, cap_h, hovered, active, disabled, opts)
   local cap_color
   if disabled then
-    cap_color = Colors.with_opacity(Colors.desaturate(opts.cap_color or Theme.COLORS.BG_ACTIVE, 0.5), 0.5)
+    cap_color = Colors.WithOpacity(Colors.Desaturate(opts.cap_color or Theme.COLORS.BG_ACTIVE, 0.5), 0.5)
   elseif active then
-    cap_color = opts.cap_active_color or Colors.adjust_brightness(Theme.COLORS.BG_ACTIVE, 1.2)
+    cap_color = opts.cap_active_color or Colors.AdjustBrightness(Theme.COLORS.BG_ACTIVE, 1.2)
   elseif hovered then
-    cap_color = opts.cap_hover_color or Colors.adjust_brightness(Theme.COLORS.BG_ACTIVE, 1.1)
+    cap_color = opts.cap_hover_color or Colors.AdjustBrightness(Theme.COLORS.BG_ACTIVE, 1.1)
   else
     cap_color = opts.cap_color or Theme.COLORS.BG_ACTIVE
   end
@@ -157,18 +157,18 @@ local function render_fader_cap(dl, x, y, w, cap_y, cap_h, hovered, active, disa
   -- Shadow
   if not disabled then
     ImGui.DrawList_AddRectFilled(dl, x + 1, cap_y + 1, x + w + 1, cap_y + cap_h + 1,
-      Colors.hexrgb("#00000050"), 2)
+      0x00000050, 2)
   end
 
   -- Cap body
   ImGui.DrawList_AddRectFilled(dl, x, cap_y, x + w, cap_y + cap_h, cap_color, 2)
 
   -- Border
-  local border_color = Colors.adjust_brightness(cap_color, 0.7)
+  local border_color = Colors.AdjustBrightness(cap_color, 0.7)
   ImGui.DrawList_AddRect(dl, x, cap_y, x + w, cap_y + cap_h, border_color, 2, 0, 1)
 
   -- Center line indicator
-  local line_color = Colors.adjust_brightness(cap_color, 1.3)
+  local line_color = Colors.AdjustBrightness(cap_color, 1.3)
   local line_y = cap_y + cap_h / 2
   ImGui.DrawList_AddLine(dl, x + 2, line_y, x + w - 2, line_y, line_color, 1)
 end

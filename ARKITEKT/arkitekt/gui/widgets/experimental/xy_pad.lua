@@ -3,8 +3,8 @@
 -- EXPERIMENTAL: XY pad widget for controlling two parameters simultaneously
 -- Common in audio apps for LFO rate/depth, filter cutoff/resonance, etc.
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -82,7 +82,7 @@ local xy_locks = {}  -- Prevents double-click interference with drag
 -- ============================================================================
 
 local function render_grid(dl, x, y, w, h, divisions, opts)
-  local grid_color = opts.grid_color or Colors.with_opacity(Theme.COLORS.BORDER_INNER, 0.3)
+  local grid_color = opts.grid_color or Colors.WithOpacity(Theme.COLORS.BORDER_INNER, 0.3)
 
   -- Vertical lines
   for i = 1, divisions - 1 do
@@ -100,14 +100,14 @@ local function render_grid(dl, x, y, w, h, divisions, opts)
   if divisions % 2 == 0 then
     local center_x = x + w / 2
     local center_y = y + h / 2
-    local crosshair_color = Colors.with_opacity(grid_color, 0.6)
+    local crosshair_color = Colors.WithOpacity(grid_color, 0.6)
     ImGui.DrawList_AddLine(dl, center_x, y, center_x, y + h, crosshair_color, 2)
     ImGui.DrawList_AddLine(dl, x, center_y, x + w, center_y, crosshair_color, 2)
   end
 end
 
 local function render_crosshair(dl, cx, cy, w, h, x, y, opts)
-  local crosshair_color = opts.crosshair_color or Colors.with_opacity(Theme.COLORS.ACCENT_PRIMARY, 0.4)
+  local crosshair_color = opts.crosshair_color or Colors.WithOpacity(Theme.COLORS.ACCENT_PRIMARY, 0.4)
 
   -- Vertical line
   ImGui.DrawList_AddLine(dl, cx, y, cx, y + h, crosshair_color, 1)
@@ -118,25 +118,25 @@ end
 local function render_handle(dl, cx, cy, radius, hovered, active, disabled, opts)
   local handle_color
   if disabled then
-    handle_color = Colors.with_opacity(Colors.desaturate(opts.handle_color or Theme.COLORS.ACCENT_PRIMARY, 0.5), 0.5)
+    handle_color = Colors.WithOpacity(Colors.Desaturate(opts.handle_color or Theme.COLORS.ACCENT_PRIMARY, 0.5), 0.5)
   elseif active then
-    handle_color = opts.handle_active_color or Colors.adjust_brightness(Theme.COLORS.ACCENT_PRIMARY, 1.3)
+    handle_color = opts.handle_active_color or Colors.AdjustBrightness(Theme.COLORS.ACCENT_PRIMARY, 1.3)
   elseif hovered then
-    handle_color = opts.handle_hover_color or Colors.adjust_brightness(Theme.COLORS.ACCENT_PRIMARY, 1.15)
+    handle_color = opts.handle_hover_color or Colors.AdjustBrightness(Theme.COLORS.ACCENT_PRIMARY, 1.15)
   else
     handle_color = opts.handle_color or Theme.COLORS.ACCENT_PRIMARY
   end
 
   -- Shadow
   if not disabled then
-    ImGui.DrawList_AddCircleFilled(dl, cx + 1, cy + 1, radius, Colors.hexrgb("#00000050"), 16)
+    ImGui.DrawList_AddCircleFilled(dl, cx + 1, cy + 1, radius, 0x00000050, 16)
   end
 
   -- Handle circle
   ImGui.DrawList_AddCircleFilled(dl, cx, cy, radius, handle_color, 16)
 
   -- Border
-  local border_color = Colors.adjust_brightness(handle_color, 0.7)
+  local border_color = Colors.AdjustBrightness(handle_color, 0.7)
   ImGui.DrawList_AddCircle(dl, cx, cy, radius, border_color, 16, 2)
 end
 

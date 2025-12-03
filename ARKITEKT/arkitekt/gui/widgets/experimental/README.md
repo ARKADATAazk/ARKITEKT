@@ -158,7 +158,7 @@ Ark.SpectrumAnalyzer.bass(ctx, {
 Ark.SpectrumAnalyzer(ctx, {
   bins = fft_bins,
   is_gradient = false,
-  color = Colors.hexrgb("#33FF66"),
+  color = 0x33FF66FF,
 })
 ```
 

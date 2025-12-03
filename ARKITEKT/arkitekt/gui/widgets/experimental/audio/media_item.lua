@@ -4,8 +4,8 @@
 -- Extracted from ItemPicker tile renderer system
 -- Complete media item display with header, waveform, badges, and states
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 local Waveform = require('arkitekt.gui.widgets.experimental.audio.waveform')
@@ -83,7 +83,7 @@ end
 
 local function render_header(ctx, dl, x, y, w, h, name, text_color, header_color, rounding)
   -- Header background (semi-transparent)
-  local header_alpha = Colors.opacity(header_color)
+  local header_alpha = Colors.GetOpacity(header_color)
   if header_alpha > 0 then
     ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, header_color, rounding, ImGui.DrawFlags_RoundCornersTop)
   end
@@ -158,7 +158,7 @@ end
 
 local function render_disabled_overlay(dl, x, y, w, h, rounding)
   -- Dark overlay for disabled items
-  local overlay_color = Colors.with_opacity(Colors.hexrgb("#000000"), 0.5)
+  local overlay_color = 0x00000080  -- 0x000000 + 50% alpha
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, overlay_color, rounding)
 end
 
@@ -189,10 +189,10 @@ function M.draw(ctx, opts)
   local bg_color = opts.bg_color or base_color
   local text_color = opts.text_color or Theme.COLORS.TEXT_NORMAL
   local border_color = opts.border_color or Theme.COLORS.BORDER_OUTER
-  local selection_color = opts.selection_color or Colors.adjust_brightness(base_color, 1.3)
+  local selection_color = opts.selection_color or Colors.AdjustBrightness(base_color, 1.3)
 
   -- Header colors (semi-transparent)
-  local header_color = opts.header_color or Colors.with_opacity(Colors.adjust_brightness(base_color, 0.7), 0.6)
+  local header_color = opts.header_color or Colors.WithOpacity(Colors.AdjustBrightness(base_color, 0.7), 0.6)
 
   -- Waveform color (darkened for contrast)
   local waveform_color = opts.waveform_color
@@ -202,7 +202,7 @@ function M.draw(ctx, opts)
     s = s * 0.64
     v = v * 0.35
     r, g, b = ImGui.ColorConvertHSVtoRGB(h_hsv, s, v)
-    waveform_color = Colors.components_to_rgba(r * 255, g * 255, b * 255, 255)
+    waveform_color = Colors.ComponentsToRgba(r * 255, g * 255, b * 255, 255)
   end
 
   -- Render base tile
@@ -256,14 +256,14 @@ function M.draw(ctx, opts)
 
   -- Duration badge
   if opts.show_duration and opts.duration > 0 then
-    local badge_color = Colors.with_opacity(Colors.hexrgb("#000000"), 0.6)
+    local badge_color = 0x00000099  -- 60% opacity black
     local badge_w, badge_h = render_duration_badge(ctx, dl, badge_x, badge_y, opts.duration, text_color, badge_color)
     badge_y = badge_y + badge_h + 2
   end
 
   -- Pool badge
   if opts.show_pool_badge and opts.pool_count and opts.pool_count > 1 then
-    local badge_color = Colors.with_opacity(Theme.COLORS.ACCENT_SECONDARY or Colors.hexrgb("#FF9933"), 0.8)
+    local badge_color = Colors.WithOpacity(Theme.COLORS.ACCENT_SECONDARY or 0xFF9933FF, 0.8)
     render_pool_badge(ctx, dl, badge_x, badge_y, opts.pool_count, text_color, badge_color)
   end
 

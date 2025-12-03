@@ -3,8 +3,8 @@
 -- EXPERIMENTAL: Step sequencer grid for pattern editing
 -- Interactive grid where each cell represents a note/trigger at a time step
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -91,20 +91,20 @@ local DEFAULTS = {
 --- Get color for cell based on velocity
 local function get_cell_color(velocity, opts)
   if not velocity or velocity <= 0 then
-    return opts.color_empty or Colors.with_opacity(Theme.COLORS.BG_BASE, 0.3)
+    return opts.color_empty or Colors.WithOpacity(Theme.COLORS.BG_BASE, 0.3)
   end
 
   local base_color = opts.color_filled or Theme.COLORS.ACCENT_PRIMARY
 
   -- Velocity-based color modulation
   if opts.is_velocity_colors then
-    local color_low = opts.color_accent_low or Colors.hexrgb("#4466FF")
-    local color_high = opts.color_accent_high or Colors.hexrgb("#FF4466")
-    return Colors.lerp_color(color_low, color_high, velocity)
+    local color_low = opts.color_accent_low or 0x4466FFFF
+    local color_high = opts.color_accent_high or 0xFF4466FF
+    return Colors.Lerp(color_low, color_high, velocity)
   end
 
   -- Simple opacity modulation
-  return Colors.with_opacity(base_color, 0.3 + velocity * 0.7)
+  return Colors.WithOpacity(base_color, 0.3 + velocity * 0.7)
 end
 
 --- Initialize empty pattern if needed
@@ -160,8 +160,8 @@ local function render_grid(ctx, dl, x, y, w, h, pattern, opts, unique_id)
 
       -- Highlight current step
       if opts.current_step == step then
-        local current_color = opts.color_current or Colors.hexrgb("#FFFF44")
-        cell_color = Colors.lerp_color(cell_color, current_color, 0.4)
+        local current_color = opts.color_current or 0xFFFF44FF
+        cell_color = Colors.Lerp(cell_color, current_color, 0.4)
       end
 
       -- Draw cell
@@ -176,7 +176,7 @@ local function render_grid(ctx, dl, x, y, w, h, pattern, opts, unique_id)
 
         -- Hover highlight
         if hovered then
-          local hover_color = opts.color_hover or Colors.with_opacity(Theme.COLORS.TEXT_NORMAL, 0.2)
+          local hover_color = opts.color_hover or Colors.WithOpacity(Theme.COLORS.TEXT_NORMAL, 0.2)
           DrawList_AddRect(dl, cell_x, cell_y, cell_x + cell_w, cell_y + cell_h, hover_color, cell_rounding, 0, 2)
         end
 
