@@ -2,7 +2,7 @@
 -- TemplateBrowser/ui/views/info_panel_view.lua
 -- Right panel view: Template info & tag assignment
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local TemplateOps = require('TemplateBrowser.domain.template.operations')
 local Tags = require('TemplateBrowser.domain.tags.service')

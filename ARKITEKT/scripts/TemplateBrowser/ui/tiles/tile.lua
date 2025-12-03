@@ -2,7 +2,7 @@
 -- TemplateBrowser/ui/tiles/tile.lua
 -- Template tile renderer using arkitekt design system
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local TileHelpers = require('TemplateBrowser.ui.tiles.helpers')

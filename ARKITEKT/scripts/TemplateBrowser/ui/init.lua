@@ -2,7 +2,7 @@
 -- TemplateBrowser/ui/init.lua
 -- Main GUI with three-panel layout
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 -- Domain services
@@ -24,7 +24,7 @@ local InfoPanelConfig = require('TemplateBrowser.ui.config.info')
 local Shortcuts = require('TemplateBrowser.ui.shortcuts')
 
 -- Layout constants
-local Layout = require('TemplateBrowser.defs.constants')
+local Layout = require('TemplateBrowser.config.constants')
 
 -- Import view modules
 local LeftPanelView = require('TemplateBrowser.ui.views.left_panel_view')

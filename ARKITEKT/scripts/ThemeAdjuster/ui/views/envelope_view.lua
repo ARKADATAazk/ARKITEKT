@@ -2,7 +2,7 @@
 -- ThemeAdjuster/ui/views/envelope_view.lua
 -- Envelope configuration tab
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')

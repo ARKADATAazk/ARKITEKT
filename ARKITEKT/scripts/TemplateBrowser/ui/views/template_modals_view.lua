@@ -2,11 +2,11 @@
 -- TemplateBrowser/ui/views/template_modals_view.lua
 -- Template Browser modals and context menus
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local FileOps = require('TemplateBrowser.data.file_ops')
 local Chip = require('arkitekt.gui.widgets.data.chip')
-local ColorDefs = require('arkitekt.defs.colors')
+local ColorDefs = require('arkitekt.config.colors')
 local UI = require('TemplateBrowser.ui.config.constants')
 
 local M = {}

@@ -2,11 +2,11 @@
 -- ThemeAdjuster/ui/views/package_modal.lua
 -- Package manifest/micro-manage modal (overlay with visual tile grid)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Fs = require('arkitekt.core.fs')
-local Constants = require('ThemeAdjuster.defs.constants')
-local ImageCache = require('arkitekt.platform.images')
+local Constants = require('ThemeAdjuster.config.constants')
+local ImageCache = require('arkitekt.core.images')
 local PackageManager = require('ThemeAdjuster.data.packages.manager')
 local hexrgb = Ark.Colors.Hexrgb
 
@@ -42,7 +42,7 @@ local AREA_COLORS = {
   Other = TC.other_slate,
 }
 
--- Image cache for tooltips (uses arkitekt.platform.images for proper lifecycle management)
+-- Image cache for tooltips (uses arkitekt.core.images for proper lifecycle management)
 -- See arkitekt/core/images.lua for full documentation
 local image_cache = ImageCache.new({
   budget = 10,      -- Max images to load per frame

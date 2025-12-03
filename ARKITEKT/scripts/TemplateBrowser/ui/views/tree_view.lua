@@ -7,14 +7,14 @@
 local Logger = require('arkitekt.debug.logger')
 local TreeView = require('arkitekt.gui.widgets.navigation.tree_view')
 local PathValidation = require('arkitekt.core.path_validation')
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local FileOps = require('TemplateBrowser.data.file_ops')
 local Scanner = require('TemplateBrowser.domain.template.scanner')
 local Persistence = require('TemplateBrowser.data.storage')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Colors = require('arkitekt.core.colors')
-local ColorDefs = require('arkitekt.defs.colors')
-local Constants = require('TemplateBrowser.defs.constants')
+local ColorDefs = require('arkitekt.config.colors')
+local Constants = require('TemplateBrowser.config.constants')
 
 local M = {}
 

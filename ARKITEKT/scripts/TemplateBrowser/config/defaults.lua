@@ -2,7 +2,7 @@
 -- TemplateBrowser/defs/defaults.lua
 -- Default configuration values
 
-local Constants = require('TemplateBrowser.defs.constants')
+local Constants = require('TemplateBrowser.config.constants')
 
 local M = {}
 

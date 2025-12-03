@@ -2,13 +2,13 @@
 -- ThemeAdjuster/ui/views/mcp_view.lua
 -- MCP (Mixer Control Panel) configuration tab
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 local ThemeMapper = require('ThemeAdjuster.domain.theme.mapper')
 local ParamDiscovery = require('ThemeAdjuster.domain.theme.discovery')
-local Strings = require('ThemeAdjuster.defs.strings')
+local Strings = require('ThemeAdjuster.config.strings')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
 local hexrgb = Ark.Colors.Hexrgb
 

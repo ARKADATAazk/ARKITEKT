@@ -3,7 +3,7 @@
 -- VSTs tab: List of all FX with filtering
 
 local Logger = require('arkitekt.debug.logger')
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Helpers = require('TemplateBrowser.ui.views.helpers')

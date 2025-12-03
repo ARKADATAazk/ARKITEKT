@@ -2,7 +2,7 @@
 -- TemplateBrowser/ui/views/convenience_panel/vsts_tab.lua
 -- Mini VSTs tab for convenience panel
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Helpers = require('TemplateBrowser.ui.views.helpers')

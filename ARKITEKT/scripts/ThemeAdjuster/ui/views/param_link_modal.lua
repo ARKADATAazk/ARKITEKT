@@ -2,7 +2,7 @@
 -- ThemeAdjuster/ui/views/param_link_modal.lua
 -- Parameter link selection modal
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')

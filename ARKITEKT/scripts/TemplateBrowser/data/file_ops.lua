@@ -7,7 +7,7 @@ local M = {}
 -- DEPENDENCIES
 local Logger = require('arkitekt.debug.logger')
 local PathValidation = require('arkitekt.core.path_validation')
-local Constants = require('TemplateBrowser.defs.constants')
+local Constants = require('TemplateBrowser.config.constants')
 
 -- Get separator for current OS
 local function get_sep()

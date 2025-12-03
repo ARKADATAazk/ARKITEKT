@@ -2,7 +2,7 @@
 -- TemplateBrowser/ui/views/left_panel/directory_tab.lua
 -- Directory tab: Folder tree + folder creation + tags mini-list
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Tags = require('TemplateBrowser.domain.tags.service')
 local Chip = require('arkitekt.gui.widgets.data.chip')

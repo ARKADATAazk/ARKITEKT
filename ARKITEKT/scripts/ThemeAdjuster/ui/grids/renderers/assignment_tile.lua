@@ -2,7 +2,7 @@
 -- ThemeAdjuster/ui/grids/renderers/assignment_tile.lua
 -- Renders parameter tiles in assignment grids
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')

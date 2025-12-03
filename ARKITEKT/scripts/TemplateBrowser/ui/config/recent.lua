@@ -3,7 +3,7 @@
 -- Panel container configuration for recent/favorites templates
 -- All visual styling comes from library defaults
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

@@ -2,12 +2,12 @@
 -- ThemeAdjuster/ui/views/global_view.lua
 -- Global color controls tab
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local hexrgb = Ark.Colors.Hexrgb
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
-local Strings = require('ThemeAdjuster.defs.strings')
+local Strings = require('ThemeAdjuster.config.strings')
 
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 

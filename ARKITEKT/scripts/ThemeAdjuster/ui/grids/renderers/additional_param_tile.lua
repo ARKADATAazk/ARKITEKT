@@ -2,7 +2,7 @@
 -- ThemeAdjuster/ui/grids/renderers/additional_param_tile.lua
 -- Renders parameter tiles in Additional tab with controls and link mode selector
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
 local hexrgb = Ark.Colors.Hexrgb

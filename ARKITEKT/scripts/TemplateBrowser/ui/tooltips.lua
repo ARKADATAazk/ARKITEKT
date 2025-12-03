@@ -2,8 +2,8 @@
 -- TemplateBrowser/ui/tooltips.lua
 -- Tooltip configuration and utilities
 
-local Strings = require('TemplateBrowser.defs.strings')
-local Defaults = require('TemplateBrowser.defs.defaults')
+local Strings = require('TemplateBrowser.config.strings')
+local Defaults = require('TemplateBrowser.config.defaults')
 local TrackParser = require('TemplateBrowser.domain.template.track_parser')
 local Stats = require('TemplateBrowser.domain.template.stats')
 

@@ -4,7 +4,7 @@
 -- Eliminates ~300 LOC duplication between template_grid and quick_access_grid
 
 -- Dependencies (cached at module load per Lua Performance Guide)
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local TemplateOps = require('TemplateBrowser.domain.template.operations')
 local Persistence = require('TemplateBrowser.data.storage')
 local Tags = require('TemplateBrowser.domain.tags.service')

@@ -2,12 +2,12 @@
 -- TemplateBrowser/ui/tiles/factory.lua
 -- Grid opts factory for template tiles
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local TemplateTile = require('TemplateBrowser.ui.tiles.tile')
 local TemplateTileCompact = require('TemplateBrowser.ui.tiles.tile_compact')
 local DragDrop = require('arkitekt.gui.interaction.drag_drop')
-local Constants = require('TemplateBrowser.defs.constants')
+local Constants = require('TemplateBrowser.config.constants')
 local Tooltips = require('TemplateBrowser.ui.tooltips')
 
 local M = {}

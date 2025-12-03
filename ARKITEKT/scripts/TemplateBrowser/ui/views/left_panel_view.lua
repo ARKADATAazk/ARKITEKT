@@ -2,7 +2,7 @@
 -- TemplateBrowser/ui/views/left_panel_view.lua
 -- Left panel view: Directory / VSTs / Tags (using panel container) + Convenience panel (mini Tags/VSTs)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 -- Import tab modules
 local DirectoryTab = require('TemplateBrowser.ui.views.left_panel.directory_tab')

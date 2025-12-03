@@ -3,7 +3,7 @@
 -- Middle panel view: Recent templates + template grid
 
 -- Dependencies (cached at module load per Lua Performance Guide)
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.factory')
 local Chip = require('arkitekt.gui.widgets.data.chip')

@@ -2,8 +2,8 @@
 -- TemplateBrowser/ui/tiles/helpers.lua
 -- Shared helper functions for tile renderers
 
-local ImGui = require('arkitekt.platform.imgui')
-local Defaults = require('TemplateBrowser.defs.defaults')
+local ImGui = require('arkitekt.core.imgui')
+local Defaults = require('TemplateBrowser.config.defaults')
 
 local M = {}
 

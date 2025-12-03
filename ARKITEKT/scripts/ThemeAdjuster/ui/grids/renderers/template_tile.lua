@@ -2,7 +2,7 @@
 -- ThemeAdjuster/ui/grids/renderers/template_tile.lua
 -- Renders template tiles in the templates grid
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local Math = require('arkitekt.core.math')

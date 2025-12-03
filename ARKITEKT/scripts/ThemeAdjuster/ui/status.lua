@@ -2,7 +2,7 @@
 -- ThemeAdjuster/ui/status.lua
 -- Status bar configuration
 
-local Constants = require('ThemeAdjuster.defs.constants')
+local Constants = require('ThemeAdjuster.config.constants')
 
 local M = {}
 

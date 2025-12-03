@@ -2,7 +2,7 @@
 -- TemplateBrowser/ui/views/convenience_panel_view.lua
 -- Convenience panel view: Tags / VSTs mini tabs (for quick access)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 -- Import tab modules
 local ConvTagsTab = require('TemplateBrowser.ui.views.convenience_panel.tags_tab')

@@ -2,11 +2,11 @@
 -- ThemeAdjuster/ui/views/additional_view.lua
 -- Additional parameters tab - Grid-based tile manager
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local hexrgb = Ark.Colors.Hexrgb
-local Constants = require('ThemeAdjuster.defs.constants')
+local Constants = require('ThemeAdjuster.config.constants')
 local ParamDiscovery = require('ThemeAdjuster.domain.theme.discovery')
 local ThemeMapper = require('ThemeAdjuster.domain.theme.mapper')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')

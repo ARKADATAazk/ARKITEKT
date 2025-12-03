@@ -2,7 +2,7 @@
 -- TemplateBrowser/ui/status.lua
 -- Status bar component using framework notification service
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

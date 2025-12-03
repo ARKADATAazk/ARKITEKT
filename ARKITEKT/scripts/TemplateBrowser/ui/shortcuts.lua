@@ -2,7 +2,7 @@
 -- TemplateBrowser/ui/shortcuts.lua
 -- Keyboard shortcuts configuration and handling
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

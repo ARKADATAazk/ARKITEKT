@@ -2,7 +2,7 @@
 -- ThemeAdjuster/ui/gui.lua
 -- Main GUI orchestrator with tab system
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Config = require('ThemeAdjuster.app.config')
 local PackageManager = require('ThemeAdjuster.data.packages.manager')
 local TabContent = require('ThemeAdjuster.ui.tab_content')
