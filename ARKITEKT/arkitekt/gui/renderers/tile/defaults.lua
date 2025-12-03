@@ -7,14 +7,144 @@
 -- The get() function returns cached config to avoid per-tile overhead.
 
 local Colors = require('arkitekt.core.colors')
+local ImGui = require('arkitekt.core.imgui')
+
+-- Performance: Localize ImGui functions
+local CalcTextSize = ImGui.CalcTextSize
+local GetFrameCount = ImGui.GetFrameCount
+
 local M = {}
 
 -- Per-frame cache
 local _cached_config = nil
 local _cached_frame = -1
 
+-- ============================================================================
+-- TEXT UTILITIES (cached per-frame for performance)
+-- ============================================================================
+
+-- Per-frame text measurement cache
+local _text_cache = {
+  ctx = nil,
+  text_height = 0,
+  separator_width = 0,
+  ellipsis_width = 0,
+}
+
+-- Truncated text cache (persists across frames, keyed by item)
+-- Structure: { [item_key] = { name = string, width = number, truncated = string } }
+local _truncated_cache = {}
+local _truncated_cache_frame = -1
+
+--- Get cached text line height (measured once per frame)
+--- @param ctx userdata ImGui context
+--- @return number Text line height in pixels
+function M.get_text_height(ctx)
+  if _text_cache.ctx == ctx then
+    return _text_cache.text_height
+  end
+  local _, h = CalcTextSize(ctx, 'Tg')
+  _text_cache.ctx = ctx
+  _text_cache.text_height = h
+  return h
+end
+
+--- Get cached separator width (measured once per frame)
+--- @param ctx userdata ImGui context
+--- @return number Separator width in pixels
+function M.get_separator_width(ctx)
+  if _text_cache.ctx == ctx and _text_cache.separator_width > 0 then
+    return _text_cache.separator_width
+  end
+  local w = CalcTextSize(ctx, ' ')
+  _text_cache.separator_width = w
+  _text_cache.ctx = ctx
+  return w
+end
+
+--- Get cached ellipsis width (measured once per frame)
+--- @param ctx userdata ImGui context
+--- @return number Ellipsis width in pixels
+function M.get_ellipsis_width(ctx)
+  if _text_cache.ctx == ctx and _text_cache.ellipsis_width > 0 then
+    return _text_cache.ellipsis_width
+  end
+  local w = CalcTextSize(ctx, '...')
+  _text_cache.ellipsis_width = w
+  _text_cache.ctx = ctx
+  return w
+end
+
+--- Get or compute truncated text (cached by item key and width)
+--- @param ctx userdata ImGui context
+--- @param item_key string Unique item identifier
+--- @param text string Full text to truncate
+--- @param max_width number Maximum width in pixels
+--- @return string Truncated text (with ellipsis if needed)
+function M.get_truncated_text(ctx, item_key, text, max_width)
+  if not text or max_width <= 0 then return '' end
+
+  -- Round width to nearest 2px to avoid cache misses from floating point drift
+  local width_key = ((max_width + 1) // 2) * 2
+
+  -- Check cache
+  local cached = _truncated_cache[item_key]
+  if cached and cached.name == text and cached.width == width_key then
+    return cached.truncated
+  end
+
+  -- Quick length-based estimate to skip CalcTextSize for short text
+  local len = #text
+  if len * 12 < max_width then
+    -- Almost certainly fits - cache and return
+    _truncated_cache[item_key] = { name = text, width = width_key, truncated = text }
+    return text
+  end
+
+  -- Check if full text fits
+  local text_width = CalcTextSize(ctx, text)
+  if text_width <= max_width then
+    _truncated_cache[item_key] = { name = text, width = width_key, truncated = text }
+    return text
+  end
+
+  -- Need to truncate - use binary search
+  local ellipsis_width = M.get_ellipsis_width(ctx)
+  if max_width <= ellipsis_width then
+    _truncated_cache[item_key] = { name = text, width = width_key, truncated = '' }
+    return ''
+  end
+
+  local available_width = max_width - ellipsis_width
+  local low, high = 1, len
+  local best = 0
+
+  while low <= high do
+    local mid = (low + high) // 2
+    local truncated = text:sub(1, mid)
+    if CalcTextSize(ctx, truncated) <= available_width then
+      best = mid
+      low = mid + 1
+    else
+      high = mid - 1
+    end
+  end
+
+  local result = best > 0 and (text:sub(1, best) .. '...') or '...'
+  _truncated_cache[item_key] = { name = text, width = width_key, truncated = result }
+  return result
+end
+
+--- Clear truncated text cache (call when items change significantly)
+function M.clear_truncated_cache()
+  _truncated_cache = {}
+end
+
 -- Static defaults (used as fallback when ThemeManager not available)
 M.STATIC_DEFAULTS = {
+  -- Shape
+  rounding = 6,  -- Max rounding (scaled dynamically by responsive system)
+
   -- Fill layer (dark theme defaults)
   fill_opacity = 0.4,
   fill_saturation = 0.4,
@@ -59,9 +189,9 @@ M.STATIC_DEFAULTS = {
   ants_enabled = true,
   ants_replace_border = true,
   ants_thickness = 1,
-  ants_dash = 8,
-  ants_gap = 6,
-  ants_speed = 20,
+  ants_dash = 36,   -- 4x longer for fewer draw calls
+  ants_gap = 27,
+  ants_speed = 40,
   ants_inset = 0,
   ants_alpha = 0xFF,
 
@@ -118,11 +248,12 @@ end
 --- Call once per frame before rendering tiles
 --- @param ctx userdata ImGui context (used to get frame count)
 function M.begin_frame(ctx)
-  local ImGui = require('arkitekt.core.imgui')
-  local frame = ImGui.GetFrameCount(ctx)
+  local frame = GetFrameCount(ctx)
   if frame ~= _cached_frame then
     _cached_config = _build_config()
     _cached_frame = frame
+    -- Reset per-frame text cache when frame changes
+    _text_cache.ctx = nil
   end
 end
 

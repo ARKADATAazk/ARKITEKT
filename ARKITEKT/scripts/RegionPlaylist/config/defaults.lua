@@ -168,6 +168,11 @@ M.REGION_TILES = {
       min_gap = 3,
       max_gap = 12,
     },
+    rounding_scaling = {
+      enabled = true,
+      min_rounding = 0,
+      max_rounding = 6,
+    },
   },
 
   hover = {

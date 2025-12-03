@@ -296,7 +296,7 @@ function Coordinator:draw_active(ctx, playlist, height, shell_state)
     local child_w = avail_w - (self.container_config.padding * 2)
     local child_h = (height - header_height) - (self.container_config.padding * 2)
 
-    local raw_height, raw_gap = ResponsiveGrid.calculate_responsive_tile_height({
+    local raw_height, raw_gap, raw_rounding = ResponsiveGrid.calculate_responsive_tile_height({
       item_count = #playlist.items,
       avail_width = child_w,
       avail_height = child_h,
@@ -315,6 +315,7 @@ function Coordinator:draw_active(ctx, playlist, height, shell_state)
     self._active_items = playlist.items
     self._active_tile_height = responsive_height
     self._active_gap = raw_gap
+    self._active_rounding = raw_rounding
     self._active_clip_bounds = self.active_container.visible_bounds
 
     local wheel_y = ImGui.GetMouseWheel(ctx)
@@ -440,7 +441,7 @@ function Coordinator:draw_pool(ctx, regions, height, shell_state)
     local child_w = avail_w - (self.container_config.padding * 2)
     local child_h = (height - header_height) - (self.container_config.padding * 2)
 
-    local raw_height, raw_gap = ResponsiveGrid.calculate_responsive_tile_height({
+    local raw_height, raw_gap, raw_rounding = ResponsiveGrid.calculate_responsive_tile_height({
       item_count = #regions,
       avail_width = child_w,
       avail_height = child_h,
@@ -459,11 +460,13 @@ function Coordinator:draw_pool(ctx, regions, height, shell_state)
     self._pool_items = regions
     self._pool_tile_height = responsive_height
     self._pool_gap = raw_gap
+    self._pool_rounding = raw_rounding
     self._pool_clip_bounds = self.pool_container.visible_bounds
     self._pool_disable_background_clicks = ImGui.IsPopupOpen(ctx, 'PoolActionsMenu')
 
     -- Draw grid using opts-based API
     local opts = PoolGridFactory.create_opts(self, self.config)
+    opts.gap = raw_gap
     local result = Ark.Grid(ctx, opts)
 
     -- Store grid reference for other operations

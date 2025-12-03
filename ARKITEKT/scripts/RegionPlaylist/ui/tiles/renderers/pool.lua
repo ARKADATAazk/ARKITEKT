@@ -13,17 +13,72 @@ local Background = require('arkitekt.gui.draw.patterns')
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
 local sqrt = math.sqrt
+local time_precise = reaper.time_precise
+
+-- Performance: Localize Ark/ImGui functions
+local Colors_Luminance = Ark.Colors.Luminance
+local Colors_AdjustBrightness = Ark.Colors.AdjustBrightness
+local Colors_Desaturate = Ark.Colors.Desaturate
+local Colors_WithAlpha = Ark.Colors.WithAlpha
+local Colors_WithOpacity = Ark.Colors.WithOpacity
+local Draw_Text = Ark.Draw.Text
+local DrawList_AddRect = ImGui.DrawList_AddRect
 
 local M = {}
 
+-- ============================================================================
+-- PROFILING (set to true to enable, check REAPER console for output)
+-- ============================================================================
+local PROFILE_ENABLED = true
+local _profile = {
+  animator = 0,
+  color = 0,
+  base_tile = 0,
+  text = 0,
+  badge = 0,
+  length = 0,
+  count = 0,
+  last_report = 0,
+}
+
+local function profile_report()
+  if not PROFILE_ENABLED then return end
+  local now = time_precise()
+  if now - _profile.last_report > 1.0 then
+    reaper.ShowConsoleMsg(string.format(
+      '[POOL] %d tiles | anim:%.1fms | color:%.1fms | base:%.1fms | text:%.1fms | badge:%.1fms | len:%.1fms\n',
+      _profile.count,
+      _profile.animator * 1000,
+      _profile.color * 1000,
+      _profile.base_tile * 1000,
+      _profile.text * 1000,
+      _profile.badge * 1000,
+      _profile.length * 1000
+    ))
+    -- Reset
+    _profile.animator = 0
+    _profile.color = 0
+    _profile.base_tile = 0
+    _profile.text = 0
+    _profile.badge = 0
+    _profile.length = 0
+    _profile.count = 0
+    _profile.last_report = now
+  end
+end
+
 M.CONFIG = {
+  -- Grid layout
+  tile_width = 110,
+  gap = 12,
+  -- Appearance
   bg_base = 0x1A1A1AFF,
   disabled = { desaturate = 0.9, brightness = 0.5, alpha_multiplier = 0.6, min_lightness = 0.28 },
-  responsive = { hide_length_below = 35, hide_text_below = 15 },
-  playlist_tile = { 
-    base_color = 0x3A3A3AFF, 
-    name_color = 0xCCCCCCFF, 
-    badge_color = 0x999999FF 
+  responsive = { hide_length_below = 50, hide_text_below = 15 },
+  playlist_tile = {
+    base_color = 0x3A3A3AFF,
+    name_color = 0xCCCCCCFF,
+    badge_color = 0x999999FF
   },
   text_margin_right = 6,
   badge_margin = 6,
@@ -36,6 +91,8 @@ M.CONFIG = {
   badge_nudge_y = 0,
   badge_text_nudge_x = -1,
   badge_text_nudge_y = -2,
+  -- Spawn animation
+  spawn = { enabled = true, duration = 0.25, scale_start = 0.8 },
   circular = {
     base_color = 0x240C0CFF,
     stripe_color = Ark.Colors.WithOpacity(0x430D0D85, 0.2),
@@ -57,10 +114,10 @@ M.CONFIG = {
 }
 
 local function clamp_min_lightness(color, min_l)
-  local lum = Ark.Colors.Luminance(color)
+  local lum = Colors_Luminance(color)
   if lum < (min_l or 0) then
     local factor = (min_l + 0.001) / max(lum, 0.001)
-    return Ark.Colors.AdjustBrightness(color, factor)
+    return Colors_AdjustBrightness(color, factor)
   end
   return color
 end
@@ -124,6 +181,8 @@ end
 --- Render pool region tile
 --- @param opts table Render options (same as M.render)
 function M.render_region(opts)
+  local t0 = PROFILE_ENABLED and time_precise() or 0
+
   local ctx = opts.ctx
   local rect = opts.rect
   local region = opts.item
@@ -139,11 +198,18 @@ function M.render_region(opts)
 
   animator:track(key, 'hover', state.hover and 1.0 or 0.0, hover_config and hover_config.animation_speed_hover or 12.0)
   local hover_factor = animator:get(key, 'hover')
+
+  local t1 = PROFILE_ENABLED and time_precise() or 0
+
   local base_color = region.color or M.CONFIG.bg_base
   local fx_config = TileFXConfig.get()
 
+  local t2 = PROFILE_ENABLED and time_precise() or 0
+
   BaseRenderer.draw_base_tile(ctx, dl, rect, base_color, fx_config, state, hover_factor)
   if state.selected and fx_config.ants_enabled then BaseRenderer.draw_marching_ants(dl, rect, base_color, fx_config) end
+
+  local t3 = PROFILE_ENABLED and time_precise() or 0
 
   local actual_height = tile_height or (y2 - y1)
   local show_text = actual_height >= M.CONFIG.responsive.hide_text_below
@@ -157,7 +223,21 @@ function M.render_region(opts)
     BaseRenderer.draw_region_text(ctx, dl, text_pos, region, base_color, 0xFF, right_bound_x, grid, rect, key)
   end
 
+  local t4 = PROFILE_ENABLED and time_precise() or 0
+
   if show_length then BaseRenderer.draw_length_display(ctx, dl, rect, region, base_color, 0xFF) end
+
+  -- Profiling accumulation
+  if PROFILE_ENABLED then
+    local t5 = time_precise()
+    _profile.animator = _profile.animator + (t1 - t0)
+    _profile.color = _profile.color + (t2 - t1)
+    _profile.base_tile = _profile.base_tile + (t3 - t2)
+    _profile.text = _profile.text + (t4 - t3)
+    _profile.length = _profile.length + (t5 - t4)
+    _profile.count = _profile.count + 1
+    profile_report()
+  end
 end
 
 --- Render pool playlist tile
@@ -196,10 +276,10 @@ function M.render_playlist(opts)
   }
 
   if disabled_factor > 0 then
-    base_color = Ark.Colors.Desaturate(base_color, M.CONFIG.disabled.desaturate * disabled_factor)
-    base_color = Ark.Colors.AdjustBrightness(base_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
-    playlist_data.chip_color = Ark.Colors.Desaturate(playlist_data.chip_color, M.CONFIG.disabled.desaturate * disabled_factor)
-    playlist_data.chip_color = Ark.Colors.AdjustBrightness(playlist_data.chip_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+    base_color = Colors_Desaturate(base_color, M.CONFIG.disabled.desaturate * disabled_factor)
+    base_color = Colors_AdjustBrightness(base_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+    playlist_data.chip_color = Colors_Desaturate(playlist_data.chip_color, M.CONFIG.disabled.desaturate * disabled_factor)
+    playlist_data.chip_color = Colors_AdjustBrightness(playlist_data.chip_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     local minL = M.CONFIG.disabled.min_lightness or 0.28
     base_color = clamp_min_lightness(base_color, minL)
     playlist_data.chip_color = clamp_min_lightness(playlist_data.chip_color, minL)
@@ -238,7 +318,7 @@ function M.render_playlist(opts)
     
     local name_color = M.CONFIG.playlist_tile.name_color
     if disabled_factor > 0 then
-      name_color = Ark.Colors.AdjustBrightness(name_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+      name_color = Colors_AdjustBrightness(name_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     end
     if (state.hover or state.selected) and not is_disabled then
       name_color = 0xFFFFFFFF
@@ -262,16 +342,16 @@ function M.render_playlist(opts)
     
     local badge_border_color = playlist_data.chip_color
     if disabled_factor > 0 then
-      badge_border_color = Ark.Colors.AdjustBrightness(badge_border_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+      badge_border_color = Colors_AdjustBrightness(badge_border_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     end
     if (state.hover or state.selected) and not is_disabled then
       badge_border_color = playlist_data.chip_color
     end
-    
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Ark.Colors.WithAlpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
-    
+
+    DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors_WithAlpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
+
     -- Use whiter text like active tiles
-    Ark.Draw.Text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Ark.Colors.WithAlpha(0xFFFFFFDD, text_alpha), badge_text)
+    Draw_Text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors_WithAlpha(0xFFFFFFDD, text_alpha), badge_text)
   end
   
   -- Draw playlist duration in bottom right (like regions)
@@ -314,7 +394,7 @@ function M.render_circular_playlist(opts)
   
   local fx_config = TileFXConfig.get()
   local border_color = M.CONFIG.circular.border_color
-  
+
   -- Draw base tile with red border
   BaseRenderer.draw_base_tile(ctx, dl, rect, base_color, fx_config, state, 0, 0, 0, border_color)
   
@@ -362,7 +442,7 @@ function M.render_circular_playlist(opts)
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
     
     local badge_border_color = M.CONFIG.circular.badge_border_color
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Ark.Colors.WithAlpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
+    DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors_WithAlpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
     
     -- Draw lock icon centered in badge
     local lock_x = badge_x + (badge_x2 - badge_x) * 0.5

@@ -76,29 +76,23 @@ local function create_behaviors(rt)
     ['click:right'] = function(grid, key, selected_keys)
       if not rt.on_active_toggle_enabled then return end
 
-      if #selected_keys > 1 then
-        local playlist_items = grid.get_items()
-        local item_map = {}
-        for _, item in ipairs(playlist_items) do
-          item_map[item.key] = item
-        end
+      local playlist_items = grid.get_items()
+      local item_map = {}
+      for _, item in ipairs(playlist_items) do
+        item_map[item.key] = item
+      end
 
-        local clicked_item = item_map[key]
-        if clicked_item then
-          local new_state = not (clicked_item.enabled ~= false)
-          for _, sel_key in ipairs(selected_keys) do
-            rt.on_active_toggle_enabled(sel_key, new_state)
-          end
-        end
+      local clicked_item = item_map[key]
+      if not clicked_item then return end
+
+      local new_state = not (clicked_item.enabled ~= false)
+
+      if #selected_keys > 1 and rt.on_active_toggle_enabled_batch then
+        -- Batch operation: single undo/persist/flatten
+        rt.on_active_toggle_enabled_batch(selected_keys, new_state)
       else
-        local playlist_items = grid.get_items()
-        for _, item in ipairs(playlist_items) do
-          if item.key == key then
-            local new_state = not (item.enabled ~= false)
-            rt.on_active_toggle_enabled(key, new_state)
-            break
-          end
-        end
+        -- Single item
+        rt.on_active_toggle_enabled(key, new_state)
       end
     end,
 
@@ -410,6 +404,7 @@ local function create_render_tile(rt, tile_config)
       hover_config = rt.hover_config,
       tile_height = tile_height,
       border_thickness = tile_config.border_thickness,
+      rounding = rt._active_rounding,
       bridge = rt.app_bridge,
       get_playlist_by_id = rt.get_playlist_by_id,
       grid = grid,
@@ -438,7 +433,7 @@ function M.create_opts(rt, config)
 
   return {
     id = 'active_grid',
-    gap = ActiveTile.CONFIG.gap,
+    gap = rt._active_gap or ActiveTile.CONFIG.gap,
     min_col_w = rt._active_min_col_w_fn or function() return ActiveTile.CONFIG.tile_width end,
     fixed_tile_h = rt._active_tile_height or base_tile_height,
     items = rt._active_items or {},

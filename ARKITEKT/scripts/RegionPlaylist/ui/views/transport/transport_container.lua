@@ -62,6 +62,7 @@ function M.new(opts)
         rounding = cfg.fx and cfg.fx.rounding or 8,
         padding = { left = 0, right = 0 },
         elements = opts.header_elements or {},
+        element_rounding_mode = 'bottom',  -- Transport panel has bottom corners rounded
       },
 
       corner_buttons = cfg.corner_buttons or nil,

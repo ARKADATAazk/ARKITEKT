@@ -273,7 +273,7 @@ local function find_separator_neighbors(elements, separator_index)
   return left_neighbor, right_neighbor
 end
 
-local function calculate_corner_rounding(layout, header_rounding, is_bottom, side)
+local function calculate_corner_rounding(layout, header_rounding, is_bottom, side, default_rounding_mode)
   local rounding_info = {}
 
   local first_idx = find_first_non_separator(layout)
@@ -316,9 +316,9 @@ local function calculate_corner_rounding(layout, header_rounding, is_bottom, sid
         end
       end
 
-      -- Check for rounding_mode override in element config
+      -- Check for rounding_mode override in element config, or use header default
       -- 'top' = force top corners, 'bottom' = force bottom corners, nil = auto
-      local rounding_mode = item.element.config and item.element.config.rounding_mode
+      local rounding_mode = (item.element.config and item.element.config.rounding_mode) or default_rounding_mode
 
       if rounding_mode == 'bottom' then
         -- Force bottom corners (e.g., transport panel buttons)
@@ -425,13 +425,13 @@ local STANDARDIZED_WIDGETS = {
   combo = true,
 }
 
-local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom, valign, side)
+local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom, valign, side, default_rounding_mode)
   if not elements or #elements == 0 then
     return 0
   end
 
   local layout = layout_elements(ctx, elements, width, state)
-  local rounding_info = calculate_corner_rounding(layout, header_rounding, is_bottom, side)
+  local rounding_info = calculate_corner_rounding(layout, header_rounding, is_bottom, side, default_rounding_mode)
 
   local border_overlap = 1
   local cursor_x = x
@@ -595,6 +595,7 @@ function M.Draw(ctx, dl, x, y, width, height, state, config)
 
   local header_rounding = config.rounding or 8
   local is_bottom = config.position == 'bottom'
+  local default_rounding_mode = config.element_rounding_mode  -- 'top', 'bottom', or nil for auto
 
   -- Apply clipping to prevent header elements from overflowing panel bounds
   ImGui.DrawList_PushClipRect(dl, x, y, x + width, y + height, true)
@@ -613,7 +614,7 @@ function M.Draw(ctx, dl, x, y, width, height, state, config)
     local valign = config.valign or 'top'
     -- Pixel snap center position to prevent blurry borders
     local center_x = (content_x + (content_width - center_width) / 2 + 0.5) // 1
-    render_elements(ctx, dl, center_x, content_y, center_width, content_height, center_elements, state, header_rounding, is_bottom, valign, 'full')
+    render_elements(ctx, dl, center_x, content_y, center_width, content_height, center_elements, state, header_rounding, is_bottom, valign, 'full', default_rounding_mode)
 
     -- Draw clip edge borders if content overflows (use actual rendered width, not allocated content_width)
     draw_clip_edge_borders(dl, x, y, width, height, center_x, center_x + center_width)
@@ -639,11 +640,11 @@ function M.Draw(ctx, dl, x, y, width, height, state, config)
     end
 
     -- Render left-aligned elements (only left edge gets outer rounding)
-    render_elements(ctx, dl, content_x, content_y, left_width, content_height, left_elements, state, header_rounding, is_bottom, nil, 'left')
+    render_elements(ctx, dl, content_x, content_y, left_width, content_height, left_elements, state, header_rounding, is_bottom, nil, 'left', default_rounding_mode)
 
     -- Render right-aligned elements (only right edge gets outer rounding)
     local right_x = content_x + content_width - right_width
-    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom, nil, 'right')
+    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom, nil, 'right', default_rounding_mode)
 
     -- Draw clip edge borders if content overflows
     draw_clip_edge_borders(dl, x, y, width, height, content_x, content_x + left_width, right_x, right_x + right_width)
@@ -657,7 +658,7 @@ function M.Draw(ctx, dl, x, y, width, height, state, config)
     end
 
     local right_x = content_x + content_width - right_width
-    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom, nil, 'full')
+    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom, nil, 'full', default_rounding_mode)
 
     -- Draw clip edge borders if content overflows (use actual rendered width)
     draw_clip_edge_borders(dl, x, y, width, height, right_x, right_x + right_width)
@@ -671,7 +672,7 @@ function M.Draw(ctx, dl, x, y, width, height, state, config)
       left_width = left_width + item.width
     end
 
-    render_elements(ctx, dl, content_x, content_y, content_width, content_height, left_elements, state, header_rounding, is_bottom, nil, 'full')
+    render_elements(ctx, dl, content_x, content_y, content_width, content_height, left_elements, state, header_rounding, is_bottom, nil, 'full', default_rounding_mode)
 
     -- Draw clip edge borders if content overflows (use actual rendered width, not allocated content_width)
     draw_clip_edge_borders(dl, x, y, width, height, content_x, content_x + left_width)

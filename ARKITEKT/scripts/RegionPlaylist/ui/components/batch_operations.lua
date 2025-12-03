@@ -17,24 +17,28 @@ function M.separate_active_items(item_keys, get_items_fn)
   local region_items = {}
   local playlist_items = {}
 
+  -- Build lookup map first (O(n) instead of O(n²))
   local items = get_items_fn()
+  local items_by_key = {}
+  for _, item in ipairs(items) do
+    items_by_key[item.key] = item
+  end
+
   for i, key in ipairs(item_keys) do
-    for _, item in ipairs(items) do
-      if item.key == key then
-        if item.type == 'playlist' then
-          playlist_items[#playlist_items + 1] = {
-            index = i,
-            key = key,
-            playlist_id = item.playlist_id
-          }
-        else
-          region_items[#region_items + 1] = {
-            index = i,
-            key = key,
-            rid = item.rid
-          }
-        end
-        break
+    local item = items_by_key[key]
+    if item then
+      if item.type == 'playlist' then
+        playlist_items[#playlist_items + 1] = {
+          index = i,
+          key = key,
+          playlist_id = item.playlist_id
+        }
+      else
+        region_items[#region_items + 1] = {
+          index = i,
+          key = key,
+          rid = item.rid
+        }
       end
     end
   end
@@ -89,9 +93,16 @@ function M.batch_rename(region_items, playlist_items, new_names, controller)
     Regions.set_region_names_batch(0, region_renames)
   end
 
-  -- Rename playlists individually
-  for _, item in ipairs(playlist_items) do
-    controller:rename_playlist(item.playlist_id, new_names[item.index])
+  -- Batch rename playlists
+  if #playlist_items > 0 then
+    local playlist_renames = {}
+    for _, item in ipairs(playlist_items) do
+      playlist_renames[#playlist_renames + 1] = {
+        id = item.playlist_id,
+        name = new_names[item.index]
+      }
+    end
+    controller:rename_playlists_batch(playlist_renames)
   end
 end
 
@@ -106,9 +117,13 @@ function M.batch_recolor(region_items, playlist_items, color, controller)
     controller:set_region_colors_batch(rids, color)
   end
 
-  -- Recolor playlists individually
-  for _, item in ipairs(playlist_items) do
-    controller:set_playlist_color(item.playlist_id, color)
+  -- Batch recolor playlists
+  if #playlist_items > 0 then
+    local playlist_ids = {}
+    for _, item in ipairs(playlist_items) do
+      playlist_ids[#playlist_ids + 1] = item.playlist_id
+    end
+    controller:set_playlist_colors_batch(playlist_ids, color)
   end
 end
 
