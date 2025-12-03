@@ -27,20 +27,17 @@ end
 
 -- Draw a crisp rectangle (pixel-aligned)
 function M.Rect(dl, x1, y1, x2, y2, color, rounding, thickness)
+  thickness = thickness or 1
+  rounding = rounding or 0
+
+  -- Snap to integers
   x1 = M.Snap(x1)
   y1 = M.Snap(y1)
   x2 = M.Snap(x2)
   y2 = M.Snap(y2)
-  thickness = thickness or 1
-  rounding = rounding or 0
 
-  -- Offset by 0.5 for crisp 1px lines
-  if thickness == 1 then
-    ImGui.DrawList_AddRect(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5,
-                                  color, rounding, 0, thickness)
-  else
-    ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, color, rounding, 0, thickness)
-  end
+  -- Just pass through - no offset manipulation
+  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, color, rounding, 0, thickness)
 end
 
 -- Draw a filled rectangle (pixel-aligned)
