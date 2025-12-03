@@ -184,7 +184,7 @@ function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data
   local start_cursor_x, start_cursor_y = ImGui.GetCursorScreenPos(ctx)
 
   -- Ensure content_h is valid to prevent BeginChild/EndChild errors
-  local safe_content_h = math.max(1, content_h or 1)
+  local safe_content_h = max(1, content_h or 1)
 
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
@@ -228,7 +228,7 @@ function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data
   ImGui.SetCursorScreenPos(ctx, start_cursor_x + active_width + separator_gap, start_cursor_y)
 
   -- Ensure content_h is valid to prevent BeginChild/EndChild errors
-  local safe_content_h = math.max(1, content_h or 1)
+  local safe_content_h = max(1, content_h or 1)
 
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 

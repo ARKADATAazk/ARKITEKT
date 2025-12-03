@@ -241,15 +241,14 @@ local function create_behaviors(rt)
         local active_items = rt.active_grid.get_items()
         local active_selected_keys = rt.active_grid.selection:selected_keys()
 
-        for _, key in ipairs(active_selected_keys) do
-          local item = nil
-          for _, it in ipairs(active_items) do
-            if it.key == key then
-              item = it
-              break
-            end
-          end
+        -- Build lookup map first (O(n) instead of O(n²))
+        local items_by_key = {}
+        for _, it in ipairs(active_items) do
+          items_by_key[it.key] = it
+        end
 
+        for _, key in ipairs(active_selected_keys) do
+          local item = items_by_key[key]
           if item then
             if item.playlist_id then
               active_selection_info.playlist_count = active_selection_info.playlist_count + 1
@@ -315,6 +314,7 @@ local function create_render_tile(rt, tile_config)
       hover_config = rt.hover_config,
       tile_height = tile_height,
       border_thickness = tile_config.border_thickness,
+      rounding = rt._pool_rounding,
       grid = grid,
     })
   end

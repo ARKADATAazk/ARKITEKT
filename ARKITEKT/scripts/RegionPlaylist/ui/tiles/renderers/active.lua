@@ -7,12 +7,78 @@ local Ark = require('arkitekt')
 
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 local BaseRenderer = require('RegionPlaylist.ui.tiles.renderers.base')
+local State = require('RegionPlaylist.app.state')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
+local time_precise = reaper.time_precise
+
+-- Performance: Localize ImGui/Ark functions
+local CalcTextSize = ImGui.CalcTextSize
+local DrawList_AddRectFilled = ImGui.DrawList_AddRectFilled
+local DrawList_AddRect = ImGui.DrawList_AddRect
+local SetCursorScreenPos = ImGui.SetCursorScreenPos
+local InvisibleButton = ImGui.InvisibleButton
+local IsItemClicked = ImGui.IsItemClicked
+local Colors_WithAlpha = Ark.Colors.WithAlpha
+local Colors_Desaturate = Ark.Colors.Desaturate
+local Colors_AdjustBrightness = Ark.Colors.AdjustBrightness
+local Colors_Luminance = Ark.Colors.Luminance
+local Draw_Text = Ark.Draw.Text
 
 local M = {}
+
+-- ============================================================================
+-- PROFILING (set to true to enable, check REAPER console for output)
+-- ============================================================================
+local PROFILE_ENABLED = true
+local _profile = {
+  animator = 0,
+  color = 0,
+  fx_config = 0,
+  playback = 0,
+  base_tile = 0,
+  text = 0,
+  badge = 0,
+  length = 0,
+  count = 0,
+  last_report = 0,
+}
+
+local function profile_report()
+  if not PROFILE_ENABLED then return end
+  local now = time_precise()
+  if now - _profile.last_report > 1.0 then
+    reaper.ShowConsoleMsg(string.format(
+      '[ACTIVE] %d tiles | anim:%.1fms | color:%.1fms | fx:%.1fms | playback:%.1fms | base:%.1fms | text:%.1fms | badge:%.1fms | len:%.1fms\n',
+      _profile.count,
+      _profile.animator * 1000,
+      _profile.color * 1000,
+      _profile.fx_config * 1000,
+      _profile.playback * 1000,
+      _profile.base_tile * 1000,
+      _profile.text * 1000,
+      _profile.badge * 1000,
+      _profile.length * 1000
+    ))
+    -- Reset
+    _profile.animator = 0
+    _profile.color = 0
+    _profile.fx_config = 0
+    _profile.playback = 0
+    _profile.base_tile = 0
+    _profile.text = 0
+    _profile.badge = 0
+    _profile.length = 0
+    _profile.count = 0
+    _profile.last_report = now
+  end
+end
 M.CONFIG = {
+  -- Grid layout
+  tile_width = 110,
+  gap = 12,
+  -- Appearance
   bg_base = 0x1A1A1AFF,
   badge_rounding = 4,
   badge_padding_x = 6,
@@ -21,20 +87,22 @@ M.CONFIG = {
   badge_bg = 0x14181CFF,
   badge_border_alpha = 0x33,
   disabled = { desaturate = 0.8, brightness = 0.4, min_alpha = 0x33, fade_speed = 20.0, min_lightness = 0.28 },
-  responsive = { hide_length_below = 35, hide_badge_below = 25, hide_text_below = 15 }, -- UPDATED
+  responsive = { hide_length_below = 50, hide_badge_below = 25, hide_text_below = 15 },
   playlist_tile = { base_color = 0x3A3A3AFF },
   text_margin_right = 6,
   badge_nudge_x = 0,
   badge_nudge_y = 0,
   badge_text_nudge_x = -1,
   badge_text_nudge_y = -1,
+  -- Spawn animation
+  spawn = { enabled = true, duration = 0.25, scale_start = 0.8 },
 }
 
 local function clamp_min_lightness(color, min_l)
-  local lum = Ark.Colors.Luminance(color)
+  local lum = Colors_Luminance(color)
   if lum < (min_l or 0) then
     local factor = (min_l + 0.001) / max(lum, 0.001)
-    return Ark.Colors.AdjustBrightness(color, factor)
+    return Colors_AdjustBrightness(color, factor)
   end
   return color
 end
@@ -65,6 +133,8 @@ end
 --- Render region tile
 --- @param opts table Render options (same as M.render)
 function M.render_region(opts)
+  local t0 = PROFILE_ENABLED and time_precise() or 0
+
   local ctx = opts.ctx
   local rect = opts.rect
   local item = opts.item
@@ -81,23 +151,29 @@ function M.render_region(opts)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local region = get_region_by_rid(item.rid)
   if not region then return end
-  
+
   local is_enabled = item.enabled ~= false
   animator:track(item.key, 'hover', state.hover and 1.0 or 0.0, hover_config and hover_config.animation_speed_hover or 12.0)
   animator:track(item.key, 'enabled', is_enabled and 1.0 or 0.0, M.CONFIG.disabled.fade_speed)
   local hover_factor = animator:get(item.key, 'hover')
   local enabled_factor = animator:get(item.key, 'enabled')
-  
+
+  local t1 = PROFILE_ENABLED and time_precise() or 0
+
   local base_color = region.color or M.CONFIG.bg_base
   if enabled_factor < 1.0 then
-    base_color = Ark.Colors.Desaturate(base_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
-    base_color = Ark.Colors.AdjustBrightness(base_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
+    base_color = Colors_Desaturate(base_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
+    base_color = Colors_AdjustBrightness(base_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
     base_color = clamp_min_lightness(base_color, M.CONFIG.disabled.min_lightness or 0.28)
   end
-  
+
+  local t2 = PROFILE_ENABLED and time_precise() or 0
+
   local fx_config = TileFXConfig.get()
   fx_config.border_thickness = border_thickness or 1.0
-  
+
+  local t3 = PROFILE_ENABLED and time_precise() or 0
+
   local playback_progress, playback_fade = 0, 0
   if bridge and bridge:get_state().is_playing then
     local current_key = bridge:get_current_item_key()
@@ -127,54 +203,78 @@ function M.render_region(opts)
     playback_fade = animator:get(item.key, 'progress_fade')
   end
   
+  local t4 = PROFILE_ENABLED and time_precise() or 0
+
   BaseRenderer.draw_base_tile(ctx, dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade)
   if state.selected and fx_config.ants_enabled then BaseRenderer.draw_marching_ants(dl, rect, base_color, fx_config) end
+
+  local t5 = PROFILE_ENABLED and time_precise() or 0
 
   local actual_height = tile_height or (y2 - y1)
   local show_text = actual_height >= M.CONFIG.responsive.hide_text_below
   local show_badge = actual_height >= M.CONFIG.responsive.hide_badge_below
   local show_length = actual_height >= M.CONFIG.responsive.hide_length_below
   local text_alpha = (0xFF * enabled_factor + M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))//1
-  
+
   local right_elements = {}
-  
+
+  -- Pre-compute badge dimensions once (used for text bounds and badge rendering)
+  local badge_text, bw, bh
   if show_badge then
-    local badge_text = (item.reps == 0) and '∞' or ('×' .. (item.reps or 1))
-    local bw, _ = ImGui.CalcTextSize(ctx, badge_text)
+    local reps = item.reps or 1
+    badge_text = (reps == 0) and '∞' or ('×' .. reps)
+    bw, bh = CalcTextSize(ctx, badge_text)
+    bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
     right_elements[#right_elements + 1] = BaseRenderer.create_element(
       true,
-      (bw * BaseRenderer.CONFIG.badge_font_scale) + (M.CONFIG.badge_padding_x * 2),
+      bw + (M.CONFIG.badge_padding_x * 2),
       M.CONFIG.badge_margin
     )
   end
-  
+
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
     local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
     BaseRenderer.draw_region_text(ctx, dl, text_pos, region, base_color, text_alpha, right_bound_x, grid, rect, item.key)
   end
-  
+
+  local t6 = PROFILE_ENABLED and time_precise() or 0
+
   if show_badge then
-    local reps = item.reps or 1
-    local badge_text = (reps == 0) and '∞' or ('×' .. reps)
-    local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
-    bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
+    -- badge_text, bw, bh already computed above
     local badge_height = bh + M.CONFIG.badge_padding_y * 2
     local badge_x = x2 - bw - M.CONFIG.badge_padding_x * 2 - M.CONFIG.badge_margin
     local badge_y = BaseRenderer.calculate_badge_position(ctx, rect, badge_height, actual_height)
     local badge_x2, badge_y2 = badge_x + bw + M.CONFIG.badge_padding_x * 2, badge_y + bh + M.CONFIG.badge_padding_y * 2
     local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | ((((M.CONFIG.badge_bg & 0xFF) * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor)))//1)
-    
-    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Ark.Colors.WithAlpha(base_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
-    Ark.Draw.Text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Ark.Colors.WithAlpha(0xFFFFFFDD, text_alpha), badge_text)
-    
-    ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
-    ImGui.InvisibleButton(ctx, '##badge_' .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
-    if ImGui.IsItemClicked(ctx, 0) and on_repeat_cycle then on_repeat_cycle(item.key) end
+
+    DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
+    DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors_WithAlpha(base_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
+    Draw_Text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors_WithAlpha(0xFFFFFFDD, text_alpha), badge_text)
+
+    SetCursorScreenPos(ctx, badge_x, badge_y)
+    InvisibleButton(ctx, '##badge_' .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
+    if IsItemClicked(ctx, 0) and on_repeat_cycle then on_repeat_cycle(item.key) end
   end
-  
+
+  local t7 = PROFILE_ENABLED and time_precise() or 0
+
   if show_length then BaseRenderer.draw_length_display(ctx, dl, rect, region, base_color, text_alpha) end
+
+  -- Profiling accumulation
+  if PROFILE_ENABLED then
+    local t8 = time_precise()
+    _profile.animator = _profile.animator + (t1 - t0)
+    _profile.color = _profile.color + (t2 - t1)
+    _profile.fx_config = _profile.fx_config + (t3 - t2)
+    _profile.playback = _profile.playback + (t4 - t3)
+    _profile.base_tile = _profile.base_tile + (t5 - t4)
+    _profile.text = _profile.text + (t6 - t5)
+    _profile.badge = _profile.badge + (t7 - t6)
+    _profile.length = _profile.length + (t8 - t7)
+    _profile.count = _profile.count + 1
+    profile_report()
+  end
 end
 
 --- Render playlist tile
@@ -197,26 +297,22 @@ function M.render_playlist(opts)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local playlist = get_playlist_by_id and get_playlist_by_id(item.playlist_id) or {}
   
-  -- Calculate total duration if playlist has items (in beat positions)
-  local total_duration = 0
-  if playlist.items and bridge then
-    local State = require('RegionPlaylist.app.state')
-    -- Calculate duration from region beat positions
+  -- Use cached duration from playlist if available, otherwise calculate
+  -- Note: Duration should ideally be cached on playlist when items change
+  local total_duration = playlist.cached_duration or 0
+  if total_duration == 0 and playlist.items then
+    -- Fallback: calculate duration (consider caching this in data layer)
     for _, pl_item in ipairs(playlist.items) do
       local item_type = pl_item.type or 'region'
       local rid = pl_item.rid
-      
+
       if item_type == 'region' and rid then
         local region = State.get_region_by_rid(rid)
         if region then
-          -- region.start and region['end'] are in beat positions
           local duration = (region['end'] or 0) - (region.start or 0)
           local repeats = pl_item.reps or 1
           total_duration = total_duration + (duration * repeats)
         end
-      elseif item_type == 'playlist' and pl_item.playlist_id then
-        -- For nested playlists, we'd need recursive calculation
-        -- For now, skip nested duration calculation in active view
       end
     end
   end
@@ -236,13 +332,13 @@ function M.render_playlist(opts)
 
   local base_color = M.CONFIG.playlist_tile.base_color
   local chip_color = playlist_data.chip_color
-  
+
   -- Apply disabled state to both base and chip color
   if enabled_factor < 1.0 then
-    base_color = Ark.Colors.Desaturate(base_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
-    base_color = Ark.Colors.AdjustBrightness(base_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
-    chip_color = Ark.Colors.Desaturate(chip_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
-    chip_color = Ark.Colors.AdjustBrightness(chip_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
+    base_color = Colors_Desaturate(base_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
+    base_color = Colors_AdjustBrightness(base_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
+    chip_color = Colors_Desaturate(chip_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
+    chip_color = Colors_AdjustBrightness(chip_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
     local minL = M.CONFIG.disabled.min_lightness or 0.28
     base_color = clamp_min_lightness(base_color, minL)
     chip_color = clamp_min_lightness(chip_color, minL)
@@ -296,18 +392,21 @@ function M.render_playlist(opts)
   local text_alpha = (0xFF * enabled_factor + M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))//1
 
   local right_elements = {}
-  
+
+  -- Pre-compute badge dimensions once (used for text bounds and badge rendering)
+  local badge_text, bw, bh
   if show_badge then
     local reps = item.reps or 1
-    local badge_text = (reps == 0) and ('∞ [' .. playlist_data.item_count .. ']') or ('×' .. reps .. ' [' .. playlist_data.item_count .. ']')
-    local bw, _ = ImGui.CalcTextSize(ctx, badge_text)
+    badge_text = (reps == 0) and ('∞ [' .. playlist_data.item_count .. ']') or ('×' .. reps .. ' [' .. playlist_data.item_count .. ']')
+    bw, bh = CalcTextSize(ctx, badge_text)
+    bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
     right_elements[#right_elements + 1] = BaseRenderer.create_element(
       true,
-      (bw * BaseRenderer.CONFIG.badge_font_scale) + (M.CONFIG.badge_padding_x * 2),
+      bw + (M.CONFIG.badge_padding_x * 2),
       M.CONFIG.badge_margin
     )
   end
-  
+
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
     local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
@@ -315,23 +414,20 @@ function M.render_playlist(opts)
   end
 
   if show_badge then
-    local reps = item.reps or 1
-    local badge_text = (reps == 0) and ('∞ [' .. playlist_data.item_count .. ']') or ('×' .. reps .. ' [' .. playlist_data.item_count .. ']')
-    local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
-    bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
+    -- badge_text, bw, bh already computed above
     local badge_height = bh + M.CONFIG.badge_padding_y * 2
     local badge_x = x2 - bw - M.CONFIG.badge_padding_x * 2 - M.CONFIG.badge_margin
     local badge_y = BaseRenderer.calculate_badge_position(ctx, rect, badge_height, actual_height)
     local badge_x2, badge_y2 = badge_x + bw + M.CONFIG.badge_padding_x * 2, badge_y + bh + M.CONFIG.badge_padding_y * 2
     local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | ((((M.CONFIG.badge_bg & 0xFF) * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor)))//1)
 
-    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Ark.Colors.WithAlpha(playlist_data.chip_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
-    Ark.Draw.Text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Ark.Colors.WithAlpha(0xFFFFFFDD, text_alpha), badge_text)
-    
-    ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
-    ImGui.InvisibleButton(ctx, '##badge_' .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
-    if ImGui.IsItemClicked(ctx, 0) and on_repeat_cycle then on_repeat_cycle(item.key) end
+    DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
+    DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors_WithAlpha(playlist_data.chip_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
+    Draw_Text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors_WithAlpha(0xFFFFFFDD, text_alpha), badge_text)
+
+    SetCursorScreenPos(ctx, badge_x, badge_y)
+    InvisibleButton(ctx, '##badge_' .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
+    if IsItemClicked(ctx, 0) and on_repeat_cycle then on_repeat_cycle(item.key) end
     
     -- Enhanced tooltip with playback info
     if ImGui.IsItemHovered(ctx) then

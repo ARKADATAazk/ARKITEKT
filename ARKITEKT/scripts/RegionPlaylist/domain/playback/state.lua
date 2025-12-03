@@ -100,7 +100,7 @@ function State:set_order(new_order)
       local rid = entry.rid
       if rid then
         local reps = tonumber(entry.reps) or 1
-        reps = math.max(1, reps // 1)
+        reps = max(1, reps // 1)
         local key = entry.key
         for loop_index = 1, reps do
           sequence[#sequence + 1] = {
@@ -155,8 +155,8 @@ function State:set_sequence(sequence)
       local normalized = {
         rid = rid,
         item_key = entry.item_key,
-        loop = math.max(1, (entry.loop or 1) // 1),
-        total_loops = math.max(1, (entry.total_loops or 1) // 1),
+        loop = max(1, (entry.loop or 1) // 1),
+        total_loops = max(1, (entry.total_loops or 1) // 1),
       }
       if normalized.loop > normalized.total_loops then
         normalized.loop = normalized.total_loops

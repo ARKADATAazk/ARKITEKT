@@ -125,10 +125,10 @@ function M.render(ctx, opts)
     local is_hovered = ImGui.IsItemHovered(ctx)
 
     -- Create darker border using HSL (reduce lightness for true darker shade)
-    local h, s, l = ColorUtils.rgb_to_hsl(color)
+    local h, s, l = ColorUtils.RgbToHsl(color)
     local darker_l = l * 0.5  -- 50% of original lightness
-    local br, bg, bb = ColorUtils.hsl_to_rgb(h, s, darker_l)
-    local border_col = ColorUtils.components_to_rgba(br, bg, bb, 255)
+    local br, bg, bb = ColorUtils.HslToRgb(h, s, darker_l)
+    local border_col = ColorUtils.ComponentsToRgba(br, bg, bb, 255)
 
     -- Draw chip (no glow - using icon for selection)
     Chip.Draw(ctx, {

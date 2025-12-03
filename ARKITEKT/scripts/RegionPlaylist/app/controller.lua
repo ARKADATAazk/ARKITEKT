@@ -254,6 +254,35 @@ function Controller:set_playlist_color(id, color)
   end)
 end
 
+--- Batch rename multiple playlists in a single operation
+--- @param renames table Array of {id, name} pairs
+function Controller:rename_playlists_batch(renames)
+  return self:_with_undo(function()
+    for _, rename in ipairs(renames) do
+      local playlist = self:_get_playlist(rename.id)
+      if playlist then
+        playlist.name = rename.name or playlist.name
+      end
+    end
+    return true
+  end)
+end
+
+--- Batch set color for multiple playlists in a single operation
+--- @param playlist_ids table Array of playlist IDs
+--- @param color number Color value
+function Controller:set_playlist_colors_batch(playlist_ids, color)
+  return self:_with_undo(function()
+    for _, id in ipairs(playlist_ids) do
+      local playlist = self:_get_playlist(id)
+      if playlist then
+        playlist.chip_color = color or nil
+      end
+    end
+    return true
+  end)
+end
+
 function Controller:set_region_color(rid, color)
   local Regions = require('arkitekt.reaper.regions')
 
@@ -449,6 +478,64 @@ function Controller:add_items_batch(playlist_id, rids, insert_index)
   end)
 end
 
+--- Add multiple items (regions and/or playlists) in a single batch operation
+--- @param playlist_id string Target playlist ID
+--- @param items table Array of {type='region', rid=N} or {type='playlist', playlist_id=ID}
+--- @param insert_index number Starting insertion index
+--- @return boolean, table Success flag and array of new item keys
+function Controller:add_mixed_items_batch(playlist_id, items, insert_index)
+  return self:_with_undo(function()
+    local pl = self:_get_playlist(playlist_id)
+    if not pl then
+      error('Playlist not found')
+    end
+
+    local keys = {}
+    local idx = insert_index or (#pl.items + 1)
+
+    for i, item_data in ipairs(items) do
+      local new_item
+
+      if item_data.type == 'playlist' then
+        -- Playlist item
+        local source_pl = self:_get_playlist(item_data.playlist_id)
+        if source_pl then
+          new_item = {
+            type = 'playlist',
+            playlist_id = item_data.playlist_id,
+            reps = 1,
+            enabled = true,
+            key = self:_generate_item_key(),
+          }
+        end
+      else
+        -- Region item
+        local rid = item_data.rid
+        local region = self.state.get_region_by_rid(rid)
+        local guid = region and region.guid or nil
+        local region_name = region and region.name or nil
+
+        new_item = {
+          type = 'region',
+          rid = rid,
+          guid = guid,
+          region_name = region_name,
+          reps = 1,
+          enabled = true,
+          key = self:_generate_item_key(),
+        }
+      end
+
+      if new_item then
+        table.insert(pl.items, idx + i - 1, new_item)
+        keys[#keys + 1] = new_item.key
+      end
+    end
+
+    return keys
+  end)
+end
+
 function Controller:copy_items(playlist_id, items, insert_index)
   return self:_with_undo(function()
     local pl = self:_get_playlist(playlist_id)
@@ -529,11 +616,31 @@ function Controller:toggle_item_enabled(playlist_id, item_key, enabled)
     if not pl then
       error('Playlist not found')
     end
-    
+
     for _, item in ipairs(pl.items) do
       if item.key == item_key then
         item.enabled = enabled
         return
+      end
+    end
+  end)
+end
+
+function Controller:toggle_items_enabled(playlist_id, item_keys, enabled)
+  return self:_with_undo(function()
+    local pl = self:_get_playlist(playlist_id)
+    if not pl then
+      error('Playlist not found')
+    end
+
+    local keys_set = {}
+    for _, k in ipairs(item_keys) do
+      keys_set[k] = true
+    end
+
+    for _, item in ipairs(pl.items) do
+      if keys_set[item.key] then
+        item.enabled = enabled
       end
     end
   end)

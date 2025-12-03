@@ -170,7 +170,7 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   
   local text_line_h = ImGui.CalcTextSize(ctx, 'Tg')
   
-  local row_height = math.max(text_line_h, time_h)
+  local row_height = max(text_line_h, time_h)
   
   local row_y = content_top + ((content_bottom - content_top) - row_height) / 2 + LC.content_vertical_offset
 

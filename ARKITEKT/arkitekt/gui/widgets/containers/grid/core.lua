@@ -1355,7 +1355,10 @@ local function _update_grid_from_opts(grid, opts)
     grid.behaviors = opts.behaviors
   end
 
-  -- Update layout parameters (may change per-frame for resize shortcuts)
+  -- Update layout parameters (may change per-frame for responsive sizing)
+  if opts.gap ~= nil then
+    grid.gap = opts.gap
+  end
   if opts.fixed_tile_h ~= nil then
     grid.fixed_tile_h = opts.fixed_tile_h
     -- Also update the function version if it's not already a function
@@ -1365,6 +1368,29 @@ local function _update_grid_from_opts(grid, opts)
   end
   if opts.min_col_w ~= nil then
     grid.min_col_w = opts.min_col_w
+  end
+  if opts.extend_input_area ~= nil then
+    grid.extend_input_area = opts.extend_input_area
+  end
+
+  -- Update drag/drop configuration
+  if opts.external_drag_check ~= nil then
+    grid.external_drag_check = opts.external_drag_check
+  end
+  if opts.is_copy_mode_check ~= nil then
+    grid.is_copy_mode_check = opts.is_copy_mode_check
+  end
+  if opts.accept_external_drops ~= nil then
+    grid.accept_external_drops = opts.accept_external_drops
+  end
+  if opts.on_external_drop ~= nil then
+    grid.on_external_drop = opts.on_external_drop
+  end
+  if opts.on_click_empty ~= nil then
+    grid.on_click_empty = opts.on_click_empty
+  end
+  if opts.disable_background_clicks ~= nil then
+    grid.disable_background_clicks = opts.disable_background_clicks
   end
 
   -- Update feature flags

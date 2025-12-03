@@ -291,42 +291,55 @@ function M.new(Coordinator, opts)
 
     on_cross_grid_drop = function(drop_info)
       if drop_info.source_grid == 'pool' and drop_info.target_grid == 'active' then
-        local spawned_keys = {}
         local insert_index = drop_info.insert_index
+        local active_playlist_id = rt.active_container:get_active_tab_id()
+
+        -- Build batch of items to add (filtering out circular refs)
+        local items_to_add = {}
+        local had_circular_error = false
 
         for _, item_data in ipairs(drop_info.payload) do
-          local new_key = nil
-
           if type(item_data) == 'number' then
-            if rt.on_pool_to_active then
-              new_key = rt.on_pool_to_active(item_data, insert_index)
-            end
+            -- Region
+            items_to_add[#items_to_add + 1] = { type = 'region', rid = item_data }
           elseif type(item_data) == 'table' and item_data.type == 'playlist' then
-            local active_playlist_id = rt.active_container:get_active_tab_id()
-
+            -- Check for circular reference before adding
             if rt.detect_circular_ref then
               local circular, path = rt.detect_circular_ref(active_playlist_id, item_data.id)
               if circular then
-                -- Set error in status bar and skip
+                had_circular_error = true
                 if rt.State and rt.State.set_circular_dependency_error then
                   rt.State.set_circular_dependency_error('Cannot add playlist - would create circular dependency')
                 end
-                goto continue_loop
+                -- Skip this playlist but continue with others
+              else
+                items_to_add[#items_to_add + 1] = { type = 'playlist', playlist_id = item_data.id }
+              end
+            else
+              items_to_add[#items_to_add + 1] = { type = 'playlist', playlist_id = item_data.id }
+            end
+          end
+        end
+
+        -- Batch add all items in single operation
+        local spawned_keys = {}
+        if #items_to_add > 0 then
+          if rt.on_pool_to_active_batch then
+            spawned_keys = rt.on_pool_to_active_batch(items_to_add, insert_index)
+          else
+            -- Fallback to individual adds (legacy support)
+            for i, item_data in ipairs(items_to_add) do
+              local new_key
+              if item_data.type == 'region' and rt.on_pool_to_active then
+                new_key = rt.on_pool_to_active(item_data.rid, insert_index + i - 1)
+              elseif item_data.type == 'playlist' and rt.on_pool_playlist_to_active then
+                new_key = rt.on_pool_playlist_to_active(item_data.playlist_id, insert_index + i - 1)
+              end
+              if new_key then
+                spawned_keys[#spawned_keys + 1] = new_key
               end
             end
-
-            if rt.on_pool_playlist_to_active then
-              new_key = rt.on_pool_playlist_to_active(item_data.id, insert_index)
-            end
           end
-
-          if new_key then
-            spawned_keys[#spawned_keys + 1] = new_key
-          end
-
-          insert_index = insert_index + 1
-
-          ::continue_loop::
         end
 
         if #spawned_keys > 0 then

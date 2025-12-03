@@ -9,6 +9,17 @@ local min = math.min
 
 local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
+
+-- Performance: Localize ImGui functions (significant in hot loops)
+local DrawList_AddText = ImGui.DrawList_AddText
+local DrawList_AddRect = ImGui.DrawList_AddRect
+local DrawList_AddRectFilled = ImGui.DrawList_AddRectFilled
+local DrawList_AddLine = ImGui.DrawList_AddLine
+local DrawList_PushClipRect = ImGui.DrawList_PushClipRect
+local DrawList_PopClipRect = ImGui.DrawList_PopClipRect
+local CalcTextSize = ImGui.CalcTextSize
+local GetWindowDrawList = ImGui.GetWindowDrawList
+
 local M = {}
 
 -- Snap to pixel boundary for crisp rendering
@@ -18,60 +29,51 @@ end
 
 -- Draw centered text within a rectangle
 function M.CenteredText(ctx, text, x1, y1, x2, y2, color)
-  local dl = ImGui.GetWindowDrawList(ctx)
-  local tw, th = ImGui.CalcTextSize(ctx, text)
+  local dl = GetWindowDrawList(ctx)
+  local tw, th = CalcTextSize(ctx, text)
   local cx = x1 + ((x2 - x1 - tw)//1 * 0.5)
   local cy = y1 + ((y2 - y1 - th)//1 * 0.5)
-  ImGui.DrawList_AddText(dl, cx, cy, color or 0xFFFFFFFF, text)
+  DrawList_AddText(dl, cx, cy, color or 0xFFFFFFFF, text)
 end
 
 -- Draw a crisp rectangle (pixel-aligned)
 function M.Rect(dl, x1, y1, x2, y2, color, rounding, thickness)
-  x1 = M.Snap(x1)
-  y1 = M.Snap(y1)
-  x2 = M.Snap(x2)
-  y2 = M.Snap(y2)
+  x1 = (x1 + 0.5)//1
+  y1 = (y1 + 0.5)//1
+  x2 = (x2 + 0.5)//1
+  y2 = (y2 + 0.5)//1
   thickness = thickness or 1
   rounding = rounding or 0
 
   -- Offset by 0.5 for crisp 1px lines
   if thickness == 1 then
-    ImGui.DrawList_AddRect(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5,
-                                  color, rounding, 0, thickness)
+    DrawList_AddRect(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5,
+                     color, rounding, 0, thickness)
   else
-    ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, color, rounding, 0, thickness)
+    DrawList_AddRect(dl, x1, y1, x2, y2, color, rounding, 0, thickness)
   end
 end
 
 -- Draw a filled rectangle (pixel-aligned)
 function M.RectFilled(dl, x1, y1, x2, y2, color, rounding)
-  x1 = M.Snap(x1)
-  y1 = M.Snap(y1)
-  x2 = M.Snap(x2)
-  y2 = M.Snap(y2)
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, color, rounding or 0)
+  DrawList_AddRectFilled(dl, (x1 + 0.5)//1, (y1 + 0.5)//1, (x2 + 0.5)//1, (y2 + 0.5)//1, color, rounding or 0)
 end
 
 -- Draw a crisp line (pixel-aligned)
 function M.Line(dl, x1, y1, x2, y2, color, thickness)
-  x1 = M.Snap(x1)
-  y1 = M.Snap(y1)
-  x2 = M.Snap(x2)
-  y2 = M.Snap(y2)
-  thickness = thickness or 1
-  ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, color, thickness)
+  DrawList_AddLine(dl, (x1 + 0.5)//1, (y1 + 0.5)//1, (x2 + 0.5)//1, (y2 + 0.5)//1, color, thickness or 1)
 end
 
--- Draw left-aligned text
+-- Draw left-aligned text (hot path - inlined snap)
 function M.Text(dl, x, y, color, text)
-  ImGui.DrawList_AddText(dl, M.Snap(x), M.Snap(y), color, text or '')
+  DrawList_AddText(dl, (x + 0.5)//1, (y + 0.5)//1, color, text or '')
 end
 
 -- Draw right-aligned text
 function M.TextRight(ctx, x, y, color, text)
-  local dl = ImGui.GetWindowDrawList(ctx)
-  local tw = select(1, ImGui.CalcTextSize(ctx, text))
-  ImGui.DrawList_AddText(dl, M.Snap(x - tw), M.Snap(y), color, text or '')
+  local dl = GetWindowDrawList(ctx)
+  local tw = CalcTextSize(ctx, text)
+  DrawList_AddText(dl, ((x - tw) + 0.5)//1, (y + 0.5)//1, color, text or '')
 end
 
 -- Check if point is in rectangle
@@ -98,19 +100,20 @@ end
 
 -- Create a clipped text helper (for tab labels etc)
 function M.TextClipped(ctx, text, x, y, max_width, color)
-  local dl = ImGui.GetWindowDrawList(ctx)
-  local tw, th = ImGui.CalcTextSize(ctx, text)
+  local dl = GetWindowDrawList(ctx)
+  local tw, th = CalcTextSize(ctx, text)
+  local snap_x = (x + 0.5)//1
+  local snap_y = (y + 0.5)//1
 
   if tw <= max_width then
     -- Text fits, no clipping needed
-    ImGui.DrawList_AddText(dl, M.Snap(x), M.Snap(y), color, text)
+    DrawList_AddText(dl, snap_x, snap_y, color, text)
   else
     -- Clip text
-    local clip_x1 = M.Snap(x)
-    local clip_x2 = M.Snap(x + max_width)
-    ImGui.DrawList_PushClipRect(dl, clip_x1, y - 2, clip_x2, y + th + 2, true)
-    ImGui.DrawList_AddText(dl, M.Snap(x), M.Snap(y), color, text)
-    ImGui.DrawList_PopClipRect(dl)
+    local clip_x2 = ((x + max_width) + 0.5)//1
+    DrawList_PushClipRect(dl, snap_x, y - 2, clip_x2, y + th + 2, true)
+    DrawList_AddText(dl, snap_x, snap_y, color, text)
+    DrawList_PopClipRect(dl)
   end
 end
 

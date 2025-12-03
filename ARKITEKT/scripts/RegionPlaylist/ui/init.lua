@@ -121,7 +121,11 @@ function M.create(State, AppConfig, settings)
     on_active_toggle_enabled = function(item_key, new_state)
       self.controller:toggle_item_enabled(State.get_active_playlist_id(), item_key, new_state)
     end,
-    
+
+    on_active_toggle_enabled_batch = function(item_keys, new_state)
+      self.controller:toggle_items_enabled(State.get_active_playlist_id(), item_keys, new_state)
+    end,
+
     on_active_delete = function(item_keys)
       self.controller:delete_items(State.get_active_playlist_id(), item_keys)
       for _, key in ipairs(item_keys) do
@@ -239,7 +243,13 @@ function M.create(State, AppConfig, settings)
       local success, key = self.controller:add_playlist_item(State.get_active_playlist_id(), playlist_id, insert_index)
       return success and key or nil
     end,
-    
+
+    -- Batch add: single undo/persist/flatten for multiple items
+    on_pool_to_active_batch = function(items, insert_index)
+      local success, keys = self.controller:add_mixed_items_batch(State.get_active_playlist_id(), items, insert_index)
+      return success and keys or {}
+    end,
+
     on_pool_reorder = function(new_rids)
       State.set_pool_order(new_rids)
       State.persist_ui_prefs()
