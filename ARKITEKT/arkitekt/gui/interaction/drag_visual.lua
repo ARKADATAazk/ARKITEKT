@@ -13,7 +13,7 @@
 --
 -- Original source: Merged from dnd/config.lua, dnd/drag_indicator.lua, dnd/drop_indicator.lua
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.core.theme')

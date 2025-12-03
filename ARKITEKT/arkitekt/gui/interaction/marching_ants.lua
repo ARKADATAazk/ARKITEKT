@@ -2,7 +2,7 @@
 -- Arkitekt/gui/fx/marching_ants.lua
 -- Animated marching ants selection border (optimized with polylines)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

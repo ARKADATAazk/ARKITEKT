@@ -11,7 +11,7 @@
 -- - Drawing simple drop target indicators
 -- - Global drag-drop state coordination
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Colors = require('arkitekt.core.colors')
 local Draw = require('arkitekt.gui.draw.primitives')

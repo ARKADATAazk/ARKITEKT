@@ -2,7 +2,7 @@
 -- Arkitekt/gui/systems/mouse_util.lua
 -- Mouse utilities for differentiating clicks from drags
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 
