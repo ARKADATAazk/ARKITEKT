@@ -385,7 +385,7 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   local bg_color = (r << 24) | (g << 16) | (b << 8) | math.floor(255 * bg_opacity)
 
   -- Border color based on selection
-  local border_color = selected and 0x4A90E2FF or Colors.WithOpacity(0x333344FF, 0.8)
+  local border_color = selected and 0x4A90E2FF or Ark.Colors.WithOpacity(0x333344FF, 0.8)
 
   -- Draw tile background
   local x1, y1 = ImGui.GetCursorScreenPos(ctx)
@@ -398,46 +398,28 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   -- Invisible button for interaction
   ImGui.InvisibleButton(ctx, '##tile_' .. key, TILE_WIDTH, TILE_HEIGHT)
 
-  local clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
+  local left_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
+  local right_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right)
   local hovered = ImGui.IsItemHovered(ctx)
 
-  -- Handle click
-  if clicked then
-    -- Shift+click for multi-select
+  -- Left click = Pin/Unpin
+  if left_clicked then
     if ImGui.IsKeyDown(ctx, ImGui.Mod_Shift) then
+      -- Shift+click for multi-select
       self.selected_assets[key] = not selected
     else
-      -- Toggle include/exclude
-      self:toggle_asset_inclusion(pkg.id, key)
+      -- Toggle pin to this package
+      if is_pinned then
+        self:set_pinned_provider(key, nil)  -- Unpin
+      else
+        self:set_pinned_provider(key, pkg.id)  -- Pin to this package
+      end
     end
   end
 
-  -- Right-click context menu for pin options
-  if ImGui.BeginPopupContextItem(ctx, 'tile_pin_menu_' .. key) then
-    -- Show current pin status
-    if pinned_to then
-      ImGui.TextColored(ctx, 0x888888FF, 'Currently pinned to:')
-      ImGui.TextColored(ctx, is_pinned and 0x4AE290FF or 0xE8A54AFF, pinned_to)
-      ImGui.Separator(ctx)
-    end
-
-    -- Pin options
-    if is_pinned then
-      if ImGui.MenuItem(ctx, 'Unpin from this package') then
-        self:set_pinned_provider(key, nil)
-      end
-    else
-      if ImGui.MenuItem(ctx, 'Pin to this package') then
-        self:set_pinned_provider(key, pkg.id)
-      end
-      if is_pinned_elsewhere then
-        if ImGui.MenuItem(ctx, 'Override pin (take from ' .. pinned_to .. ')') then
-          self:set_pinned_provider(key, pkg.id)
-        end
-      end
-    end
-
-    ImGui.EndPopup(ctx)
+  -- Right click = Exclude/Include
+  if right_clicked then
+    self:toggle_asset_inclusion(pkg.id, key)
   end
 
   -- Draw key name (truncated) - more space for wider tiles
