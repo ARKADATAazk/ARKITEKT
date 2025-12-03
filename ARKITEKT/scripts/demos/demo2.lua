@@ -115,7 +115,7 @@ local function draw(ctx)
   -- HUE SLIDER (no longer affected by saturation/brightness changes)
   ImGui.Text(ctx, 'Hue (0-360°):')
   local changed_h
-  changed_h, hue = Ark.HueSlider.draw_hue(ctx, '##hue_slider', hue, {
+  changed_h, hue = Ark.HueSlider.DrawHue(ctx, '##hue_slider', hue, {
     w = 320,
     h = 20,
   })
@@ -125,7 +125,7 @@ local function draw(ctx)
   -- SATURATION SLIDER (updates when hue changes)
   ImGui.Text(ctx, 'Saturation (0-100%):')
   local changed_s
-  changed_s, saturation = Ark.HueSlider.draw_saturation(ctx, '##sat_slider', saturation, hue, {
+  changed_s, saturation = Ark.HueSlider.DrawSaturation(ctx, '##sat_slider', saturation, hue, {
     w = 320,
     h = 20,
     brightness = brightness,
@@ -136,7 +136,7 @@ local function draw(ctx)
   -- BRIGHTNESS/GAMMA SLIDER (independent)
   ImGui.Text(ctx, 'Brightness (0-100%):')
   local changed_b
-  changed_b, brightness = Ark.HueSlider.draw_gamma(ctx, '##gamma_slider', brightness, {
+  changed_b, brightness = Ark.HueSlider.DrawGamma(ctx, '##gamma_slider', brightness, {
     w = 320,
     h = 20,
   })

@@ -7,7 +7,7 @@ local Slider = require('arkitekt.gui.widgets.primitives.slider')
 
 -- Forward all functions to Slider module
 return {
-  draw_hue = Slider.draw_hue,
-  draw_saturation = Slider.draw_saturation,
-  draw_gamma = Slider.draw_gamma,
+  DrawHue = Slider.DrawHue,
+  DrawSaturation = Slider.DrawSaturation,
+  DrawGamma = Slider.DrawGamma,
 }

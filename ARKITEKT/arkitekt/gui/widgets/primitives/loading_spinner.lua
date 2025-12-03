@@ -96,7 +96,7 @@ end
 --- @param center_x number Center X coordinate
 --- @param center_y number Center Y coordinate
 --- @param opts table Options: size, thickness, color, arc_length, speed
-function M.draw_direct(dl, center_x, center_y, opts)
+function M.DrawDirect(dl, center_x, center_y, opts)
   opts = opts or {}
 
   local size = opts.size or 20

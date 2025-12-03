@@ -42,7 +42,7 @@ function M.draw_favorite_star(ctx, dl, x, y, size, alpha, is_favorite, icon_font
   base_color = base_color or Colors.Hexrgb('#555555')
 
   -- Render using modular badge system
-  Badge.icon(ctx, {
+  Badge.Icon(ctx, {
     draw_list = dl,
     x = x,
     y = y,

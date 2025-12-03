@@ -120,7 +120,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result { x1, y1, x2, y2, width, height }
-function M.icon(ctx, opts)
+function M.Icon(ctx, opts)
   opts = Base.parse_opts(opts, M.DEFAULTS)
   local cfg = merge_config(opts)
 
@@ -169,7 +169,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result { x1, y1, x2, y2, width, height, left_clicked, right_clicked }
-function M.clickable(ctx, opts)
+function M.Clickable(ctx, opts)
   opts = Base.parse_opts(opts, M.DEFAULTS)
 
   -- Render the text badge first
@@ -203,7 +203,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result { x1, y1, x2, y2, width, height }
-function M.favorite(ctx, opts)
+function M.Favorite(ctx, opts)
   opts = Base.parse_opts(opts, M.DEFAULTS)
 
   -- Return empty result if not favorited
@@ -223,7 +223,7 @@ function M.favorite(ctx, opts)
   end
 
   opts.icon = star_char
-  return M.icon(ctx, opts)
+  return M.Icon(ctx, opts)
 end
 
 -- ============================================================================

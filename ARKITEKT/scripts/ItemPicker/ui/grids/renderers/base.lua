@@ -211,7 +211,7 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
   local spinner_color = Ark.Colors.WithAlpha(palette.placeholder_spinner or 0x808080FF, spinner_alpha)
   local thickness = math.max(2, size * 0.2)
 
-  Ark.LoadingSpinner.draw_direct(dl, center_x, center_y, {
+  Ark.LoadingSpinner.DrawDirect(dl, center_x, center_y, {
     size = size,
     thickness = thickness,
     color = spinner_color,

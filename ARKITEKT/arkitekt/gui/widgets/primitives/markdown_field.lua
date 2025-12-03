@@ -284,14 +284,14 @@ end
 --- Check if a field is currently being edited
 -- @param id Field identifier
 -- @return editing True if in edit mode
-function M.is_editing(id)
+function M.IsEditing(id)
   local state = field_state[id]
   return state and state.editing or false
 end
 
 --- Exit edit mode for a field
 -- @param id Field identifier
-function M.exit_edit_mode(id)
+function M.ExitEditMode(id)
   local state = field_state[id]
   if state then
     state.editing = false

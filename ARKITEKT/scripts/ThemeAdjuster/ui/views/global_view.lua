@@ -283,7 +283,7 @@ function GlobalView:draw(ctx, shell_state)
     local changed, new_saturation_normalized = draw_slider_row(
       'Saturation',
       string.format('%d%%', saturation_display),
-      function(c, i, v, o) return Ark.HueSlider.draw_saturation(c, i, v, 210, o) end,
+      function(c, i, v, o) return Ark.HueSlider.DrawSaturation(c, i, v, 210, o) end,
       '##saturation',
       (self.saturation / 512) * 100,  -- Map 0-512 to 0-100
       {default = 50, brightness = 80}  -- 256 is 50% of range

@@ -204,7 +204,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options (must have same id as draw call)
 --- @return boolean True if dragging
-function M.is_dragging(ctx, opts)
+function M.IsDragging(ctx, opts)
   opts = opts or {}
   local unique_id = Base.resolve_id(ctx, opts, 'splitter')
   local instance = instances[unique_id]

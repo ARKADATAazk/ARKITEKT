@@ -480,17 +480,17 @@ end
 M.Gamma = M.Brightness
 
 -- ============================================================================
--- LEGACY API (for compatibility with old hue_slider)
--- Old signature: draw_hue(ctx, id, value, opt) -> changed, new_value
+-- ALTERNATIVE SIGNATURE API
+-- Signature: DrawHue(ctx, id, value, opt) -> changed, new_value
 -- ============================================================================
 
---- Legacy hue slider API (for backwards compatibility)
+--- Hue slider with positional parameters
 --- @param ctx userdata ImGui context
 --- @param id string Slider ID
 --- @param value number Hue value (0-360)
 --- @param opt table|nil Options (w, h, default, saturation, brightness)
 --- @return boolean, number changed, new_value
-function M.draw_hue(ctx, id, value, opt)
+function M.DrawHue(ctx, id, value, opt)
   opt = opt or {}
   local result = M.Hue(ctx, {
     id = id,
@@ -504,14 +504,14 @@ function M.draw_hue(ctx, id, value, opt)
   return result.changed, result.value
 end
 
---- Legacy saturation slider API (for backwards compatibility)
+--- Saturation slider with positional parameters
 --- @param ctx userdata ImGui context
 --- @param id string Slider ID
 --- @param value number Saturation value (0-100)
 --- @param base_hue number|nil Base hue in degrees
 --- @param opt table|nil Options (w, h, default, brightness)
 --- @return boolean, number changed, new_value
-function M.draw_saturation(ctx, id, value, base_hue, opt)
+function M.DrawSaturation(ctx, id, value, base_hue, opt)
   opt = opt or {}
   local result = M.Saturation(ctx, {
     id = id,
@@ -525,13 +525,13 @@ function M.draw_saturation(ctx, id, value, base_hue, opt)
   return result.changed, result.value
 end
 
---- Legacy brightness/gamma slider API (for backwards compatibility)
+--- Brightness/gamma slider with positional parameters
 --- @param ctx userdata ImGui context
 --- @param id string Slider ID
 --- @param value number Brightness value (0-100)
 --- @param opt table|nil Options (w, h, default)
 --- @return boolean, number changed, new_value
-function M.draw_gamma(ctx, id, value, opt)
+function M.DrawGamma(ctx, id, value, opt)
   opt = opt or {}
   local result = M.Brightness(ctx, {
     id = id,
