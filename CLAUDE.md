@@ -72,8 +72,8 @@ For full widget API, see `cookbook/QUICKSTART.md` and `cookbook/WIDGETS.md`.
 |-----------------------------------|--------------------------------------------------|
 | Add/modify a **widget**           | `arkitekt/gui/widgets/[category]/`              |
 | Change **app bootstrap/runtime**  | `arkitekt/runtime/` (shell.lua, chrome/)        |
-| Add **constants/defaults**        | `arkitekt/defs/` or `scripts/[AppName]/defs/`   |
-| Modify **theming**                | `arkitekt/core/theme_manager/`                  |
+| Add **constants/defaults**        | `arkitekt/config/` or `scripts/[AppName]/config/` |
+| Modify **theming**                | `arkitekt/theme/` or `arkitekt/theme/manager/`  |
 | Work on **animations**            | `arkitekt/gui/animation/`                       |
 | Work on **drawing/rendering**     | `arkitekt/gui/draw/` or `arkitekt/gui/renderers/` |
 | Add **interaction handlers**      | `arkitekt/gui/interaction/` (drag-drop, selection, reorder) |
@@ -81,7 +81,8 @@ For full widget API, see `cookbook/QUICKSTART.md` and `cookbook/WIDGETS.md`.
 | Change **font loading**           | `arkitekt/runtime/chrome/fonts.lua`             |
 | Edit a **specific app**           | `scripts/[AppName]/`                            |
 | Add **reusable utilities**        | `arkitekt/core/` (fs, json, settings, etc.)     |
-| Add **platform abstractions**     | `arkitekt/platform/`                            |
+| Add **assets** (fonts, icons)     | `arkitekt/assets/`                              |
+| Add **vendor/external libs**      | `arkitekt/vendor/`                              |
 | Check detailed **guides**         | `cookbook/`                                     |
 | Find **actionable tasks**         | `TODO/`                                         |
 
@@ -91,11 +92,10 @@ For full widget API, see `cookbook/QUICKSTART.md` and `cookbook/WIDGETS.md`.
 app/      # Orchestration, wiring, runtime
 domain/   # Business logic (no ImGui)
 core/     # Reusable utilities (fs/json/settings/math)
-platform/ # ImGui/REAPER abstractions
 storage/  # Persistence logic
 ui/       # Views, components
 widgets/  # Reusable UI elements
-defs/     # Constants & configuration
+config/   # Constants & configuration
 tests/    # Unit tests
 ```
 
@@ -114,7 +114,7 @@ For full workflows, see the corresponding sections in `cookbook/`.
 - Find a similar widget in `arkitekt/gui/widgets/[category]/` and copy its pattern.
 - Single-frame widget → `M.draw(ctx, opts)` returning result.
 - Multi-frame widget → `M.begin_*` / `M.end_*` (ImGui-style).
-- Never hardcode colors/timing; use `arkitekt/defs/*` + `Theme.COLORS`.
+- Never hardcode colors/timing; use `arkitekt/config/*` + `Theme.COLORS`.
 
 ### Fix a Bug
 
@@ -200,7 +200,7 @@ Never do these:
 
 - UI / ImGui calls in `domain/*`.
 - New globals or module-level side effects.
-- Hardcoded magic numbers when a `defs/` constant exists.
+- Hardcoded magic numbers when a `config/` constant exists.
 - Creating new folders just because “it feels cleaner” – check existing structure first.
 - Touching unrelated files “while you’re here”.
 - Re-declaring default config values (colors, padding, rounding, etc.) just to restate defaults.
