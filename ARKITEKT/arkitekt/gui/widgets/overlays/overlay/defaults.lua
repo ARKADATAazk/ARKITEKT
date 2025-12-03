@@ -7,9 +7,9 @@
 -- The overlay will automatically adapt to the current theme.
 
 local Colors = require('arkitekt.core.colors')
-local ConfigUtil = require('arkitekt.core.config')
-local Constants = require('arkitekt.defs.app')
-local Timing = require('arkitekt.defs.timing')
+local ConfigUtil = require('arkitekt.core.merge')
+local Constants = require('arkitekt.config.app')
+local Timing = require('arkitekt.config.timing')
 
 local M = {}
 local hexrgb = Colors.Hexrgb

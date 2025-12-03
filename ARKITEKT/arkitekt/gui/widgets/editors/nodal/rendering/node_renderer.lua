@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/nodal/rendering/node_renderer.lua
 -- Node rendering with dropdown-based trigger targeting
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')

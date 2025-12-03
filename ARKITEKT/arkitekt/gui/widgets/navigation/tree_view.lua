@@ -3,7 +3,7 @@
 -- TreeView widget with ImGui-style hidden state API
 -- Supports inline rename, multi-select, drag-drop, and folder icons
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local IdStack = require('arkitekt.core.id_stack')
 local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')

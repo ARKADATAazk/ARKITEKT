@@ -4,7 +4,7 @@
 -- Opens as a draggable, always-on-top window with hue wheel picker
 -- Changes apply instantly to selected items as you adjust the color
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 

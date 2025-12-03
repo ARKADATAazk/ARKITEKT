@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/overlay/container.lua
 -- Reusable dark container pattern for non-blocking modals
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.Hexrgb
 

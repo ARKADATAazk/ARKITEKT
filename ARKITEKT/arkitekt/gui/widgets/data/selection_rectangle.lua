@@ -4,7 +4,7 @@
 -- Marquee selection (LEFT click + drag on background, square corners)
 -- FIXED: Scroll-aware selection maintains origin point
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

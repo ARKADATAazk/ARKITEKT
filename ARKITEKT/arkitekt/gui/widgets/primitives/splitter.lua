@@ -3,7 +3,7 @@
 -- Draggable splitter for resizing panels
 -- Uses unified opts-based API
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Base = require('arkitekt.gui.widgets.base')
 
 local M = {}

@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/chip_list/list.lua
 -- Chip list container with multiple layout modes
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Colors = require('arkitekt.core.colors')

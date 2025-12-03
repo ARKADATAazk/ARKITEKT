@@ -4,14 +4,14 @@
 -- Now supports both parent-window and viewport-level overlays
 -- Enhanced with easing curves and close button support
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Draw   = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
 local CoreMath = require('arkitekt.core.math')
 local Theme  = require('arkitekt.core.theme')
 local OverlayConfig = require('arkitekt.gui.widgets.overlays.overlay.defaults')
-local Constants = require('arkitekt.defs.app')
+local Constants = require('arkitekt.config.app')
 
 local M = {}
 M.__index = M

@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/displays/status_pad.lua
 -- Interactive status tile with a modern, flat design. (ReaImGui 0.9)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Draw   = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')

@@ -2,7 +2,7 @@
 -- arkitekt/gui/widgets/primitives/markdown_field.lua
 -- Markdown field widget with view/edit modes
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.Hexrgb
@@ -36,7 +36,7 @@ end
 
 local function get_markdown_renderer(ctx, id, state)
   if not state.markdown_renderer then
-    local ReaImGuiMd = require('arkitekt.external.talagan_ReaImGui Markdown.reaimgui_markdown')
+    local ReaImGuiMd = require('arkitekt.vendor.talagan_ReaImGui Markdown.reaimgui_markdown')
 
     -- Teal accent color from style defaults (as hex strings for markdown lib)
     local teal_accent = '#41E0A3'

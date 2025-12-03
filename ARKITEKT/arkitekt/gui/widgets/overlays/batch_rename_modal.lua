@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/overlays/batch_rename_modal.lua
 -- Modal for batch renaming with wildcard support
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.core.theme')
 local Container = require('arkitekt.gui.widgets.overlays.overlay.container')

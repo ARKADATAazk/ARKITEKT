@@ -2,9 +2,9 @@
 -- Arkitekt/gui/widgets/menutabs.lua
 -- Equal-width menu tabs for ReaImGui 0.9+
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
-local Config = require('arkitekt.core.config')
+local Config = require('arkitekt.core.merge')
 local Theme = require('arkitekt.core.theme')
 
 local M = {}

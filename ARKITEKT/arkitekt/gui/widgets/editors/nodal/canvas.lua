@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/nodal/canvas.lua
 -- Main container for node system with vertical sequencer
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Config = require('arkitekt.gui.widgets.editors.nodal.defaults')
 local Node = require('arkitekt.gui.widgets.editors.nodal.core.node')

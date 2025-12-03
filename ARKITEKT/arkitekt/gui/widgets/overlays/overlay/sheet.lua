@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/overlay/sheet.lua
 -- A task-oriented modal 'sheet' with visual polish
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Draw   = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')

@@ -3,7 +3,7 @@
 -- Standardized badge rendering system with consistent styling
 -- Uses unified opts-based API
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 

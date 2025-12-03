@@ -34,7 +34,7 @@
 --     -- Handle save
 --   end
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.core.theme')
 

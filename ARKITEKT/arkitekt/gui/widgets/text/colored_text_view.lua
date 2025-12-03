@@ -2,7 +2,7 @@
 -- arkitekt/gui/widgets/colored_text_view.lua
 -- Read-only colored text viewer with native selection support
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.Hexrgb
 

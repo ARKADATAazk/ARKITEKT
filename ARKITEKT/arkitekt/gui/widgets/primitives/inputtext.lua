@@ -4,7 +4,7 @@
 -- Uses unified opts-based API
 -- Includes search input variant
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')

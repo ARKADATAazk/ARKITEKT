@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/controls/scrollbar.lua
 -- Custom scrollbar with smooth animations
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 
 local M = {}

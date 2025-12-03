@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/package_tiles/micromanage.lua
 -- Package micromanagement window for fine-grained asset control
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

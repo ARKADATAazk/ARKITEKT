@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/nodal/systems/viewport.lua
 -- Viewport controller with pan/zoom for node canvas
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

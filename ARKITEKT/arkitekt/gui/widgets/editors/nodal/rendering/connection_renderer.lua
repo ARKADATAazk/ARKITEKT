@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/nodal/rendering/connection_renderer.lua
 -- Connection rendering with Manhattan routing
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')

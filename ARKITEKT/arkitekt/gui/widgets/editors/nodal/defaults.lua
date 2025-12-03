@@ -3,7 +3,7 @@
 -- Visual configuration for node system (unified with panel background system)
 
 local Colors = require('arkitekt.core.colors')
-local ConfigUtil = require('arkitekt.core.config')
+local ConfigUtil = require('arkitekt.core.merge')
 
 local M = {}
 local hexrgb = Colors.Hexrgb

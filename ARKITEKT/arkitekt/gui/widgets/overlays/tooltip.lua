@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/controls/tooltip.lua
 -- Reusable styled tooltip widget
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.core.theme')
 local hexrgb = Colors.Hexrgb

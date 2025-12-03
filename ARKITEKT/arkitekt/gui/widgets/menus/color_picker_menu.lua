@@ -2,8 +2,8 @@
 -- arkitekt/gui/widgets/menus/color_picker_menu.lua
 -- Reusable color picker for context menus with Chip rendering
 
-local ImGui = require('arkitekt.platform.imgui')
-local Colors = require('arkitekt.defs.colors')
+local ImGui = require('arkitekt.core.imgui')
+local Colors = require('arkitekt.config.colors')
 local ColorUtils = require('arkitekt.core.colors')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Draw = require('arkitekt.gui.draw.primitives')

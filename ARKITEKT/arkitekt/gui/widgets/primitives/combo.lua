@@ -3,7 +3,7 @@
 -- Standalone combo widget (ImGui.Combo equivalent) with Arkitekt styling
 -- Can be used anywhere, with optional panel integration
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')

@@ -3,7 +3,7 @@
 -- Visual effect: diagonal hatched/striped fill pattern
 -- Useful for backgrounds, overlays, progress indicators, stretch zones, etc.
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 
 local M = {}

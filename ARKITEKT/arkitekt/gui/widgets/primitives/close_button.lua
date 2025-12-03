@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/close_button.lua
 -- Floating close button that appears on hover in top-right corner
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')

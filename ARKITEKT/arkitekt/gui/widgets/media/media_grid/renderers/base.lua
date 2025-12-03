@@ -6,7 +6,7 @@
 -- PERF: Call cache_config() once per frame before rendering tiles.
 -- Render functions use cached values directly - no fallbacks.
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.Hexrgb
 local Draw = require('arkitekt.gui.draw.primitives')

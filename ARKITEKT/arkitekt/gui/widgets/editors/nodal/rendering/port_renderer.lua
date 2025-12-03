@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/nodal/port_renderer.lua
 -- Port rendering
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

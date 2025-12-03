@@ -3,18 +3,18 @@
 -- Package tile rendering module with text truncation support
 -- Theme-aware: uses ThemeAdjuster/defs/colors.lua for script-specific colors
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Draw = require('arkitekt.gui.draw.primitives')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local Colors = require('arkitekt.core.colors')
-local ImageCache = require('arkitekt.platform.images')
+local ImageCache = require('arkitekt.core.images')
 
 -- Lazy-load script colors (ThemeAdjuster-specific)
 local ScriptColors = nil
 local function get_script_colors()
   if not ScriptColors then
-    local ok, mod = pcall(require, 'ThemeAdjuster.defs.colors')
+    local ok, mod = pcall(require, 'ThemeAdjuster.config.colors')
     if ok then
       ScriptColors = mod
     end

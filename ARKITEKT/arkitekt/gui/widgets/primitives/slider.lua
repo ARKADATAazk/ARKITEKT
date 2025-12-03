@@ -3,7 +3,7 @@
 -- Standardized slider widget with Arkitekt styling
 -- Uses unified opts-based API with double-click to reset
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')

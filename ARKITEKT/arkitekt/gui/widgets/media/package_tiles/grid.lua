@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/package_tiles/grid.lua
 -- Package grid main logic with 200px height constraint (opts-based API)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local Colors = require('arkitekt.core.colors')
