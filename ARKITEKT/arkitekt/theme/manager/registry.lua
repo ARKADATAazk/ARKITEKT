@@ -3,7 +3,7 @@
 -- Script palette registration
 --
 -- Allows scripts to register their own theme-reactive palettes
--- using the same DSL as the main palette (snap/lerp/offset).
+-- using the same DSL as the main palette (snap2/lerp2/offset2).
 -- Flat structure with type inference.
 
 local Palette = require('arkitekt.config.colors')
@@ -29,9 +29,9 @@ end
 -- SCRIPT PALETTE REGISTRATION
 -- =============================================================================
 -- Scripts register flat palettes using the same DSL wrappers:
---   snap(dark, light)  → color (hex) or value (number)
---   lerp(dark, light)  → color (hex) or value (number)
---   offset(dark, light) → BG-derived color
+--   snap2(dark, light)  → color (hex) or value (number)
+--   lerp2(dark, light)  → color (hex) or value (number)
+--   offset2(dark, light) → BG-derived color
 
 --- Registered script palette definitions
 --- @type table<string, table>
@@ -115,7 +115,7 @@ function M.get_computed_palette(script_name, current_t)
 
   for key, def in pairs(palette_def) do
     -- Use unified derive_entry if BG_BASE available, otherwise fallback
-    if type(def) == 'table' and def.mode == 'offset' then
+    if type(def) == 'table' and (def.mode == 'offset2' or def.mode == 'offset3') then
       -- Offset mode requires BG_BASE
       if bg_base then
         computed[key] = Engine.derive_entry(bg_base, def, current_t, key)
@@ -124,7 +124,7 @@ function M.get_computed_palette(script_name, current_t)
         computed[key] = nil
       end
     elseif type(def) == 'table' and def.mode then
-      -- snap or lerp
+      -- snap2/3 or lerp2/3
       local resolved = Engine.resolve_value(def, current_t)
       if is_byte_color(resolved) then
         -- Byte color → use directly

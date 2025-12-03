@@ -1,7 +1,8 @@
 # @noindex
 # Convert Theme DSL hex strings to bytes
-# - snap('#RRGGBB', '#RRGGBB') → snap(0xRRGGBBFF, 0xRRGGBBFF)
-# - lerp('#RRGGBB', '#RRGGBB') → lerp(0xRRGGBBFF, 0xRRGGBBFF)
+# - snap2('#RRGGBB', '#RRGGBB') → snap2(0xRRGGBBFF, 0xRRGGBBFF)
+# - lerp2('#RRGGBB', '#RRGGBB') → lerp2(0xRRGGBBFF, 0xRRGGBBFF)
+# - snap3/lerp3/offset3 with hex strings → byte format
 # - presets: '#RRGGBB' → 0xRRGGBBFF
 # - PALETTE .hex = '#RRGGBB' → .color = 0xRRGGBBFF
 
@@ -20,11 +21,11 @@ def hex_to_byte(hex_str):
         return f'0x{hex_str}'
 
 def convert_snap_lerp(content):
-    """Convert snap('#...', '#...') and lerp('#...', '#...') to bytes."""
+    """Convert snap2/snap3/lerp2/lerp3/offset2/offset3 with hex strings to bytes."""
 
-    # Pattern for snap/lerp/snap3/lerp3 with hex strings
+    # Pattern for DSL functions with hex strings
     def replace_dsl_call(match):
-        func = match.group(1)  # snap, lerp, snap3, lerp3
+        func = match.group(1)  # snap2, snap3, lerp2, lerp3, offset2, offset3
         args = match.group(2)
 
         # Convert each hex string in the args
@@ -34,8 +35,8 @@ def convert_snap_lerp(content):
         new_args = re.sub(r"['\"]#[0-9A-Fa-f]{6,8}['\"]", convert_hex_arg, args)
         return f'{func}({new_args})'
 
-    # Match snap(...), lerp(...), snap3(...), lerp3(...)
-    content = re.sub(r'(snap3?|lerp3?)\(([^)]+)\)', replace_dsl_call, content)
+    # Match snap2/3, lerp2/3, offset2/3
+    content = re.sub(r'(snap[23]|lerp[23]|offset[23])\(([^)]+)\)', replace_dsl_call, content)
 
     return content
 
