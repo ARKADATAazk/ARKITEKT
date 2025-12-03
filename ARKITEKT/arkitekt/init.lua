@@ -246,22 +246,34 @@ local MODULES = {
   -- Navigation
   Tree = 'arkitekt.gui.widgets.navigation.tree_view',
 
-  -- Utilities (commonly used modules)
+  -- Core Services
+  Theme = 'arkitekt.theme',
+  Settings = 'arkitekt.core.settings',
+  Logger = 'arkitekt.debug.logger',
+
+  -- Interaction
+  Selection = 'arkitekt.gui.interaction.selection',
+  DragDrop = 'arkitekt.gui.interaction.drag_drop',
+
+  -- Animation
+  Tracks = 'arkitekt.gui.animation.tracks',
+  Easing = 'arkitekt.gui.animation.easing',
   Anim = 'arkitekt.config.animation',
-  Colors = 'arkitekt.core.colors',
-  Cursor = 'arkitekt.gui.interaction.cursor',
-  Style = 'arkitekt.gui.style',
+
+  -- Drawing
   Draw = 'arkitekt.gui.draw.primitives',
   Pattern = 'arkitekt.gui.draw.patterns',
-  Easing = 'arkitekt.gui.animation.easing',
+  Style = 'arkitekt.gui.style',
+
+  -- Utilities
+  Colors = 'arkitekt.core.colors',
+  Cursor = 'arkitekt.gui.interaction.cursor',
   Features = 'arkitekt.config.features',
+  Images = 'arkitekt.core.images',
   Lookup = 'arkitekt.core.lookup',
   Math = 'arkitekt.core.math',
   Notification = 'arkitekt.core.notification',
   UUID = 'arkitekt.core.uuid',
-
-  -- Platform (REAPER + ImGui specific utilities)
-  Images = 'arkitekt.core.images',
 }
 
 -- Lazy loading with metatable
