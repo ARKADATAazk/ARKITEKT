@@ -4,7 +4,7 @@
 -- Enables ImGui-familiar ID scoping without requiring explicit IDs everywhere
 -- Syncs with ImGui's PushID/PopID for red square debugging support
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

@@ -88,7 +88,7 @@ M.COLORS = {
 -- DSL DEFINITIONS (imported from defs/colors)
 -- =============================================================================
 
-local Palette = require('arkitekt.defs.colors')
+local Palette = require('arkitekt.config.colors')
 
 -- Re-export DSL wrappers
 M.snap = Palette.snap
@@ -105,11 +105,11 @@ M.colors = Palette.colors
 -- ENGINE (color generation)
 -- =============================================================================
 
-local Engine = require('arkitekt.core.theme_manager.engine')
-local Presets = require('arkitekt.core.theme_manager.presets')
-local Integration = require('arkitekt.core.theme_manager.integration')
-local Registry = require('arkitekt.core.theme_manager.registry')
-local Debug = require('arkitekt.core.theme_manager.debug')
+local Engine = require('arkitekt.core.theme.manager.engine')
+local Presets = require('arkitekt.core.theme.manager.presets')
+local Integration = require('arkitekt.core.theme.manager.integration')
+local Registry = require('arkitekt.core.theme.manager.registry')
+local Debug = require('arkitekt.debug.theme_manager')
 
 -- Current theme mode
 M.current_mode = nil
