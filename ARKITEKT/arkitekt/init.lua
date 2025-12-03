@@ -228,6 +228,7 @@ local MODULES = {
   CornerButton = 'arkitekt.gui.widgets.primitives.corner_button',
   HueSlider = 'arkitekt.gui.widgets.primitives.hue_slider',  -- DEPRECATED: Use Slider.Hue/Saturation/Brightness
   InputText = 'arkitekt.gui.widgets.primitives.inputtext',
+  Knob = 'arkitekt.gui.widgets.primitives.knob',
   LoadingSpinner = 'arkitekt.gui.widgets.primitives.loading_spinner',
   MarkdownField = 'arkitekt.gui.widgets.primitives.markdown_field',
   ProgressBar = 'arkitekt.gui.widgets.primitives.progress_bar',
@@ -257,6 +258,26 @@ local MODULES = {
 
   -- Animation
   Tracks = 'arkitekt.gui.animation.tracks',
+  -- Experimental Widgets (APIs may change, use with caution)
+  Encoder = 'arkitekt.gui.widgets.experimental.encoder',
+  Fader = 'arkitekt.gui.widgets.experimental.fader',
+  MediaItem = 'arkitekt.gui.widgets.experimental.audio.media_item',
+  MIDIPianoRoll = 'arkitekt.gui.widgets.experimental.audio.midi_piano_roll',
+  Nodes = 'arkitekt.gui.widgets.experimental.nodes',
+  Piano = 'arkitekt.gui.widgets.experimental.audio.piano',
+  SpectrumAnalyzer = 'arkitekt.gui.widgets.experimental.spectrum_analyzer',
+  StepSequencer = 'arkitekt.gui.widgets.experimental.step_sequencer',
+  Transport = 'arkitekt.gui.widgets.experimental.transport',
+  VUMeter = 'arkitekt.gui.widgets.experimental.vu_meter',
+  Waveform = 'arkitekt.gui.widgets.experimental.audio.waveform',
+  XYPad = 'arkitekt.gui.widgets.experimental.xy_pad',
+
+  -- Utilities (commonly used modules)
+  Anim = 'arkitekt.core.animation',
+  Colors = 'arkitekt.core.colors',
+  Cursor = 'arkitekt.core.cursor',
+  Style = 'arkitekt.gui.style',
+  Draw = 'arkitekt.gui.draw.primitives',
   Easing = 'arkitekt.gui.animation.easing',
   Anim = 'arkitekt.config.animation',
 
