@@ -24,7 +24,7 @@ function M.init()
   end
 
   -- Check feature flag OR launch_args.profiler from DevKit
-  local ok, Features = pcall(require, 'arkitekt.defs.features')
+  local ok, Features = pcall(require, 'arkitekt.config.features')
   local feature_enabled = ok and Features and Features.PROFILER_ENABLED
 
   -- Also check if launched with profiler flag from DevKit
