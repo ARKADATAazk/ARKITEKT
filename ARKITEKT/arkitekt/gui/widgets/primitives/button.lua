@@ -274,7 +274,7 @@ local function get_preset_colors(preset_name)
     }
   elseif preset_name == 'success' then
     return {
-      bg = C.SUCCESS or 0x44FF44FF,  -- Fallback green
+      bg = C.ACCENT_SUCCESS or C.SUCCESS or 0x44FF44FF,  -- Fallback green
       text = C.TEXT_BRIGHT or C.TEXT_NORMAL,
     }
   end
