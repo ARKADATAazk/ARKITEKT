@@ -9,9 +9,6 @@ local min = math.min
 
 local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
-local Hexrgb = Colors.Hexrgb
-
-
 local M = {}
 
 -- Snap to pixel boundary for crisp rendering
@@ -25,7 +22,7 @@ function M.CenteredText(ctx, text, x1, y1, x2, y2, color)
   local tw, th = ImGui.CalcTextSize(ctx, text)
   local cx = x1 + ((x2 - x1 - tw)//1 * 0.5)
   local cy = y1 + ((y2 - y1 - th)//1 * 0.5)
-  ImGui.DrawList_AddText(dl, cx, cy, color or Hexrgb('#FFFFFF'), text)
+  ImGui.DrawList_AddText(dl, cx, cy, color or 0xFFFFFFFF, text)
 end
 
 -- Draw a crisp rectangle (pixel-aligned)

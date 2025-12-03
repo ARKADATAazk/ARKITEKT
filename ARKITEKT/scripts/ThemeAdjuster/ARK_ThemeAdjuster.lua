@@ -19,8 +19,6 @@ local GUI = require('ThemeAdjuster.ui.gui')
 local StatusConfig = require('ThemeAdjuster.ui.status')
 local Settings = require('arkitekt.core.settings')
 
-local hexrgb = Ark.Colors.Hexrgb
-
 -- ============================================================================
 -- INITIALIZE SETTINGS
 -- ============================================================================
@@ -46,7 +44,7 @@ Shell.run({
   settings     = settings,
   initial_pos  = { x = 80, y = 80 },
   initial_size = { w = 1120, h = 820 },
-  icon_color   = hexrgb('#00B88F'),
+  icon_color   = 0x00B88FFF,
   icon_size    = 18,
   min_size     = { w = 700, h = 500 },
   get_status_func = StatusConfig.get_status_func and StatusConfig.get_status_func(State) or nil,
@@ -69,13 +67,13 @@ Shell.run({
       spacing_after = 2,
     },
     colors = {
-      bg_active   = hexrgb('#242424'),
-      bg_clicked  = hexrgb('#2A2A2A'),
-      bg_hovered  = hexrgb('#202020'),
-      bg_inactive = hexrgb('#1A1A1A'),
-      border      = hexrgb('#000000'),
-      text_active = hexrgb('#FFFFFF'),
-      text_inact  = hexrgb('#BBBBBB'),
+      bg_active   = 0x242424FF,
+      bg_clicked  = 0x2A2A2AFF,
+      bg_hovered  = 0x202020FF,
+      bg_inactive = 0x1A1A1AFF,
+      border      = 0x000000FF,
+      text_active = 0xFFFFFFFF,
+      text_inact  = 0xBBBBBBFF,
     },
   },
   fonts        = {},

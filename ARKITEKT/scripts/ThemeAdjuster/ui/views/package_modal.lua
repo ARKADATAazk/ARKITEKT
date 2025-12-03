@@ -8,8 +8,6 @@ local Fs = require('arkitekt.core.fs')
 local Constants = require('ThemeAdjuster.config.constants')
 local ImageCache = require('arkitekt.core.images')
 local PackageManager = require('ThemeAdjuster.data.packages.manager')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 local PackageModal = {}
 PackageModal.__index = PackageModal
@@ -377,7 +375,7 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
 
   -- Use cached area for tile color
   local area = self._area_cache[key] or 'Other'
-  local base_color = AREA_COLORS[area] or hexrgb('#444455')
+  local base_color = AREA_COLORS[area] or 0x444455FF
 
   -- Apply opacity based on included state
   local bg_opacity = included and 0.7 or 0.25
@@ -387,7 +385,7 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   local bg_color = (r << 24) | (g << 16) | (b << 8) | math.floor(255 * bg_opacity)
 
   -- Border color based on selection
-  local border_color = selected and hexrgb('#4A90E2') or hexrgb('#333344', 0.8)
+  local border_color = selected and 0x4A90E2FF or Colors.WithOpacity(0x333344FF, 0.8)
 
   -- Draw tile background
   local x1, y1 = ImGui.GetCursorScreenPos(ctx)
@@ -418,8 +416,8 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   if ImGui.BeginPopupContextItem(ctx, 'tile_pin_menu_' .. key) then
     -- Show current pin status
     if pinned_to then
-      ImGui.TextColored(ctx, hexrgb('#888888'), 'Currently pinned to:')
-      ImGui.TextColored(ctx, is_pinned and hexrgb('#4AE290') or hexrgb('#E8A54A'), pinned_to)
+      ImGui.TextColored(ctx, 0x888888FF, 'Currently pinned to:')
+      ImGui.TextColored(ctx, is_pinned and 0x4AE290FF or 0xE8A54AFF, pinned_to)
       ImGui.Separator(ctx)
     end
 
@@ -449,7 +447,7 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
     display_name = display_name:sub(1, max_chars - 2) .. '..'
   end
 
-  local text_color = included and hexrgb('#FFFFFF') or hexrgb('#666666')
+  local text_color = included and 0xFFFFFFFF or 0x666666FF
   local text_w, text_h = ImGui.CalcTextSize(ctx, display_name)
   local text_x = x1 + 6  -- Left-aligned with padding
   local text_y = y1 + (TILE_HEIGHT - text_h) * 0.5  -- Vertically centered
@@ -463,28 +461,28 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   if not included then
     local badge_x = x2 - 56
     local badge_y = y1 + TILE_HEIGHT * 0.5
-    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb('#CC3333'))
+    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, 0xCC3333FF)
   end
 
   -- Shadowed badge (orange circle) - overridden by higher priority package
   if shadowed_by and not is_pinned_elsewhere then
     local badge_x = x2 - 42
     local badge_y = y1 + TILE_HEIGHT * 0.5
-    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb('#E8A54A'))
+    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, 0xE8A54AFF)
   end
 
   -- Pinned elsewhere badge (yellow-orange dot) - different shade from shadowed
   if is_pinned_elsewhere then
     local badge_x = x2 - 28
     local badge_y = y1 + TILE_HEIGHT * 0.5
-    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb('#F5C542'))
+    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, 0xF5C542FF)
   end
 
   -- Pinned here badge (green dot)
   if is_pinned then
     local badge_x = x2 - 14
     local badge_y = y1 + TILE_HEIGHT * 0.5
-    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb('#4AE290'))
+    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, 0x4AE290FF)
   end
 
   -- DPI badge (top right, smaller text)
@@ -493,7 +491,7 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
     local dpi_w = ImGui.CalcTextSize(ctx, dpi_text)
     local dpi_x = x2 - dpi_w - 4
     local dpi_y = y1 + 2
-    ImGui.DrawList_AddText(dl, dpi_x, dpi_y, hexrgb('#666666'), dpi_text)
+    ImGui.DrawList_AddText(dl, dpi_x, dpi_y, 0x666666FF, dpi_text)
   end
 
   -- Tooltip on hover
@@ -522,15 +520,15 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
 
     -- Status
     if not included then
-      ImGui.TextColored(ctx, hexrgb('#FF6666'), 'EXCLUDED')
+      ImGui.TextColored(ctx, 0xFF6666FF, 'EXCLUDED')
     end
     if is_pinned then
-      ImGui.TextColored(ctx, hexrgb('#4AE290'), 'PINNED HERE')
+      ImGui.TextColored(ctx, 0x4AE290FF, 'PINNED HERE')
     elseif is_pinned_elsewhere then
-      ImGui.TextColored(ctx, hexrgb('#F5C542'), 'Pinned to: ' .. pinned_to)
+      ImGui.TextColored(ctx, 0xF5C542FF, 'Pinned to: ' .. pinned_to)
     end
     if shadowed_by and not is_pinned_elsewhere then
-      ImGui.TextColored(ctx, hexrgb('#E8A54A'), 'Overridden by: ' .. shadowed_by)
+      ImGui.TextColored(ctx, 0xE8A54AFF, 'Overridden by: ' .. shadowed_by)
     end
 
     -- DPI info
@@ -538,14 +536,14 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
       local dpi_str = 'DPI: 100%'
       if has_150 then dpi_str = dpi_str .. ', 150%' end
       if has_200 then dpi_str = dpi_str .. ', 200%' end
-      ImGui.TextColored(ctx, hexrgb('#AAAAAA'), dpi_str)
+      ImGui.TextColored(ctx, 0xAAAAAAFF, dpi_str)
     end
 
     -- Help text
     ImGui.Spacing(ctx)
-    ImGui.TextColored(ctx, hexrgb('#666666'), 'Click: Toggle include/exclude')
-    ImGui.TextColored(ctx, hexrgb('#666666'), 'Right-click: Pin options')
-    ImGui.TextColored(ctx, hexrgb('#666666'), 'Shift+Click: Select')
+    ImGui.TextColored(ctx, 0x666666FF, 'Click: Toggle include/exclude')
+    ImGui.TextColored(ctx, 0x666666FF, 'Right-click: Pin options')
+    ImGui.TextColored(ctx, 0x666666FF, 'Shift+Click: Select')
 
     ImGui.EndTooltip(ctx)
   end
@@ -741,35 +739,35 @@ function PackageModal:draw_content(ctx, bounds)
 
   -- Header with stats
   ImGui.SetCursorPosX(ctx, start_x)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFFFFFFF)
   ImGui.Text(ctx, 'Package: ' .. (pkg.meta and pkg.meta.name or pkg.id))
   ImGui.PopStyleColor(ctx)
 
   if pkg.meta and pkg.meta.version then
     ImGui.SameLine(ctx, 0, 8)
-    ImGui.TextColored(ctx, hexrgb('#666666'), 'v' .. pkg.meta.version)
+    ImGui.TextColored(ctx, 0x666666FF, 'v' .. pkg.meta.version)
   end
 
   -- Stats display
   local stats = self._stats_cache
   if stats then
     ImGui.SameLine(ctx, 0, 20)
-    ImGui.TextColored(ctx, hexrgb('#4AE290'), tostring(stats.included) .. ' included')
+    ImGui.TextColored(ctx, 0x4AE290FF, tostring(stats.included) .. ' included')
     ImGui.SameLine(ctx, 0, 8)
-    ImGui.TextColored(ctx, hexrgb('#666666'), '/')
+    ImGui.TextColored(ctx, 0x666666FF, '/')
     ImGui.SameLine(ctx, 0, 8)
-    ImGui.TextColored(ctx, hexrgb('#CC3333'), tostring(stats.excluded) .. ' excluded')
+    ImGui.TextColored(ctx, 0xCC3333FF, tostring(stats.excluded) .. ' excluded')
     if stats.pinned_here > 0 then
       ImGui.SameLine(ctx, 0, 12)
-      ImGui.TextColored(ctx, hexrgb('#4AE290'), tostring(stats.pinned_here) .. ' pinned')
+      ImGui.TextColored(ctx, 0x4AE290FF, tostring(stats.pinned_here) .. ' pinned')
     end
     if stats.pinned_elsewhere > 0 then
       ImGui.SameLine(ctx, 0, 8)
-      ImGui.TextColored(ctx, hexrgb('#F5C542'), tostring(stats.pinned_elsewhere) .. ' contested')
+      ImGui.TextColored(ctx, 0xF5C542FF, tostring(stats.pinned_elsewhere) .. ' contested')
     end
     if stats.shadowed > 0 then
       ImGui.SameLine(ctx, 0, 8)
-      ImGui.TextColored(ctx, hexrgb('#E8A54A'), tostring(stats.shadowed) .. ' overridden')
+      ImGui.TextColored(ctx, 0xE8A54AFF, tostring(stats.shadowed) .. ' overridden')
     end
   end
 
@@ -883,7 +881,7 @@ function PackageModal:draw_content(ctx, bounds)
   end
   if selection_count > 0 then
     ImGui.SetCursorScreenPos(ctx, btn_x, toolbar_y + 5)
-    ImGui.TextColored(ctx, hexrgb('#4A90E2'), tostring(selection_count) .. ' selected')
+    ImGui.TextColored(ctx, 0x4A90E2FF, tostring(selection_count) .. ' selected')
     local text_w = ImGui.CalcTextSize(ctx, tostring(selection_count) .. ' selected')
     btn_x = btn_x + text_w + 12
   end

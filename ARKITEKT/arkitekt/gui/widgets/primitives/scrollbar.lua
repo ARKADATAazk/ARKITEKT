@@ -6,8 +6,6 @@ local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 
 local M = {}
-local hexrgb = Colors.Hexrgb
-
 local Scrollbar = {}
 Scrollbar.__index = Scrollbar
 
@@ -16,12 +14,12 @@ local DEFAULTS = {
   padding = 2,
   min_thumb_height = 30,
 
-  track_color = hexrgb('#00000000'),
-  track_hover_color = hexrgb('#0F0F0F'),
+  track_color = 0x00000000,
+  track_hover_color = 0x0F0F0FFF,
 
-  thumb_color = hexrgb('#282828'),
-  thumb_hover_color = hexrgb('#323232'),
-  thumb_active_color = hexrgb('#3C3C3C'),
+  thumb_color = 0x282828FF,
+  thumb_hover_color = 0x323232FF,
+  thumb_active_color = 0x3C3C3CFF,
 
   thumb_rounding = 4,
   track_rounding = 0,

@@ -152,12 +152,12 @@ local function draw_custom_theme(ctx)
   -- TODO: Add color picker when we implement it
   -- For now, just show some example colors to click
   local example_colors = {
-    {Colors.Hexrgb('#FF6B6BFF'), 'Coral Red'},
-    {Colors.Hexrgb('#4ECDC4FF'), 'Turquoise'},
-    {Colors.Hexrgb('#95E1D3FF'), 'Mint'},
-    {Colors.Hexrgb('#F38181FF'), 'Pink'},
-    {Colors.Hexrgb('#AA96DAFF'), 'Purple'},
-    {Colors.Hexrgb('#FCBAD3FF'), 'Rose'},
+    {0xFF6B6BFF, 'Coral Red'},
+    {0x4ECDC4FF, 'Turquoise'},
+    {0x95E1D3FF, 'Mint'},
+    {0xF38181FF, 'Pink'},
+    {0xAA96DAFF, 'Purple'},
+    {0xFCBAD3FF, 'Rose'},
   }
 
   for _, pair in ipairs(example_colors) do

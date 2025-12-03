@@ -781,10 +781,10 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
     selection_color = Colors.WithOpacity(selection_color, 0.67)
   else
     -- Fallback colors
-    local hexrgb = Colors.Hexrgb
-    bg_color = hexrgb('#1A1A1AE0')
-    text_color = hexrgb('#FFFFFFDD')
-    selection_color = hexrgb('#4444AAAA')
+    local hex = Colors.hex
+    bg_color = 0x1A1A1AE0
+    text_color = 0xFFFFFFDD
+    selection_color = 0x4444AAAA
   end
 
   -- Draw backdrop (no borders)
@@ -801,10 +801,10 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
   end
 
   -- Style the input field to be transparent (we drew our own backdrop)
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.Hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.Hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.Hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, Colors.Hexrgb('#00000000'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x00000000)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
   ImGui.PushStyleColor(ctx, ImGui.Col_TextSelectedBg, selection_color)
 

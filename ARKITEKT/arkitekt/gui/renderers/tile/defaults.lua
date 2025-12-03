@@ -7,8 +7,6 @@
 -- The get() function returns cached config to avoid per-tile overhead.
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.Hexrgb
-
 local M = {}
 
 -- Per-frame cache
@@ -39,7 +37,7 @@ M.STATIC_DEFAULTS = {
 
   -- Region name text - neutral white/gray (brightness adjusts the base neutral color)
   name_brightness = 1.0,
-  name_base_color = hexrgb('#DDE3E9'),
+  name_base_color = 0xDDE3E9FF,
 
   -- Duration/bars text - region-colored
   duration_saturation = 0.3,

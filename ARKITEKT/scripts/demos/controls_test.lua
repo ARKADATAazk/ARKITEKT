@@ -11,9 +11,6 @@ local Shell = require('arkitekt.runtime.shell')
 -- Import base controls
 -- Import panel system
 local Config = require('arkitekt.gui.widgets.containers.panel.defaults')
-local hexrgb = Ark.Colors.Hexrgb
-
-
 -- ============================================================================
 -- TEST STATE
 -- ============================================================================
@@ -33,8 +30,8 @@ local test_state = {
 
 local function create_test_panel()
   local panel_config = {
-    bg_color = hexrgb('#1A1A1A'),
-    border_color = hexrgb('#000000DD'),
+    bg_color = 0x1A1A1AFF,
+    border_color = 0x000000DD,
     border_thickness = 1,
     rounding = 8,
     padding = 16,
@@ -42,8 +39,8 @@ local function create_test_panel()
     header = {
       enabled = true,
       height = 30,
-      bg_color = hexrgb('#1E1E1E'),
-      border_color = hexrgb('#00000066'),
+      bg_color = 0x1E1E1EFF,
+      border_color = 0x00000066,
       rounding = 8,
       
       padding = {
@@ -100,7 +97,7 @@ local function create_test_panel()
     left_sidebar = {
       enabled = true,
       width = 40,
-      bg_color = hexrgb('#1E1E1E'),
+      bg_color = 0x1E1E1EFF,
       valign = 'center',
       button_size = 30,
       button_spacing = 4,
@@ -143,7 +140,7 @@ local function create_test_panel()
     right_sidebar = {
       enabled = true,
       width = 40,
-      bg_color = hexrgb('#1E1E1E'),
+      bg_color = 0x1E1E1EFF,
       valign = 'top',
       button_size = 30,
       button_spacing = 4,

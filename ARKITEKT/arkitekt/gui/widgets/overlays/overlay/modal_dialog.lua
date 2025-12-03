@@ -8,8 +8,6 @@ local Sheet = require('arkitekt.gui.widgets.overlays.overlay.sheet')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.Hexrgb
-
 local M = {}
 
 -- Default modal configuration
@@ -18,13 +16,13 @@ local DEFAULTS = {
   height = 0.25,         -- Percentage of window height
 
   -- Modal box styling (square, no gradients, double borders)
-  bg_color = hexrgb('#1A1A1AFF'),         -- Dark background
-  border_outer = hexrgb('#000000DD'),     -- Black outer border
-  border_inner = hexrgb('#404040FF'),     -- Gray inner border
+  bg_color = 0x1A1A1AFF,         -- Dark background
+  border_outer = 0x000000DD,     -- Black outer border
+  border_inner = 0x404040FF,     -- Gray inner border
 
   -- Title styling
-  title_bg = hexrgb('#1E1E1EFF'),         -- Title bar background
-  title_text = hexrgb('#CCCCCCFF'),       -- Title text color
+  title_bg = 0x1E1E1EFF,         -- Title bar background
+  title_text = 0xCCCCCCFF,       -- Title text color
   title_height = 32,                      -- Title bar height
 
   -- Content padding
@@ -90,10 +88,10 @@ local function draw_text_input(ctx, x, y, width, height, unique_id, text, placeh
   ImGui.SetCursorScreenPos(ctx, x + 8, y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5 - 2)
   ImGui.PushItemWidth(ctx, width - 16)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb('#00000000'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x00000000)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, cfg.text_color)
 
   local changed, new_text = ImGui.InputTextWithHint(

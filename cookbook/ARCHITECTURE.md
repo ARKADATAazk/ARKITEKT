@@ -319,7 +319,7 @@ return M
 local M = {}
 
 M.COLORS = {
-  HIGHLIGHT = Ark.Colors.Hexrgb('#4A90D9'),
+  HIGHLIGHT = Ark.Colors.hex('#4A90D9'),
 }
 
 M.SIZES = {

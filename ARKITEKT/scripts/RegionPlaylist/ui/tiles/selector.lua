@@ -8,20 +8,18 @@ local Ark = require('arkitekt')
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
 
 local M = {}
-local hexrgb = Ark.Colors.Hexrgb
-
 M.CONFIG = {
   chip_width = 110,
   chip_height = 30,
   gap = 10,
-  bg_inactive = hexrgb('#1A2A3A'),
-  bg_active = hexrgb('#2A4A6A'),
-  bg_hover = hexrgb('#3A5A7A'),
-  border_inactive = hexrgb('#2A3A4A'),
-  border_active = hexrgb('#4A90E2'),
+  bg_inactive = 0x1A2A3AFF,
+  bg_active = 0x2A4A6AFF,
+  bg_hover = 0x3A5A7AFF,
+  border_inactive = 0x2A3A4AFF,
+  border_active = 0x4A90E2FF,
   border_thickness = 1.5,
   rounding = 4,
-  text_color = hexrgb('#FFFFFF'),
+  text_color = 0xFFFFFFFF,
   animation_speed = 10.0,
 }
 

@@ -605,7 +605,7 @@ function M.draw_physical_tree(ctx, state, config)
         for _, palette_color in ipairs(ColorDefs.PALETTE) do
           color_options[#color_options + 1] = {
             name = palette_color.name,
-            color = Colors.Hexrgb(palette_color.hex)
+            color = palette_color.hex  -- .hex is now a byte value
           }
         end
 
@@ -1031,7 +1031,7 @@ function M.draw_virtual_tree(ctx, state, config)
         for _, palette_color in ipairs(ColorDefs.PALETTE) do
           color_options[#color_options + 1] = {
             name = palette_color.name,
-            color = Colors.Hexrgb(palette_color.hex)
+            color = palette_color.hex  -- .hex is now a byte value
           }
         end
 

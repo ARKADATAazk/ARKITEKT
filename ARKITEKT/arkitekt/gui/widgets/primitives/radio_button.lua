@@ -8,8 +8,6 @@ local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.theme')
 local Base = require('arkitekt.gui.widgets.base')
 
-local hexrgb = Colors.Hexrgb
-
 local M = {}
 
 -- ============================================================================
@@ -149,12 +147,12 @@ function M.Draw(ctx, label_or_opts, active)
 
   -- Determine colors
   local bg_color, inner_color, selected_color, text_color, border_inner, border_outer
-  local white_overlay = hexrgb('#FFFFFF')
+  local white_overlay = 0xFFFFFFFF
 
   -- Base colors
   bg_color = opts.bg_color or Theme.COLORS.BG_BASE
   inner_color = Colors.AdjustBrightness(opts.inner_color or Theme.COLORS.BG_BASE, 0.85)
-  selected_color = opts.selected_color or hexrgb('#7e7e7e')
+  selected_color = opts.selected_color or 0x7E7E7EFF
   text_color = opts.text_color or Theme.COLORS.TEXT_NORMAL
   border_inner = opts.border_inner_color or Theme.COLORS.BORDER_INNER
   border_outer = opts.border_outer_color or Theme.COLORS.BORDER_OUTER

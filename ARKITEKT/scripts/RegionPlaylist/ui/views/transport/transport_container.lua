@@ -8,8 +8,6 @@ local Ark = require('arkitekt')
 
 local Panel = require('arkitekt.gui.widgets.containers.panel.init')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
-local hexrgb = Ark.Colors.Hexrgb
-
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
 local min = math.min
@@ -40,7 +38,7 @@ function M.new(opts)
     width = opts.width,
 
     config = {
-      bg_color = cfg.panel_bg_color or hexrgb('#00000000'),
+      bg_color = cfg.panel_bg_color or 0x00000000,
       border_thickness = 0,
       -- Transport panel: top corners square, bottom corners rounded
       rounding_tl = 0,  -- Top-left: square
@@ -59,8 +57,8 @@ function M.new(opts)
         height = button_height,
         position = 'top',
         valign = 'middle',
-        bg_color = hexrgb('#00000000'),  -- Transparent so pattern shows through
-        border_color = hexrgb('#00000000'),  -- Transparent border
+        bg_color = 0x00000000,  -- Transparent so pattern shows through
+        border_color = 0x00000000,  -- Transparent border
         rounding = cfg.fx and cfg.fx.rounding or 8,
         padding = { left = 0, right = 0 },
         elements = opts.header_elements or {},

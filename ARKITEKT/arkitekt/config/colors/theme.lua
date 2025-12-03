@@ -17,30 +17,30 @@ local M = {}
 -- Base colors for dark/light themes. Anchors are auto-computed from these.
 
 M.presets = {
-  dark       = '#242424',  -- t=0 anchor
-  grey       = '#333333',
-  light_grey = '#505050',
-  light      = '#E0E0E0',  -- t=1 anchor
+  dark = 0x242424FF,  -- t=0 anchor
+  grey = 0x333333FF,
+  light_grey = 0x505050FF,
+  light = 0xE0E0E0FF,  -- t=1 anchor
 }
 
 -- =============================================================================
 -- VALIDATION
 -- =============================================================================
 
---- Validate hex color format
---- @param hex string Hex color string
+--- Validate byte color format (0xRRGGBBAA)
+--- @param color number Byte color value
 --- @param name string Variable name for error messages
 --- @return boolean valid, string|nil error_message
-local function validate_hex(hex, name)
-  if type(hex) ~= 'string' then
-    return false, string.format('%s: expected string, got %s', name, type(hex))
+local function validate_byte_color(color, name)
+  if type(color) ~= 'number' then
+    return false, string.format('%s: expected number, got %s', name, type(color))
   end
-  if not hex:match('^#[0-9A-Fa-f]+$') then
-    return false, string.format("%s: invalid hex format '%s'", name, hex)
+  -- Byte colors are 32-bit RGBA values (> 255)
+  if color <= 255 then
+    return false, string.format('%s: value too small for byte color (%d)', name, color)
   end
-  local len = #hex - 1  -- minus the #
-  if len ~= 6 and len ~= 8 then
-    return false, string.format('%s: hex must be 6 or 8 chars, got %d', name, len)
+  if color > 0xFFFFFFFF then
+    return false, string.format('%s: value exceeds max byte color (0x%X)', name, color)
   end
   return true
 end
@@ -58,14 +58,12 @@ local function contrast_ratio(color1, color2)
 end
 
 --- Warn if contrast ratio is too low for text readability
---- @param fg_hex string Foreground hex color
---- @param bg_hex string Background hex color
+--- @param fg number Foreground byte color (0xRRGGBBAA)
+--- @param bg number Background byte color (0xRRGGBBAA)
 --- @param name string Variable name for warning
 --- @param min_ratio number Minimum contrast ratio (default 4.5 for WCAG AA)
-local function warn_low_contrast(fg_hex, bg_hex, name, min_ratio)
+local function warn_low_contrast(fg, bg, name, min_ratio)
   min_ratio = min_ratio or 4.5
-  local fg = Colors.Hexrgb(fg_hex)
-  local bg = Colors.Hexrgb(bg_hex)
   local ratio = contrast_ratio(fg, bg)
   if ratio < min_ratio then
     reaper.ShowConsoleMsg(string.format(
@@ -76,8 +74,8 @@ local function warn_low_contrast(fg_hex, bg_hex, name, min_ratio)
 end
 
 -- Validate presets on load
-for name, hex in pairs(M.presets) do
-  local valid, err = validate_hex(hex, 'presets.' .. name)
+for name, color in pairs(M.presets) do
+  local valid, err = validate_byte_color(color, 'presets.' .. name)
   if not valid then
     reaper.ShowConsoleMsg('[Theme] ' .. err .. '\n')
   end
@@ -87,8 +85,7 @@ end
 -- ANCHORS (auto-computed from presets)
 -- =============================================================================
 
-local function compute_lightness(hex)
-  local color = Colors.Hexrgb(hex)
+local function compute_lightness(color)
   local _, _, l = Colors.RgbToHsl(color)
   return l
 end
@@ -218,7 +215,7 @@ M.colors = {
   BORDER_HOVER    = offset(0.18, -0.14),   -- was 0.10/-0.08, increased for visible pop
   BORDER_ACTIVE   = offset(0.30, -0.22),   -- was 0.15/-0.12, much brighter on click
   BORDER_FOCUS    = offset(0.25, -0.18),   -- was 0.20/-0.15
-  BORDER_OUTER    = snap('#000000', '#404040'),
+  BORDER_OUTER    = snap(0x000000FF, 0x404040FF),
   BORDER_OUTER_OPACITY = lerp(0.87, 0.60),
 
   -- === ACCENTS (from BG_BASE) ===
@@ -233,17 +230,17 @@ M.colors = {
   -- (lerp created a 'dead zone' in mid-range themes like light_grey)
   ACCENT_WHITE        = offset(0.12, -0.15),
   ACCENT_WHITE_BRIGHT = offset(0.20, -0.22),
-  ACCENT_SUCCESS = lerp('#4CAF50', '#2E7D32'),
-  ACCENT_WARNING = lerp('#FFA726', '#F57C00'),
-  ACCENT_DANGER  = lerp('#EF5350', '#C62828'),
+  ACCENT_SUCCESS = lerp(0x4CAF50FF, 0x2E7D32FF),
+  ACCENT_WARNING = lerp(0xFFA726FF, 0xF57C00FF),
+  ACCENT_DANGER  = lerp(0xEF5350FF, 0xC62828FF),
 
   -- === TEXT ===
-  TEXT_NORMAL = snap('#FFFFFF', '#000000'),
-  TEXT_HOVER  = snap('#F0F0F0', '#1A1A1A'),
-  TEXT_ACTIVE = snap('#E8E8E8', '#222222'),
-  TEXT_DIMMED = snap('#A0A0A0', '#606060'),
-  TEXT_DARK   = snap('#808080', '#808080'),
-  TEXT_BRIGHT = snap('#FFFFFF', '#000000'),
+  TEXT_NORMAL = snap(0xFFFFFFFF, 0x000000FF),
+  TEXT_HOVER  = snap(0xF0F0F0FF, 0x1A1A1AFF),
+  TEXT_ACTIVE = snap(0xE8E8E8FF, 0x222222FF),
+  TEXT_DIMMED = snap(0xA0A0A0FF, 0x606060FF),
+  TEXT_DARK   = snap(0x808080FF, 0x808080FF),
+  TEXT_BRIGHT = snap(0xFFFFFFFF, 0x000000FF),
 
   -- === PATTERNS (from BG_BASE, includes panel offset) ===
   PATTERN_PRIMARY   = offset(-0.064, -0.10),
@@ -251,54 +248,54 @@ M.colors = {
 
   -- === TILES ===
   -- BRIGHTNESS/SATURATION use normalized scale: 0=off, 0.5=neutral, 1=max (2x)
-  TILE_NAME_COLOR      = snap('#DDE3E9', '#1A1A1A'),
+  TILE_NAME_COLOR      = snap(0xDDE3E9FF, 0x1A1A1AFF),
   TILE_FILL_BRIGHTNESS = lerp(0.25, 0.35), -- Normalized: 0.5=1x, so 0.25→0.5x, 0.35→0.7x
   TILE_FILL_SATURATION = lerp(0.20, 0.35), -- Normalized: 0.5=1x, so 0.20→0.4x, 0.35→0.7x
   TILE_FILL_OPACITY    = lerp(0.4, 0.6),   -- Light: slightly more opaque (was 0.5)
 
   -- === BADGES ===
-  BADGE_BG             = snap('#14181C', '#E8ECF0'),
-  BADGE_TEXT           = snap('#FFFFFF', '#1A1A1A'),
+  BADGE_BG             = snap(0x14181CFF, 0xE8ECF0FF),
+  BADGE_TEXT           = snap(0xFFFFFFFF, 0x1A1A1AFF),
   BADGE_BG_OPACITY     = lerp(0.85, 0.90),
   BADGE_BORDER_OPACITY = lerp(0.20, 0.15),
 
   -- === PLAYLIST ===
-  PLAYLIST_TILE_COLOR  = snap('#3A3A3A', '#A0A0A0'),  -- Light: darker for contrast (was #D0D0D0)
-  PLAYLIST_NAME_COLOR  = snap('#CCCCCC', '#2A2A2A'),
-  PLAYLIST_BADGE_COLOR = snap('#999999', '#666666'),
+  PLAYLIST_TILE_COLOR  = snap(0x3A3A3AFF, 0xA0A0A0FF),  -- Light: darker for contrast (was #D0D0D0)
+  PLAYLIST_NAME_COLOR  = snap(0xCCCCCCFF, 0x2A2A2AFF),
+  PLAYLIST_BADGE_COLOR = snap(0x999999FF, 0x666666FF),
 
   -- === OPERATIONS (drag/drop feedback) ===
-  OP_MOVE   = snap('#CCCCCC', '#444444'),  -- Gray - move operation
-  OP_COPY   = snap('#06B6D4', '#0891B2'),  -- Cyan - copy operation
-  OP_DELETE = snap('#E84A4A', '#DC2626'),  -- Red - delete operation
-  OP_LINK   = snap('#4A9EFF', '#2563EB'),  -- Blue - link/reference
+  OP_MOVE   = snap(0xCCCCCCFF, 0x444444FF),  -- Gray - move operation
+  OP_COPY   = snap(0x06B6D4FF, 0x0891B2FF),  -- Cyan - copy operation
+  OP_DELETE = snap(0xE84A4AFF, 0xDC2626FF),  -- Red - delete operation
+  OP_LINK   = snap(0x4A9EFFFF, 0x2563EBFF),  -- Blue - link/reference
 
   -- === COLORED BUTTONS ===
   -- Each variant: BG (base), HOVER (+lightness), ACTIVE (-lightness), TEXT (auto contrast)
 
   -- Danger (red)
-  BUTTON_DANGER_BG     = lerp('#B91C1C', '#FCA5A5'),
-  BUTTON_DANGER_HOVER  = lerp('#DC2626', '#FEE2E2'),
-  BUTTON_DANGER_ACTIVE = lerp('#991B1B', '#F87171'),
-  BUTTON_DANGER_TEXT   = snap('#FFFFFF', '#7F1D1D'),
+  BUTTON_DANGER_BG     = lerp(0xB91C1CFF, 0xFCA5A5FF),
+  BUTTON_DANGER_HOVER  = lerp(0xDC2626FF, 0xFEE2E2FF),
+  BUTTON_DANGER_ACTIVE = lerp(0x991B1BFF, 0xF87171FF),
+  BUTTON_DANGER_TEXT   = snap(0xFFFFFFFF, 0x7F1D1DFF),
 
   -- Success (green)
-  BUTTON_SUCCESS_BG     = lerp('#15803D', '#86EFAC'),
-  BUTTON_SUCCESS_HOVER  = lerp('#16A34A', '#BBF7D0'),
-  BUTTON_SUCCESS_ACTIVE = lerp('#166534', '#4ADE80'),
-  BUTTON_SUCCESS_TEXT   = snap('#FFFFFF', '#14532D'),
+  BUTTON_SUCCESS_BG     = lerp(0x15803DFF, 0x86EFACFF),
+  BUTTON_SUCCESS_HOVER  = lerp(0x16A34AFF, 0xBBF7D0FF),
+  BUTTON_SUCCESS_ACTIVE = lerp(0x166534FF, 0x4ADE80FF),
+  BUTTON_SUCCESS_TEXT   = snap(0xFFFFFFFF, 0x14532DFF),
 
   -- Warning (amber/orange)
-  BUTTON_WARNING_BG     = lerp('#B45309', '#FCD34D'),
-  BUTTON_WARNING_HOVER  = lerp('#D97706', '#FDE68A'),
-  BUTTON_WARNING_ACTIVE = lerp('#92400E', '#FBBF24'),
-  BUTTON_WARNING_TEXT   = snap('#FFFFFF', '#78350F'),
+  BUTTON_WARNING_BG     = lerp(0xB45309FF, 0xFCD34DFF),
+  BUTTON_WARNING_HOVER  = lerp(0xD97706FF, 0xFDE68AFF),
+  BUTTON_WARNING_ACTIVE = lerp(0x92400EFF, 0xFBBF24FF),
+  BUTTON_WARNING_TEXT   = snap(0xFFFFFFFF, 0x78350FFF),
 
   -- Info (blue)
-  BUTTON_INFO_BG     = lerp('#1D4ED8', '#93C5FD'),
-  BUTTON_INFO_HOVER  = lerp('#2563EB', '#BFDBFE'),
-  BUTTON_INFO_ACTIVE = lerp('#1E40AF', '#60A5FA'),
-  BUTTON_INFO_TEXT   = snap('#FFFFFF', '#1E3A8A'),
+  BUTTON_INFO_BG     = lerp(0x1D4ED8FF, 0x93C5FDFF),
+  BUTTON_INFO_HOVER  = lerp(0x2563EBFF, 0xBFDBFEFF),
+  BUTTON_INFO_ACTIVE = lerp(0x1E40AFFF, 0x60A5FAFF),
+  BUTTON_INFO_TEXT   = snap(0xFFFFFFFF, 0x1E3A8AFF),
 }
 
 -- =============================================================================
@@ -316,7 +313,7 @@ function M.get_all_keys()
 end
 
 -- Export validation utilities
-M.validate_hex = validate_hex
+M.validate_byte_color = validate_byte_color
 M.contrast_ratio = contrast_ratio
 M.warn_low_contrast = warn_low_contrast
 

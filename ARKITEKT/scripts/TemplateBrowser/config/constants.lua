@@ -4,40 +4,38 @@
 
 local ColorDefs = require('arkitekt.config.colors')
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- ============================================================================
 -- COLORS
 -- ============================================================================
 M.COLORS = {
-  panel_bg = hexrgb('#1A1A1A'),
-  panel_border = hexrgb('#333333'),
-  header_bg = hexrgb('#252525'),
-  selected_bg = hexrgb('#2A5599'),
-  hover_bg = hexrgb('#2A2A2A'),
-  text = hexrgb('#FFFFFF'),
-  text_dim = hexrgb('#888888'),
-  separator = hexrgb('#404040'),
+  panel_bg = 0x1A1A1AFF,
+  panel_border = 0x333333FF,
+  header_bg = 0x252525FF,
+  selected_bg = 0x2A5599FF,
+  hover_bg = 0x2A2A2AFF,
+  text = 0xFFFFFFFF,
+  text_dim = 0x888888FF,
+  separator = 0x404040FF,
 }
 
 -- Status bar message colors
 M.STATUS = {
-  ERROR = hexrgb('#FF4444'),
-  WARNING = hexrgb('#FFA500'),
-  SUCCESS = hexrgb('#4AFF4A'),
-  INFO = hexrgb('#FFFFFF'),
+  ERROR = 0xFF4444FF,
+  WARNING = 0xFFA500FF,
+  SUCCESS = 0x4AFF4AFF,
+  INFO = 0xFFFFFFFF,
 }
 
 -- Tag color palette (from centralized palette)
 M.TAG_COLORS = {}
 for i, color in ipairs(ColorDefs.PALETTE) do
-  M.TAG_COLORS[i] = hexrgb(color.hex)
+  M.TAG_COLORS[i] = color.hex  -- .hex is now a byte value
 end
 
 -- Default tag color (Blue from palette)
-M.DEFAULT_TAG_COLOR = hexrgb(ColorDefs.PALETTE[1].hex)
+M.DEFAULT_TAG_COLOR = ColorDefs.PALETTE[1].hex
 
 -- ============================================================================
 -- PANEL LAYOUT

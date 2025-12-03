@@ -249,10 +249,10 @@ function M.draw_containers(ctx, draw_list, State)
       label = label .. ' [linked]'
     end
 
-    local text_color = Ark.Colors.Hexrgba('#FFFFFF', 0.9)
-    local label_bg = Ark.Colors.Hexrgba('#000000', 0.6)
+    local text_color = Ark.Colors.WithOpacity(0xFFFFFFFF, 0.9)
+    local label_bg = Ark.Colors.WithOpacity(0x000000FF, 0.6)
     if hovered_container == container and not M.dragging_container_id then
-      label_bg = Ark.Colors.Hexrgba('#333333', 0.8)  -- Highlight on hover
+      label_bg = Ark.Colors.WithOpacity(0x333333FF, 0.8)  -- Highlight on hover
     end
 
     local text_w, text_h = ImGui.CalcTextSize(ctx, label)

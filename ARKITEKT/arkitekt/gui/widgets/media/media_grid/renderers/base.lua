@@ -8,7 +8,6 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.Hexrgb
 local Draw = require('arkitekt.gui.draw.primitives')
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
@@ -171,7 +170,7 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
   local size = math.min(x2 - x1, y2 - y1) * 0.15
 
   local spinner_alpha = (alpha * 128) // 1
-  local spinner_color = Colors.WithAlpha(hexrgb('#FFFFFF'), spinner_alpha)
+  local spinner_color = Colors.WithAlpha(0xFFFFFFFF, spinner_alpha)
 
   local time = reaper.time_precise()
   local angle = (time * 2) % (math.pi * 2)
@@ -226,7 +225,7 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
       _cfg.badge_rounding, 0, 0.5)
 
     Draw.Text(dl, badge_x + _cfg.badge_padding_x, badge_y + _cfg.badge_padding_y,
-      Colors.WithAlpha(hexrgb('#FFFFFFDD'), text_alpha), badge_text)
+      Colors.WithAlpha(0xFFFFFFDD, text_alpha), badge_text)
   end
 end
 

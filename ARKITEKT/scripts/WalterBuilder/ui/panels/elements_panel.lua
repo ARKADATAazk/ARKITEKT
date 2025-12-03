@@ -9,8 +9,6 @@ local Colors = require('WalterBuilder.config.colors')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 local Panel = {}
 Panel.__index = Panel
@@ -55,9 +53,9 @@ function Panel:draw_category_header(ctx, category, display_name)
   local is_collapsed = self.collapsed[category]
 
   -- Header button
-  ImGui.PushStyleColor(ctx, ImGui.Col_Header, hexrgb('#2A2A2A'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, hexrgb('#333333'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, hexrgb('#404040'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Header, 0x2A2A2AFF)
+  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, 0x333333FF)
+  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, 0x404040FF)
 
   local open = ImGui.CollapsingHeader(ctx, display_name, not is_collapsed and ImGui.TreeNodeFlags_DefaultOpen or 0)
 
@@ -85,7 +83,7 @@ function Panel:draw_element_item(ctx, def)
 
   -- For hidden elements, dim the color
   if is_hidden then
-    cat_color = hexrgb('#555555')
+    cat_color = 0x555555FF
   end
 
   -- Display name with status indicators
@@ -125,22 +123,22 @@ function Panel:draw_element_item(ctx, def)
     ImGui.BeginTooltip(ctx)
     ImGui.Text(ctx, def.id)
     if def.description and def.description ~= '' then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
       ImGui.Text(ctx, def.description)
       ImGui.PopStyleColor(ctx)
     end
     if is_active then
       if is_hidden then
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CC6666'))
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCC6666FF)
         ImGui.Text(ctx, '(hidden - right-click to show)')
         ImGui.PopStyleColor(ctx)
       else
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CC88'))
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x88CC88FF)
         ImGui.Text(ctx, '(click to select, right-click to hide)')
         ImGui.PopStyleColor(ctx)
       end
     else
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
       ImGui.Text(ctx, 'Double-click to add')
       ImGui.PopStyleColor(ctx)
     end
@@ -172,9 +170,9 @@ function Panel:draw_custom_element_item(ctx, elem)
   local is_hidden = not elem.visible
 
   -- Custom elements get a distinct color
-  local cat_color = hexrgb('#9966CC')  -- Purple for custom
+  local cat_color = 0x9966CCFF  -- Purple for custom
   if is_hidden then
-    cat_color = hexrgb('#555555')
+    cat_color = 0x555555FF
   end
 
   -- Display name with status
@@ -211,15 +209,15 @@ function Panel:draw_custom_element_item(ctx, elem)
   if ImGui.IsItemHovered(ctx) then
     ImGui.BeginTooltip(ctx)
     ImGui.Text(ctx, elem.id)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#9966CC'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x9966CCFF)
     ImGui.Text(ctx, '(custom element from rtconfig)')
     ImGui.PopStyleColor(ctx)
     if is_hidden then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CC6666'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCC6666FF)
       ImGui.Text(ctx, '(hidden - right-click to show)')
       ImGui.PopStyleColor(ctx)
     else
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CC88'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x88CC88FF)
       ImGui.Text(ctx, '(click to select, right-click to hide)')
       ImGui.PopStyleColor(ctx)
     end
@@ -350,7 +348,7 @@ function Panel:draw(ctx)
   ImGui.Dummy(ctx, 0, 4)
 
   if self.selected_def then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
     ImGui.Text(ctx, 'Selected: ' .. self.selected_def.name)
     ImGui.PopStyleColor(ctx)
 
@@ -373,7 +371,7 @@ function Panel:draw(ctx)
       result = { type = 'add', definition = self.selected_def }
     end
   else
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
     ImGui.Text(ctx, 'Select an element to add')
     ImGui.PopStyleColor(ctx)
   end

@@ -259,7 +259,7 @@ function M.Draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
   ImGui.SetCursorScreenPos(ctx, sort_section_x, search_y)
 
   -- Sorting label
-  local sort_label_color = Ark.Colors.Hexrgb('#AAAAAA')
+  local sort_label_color = 0xAAAAAAFF
   sort_label_color = Ark.Colors.WithAlpha(sort_label_color, (search_fade * 200) // 1)
   local dl = ImGui.GetWindowDrawList(ctx)
   ImGui.DrawList_AddText(dl, sort_section_x, search_y + 4, sort_label_color, sort_label)

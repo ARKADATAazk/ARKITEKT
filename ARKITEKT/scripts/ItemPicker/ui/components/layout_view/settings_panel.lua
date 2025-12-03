@@ -152,7 +152,7 @@ function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   local slider_label = 'Waveform Quality:'
   local slider_label_width = ImGui.CalcTextSize(ctx, slider_label)
   ImGui.DrawList_AddText(draw_list, waveform_x, waveform_y + 3,
-    Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#FFFFFF'), (settings_alpha * 180) // 1), slider_label)
+    Ark.Colors.WithAlpha(0xFFFFFFFF, (settings_alpha * 180) // 1), slider_label)
 
   -- Slider track
   local slider_width = 120
@@ -161,12 +161,12 @@ function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   local track_h = 6
   local track_rounding = 3
 
-  local track_color = Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#1A1A1A'), (settings_alpha * 200) // 1)
+  local track_color = Ark.Colors.WithAlpha(0x1A1A1AFF, (settings_alpha * 200) // 1)
   ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + slider_width, track_y + track_h, track_color, track_rounding)
 
   local quality = state.settings.waveform_quality or 1.0
   local fill_width = slider_width * quality
-  local fill_color = Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#4A9EFF'), (settings_alpha * 200) // 1)
+  local fill_color = Ark.Colors.WithAlpha(0x4A9EFFFF, (settings_alpha * 200) // 1)
   if fill_width > 1 then
     ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + fill_width, track_y + track_h, fill_color, track_rounding)
   end
@@ -178,7 +178,7 @@ function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   local thumb_radius = 6
   local is_thumb_hovered = (mouse_x - thumb_x) * (mouse_x - thumb_x) + (mouse_y - thumb_y) * (mouse_y - thumb_y) <= thumb_radius * thumb_radius
 
-  local thumb_color = is_thumb_hovered and Ark.Colors.Hexrgb('#5AAFFF') or Ark.Colors.Hexrgb('#4A9EFF')
+  local thumb_color = is_thumb_hovered and 0x5AAFFFFF or 0x4A9EFFFF
   thumb_color = Ark.Colors.WithAlpha(thumb_color, Ark.Colors.Opacity(settings_alpha))
   ImGui.DrawList_AddCircleFilled(draw_list, thumb_x, thumb_y, thumb_radius, thumb_color)
 
@@ -196,7 +196,7 @@ function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   local percent_text = string.format('%d%%', (quality * 100) // 1)
   local percent_x = track_x + slider_width + 8
   ImGui.DrawList_AddText(draw_list, percent_x, waveform_y + 3,
-    Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#AAAAAA'), (settings_alpha * 180) // 1), percent_text)
+    Ark.Colors.WithAlpha(0xAAAAAAFF, (settings_alpha * 180) // 1), percent_text)
 
   ImGui.PopStyleVar(ctx)
 

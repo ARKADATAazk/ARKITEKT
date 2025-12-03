@@ -4,8 +4,6 @@
 
 local Ark = require('arkitekt')
 local AssignmentTile = require('ThemeAdjuster.ui.grids.renderers.assignment_tile')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 local function create_behaviors(view, tab_id)
@@ -94,14 +92,14 @@ function M.create_opts(view, tab_id, config)
 
   -- Visual feedback configurations
   local dim_config = config.dim_config or {
-    fill_color = hexrgb('#00000088'),
-    stroke_color = hexrgb('#FFFFFF33'),
+    fill_color = 0x00000088,
+    stroke_color = 0xFFFFFF33,
     stroke_thickness = 1.5,
     rounding = 3,
   }
 
   local drop_config = config.drop_config or {
-    indicator_color = hexrgb('#5588FFAA'),
+    indicator_color = 0x5588FFAA,
     indicator_thickness = 2,
     enabled = true,
   }

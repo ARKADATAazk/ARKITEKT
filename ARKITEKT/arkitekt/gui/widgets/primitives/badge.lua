@@ -26,11 +26,11 @@ M.DEFAULTS = {
   icon = nil,
 
   -- Colors
-  base_color = Colors.Hexrgb('#555555'),  -- For border derivation
+  base_color = 0x555555FF,  -- For border derivation
   alpha = 255,
-  bg_color = Colors.Hexrgb('#14181C'),
-  text_color = Colors.Hexrgb('#FFFFFFDD'),
-  icon_color = Colors.Hexrgb('#FFFFFF'),
+  bg_color = 0x14181CFF,
+  text_color = 0xFFFFFFDD,
+  icon_color = 0xFFFFFFFF,
 
   -- Style
   padding_x = 5,

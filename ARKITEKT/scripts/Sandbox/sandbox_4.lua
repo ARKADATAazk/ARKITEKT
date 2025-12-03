@@ -17,8 +17,6 @@ local ImGui = require('arkitekt.core.imgui')
 local Shell = require('arkitekt.runtime.shell')
 local Colors = require('arkitekt.core.colors')
 local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
-local hexrgb = Colors.Hexrgb
-
 -- Create namespace for widget modules
 local Ark = {
   InputText = InputText
@@ -66,22 +64,22 @@ local TREE_CONFIG = {
   },
 
   -- Colors
-  bg_hover = hexrgb('#2E2E2EFF'),
-  bg_selected = hexrgb('#393939FF'),
-  bg_selected_hover = hexrgb('#3E3E3EFF'),
-  bg_alternate = hexrgb('#1C1C1CFF'),
-  bg_disabled = hexrgb('#0F0F0FFF'),
-  text_normal = hexrgb('#CCCCCCFF'),
-  text_hover = hexrgb('#FFFFFFFF'),
-  text_disabled = hexrgb('#666666FF'),
-  arrow_color = hexrgb('#B0B0B0FF'),
-  icon_color = hexrgb('#888888FF'),
-  icon_open_color = hexrgb('#9A9A9AFF'),
-  tree_line_color = hexrgb('#505050FF'),
-  checkbox_border = hexrgb('#888888FF'),
-  checkbox_check = hexrgb('#4A9EFFFF'),
-  checkbox_bg = hexrgb('#2A2A2AFF'),
-  checkbox_bg_disabled = hexrgb('#1A1A1AFF'),
+  bg_hover = 0x2E2E2EFF,
+  bg_selected = 0x393939FF,
+  bg_selected_hover = 0x3E3E3EFF,
+  bg_alternate = 0x1C1C1CFF,
+  bg_disabled = 0x0F0F0FFF,
+  text_normal = 0xCCCCCCFF,
+  text_hover = 0xFFFFFFFF,
+  text_disabled = 0x666666FF,
+  arrow_color = 0xB0B0B0FF,
+  icon_color = 0x888888FF,
+  icon_open_color = 0x9A9A9AFF,
+  tree_line_color = 0x505050FF,
+  checkbox_border = 0x888888FF,
+  checkbox_check = 0x4A9EFFFF,
+  checkbox_bg = 0x2A2A2AFF,
+  checkbox_bg_disabled = 0x1A1A1AFF,
 }
 
 -- ============================================================================
@@ -92,14 +90,14 @@ local mock_tree = {
   {
     id = 'root',
     name = 'Project Root',
-    color = hexrgb('#4A9EFFFF'),
+    color = 0x4A9EFFFF,
     flags = { checkable = true },
     checked = true,
     children = {
       {
         id = 'src',
         name = 'src',
-        color = hexrgb('#41E0A3FF'),
+        color = 0x41E0A3FF,
         flags = { checkable = true },
         checked = true,
         children = {
@@ -117,7 +115,7 @@ local mock_tree = {
       {
         id = 'docs',
         name = 'Documentation',
-        color = hexrgb('#FFA726FF'),
+        color = 0xFFA726FF,
         children = {
           { id = 'guides', name = 'Guides', children = {
             { id = 'getting-started', name = 'Getting Started.md', children = {} },
@@ -570,11 +568,11 @@ local function draw_file_icon(dl, x, y, color)
   -- File body
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, color, 0)
   -- Corner fold
-  ImGui.DrawList_AddTriangleFilled(dl, x + w - corner, y, x + w, y, x + w, y + corner, hexrgb('#000000AA'))
+  ImGui.DrawList_AddTriangleFilled(dl, x + w - corner, y, x + w, y, x + w, y + corner, 0x000000AA)
 end
 
 local function draw_lua_icon(dl, x, y, color)
-  color = color or hexrgb('#00007FFF') -- Blue for Lua
+  color = color or 0x00007FFF -- Blue for Lua
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
 
@@ -584,7 +582,7 @@ local function draw_lua_icon(dl, x, y, color)
 end
 
 local function draw_markdown_icon(dl, x, y, color)
-  color = color or hexrgb('#0A7EA3FF') -- Cyan for markdown
+  color = color or 0x0A7EA3FF -- Cyan for markdown
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
 
@@ -601,13 +599,13 @@ local function draw_markdown_icon(dl, x, y, color)
 end
 
 local function draw_config_icon(dl, x, y, color)
-  color = color or hexrgb('#888888FF')
+  color = color or 0x888888FF
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
 
   -- Draw gear-like shape
   ImGui.DrawList_AddCircleFilled(dl, x + 5, y + 6, 4, color)
-  ImGui.DrawList_AddCircleFilled(dl, x + 5, y + 6, 2, hexrgb('#000000AA'))
+  ImGui.DrawList_AddCircleFilled(dl, x + 5, y + 6, 2, 0x000000AA)
 end
 
 local function get_node_icon_type(node)
@@ -757,15 +755,15 @@ local function draw_drag_preview(ctx, dl, drag_node, selected_count, is_copy_mod
   local preview_y = my + offset_y
 
   -- VS Code colors
-  local bg_color = hexrgb('#252526E6')  -- Dark semi-transparent
-  local border_color = hexrgb('#454545FF')
-  local text_color = hexrgb('#CCCCCCFF')
-  local badge_bg = hexrgb('#007ACCFF')  -- VS Code blue
-  local badge_text = hexrgb('#FFFFFFFF')
+  local bg_color = 0x252526E6  -- Dark semi-transparent
+  local border_color = 0x454545FF
+  local text_color = 0xCCCCCCFF
+  local badge_bg = 0x007ACCFF  -- VS Code blue
+  local badge_text = 0xFFFFFFFF
 
   -- Draw shadow (subtle)
   local shadow_offset = 2
-  local shadow_color = hexrgb('#00000040')
+  local shadow_color = 0x00000040
   ImGui.DrawList_AddRectFilled(dl,
     preview_x + shadow_offset, preview_y + shadow_offset,
     preview_x + preview_w + shadow_offset, preview_y + preview_h + shadow_offset,
@@ -781,7 +779,7 @@ local function draw_drag_preview(ctx, dl, drag_node, selected_count, is_copy_mod
   local icon_x = preview_x + padding
   local icon_y = preview_y + (preview_h - icon_size) / 2
   local has_children = drag_node.children and #drag_node.children > 0
-  local icon_color = hexrgb('#CCCCCCFF')
+  local icon_color = 0xCCCCCCFF
 
   if has_children then
     -- Folder icon (scaled down version)
@@ -840,10 +838,10 @@ local function draw_drag_preview(ctx, dl, drag_node, selected_count, is_copy_mod
     local plus_x = content_end_x + spacing
     local plus_y = preview_y + (preview_h - copy_indicator_size) / 2
     local plus_size = copy_indicator_size
-    local plus_color = hexrgb('#00FF00FF')  -- Green for copy
+    local plus_color = 0x00FF00FF  -- Green for copy
 
     -- Draw circle background
-    ImGui.DrawList_AddCircleFilled(dl, plus_x + plus_size/2, plus_y + plus_size/2, plus_size/2, hexrgb('#00000080'))
+    ImGui.DrawList_AddCircleFilled(dl, plus_x + plus_size/2, plus_y + plus_size/2, plus_size/2, 0x00000080)
 
     -- Draw + symbol
     local plus_w = plus_size * 0.5
@@ -927,7 +925,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
 
   -- Search highlight
   if search_active and matches_search then
-    ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, hexrgb('#4A4A1AFF'))
+    ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, 0x4A4A1AFF)
   end
 
   if item_selected then
@@ -948,20 +946,20 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     end
     if is_being_dragged then
       -- Semi-transparent white overlay to indicate 'being dragged'
-      ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, hexrgb('#FFFFFF18'))
+      ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, 0xFFFFFF18)
       -- Subtle border for additional feedback
-      ImGui.DrawList_AddRect(dl, visible_x + 1, y_pos + 1, visible_x + visible_w - 1, y_pos + item_h - 1, hexrgb('#FFFFFF40'), 0, 0, 1)
+      ImGui.DrawList_AddRect(dl, visible_x + 1, y_pos + 1, visible_x + visible_w - 1, y_pos + item_h - 1, 0xFFFFFF40, 0, 0, 1)
     end
   end
 
   -- Focused indicator (subtle border)
   if is_focused and not tree_state.editing then
-    ImGui.DrawList_AddRect(dl, visible_x + 1, y_pos, visible_x + visible_w - 1, y_pos + item_h, hexrgb('#6A9EFFAA'), 0, 0, 1)
+    ImGui.DrawList_AddRect(dl, visible_x + 1, y_pos, visible_x + visible_w - 1, y_pos + item_h, 0x6A9EFFAA, 0, 0, 1)
   end
 
   -- Drag & drop visual feedback
   if tree_state.drag_active and tree_state.drop_target_id == node.id then
-    local drop_color = hexrgb('#4A9EFFFF')
+    local drop_color = 0x4A9EFFFF
     if tree_state.drop_position == 'before' then
       ImGui.DrawList_AddLine(dl, visible_x, y_pos, visible_x + visible_w, y_pos, drop_color, 2)
     elseif tree_state.drop_position == 'after' then
@@ -1184,8 +1182,8 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
   local dl = ImGui.GetWindowDrawList(ctx)
   local cfg = TREE_CONFIG
 
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, hexrgb('#1A1A1AFF'))
-  ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, hexrgb('#000000DD'))
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, 0x1A1A1AFF)
+  ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, 0x000000DD)
 
   -- Mouse wheel scrolling
   if ImGui.IsWindowHovered(ctx) then
@@ -1757,11 +1755,11 @@ end
 Shell.run({
   title = 'Custom TreeView Prototype',
   version = 'v3.5.0',
-  version_color = hexrgb('#888888FF'),
+  version_color = 0x888888FF,
   initial_pos = { x = 120, y = 120 },
   initial_size = { w = 700, h = 700 },
   min_size = { w = 600, h = 500 },
-  icon_color = hexrgb('#4A9EFFFF'),
+  icon_color = 0x4A9EFFFF,
   icon_size = 18,
 
   draw = function(ctx, shell_state)

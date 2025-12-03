@@ -6,11 +6,15 @@
 -- using the same DSL as the main palette (snap/lerp/offset).
 -- Flat structure with type inference.
 
-local Colors = require('arkitekt.core.colors')
 local Palette = require('arkitekt.config.colors')
 local Engine = require('arkitekt.theme.manager.engine')
 
 local M = {}
+
+-- Helper: Check if a number is a byte color (vs a small numeric value like opacity)
+local function is_byte_color(val)
+  return type(val) == 'number' and val > 255
+end
 
 -- Lazy load Theme to avoid circular dependency
 local _Theme
@@ -122,11 +126,11 @@ function M.get_computed_palette(script_name, current_t)
     elseif type(def) == 'table' and def.mode then
       -- snap or lerp
       local resolved = Engine.resolve_value(def, current_t)
-      if type(resolved) == 'string' then
-        -- Hex string → convert to RGBA
-        computed[key] = Colors.Hexrgb(resolved .. 'FF')
+      if is_byte_color(resolved) then
+        -- Byte color → use directly
+        computed[key] = resolved
       elseif type(resolved) == 'number' then
-        -- Number → apply normalization if key matches pattern
+        -- Small number → apply normalization if key matches pattern
         if should_normalize(key) then
           resolved = Engine.normalize_to_multiplier(resolved)
         end

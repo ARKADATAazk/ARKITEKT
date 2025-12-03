@@ -13,8 +13,6 @@ local M = {}
 
 -- Set to true to enable resize grip debugging
 local DEBUG_RESIZE = false
-local hexrgb = Colors.Hexrgb
-
 local function add_text(dl, x, y, col_u32, s)
   if dl and ImGui.DrawList_AddText then
     ImGui.DrawList_AddText(dl, x, y, col_u32, tostring(s or ''))
@@ -54,9 +52,9 @@ function M.new(config)
       border = C.BORDER_OUTER,
       text = C.TEXT_NORMAL,
       sep = C.TEXT_DIMMED,
-      teal = C.ACCENT_PRIMARY or hexrgb('#41E0A3'),
-      yellow = C.ACCENT_WARNING or hexrgb('#E0B341'),
-      red = C.ACCENT_DANGER or hexrgb('#E04141'),
+      teal = C.ACCENT_PRIMARY or 0x41E0A3FF,
+      yellow = C.ACCENT_WARNING or 0xE0B341FF,
+      red = C.ACCENT_DANGER or 0xE04141FF,
       resize_handle = C.TEXT_DIMMED,
     }
   end

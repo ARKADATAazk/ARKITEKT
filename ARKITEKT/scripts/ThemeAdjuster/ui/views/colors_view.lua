@@ -4,9 +4,9 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
+local Colors = require('arkitekt.core.colors')
+local hex = Colors.hex  -- For runtime RGB→packed conversion
 local Background = require('arkitekt.gui.draw.patterns')
-local hexrgb = Ark.Colors.Hexrgb
-
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
@@ -176,14 +176,14 @@ function ColorsView:draw(ctx, shell_state)
   ImGui.Text(ctx, 'Track Colors')
   ImGui.PopFont(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
   ImGui.Text(ctx, 'Apply color palettes to project tracks')
   ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 8)
 
   -- Single scrollable content area
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
   if ImGui.BeginChild(ctx, 'colors_content', avail_w, 0, 1) then
     -- Draw background pattern
     local child_x, child_y = ImGui.GetWindowPos(ctx)
@@ -221,7 +221,7 @@ function ColorsView:draw(ctx, shell_state)
     -- Palette name display
     local current_palette = PALETTES[self.current_palette_idx]
     ImGui.PushFont(ctx, shell_state.fonts.bold, 20)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
     local palette_text_w = ImGui.CalcTextSize(ctx, current_palette.name)
     ImGui.SetCursorPosX(ctx, (avail_w - palette_text_w) / 2)
     ImGui.Text(ctx, current_palette.name)
@@ -240,7 +240,7 @@ function ColorsView:draw(ctx, shell_state)
 
     for i, color in ipairs(current_palette.colors) do
       local color_hex = string.format('#%02X%02X%02X', color[1], color[2], color[3])
-      local color_packed = hexrgb(color_hex)
+      local color_packed = hex(color_hex)
 
       -- Draw color button
       ImGui.PushStyleColor(ctx, ImGui.Col_Button, color_packed)
@@ -267,7 +267,7 @@ function ColorsView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 16)
 
     -- Instruction text
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
     local instr_text = 'Click a color to apply it to all selected tracks'
     local instr_w = ImGui.CalcTextSize(ctx, instr_text)
     ImGui.SetCursorPosX(ctx, (avail_w - instr_w) / 2)
@@ -387,7 +387,7 @@ function ColorsView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 16)
 
     -- Help text
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
     ImGui.TextWrapped(ctx, 'Track colors are stored in the project file and are independent of the theme. ' ..
                             'Use these tools to quickly apply coordinated color schemes to your tracks.')
     ImGui.PopStyleColor(ctx)

@@ -5,8 +5,6 @@
 local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local Defaults = require('arkitekt.gui.widgets.containers.tile_group.defaults')
-local hexrgb = Colors.Hexrgb
-
 local M = {}
 
 --- Renders a group header with collapse/expand functionality
@@ -55,7 +53,7 @@ function M.render(ctx, rect, group, state, config)
     local badge_size = cfg.color_badge_size
 
     -- Parse color if it's a hex string
-    local badge_color = type(group.color) == 'string' and hexrgb(group.color) or group.color
+    local badge_color = type(group.color) == 'string' and hex(group.color) or group.color
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_size, badge_y + badge_size, badge_color, 1)
 
     cursor_x = cursor_x + cfg.color_badge_size + cfg.color_badge_spacing

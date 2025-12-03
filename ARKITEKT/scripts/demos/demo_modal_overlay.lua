@@ -51,9 +51,6 @@ local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local OverlayConfig = require('arkitekt.gui.widgets.overlays.overlay.defaults')
 
 local style_ok, Style = pcall(require, 'arkitekt.gui.style.imgui')
-local hexrgb = Ark.Colors.Hexrgb
-
-
 local demo_state = {
   search_text = '',
   selected_tags = {},
@@ -62,64 +59,64 @@ local demo_state = {
   preset_layout_mode = 'grid',  -- 'flow', 'columns', 'grid'
   
   tags = {
-    { id = 'synth', label = 'Synth', color = hexrgb('#4A90E2') },
-    { id = 'bass', label = 'Bass', color = hexrgb('#7B68EE') },
-    { id = 'lead', label = 'Lead', color = hexrgb('#E85D75') },
-    { id = 'pad', label = 'Pad', color = hexrgb('#50C878') },
-    { id = 'pluck', label = 'Pluck', color = hexrgb('#F39C12') },
-    { id = 'ambient', label = 'Ambient', color = hexrgb('#9B59B6') },
-    { id = 'aggressive', label = 'Aggressive', color = hexrgb('#E74C3C') },
-    { id = 'warm', label = 'Warm', color = hexrgb('#FF8C42') },
-    { id = 'digital', label = 'Digital', color = hexrgb('#3498DB') },
-    { id = 'analog', label = 'Analog', color = hexrgb('#D68910') },
-    { id = 'bright', label = 'Bright', color = hexrgb('#F1C40F') },
-    { id = 'dark', label = 'Dark', color = hexrgb('#5D4E6D') },
-    { id = 'melodic', label = 'Melodic', color = hexrgb('#FF6B9D') },
-    { id = 'percussive', label = 'Percussive', color = hexrgb('#95A5A6') },
-    { id = 'atmospheric', label = 'Atmospheric', color = hexrgb('#6C5CE7') },
+    { id = 'synth', label = 'Synth', color = 0x4A90E2FF },
+    { id = 'bass', label = 'Bass', color = 0x7B68EEFF },
+    { id = 'lead', label = 'Lead', color = 0xE85D75FF },
+    { id = 'pad', label = 'Pad', color = 0x50C878FF },
+    { id = 'pluck', label = 'Pluck', color = 0xF39C12FF },
+    { id = 'ambient', label = 'Ambient', color = 0x9B59B6FF },
+    { id = 'aggressive', label = 'Aggressive', color = 0xE74C3CFF },
+    { id = 'warm', label = 'Warm', color = 0xFF8C42FF },
+    { id = 'digital', label = 'Digital', color = 0x3498DBFF },
+    { id = 'analog', label = 'Analog', color = 0xD68910FF },
+    { id = 'bright', label = 'Bright', color = 0xF1C40FFF },
+    { id = 'dark', label = 'Dark', color = 0x5D4E6DFF },
+    { id = 'melodic', label = 'Melodic', color = 0xFF6B9DFF },
+    { id = 'percussive', label = 'Percussive', color = 0x95A5A6FF },
+    { id = 'atmospheric', label = 'Atmospheric', color = 0x6C5CE7FF },
   },
   
   presets = {
-    { id = 'p1', label = 'ARP Crisis Line', color = hexrgb('#E74C3C') },
-    { id = 'p2', label = 'BL Filterjima', color = hexrgb('#3498DB') },
-    { id = 'p3', label = 'FX Ascensor', color = hexrgb('#F39C12') },
-    { id = 'p4', label = 'LD Blumenkranz', color = hexrgb('#50C878') },
-    { id = 'p5', label = 'LD Counter Flute', color = hexrgb('#9B59B6') },
-    { id = 'p6', label = 'LD FM-Kyojin', color = hexrgb('#E85D75') },
-    { id = 'p7', label = 'MKK Megata AH', color = hexrgb('#FF6B9D') },
-    { id = 'p8', label = 'SC Die Folter 3', color = hexrgb('#F1C40F') },
-    { id = 'p9', label = 'PD Holroyd', color = hexrgb('#4A90E2') },
-    { id = 'p10', label = 'LD Twiky', color = hexrgb('#7B68EE') },
-    { id = 'p11', label = 'DR Dropkick 2', color = hexrgb('#50E3C2') },
-    { id = 'p12', label = 'FX Insectoid', color = hexrgb('#FF8C42') },
-    { id = 'p13', label = 'BS Verzerrt', color = hexrgb('#D68910') },
-    { id = 'p14', label = 'SC Mawtawr 2', color = hexrgb('#6C5CE7') },
-    { id = 'p15', label = 'LD Ocean 2', color = hexrgb('#3498DB') },
-    { id = 'p16', label = 'BL Liquid Bells', color = hexrgb('#4ECDC4') },
-    { id = 'p17', label = 'FX Dialies', color = hexrgb('#E74C3C') },
-    { id = 'p18', label = 'LD Hush Strings', color = hexrgb('#9B59B6') },
-    { id = 'p19', label = 'SC Portal', color = hexrgb('#FF6B9D') },
-    { id = 'p20', label = 'BL Miyajima R1', color = hexrgb('#50C878') },
-    { id = 'p21', label = 'DR Noise Hit', color = hexrgb('#95A5A6') },
-    { id = 'p22', label = 'FX Yimir Origin', color = hexrgb('#F39C12') },
-    { id = 'p23', label = 'LD D91M', color = hexrgb('#7B68EE') },
-    { id = 'p24', label = 'SC Cubic', color = hexrgb('#4A90E2') },
-    { id = 'p25', label = 'PD A-R 0', color = hexrgb('#E85D75') },
-    { id = 'p26', label = 'BL Spacemind', color = hexrgb('#6C5CE7') },
-    { id = 'p27', label = 'LD Submarine', color = hexrgb('#3498DB') },
-    { id = 'p28', label = 'SC Unromantic', color = hexrgb('#D68910') },
-    { id = 'p29', label = 'FX NSEG2', color = hexrgb('#FF8C42') },
-    { id = 'p30', label = 'DR Mismash', color = hexrgb('#95A5A6') },
-    { id = 'p31', label = 'LD S3Bells', color = hexrgb('#50E3C2') },
-    { id = 'p32', label = 'BFX Crusher55', color = hexrgb('#E74C3C') },
-    { id = 'p33', label = 'MKK Portal', color = hexrgb('#F1C40F') },
-    { id = 'p34', label = 'LD Kyojin 0.1', color = hexrgb('#9B59B6') },
-    { id = 'p35', label = 'SC Die Folter', color = hexrgb('#FF6B9D') },
-    { id = 'p36', label = 'PD Rectify', color = hexrgb('#4A90E2') },
-    { id = 'p37', label = 'BS Jimoya', color = hexrgb('#50C878') },
-    { id = 'p38', label = 'FX Formattic', color = hexrgb('#7B68EE') },
-    { id = 'p39', label = 'LD Megata Soft', color = hexrgb('#E85D75') },
-    { id = 'p40', label = 'DR Dropkick', color = hexrgb('#6C5CE7') },
+    { id = 'p1', label = 'ARP Crisis Line', color = 0xE74C3CFF },
+    { id = 'p2', label = 'BL Filterjima', color = 0x3498DBFF },
+    { id = 'p3', label = 'FX Ascensor', color = 0xF39C12FF },
+    { id = 'p4', label = 'LD Blumenkranz', color = 0x50C878FF },
+    { id = 'p5', label = 'LD Counter Flute', color = 0x9B59B6FF },
+    { id = 'p6', label = 'LD FM-Kyojin', color = 0xE85D75FF },
+    { id = 'p7', label = 'MKK Megata AH', color = 0xFF6B9DFF },
+    { id = 'p8', label = 'SC Die Folter 3', color = 0xF1C40FFF },
+    { id = 'p9', label = 'PD Holroyd', color = 0x4A90E2FF },
+    { id = 'p10', label = 'LD Twiky', color = 0x7B68EEFF },
+    { id = 'p11', label = 'DR Dropkick 2', color = 0x50E3C2FF },
+    { id = 'p12', label = 'FX Insectoid', color = 0xFF8C42FF },
+    { id = 'p13', label = 'BS Verzerrt', color = 0xD68910FF },
+    { id = 'p14', label = 'SC Mawtawr 2', color = 0x6C5CE7FF },
+    { id = 'p15', label = 'LD Ocean 2', color = 0x3498DBFF },
+    { id = 'p16', label = 'BL Liquid Bells', color = 0x4ECDC4FF },
+    { id = 'p17', label = 'FX Dialies', color = 0xE74C3CFF },
+    { id = 'p18', label = 'LD Hush Strings', color = 0x9B59B6FF },
+    { id = 'p19', label = 'SC Portal', color = 0xFF6B9DFF },
+    { id = 'p20', label = 'BL Miyajima R1', color = 0x50C878FF },
+    { id = 'p21', label = 'DR Noise Hit', color = 0x95A5A6FF },
+    { id = 'p22', label = 'FX Yimir Origin', color = 0xF39C12FF },
+    { id = 'p23', label = 'LD D91M', color = 0x7B68EEFF },
+    { id = 'p24', label = 'SC Cubic', color = 0x4A90E2FF },
+    { id = 'p25', label = 'PD A-R 0', color = 0xE85D75FF },
+    { id = 'p26', label = 'BL Spacemind', color = 0x6C5CE7FF },
+    { id = 'p27', label = 'LD Submarine', color = 0x3498DBFF },
+    { id = 'p28', label = 'SC Unromantic', color = 0xD68910FF },
+    { id = 'p29', label = 'FX NSEG2', color = 0xFF8C42FF },
+    { id = 'p30', label = 'DR Mismash', color = 0x95A5A6FF },
+    { id = 'p31', label = 'LD S3Bells', color = 0x50E3C2FF },
+    { id = 'p32', label = 'BFX Crusher55', color = 0xE74C3CFF },
+    { id = 'p33', label = 'MKK Portal', color = 0xF1C40FFF },
+    { id = 'p34', label = 'LD Kyojin 0.1', color = 0x9B59B6FF },
+    { id = 'p35', label = 'SC Die Folter', color = 0xFF6B9DFF },
+    { id = 'p36', label = 'PD Rectify', color = 0x4A90E2FF },
+    { id = 'p37', label = 'BS Jimoya', color = 0x50C878FF },
+    { id = 'p38', label = 'FX Formattic', color = 0x7B68EEFF },
+    { id = 'p39', label = 'LD Megata Soft', color = 0xE85D75FF },
+    { id = 'p40', label = 'DR Dropkick', color = 0x6C5CE7FF },
   },
 }
 
@@ -201,11 +198,11 @@ local function create_preset_browser_modal(window)
     render = function(ctx, alpha, bounds)
       local custom_config = {
         sheet = {
-          background = { color = hexrgb('#1E1E28') },
+          background = { color = 0x1E1E28FF },
           header = {
-            text_color = hexrgb('#50C878'),
-            divider_color = hexrgb('#50C878'),
-            highlight_color = hexrgb('#50C878'),
+            text_color = 0x50C878FF,
+            divider_color = 0x50C878FF,
+            highlight_color = 0x50C878FF,
           }
         }
       }
@@ -238,9 +235,9 @@ local function create_preset_browser_modal(window)
           
           local is_active = (demo_state.preset_layout_mode == mode)
           if is_active then
-            ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb('#50C878'))
-            ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb('#60D888'))
-            ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb('#40B868'))
+            ImGui.PushStyleColor(ctx, ImGui.Col_Button, 0x50C878FF)
+            ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, 0x60D888FF)
+            ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, 0x40B868FF)
           end
           
           if ImGui.Button(ctx, mode_labels[mode] .. '##mode', 80, 24) then
@@ -268,7 +265,7 @@ local function create_preset_browser_modal(window)
             search_text = demo_state.search_text,
             gap = 3,
             use_dot_style = true,
-            bg_color = hexrgb('#252530'),
+            bg_color = 0x252530FF,
             dot_size = 7,
             dot_spacing = 7,
             rounding = 5,
@@ -281,7 +278,7 @@ local function create_preset_browser_modal(window)
             selected_ids = demo_state.selected_presets,
             search_text = demo_state.search_text,
             use_dot_style = true,
-            bg_color = hexrgb('#252530'),
+            bg_color = 0x252530FF,
             dot_size = 7,
             dot_spacing = 7,
             rounding = 5,
@@ -296,7 +293,7 @@ local function create_preset_browser_modal(window)
             selected_ids = demo_state.selected_presets,
             search_text = demo_state.search_text,
             use_dot_style = true,
-            bg_color = hexrgb('#252530'),
+            bg_color = 0x252530FF,
             dot_size = 7,
             dot_spacing = 7,
             rounding = 5,
@@ -413,7 +410,7 @@ local function draw_mock_content(ctx)
       cols = 1,
       gap = 8,
       use_dot_style = true,
-      bg_color = hexrgb('#252530'),
+      bg_color = 0x252530FF,
       selected_ids = demo_state.selected_presets,
       dot_size = 7,
     })

@@ -4,8 +4,6 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.Hexrgb
-
 local M = {}
 
 -- Default container styling - simple squares with 1px black border
@@ -13,9 +11,9 @@ local DEFAULTS = {
   width = 0.6,           -- Percentage of bounds width
   height = 0.8,          -- Percentage of bounds height
   rounding = 0,          -- Square corners (no rounding)
-  bg_color = hexrgb('#1e1e1e'),  -- Slightly lighter dark background
+  bg_color = 0x1E1E1EFF,  -- Slightly lighter dark background
   bg_opacity = 1.0,
-  border_color = hexrgb('#000000'),  -- Black border
+  border_color = 0x000000FF,  -- Black border
   border_opacity = 1.0,
   border_thickness = 1,  -- 1 pixel border
   padding = 20,          -- Internal padding for content spacing

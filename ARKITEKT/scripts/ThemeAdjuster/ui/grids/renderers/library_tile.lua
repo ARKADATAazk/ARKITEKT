@@ -7,7 +7,6 @@ local Ark = require('arkitekt')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
 local Math = require('arkitekt.core.math')
-local hexrgb = Ark.Colors.Hexrgb
 local Logger = require('arkitekt.debug.logger')
 local log = Logger.new('LibraryTile')
 
@@ -49,12 +48,12 @@ function M.render(ctx, rect, param, state, view)
   M._anim[key].hover = hover_t
 
   -- Color definitions
-  local BG_BASE = hexrgb('#252525')
-  local BG_ASSIGNED = hexrgb('#2A2A35')
-  local BG_HOVER = hexrgb('#2D2D2D')
-  local BRD_BASE = hexrgb('#333333')
-  local BRD_HOVER = hexrgb('#5588FF')
-  local ANT_COLOR = hexrgb('#5588FF7F')  -- 50% opacity for subtle effect
+  local BG_BASE = 0x252525FF
+  local BG_ASSIGNED = 0x2A2A35FF
+  local BG_HOVER = 0x2D2D2DFF
+  local BRD_BASE = 0x333333FF
+  local BRD_HOVER = 0x5588FFFF
+  local ANT_COLOR = 0x5588FF7F  -- 50% opacity for subtle effect
 
   -- Hover shadow effect (only when not selected)
   if hover_t > 0.01 and not state.selected then
@@ -95,7 +94,7 @@ function M.render(ctx, rect, param, state, view)
     truncated_name = param.name:sub(1, 27) .. '...'
   end
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CCCCCC'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCCCCCCFF)
   ImGui.Text(ctx, truncated_name)
   ImGui.PopStyleColor(ctx)
 
@@ -250,7 +249,7 @@ function M.render(ctx, rect, param, state, view)
   -- 6. Assignment badge (at the end)
   if assignment_count > 0 then
     ImGui.SameLine(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88AAFF'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x88AAFFFF)
     ImGui.Text(ctx, string.format('(%d)', assignment_count))
     ImGui.PopStyleColor(ctx)
   end
@@ -292,7 +291,7 @@ function M.render_link_handle(ctx, dl, rect, param_name, view, control_rects)
   end
 
   local bg_color, icon_color
-  local base_color = is_in_group and ParameterLinkManager.get_group_color(param_name) or hexrgb('#4A90E2')
+  local base_color = is_in_group and ParameterLinkManager.get_group_color(param_name) or 0x4A90E2FF
 
   if is_in_group then
     -- In group: show with group color
@@ -300,17 +299,17 @@ function M.render_link_handle(ctx, dl, rect, param_name, view, control_rects)
     icon_color = alpha_blend(base_color, 1.0)
   else
     -- Not in group: subtle gray
-    bg_color = hexrgb('#00000000')  -- Transparent
-    icon_color = hexrgb('#666666')
+    bg_color = 0x00000000  -- Transparent
+    icon_color = 0x666666FF
   end
 
   if is_hovered then
-    bg_color = alpha_blend(base_color or hexrgb('#4A90E2'), 0.5)
-    icon_color = hexrgb('#FFFFFF')
+    bg_color = alpha_blend(base_color or 0x4A90E2FF, 0.5)
+    icon_color = 0xFFFFFFFF
   end
 
   -- Draw background
-  if bg_color ~= hexrgb('#00000000') then
+  if bg_color ~= 0x00000000 then
     ImGui.DrawList_AddRectFilled(dl, handle_x1, handle_y1, handle_x2, handle_y2, bg_color, 2)
   end
 

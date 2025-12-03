@@ -22,14 +22,14 @@ local M = {}
 
 ThemeManager.register_script_palette('RegionPlaylist', {
   -- === CIRCULAR DEPENDENCY (error state) ===
-  CIRCULAR_BASE         = snap('#240C0C', '#FFDDDD'),  -- dark red / light pink
-  CIRCULAR_STRIPE       = snap('#430D0D', '#FFCCCC'),
-  CIRCULAR_BORDER       = snap('#240F0F', '#FFCCCC'),
-  CIRCULAR_TEXT         = snap('#901B1B', '#CC0000'),  -- muted red / vivid red
-  CIRCULAR_LOCK         = snap('#901B1B', '#CC0000'),
-  CIRCULAR_CHIP         = snap('#901B1B', '#CC0000'),
-  CIRCULAR_BADGE_BG     = snap('#240C0C', '#FFE0E0'),
-  CIRCULAR_BADGE_BORDER = snap('#652A2A', '#CC8888'),
+  CIRCULAR_BASE         = snap(0x240C0CFF, 0xFFDDDDFF),  -- dark red / light pink
+  CIRCULAR_STRIPE       = snap(0x430D0DFF, 0xFFCCCCFF),
+  CIRCULAR_BORDER       = snap(0x240F0FFF, 0xFFCCCCFF),
+  CIRCULAR_TEXT         = snap(0x901B1BFF, 0xCC0000FF),  -- muted red / vivid red
+  CIRCULAR_LOCK         = snap(0x901B1BFF, 0xCC0000FF),
+  CIRCULAR_CHIP         = snap(0x901B1BFF, 0xCC0000FF),
+  CIRCULAR_BADGE_BG     = snap(0x240C0CFF, 0xFFE0E0FF),
+  CIRCULAR_BADGE_BORDER = snap(0x652A2AFF, 0xCC8888FF),
 
   -- === CIRCULAR VALUES ===
   CIRCULAR_STRIPE_OPACITY = lerp(0.20, 0.30),
@@ -37,7 +37,7 @@ ThemeManager.register_script_palette('RegionPlaylist', {
   CIRCULAR_STRIPE_SPACING = lerp(16, 16),    -- constant
 
   -- === FALLBACK ===
-  FALLBACK_CHIP = snap('#FF5733', '#E64A19'),  -- orange-red
+  FALLBACK_CHIP = snap(0xFF5733FF, 0xE64A19FF),  -- orange-red
 
   -- === CUSTOM PANEL (example of offset) ===
   -- CUSTOM_PANEL_BG = offset(-0.06),  -- Would derive from BG_BASE
@@ -54,14 +54,14 @@ function M.get_circular()
   if not p then
     -- Fallback if not registered
     return {
-      base = Ark.Colors.Hexrgb('#240C0CFF'),
-      stripe = Ark.Colors.Hexrgb('#430D0D33'),
-      border = Ark.Colors.Hexrgb('#240F0FFF'),
-      text = Ark.Colors.Hexrgb('#901B1BFF'),
-      lock = Ark.Colors.Hexrgb('#901B1BFF'),
-      chip = Ark.Colors.Hexrgb('#901B1BFF'),
-      badge_bg = Ark.Colors.Hexrgb('#240C0CFF'),
-      badge_border = Ark.Colors.Hexrgb('#652A2AFF'),
+      base = 0x240C0CFF,
+      stripe = 0x430D0D33,
+      border = 0x240F0FFF,
+      text = 0x901B1BFF,
+      lock = 0x901B1BFF,
+      chip = 0x901B1BFF,
+      badge_bg = 0x240C0CFF,
+      badge_border = 0x652A2AFF,
       stripe_width = 8,
       stripe_spacing = 16,
     }
@@ -86,7 +86,7 @@ end
 function M.get_fallback_chip()
   local p = ThemeManager.get_script_palette('RegionPlaylist')
   if not p then
-    return Ark.Colors.Hexrgb('#FF5733FF')
+    return 0xFF5733FF
   end
   return p.FALLBACK_CHIP
 end
@@ -101,8 +101,8 @@ end
 function M.get_badge()
   local S = Ark.Style.COLORS or {}
   return {
-    bg = S.BADGE_BG or Ark.Colors.Hexrgb('#14181CDD'),
-    text = S.BADGE_TEXT or Ark.Colors.Hexrgb('#FFFFFFDD'),
+    bg = S.BADGE_BG or 0x14181CDD,
+    text = S.BADGE_TEXT or 0xFFFFFFDD,
     border_opacity = S.BADGE_BORDER_OPACITY or 0.20,
   }
 end
@@ -112,9 +112,9 @@ end
 function M.get_playlist_tile()
   local S = Ark.Style.COLORS or {}
   return {
-    base  = S.PLAYLIST_TILE_COLOR or Ark.Colors.Hexrgb('#3A3A3AFF'),
-    name  = S.PLAYLIST_NAME_COLOR or Ark.Colors.Hexrgb('#CCCCCCFF'),
-    badge = S.PLAYLIST_BADGE_COLOR or Ark.Colors.Hexrgb('#999999FF'),
+    base  = S.PLAYLIST_TILE_COLOR or 0x3A3A3AFF,
+    name  = S.PLAYLIST_NAME_COLOR or 0xCCCCCCFF,
+    badge = S.PLAYLIST_BADGE_COLOR or 0x999999FF,
   }
 end
 

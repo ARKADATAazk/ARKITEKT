@@ -4,8 +4,6 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- Configuration state storage

@@ -6,7 +6,6 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
-local hexrgb = Ark.Colors.Hexrgb
 local Logger = require('arkitekt.debug.logger')
 local log = Logger.new('ParamLinkModal')
 
@@ -141,11 +140,11 @@ function ParamLinkModal:render(ctx, shell_state)
   ImGui.Dummy(ctx, 0, 8)
 
   -- Source parameter info
-  ImGui.TextColored(ctx, hexrgb('#AAAAAA'), 'Source:')
+  ImGui.TextColored(ctx, 0xAAAAAAFF, 'Source:')
   ImGui.SameLine(ctx)
   ImGui.Text(ctx, self.source_param)
   ImGui.SameLine(ctx, 0, 20)
-  ImGui.TextColored(ctx, hexrgb('#AAAAAA'), 'Type:')
+  ImGui.TextColored(ctx, 0xAAAAAAFF, 'Type:')
   ImGui.SameLine(ctx)
   ImGui.Text(ctx, self.source_param_type or 'unknown')
 
@@ -157,7 +156,7 @@ function ParamLinkModal:render(ctx, shell_state)
     local mode_text = mode == ParameterLinkManager.LINK_MODE.LINK and 'LINK' or 'SYNC'
 
     ImGui.Spacing(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#4AE290'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x4AE290FF)
     if #other_params > 0 then
       ImGui.Text(ctx, string.format('Currently grouped with: %s [%s]', table.concat(other_params, ', '), mode_text))
     else
@@ -199,14 +198,14 @@ function ParamLinkModal:render(ctx, shell_state)
       chip_items[#chip_items + 1] = {
         id = param_info.id,
         label = param_info.name,
-        color = hexrgb('#4A90E2'),  -- Blue for parameters
+        color = 0x4A90E2FF,  -- Blue for parameters
       }
     end
 
     local clicked_param = ChipList.draw_columns(ctx, chip_items, {
       search_text = self.search_text,
       use_dot_style = true,
-      bg_color = hexrgb('#252530'),
+      bg_color = 0x252530FF,
       dot_size = 7,
       dot_spacing = 7,
       rounding = 5,

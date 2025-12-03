@@ -4,9 +4,6 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.Hexrgb
-
-
 local M = {}
 
 local ColoredTextView = {}
@@ -474,7 +471,7 @@ function ColoredTextView:render(ctx, width, height)
           local sel_y2 = line_y + self.char_advance.y
           
           -- Draw selection rectangle with dark grey
-          ImGui.DrawList_AddRectFilled(draw_list, sel_x1, sel_y1, sel_x2, sel_y2, hexrgb('#404040CC'))
+          ImGui.DrawList_AddRectFilled(draw_list, sel_x1, sel_y1, sel_x2, sel_y2, 0x404040CC)
         end
       end
     end

@@ -7,8 +7,6 @@
 -- This ensures ItemPicker respects the persisted theme mode.
 
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- Lazy load Theme to avoid circular dependency issues
@@ -112,37 +110,37 @@ function M.get_colors()
   -- Build colors table using Theme.COLORS with fallbacks
   _colors_cache = {
     -- Hover overlay - invert for light theme
-    HOVER_OVERLAY = is_light and hexrgb('#00000020') or hexrgb('#FFFFFF20'),
-    TEXT_SHADOW = is_light and hexrgb('#FFFFFF30') or hexrgb('#00000050'),
+    HOVER_OVERLAY = is_light and 0x00000020 or 0xFFFFFF20,
+    TEXT_SHADOW = is_light and 0xFFFFFF30 or 0x00000050,
 
     -- Default track color (when track has no color)
     DEFAULT_TRACK_COLOR = {85/256, 91/256, 91/256},
 
     -- Status bar colors
-    LOADING = hexrgb('#4A9EFF'),  -- Blue loading indicator (consistent)
-    HINT = ThemeColors.TEXT_DIMMED or hexrgb('#888888'),
+    LOADING = 0x4A9EFFFF,  -- Blue loading indicator (consistent)
+    HINT = ThemeColors.TEXT_DIMMED or 0x888888FF,
 
     -- Panel colors (from Theme.COLORS)
-    PANEL_BACKGROUND = ThemeColors.BG_CHROME or hexrgb('#0F0F0F'),
-    PANEL_BORDER = ThemeColors.BG_PANEL or hexrgb('#1A1A1A'),
-    PATTERN = ThemeColors.PATTERN_PRIMARY or hexrgb('#2A2A2A'),
+    PANEL_BACKGROUND = ThemeColors.BG_CHROME or 0x0F0F0FFF,
+    PANEL_BORDER = ThemeColors.BG_PANEL or 0x1A1A1AFF,
+    PATTERN = ThemeColors.PATTERN_PRIMARY or 0x2A2A2AFF,
 
     -- Text colors
-    MUTED_TEXT = hexrgb('#CC2222'),  -- Red for muted (consistent)
-    PRIMARY_TEXT = ThemeColors.TEXT_NORMAL or hexrgb('#FFFFFF'),
+    MUTED_TEXT = 0xCC2222FF,  -- Red for muted (consistent)
+    PRIMARY_TEXT = ThemeColors.TEXT_NORMAL or 0xFFFFFFFF,
 
     -- Backdrop/badge colors
-    BADGE_BG = is_light and hexrgb('#E8ECF0') or hexrgb('#14181C'),
-    DISABLED_BACKDROP = ThemeColors.BG_PANEL or hexrgb('#1A1A1A'),
+    BADGE_BG = is_light and 0xE8ECF0FF or 0x14181CFF,
+    DISABLED_BACKDROP = ThemeColors.BG_PANEL or 0x1A1A1AFF,
 
     -- Drag handler
-    DEFAULT_DRAG_COLOR = hexrgb('#42E896FF'),  -- Teal (consistent)
+    DEFAULT_DRAG_COLOR = 0x42E896FF,  -- Teal (consistent)
 
     -- Fallback track color
     FALLBACK_TRACK = 0x4A5A6AFF,
 
     -- Section header text color
-    SECTION_HEADER_TEXT = ThemeColors.TEXT_NORMAL or hexrgb('#FFFFFF'),
+    SECTION_HEADER_TEXT = ThemeColors.TEXT_NORMAL or 0xFFFFFFFF,
   }
 
   _cache_t = current_t
@@ -234,13 +232,13 @@ function M.get_tile_render()
       brightness = 0.60,
       min_alpha = 0x44,
       fade_speed = 20.0,
-      backdrop_color = ThemeColors.BG_PANEL or hexrgb('#1A1A1A'),
+      backdrop_color = ThemeColors.BG_PANEL or 0x1A1A1AFF,
       backdrop_alpha = 0x88,
     },
 
     -- Muted state
     muted = {
-      text_color = hexrgb('#CC2222'),
+      text_color = 0xCC2222FF,
       desaturate = 0.25,
       brightness = 0.70,
       alpha_factor = 0.85,
@@ -255,7 +253,7 @@ function M.get_tile_render()
       saturation_factor = 0.7,
       brightness_factor = 1,
       alpha = 0xDD,
-      text_shadow = is_light and hexrgb('#FFFFFF40') or hexrgb('#00000099'),
+      text_shadow = is_light and 0xFFFFFF40 or 0x00000099,
     },
 
     -- Badges (use theme-derived badge colors)
@@ -265,7 +263,7 @@ function M.get_tile_render()
         padding_y = 0,
         margin = 4,
         rounding = 3,
-        bg = is_light and hexrgb('#E8ECF0') or hexrgb('#14181C'),
+        bg = is_light and 0xE8ECF0FF or 0x14181CFF,
         border_darken = 0.4,
         border_alpha = 0x66,
       },
@@ -274,7 +272,7 @@ function M.get_tile_render()
         padding_y = 0,
         margin = 4,
         rounding = 3,
-        bg = is_light and hexrgb('#E8ECF0') or hexrgb('#14181C'),
+        bg = is_light and 0xE8ECF0FF or 0x14181CFF,
         border_darken = 0.4,
         border_alpha = 0x55,
       },
@@ -283,7 +281,7 @@ function M.get_tile_render()
         margin = 4,
         spacing = 4,
         rounding = 3,
-        bg = is_light and hexrgb('#E8ECF0') or hexrgb('#14181C'),
+        bg = is_light and 0xE8ECF0FF or 0x14181CFF,
         border_darken = 0.4,
         border_alpha = 0x66,
       },
@@ -291,7 +289,7 @@ function M.get_tile_render()
 
     -- Text
     text = {
-      primary_color = ThemeColors.TEXT_NORMAL or hexrgb('#FFFFFF'),
+      primary_color = ThemeColors.TEXT_NORMAL or 0xFFFFFFFF,
       padding_left = 4,
       padding_top = 3,
       margin_right = 6,
@@ -363,7 +361,7 @@ function M.get_tile_render()
       header_saturation_factor = 0.6,
       header_brightness_factor = 0.7,
       header_alpha = 0.0,
-      header_text_shadow = is_light and hexrgb('#FFFFFF40') or hexrgb('#00000099'),
+      header_text_shadow = is_light and 0xFFFFFF40 or 0x00000099,
     },
   }
 end
@@ -413,7 +411,7 @@ function M.get_region_tags()
       margin_bottom = 4,
       margin_left = 4,
       rounding = 0,
-      bg_color = is_light and hexrgb('#E8ECF0') or hexrgb('#14181C'),
+      bg_color = is_light and 0xE8ECF0FF or 0x14181CFF,
       alpha = 0xFF,
       text_min_lightness = 0.35,
     },

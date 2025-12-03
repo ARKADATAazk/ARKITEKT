@@ -12,7 +12,7 @@
 | Strings | `s = s .. x` in loop | `table.concat(parts)` | O(n) vs O(n²) |
 | Config | `config.a.b.c` per-item | Cache once per frame | 60% faster |
 | Renderer setup | Per-tile config lookups | cache_config() once per frame | 60% faster |
-| Colors | `hexrgb("#FF0000")` | `0xFF0000FF` (bytes) | 0.5-1μs per call |
+| Colors | `hex("#FF0000")` | `0xFF0000FF` (bytes) | 0.5-1μs per call |
 | Iteration | `for k,v in pairs(t)` | `for i=1,#t` (arrays) | 20-30% faster |
 
 ---
@@ -135,14 +135,14 @@ local s = table.concat(parts)
 
 ## Color Parsing Overhead
 
-### The Problem: hexrgb() String Parsing
+### The Problem: hex() String Parsing
 
 **Impact:** 0.5-1μs per call (string parsing, validation, bit operations)
 
 ```lua
 -- SLOW: String parsing every call
-local color = hexrgb("#FF5500")     -- ~0.5-1μs
-local color = hexrgb("#FF5500FF")   -- ~0.5-1μs
+local color = hex("#FF5500")     -- ~0.5-1μs
+local color = hex("#FF5500FF")   -- ~0.5-1μs
 
 -- FAST: Pre-computed byte literal
 local color = 0xFF5500FF            -- ~0ns (compile-time constant)
@@ -159,7 +159,7 @@ local color = 0xFF5500FF            -- ~0ns (compile-time constant)
 
 ### ARKITEKT Codebase Status
 
-**Found:** 1,302 `hexrgb()` calls across 170 files
+**Found:** 1,302 `hex()` calls across 170 files
 
 | Location | Per-Frame? | Action |
 |----------|-----------|--------|
@@ -172,8 +172,8 @@ local color = 0xFF5500FF            -- ~0ns (compile-time constant)
 
 ```lua
 -- Before (string parsing per-frame)
-local HOVER_COLOR = hexrgb("#FFFFFF20")
-local ERROR_COLOR = hexrgb("#CC2222")
+local HOVER_COLOR = hex("#FFFFFF20")
+local ERROR_COLOR = hex("#CC2222")
 
 -- After (zero-cost byte literals)
 local HOVER_COLOR = 0xFFFFFF20
@@ -588,7 +588,7 @@ end
 
 -- Example: Cache parsed colors
 local parse_color = memoize(function(hex)
-  return Colors.hexrgb(hex)
+  return Colors.hex(hex)
 end)
 ```
 
@@ -731,7 +731,7 @@ Current pollution patterns found in the codebase:
 
 | Pattern | Count | Location | Priority |
 |---------|-------|----------|----------|
-| `hexrgb()` calls | 1,302 | 170 files | 🔴 High |
+| `hex()` calls | 1,302 | 170 files | 🔴 High |
 | Non-localized `math.*` | 260 | 65 files (vs 12 localized) | 🟠 Medium |
 | `= {}` allocations | 276 | 81 files (audit hot paths) | 🟠 Medium |
 | `pairs()` in loops | 64 | 28 files | 🟡 Low |

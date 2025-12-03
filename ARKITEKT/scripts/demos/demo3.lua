@@ -47,9 +47,6 @@ local StatusPad = require('arkitekt.gui.widgets.data.status_pad')
 local StatusBar = require('arkitekt.runtime.chrome.status_bar')
 
 local style_ok, Style = pcall(require, 'arkitekt.gui.style.imgui')
-local hexrgb = Ark.Colors.Hexrgb
-
-
 -- Initial states for the pads
 local transport_override = true
 local follow_playhead = false
@@ -58,7 +55,7 @@ local quantize_enabled = true
 -- Status bar configuration
 local function get_status()
   return {
-    color = hexrgb('#41E0A3'),
+    color = 0x41E0A3FF,
     text  = 'Status Pads Demo  •  Clean Toggle Widgets',
   }
 end
@@ -71,7 +68,7 @@ local function init_pads()
   pads.transport = StatusPad.new({
     id = 'transport_pad',
     width = 250, height = 40,
-    color = hexrgb('#41E0A3'), -- Teal/Green
+    color = 0x41E0A3FF, -- Teal/Green
     primary_text = 'Transport Override',
     state = transport_override,
     icon_type = 'check',
@@ -84,7 +81,7 @@ local function init_pads()
   pads.follow = StatusPad.new({
     id = 'follow_pad',
     width = 250, height = 40,
-    color = hexrgb('#5B8DFF'), -- Blue
+    color = 0x5B8DFFFF, -- Blue
     primary_text = 'Follow Playhead',
     state = follow_playhead,
     icon_type = 'check',
@@ -97,7 +94,7 @@ local function init_pads()
   pads.quantize = StatusPad.new({
     id = 'quantize_pad',
     width = 250, height = 52, -- Slightly taller for two lines of text
-    color = hexrgb('#FFA94D'), -- Orange
+    color = 0xFFA94DFF, -- Orange
     primary_text = 'Quantize',
     secondary_text = quantize_enabled and 'Quantized' or 'Off',
     state = quantize_enabled,
@@ -114,14 +111,14 @@ init_pads()
 
 -- Main draw loop
 local function draw(ctx)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#EEEEEE'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xEEEEEEFF)
   
   ImGui.Dummy(ctx, 1, 8)
   ImGui.Text(ctx, 'Toggle Controls')
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 1, 10)
   
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
   ImGui.TextWrapped(ctx, 'These widgets are styled to match the toggle buttons from the reference screenshot. Click any pad to toggle its state.')
   ImGui.PopStyleColor(ctx)
   

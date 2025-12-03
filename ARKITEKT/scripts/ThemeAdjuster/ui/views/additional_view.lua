@@ -5,7 +5,6 @@
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
-local hexrgb = Ark.Colors.Hexrgb
 local Constants = require('ThemeAdjuster.config.constants')
 local ParamDiscovery = require('ThemeAdjuster.domain.theme.discovery')
 local ThemeMapper = require('ThemeAdjuster.domain.theme.mapper')
@@ -511,7 +510,7 @@ function AdditionalView:draw(ctx, shell_state)
   local right_width = avail_w * 0.40
 
   -- LEFT PANEL: Parameter Library
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
   -- Use modern 5-parameter API: BeginChild(ctx, id, w, h, child_flags, window_flags)
   -- WindowFlags_NoMove prevents window dragging, but allows scrolling
   local child_flags = ImGui.ChildFlags_None or 0
@@ -537,7 +536,7 @@ function AdditionalView:draw(ctx, shell_state)
     ImGui.Text(ctx, 'PARAMETER LIBRARY')
     ImGui.PopFont(ctx)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
     local param_count = #self.unknown_params
     ImGui.Text(ctx, string.format('%d parameters • Drag to assign', param_count))
     ImGui.PopStyleColor(ctx)
@@ -546,7 +545,7 @@ function AdditionalView:draw(ctx, shell_state)
 
     -- Draw library grid
     if param_count == 0 then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
       ImGui.Text(ctx, 'No additional parameters found')
       ImGui.PopStyleColor(ctx)
     else
@@ -581,7 +580,7 @@ function AdditionalView:draw(ctx, shell_state)
   -- MIDDLE PANEL: Templates
   ImGui.SameLine(ctx, 0, panel_gap)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1E1E28'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1E1E28FF)
   if ImGui.BeginChild(ctx, 'templates_grid', middle_width, 0, child_flags, window_flags) then
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
@@ -603,7 +602,7 @@ function AdditionalView:draw(ctx, shell_state)
     ImGui.Text(ctx, 'TEMPLATES')
     ImGui.PopFont(ctx)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
     local template_count = 0
     for _ in pairs(self.templates) do template_count = template_count + 1 end
     ImGui.Text(ctx, string.format('%d templates • Drag to use', template_count))
@@ -634,7 +633,7 @@ function AdditionalView:draw(ctx, shell_state)
   -- RIGHT PANEL: Assignment Grid
   ImGui.SameLine(ctx, 0, panel_gap)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
   if ImGui.BeginChild(ctx, 'assignment_grid', right_width, 0, child_flags, window_flags) then
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
@@ -736,9 +735,9 @@ function AdditionalView:draw_assignment_tab_bar(ctx, shell_state)
     local assigned_count = #self.assignments[tab_config.id]
 
     -- Tab button
-    local bg_color = is_active and tab_config.color or hexrgb('#2A2A2A')
+    local bg_color = is_active and tab_config.color or 0x2A2A2AFF
     local hover_color = tab_config.color
-    local text_color = is_active and hexrgb('#FFFFFF') or hexrgb('#888888')
+    local text_color = is_active and 0xFFFFFFFF or 0x888888FF
 
     ImGui.PushStyleColor(ctx, ImGui.Col_Button, bg_color)
     ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hover_color)
@@ -785,7 +784,7 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
     ImGui.Text(ctx, 'Parameter Groups')
     ImGui.PopFont(ctx)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
     ImGui.Text(ctx, 'Show/hide groups of parameters')
     ImGui.PopStyleColor(ctx)
 
@@ -845,7 +844,7 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 8)
 
     -- Group list
-    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
     if ImGui.BeginChild(ctx, 'group_list', 0, -32, 1) then
       ImGui.Indent(ctx, 8)
       ImGui.Dummy(ctx, 0, 4)
@@ -869,7 +868,7 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
         if is_enabled then
           ImGui.Text(ctx, display_text)
         else
-          ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
           ImGui.Text(ctx, display_text)
           ImGui.PopStyleColor(ctx)
         end
@@ -1617,8 +1616,8 @@ function AdditionalView:handle_right_click_selection(ctx, grid, grid_id)
 
       -- Draw selection rectangle
       local dl = ImGui.GetWindowDrawList(ctx)
-      ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, hexrgb('#5588FF22'), 3)
-      ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, hexrgb('#5588FFAA'), 3, 0, 1.5)
+      ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, 0x5588FF22, 3)
+      ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, 0x5588FFAA, 3, 0, 1.5)
     end
 
     -- End right-click drag

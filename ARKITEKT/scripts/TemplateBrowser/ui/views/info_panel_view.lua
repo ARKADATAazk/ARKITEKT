@@ -13,12 +13,10 @@ local Tooltips = require('TemplateBrowser.ui.tooltips')
 local UI = require('TemplateBrowser.ui.config.constants')
 
 local M = {}
-local hexrgb = Ark.Colors.Hexrgb
-
 -- Draw a u-he style section header (dim text, left-aligned)
 local function draw_section_header(ctx, title)
   ImGui.Dummy(ctx, 0, 10)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
   ImGui.Text(ctx, title)
   ImGui.PopStyleColor(ctx)
   ImGui.Dummy(ctx, 0, 4)
@@ -46,12 +44,12 @@ local function draw_info_panel(ctx, gui, width, height)
       -- ========================================
 
       -- Template name (prominent)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFFFFFFF)
       ImGui.TextWrapped(ctx, tmpl.name)
       ImGui.PopStyleColor(ctx)
 
       -- Location shown as 'in [folder]' style
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
       ImGui.Text(ctx, 'in ' .. tmpl.folder)
       ImGui.PopStyleColor(ctx)
 
@@ -84,20 +82,20 @@ local function draw_info_panel(ctx, gui, width, height)
 
           -- Bar color: brighter for higher values
           local intensity = count > 0 and (0.3 + 0.7 * (count / max_val)) or 0.1
-          local bar_color = Ark.Colors.WithAlpha(hexrgb('#5588FF'), math.floor(255 * intensity))
+          local bar_color = Ark.Colors.WithAlpha(0x5588FFFF, math.floor(255 * intensity))
 
           if bar_h > 0 then
             ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + bar_w, spark_y + spark_h - 1, bar_color, 1)
           else
             -- Draw a tiny dot for zero days
-            ImGui.DrawList_AddRectFilled(dl, bar_x, spark_y + spark_h - 2, bar_x + bar_w, spark_y + spark_h - 1, hexrgb('#333333'), 0)
+            ImGui.DrawList_AddRectFilled(dl, bar_x, spark_y + spark_h - 2, bar_x + bar_w, spark_y + spark_h - 1, 0x333333FF, 0)
           end
         end
 
         ImGui.Dummy(ctx, spark_w, spark_h + 4)
 
         -- Stats text
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
 
         -- Total and trend
         local trend_icon = Stats.format_trend(stats.trend)
@@ -132,8 +130,8 @@ local function draw_info_panel(ctx, gui, width, height)
           Chip.Draw(ctx, {
             style = Chip.STYLE.ACTION,
             label = fx_name,
-            bg_color = hexrgb('#3A3A3ACC'),
-            text_color = hexrgb('#FFFFFF'),
+            bg_color = 0x3A3A3ACC,
+            text_color = 0xFFFFFFFF,
             height = 22,
             padding_h = 8,
             rounding = 2,
@@ -230,13 +228,13 @@ local function draw_info_panel(ctx, gui, width, height)
             Persistence.save_metadata(state.metadata)
           end
         else
-          ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#555555'))
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x555555FF)
           ImGui.Text(ctx, 'No tags available')
           ImGui.Text(ctx, 'Create in Tags panel')
           ImGui.PopStyleColor(ctx)
         end
       else
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#555555'))
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x555555FF)
         ImGui.Text(ctx, 'No tags available')
         ImGui.PopStyleColor(ctx)
       end
@@ -252,9 +250,9 @@ local function draw_info_panel(ctx, gui, width, height)
         label = 'Apply to Track',
         width = content_w,
         height = 28,
-        bg_color = hexrgb('#2A5599'),
-        bg_hover_color = hexrgb('#3A65A9'),
-        bg_active_color = hexrgb('#1A4589'),
+        bg_color = 0x2A5599FF,
+        bg_hover_color = 0x3A65A9FF,
+        bg_active_color = 0x1A4589FF,
       }).clicked then
         TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
       end
@@ -291,7 +289,7 @@ local function draw_info_panel(ctx, gui, width, height)
     else
       -- No template selected
       ImGui.Dummy(ctx, 0, 40)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#555555'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x555555FF)
       local text = 'Select a template'
       local text_w = ImGui.CalcTextSize(ctx, text)
       ImGui.SetCursorPosX(ctx, (content_w - text_w) / 2)

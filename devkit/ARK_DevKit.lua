@@ -28,8 +28,6 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT%-Dev[/\
 -- ============================================================================
 local ImGui = Ark.ImGui
 local Settings = require('arkitekt.core.settings')
-local hexrgb = Ark.Colors.Hexrgb
-
 local reaper = reaper
 local sep = package.config:sub(1,1)
 
@@ -466,7 +464,7 @@ local function render_app_tile(ctx, app_data, tile_width, shell_state)
 
   -- Tile background
   local bg_color = get_tile_color(app_data.name)
-  local border_color = hexrgb('#2A2A2A')
+  local border_color = 0x2A2A2AFF
 
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, 2)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 2, 0, 0.5)
@@ -610,7 +608,7 @@ local function draw_sandbox(ctx, shell_state)
   ImGui.Dummy(ctx, 0, 8)
 
   if #State.sandbox_scripts == 0 then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
     ImGui.TextWrapped(ctx, 'No sandbox scripts found in scripts/Sandbox/')
     ImGui.PopStyleColor(ctx)
     return
@@ -626,7 +624,7 @@ local function draw_sandbox(ctx, shell_state)
     ImGui.SameLine(ctx)
 
     -- Worktree badge
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
     ImGui.Text(ctx, string.format('[%s]', script.worktree))
     ImGui.PopStyleColor(ctx)
     ImGui.SameLine(ctx, 0, 16)
@@ -687,7 +685,7 @@ local function draw_main(ctx, shell_state)
 
   -- Check for no worktrees outside panel
   if #State.worktrees == 0 then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FF6666'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFF6666FF)
     ImGui.TextWrapped(ctx, 'No worktrees found. Click Config to set the base directory.')
     ImGui.PopStyleColor(ctx)
 
@@ -728,7 +726,7 @@ local function draw_main(ctx, shell_state)
     local filtered_apps = State:get_filtered_apps()
 
     if #filtered_apps == 0 then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
       if State.search_query ~= '' then
         ImGui.TextWrapped(ctx, 'No apps match your search.')
       else
@@ -759,13 +757,13 @@ local function get_status()
 
   if wt_count == 0 then
     return {
-      color = hexrgb('#FF6666'),
+      color = 0xFF6666FF,
       text = 'NO WORKTREES',
     }
   end
 
   return {
-    color = hexrgb('#41E0A3'),
+    color = 0x41E0A3FF,
     text = string.format('%d WORKTREE(S) • %d APP(S)', wt_count, app_count),
   }
 end
@@ -784,7 +782,7 @@ Ark.Shell.run({
   initial_pos = { x = 200, y = 200 },
   initial_size = { w = 900, h = 600 },
   min_size = { w = 750, h = 400 },
-  icon_color = hexrgb('#FF6600'),
+  icon_color = 0xFF6600FF,
   icon_size = 18,
   content_padding = 12,
   get_status_func = get_status,

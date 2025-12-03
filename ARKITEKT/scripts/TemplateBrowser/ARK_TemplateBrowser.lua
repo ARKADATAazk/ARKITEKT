@@ -17,8 +17,6 @@ local GUI = require('TemplateBrowser.ui.init')
 local Scanner = require('TemplateBrowser.domain.template.scanner')
 local Constants = require('TemplateBrowser.config.constants')
 
-local hexrgb = Ark.Colors.Hexrgb
-
 -- Initialize state
 State.initialize(Config)
 

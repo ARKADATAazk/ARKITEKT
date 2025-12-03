@@ -26,8 +26,6 @@ local DnDState   = require('arkitekt.gui.widgets.containers.grid.dnd_state')
 local DropZones  = require('arkitekt.gui.widgets.containers.grid.drop_zones')
 
 local M = {}
-local hexrgb = Colors.Hexrgb
-
 -- ============================================================================
 -- HIDDEN STATE REGISTRY (ImGui-style API)
 -- ============================================================================
@@ -84,16 +82,16 @@ local DEFAULTS = {
   
   marquee = {
     drag_threshold = 3,
-    fill_color = hexrgb('#FFFFFF22'),
-    fill_color_add = hexrgb('#FFFFFF33'),
-    stroke_color = hexrgb('#FFFFFF'),
+    fill_color = 0xFFFFFF22,
+    fill_color_add = 0xFFFFFF33,
+    stroke_color = 0xFFFFFFFF,
     stroke_thickness = 1,
     rounding = 0,
   },
 
   dim = {
-    fill_color = hexrgb('#00000088'),
-    stroke_color = hexrgb('#FFFFFF33'),
+    fill_color = 0x00000088,
+    stroke_color = 0xFFFFFF33,
     stroke_thickness = 1.5,
     rounding = 6,
   },
@@ -101,17 +99,17 @@ local DEFAULTS = {
   drop = {
     line = {
       width = 2,
-      color = hexrgb('#42E896'),
+      color = 0x42E896FF,
       glow_width = 12,
-      glow_color = hexrgb('#42E89633'),
+      glow_color = 0x42E89633,
     },
     caps = {
       width = 8,
       height = 3,
-      color = hexrgb('#42E896'),
+      color = 0x42E896FF,
       rounding = 0,
       glow_size = 3,
-      glow_color = hexrgb('#42E89644'),
+      glow_color = 0x42E89644,
     },
     pulse_speed = 2.5,
   },

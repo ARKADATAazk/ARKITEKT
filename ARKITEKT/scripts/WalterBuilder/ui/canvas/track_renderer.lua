@@ -6,8 +6,6 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local TrackDefaults = require('WalterBuilder.config.track_defaults')
 
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 local Renderer = {}
 Renderer.__index = Renderer
@@ -15,31 +13,31 @@ Renderer.__index = Renderer
 -- Track visualization colors
 local COLORS = {
   -- Track backgrounds
-  BG_NORMAL = hexrgb('#1E1E1E'),
-  BG_SELECTED = hexrgb('#2A3A4A'),
-  BG_ARMED = hexrgb('#3A2A2A'),
-  BG_FOLDER = hexrgb('#252525'),
+  BG_NORMAL = 0x1E1E1EFF,
+  BG_SELECTED = 0x2A3A4AFF,
+  BG_ARMED = 0x3A2A2AFF,
+  BG_FOLDER = 0x252525FF,
 
   -- Track borders
-  BORDER_NORMAL = hexrgb('#3A3A3A'),
-  BORDER_SELECTED = hexrgb('#5588CC'),
-  BORDER_FOLDER = hexrgb('#4A4A4A'),
+  BORDER_NORMAL = 0x3A3A3AFF,
+  BORDER_SELECTED = 0x5588CCFF,
+  BORDER_FOLDER = 0x4A4A4AFF,
 
   -- Text colors
-  TEXT_NORMAL = hexrgb('#AAAAAA'),
-  TEXT_SELECTED = hexrgb('#FFFFFF'),
-  TEXT_MUTED = hexrgb('#666666'),
+  TEXT_NORMAL = 0xAAAAAAFF,
+  TEXT_SELECTED = 0xFFFFFFFF,
+  TEXT_MUTED = 0x666666FF,
 
   -- State indicators
-  ARMED = hexrgb('#CC4444'),
-  MUTED = hexrgb('#888844'),
-  SOLOED = hexrgb('#44AA44'),
+  ARMED = 0xCC4444FF,
+  MUTED = 0x888844FF,
+  SOLOED = 0x44AA44FF,
 
   -- Folder indent
-  FOLDER_LINE = hexrgb('#4A4A4AFF'),
+  FOLDER_LINE = 0x4A4A4AFF,
 
   -- Separator
-  SEPARATOR = hexrgb('#2A2A2A'),
+  SEPARATOR = 0x2A2A2AFF,
 }
 
 function M.new(opts)

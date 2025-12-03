@@ -4,8 +4,6 @@
 
 local Ark = require('arkitekt')
 local Lookup = require('arkitekt.core.lookup')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- ============================================================================
@@ -149,10 +147,10 @@ M.STATUS = {
 }
 
 M.STATUS_COLORS = {
-  info = hexrgb('#CCCCCC'),
-  success = hexrgb('#41E0A3'),
-  warning = hexrgb('#E0B341'),
-  error = hexrgb('#E04141'),
+  info = 0xCCCCCCFF,
+  success = 0x41E0A3FF,
+  warning = 0xE0B341FF,
+  error = 0xE04141FF,
 }
 
 -- ============================================================================

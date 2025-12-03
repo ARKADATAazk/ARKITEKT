@@ -7,8 +7,6 @@ local C = Theme.COLORS          -- Shared primitives
 local PC = Theme.build_panel_colors()   -- Panel-specific colors
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.Hexrgb
-
 local Config = require('arkitekt.core.merge')
 
 local M = {}

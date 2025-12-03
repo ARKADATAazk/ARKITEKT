@@ -42,14 +42,14 @@ function M.Draw(ctx, state, config, width, height)
       if vst_color then
         bg_color = is_selected and vst_color or Ark.Colors.WithOpacity(vst_color, 0.8)
       else
-        bg_color = is_selected and Ark.Colors.Hexrgb('#4A4A4ACC') or Ark.Colors.Hexrgb('#3A3A3ACC')
+        bg_color = is_selected and 0x4A4A4ACC or 0x3A3A3ACC
       end
 
       local clicked, chip_w, chip_h = Chip.Draw(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
         bg_color = bg_color,
-        text_color = vst_color and Ark.Colors.AutoTextColor(vst_color) or Ark.Colors.Hexrgb('#FFFFFF'),
+        text_color = vst_color and Ark.Colors.AutoTextColor(vst_color) or 0xFFFFFFFF,
         height = 22,
         padding_h = 8,
         rounding = 2,

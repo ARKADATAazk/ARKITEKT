@@ -9,8 +9,6 @@ local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
 local M = {}
-local hexrgb = Colors.Hexrgb
-
 -- State for each picker instance (strong tables with access tracking for cleanup)
 local instances = Base.create_instance_registry()
 
@@ -120,7 +118,7 @@ local function render_picker_contents(ctx, id, on_change)
   local changed = false
 
   -- Style the color picker with dark borders
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb('#000000FF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x000000FF)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameBorderSize, 1)
 
   -- Color picker configuration

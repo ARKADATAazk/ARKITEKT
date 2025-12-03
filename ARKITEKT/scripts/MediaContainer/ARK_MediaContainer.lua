@@ -15,8 +15,6 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 local ImGui = require('arkitekt.core.imgui')
 local Shell = require('arkitekt.runtime.shell')
 local MediaContainer = require('MediaContainer.init')
-local hexrgb = Ark.Colors.Hexrgb
-
 -- Initialize
 MediaContainer.initialize()
 
@@ -85,8 +83,8 @@ Shell.run({
       ImGui.Separator(ctx)
 
       -- Delete all button
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb('#662222FF'))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb('#883333FF'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, 0x662222FF)
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, 0x883333FF)
       if ImGui.Button(ctx, 'Delete All', -1, 0) then
         -- Clear all containers
         local State = MediaContainer.State
@@ -105,7 +103,7 @@ Shell.run({
   end,
   initial_pos  = { x = 100, y = 100 },
   initial_size = { w = 300, h = 300 },
-  icon_color   = hexrgb('#FF9933'),
+  icon_color   = 0xFF9933FF,
   icon_size    = 18,
   min_size     = { w = 280, h = 200 },
 })

@@ -29,7 +29,7 @@ local function draw_custom_collapsible_header(ctx, label, is_open, width, config
 
   -- Very subtle hover background (optional - can be removed for pure minimal)
   if hovered then
-    local hover_color = Ark.Colors.Hexrgba(config.COLORS.header_hover or config.COLORS.header_bg, 0.3) -- 30% alpha
+    local hover_color = Ark.Colors.WithOpacity(config.COLORS.header_hover or config.COLORS.header_bg, 0.3) -- 30% alpha
     ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + header_height, hover_color, 0)
   end
 
@@ -48,7 +48,7 @@ local function draw_custom_collapsible_header(ctx, label, is_open, width, config
   local text_y = chevron_y
 
   -- Draw text with slight shadow for bold effect
-  ImGui.DrawList_AddText(dl, text_x + 0.5, text_y + 0.5, Ark.Colors.Hexrgba(config.COLORS.text, 0.5), label)
+  ImGui.DrawList_AddText(dl, text_x + 0.5, text_y + 0.5, Ark.Colors.WithOpacity(config.COLORS.text, 0.5), label)
   ImGui.DrawList_AddText(dl, text_x, text_y, config.COLORS.text, label)
 
   return clicked
@@ -489,11 +489,11 @@ function M.Draw(ctx, state, config, width, height, gui)
 
   -- Helper function to draw thin separator line above header
   local function draw_thin_separator(ctx, dl, x, y, width, is_hovered, hover_time)
-    local line_color = Ark.Colors.Hexrgb('#333333')  -- Default dark
+    local line_color = 0x333333FF  -- Default dark
 
     -- If hovered for more than 1 second, highlight light grey
     if is_hovered and hover_time >= hover_threshold then
-      line_color = Ark.Colors.Hexrgb('#666666')  -- Light grey highlight
+      line_color = 0x666666FF  -- Light grey highlight
     end
 
     -- Draw thin horizontal line

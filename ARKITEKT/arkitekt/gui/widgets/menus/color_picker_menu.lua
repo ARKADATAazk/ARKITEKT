@@ -10,8 +10,6 @@ local Draw = require('arkitekt.gui.draw.primitives')
 local Unicode = require('arkitekt.core.unicode')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
-local hexrgb = ColorUtils.Hexrgb
-
 -- Remix icon for checkbox (selection indicator)
 local ICON_CHECK = Unicode.utf8(0xEC69)
 
@@ -91,12 +89,12 @@ function M.render(ctx, opts)
   local bg_y = menu_start_y - bg_padding
   local bg_w = actual_grid_width + (bg_padding * 2)
   local bg_h = grid_height + (bg_padding * 2)
-  ImGui.DrawList_AddRectFilled(dl, bg_x, bg_y, bg_x + bg_w, bg_y + bg_h, hexrgb('#1a1a1aFF'), 4)
+  ImGui.DrawList_AddRectFilled(dl, bg_x, bg_y, bg_x + bg_w, bg_y + bg_h, 0x1A1A1AFF, 4)
 
   -- Convert palette to integer colors
   local preset_colors = {}
   for i, color in ipairs(palette) do
-    preset_colors[i] = hexrgb(color.hex)
+    preset_colors[i] = color.hex  -- .hex is now a byte value
   end
 
   -- Draw color chips
@@ -159,7 +157,7 @@ function M.render(ctx, opts)
       local base_size = opts.icon_font_size or 12
       local icon_size = (base_size * 0.5) // 1  -- 50% of base size
       ImGui.PushFont(ctx, opts.icon_font, icon_size)
-      local icon_color = hexrgb('#00000099')  -- Black icon at 60% opacity
+      local icon_color = 0x00000099  -- Black icon at 60% opacity
       local text_w, text_h = ImGui.CalcTextSize(ctx, ICON_CHECK)
       local icon_x = chip_cx - text_w * 0.5  -- Centered (even chip size)
       local icon_y = chip_cy - text_h * 0.5

@@ -9,8 +9,6 @@ local Duration = require('arkitekt.core.duration')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
 local Chip = require('arkitekt.gui.widgets.data.chip')
-local hexrgb = Ark.Colors.Hexrgb
-
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
 local min = math.min

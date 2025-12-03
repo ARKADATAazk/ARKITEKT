@@ -6,8 +6,6 @@ local Constants = require('ThemeAdjuster.config.constants')
 local Ark = require('arkitekt')
 local Defaults = require('ThemeAdjuster.config.defaults')
 local Strings = require('ThemeAdjuster.config.strings')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- Re-export constants for backward compatibility

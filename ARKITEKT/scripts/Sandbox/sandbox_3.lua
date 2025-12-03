@@ -18,8 +18,6 @@ local Console = require('arkitekt.debug.console')
 local Logger = require('arkitekt.debug.logger')
 
 local ImGui = Arkit.ImGui
-local hexrgb = Arkit.hexrgb
-
 local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui')
 local console = Console.new()
 
@@ -115,12 +113,12 @@ init()
 Shell.run({
   title = 'Debug Console Test',
   version = 'v0.1.0',
-  version_color = hexrgb('#888888FF'),
+  version_color = 0x888888FF,
   style = StyleOK and Style or nil,
   initial_pos = { x = 120, y = 120 },
   initial_size = { w = 900, h = 600 },
   min_size = { w = 600, h = 400 },
-  icon_color = hexrgb('#41E0A3'),
+  icon_color = 0x41E0A3FF,
   icon_size = 18,
   
   draw = function(ctx, shell_state)

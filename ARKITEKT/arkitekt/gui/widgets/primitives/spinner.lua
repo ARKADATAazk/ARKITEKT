@@ -8,8 +8,6 @@ local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.theme')
 local Base = require('arkitekt.gui.widgets.base')
 
-local hexrgb = Colors.Hexrgb
-
 local M = {}
 
 -- ============================================================================

@@ -30,10 +30,10 @@ M.FLAGS = {
 
 -- Default colors for drop indicators
 M.COLORS = {
-  POTENTIAL_TARGET = Colors.Hexrgb('#FFFFFF30'),  -- Subtle highlight for all potential targets
-  ACTIVE_TARGET = Colors.Hexrgb('#FFFFFFAA'),     -- Brighter when hovering
-  ACTIVE_FILL = Colors.Hexrgb('#FFFFFF10'),       -- Fill for active target
-  GLOW_COLOR = Colors.Hexrgb('#FFFFFF'),          -- White glow
+  POTENTIAL_TARGET = 0xFFFFFF30,  -- Subtle highlight for all potential targets
+  ACTIVE_TARGET = 0xFFFFFFAA,     -- Brighter when hovering
+  ACTIVE_FILL = 0xFFFFFF10,       -- Fill for active target
+  GLOW_COLOR = 0xFFFFFFFF,          -- White glow
 }
 
 -- Track active drag type globally
@@ -143,14 +143,14 @@ end
 
 -- Draw a simple text preview during drag
 function M.draw_preview_text(ctx, text, color)
-  color = color or Colors.Hexrgb('#FFFFFF')
+  color = color or 0xFFFFFFFF
   ImGui.Text(ctx, text)
 end
 
 -- Draw a chip-style preview during drag
 function M.draw_preview_chip(ctx, label, bg_color, text_color)
-  bg_color = bg_color or Colors.Hexrgb('#5B8FB9')
-  text_color = text_color or Colors.Hexrgb('#FFFFFF')
+  bg_color = bg_color or 0x5B8FB9FF
+  text_color = text_color or 0xFFFFFFFF
 
   local dl = ImGui.GetForegroundDrawList(ctx)
   local text_w, text_h = ImGui.CalcTextSize(ctx, label)

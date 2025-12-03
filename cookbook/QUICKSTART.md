@@ -72,7 +72,7 @@ Shell.run({
   initial_pos  = { x = 100, y = 100 },
   initial_size = { w = 900, h = 600 },
   min_size     = { w = 600, h = 400 },
-  icon_color   = Ark.Colors.Hexrgb('#4A90D9'),
+  icon_color   = Ark.Colors.hex('#4A90D9'),
 
   draw = function(ctx, shell_state)
     gui:draw(ctx, shell_state.window, shell_state)
@@ -313,8 +313,8 @@ local M = {}
 
 -- Colors (use theme colors when possible)
 M.COLORS = {
-  HIGHLIGHT = Ark.Colors.Hexrgb('#4A90D9'),
-  WARNING = Ark.Colors.Hexrgb('#D9A84A'),
+  HIGHLIGHT = Ark.Colors.hex('#4A90D9'),
+  WARNING = Ark.Colors.hex('#D9A84A'),
 }
 
 -- Sizes
@@ -430,7 +430,7 @@ panel:begin_draw(ctx)
 panel:end_draw(ctx)
 
 -- Colors
-local color = Ark.Colors.Hexrgb('#FF5500')
+local color = Ark.Colors.hex('#FF5500')
 local with_alpha = Ark.Colors.Hexrgba('#FF5500', 0.5)
 
 -- ID Stack (ImGui-style PushID/PopID)
@@ -515,7 +515,7 @@ Shell.run({
   min_size = { w = 400, h = 300 },
 
   -- Optional - Appearance
-  icon_color = Ark.Colors.Hexrgb('#4A90D9'),
+  icon_color = Ark.Colors.hex('#4A90D9'),
   icon_size = 18,
 
   -- Optional - Persistence

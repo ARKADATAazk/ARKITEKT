@@ -4,7 +4,6 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.Hexrgb
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local Easing = require('arkitekt.gui.animation.easing')

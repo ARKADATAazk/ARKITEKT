@@ -4,8 +4,6 @@
 
 local Ark = require('arkitekt')
 local LibraryTile = require('ThemeAdjuster.ui.grids.renderers.library_tile')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 local function create_behaviors(view)
@@ -91,8 +89,8 @@ function M.create_opts(view, config)
 
   -- Visual feedback configurations
   local dim_config = config.dim_config or {
-    fill_color = hexrgb('#00000088'),
-    stroke_color = hexrgb('#FFFFFF33'),
+    fill_color = 0x00000088,
+    stroke_color = 0xFFFFFF33,
     stroke_thickness = 1.5,
     rounding = 3,
   }

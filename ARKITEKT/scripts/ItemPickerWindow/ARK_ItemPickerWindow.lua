@@ -22,8 +22,6 @@ local Shell = require('arkitekt.runtime.shell')
 local Colors = require('arkitekt.core.colors')
 local Settings = require('arkitekt.core.settings')
 
-local hexrgb = Ark.Colors.Hexrgb
-
 -- Load ItemPicker core modules (reuse data layer)
 local Config = require('scripts.ItemPicker.core.config')
 local State = require('scripts.ItemPicker.core.app_state')
@@ -72,7 +70,7 @@ Shell.run({
   initial_pos = { x = 120, y = 120 },
   initial_size = { w = 1200, h = 800 },
   min_size = { w = 800, h = 600 },
-  icon_color = hexrgb('#4A9EFF'),
+  icon_color = 0x4A9EFFFF,
   icon_size = 18,
   fonts = {
     icons = 20,

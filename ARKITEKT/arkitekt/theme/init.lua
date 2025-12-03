@@ -30,8 +30,6 @@
 -- =============================================================================
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.Hexrgb
-
 local M = {}
 
 -- =============================================================================
@@ -45,43 +43,43 @@ M.COLORS = {
   -- These are overwritten when a theme is applied
 
   -- Backgrounds
-  BG_BASE        = hexrgb('#242424FF'),
-  BG_HOVER       = hexrgb('#2A2A2AFF'),
-  BG_ACTIVE      = hexrgb('#303030FF'),
-  BG_HEADER      = hexrgb('#1E1E1EFF'),
-  BG_PANEL       = hexrgb('#1A1A1AFF'),
-  BG_CHROME      = hexrgb('#0F0F0FFF'),
-  BG_TRANSPARENT = hexrgb('#00000000'),
+  BG_BASE        = 0x242424FF,
+  BG_HOVER       = 0x2A2A2AFF,
+  BG_ACTIVE      = 0x303030FF,
+  BG_HEADER      = 0x1E1E1EFF,
+  BG_PANEL       = 0x1A1A1AFF,
+  BG_CHROME      = 0x0F0F0FFF,
+  BG_TRANSPARENT = 0x00000000,
 
   -- Borders
-  BORDER_OUTER  = hexrgb('#000000DD'),
-  BORDER_INNER  = hexrgb('#2f2f2fff'),
-  BORDER_HOVER  = hexrgb('#505050FF'),
-  BORDER_ACTIVE = hexrgb('#B0B0B077'),
-  BORDER_FOCUS  = hexrgb('#7B7B7BFF'),
+  BORDER_OUTER  = 0x000000DD,
+  BORDER_INNER  = 0x2F2F2FFF,
+  BORDER_HOVER  = 0x505050FF,
+  BORDER_ACTIVE = 0xB0B0B077,
+  BORDER_FOCUS  = 0x7B7B7BFF,
 
   -- Text
-  TEXT_NORMAL = hexrgb('#CCCCCCFF'),
-  TEXT_HOVER  = hexrgb('#FFFFFFFF'),
-  TEXT_ACTIVE = hexrgb('#FFFFFFFF'),
-  TEXT_DIMMED = hexrgb('#AAAAAAFF'),
-  TEXT_DARK   = hexrgb('#707070FF'),
-  TEXT_BRIGHT = hexrgb('#EEEEEEFF'),
+  TEXT_NORMAL = 0xCCCCCCFF,
+  TEXT_HOVER  = 0xFFFFFFFF,
+  TEXT_ACTIVE = 0xFFFFFFFF,
+  TEXT_DIMMED = 0xAAAAAAFF,
+  TEXT_DARK   = 0x707070FF,
+  TEXT_BRIGHT = 0xEEEEEEFF,
 
   -- Accents
-  ACCENT_PRIMARY      = hexrgb('#4A9EFF'),
-  ACCENT_TEAL         = hexrgb('#295650FF'),
-  ACCENT_TEAL_BRIGHT  = hexrgb('#41E0A3FF'),
-  ACCENT_WHITE        = hexrgb('#2f2f2fff'),
-  ACCENT_WHITE_BRIGHT = hexrgb('#585858ff'),
-  ACCENT_TRANSPARENT  = hexrgb('#43434388'),
-  ACCENT_SUCCESS      = hexrgb('#4CAF50'),
-  ACCENT_WARNING      = hexrgb('#FFA726'),
-  ACCENT_DANGER       = hexrgb('#EF5350'),
+  ACCENT_PRIMARY      = 0x4A9EFFFF,
+  ACCENT_TEAL         = 0x295650FF,
+  ACCENT_TEAL_BRIGHT  = 0x41E0A3FF,
+  ACCENT_WHITE        = 0x2F2F2FFF,
+  ACCENT_WHITE_BRIGHT = 0x585858FF,
+  ACCENT_TRANSPARENT  = 0x43434388,
+  ACCENT_SUCCESS      = 0x4CAF50FF,
+  ACCENT_WARNING      = 0xFFA726FF,
+  ACCENT_DANGER       = 0xEF5350FF,
 
   -- Patterns
-  PATTERN_PRIMARY   = hexrgb('#30303060'),
-  PATTERN_SECONDARY = hexrgb('#30303020'),
+  PATTERN_PRIMARY   = 0x30303060,
+  PATTERN_SECONDARY = 0x30303020,
 }
 
 -- =============================================================================
@@ -538,7 +536,7 @@ function M.build_panel_colors()
     bg_panel = M.COLORS.BG_PANEL,
     border_panel = M.COLORS.BORDER_OUTER,
     bg_header = M.COLORS.BG_HEADER,
-    border_header = Colors.WithAlpha(hexrgb('#000000'), 0x66),
+    border_header = Colors.WithAlpha(0x000000FF, 0x66),
     bg_tab = M.COLORS.BG_BASE,
     bg_tab_hover = M.COLORS.BG_HOVER,
     bg_tab_active = M.COLORS.BG_ACTIVE,
@@ -550,7 +548,7 @@ function M.build_panel_colors()
     border_tab_focus = M.COLORS.BORDER_FOCUS,
     bg_tab_track = M.COLORS.BG_PANEL,
     border_tab_track = M.COLORS.BORDER_OUTER,
-    separator_line = Colors.WithAlpha(hexrgb('#303030'), 0x80),
+    separator_line = Colors.WithAlpha(0x303030FF, 0x80),
     bg_scrollbar = M.COLORS.BG_TRANSPARENT,
     pattern_primary = M.COLORS.PATTERN_PRIMARY,
     pattern_secondary = M.COLORS.PATTERN_SECONDARY,
@@ -565,12 +563,12 @@ function M.build_action_chip_config(variant)
   -- Action chips: colored rectangles with contrasting text
   local configs = {
     wildcard = {
-      bg_color = M.COLORS.ACCENT_PRIMARY or hexrgb('#5B8FB9'),
-      text_color = M.COLORS.TEXT_DARK or hexrgb('#1a1a1a'),
+      bg_color = M.COLORS.ACCENT_PRIMARY or 0x5B8FB9FF,
+      text_color = M.COLORS.TEXT_DARK or 0x1A1A1AFF,
     },
     tag = {
-      bg_color = M.COLORS.ACCENT_WARNING or hexrgb('#8B7355'),
-      text_color = M.COLORS.TEXT_DARK or hexrgb('#1a1a1a'),
+      bg_color = M.COLORS.ACCENT_WARNING or 0x8B7355FF,
+      text_color = M.COLORS.TEXT_DARK or 0x1A1A1AFF,
     },
   }
 
@@ -578,7 +576,7 @@ function M.build_action_chip_config(variant)
   _action_chip_caches[variant] = {
     bg_color = base.bg_color,
     text_color = base.text_color,
-    border_color = Colors.WithAlpha(hexrgb('#000000'), 100),
+    border_color = Colors.WithAlpha(0x000000FF, 100),
     rounding = 2,
     padding_h = 8,
   }

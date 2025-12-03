@@ -6,8 +6,6 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local M = {}
-local hexrgb = Ark.Colors.Hexrgb
-
 local ColorGrid = {}
 ColorGrid.__index = ColorGrid
 
@@ -108,7 +106,7 @@ function ColorGrid:draw(ctx, colors, config, allow_interaction)
     Ark.Draw.RectFilled(dl, x1, y1, x2, y2, fill_color, rounding)
     
     -- Draw black border (1px)
-    Ark.Draw.Rect(dl, x1, y1, x2, y2, hexrgb('#000000'), rounding, 1)
+    Ark.Draw.Rect(dl, x1, y1, x2, y2, 0x000000FF, rounding, 1)
     
     -- Draw color border on top for hover effect
     if is_hovered then

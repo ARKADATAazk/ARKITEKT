@@ -8,8 +8,6 @@ local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
-local hexrgb = Colors.Hexrgb
-
 local M = {}
 
 -- ============================================================================
@@ -106,8 +104,8 @@ local slider_locks = {}  -- Prevents double-click interference with drag
 -- ============================================================================
 
 local function render_slider_background(dl, x, y, w, h, config, gradient_fn)
-  local bg_color = config.bg_color or hexrgb('#1A1A1A')
-  local border_color = config.border_color or hexrgb('#000000')
+  local bg_color = config.bg_color or 0x1A1A1AFF
+  local border_color = config.border_color or 0x000000FF
 
   -- Background
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, bg_color, config.rounding or 0)
@@ -128,26 +126,26 @@ local function render_grab(dl, gx, y, h, grab_w, active, hovered, disabled, conf
   -- Determine grab color
   local grab_color
   if disabled then
-    grab_color = Colors.WithOpacity(Colors.Desaturate(config.grab_color or hexrgb('#383C45'), 0.5), 0.5)
+    grab_color = Colors.WithOpacity(Colors.Desaturate(config.grab_color or 0x383C45FF, 0.5), 0.5)
   elseif active then
-    grab_color = config.grab_active_color or hexrgb('#585C65')
+    grab_color = config.grab_active_color or 0x585C65FF
   elseif hovered then
-    grab_color = config.grab_hover_color or hexrgb('#484C55')
+    grab_color = config.grab_hover_color or 0x484C55FF
   else
-    grab_color = config.grab_color or hexrgb('#383C45')
+    grab_color = config.grab_color or 0x383C45FF
   end
 
   -- Shadow
   if not disabled then
     ImGui.DrawList_AddRectFilled(dl, x_left + 1, y + 1, x_right + 1, y + h + 1,
-      hexrgb('#00000050'), 0)
+      0x00000050, 0)
   end
 
   -- Grab body
   ImGui.DrawList_AddRectFilled(dl, x_left, y, x_right, y + h, grab_color, 0)
 
   -- Border
-  ImGui.DrawList_AddRect(dl, x_left, y, x_right, y + h, hexrgb('#000000'), 0, 0, 1)
+  ImGui.DrawList_AddRect(dl, x_left, y, x_right, y + h, 0x000000FF, 0, 0, 1)
 end
 
 -- ============================================================================

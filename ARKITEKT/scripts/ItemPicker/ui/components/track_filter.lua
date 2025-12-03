@@ -550,13 +550,13 @@ function M.render_modal(ctx, state, bounds)
     end
 
     -- Draw tooltip background
-    local tip_bg = Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#1A1A1A'), (0xF5 * alpha) // 1)
-    local tip_border = Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#505050'), (0xFF * alpha) // 1)
+    local tip_bg = Ark.Colors.WithAlpha(0x1A1A1AFF, (0xF5 * alpha) // 1)
+    local tip_border = Ark.Colors.WithAlpha(0x505050FF, (0xFF * alpha) // 1)
     ImGui.DrawList_AddRectFilled(draw_list, tip_x, tip_y, tip_x + tooltip_w, tip_y + tooltip_h, tip_bg, 4)
     ImGui.DrawList_AddRect(draw_list, tip_x, tip_y, tip_x + tooltip_w, tip_y + tooltip_h, tip_border, 4)
 
     -- Draw tooltip text
-    local tip_text_color = Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#CCCCCC'), (0xFF * alpha) // 1)
+    local tip_text_color = Ark.Colors.WithAlpha(0xCCCCCCFF, (0xFF * alpha) // 1)
     ImGui.DrawList_AddText(draw_list, tip_x + tooltip_padding, tip_y + tooltip_padding, tip_text_color, path_text)
   end
 
@@ -576,14 +576,14 @@ function M.render_modal(ctx, state, bounds)
     if state.persist_track_filter then state.persist_track_filter() end
   end
 
-  local all_bg = all_hovered and Ark.Colors.Hexrgb('#3A3A3A') or Ark.Colors.Hexrgb('#2A2A2A')
+  local all_bg = all_hovered and 0x3A3A3AFF or 0x2A2A2AFF
   all_bg = Ark.Colors.WithAlpha(all_bg, (0xEE * alpha) // 1)
   ImGui.DrawList_AddRectFilled(draw_list, all_x, btn_y, all_x + btn_width, btn_y + btn_height, all_bg, 4)
   local all_text_w = ImGui.CalcTextSize(ctx, 'All')
   ImGui.DrawList_AddText(draw_list,
     all_x + (btn_width - all_text_w) / 2,
     btn_y + (btn_height - ImGui.GetTextLineHeight(ctx)) / 2,
-    Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#FFFFFF'), (0xEE * alpha) // 1), 'All')
+    Ark.Colors.WithAlpha(0xFFFFFFFF, (0xEE * alpha) // 1), 'All')
 
   -- 'None' button
   local none_x = content_x + btn_width + 8
@@ -595,14 +595,14 @@ function M.render_modal(ctx, state, bounds)
     if state.persist_track_filter then state.persist_track_filter() end
   end
 
-  local none_bg = none_hovered and Ark.Colors.Hexrgb('#3A3A3A') or Ark.Colors.Hexrgb('#2A2A2A')
+  local none_bg = none_hovered and 0x3A3A3AFF or 0x2A2A2AFF
   none_bg = Ark.Colors.WithAlpha(none_bg, (0xEE * alpha) // 1)
   ImGui.DrawList_AddRectFilled(draw_list, none_x, btn_y, none_x + btn_width, btn_y + btn_height, none_bg, 4)
   local none_text_w = ImGui.CalcTextSize(ctx, 'None')
   ImGui.DrawList_AddText(draw_list,
     none_x + (btn_width - none_text_w) / 2,
     btn_y + (btn_height - ImGui.GetTextLineHeight(ctx)) / 2,
-    Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#FFFFFF'), (0xEE * alpha) // 1), 'None')
+    Ark.Colors.WithAlpha(0xFFFFFFFF, (0xEE * alpha) // 1), 'None')
 
   return true  -- Modal is active, block input behind
 end

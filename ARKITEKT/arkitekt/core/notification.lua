@@ -4,8 +4,6 @@
 -- Integrates with arkitekt/runtime/chrome/status_bar.lua via get_status() callback
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.Hexrgb
-
 local M = {}
 
 -- ============================================================================
@@ -22,10 +20,10 @@ M.TYPE = {
 
 -- Default colors by message type
 M.DEFAULT_COLORS = {
-  info = hexrgb('#CCCCCC'),
-  success = hexrgb('#41E0A3'),
-  warning = hexrgb('#E0B341'),
-  error = hexrgb('#E04141'),
+  info = 0xCCCCCCFF,
+  success = 0x41E0A3FF,
+  warning = 0xE0B341FF,
+  error = 0xE04141FF,
 }
 
 -- Default timeouts (seconds) by message type

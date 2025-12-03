@@ -10,8 +10,6 @@ local Slider = require('arkitekt.gui.widgets.primitives.slider')
 local TrackDefaults = require('WalterBuilder.config.track_defaults')
 local Constants = require('WalterBuilder.config.constants')
 
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 local Panel = {}
 Panel.__index = Panel
@@ -42,7 +40,7 @@ function Panel:draw_height_presets(ctx)
   local track = self.track
   local changed = false
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
   ImGui.Text(ctx, 'Presets:')
   ImGui.PopStyleColor(ctx)
 
@@ -94,7 +92,7 @@ function Panel:draw_state_toggles(ctx)
     width = 30,
     height = 24,
     is_toggled = track.armed,
-    bg_on_color = hexrgb('#CC4444'),
+    bg_on_color = 0xCC4444FF,
     tooltip = 'Record Armed',
     advance = 'none',
   })
@@ -112,7 +110,7 @@ function Panel:draw_state_toggles(ctx)
     width = 30,
     height = 24,
     is_toggled = track.muted,
-    bg_on_color = hexrgb('#888844'),
+    bg_on_color = 0x888844FF,
     tooltip = 'Muted',
     advance = 'none',
   })
@@ -130,7 +128,7 @@ function Panel:draw_state_toggles(ctx)
     width = 30,
     height = 24,
     is_toggled = track.soloed,
-    bg_on_color = hexrgb('#44AA44'),
+    bg_on_color = 0x44AA44FF,
     tooltip = 'Soloed',
     advance = 'none',
   })
@@ -151,14 +149,14 @@ function Panel:draw_folder_settings(ctx)
 
   ImGui.Dummy(ctx, 0, 8)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFFFFFFF)
   ImGui.Text(ctx, 'Folder')
   ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 4)
 
   -- Folder state buttons
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
   ImGui.Text(ctx, 'State:')
   ImGui.PopStyleColor(ctx)
 
@@ -196,7 +194,7 @@ function Panel:draw_folder_settings(ctx)
   ImGui.SetCursorScreenPos(ctx, x - 60, y + 26)
 
   -- Folder depth using Slider
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
   ImGui.Text(ctx, 'Depth:')
   ImGui.PopStyleColor(ctx)
 
@@ -254,7 +252,7 @@ function Panel:draw(ctx)
 
   if not self.track then
     -- No track selected
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
     ImGui.Text(ctx, 'No track selected')
     ImGui.Dummy(ctx, 0, 8)
     ImGui.Text(ctx, 'Click a track in the canvas')
@@ -267,14 +265,14 @@ function Panel:draw(ctx)
   local changed = false
 
   -- Track name header
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#00AAFF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x00AAFFFF)
   ImGui.Text(ctx, 'Track: ' .. track.name)
   ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 8)
 
   -- Name input
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
   ImGui.Text(ctx, 'Name:')
   ImGui.PopStyleColor(ctx)
 
@@ -290,14 +288,14 @@ function Panel:draw(ctx)
   ImGui.Dummy(ctx, 0, 8)
 
   -- Height section
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFFFFFFF)
   ImGui.Text(ctx, 'Height')
   ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 4)
 
   -- Height slider
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
   ImGui.Text(ctx, 'Value:')
   ImGui.PopStyleColor(ctx)
 
@@ -335,7 +333,7 @@ function Panel:draw(ctx)
   ImGui.Dummy(ctx, 0, 8)
 
   -- State toggles section
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFFFFFFF)
   ImGui.Text(ctx, 'Track State')
   ImGui.PopStyleColor(ctx)
 
@@ -364,9 +362,9 @@ function Panel:draw(ctx)
     label = 'Remove Track',
     width = avail_w - 4,
     height = 26,
-    bg_color = hexrgb('#4A2A2A'),
-    bg_hover_color = hexrgb('#5A3A3A'),
-    bg_active_color = hexrgb('#6A4A4A'),
+    bg_color = 0x4A2A2AFF,
+    bg_hover_color = 0x5A3A3AFF,
+    bg_active_color = 0x6A4A4AFF,
     advance = 'vertical',
   })
 

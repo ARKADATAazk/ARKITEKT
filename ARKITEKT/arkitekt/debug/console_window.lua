@@ -10,19 +10,16 @@ local M = {}
 
 local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.Hexrgb
-
-
 local window_state = {
   runtime = nil,
   console = nil,
   is_open = false,
 }
 
-local function hexrgb(hex)
+local function hex(hex)
   if hex:sub(1, 1) == '#' then hex = hex:sub(2) end
   local h = tonumber(hex, 16)
-  if not h then return hexrgb('#FFFFFF') end
+  if not h then return 0xFFFFFFFF end
   return (#hex == 8) and h or ((h << 8) | 0xFF)
 end
 
@@ -40,12 +37,12 @@ function M.launch()
   window_state.runtime = Shell.run({
     title = 'ARKITEKT Debug Console',
     version = 'v1.0.0',
-    version_color = hexrgb('#888888FF'),
+    version_color = 0x888888FF,
     style = StyleOK and Style or nil,
     initial_pos = { x = 120, y = 120 },
     initial_size = { w = 1000, h = 600 },
     min_size = { w = 600, h = 400 },
-    icon_color = hexrgb('#41E0A3FF'),
+    icon_color = 0x41E0A3FF,
     icon_size = 18,
     show_icon = false,
     show_status_bar = false,

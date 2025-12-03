@@ -8,24 +8,21 @@ local Panel = require('arkitekt.gui.widgets.containers.panel')
 local Config = require('arkitekt.gui.widgets.containers.panel.defaults')
 local ColoredTextView = require('arkitekt.gui.widgets.text.colored_text_view')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.Hexrgb
-
-
 local M = {}
 
 local COLORS = {
-  teal = hexrgb('#41E0A3FF'),
-  red = hexrgb('#E04141FF'),
-  yellow = hexrgb('#E0B341FF'),
-  grey_84 = hexrgb('#D6D6D6FF'),
-  grey_60 = hexrgb('#999999FF'),
-  grey_52 = hexrgb('#858585FF'),
-  grey_40 = hexrgb('#666666FF'),
-  grey_20 = hexrgb('#333333FF'),
-  grey_18 = hexrgb('#2E2E2EFF'),
-  grey_14 = hexrgb('#242424FF'),
-  grey_10 = hexrgb('#1A1A1AFF'),
-  grey_08 = hexrgb('#141414FF'),
+  teal = 0x41E0A3FF,
+  red = 0xE04141FF,
+  yellow = 0xE0B341FF,
+  grey_84 = 0xD6D6D6FF,
+  grey_60 = 0x999999FF,
+  grey_52 = 0x858585FF,
+  grey_40 = 0x666666FF,
+  grey_20 = 0x333333FF,
+  grey_18 = 0x2E2E2EFF,
+  grey_14 = 0x242424FF,
+  grey_10 = 0x1A1A1AFF,
+  grey_08 = 0x141414FF,
 }
 
 -- ==========================================================================
@@ -68,38 +65,38 @@ local COLORS = {
 
 local CATEGORY_COLORS = {
   -- Playback/Transport (Blues)
-  TRANSPORT   = hexrgb('#4682B4FF'),  -- Steel Blue
-  TRANSITIONS = hexrgb('#00CED1FF'),  -- Dark Cyan
-  PLAYBACK    = hexrgb('#5F9EA0FF'),  -- Cadet Blue
-  SEQUENCER   = hexrgb('#6495EDFF'),  -- Cornflower Blue
-  QUANTIZE    = hexrgb('#7B68EEFF'),  -- Medium Slate Blue
+  TRANSPORT   = 0x4682B4FF,  -- Steel Blue
+  TRANSITIONS = 0x00CED1FF,  -- Dark Cyan
+  PLAYBACK    = 0x5F9EA0FF,  -- Cadet Blue
+  SEQUENCER   = 0x6495EDFF,  -- Cornflower Blue
+  QUANTIZE    = 0x7B68EEFF,  -- Medium Slate Blue
 
   -- State/Data (Golds)
-  STATE   = hexrgb('#DAA520FF'),  -- Goldenrod
-  STORAGE = hexrgb('#CD853FFF'),  -- Peru
-  BRIDGE  = hexrgb('#D2691EFF'),  -- Chocolate
+  STATE   = 0xDAA520FF,  -- Goldenrod
+  STORAGE = 0xCD853FFF,  -- Peru
+  BRIDGE  = 0xD2691EFF,  -- Chocolate
 
   -- Domains (Purples/Teals)
-  PLAYLIST       = hexrgb('#9370DBFF'),  -- Medium Purple
-  REGION         = hexrgb('#20B2AAFF'),  -- Light Sea Green
-  UI_PREFERENCES = hexrgb('#BA55D3FF'),  -- Medium Orchid
-  DEPENDENCY     = hexrgb('#DB7093FF'),  -- Pale Violet Red
+  PLAYLIST       = 0x9370DBFF,  -- Medium Purple
+  REGION         = 0x20B2AAFF,  -- Light Sea Green
+  UI_PREFERENCES = 0xBA55D3FF,  -- Medium Orchid
+  DEPENDENCY     = 0xDB7093FF,  -- Pale Violet Red
 
   -- Actions/Control (Greens)
   ENGINE      = COLORS.teal,             -- #41E0A3
-  CONTROLLER  = hexrgb('#98FB98FF'),     -- Pale Green
-  COORDINATOR = hexrgb('#66CDAAFF'),     -- Medium Aquamarine
-  UNDO        = hexrgb('#F5DEB3FF'),     -- Wheat
+  CONTROLLER  = 0x98FB98FF,     -- Pale Green
+  COORDINATOR = 0x66CDAAFF,     -- Medium Aquamarine
+  UNDO        = 0xF5DEB3FF,     -- Wheat
 
   -- System/UI (Greys)
   GUI     = COLORS.grey_84,
   SYSTEM  = COLORS.grey_84,
-  WIDGET  = hexrgb('#87CEEBFF'),  -- Sky Blue
-  EVENTS  = hexrgb('#87CEEBFF'),  -- Sky Blue
+  WIDGET  = 0x87CEEBFF,  -- Sky Blue
+  EVENTS  = 0x87CEEBFF,  -- Sky Blue
   CONSOLE = COLORS.grey_60,
 
   -- Special
-  TEST = hexrgb('#00FF88FF'),  -- Bright Green
+  TEST = 0x00FF88FF,  -- Bright Green
 }
 
 local LEVEL_COLORS = {
@@ -161,15 +158,15 @@ function M.new(config)
   }
   
   local panel_config = {
-    bg_color = hexrgb('#0D0D0DFF'),
-    border_color = hexrgb('#000000DD'),
+    bg_color = 0x0D0D0DFF,
+    border_color = 0x000000DD,
     border_thickness = 1,
     rounding = 8,
     padding = 8,
     
     scroll = {
       flags = 0,
-      bg_color = hexrgb('#00000000'),
+      bg_color = 0x00000000,
     },
     
     background_pattern = {
@@ -376,7 +373,7 @@ function M.new(config)
     end
 
     -- Draw live slots container
-    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#141414FF'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x141414FF)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ChildRounding, 4)
 
     -- BeginChild params: ctx, id, size_w, size_h, child_flags, window_flags
@@ -415,9 +412,9 @@ function M.new(config)
         local row_w = avail_w - 32
 
         -- Invisible selectable for hover/click detection
-        ImGui.PushStyleColor(ctx, ImGui.Col_Header, hexrgb('#FFFFFF18'))
-        ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, hexrgb('#FFFFFF22'))
-        ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, hexrgb('#FFFFFF30'))
+        ImGui.PushStyleColor(ctx, ImGui.Col_Header, 0xFFFFFF18)
+        ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, 0xFFFFFF22)
+        ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, 0xFFFFFF30)
 
         local is_selected = false
         local clicked, _ = ImGui.Selectable(ctx, '##slot_' .. entry.key, is_selected,
@@ -437,7 +434,7 @@ function M.new(config)
         if is_hovered then
           self.hovered_slot_key = entry.key
           ImGui.DrawList_AddRectFilled(dl, row_x, row_y, row_x + row_w, row_y + row_height - 2,
-            hexrgb('#FFFFFF10'), 3, 0)
+            0xFFFFFF10, 3, 0)
         end
 
         -- Move cursor back to draw content over the selectable
@@ -522,16 +519,16 @@ function M.new(config)
     local stale = age > 5.0
     local line_height = ImGui.GetTextLineHeightWithSpacing(ctx)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#0D0D0DFF'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x0D0D0DFF)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ChildRounding, 6)
 
     if ImGui.BeginChild(ctx, '##FocusedSlot', avail_w - 16, avail_h - 20, ImGui.ChildFlags_Borders, 0) then
       local dl = ImGui.GetWindowDrawList(ctx)
 
       -- Header bar with back button
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb('#333333FF'))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb('#444444FF'))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb('#555555FF'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, 0x333333FF)
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, 0x444444FF)
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, 0x555555FF)
 
       if ImGui.Button(ctx, '< Back##focused', 60, 24) then
         self.focused_slot_key = nil
@@ -572,7 +569,7 @@ function M.new(config)
       ImGui.Spacing(ctx)
 
       -- Big display of current message
-      ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1AFF'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
       if ImGui.BeginChild(ctx, '##CurrentValue', avail_w - 48, 50, ImGui.ChildFlags_Borders, 0) then
         ImGui.SetCursorPos(ctx, 12, 12)
 
@@ -614,7 +611,7 @@ function M.new(config)
       local history_h = avail_h - 220
       if history_h < 100 then history_h = 100 end
 
-      ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#141414FF'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x141414FF)
       if ImGui.BeginChild(ctx, '##History', avail_w - 48, history_h, ImGui.ChildFlags_Borders, 0) then
         if #slot.history == 0 then
           ImGui.TextDisabled(ctx, 'No history yet...')
@@ -628,8 +625,8 @@ function M.new(config)
             local row_x, row_y = ImGui.GetCursorScreenPos(ctx)
             local row_w = avail_w - 64
 
-            ImGui.PushStyleColor(ctx, ImGui.Col_Header, hexrgb('#FFFFFF00'))
-            ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, hexrgb('#FFFFFF15'))
+            ImGui.PushStyleColor(ctx, ImGui.Col_Header, 0xFFFFFF00)
+            ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, 0xFFFFFF15)
             ImGui.Selectable(ctx, '##hist_' .. i, false, 0, row_w, line_height)
             ImGui.PopStyleColor(ctx, 2)
 
@@ -731,8 +728,8 @@ function M.new(config)
     local stats_y = sy + padding
 
     -- Background with slight transparency
-    local bg_color = hexrgb('#1A1A1AE6')
-    local border_color = hexrgb('#333333FF')
+    local bg_color = 0x1A1A1AE6
+    local border_color = 0x333333FF
     ImGui.DrawList_AddRectFilled(dl, stats_x, stats_y, stats_x + stats_w, stats_y + stats_h, bg_color, 6, 0)
     ImGui.DrawList_AddRect(dl, stats_x, stats_y, stats_x + stats_w, stats_y + stats_h, border_color, 6, 0, 1.0)
 

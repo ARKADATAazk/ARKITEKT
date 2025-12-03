@@ -5,7 +5,6 @@
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
-local hexrgb = Ark.Colors.Hexrgb
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 local Strings = require('ThemeAdjuster.config.strings')
 
@@ -107,14 +106,14 @@ function GlobalView:draw(ctx, shell_state)
   ImGui.Text(ctx, 'Global Color Controls')
   ImGui.PopFont(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
   ImGui.Text(ctx, 'Adjust theme-wide color properties')
   ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 15)
 
   -- Color Sliders Section
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
   if ImGui.BeginChild(ctx, 'global_color_sliders', avail_w, 0, 1) then
     -- Draw background pattern (grid/dots like assembler panel)
     local child_x, child_y = ImGui.GetWindowPos(ctx)
@@ -173,7 +172,7 @@ function GlobalView:draw(ctx, shell_state)
       local label_text_w = ImGui.CalcTextSize(ctx, label)
       ImGui.SetCursorPosX(ctx, cursor_x_base + start_x + LABEL_WIDTH - label_text_w)
       ImGui.AlignTextToFramePadding(ctx)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
       ImGui.Text(ctx, label)
       ImGui.PopStyleColor(ctx)
 
@@ -186,7 +185,7 @@ function GlobalView:draw(ctx, shell_state)
       -- RIGHT VALUE (left-aligned)
       ImGui.SameLine(ctx, 0, SPACING)
       ImGui.AlignTextToFramePadding(ctx)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFFFFFFF)
       ImGui.Text(ctx, value_text)
       ImGui.PopStyleColor(ctx)
 
@@ -199,7 +198,7 @@ function GlobalView:draw(ctx, shell_state)
     local changed, new_gamma_normalized = draw_slider_row(
       'Gamma',
       string.format('%.2f', gamma_display),
-      Ark.HueSlider.draw_gamma,
+      Ark.HueSlider.DrawGamma,
       '##gamma',
       ((2000 - self.gamma) / 1500) * 100,  -- Map 500-2000 to 100-0 (reversed)
       {default = 66.67}  -- 1000 is 66.67% of reversed range
@@ -220,7 +219,7 @@ function GlobalView:draw(ctx, shell_state)
     local changed, new_highlights_normalized = draw_slider_row(
       'Highlights',
       string.format('%.2f', highlights_display),
-      Ark.HueSlider.draw_gamma,
+      Ark.HueSlider.DrawGamma,
       '##highlights',
       ((self.highlights + 256) / 512) * 100,  -- Map -256-256 to 0-100
       {default = 50}  -- 0 is 50% of range (0.00)
@@ -241,7 +240,7 @@ function GlobalView:draw(ctx, shell_state)
     local changed, new_midtones_normalized = draw_slider_row(
       'Midtones',
       string.format('%.2f', midtones_display),
-      Ark.HueSlider.draw_gamma,
+      Ark.HueSlider.DrawGamma,
       '##midtones',
       ((self.midtones + 256) / 512) * 100,  -- Map -256-256 to 0-100
       {default = 50}  -- 0 is 50% of range (0.00)
@@ -262,7 +261,7 @@ function GlobalView:draw(ctx, shell_state)
     local changed, new_shadows_normalized = draw_slider_row(
       'Shadows',
       string.format('%.2f', shadows_display),
-      Ark.HueSlider.draw_gamma,
+      Ark.HueSlider.DrawGamma,
       '##shadows',
       ((self.shadows + 256) / 512) * 100,  -- Map -256-256 to 0-100
       {default = 50}  -- 0 is 50% of range (0.00)
@@ -304,7 +303,7 @@ function GlobalView:draw(ctx, shell_state)
     local changed, new_tint_normalized = draw_slider_row(
       'Tint',
       string.format('%.0f°', tint_degrees),
-      Ark.HueSlider.draw_hue,
+      Ark.HueSlider.DrawHue,
       '##tint',
       ((self.tint / 384) * 360),
       {default = 180, saturation = 75, brightness = 80}

@@ -114,7 +114,7 @@ end
 
 ## hexrgb.py
 
-Converts hex color literals (`0xRRGGBBAA`) to `hexrgb()` function calls in Lua files.
+Converts hex color literals (`0xRRGGBBAA`) to `hex()` function calls in Lua files.
 
 ### Usage
 
@@ -127,7 +127,7 @@ Processes all `.lua` files in ARKITEKT directory with dry-run first, then prompt
 ### What it does
 
 - Finds `0xRRGGBBAA` hex literals
-- Converts to `hexrgb("#RRGGBB")` or `hexrgb("#RRGGBBAA")`
+- Converts to `hex("#RRGGBB")` or `hex("#RRGGBBAA")`
 - Adds `local Colors = require('arkitekt.core.colors')` if needed
 - Adds `local hexrgb = Colors.hexrgb` local binding
 

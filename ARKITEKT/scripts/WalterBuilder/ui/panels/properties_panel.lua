@@ -11,8 +11,6 @@ local Button = require('arkitekt.gui.widgets.primitives.button')
 local Slider = require('arkitekt.gui.widgets.primitives.slider')
 local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
 
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 local Panel = {}
 Panel.__index = Panel
@@ -45,7 +43,7 @@ end
 -- Draw a coordinate input row
 function Panel:draw_coord_input(ctx, label, value, min_val, max_val, step, id_suffix)
   ImGui.AlignTextToFramePadding(ctx)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
   ImGui.Text(ctx, label)
   ImGui.PopStyleColor(ctx)
 
@@ -70,7 +68,7 @@ function Panel:draw_attachment_toggle(ctx, label, value, id_suffix)
     width = 50,
     height = 24,
     is_toggled = is_attached,
-    bg_on_color = hexrgb('#2A4A2A'),
+    bg_on_color = 0x2A4A2AFF,
     advance = 'vertical',
   })
 
@@ -85,7 +83,7 @@ end
 function Panel:draw_behavior_info(ctx, element)
   local behavior = Simulator.classify_behavior(element)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
   ImGui.Text(ctx, 'Behavior:')
   ImGui.PopStyleColor(ctx)
 
@@ -108,7 +106,7 @@ function Panel:draw_position_section(ctx)
   local c = element.coords
   local changed = false
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFFFFFFF)
   ImGui.Text(ctx, 'Position & Size')
   ImGui.PopStyleColor(ctx)
 
@@ -143,11 +141,11 @@ function Panel:draw_attachment_section(ctx)
 
   ImGui.Dummy(ctx, 0, 8)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFFFFFFF)
   ImGui.Text(ctx, 'Edge Attachments')
   ImGui.PopStyleColor(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
   ImGui.Text(ctx, 'Control how edges respond to parent resize')
   ImGui.PopStyleColor(ctx)
 
@@ -182,7 +180,7 @@ function Panel:draw_attachment_section(ctx)
   -- Advanced: precise values
   if self.show_advanced then
     ImGui.Dummy(ctx, 0, 8)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
     ImGui.Text(ctx, 'Precise values (0.0 - 1.0):')
     ImGui.PopStyleColor(ctx)
 
@@ -210,7 +208,7 @@ function Panel:draw_attachment_presets(ctx)
 
   ImGui.Dummy(ctx, 0, 8)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
   ImGui.Text(ctx, 'Quick presets:')
   ImGui.PopStyleColor(ctx)
 
@@ -276,7 +274,7 @@ function Panel:draw(ctx)
 
   if not self.element then
     -- No element selected
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
     ImGui.Text(ctx, 'No element selected')
     ImGui.Dummy(ctx, 0, 8)
     ImGui.Text(ctx, 'Select an element from the canvas')
@@ -289,13 +287,13 @@ function Panel:draw(ctx)
   local changed = false
 
   -- Element header
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#00AAFF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x00AAFFFF)
   ImGui.Text(ctx, element.id)
   ImGui.PopStyleColor(ctx)
 
   if element.name and element.name ~= element.id then
     ImGui.SameLine(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
     ImGui.Text(ctx, '(' .. element.name .. ')')
     ImGui.PopStyleColor(ctx)
   end
@@ -355,9 +353,9 @@ function Panel:draw(ctx)
     label = 'Remove from Layout',
     width = avail_w - 4,
     height = 26,
-    bg_color = hexrgb('#4A2A2A'),
-    bg_hover_color = hexrgb('#5A3A3A'),
-    bg_active_color = hexrgb('#6A4A4A'),
+    bg_color = 0x4A2A2AFF,
+    bg_hover_color = 0x5A3A3AFF,
+    bg_active_color = 0x6A4A4AFF,
     advance = 'vertical',
   })
 

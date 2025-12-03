@@ -9,8 +9,6 @@ local Theme = require('arkitekt.theme')
 
 local M = {}
 M.__index = M
-local hexrgb = Colors.Hexrgb
-
 local DEFAULTS = {
   style = {
     height  = 30,

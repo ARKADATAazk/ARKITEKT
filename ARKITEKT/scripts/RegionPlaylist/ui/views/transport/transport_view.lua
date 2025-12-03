@@ -11,8 +11,6 @@ local ButtonWidgets = require('RegionPlaylist.ui.views.transport.button_widgets'
 local DisplayWidget = require('RegionPlaylist.ui.views.transport.display_widget')
 local CoreConfig = require('RegionPlaylist.app.config')
 local Strings = require('RegionPlaylist.config.strings')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- ============================================================================
@@ -808,7 +806,7 @@ function M.Draw(ctx, shell_state, is_blocking)
 
   local playlist_data = playlist_to_display and {
     name = playlist_to_display.name,
-    color = playlist_to_display.chip_color or hexrgb('#888888'),
+    color = playlist_to_display.chip_color or 0x888888FF,
   } or nil
 
   local current_region = nil

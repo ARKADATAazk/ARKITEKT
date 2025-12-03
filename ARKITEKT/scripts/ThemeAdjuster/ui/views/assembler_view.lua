@@ -9,8 +9,6 @@ local PackageManager = require('ThemeAdjuster.data.packages.manager')
 local Config = require('ThemeAdjuster.app.config')
 local Theme = require('ThemeAdjuster.domain.theme.reader')
 local PackageModal = require('ThemeAdjuster.ui.views.package_modal')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 local AssemblerView = {}
 AssemblerView.__index = AssemblerView
@@ -118,8 +116,8 @@ function M.new(State, AppConfig, settings)
   container_config.footer = {
     enabled = true,
     height = 32,
-    bg_color = hexrgb("#1E1E1E"),
-    border_color = hexrgb("#000000"),
+    bg_color = 0x1E1E1EFF,
+    border_color = 0x000000FF,
     elements = {
       -- Left: ZIP status (flex to take remaining space)
       {
@@ -696,13 +694,13 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
 
   -- Show status indicator
   if status == "needs-link" then
-    ImGui.TextColored(ctx, hexrgb("#E04141"), "NOT LINKED")
+    ImGui.TextColored(ctx, 0xE04141FF, "NOT LINKED")
   elseif status == "linked-ready" or status == "zip-ready" then
-    ImGui.TextColored(ctx, hexrgb("#41E0A3"), "ZIP")
+    ImGui.TextColored(ctx, 0x41E0A3FF, "ZIP")
   elseif status == "linked-needs-build" then
-    ImGui.TextColored(ctx, hexrgb("#E0B341"), "BUILD NEEDED")
+    ImGui.TextColored(ctx, 0xE0B341FF, "BUILD NEEDED")
   elseif status == "direct" then
-    ImGui.TextColored(ctx, hexrgb("#41E0A3"), "DIRECT")
+    ImGui.TextColored(ctx, 0x41E0A3FF, "DIRECT")
   end
 
   -- Show inline ZIP picker for ZIP modes

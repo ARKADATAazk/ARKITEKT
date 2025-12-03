@@ -9,8 +9,6 @@ local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
-local hexrgb = Colors.Hexrgb
-
 local M = {}
 
 -- ============================================================================
@@ -212,10 +210,10 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   ImGui.PushItemWidth(ctx, width - padding_x * 2)
 
   -- Make input background transparent
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb('#00000000'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x00000000)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
 
   local changed, new_text

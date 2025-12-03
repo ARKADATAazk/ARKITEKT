@@ -4,8 +4,6 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- Helper function to apply alpha to color
@@ -23,7 +21,7 @@ local function get_item_data(state, item_index)
     return {
       media_item = state.item_to_add,
       name = state.item_to_add_name,
-      color = state.item_to_add_color or hexrgb('#42E896FF'),
+      color = state.item_to_add_color or 0x42E896FF,
       is_midi = take and reaper.TakeIsMIDI(take) or false,
     }
   end
@@ -37,7 +35,7 @@ local function get_item_data(state, item_index)
     return {
       media_item = state.item_to_add,
       name = state.item_to_add_name,
-      color = state.item_to_add_color or hexrgb('#42E896FF'),
+      color = state.item_to_add_color or 0x42E896FF,
       is_midi = false,
     }
   end
@@ -54,7 +52,7 @@ local function get_item_data(state, item_index)
     color = Ark.Colors.ComponentsToRgba(R, G, B, 255)
   else
     -- No color flag: use default grey
-    color = Ark.Colors.Hexrgb('#555B5B')
+    color = 0x555B5BFF
   end
 
   local media_item = item_data[1]  -- MediaItem pointer
@@ -190,7 +188,7 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
   -- Draw insertion preview
   if rect_x1 then
     -- Grey crosshair lines instead of blue
-    local line_color = Ark.Colors.Hexrgba('#808080', 0.8)
+    local line_color = Ark.Colors.WithOpacity(0x808080FF, 0.8)
 
     -- Get the items being dragged
     local dragging_count = (state.dragging_keys and #state.dragging_keys) or 1
@@ -223,7 +221,7 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
             item_color = Ark.Colors.WithOpacity(Ark.Colors.ComponentsToRgba(r*255, g*255, b*255, 255), 0.8)
           else
             -- Fallback to grey
-            item_color = Ark.Colors.Hexrgba('#B1B4B4', 0.8)
+            item_color = Ark.Colors.WithOpacity(0xB1B4B4FF, 0.8)
           end
 
           -- Draw base rectangle with item color
@@ -362,7 +360,7 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       -- Multiple shadow layers for soft glow effect
       for layer = shadow_layers, 1, -1 do
         local shadow_alpha = (0.12 / layer) * opacity  -- Softer shadows for back tiles
-        local shadow_color = apply_alpha(hexrgb('#000000FF'), shadow_alpha)
+        local shadow_color = apply_alpha(0x000000FF, shadow_alpha)
         local expand = layer * 1.5
 
         ImGui.DrawList_AddRectFilled(state.draw_list,
@@ -432,11 +430,11 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
         header_color = Ark.Colors.WithOpacity(Ark.Colors.ComponentsToRgba(r*255, g*255, b*255, 255), header_alpha)
       else
         -- Fallback: dark overlay
-        header_color = apply_alpha(hexrgb('#00000040'), opacity)
+        header_color = apply_alpha(0x00000040, opacity)
       end
 
       -- Add text shadow overlay
-      local text_shadow = hexrgb('#00000000')
+      local text_shadow = 0x00000000
       if config and config.TILE_RENDER and config.TILE_RENDER.header then
         text_shadow = apply_alpha(config.TILE_RENDER.header.text_shadow, opacity)
       end
@@ -446,7 +444,7 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y1 + header_height, text_shadow, tile_rounding, round_flags)
 
       -- Item name (use config text color or default white)
-      local text_color = (config and config.TILE_RENDER and config.TILE_RENDER.text.primary_color) or hexrgb('#FFFFFFFF')
+      local text_color = (config and config.TILE_RENDER and config.TILE_RENDER.text.primary_color) or 0xFFFFFFFF
       local name_color = apply_alpha(text_color, opacity)
       local text_x = x1 + 8
       local text_y = y1 + (header_height - ImGui.GetTextLineHeight(ctx)) / 2
@@ -473,24 +471,24 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       ImGui.DrawList_AddRectFilled(state.draw_list,
         badge_x + 2, badge_y + 2,
         badge_x + badge_width + 2, badge_y + badge_height + 2,
-        hexrgb('#00000066'), rounding)
+        0x00000066, rounding)
 
       -- Badge background (90% opacity dark grey)
       ImGui.DrawList_AddRectFilled(state.draw_list,
         badge_x, badge_y,
         badge_x + badge_width, badge_y + badge_height,
-        hexrgb('#1A1A1AE6'), rounding)
+        0x1A1A1AE6, rounding)
 
       -- Badge border (subtle)
       ImGui.DrawList_AddRect(state.draw_list,
         badge_x, badge_y,
         badge_x + badge_width, badge_y + badge_height,
-        hexrgb('#FFFFFF33'), rounding, 0, 1)
+        0xFFFFFF33, rounding, 0, 1)
 
       -- Badge text (centered)
       local text_x = badge_x + padding_x
       local text_y = badge_y + padding_y
-      ImGui.DrawList_AddText(state.draw_list, text_x, text_y, hexrgb('#FFFFFFFF'), badge_text)
+      ImGui.DrawList_AddText(state.draw_list, text_x, text_y, 0xFFFFFFFF, badge_text)
     end
 
     -- ALT + MIDI pooled badge (teal, shown when ALT is held for MIDI items)
@@ -513,24 +511,24 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       ImGui.DrawList_AddRectFilled(state.draw_list,
         pool_badge_x + 2, pool_badge_y + 2,
         pool_badge_x + pool_badge_width + 2, pool_badge_y + pool_badge_height + 2,
-        hexrgb('#00000066'), rounding)
+        0x00000066, rounding)
 
       -- Badge background (teal color)
       ImGui.DrawList_AddRectFilled(state.draw_list,
         pool_badge_x, pool_badge_y,
         pool_badge_x + pool_badge_width, pool_badge_y + pool_badge_height,
-        hexrgb('#008B8BE6'), rounding)
+        0x008B8BE6, rounding)
 
       -- Badge border (lighter teal)
       ImGui.DrawList_AddRect(state.draw_list,
         pool_badge_x, pool_badge_y,
         pool_badge_x + pool_badge_width, pool_badge_y + pool_badge_height,
-        hexrgb('#20B2AA66'), rounding, 0, 1)
+        0x20B2AA66, rounding, 0, 1)
 
       -- Badge text (white, centered)
       local text_x = pool_badge_x + padding_x
       local text_y = pool_badge_y + padding_y
-      ImGui.DrawList_AddText(state.draw_list, text_x, text_y, hexrgb('#FFFFFFFF'), pool_badge_text)
+      ImGui.DrawList_AddText(state.draw_list, text_x, text_y, 0xFFFFFFFF, pool_badge_text)
     end
 
     -- Dummy to reserve space

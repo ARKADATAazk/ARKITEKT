@@ -4,11 +4,11 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
+local Colors = require('arkitekt.core.colors')
+local hex = Colors.hex  -- For runtime string→packed conversion
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
 local Math = require('arkitekt.core.math')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- Animation state storage (persistent across frames)
@@ -43,7 +43,7 @@ function M.render(ctx, rect, item, state, view, tab_id)
   M._anim[key].hover = hover_t
 
   -- Get tab color
-  local tab_color = view.tab_colors[tab_id] or hexrgb('#888888')
+  local tab_color = view.tab_colors[tab_id] or 0x888888FF
 
   -- Color definitions - use tab color for base with very low opacity
   local function dim_color(color, opacity)
@@ -92,12 +92,12 @@ function M.render(ctx, rect, item, state, view, tab_id)
   -- Check link status for visual indicator
   local is_in_group = ParameterLinkManager.is_in_group(param_name)
   local link_prefix = ''
-  local link_color = hexrgb('#FFFFFF')
+  local link_color = 0xFFFFFFFF
 
   if is_in_group then
     local mode = ParameterLinkManager.get_link_mode(param_name)
     link_prefix = mode == ParameterLinkManager.LINK_MODE.LINK and '⇄ ' or '⇉ '
-    link_color = ParameterLinkManager.get_group_color(param_name) or hexrgb('#4AE290')
+    link_color = ParameterLinkManager.get_group_color(param_name) or 0x4AE290FF
   end
 
   if metadata.display_name and metadata.display_name ~= '' then
@@ -110,7 +110,7 @@ function M.render(ctx, rect, item, state, view, tab_id)
     end
 
     -- Custom name on LEFT (bright color)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CCCCCC'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCCCCCCFF)
     local custom_name = metadata.display_name
     local max_len = link_prefix ~= '' and 26 or 30
     if #custom_name > max_len then
@@ -121,7 +121,7 @@ function M.render(ctx, rect, item, state, view, tab_id)
 
     -- Parameter name on RIGHT (muted)
     ImGui.SameLine(ctx, 0, 12)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
     local display_name = param_name
     if #display_name > 25 then
       display_name = display_name:sub(1, 22) .. '...'
@@ -138,7 +138,7 @@ function M.render(ctx, rect, item, state, view, tab_id)
     end
 
     -- No custom name - just show parameter name (muted color)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
     local display_name = param_name
     local max_len = link_prefix ~= '' and 21 or 25
     if #display_name > max_len then
@@ -167,7 +167,7 @@ function M.render(ctx, rect, item, state, view, tab_id)
   -- Show order number for debugging (optional)
   if view.dev_mode and item.order then
     ImGui.SameLine(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#555555'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x555555FF)
     ImGui.Text(ctx, string.format('#%d', item.order))
     ImGui.PopStyleColor(ctx)
   end
@@ -374,8 +374,8 @@ function M.render_group(ctx, rect, item, state, view, tab_id)
 
   if not group then
     -- Group not found, render error placeholder
-    ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, hexrgb('#440000'), 3)
-    ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, hexrgb('#880000'), 3, 0, 1)
+    ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, 0x440000FF, 3)
+    ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, 0x880000FF, 3, 0, 1)
     ImGui.SetCursorScreenPos(ctx, x1 + 8, y1 + 4)
     ImGui.Text(ctx, 'Group not found: ' .. group_id)
     return
@@ -388,12 +388,12 @@ function M.render_group(ctx, rect, item, state, view, tab_id)
   M._anim[key].hover = hover_t
 
   -- Get tab color
-  local tab_color = view.tab_colors[tab_id] or hexrgb('#888888')
+  local tab_color = view.tab_colors[tab_id] or 0x888888FF
 
   -- Parse group color
   local group_color = group.color
   if type(group_color) == 'string' then
-    group_color = hexrgb(group_color)
+    group_color = hex(group_color)
   end
 
   -- Color definitions
@@ -439,7 +439,7 @@ function M.render_group(ctx, rect, item, state, view, tab_id)
   ImGui.SetCursorScreenPos(ctx, x1 + 8 + badge_size + 6, y1 + 1)
   ImGui.AlignTextToFramePadding(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CCCCCC'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCCCCCCFF)
   local display_name = group.name or ('Group ' .. group_id)
   if #display_name > 30 then
     display_name = display_name:sub(1, 27) .. '...'
@@ -449,7 +449,7 @@ function M.render_group(ctx, rect, item, state, view, tab_id)
 
   -- Member count
   ImGui.SameLine(ctx, 0, 8)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
   local count = #(group.template_ids or {})
   ImGui.Text(ctx, string.format('(%d template%s)', count, count == 1 and '' or 's'))
   ImGui.PopStyleColor(ctx)

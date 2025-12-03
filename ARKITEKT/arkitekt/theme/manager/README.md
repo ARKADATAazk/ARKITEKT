@@ -66,8 +66,8 @@ SPECIAL  = offset(0.05, -0.05, 0.3) -- snap at t=0.3
 Linearly interpolates between values based on `t`.
 
 ```lua
-OPACITY = lerp(0.87, 0.60)         -- smooth transition
-ACCENT  = lerp("#334455", "#AABBCC") -- RGB color lerp
+OPACITY = lerp(0.87, 0.60)                       -- smooth transition
+ACCENT  = lerp(0x334455FF, 0xAABBCCFF)           -- RGB color lerp
 ```
 
 ### `snap(dark, light, [threshold])` - Discrete Snap
@@ -75,8 +75,8 @@ ACCENT  = lerp("#334455", "#AABBCC") -- RGB color lerp
 No interpolation. Picks one value or the other.
 
 ```lua
-TEXT_NORMAL = snap("#FFFFFF", "#000000")     -- snap at 0.5
-SPECIAL     = snap("#AAA", "#555", 0.3)      -- snap at t=0.3
+TEXT_NORMAL = snap(0xFFFFFFFF, 0x000000FF)   -- snap at 0.5
+SPECIAL     = snap(0xAAAAAAFF, 0x555555FF, 0.3)  -- snap at t=0.3
 ```
 
 ---
@@ -106,9 +106,9 @@ M.palette = {
   BG_HOVER  = offset(0.03, -0.04),
   BG_PANEL  = offset(-0.04),
 
-  -- === TEXT (snap on hex = color) ===
-  TEXT_NORMAL = snap("#FFFFFF", "#000000"),
-  TEXT_DIMMED = snap("#A0A0A0", "#606060"),
+  -- === TEXT (snap on bytes = color) ===
+  TEXT_NORMAL = snap(0xFFFFFFFF, 0x000000FF),
+  TEXT_DIMMED = snap(0xA0A0A0FF, 0x606060FF),
 
   -- === VALUES (lerp on numbers = value) ===
   TILE_BRIGHTNESS = lerp(0.5, 1.4),
@@ -118,8 +118,8 @@ M.palette = {
 
 Type inference:
 - `offset` → Apply delta to BG_BASE → RGBA color
-- `snap`/`lerp` on hex strings → RGBA color
-- `snap`/`lerp` on numbers → numeric value
+- `snap`/`lerp` on byte colors (>255) → RGBA color
+- `snap`/`lerp` on small numbers → numeric value
 
 ---
 
@@ -141,7 +141,7 @@ M.palette = {
   -- ...existing...
   MY_NEW_BG = offset(0.08, -0.06),
   MY_NEW_OPACITY = lerp(0.9, 0.7),
-  MY_NEW_COLOR = snap("#FF0000", "#00FF00"),
+  MY_NEW_COLOR = snap(0xFF0000FF, 0x00FF00FF),
 }
 ```
 
@@ -161,7 +161,6 @@ Scripts can register their own theme-reactive palettes using the same DSL:
 ```lua
 -- MyScript/defs/palette.lua
 local ThemeManager = require('arkitekt.theme.manager')
-local Colors = require('arkitekt.core.colors')
 
 local snap = ThemeManager.snap
 local lerp = ThemeManager.lerp
@@ -171,10 +170,10 @@ local M = {}
 
 -- Register flat palette at load time
 ThemeManager.register_script_palette("MyScript", {
-  -- Colors (snap/lerp on hex)
-  HIGHLIGHT = snap("#FF6B6B", "#CC4444"),
-  BADGE_TEXT = snap("#FFFFFF", "#1A1A1A"),
-  ERROR_BG = snap("#240C0C", "#FFDDDD"),
+  -- Colors (snap/lerp on bytes)
+  HIGHLIGHT = snap(0xFF6B6BFF, 0xCC4444FF),
+  BADGE_TEXT = snap(0xFFFFFFFF, 0x1A1A1AFF),
+  ERROR_BG = snap(0x240C0CFF, 0xFFDDDDFF),
 
   -- Values (lerp on numbers)
   GLOW_OPACITY = lerp(0.8, 0.5),
@@ -188,7 +187,7 @@ ThemeManager.register_script_palette("MyScript", {
 function M.get_colors()
   local p = ThemeManager.get_script_palette("MyScript")
   if not p then
-    return { highlight = Colors.hexrgb("#FF6B6BFF") }
+    return { highlight = 0xFF6B6BFF }
   end
 
   return {
@@ -263,7 +262,7 @@ local valid, err = ThemeManager.validate()
 
 ```lua
 -- Generate from a single base color
-local bg = Colors.hexrgb("#3A3A3AFF")
+local bg = 0x3A3A3AFF
 ThemeManager.generate_and_apply(bg)
 ```
 
@@ -272,7 +271,7 @@ ThemeManager.generate_and_apply(bg)
 ```lua
 -- Register flat palette
 ThemeManager.register_script_palette("ScriptName", {
-  MY_COLOR = snap("#AAA", "#555"),
+  MY_COLOR = snap(0xAAAAAAFF, 0x555555FF),
   MY_OPACITY = lerp(0.8, 0.5),
   MY_PANEL = offset(-0.04),
 })

@@ -15,7 +15,6 @@ local Constants = require('arkitekt.config.app')
 
 local M = {}
 M.__index = M
-local hexrgb = Colors.Hexrgb
 local clamp = CoreMath.clamp
 
 -- Global state to track if ANY overlay manager has active overlays

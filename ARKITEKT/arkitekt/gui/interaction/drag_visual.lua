@@ -17,8 +17,6 @@ local ImGui = require('arkitekt.core.imgui')
 local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.theme')
-local hexrgb = Colors.Hexrgb
-
 -- ============================================================================
 -- PERFORMANCE OPTIMIZATIONS
 -- ============================================================================
@@ -102,7 +100,7 @@ M.MODES = build_mode_configs()
 M.TILE_DEFAULTS = {
   width = 60,
   height = 40,
-  base_fill = hexrgb('#1A1A1A'),
+  base_fill = 0x1A1A1AFF,
   stroke_thickness = 1.5,
   rounding = 4,
   global_opacity = 0.70,
@@ -117,8 +115,8 @@ M.STACK_DEFAULTS = {
 }
 
 M.BADGE_DEFAULTS = {
-  bg = hexrgb('#1A1A1AEE'),
-  border_color = hexrgb('#00000099'),
+  bg = 0x1A1A1AEE,
+  border_color = 0x00000099,
   border_thickness = 1,
   rounding = 6,
   padding_x = 6,
@@ -144,7 +142,7 @@ M.DROP_DEFAULTS = {
 M.SHADOW_DEFAULTS = {
   enabled = false,
   layers = 2,
-  base_color = hexrgb('#00000044'),
+  base_color = 0x00000044,
   offset = 2,
   blur_spread = 1.0,
 }
@@ -230,7 +228,7 @@ local function draw_copy_indicator(ctx, dl, mx, my, config)
   local ix = mx - size - 20
   local iy = my - size / 2
 
-  AddCircleFilled(dl, ix + size/2, iy + size/2, size/2, hexrgb('#1A1A1AEE'))
+  AddCircleFilled(dl, ix + size/2, iy + size/2, size/2, 0x1A1A1AEE)
   AddCircle(dl, ix + size/2, iy + size/2, size/2, indicator_color, 0, 2)
 
   local tw, th = CalcTextSize(ctx, indicator_text)
@@ -246,7 +244,7 @@ local function draw_delete_indicator(ctx, dl, mx, my, config)
   local ix = mx - size - 20
   local iy = my - size / 2
 
-  AddCircleFilled(dl, ix + size/2, iy + size/2, size/2, hexrgb('#1A1A1AEE'))
+  AddCircleFilled(dl, ix + size/2, iy + size/2, size/2, 0x1A1A1AEE)
   AddCircle(dl, ix + size/2, iy + size/2, size/2, indicator_color, 0, 2)
 
   local tw, th = CalcTextSize(ctx, indicator_text)
@@ -279,7 +277,7 @@ function DragIndicator.draw_badge(ctx, dl, mx, my, count, config, is_copy_mode, 
 
   if cfg.shadow and cfg.shadow.enabled then
     local shadow_offset = cfg.shadow.offset or 2
-    local shadow_color = cfg.shadow.color or hexrgb('#00000099')
+    local shadow_color = cfg.shadow.color or 0x00000099
     AddRectFilled(dl,
       bx + shadow_offset, by + shadow_offset,
       bx + badge_w + shadow_offset, by + badge_h + shadow_offset,

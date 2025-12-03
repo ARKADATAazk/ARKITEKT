@@ -16,8 +16,6 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local Shell = require('arkitekt.runtime.shell')
 local Arkit = require('arkitekt.arkit')
 local ImGui = Arkit.ImGui
-local hexrgb = Arkit.hexrgb
-
 local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui')
 
 -- ============================================================================
@@ -40,8 +38,8 @@ local function create_alignment_panel()
     width = 850,
     height = 180,
     config = {
-      bg_color = hexrgb('#1A1A1AFF'),
-      border_color = hexrgb('#000000DD'),
+      bg_color = 0x1A1A1AFF,
+      border_color = 0x000000DD,
       border_thickness = 1,
       rounding = 8,
       padding = 16,
@@ -50,8 +48,8 @@ local function create_alignment_panel()
         enabled = true,
         height = 30,
         position = 'top',
-        bg_color = hexrgb('#1E1E1EFF'),
-        border_color = hexrgb('#00000066'),
+        bg_color = 0x1E1E1EFF,
+        border_color = 0x00000066,
         rounding = 8,
         
         elements = {
@@ -90,7 +88,7 @@ local function create_alignment_panel()
             spacing_before = 8,
             config = {
               show_line = true,
-              line_color = hexrgb('#40404080'),
+              line_color = 0x40404080,
             }
           },
           
@@ -153,8 +151,8 @@ local function create_bottom_header_panel()
     width = 850,
     height = 150,
     config = {
-      bg_color = hexrgb('#1A1A1AFF'),
-      border_color = hexrgb('#000000DD'),
+      bg_color = 0x1A1A1AFF,
+      border_color = 0x000000DD,
       border_thickness = 1,
       rounding = 8,
       padding = 16,
@@ -163,8 +161,8 @@ local function create_bottom_header_panel()
         enabled = true,
         height = 30,
         position = 'bottom', -- Header at bottom!
-        bg_color = hexrgb('#1E1E1EFF'),
-        border_color = hexrgb('#00000066'),
+        bg_color = 0x1E1E1EFF,
+        border_color = 0x00000066,
         rounding = 8,
         
         elements = {
@@ -202,8 +200,8 @@ local function create_corner_buttons_panel()
     width = 850,
     height = 200,
     config = {
-      bg_color = hexrgb('#1A1A1AFF'),
-      border_color = hexrgb('#000000DD'),
+      bg_color = 0x1A1A1AFF,
+      border_color = 0x000000DD,
       border_thickness = 1,
       rounding = 8,
       padding = 16,
@@ -265,8 +263,8 @@ local function create_hybrid_panel()
     width = 850,
     height = 150,
     config = {
-      bg_color = hexrgb('#1A1A1AFF'),
-      border_color = hexrgb('#000000DD'),
+      bg_color = 0x1A1A1AFF,
+      border_color = 0x000000DD,
       border_thickness = 1,
       rounding = 8,
       padding = 16,
@@ -275,8 +273,8 @@ local function create_hybrid_panel()
         enabled = true,
         height = 30,
         position = 'top',
-        bg_color = hexrgb('#1E1E1EFF'),
-        border_color = hexrgb('#00000066'),
+        bg_color = 0x1E1E1EFF,
+        border_color = 0x00000066,
         rounding = 8,
         
         elements = {
@@ -317,8 +315,8 @@ local function create_sidebar_panel()
     width = 850,
     height = 200,
     config = {
-      bg_color = hexrgb('#1A1A1AFF'),
-      border_color = hexrgb('#000000DD'),
+      bg_color = 0x1A1A1AFF,
+      border_color = 0x000000DD,
       border_thickness = 1,
       rounding = 8,
       padding = 16,
@@ -327,8 +325,8 @@ local function create_sidebar_panel()
         enabled = true,
         height = 30,
         position = 'top',
-        bg_color = hexrgb('#1E1E1EFF'),
-        border_color = hexrgb('#00000066'),
+        bg_color = 0x1E1E1EFF,
+        border_color = 0x00000066,
         rounding = 8,
 
         elements = {
@@ -346,8 +344,8 @@ local function create_sidebar_panel()
       left_sidebar = {
         enabled = true,
         width = 40,
-        bg_color = hexrgb('#1E1E1EFF'),
-        border_color = hexrgb('#00000066'),
+        bg_color = 0x1E1E1EFF,
+        border_color = 0x00000066,
         valign = 'center',
         padding = { top = 4, bottom = 4 },
         button_size = 28,
@@ -384,8 +382,8 @@ local function create_sidebar_panel()
       right_sidebar = {
         enabled = true,
         width = 40,
-        bg_color = hexrgb('#1E1E1EFF'),
-        border_color = hexrgb('#00000066'),
+        bg_color = 0x1E1E1EFF,
+        border_color = 0x00000066,
         valign = 'top',
         padding = { top = 4, bottom = 4 },
         button_size = 28,
@@ -437,11 +435,11 @@ local function draw(ctx, shell_state)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 20, 20)
   
   -- Header
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#41E0A3FF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x41E0A3FF)
   ImGui.Text(ctx, '🎨 PANEL FEATURES TEST')
   ImGui.PopStyleColor(ctx, 1)
   
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888FF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
   ImGui.Text(ctx, 'Testing new panel capabilities')
   ImGui.PopStyleColor(ctx, 1)
   
@@ -451,7 +449,7 @@ local function draw(ctx, shell_state)
   
   -- Panel 1: Left/Right Alignment
   ImGui.PushID(ctx, 'panel1')
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFD700FF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFD700FF)
   ImGui.Text(ctx, '1. LEFT/RIGHT ALIGNMENT + SEPARATOR')
   ImGui.PopStyleColor(ctx, 1)
   ImGui.Text(ctx, 'Elements can be aligned left or right. Separator creates visual break.')
@@ -473,7 +471,7 @@ local function draw(ctx, shell_state)
   
   -- Panel 2: Bottom Header
   ImGui.PushID(ctx, 'panel2')
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFD700FF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFD700FF)
   ImGui.Text(ctx, '2. BOTTOM HEADER')
   ImGui.PopStyleColor(ctx, 1)
   ImGui.Text(ctx, 'Header can be positioned at top or bottom of panel.')
@@ -495,7 +493,7 @@ local function draw(ctx, shell_state)
   
   -- Panel 3: Corner Buttons
   ImGui.PushID(ctx, 'panel3')
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFD700FF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFD700FF)
   ImGui.Text(ctx, '3. CORNER BUTTONS (NO HEADER)')
   ImGui.PopStyleColor(ctx, 1)
   ImGui.Text(ctx, 'Floating buttons in panel corners without header.')
@@ -520,7 +518,7 @@ local function draw(ctx, shell_state)
   
   -- Panel 4: Hybrid
   ImGui.PushID(ctx, 'panel4')
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFD700FF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFD700FF)
   ImGui.Text(ctx, '4. HEADER + CORNER BUTTONS')
   ImGui.PopStyleColor(ctx, 1)
   ImGui.Text(ctx, 'Corner buttons can coexist with headers.')
@@ -542,7 +540,7 @@ local function draw(ctx, shell_state)
 
   -- Panel 5: Sidebars
   ImGui.PushID(ctx, 'panel5')
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFD700FF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFD700FF)
   ImGui.Text(ctx, '5. SIDEBARS')
   ImGui.PopStyleColor(ctx, 1)
   ImGui.Text(ctx, 'Vertical button bars on left/right sides of panel.')
@@ -581,12 +579,12 @@ reaper.ShowConsoleMsg('═══════════════════
 Shell.run({
   title = 'Panel Features Test',
   version = 'v3.0.0',
-  version_color = hexrgb('#888888FF'),
+  version_color = 0x888888FF,
   style = StyleOK and Style or nil,
   initial_pos = { x = 100, y = 100 },
   initial_size = { w = 900, h = 1150 },
   min_size = { w = 900, h = 900 },
-  icon_color = hexrgb('#41E0A3FF'),
+  icon_color = 0x41E0A3FF,
   icon_size = 18,
 
   draw = draw,

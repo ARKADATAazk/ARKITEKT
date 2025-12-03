@@ -559,7 +559,7 @@ function GUI:draw(ctx, shell_state)
     local status_w = ImGui.CalcTextSize(ctx, status)
 
     ImGui.SetCursorPos(ctx, (SCREEN_W - status_w) * 0.5, status_y)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Ark.Colors.Hexrgb('#B3B3B3'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xB3B3B3FF)
     ImGui.Text(ctx, status)
     ImGui.PopStyleColor(ctx)
 

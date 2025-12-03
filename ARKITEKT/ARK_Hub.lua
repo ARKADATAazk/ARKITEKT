@@ -51,9 +51,6 @@ local SelRect = require('arkitekt.gui.widgets.data.selection_rectangle')
 
 local SettingsOK, Settings = pcall(require, 'arkitekt.core.settings')
 local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui')
-local hexrgb = Ark.Colors.Hexrgb
-
-
 local settings = nil
 if SettingsOK and type(Settings.new)=='function' then
   local data_dir = Ark._bootstrap.get_data_dir('ARKITEKT')
@@ -244,13 +241,13 @@ local function get_app_status()
   
   if total_conflicts > 0 then
     return {
-      color = hexrgb('#FFA500'),
+      color = 0xFFA500FF,
       text = string.format('CONFLICTS: %d', total_conflicts),
     }
   end
   
   return {
-    color = hexrgb('#41E0A3'),
+    color = 0x41E0A3FF,
     text = 'READY',
   }
 end

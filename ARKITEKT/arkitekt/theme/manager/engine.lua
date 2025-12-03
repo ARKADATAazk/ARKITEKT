@@ -10,6 +10,12 @@ local Palette = require('arkitekt.config.colors')
 
 local M = {}
 
+-- Helper: Check if a number is a byte color (vs a small numeric value like opacity)
+-- Byte colors are large numbers like 0xRRGGBBAA (> 255)
+local function is_byte_color(val)
+  return type(val) == 'number' and val > 255
+end
+
 -- =============================================================================
 -- NORMALIZED VALUE TRANSFORMS
 -- =============================================================================
@@ -112,15 +118,15 @@ local function resolve_value(def, t)
   -- lerp: smooth interpolation
   elseif mode == 'lerp' then
     local dark_val, light_val = def.dark, def.light
-    if type(dark_val) == 'number' and type(light_val) == 'number' then
+
+    -- Byte colors: use Colors.Lerp for proper RGBA interpolation
+    if is_byte_color(dark_val) and is_byte_color(light_val) then
+      return Colors.Lerp(dark_val, light_val, t)
+
+    -- Small numbers: linear interpolation (opacity, brightness, etc.)
+    elseif type(dark_val) == 'number' and type(light_val) == 'number' then
       return dark_val + (light_val - dark_val) * t
-    elseif type(dark_val) == 'string' and type(light_val) == 'string' then
-      -- RGB color lerp
-      local color_a = Colors.Hexrgb(dark_val .. (#dark_val == 7 and 'FF' or ''))
-      local color_b = Colors.Hexrgb(light_val .. (#light_val == 7 and 'FF' or ''))
-      local lerped = Colors.Lerp(color_a, color_b, t)
-      local r, g, b = Colors.RgbaToComponents(lerped)
-      return string.format('#%02X%02X%02X', r, g, b)
+
     else
       return t < 0.5 and dark_val or light_val
     end
@@ -142,15 +148,14 @@ local function resolve_value(def, t)
     end
 
     -- Interpolate based on type
-    if type(val_a) == 'number' and type(val_b) == 'number' then
+    -- Byte colors: use Colors.Lerp for proper RGBA interpolation
+    if is_byte_color(val_a) and is_byte_color(val_b) then
+      return Colors.Lerp(val_a, val_b, local_t)
+
+    -- Small numbers: linear interpolation (opacity, brightness, etc.)
+    elseif type(val_a) == 'number' and type(val_b) == 'number' then
       return val_a + (val_b - val_a) * local_t
-    elseif type(val_a) == 'string' and type(val_b) == 'string' then
-      -- RGB color lerp
-      local color_a = Colors.Hexrgb(val_a .. (#val_a == 7 and 'FF' or ''))
-      local color_b = Colors.Hexrgb(val_b .. (#val_b == 7 and 'FF' or ''))
-      local lerped = Colors.Lerp(color_a, color_b, local_t)
-      local r, g, b = Colors.RgbaToComponents(lerped)
-      return string.format('#%02X%02X%02X', r, g, b)
+
     else
       return local_t < 0.5 and val_a or val_b
     end
@@ -193,16 +198,18 @@ local function derive_entry(base_bg, key, def, t)
   -- SNAP/SNAP3/LERP/LERP3: Check value type
   local resolved = resolve_value(def, t)
 
-  if type(resolved) == 'string' then
-    -- Hex string → convert to RGBA
-    return Colors.Hexrgb(resolved .. 'FF')
+  if is_byte_color(resolved) then
+    -- Byte color → return directly
+    return resolved
+
   elseif type(resolved) == 'number' then
-    -- Number → apply normalization if key matches pattern
+    -- Small number → apply normalization if key matches pattern
     if should_normalize(key) then
       resolved = M.normalize_to_multiplier(resolved)
     end
     -- Clamp to valid range for key type
     return Palette.clamp_value(key, resolved)
+
   else
     return resolved
   end

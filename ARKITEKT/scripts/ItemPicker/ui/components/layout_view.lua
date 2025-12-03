@@ -114,7 +114,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Draw dotted pattern
   local Theme = get_theme()
   local ThemeColors = Theme and Theme.COLORS or {}
-  local pattern_color = ThemeColors.PATTERN_PRIMARY or Ark.Colors.Hexrgb('#2A2A2A')
+  local pattern_color = ThemeColors.PATTERN_PRIMARY or 0x2A2A2AFF
 
   local overlay_pattern_config = {
     enabled = true,

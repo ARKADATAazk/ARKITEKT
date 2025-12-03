@@ -14,7 +14,7 @@ local M = {}
 -- Color preset palette from centralized colors
 local PRESET_COLORS = {}
 for i, color in ipairs(ColorDefs.PALETTE) do
-  PRESET_COLORS[i] = Ark.Colors.Hexrgb(color.hex)
+  PRESET_COLORS[i] = color.hex  -- .hex is now a byte value
 end
 
 -- Draw template context menu (color picker)
@@ -314,7 +314,7 @@ function M.draw_tag_context_menu(ctx, state)
         width = -1,
         height = UI.BUTTON.HEIGHT_DEFAULT
       }).clicked then
-        tag_data.color = Ark.Colors.Hexrgb('#646464')
+        tag_data.color = 0x646464FF
         local Persistence = require('TemplateBrowser.data.storage')
         Persistence.save_metadata(state.metadata)
         state.context_menu_tag = nil

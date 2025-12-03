@@ -6,8 +6,6 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local Math = require('arkitekt.core.math')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- Animation state storage (persistent across frames)
@@ -35,11 +33,11 @@ function M.render(ctx, rect, item, state, view)
   M._anim[key].hover = hover_t
 
   -- Color definitions
-  local BG_BASE = hexrgb('#252530')
-  local BG_HOVER = hexrgb('#2D2D3D')
-  local BRD_BASE = hexrgb('#444455')
-  local BRD_HOVER = hexrgb('#7788FF')
-  local ANT_COLOR = hexrgb('#7788FF7F')
+  local BG_BASE = 0x252530FF
+  local BG_HOVER = 0x2D2D3DFF
+  local BRD_BASE = 0x444455FF
+  local BRD_HOVER = 0x7788FFFF
+  local ANT_COLOR = 0x7788FF7F
 
   -- Hover shadow effect
   if hover_t > 0.01 and not state.selected then
@@ -63,7 +61,7 @@ function M.render(ctx, rect, item, state, view)
   ImGui.AlignTextToFramePadding(ctx)
 
   -- Template name
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CCCCFF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCCCCFFFF)
   local display_name = template.name or 'Unnamed Template'
   if #display_name > 30 then
     display_name = display_name:sub(1, 27) .. '...'
@@ -73,7 +71,7 @@ function M.render(ctx, rect, item, state, view)
 
   -- Template type indicator
   ImGui.SameLine(ctx)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#8888AA'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x8888AAFF)
   local type_label = template.type == 'preset_spinner' and '[Preset]' or
                      template.type == 'compound_bool' and '[Compound]' or
                      '[Custom]'
@@ -82,7 +80,7 @@ function M.render(ctx, rect, item, state, view)
 
   -- Parameter list (second line)
   ImGui.SetCursorScreenPos(ctx, x1 + 8, y1 + 20)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#777788'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x777788FF)
 
   local param_names = {}
   for _, param_name in ipairs(template.params or {}) do

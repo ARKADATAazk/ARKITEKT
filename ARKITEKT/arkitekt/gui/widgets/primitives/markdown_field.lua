@@ -5,8 +5,6 @@
 local ImGui = require('arkitekt.core.imgui')
 local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.Hexrgb
-
 local M = {}
 
 -- State storage for each markdown field instance
@@ -122,9 +120,9 @@ function M.Draw(ctx, opts)
     -- EDIT MODE: Show multiline text input
     -- ========================================================================
 
-    local edit_bg = opts.edit_bg_color or hexrgb('#1A1A1A')
-    local edit_border = opts.edit_border_color or hexrgb('#4A9EFF')
-    local text_color = opts.text_color or hexrgb('#FFFFFF')
+    local edit_bg = opts.edit_bg_color or 0x1A1A1AFF
+    local edit_border = opts.edit_border_color or 0x4A9EFFFF
+    local text_color = opts.text_color or 0xFFFFFFFF
 
     -- Draw background
     local dl = ImGui.GetWindowDrawList(ctx)
@@ -141,10 +139,10 @@ function M.Draw(ctx, opts)
     end
 
     -- Style the input to be transparent (we draw our own background)
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, hexrgb('#00000000'))
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, hexrgb('#00000000'))
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, hexrgb('#00000000'))
-    ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb('#00000000'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0x00000000)
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0x00000000)
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0x00000000)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x00000000)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
 
     local input_changed, input_text = ImGui.InputTextMultiline(
@@ -200,8 +198,8 @@ function M.Draw(ctx, opts)
     -- VIEW MODE: Show rendered markdown
     -- ========================================================================
 
-    local view_bg = opts.view_bg_color or hexrgb('#0D0D0D')
-    local placeholder_color = opts.placeholder_color or hexrgb('#666666')
+    local view_bg = opts.view_bg_color or 0x0D0D0DFF
+    local placeholder_color = opts.placeholder_color or 0x666666FF
     local placeholder_text = opts.placeholder or 'Double-click to edit...'
 
     -- Check if hovering over the view area

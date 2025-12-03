@@ -3,8 +3,6 @@
 -- App-level defaults for window, titlebar, status bar, overlay, etc.
 
 local CoreColors = require('arkitekt.core.colors')
-local hexrgb = CoreColors.Hexrgb
-
 local M = {}
 
 -- ============================================================================
@@ -71,19 +69,19 @@ M.OVERLAY = {
     CLOSE_BUTTON_PROXIMITY = 150,
 
     -- Close button colors
-    CLOSE_BUTTON_BG_COLOR = hexrgb('#000000FF'),
+    CLOSE_BUTTON_BG_COLOR = 0x000000FF,
     CLOSE_BUTTON_BG_OPACITY = 0.6,
     CLOSE_BUTTON_BG_OPACITY_HOVER = 0.8,
-    CLOSE_BUTTON_ICON_COLOR = hexrgb('#FFFFFFFF'),
-    CLOSE_BUTTON_HOVER_COLOR = hexrgb('#FF4444FF'),
-    CLOSE_BUTTON_ACTIVE_COLOR = hexrgb('#FF0000FF'),
+    CLOSE_BUTTON_ICON_COLOR = 0xFFFFFFFF,
+    CLOSE_BUTTON_HOVER_COLOR = 0xFF4444FF,
+    CLOSE_BUTTON_ACTIVE_COLOR = 0xFF0000FF,
 
     -- Layout
     CONTENT_PADDING = 24,
 
     -- Scrim/backdrop
     SCRIM_OPACITY = 0.99,
-    SCRIM_COLOR = hexrgb('#000000FF'),
+    SCRIM_COLOR = 0x000000FF,
 
     -- Behavior defaults
     DEFAULT_USE_VIEWPORT = true,
@@ -186,7 +184,7 @@ M.WINDOW = {
 
     -- Background colors
     bg_color_floating = nil,
-    bg_color_docked = hexrgb('#282828'),
+    bg_color_docked = 0x282828FF,
 
     -- Default mode (used for flag/chrome presets)
     mode = 'window',  -- 'window', 'overlay', or 'hud'
@@ -220,23 +218,23 @@ M.TITLEBAR = {
     bg_color = nil,
     bg_color_active = nil,
     text_color = nil,
-    version_color = hexrgb('#ffffff5b'),
+    version_color = 0xFFFFFF5B,
 
     -- Button colors (minimal style)
-    button_maximize_normal = hexrgb('#00000000'),
-    button_maximize_hovered = hexrgb('#4CAF50FF'),  -- Success green
-    button_maximize_active = hexrgb('#60FFFFFF'),
-    button_close_normal = hexrgb('#00000000'),
-    button_close_hovered = hexrgb('#CC3333FF'),
-    button_close_active = hexrgb('#FF1111FF'),
+    button_maximize_normal = 0x00000000,
+    button_maximize_hovered = 0x4CAF50FF,  -- Success green
+    button_maximize_active = 0x60FFFFFF,
+    button_close_normal = 0x00000000,
+    button_close_hovered = 0xCC3333FF,
+    button_close_active = 0xFF1111FF,
 
     -- Button colors (filled style)
-    button_maximize_filled_normal = hexrgb('#808080'),
-    button_maximize_filled_hovered = hexrgb('#999999'),
-    button_maximize_filled_active = hexrgb('#666666'),
-    button_close_filled_normal = hexrgb('#CC3333'),
-    button_close_filled_hovered = hexrgb('#FF4444'),
-    button_close_filled_active = hexrgb('#FF1111'),
+    button_maximize_filled_normal = 0x808080FF,
+    button_maximize_filled_hovered = 0x999999FF,
+    button_maximize_filled_active = 0x666666FF,
+    button_close_filled_normal = 0xCC3333FF,
+    button_close_filled_hovered = 0xFF4444FF,
+    button_close_filled_active = 0xFF1111FF,
 }
 
 -- ============================================================================

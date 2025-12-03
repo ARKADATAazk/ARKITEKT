@@ -38,8 +38,6 @@
 
 local Ark = require('arkitekt')
 local ActiveTile = require('RegionPlaylist.ui.tiles.renderers.active')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- Handle delete with destroy animation
@@ -429,8 +427,8 @@ function M.create_opts(rt, config)
   local base_tile_height = config.base_tile_height_active or 72
   local tile_config = config.tile_config or { border_thickness = 0.5, rounding = 6 }
   local dim_config = config.dim_config or {
-    fill_color = hexrgb('#00000088'),
-    stroke_color = hexrgb('#FFFFFF33'),
+    fill_color = 0x00000088,
+    stroke_color = 0xFFFFFF33,
     stroke_thickness = 1.5,
     rounding = 6,
   }

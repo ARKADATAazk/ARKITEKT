@@ -26,35 +26,35 @@ M.definition = {
   -- =========================================================================
 
   -- Favorite star color (yellow/gold)
-  favorite_star = Theme.snap('#FFE87C', '#E5C84A'),
+  favorite_star = Theme.snap(0xFFE87CFF, 0xE5C84AFF),
 
   -- Rename input field colors
-  rename_input_bg = Theme.snap('#1A1A1A', '#F0F0F0'),
-  rename_input_text = Theme.snap('#FFFFFF', '#1A1A1A'),
+  rename_input_bg = Theme.snap(0x1A1A1AFF, 0xF0F0F0FF),
+  rename_input_text = Theme.snap(0xFFFFFFFF, 0x1A1A1AFF),
 
   -- Badge text color (cycle badge N/M) - note: use 6-char hex, alpha handled separately
-  badge_text = Theme.snap('#FFFFFF', '#000000'),
+  badge_text = Theme.snap(0xFFFFFFFF, 0x000000FF),
 
   -- Pool badge text - note: use 6-char hex, alpha handled separately
-  pool_badge_text = Theme.snap('#FFFFFF', '#000000'),
+  pool_badge_text = Theme.snap(0xFFFFFFFF, 0x000000FF),
 
   -- Region chip default color (when region has no color)
-  region_chip_default = Theme.snap('#4A5A6A', '#8A9AAA'),
+  region_chip_default = Theme.snap(0x4A5A6AFF, 0x8A9AAAFF),
 
   -- Default tile color (when item has no color)
-  default_tile_color = Theme.snap('#555555', '#AAAAAA'),
+  default_tile_color = Theme.snap(0x555555FF, 0xAAAAAAFF),
 
   -- Placeholder spinner color
-  placeholder_spinner = Theme.snap('#808080', '#606060'),
+  placeholder_spinner = Theme.snap(0x808080FF, 0x606060FF),
 
   -- Loading indicator
-  loading_indicator = Theme.snap('#4A9EFF', '#2A7EDF'),
+  loading_indicator = Theme.snap(0x4A9EFFFF, 0x2A7EDFFF),
 
   -- Muted text color (red)
-  muted_text = Theme.snap('#22cccc', '#DD3333'),
+  muted_text = Theme.snap(0x22CCCCFF, 0xDD3333FF),
 
   -- Drag handler default color (teal)
-  drag_handle = Theme.snap('#42E896', '#32D886'),
+  drag_handle = Theme.snap(0x42E896FF, 0x32D886FF),
 
   -- =========================================================================
   -- LIGHTNESS/SATURATION OFFSETS (applied to dynamic tile colors)
@@ -88,61 +88,61 @@ M.definition = {
   -- =========================================================================
 
   -- Panel backgrounds
-  panel_bg = Theme.snap('#1A1A1A', '#F5F5F5'),
-  panel_bg_alt = Theme.snap('#2A2A2A', '#E8E8E8'),
-  panel_bg_hover = Theme.snap('#3A3A3A', '#DDDDDD'),
-  panel_border = Theme.snap('#404040', '#C0C0C0'),
+  panel_bg = Theme.snap(0x1A1A1AFF, 0xF5F5F5FF),
+  panel_bg_alt = Theme.snap(0x2A2A2AFF, 0xE8E8E8FF),
+  panel_bg_hover = Theme.snap(0x3A3A3AFF, 0xDDDDDDFF),
+  panel_border = Theme.snap(0x404040FF, 0xC0C0C0FF),
 
   -- Scrim/overlay
-  scrim = Theme.snap('#000000', '#000000'),
+  scrim = Theme.snap(0x000000FF, 0x000000FF),
 
   -- Text colors
-  text_primary = Theme.snap('#FFFFFF', '#1A1A1A'),
-  text_secondary = Theme.snap('#AAAAAA', '#666666'),
-  text_dimmed = Theme.snap('#888888', '#999999'),
-  text_label = Theme.snap('#888888', '#777777'),
+  text_primary = Theme.snap(0xFFFFFFFF, 0x1A1A1AFF),
+  text_secondary = Theme.snap(0xAAAAAAFF, 0x666666FF),
+  text_dimmed = Theme.snap(0x888888FF, 0x999999FF),
+  text_label = Theme.snap(0x888888FF, 0x777777FF),
 
   -- Accent colors
-  accent_primary = Theme.snap('#4A9EFF', '#2A7EDF'),
-  accent_primary_hover = Theme.snap('#5AAFFF', '#3A8EEF'),
-  accent_teal = Theme.snap('#42E896', '#32D886'),
-  accent_teal_dark = Theme.snap('#008B8B', '#006B6B'),
+  accent_primary = Theme.snap(0x4A9EFFFF, 0x2A7EDFFF),
+  accent_primary_hover = Theme.snap(0x5AAFFFFF, 0x3A8EEFFF),
+  accent_teal = Theme.snap(0x42E896FF, 0x32D886FF),
+  accent_teal_dark = Theme.snap(0x008B8BFF, 0x006B6BFF),
 
   -- Track filter indicator
-  filter_indicator = Theme.snap('#42E896', '#32D886'),
+  filter_indicator = Theme.snap(0x42E896FF, 0x32D886FF),
 
   -- Slider colors
-  slider_track = Theme.snap('#1A1A1A', '#E0E0E0'),
-  slider_fill = Theme.snap('#4A9EFF', '#2A7EDF'),
-  slider_thumb = Theme.snap('#4A9EFF', '#2A7EDF'),
-  slider_thumb_hover = Theme.snap('#5AAFFF', '#3A8EEF'),
+  slider_track = Theme.snap(0x1A1A1AFF, 0xE0E0E0FF),
+  slider_fill = Theme.snap(0x4A9EFFFF, 0x2A7EDFFF),
+  slider_thumb = Theme.snap(0x4A9EFFFF, 0x2A7EDFFF),
+  slider_thumb_hover = Theme.snap(0x5AAFFFFF, 0x3A8EEFFF),
 
   -- Sort label
-  sort_label = Theme.snap('#AAAAAA', '#666666'),
+  sort_label = Theme.snap(0xAAAAAAFF, 0x666666FF),
 
   -- Drag preview
-  drag_shadow = Theme.snap('#000000', '#000000'),
-  drag_header = Theme.snap('#000000', '#FFFFFF'),
-  drag_text = Theme.snap('#FFFFFF', '#1A1A1A'),
-  drag_badge_bg = Theme.snap('#1A1A1A', '#E8E8E8'),
-  drag_badge_border = Theme.snap('#FFFFFF', '#888888'),
-  drag_pool_bg = Theme.snap('#008B8B', '#20B2AA'),
-  drag_pool_border = Theme.snap('#20B2AA', '#40D0D0'),
-  drag_fallback = Theme.snap('#555B5B', '#AAAAAA'),
+  drag_shadow = Theme.snap(0x000000FF, 0x000000FF),
+  drag_header = Theme.snap(0x000000FF, 0xFFFFFFFF),
+  drag_text = Theme.snap(0xFFFFFFFF, 0x1A1A1AFF),
+  drag_badge_bg = Theme.snap(0x1A1A1AFF, 0xE8E8E8FF),
+  drag_badge_border = Theme.snap(0xFFFFFFFF, 0x888888FF),
+  drag_pool_bg = Theme.snap(0x008B8BFF, 0x20B2AAFF),
+  drag_pool_border = Theme.snap(0x20B2AAFF, 0x40D0D0FF),
+  drag_fallback = Theme.snap(0x555B5BFF, 0xAAAAAAFF),
 
   -- Tooltip
-  tooltip_bg = Theme.snap('#1A1A1A', '#F5F5F5'),
-  tooltip_border = Theme.snap('#505050', '#C0C0C0'),
-  tooltip_text = Theme.snap('#CCCCCC', '#444444'),
+  tooltip_bg = Theme.snap(0x1A1A1AFF, 0xF5F5F5FF),
+  tooltip_border = Theme.snap(0x505050FF, 0xC0C0C0FF),
+  tooltip_text = Theme.snap(0xCCCCCCFF, 0x444444FF),
 
   -- Arrow/chevron
-  arrow = Theme.snap('#888888', '#666666'),
+  arrow = Theme.snap(0x888888FF, 0x666666FF),
 
   -- Loading strip pattern
-  loading_strip = Theme.snap('#3A3A3A', '#D0D0D0'),
+  loading_strip = Theme.snap(0x3A3A3AFF, 0xD0D0D0FF),
 
   -- Waveform zero line (debug/viz)
-  viz_zero_line = Theme.snap('#FFFFFF', '#000000'),
+  viz_zero_line = Theme.snap(0xFFFFFFFF, 0x000000FF),
 }
 
 -- =============================================================================

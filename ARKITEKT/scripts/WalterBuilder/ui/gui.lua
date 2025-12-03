@@ -20,8 +20,6 @@ local Constants = require('WalterBuilder.config.constants')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local WalterSettings = require('WalterBuilder.infra.settings')
 
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 local GUI = {}
 GUI.__index = GUI
@@ -545,7 +543,7 @@ function GUI:draw_status_bar(ctx)
     -- Show default status
     local elem_count = #self.State.get_elements()
     local track_count = #self.State.get_tracks()
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
     ImGui.Text(ctx, string.format('%d elements, %d tracks', elem_count, track_count))
     ImGui.PopStyleColor(ctx)
   end
@@ -570,13 +568,13 @@ function GUI:draw(ctx, window, shell_state)
   -- [Elements Panel] | [Canvas] | [Properties/Code]
 
   -- Left panel: Elements
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
 
   if ImGui.BeginChild(ctx, 'left_panel', self.left_panel_width, remaining_h, ImGui.ChildFlags_Borders, 0) then
     ImGui.Dummy(ctx, 0, 4)
     ImGui.Indent(ctx, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFFFFFFF)
     ImGui.Text(ctx, 'Elements')
     ImGui.PopStyleColor(ctx)
 
@@ -630,7 +628,7 @@ function GUI:draw(ctx, window, shell_state)
   end
 
   local dl = ImGui.GetWindowDrawList(ctx)
-  local ls_color = (ls_hovered or ls_active) and hexrgb('#888888') or hexrgb('#555555')
+  local ls_color = (ls_hovered or ls_active) and 0x888888FF or 0x555555FF
   ImGui.DrawList_AddRectFilled(dl, lsplit_x, lsplit_y, lsplit_x + splitter_w, lsplit_y + remaining_h, ls_color)
 
   ImGui.SameLine(ctx, 0, 0)
@@ -638,18 +636,18 @@ function GUI:draw(ctx, window, shell_state)
   -- Center: Canvas
   local canvas_w = avail_w - self.left_panel_width - self.right_panel_width - splitter_w * 2
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
 
   if ImGui.BeginChild(ctx, 'center_panel', canvas_w, remaining_h, ImGui.ChildFlags_Borders, 0) then
     ImGui.Dummy(ctx, 0, 4)
     ImGui.Indent(ctx, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFFFFFFF)
     ImGui.Text(ctx, 'Preview Canvas')
   ImGui.PopStyleColor(ctx)
 
   ImGui.SameLine(ctx)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
   ImGui.Text(ctx, '(drag handles to resize)')
   ImGui.PopStyleColor(ctx)
 
@@ -736,13 +734,13 @@ function GUI:draw(ctx, window, shell_state)
     self.right_splitter_drag_start = 0
   end
 
-  local rs_color = (rs_hovered or rs_active) and hexrgb('#888888') or hexrgb('#555555')
+  local rs_color = (rs_hovered or rs_active) and 0x888888FF or 0x555555FF
   ImGui.DrawList_AddRectFilled(dl, rsplit_x, rsplit_y, rsplit_x + splitter_w, rsplit_y + remaining_h, rs_color)
 
   ImGui.SameLine(ctx, 0, 0)
 
   -- Right panel: Properties and Code (tabbed or split)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
 
   ImGui.BeginChild(ctx, 'right_panel', self.right_panel_width, remaining_h, 1, 0)
   ImGui.Dummy(ctx, 0, 4)

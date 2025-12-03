@@ -17,13 +17,10 @@ local DragIndicator = Dnd.DragIndicator
 local DropIndicator = Dnd.DropIndicator
 local Background = require('arkitekt.gui.draw.patterns')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.Hexrgb
-
-
 local M = {}
 
 M.VIEWPORT_CONFIG = {
-  border_color = hexrgb('#000000'),
+  border_color = 0x000000FF,
   border_thickness = 2,
   rounding = 8,
   inset = 1,  -- Inset from actual bounds to prevent clipping
@@ -136,7 +133,7 @@ function M.render(canvas, ctx, bounds_x, bounds_y, bounds_w, bounds_h)
   
   -- Draw background color
   ImGui.DrawList_AddRectFilled(dl, viewport_x, viewport_y, viewport_x + viewport_w, viewport_y + viewport_h, 
-    canvas.config.bg_color or hexrgb('#1A1A1A'), M.VIEWPORT_CONFIG.rounding)
+    canvas.config.bg_color or 0x1A1A1AFF, M.VIEWPORT_CONFIG.rounding)
   
   -- Draw grid pattern - ensure it covers the full canvas bounds
   M.render_grid(canvas, ctx, dl, viewport_x, viewport_y, viewport_w, viewport_h)
@@ -231,7 +228,7 @@ function M.render_container(canvas, ctx, dl)
     container_world_x + container_world_w, 
     container_world_y + container_world_h)
   
-  ImGui.DrawList_AddRect(dl, screen_x1, screen_y1, screen_x2, screen_y2, hexrgb('#404040AA'), 4, 0, 1.5)
+  ImGui.DrawList_AddRect(dl, screen_x1, screen_y1, screen_x2, screen_y2, 0x404040AA, 4, 0, 1.5)
 end
 
 function M.render_nodes(canvas, ctx)

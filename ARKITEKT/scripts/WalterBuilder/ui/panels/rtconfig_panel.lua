@@ -10,8 +10,6 @@ local ThemeConnector = require('WalterBuilder.domain.theme_connector')
 local Colors = require('WalterBuilder.config.colors')
 local WalterSettings = require('WalterBuilder.infra.settings')
 
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 local Panel = {}
 Panel.__index = Panel
@@ -126,7 +124,7 @@ end
 -- Draw summary section
 function Panel:draw_summary(ctx)
   if not self.rtconfig then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CC6666'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCC6666FF)
     ImGui.Text(ctx, self.load_error or 'No rtconfig loaded')
     ImGui.PopStyleColor(ctx)
     return
@@ -134,7 +132,7 @@ function Panel:draw_summary(ctx)
 
   local summary = RtconfigParser.get_summary(self.rtconfig)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CC88'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x88CC88FF)
   ImGui.Text(ctx, 'WALTER v' .. (summary.version or '?'))
   ImGui.PopStyleColor(ctx)
 
@@ -174,7 +172,7 @@ function Panel:draw_load_controls(ctx)
 
     local is_selected = self.current_context == ctx_name
     if is_selected then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb('#4488AA'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, 0x4488AAFF)
     end
 
     if ImGui.SmallButton(ctx, ctx_name:upper()) then
@@ -193,7 +191,7 @@ function Panel:draw_load_controls(ctx)
     local stats = self.conversion_stats
 
     -- Simple elements (fully understood)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CC88'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x88CC88FF)
     ImGui.Text(ctx, string.format('Simple: %d', stats.simple))
     ImGui.PopStyleColor(ctx)
 
@@ -207,7 +205,7 @@ function Panel:draw_load_controls(ctx)
     ImGui.SameLine(ctx, 0, 15)
 
     -- Computed elements (expressions)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CCCC88'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCCCC88FF)
     ImGui.Text(ctx, string.format('Computed: %d', stats.computed))
     ImGui.PopStyleColor(ctx)
 
@@ -220,7 +218,7 @@ function Panel:draw_load_controls(ctx)
 
     if stats.cleared > 0 then
       ImGui.SameLine(ctx, 0, 15)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
       ImGui.Text(ctx, string.format('Cleared: %d', stats.cleared))
       ImGui.PopStyleColor(ctx)
     end
@@ -239,7 +237,7 @@ function Panel:draw_load_controls(ctx)
   if ImGui.IsItemHovered(ctx) then
     ImGui.BeginTooltip(ctx)
     ImGui.Text(ctx, 'Show all elements regardless of size')
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
     ImGui.Text(ctx, 'Many elements have 0x0 size due to conditional')
     ImGui.Text(ctx, 'logic. Enable to see their positions anyway.')
     ImGui.PopStyleColor(ctx)
@@ -305,7 +303,7 @@ function Panel:draw_context_controls(ctx)
     end
 
     -- Dimensions section
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CCFF'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x88CCFFFF)
     ImGui.Text(ctx, 'Dimensions')
     ImGui.PopStyleColor(ctx)
 
@@ -334,7 +332,7 @@ function Panel:draw_context_controls(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
     -- Visibility toggles section
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CCFF'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x88CCFFFF)
     ImGui.Text(ctx, 'Visibility')
     ImGui.PopStyleColor(ctx)
 
@@ -352,7 +350,7 @@ function Panel:draw_context_controls(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
     -- Track state section
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CCFF'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x88CCFFFF)
     ImGui.Text(ctx, 'Track State')
     ImGui.PopStyleColor(ctx)
 
@@ -436,7 +434,7 @@ function Panel:draw_macros(ctx)
       -- Tooltip with params
       if ImGui.IsItemHovered(ctx) and #macro.params > 0 then
         ImGui.BeginTooltip(ctx)
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
         ImGui.Text(ctx, 'Parameters: ' .. params_str)
         ImGui.Text(ctx, 'Body: ' .. #macro.body .. ' lines')
         ImGui.PopStyleColor(ctx)
@@ -504,14 +502,14 @@ function Panel:draw_detail(ctx)
   elseif self.selected_macro then
     self:draw_macro_detail(ctx, self.selected_macro)
   else
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
     ImGui.Text(ctx, 'Select a section, layout, or macro to view details')
     ImGui.PopStyleColor(ctx)
   end
 end
 
 function Panel:draw_section_detail(ctx, section)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CCFF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x88CCFFFF)
   ImGui.Text(ctx, 'Section: ' .. section.name)
   ImGui.PopStyleColor(ctx)
   ImGui.Separator(ctx)
@@ -547,10 +545,10 @@ function Panel:draw_section_detail(ctx, section)
       display = item.macro .. ' ...'
     elseif item.type == RtconfigParser.TOKEN.COMMENT then
       display = item.text:sub(1, 60)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
     elseif item.type == RtconfigParser.TOKEN.RAW then
       display = (item.code or item.text or ''):sub(1, 60)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
     end
 
     if show then
@@ -564,7 +562,7 @@ function Panel:draw_section_detail(ctx, section)
       if item.type == RtconfigParser.TOKEN.SET and ImGui.IsItemHovered(ctx) then
         ImGui.BeginTooltip(ctx)
         ImGui.Text(ctx, item.element)
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
         if item.is_simple and item.coords then
           ImGui.Text(ctx, string.format('Coords: [%s]', table.concat(item.coords, ' ')))
         else
@@ -581,7 +579,7 @@ function Panel:draw_section_detail(ctx, section)
 end
 
 function Panel:draw_layout_detail(ctx, layout)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFCC88'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFCC88FF)
   ImGui.Text(ctx, 'Layout: ' .. layout.name)
   if layout.dpi then
     ImGui.SameLine(ctx)
@@ -591,7 +589,7 @@ function Panel:draw_layout_detail(ctx, layout)
 
   if layout.parent then
     ImGui.SameLine(ctx, 0, 10)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
     ImGui.Text(ctx, '(child of ' .. layout.parent.name .. ')')
     ImGui.PopStyleColor(ctx)
   end
@@ -607,20 +605,20 @@ function Panel:draw_layout_detail(ctx, layout)
 
     if item.type == RtconfigParser.TOKEN.SET then
       if item.is_simple then
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#88CC88'))
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x88CC88FF)
         display = 'set ' .. item.element .. ' [literal]'
       else
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CCCC88'))
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCCCC88FF)
         display = 'set ' .. item.element .. ' [expr]'
       end
       ImGui.Text(ctx, display)
       ImGui.PopStyleColor(ctx)
     elseif item.type == RtconfigParser.TOKEN.MACRO_CALL then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CC88CC'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCC88CCFF)
       ImGui.Text(ctx, item.macro .. '(' .. table.concat(item.args or {}, ', ') .. ')')
       ImGui.PopStyleColor(ctx)
     elseif item.type == RtconfigParser.TOKEN.RAW then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
       ImGui.Text(ctx, (item.code or ''):sub(1, 50))
       ImGui.PopStyleColor(ctx)
     end
@@ -634,7 +632,7 @@ function Panel:draw_layout_detail(ctx, layout)
 end
 
 function Panel:draw_macro_detail(ctx, macro)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CC88FF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCC88FFFF)
   ImGui.Text(ctx, 'Macro: ' .. macro.name)
   ImGui.PopStyleColor(ctx)
   ImGui.Separator(ctx)
@@ -654,7 +652,7 @@ function Panel:draw_macro_detail(ctx, macro)
   ImGui.Text(ctx, 'Body (' .. #macro.body .. ' lines):')
   ImGui.Dummy(ctx, 0, 2)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
   local max_lines = 20
   for i, line in ipairs(macro.body) do
     if i > max_lines then
@@ -692,11 +690,11 @@ function Panel:draw(ctx)
 
   -- Theme info
   if self.theme_info and self.theme_info.theme_name then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
     ImGui.Text(ctx, 'Theme: ' .. self.theme_info.theme_name)
     ImGui.PopStyleColor(ctx)
   elseif self.theme_info and self.theme_info.rtconfig_path then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
     local filename = self.theme_info.rtconfig_path:match('[^/\\]+$') or 'rtconfig.txt'
     ImGui.Text(ctx, 'File: ' .. filename)
     ImGui.PopStyleColor(ctx)
@@ -771,7 +769,7 @@ function Panel:draw(ctx)
 
   -- Draw splitter visual
   local dl = ImGui.GetWindowDrawList(ctx)
-  local splitter_color = (is_hovered or is_active) and hexrgb('#888888') or hexrgb('#555555')
+  local splitter_color = (is_hovered or is_active) and 0x888888FF or 0x555555FF
   ImGui.DrawList_AddRectFilled(dl, splitter_x, splitter_y, splitter_x + splitter_w, splitter_y + avail_h - 20, splitter_color)
 
   ImGui.SameLine(ctx, 0, 0)

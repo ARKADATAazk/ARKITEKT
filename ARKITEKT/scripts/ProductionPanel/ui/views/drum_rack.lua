@@ -13,22 +13,22 @@ local Theme = require('arkitekt.theme')
 
 -- MOCK DATA
 local mock_pads = {
-  { name = 'Kick', note = 36, color = Colors.Hexrgb('#D94A4A'), has_sample = true },
-  { name = 'Snare', note = 38, color = Colors.Hexrgb('#D9884A'), has_sample = true },
-  { name = 'Clap', note = 39, color = Colors.Hexrgb('#D9C84A'), has_sample = true },
-  { name = 'Hat Closed', note = 42, color = Colors.Hexrgb('#88D94A'), has_sample = true },
-  { name = 'Tom Low', note = 43, color = Colors.Hexrgb('#4AD988'), has_sample = false },
-  { name = 'Hat Open', note = 46, color = Colors.Hexrgb('#4AD9D9'), has_sample = true },
-  { name = 'Tom Mid', note = 47, color = Colors.Hexrgb('#4A88D9'), has_sample = false },
-  { name = 'Tom High', note = 48, color = Colors.Hexrgb('#884AD9'), has_sample = false },
-  { name = 'Crash', note = 49, color = Colors.Hexrgb('#D94AD9'), has_sample = true },
-  { name = 'Ride', note = 51, color = Colors.Hexrgb('#D94A88'), has_sample = false },
-  { name = '', note = 52, color = Colors.Hexrgb('#505050'), has_sample = false },
-  { name = '', note = 53, color = Colors.Hexrgb('#505050'), has_sample = false },
-  { name = '', note = 54, color = Colors.Hexrgb('#505050'), has_sample = false },
-  { name = '', note = 55, color = Colors.Hexrgb('#505050'), has_sample = false },
-  { name = '', note = 56, color = Colors.Hexrgb('#505050'), has_sample = false },
-  { name = '', note = 57, color = Colors.Hexrgb('#505050'), has_sample = false },
+  { name = 'Kick', note = 36, color = 0xD94A4AFF, has_sample = true },
+  { name = 'Snare', note = 38, color = 0xD9884AFF, has_sample = true },
+  { name = 'Clap', note = 39, color = 0xD9C84AFF, has_sample = true },
+  { name = 'Hat Closed', note = 42, color = 0x88D94AFF, has_sample = true },
+  { name = 'Tom Low', note = 43, color = 0x4AD988FF, has_sample = false },
+  { name = 'Hat Open', note = 46, color = 0x4AD9D9FF, has_sample = true },
+  { name = 'Tom Mid', note = 47, color = 0x4A88D9FF, has_sample = false },
+  { name = 'Tom High', note = 48, color = 0x884AD9FF, has_sample = false },
+  { name = 'Crash', note = 49, color = 0xD94AD9FF, has_sample = true },
+  { name = 'Ride', note = 51, color = 0xD94A88FF, has_sample = false },
+  { name = '', note = 52, color = 0x505050FF, has_sample = false },
+  { name = '', note = 53, color = 0x505050FF, has_sample = false },
+  { name = '', note = 54, color = 0x505050FF, has_sample = false },
+  { name = '', note = 55, color = 0x505050FF, has_sample = false },
+  { name = '', note = 56, color = 0x505050FF, has_sample = false },
+  { name = '', note = 57, color = 0x505050FF, has_sample = false },
 }
 
 -- STATE
@@ -157,7 +157,7 @@ local function draw_pad(ctx, index, x, y, size)
   -- Shadow (if pad has sample)
   if pad.has_sample and not active then
     local shadow_offset = 2
-    local shadow_color = Colors.WithOpacity(Colors.Hexrgb('#000000'), 0.3)
+    local shadow_color = Colors.WithOpacity(0x000000FF, 0.3)
     ImGui.DrawList_AddRectFilled(dl,
       x + shadow_offset, y + shadow_offset,
       x + size + shadow_offset, y + size + shadow_offset,
@@ -205,7 +205,7 @@ local function draw_pad(ctx, index, x, y, size)
     ImGui.DrawList_AddRectFilled(dl,
       x + 3, bar_y,
       x + size - 3, bar_y + bar_height,
-      Colors.WithOpacity(Colors.Hexrgb('#000000'), 0.3), 2)
+      Colors.WithOpacity(0x000000FF, 0.3), 2)
 
     -- Volume level
     local vol_color = adjust_brightness(bg_color, 1.4)
@@ -222,7 +222,7 @@ local function draw_pad(ctx, index, x, y, size)
 
     -- Shadow
     ImGui.DrawList_AddText(dl, label_x + 1, label_y + 1,
-      Colors.WithOpacity(Colors.Hexrgb('#000000'), 0.6), pad.name)
+      Colors.WithOpacity(0x000000FF, 0.6), pad.name)
 
     -- Main text
     ImGui.DrawList_AddText(dl, label_x, label_y, text_color, pad.name)
@@ -238,7 +238,7 @@ local function draw_pad(ctx, index, x, y, size)
   local badge_h = note_h + badge_padding
 
   -- Note badge background
-  local badge_bg = Colors.WithOpacity(Colors.Hexrgb('#000000'), 0.5)
+  local badge_bg = Colors.WithOpacity(0x000000FF, 0.5)
   ImGui.DrawList_AddRectFilled(dl,
     badge_x, badge_y,
     badge_x + badge_w, badge_y + badge_h,

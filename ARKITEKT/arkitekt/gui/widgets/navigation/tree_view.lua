@@ -69,7 +69,7 @@ local function draw_tree_arrow(ctx, dl, x, y, is_open)
   local size = 5
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
-  local arrow_color = Colors.Hexrgb('#B0B0B0FF')
+  local arrow_color = 0xB0B0B0FF
 
   if is_open then
     local x1, y1 = x, y
@@ -95,7 +95,7 @@ local function draw_folder_icon(ctx, dl, x, y, color)
   local tab_h = 2
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
-  local icon_color = color or Colors.Hexrgb('#888888')
+  local icon_color = color or 0x888888FF
   ImGui.DrawList_AddRectFilled(dl, x, y, x + tab_w, y + tab_h, icon_color, 0)
   ImGui.DrawList_AddRectFilled(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, icon_color, 0)
   return main_w + 4
@@ -107,10 +107,10 @@ local function draw_file_icon(ctx, dl, x, y, color)
   local fold_size = 3
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
-  local icon_color = color or Colors.Hexrgb('#888888')
+  local icon_color = color or 0x888888FF
   ImGui.DrawList_AddRectFilled(dl, x, y, x + main_w - fold_size, y + main_h, icon_color, 0)
   ImGui.DrawList_AddRectFilled(dl, x, y + fold_size, x + main_w, y + main_h, icon_color, 0)
-  local corner_color = Colors.Hexrgb('#555555')
+  local corner_color = 0x555555FF
   ImGui.DrawList_AddTriangleFilled(dl,
     x + main_w - fold_size, y + fold_size,
     x + main_w, y + fold_size,
@@ -126,7 +126,7 @@ local function draw_virtual_folder_icon(ctx, dl, x, y, color)
   local tab_h = 2
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
-  local icon_color = color or Colors.Hexrgb('#888888')
+  local icon_color = color or 0x888888FF
   ImGui.DrawList_AddRect(dl, x, y, x + tab_w, y + tab_h, icon_color, 0, 0, 2)
   ImGui.DrawList_AddRect(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, icon_color, 0, 0, 2)
   local v_color = Colors.WithAlpha(icon_color, 0xFF)
@@ -221,15 +221,15 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
 
   -- Draw hover effect
   if tree_item_hovered and not is_selected then
-    local hover_color = Colors.Hexrgb('#FFFFFF08')
+    local hover_color = 0xFFFFFF08
     ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, hover_color, 0)
   end
 
   -- Draw selection indicator
   if is_selected then
     local selection_bar_width = 3
-    local selection_color = Colors.Hexrgb('#FFFFFFFF')
-    local selection_bg = Colors.Hexrgb('#FFFFFF15')
+    local selection_color = 0xFFFFFFFF
+    local selection_bg = 0xFFFFFF15
     ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_min_x + selection_bar_width, item_max_y, selection_color, 0)
     ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, selection_bg, 0)
   end
@@ -267,9 +267,9 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
     local saved_cursor_x, saved_cursor_y = ImGui.GetCursorScreenPos(ctx)
     ImGui.SetCursorScreenPos(ctx, text_x, item_min_y)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.Hexrgb('#FFFFFF15'))
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.Hexrgb('#FFFFFF20'))
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.Hexrgb('#FFFFFF25'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0xFFFFFF15)
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0xFFFFFF20)
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0xFFFFFF25)
 
     if not state.rename_focus_set then
       ImGui.SetKeyboardFocusHere(ctx, 0)
@@ -317,9 +317,9 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
     -- Draw text label
     local text_color
     if node_color and opts.show_colors ~= false then
-      text_color = Colors.Lerp(node_color, Colors.Hexrgb('#FFFFFFFF'), 0.7)
+      text_color = Colors.Lerp(node_color, 0xFFFFFFFF, 0.7)
     else
-      text_color = Colors.Hexrgb('#FFFFFFFF')
+      text_color = 0xFFFFFFFF
     end
     ImGui.DrawList_AddText(dl, text_x, text_y, text_color, node.name)
 
@@ -329,7 +329,7 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
       local count_w = ImGui.CalcTextSize(ctx, count_text)
       local count_x = item_max_x - count_w - 8
       local count_y = item_min_y
-      local count_color = Colors.Hexrgb('#808080FF')
+      local count_color = 0x808080FF
       ImGui.DrawList_AddText(dl, count_x, count_y, count_color, count_text)
     end
   end

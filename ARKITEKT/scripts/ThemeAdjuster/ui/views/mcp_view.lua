@@ -10,8 +10,6 @@ local ThemeMapper = require('ThemeAdjuster.domain.theme.mapper')
 local ParamDiscovery = require('ThemeAdjuster.domain.theme.discovery')
 local Strings = require('ThemeAdjuster.config.strings')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
-local hexrgb = Ark.Colors.Hexrgb
-
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
@@ -203,7 +201,7 @@ function MCPView:draw_additional_param(ctx, param)
     and param.display_name or param.name
 
   -- Label
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CCCCCC'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCCCCCCFF)
   ImGui.Text(ctx, display_name)
   ImGui.PopStyleColor(ctx)
 
@@ -283,7 +281,7 @@ function MCPView:draw_additional_param(ctx, param)
     end
 
   else
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#888888'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
     ImGui.Text(ctx, string.format('%.1f', param.value))
     ImGui.PopStyleColor(ctx)
   end
@@ -308,7 +306,7 @@ function MCPView:draw(ctx, shell_state)
   ImGui.Text(ctx, 'Mixer Control Panel')
   ImGui.PopFont(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
   ImGui.Text(ctx, 'Configure mixer appearance and element visibility')
   ImGui.PopStyleColor(ctx)
 
@@ -330,7 +328,7 @@ function MCPView:draw(ctx, shell_state)
   local right_width = has_additional and (avail_w * 0.4 - 8) or 0
 
   -- Left column (main controls)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
   if ImGui.BeginChild(ctx, 'mcp_left', left_width, 0, 1) then
     -- Draw background pattern (using panel defaults)
     local child_x, child_y = ImGui.GetWindowPos(ctx)
@@ -409,7 +407,7 @@ function MCPView:draw(ctx, shell_state)
 
     ImGui.AlignTextToFramePadding(ctx)
     if is_default then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#00FF88'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x00FF88FF)
       ImGui.Text(ctx, 'Default Layout')
       ImGui.PopStyleColor(ctx)
     else
@@ -458,7 +456,7 @@ function MCPView:draw(ctx, shell_state)
       local label_text_w = ImGui.CalcTextSize(ctx, label)
       ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + label_w - label_text_w)
       ImGui.AlignTextToFramePadding(ctx)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
       ImGui.Text(ctx, label)
       ImGui.PopStyleColor(ctx)
 
@@ -480,7 +478,7 @@ function MCPView:draw(ctx, shell_state)
 
     -- Column 1: Layout
     ImGui.BeginGroup(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
     ImGui.Text(ctx, 'Layout')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
@@ -514,7 +512,7 @@ function MCPView:draw(ctx, shell_state)
     -- Column 2: Element Sizing
     ImGui.SameLine(ctx, col_w + 8)
     ImGui.BeginGroup(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
     ImGui.Text(ctx, 'Element Sizing')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
@@ -548,7 +546,7 @@ function MCPView:draw(ctx, shell_state)
     -- Column 3: List Sizing
     ImGui.SameLine(ctx, (col_w * 2) + 8)
     ImGui.BeginGroup(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
     ImGui.Text(ctx, 'List Sizing')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
@@ -610,7 +608,7 @@ function MCPView:draw(ctx, shell_state)
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
     ImGui.Text(ctx, 'Toggle mixer display options')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 6)
@@ -688,7 +686,7 @@ function MCPView:draw(ctx, shell_state)
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
     ImGui.Text(ctx, 'Control when mixer elements are visible')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 2)
@@ -747,7 +745,7 @@ function MCPView:draw(ctx, shell_state)
   if has_additional then
     ImGui.SameLine(ctx, 0, 8)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
     if ImGui.BeginChild(ctx, 'mcp_right', right_width, 0, 1) then
       -- Draw background pattern
       local child_x, child_y = ImGui.GetWindowPos(ctx)
@@ -765,13 +763,13 @@ function MCPView:draw(ctx, shell_state)
 
       -- Additional Parameters Section
       ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#E24A90'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xE24A90FF)
       ImGui.Text(ctx, 'ADDITIONAL PARAMETERS')
       ImGui.PopStyleColor(ctx)
       ImGui.PopFont(ctx)
       ImGui.Dummy(ctx, 0, 4)
 
-      local tab_color = hexrgb('#E8C547')  -- MCP yellow color
+      local tab_color = 0xE8C547FF  -- MCP yellow color
       for _, param in ipairs(additional_params) do
         AdditionalParamTile.render(ctx, param, tab_color, shell_state, self.additional_view)
       end

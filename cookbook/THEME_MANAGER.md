@@ -289,7 +289,7 @@ Access via `Theme.COLORS.MY_NEW_COLOR`.
 
 ```lua
 local Colors = require('arkitekt.core.colors')
-local custom_bg = Colors.hexrgb("#3A3A3AFF")
+local custom_bg = Colors.hex("#3A3A3AFF")
 Theme.generate_and_apply(custom_bg)
 ```
 

@@ -6,8 +6,6 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
-local hexrgb = Ark.Colors.Hexrgb
-
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
@@ -88,14 +86,14 @@ function EnvelopeView:draw(ctx, shell_state)
   ImGui.Text(ctx, 'Envelope Panel')
   ImGui.PopFont(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
   ImGui.Text(ctx, 'Configure envelope appearance and element visibility')
   ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 8)
 
   -- Single scrollable content area
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
   if ImGui.BeginChild(ctx, 'env_content', avail_w, 0, 1) then
     -- Draw background pattern (using panel defaults)
     local child_x, child_y = ImGui.GetWindowPos(ctx)
@@ -187,7 +185,7 @@ function EnvelopeView:draw(ctx, shell_state)
       local label_text_w = ImGui.CalcTextSize(ctx, label)
       ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + label_w - label_text_w)
       ImGui.AlignTextToFramePadding(ctx)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
       ImGui.Text(ctx, label)
       ImGui.PopStyleColor(ctx)
 
@@ -209,7 +207,7 @@ function EnvelopeView:draw(ctx, shell_state)
 
     -- Column 1: Element Sizing
     ImGui.BeginGroup(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
     ImGui.Text(ctx, 'Element Sizing')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
@@ -231,7 +229,7 @@ function EnvelopeView:draw(ctx, shell_state)
     -- Column 2: Options
     ImGui.SameLine(ctx, col_w + 8)
     ImGui.BeginGroup(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
     ImGui.Text(ctx, 'Options')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
@@ -251,7 +249,7 @@ function EnvelopeView:draw(ctx, shell_state)
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
     ImGui.Text(ctx, 'Control which envelope elements are visible')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 2)

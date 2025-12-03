@@ -22,8 +22,6 @@ do
 end
 
 local M = {}
-local hexrgb = Colors.Hexrgb
-
 local Icon = nil
 do
   local ok, mod = pcall(require, 'arkitekt.runtime.chrome.icon')
@@ -333,7 +331,7 @@ function M.new(opts)
                 local custom_color = ThemeManager.get_custom_color()
                 if not custom_color then
                   -- Default to current BG_BASE if no custom color set
-                  custom_color = ThemeManager.COLORS and ThemeManager.COLORS.BG_BASE or hexrgb('#333333')
+                  custom_color = ThemeManager.COLORS and ThemeManager.COLORS.BG_BASE or 0x333333FF
                 end
 
                 -- ColorEdit3 uses plain 0xRRGGBB (24-bit, no alpha)

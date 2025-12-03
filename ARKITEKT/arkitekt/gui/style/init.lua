@@ -9,7 +9,6 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.Hexrgb
 local ConfigUtil = require('arkitekt.core.merge')
 
 local M = {}
@@ -23,45 +22,45 @@ local M = {}
 
 M.COLORS = {
   -- Backgrounds
-  BG_BASE = hexrgb('#242424FF'),        -- 36,36,36 RGB - main content background
-  BG_HOVER = hexrgb('#2A2A2AFF'),       -- Hovered control background
-  BG_ACTIVE = hexrgb('#303030FF'),      -- Active/pressed control background
-  BG_HEADER = hexrgb('#1E1E1EFF'),      -- 30,30,30 RGB - header/toolbar background
-  BG_PANEL = hexrgb('#1A1A1AFF'),       -- 26,26,26 RGB - panel content background (darker)
-  BG_CHROME = hexrgb('#0F0F0FFF'),      -- 15,15,15 RGB - titlebar/statusbar
-  BG_TRANSPARENT = hexrgb('#00000000'), -- Transparent background
+  BG_BASE = 0x242424FF,        -- 36,36,36 RGB - main content background
+  BG_HOVER = 0x2A2A2AFF,       -- Hovered control background
+  BG_ACTIVE = 0x303030FF,      -- Active/pressed control background
+  BG_HEADER = 0x1E1E1EFF,      -- 30,30,30 RGB - header/toolbar background
+  BG_PANEL = 0x1A1A1AFF,       -- 26,26,26 RGB - panel content background (darker)
+  BG_CHROME = 0x0F0F0FFF,      -- 15,15,15 RGB - titlebar/statusbar
+  BG_TRANSPARENT = 0x00000000, -- Transparent background
 
   -- Borders
-  BORDER_OUTER = hexrgb('#000000DD'),   -- Black outer border (strong contrast)
-  BORDER_INNER = hexrgb('#2f2f2fff'),   -- Gray inner highlight border
-  BORDER_HOVER = hexrgb('#505050FF'),   -- Lighter border on hover
-  BORDER_ACTIVE = hexrgb('#B0B0B077'),  -- Active state border (semi-transparent)
-  BORDER_FOCUS = hexrgb('#7B7B7BFF'),   -- Focus state border
+  BORDER_OUTER = 0x000000DD,   -- Black outer border (strong contrast)
+  BORDER_INNER = 0x2F2F2FFF,   -- Gray inner highlight border
+  BORDER_HOVER = 0x505050FF,   -- Lighter border on hover
+  BORDER_ACTIVE = 0xB0B0B077,  -- Active state border (semi-transparent)
+  BORDER_FOCUS = 0x7B7B7BFF,   -- Focus state border
 
   -- Text
-  TEXT_NORMAL = hexrgb('#CCCCCCFF'),    -- Standard text color
-  TEXT_HOVER = hexrgb('#FFFFFFFF'),     -- Bright text on hover
-  TEXT_ACTIVE = hexrgb('#FFFFFFFF'),    -- Bright text when active
-  TEXT_DIMMED = hexrgb('#AAAAAAFF'),    -- Dimmed/secondary text
-  TEXT_DARK = hexrgb('#707070FF'),      -- Dark text for high-contrast areas
-  TEXT_BRIGHT = hexrgb('#EEEEEEFF'),    -- Extra bright text
+  TEXT_NORMAL = 0xCCCCCCFF,    -- Standard text color
+  TEXT_HOVER = 0xFFFFFFFF,     -- Bright text on hover
+  TEXT_ACTIVE = 0xFFFFFFFF,    -- Bright text when active
+  TEXT_DIMMED = 0xAAAAAAFF,    -- Dimmed/secondary text
+  TEXT_DARK = 0x707070FF,      -- Dark text for high-contrast areas
+  TEXT_BRIGHT = 0xEEEEEEFF,    -- Extra bright text
 
   -- Accents (themed - used for toggle buttons, highlights)
-  ACCENT_PRIMARY = hexrgb('#4A9EFF'),   -- Primary accent (blue)
-  ACCENT_TEAL = hexrgb('#295650FF'),    -- Teal accent (for toggle buttons)
-  ACCENT_TEAL_BRIGHT = hexrgb('#41E0A3FF'), -- Bright teal (for text on teal bg)
-  ACCENT_WHITE = hexrgb('#2f2f2fff'),   -- White/gray accent (desaturated)
-  ACCENT_WHITE_BRIGHT = hexrgb('#585858ff'), -- Bright white accent
-  ACCENT_TRANSPARENT = hexrgb('#43434388'), -- Semi-transparent accent (overlays)
+  ACCENT_PRIMARY = 0x4A9EFFFF,   -- Primary accent (blue)
+  ACCENT_TEAL = 0x295650FF,    -- Teal accent (for toggle buttons)
+  ACCENT_TEAL_BRIGHT = 0x41E0A3FF, -- Bright teal (for text on teal bg)
+  ACCENT_WHITE = 0x2F2F2FFF,   -- White/gray accent (desaturated)
+  ACCENT_WHITE_BRIGHT = 0x585858FF, -- Bright white accent
+  ACCENT_TRANSPARENT = 0x43434388, -- Semi-transparent accent (overlays)
 
   -- Semantic colors (status indicators)
-  ACCENT_SUCCESS = hexrgb('#4CAF50'),   -- Success/confirmation (green)
-  ACCENT_WARNING = hexrgb('#FFA726'),   -- Warning state (orange)
-  ACCENT_DANGER = hexrgb('#EF5350'),    -- Error/danger state (red)
+  ACCENT_SUCCESS = 0x4CAF50FF,   -- Success/confirmation (green)
+  ACCENT_WARNING = 0xFFA726FF,   -- Warning state (orange)
+  ACCENT_DANGER = 0xEF5350FF,    -- Error/danger state (red)
 
   -- Background patterns (decorative grid/dot patterns)
-  PATTERN_PRIMARY = hexrgb('#30303060'),   -- Primary pattern color (semi-transparent)
-  PATTERN_SECONDARY = hexrgb('#30303020'), -- Secondary pattern color (more transparent)
+  PATTERN_PRIMARY = 0x30303060,   -- Primary pattern color (semi-transparent)
+  PATTERN_SECONDARY = 0x30303020, -- Secondary pattern color (more transparent)
 }
 
 -- ============================================================================
@@ -79,12 +78,12 @@ M.COLORS = {
 
 M.PANEL_COLORS = {
   -- Panel container
-  bg_panel = hexrgb('#1A1A1AFF'),       -- Main panel container background (darker than controls)
+  bg_panel = 0x1A1A1AFF,       -- Main panel container background (darker than controls)
   border_panel = M.COLORS.BORDER_OUTER, -- Panel outer border (reuse shared)
 
   -- Header bar
-  bg_header = hexrgb('#1E1E1EFF'),      -- Header bar background
-  border_header = hexrgb('#00000066'),  -- Subtle header border
+  bg_header = 0x1E1E1EFF,      -- Header bar background
+  border_header = 0x00000066,  -- Subtle header border
 
   -- Tab strip
   bg_tab = M.COLORS.BG_BASE,            -- Tab background (inactive)
@@ -98,11 +97,11 @@ M.PANEL_COLORS = {
   border_tab_focus = M.COLORS.BORDER_FOCUS,  -- Tab border when focused
 
   -- Tab track (background behind tabs)
-  bg_tab_track = hexrgb('#1A1A1AFF'),   -- Track background
+  bg_tab_track = 0x1A1A1AFF,   -- Track background
   border_tab_track = M.COLORS.BORDER_OUTER, -- Track border
 
   -- Separator
-  separator_line = hexrgb('#30303080'),  -- Separator line color (semi-transparent)
+  separator_line = 0x30303080,  -- Separator line color (semi-transparent)
 
   -- Scrollbar
   bg_scrollbar = M.COLORS.BG_TRANSPARENT, -- Scrollbar background
@@ -119,9 +118,9 @@ M.PANEL_COLORS = {
 -- ============================================================================
 
 M.TOOLTIP_COLORS = {
-  bg = hexrgb('#2A2A2AFF'),
+  bg = 0x2A2A2AFF,
   border = M.COLORS.BORDER_INNER,
-  text = hexrgb('#EEEEEEFF'),
+  text = 0xEEEEEEFF,
 }
 
 -- ============================================================================
@@ -133,17 +132,17 @@ M.TOOLTIP_COLORS = {
 
 -- Action chip presets - colored rectangles with dark text
 M.ACTION_CHIP_WILDCARD = {
-  bg_color = hexrgb('#5B8FB9'),  -- Muted blue for technical wildcards
-  text_color = hexrgb('#1a1a1a'),  -- Dark text
-  border_color = Colors.WithAlpha(hexrgb('#000000'), 100),
+  bg_color = 0x5B8FB9FF,  -- Muted blue for technical wildcards
+  text_color = 0x1A1A1AFF,  -- Dark text
+  border_color = Colors.WithAlpha(0x000000FF, 100),
   rounding = 2,
   padding_h = 8,
 }
 
 M.ACTION_CHIP_TAG = {
-  bg_color = hexrgb('#8B7355'),  -- Warm amber for tags/names
-  text_color = hexrgb('#1a1a1a'),  -- Dark text
-  border_color = Colors.WithAlpha(hexrgb('#000000'), 100),
+  bg_color = 0x8B7355FF,  -- Warm amber for tags/names
+  text_color = 0x1A1A1AFF,  -- Dark text
+  border_color = Colors.WithAlpha(0x000000FF, 100),
   rounding = 2,
   padding_h = 8,
 }
@@ -459,17 +458,17 @@ M.DYNAMIC_PRESETS = {
 
   -- Action chips (colored rectangles with dark text)
   ACTION_CHIP_WILDCARD = {
-    bg_color = hexrgb('#5B8FB9'),  -- Direct value (not theme-dependent)
-    text_color = hexrgb('#1a1a1a'),
-    border_color = Colors.WithAlpha(hexrgb('#000000'), 100),
+    bg_color = 0x5B8FB9FF,  -- Direct value (not theme-dependent)
+    text_color = 0x1A1A1AFF,
+    border_color = Colors.WithAlpha(0x000000FF, 100),
     rounding = 2,
     padding_h = 8,
   },
 
   ACTION_CHIP_TAG = {
-    bg_color = hexrgb('#8B7355'),
-    text_color = hexrgb('#1a1a1a'),
-    border_color = Colors.WithAlpha(hexrgb('#000000'), 100),
+    bg_color = 0x8B7355FF,
+    text_color = 0x1A1A1AFF,
+    border_color = Colors.WithAlpha(0x000000FF, 100),
     rounding = 2,
     padding_h = 8,
   },

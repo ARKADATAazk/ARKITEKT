@@ -4,8 +4,6 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.Hexrgb
-
 local M = {}
 
 -- Animation constants
@@ -223,7 +221,7 @@ function M.handle_inline_edit_input(ctx, dl, state, id, x, y, width, height, chi
     bg_color = Colors.AdjustBrightness(chip_color, 0.15)
     bg_color = Colors.WithOpacity(bg_color, 0.88)
   else
-    bg_color = hexrgb('#1A1A1AE0')
+    bg_color = 0x1A1A1AE0
   end
 
   -- Draw backdrop with rounded corners
@@ -246,15 +244,15 @@ function M.handle_inline_edit_input(ctx, dl, state, id, x, y, width, height, chi
     selection_color = Colors.AdjustBrightness(chip_color, 0.8)
     selection_color = Colors.WithOpacity(selection_color, 0.67)
   else
-    text_color = hexrgb('#FFFFFFDD')
-    selection_color = hexrgb('#4444AAAA')
+    text_color = 0xFFFFFFDD
+    selection_color = 0x4444AAAA
   end
 
   -- Style the input field to be transparent
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, hexrgb('#00000000'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb('#00000000'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x00000000)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
   ImGui.PushStyleColor(ctx, ImGui.Col_TextSelectedBg, selection_color)
 

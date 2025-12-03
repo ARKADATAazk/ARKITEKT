@@ -51,7 +51,7 @@ Shell.run({
   settings     = settings,
   initial_size = { w = Defaults.WINDOW.WIDTH, h = Defaults.WINDOW.HEIGHT },
   min_size     = { w = Defaults.WINDOW.MIN_WIDTH, h = Defaults.WINDOW.MIN_HEIGHT },
-  icon_color   = Colors.Hexrgb('#D94A4A'),
+  icon_color   = 0xD94A4AFF,
 
   draw = function(ctx, shell_state)
     GUI.Draw(ctx, shell_state)

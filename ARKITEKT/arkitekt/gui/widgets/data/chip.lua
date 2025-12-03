@@ -10,8 +10,6 @@ local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 
 local M = {}
-local hexrgb = Colors.Hexrgb
-
 local STYLE = {
   PILL = 'pill',
   DOT = 'dot',
@@ -123,7 +121,7 @@ function M.Draw(ctx, opts)
   opts = opts or {}
   local style = opts.style or STYLE.PILL
   local label = opts.label or ''
-  local color = opts.color or hexrgb('#FF5733')
+  local color = opts.color or 0xFF5733FF
   local height = opts.height or (style == STYLE.DOT and 28 or 24)
   local is_selected = opts.is_selected or false
   local is_hovered = opts.is_hovered or false
@@ -146,7 +144,7 @@ function M.Draw(ctx, opts)
     local shadow_alpha = opts.shadow_alpha or 80
     local alpha_factor = opts.alpha_factor or 1.0
     local border = opts.border or false
-    local border_color = opts.border_color or hexrgb('#000000')
+    local border_color = opts.border_color or 0x000000FF
     local border_thickness = opts.border_thickness or 1.0
     
     local draw_color = _apply_state(color, is_active, is_hovered, is_selected)
@@ -162,7 +160,7 @@ function M.Draw(ctx, opts)
           x + shadow_offset_x, 
           y + shadow_offset_y, 
           radius + shadow_blur, 
-          Colors.WithAlpha(hexrgb('#000000'), shadow_alpha_final))
+          Colors.WithAlpha(0x000000FF, shadow_alpha_final))
       end
       
       if show_glow then
@@ -188,7 +186,7 @@ function M.Draw(ctx, opts)
           y1 + shadow_offset_y - shadow_blur,
           x2 + shadow_offset_x + shadow_blur,
           y2 + shadow_offset_y + shadow_blur,
-          Colors.WithAlpha(hexrgb('#000000'), shadow_alpha_final),
+          Colors.WithAlpha(0x000000FF, shadow_alpha_final),
           rounding)
       end
 
@@ -232,7 +230,7 @@ function M.Draw(ctx, opts)
   local dl = ImGui.GetWindowDrawList(ctx)
   
   if style == STYLE.DOT then
-    local bg_color = opts.bg_color or hexrgb('#1E1E1E')
+    local bg_color = opts.bg_color or 0x1E1E1EFF
     local dot_size = opts.dot_size or 8
     local dot_spacing = opts.dot_spacing or 10
     local dot_shape = opts.dot_shape or SHAPE.CIRCLE
@@ -246,17 +244,17 @@ function M.Draw(ctx, opts)
                                  draw_bg, rounding)
 
     -- Inner border (lighter on select, darker otherwise)
-    local border_inner = is_selected and hexrgb('#7B7B7BFF') or hexrgb('#2f2f2fff')
+    local border_inner = is_selected and 0x7B7B7BFF or 0x2F2F2FFF
     ImGui.DrawList_AddRect(dl, start_x + 1, start_y + 1, start_x + chip_w - 1, start_y + chip_h - 1,
                            border_inner, rounding, 0, 1)
 
     -- Outer border (always dark black)
-    local border_outer = hexrgb('#000000DD')
+    local border_outer = 0x000000DD
     ImGui.DrawList_AddRect(dl, start_x, start_y, start_x + chip_w, start_y + chip_h,
                            border_outer, rounding, 0, 1)
 
     if is_hovered or is_selected then
-      local inner_shadow = Colors.WithAlpha(hexrgb('#000000'), 40)
+      local inner_shadow = Colors.WithAlpha(0x000000FF, 40)
       Draw.RectFilled(dl, start_x, start_y, start_x + chip_w, start_y + 2, inner_shadow, 0)
     end
 
@@ -265,7 +263,7 @@ function M.Draw(ctx, opts)
     local dot_color = _apply_state(color, false, is_hovered, is_selected)
 
     if dot_shape == SHAPE.CIRCLE then
-      ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, (dot_size * 0.5) + 1, Colors.WithAlpha(hexrgb('#000000'), 80))
+      ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, (dot_size * 0.5) + 1, Colors.WithAlpha(0x000000FF, 80))
 
       if is_selected or is_hovered then
         _render_glow(dl, dot_x, dot_y, dot_size * 0.5, dot_color, 4)
@@ -279,7 +277,7 @@ function M.Draw(ctx, opts)
         dot_y - half_dot,
         dot_x + half_dot,
         dot_y + half_dot,
-        Colors.WithAlpha(hexrgb('#000000'), 80),
+        Colors.WithAlpha(0x000000FF, 80),
         dot_rounding)
 
       if is_selected or is_hovered then
@@ -295,7 +293,7 @@ function M.Draw(ctx, opts)
         dot_rounding)
     end
 
-    local text_color = (is_hovered or is_selected) and hexrgb('#FFFFFF') or Colors.WithAlpha(hexrgb('#FFFFFF'), 200)
+    local text_color = (is_hovered or is_selected) and 0xFFFFFFFF or Colors.WithAlpha(0xFFFFFFFF, 200)
     local content_x = start_x + padding_h + dot_size + dot_spacing
     local available_w = chip_w - (content_x - start_x) - padding_h
 
@@ -305,9 +303,9 @@ function M.Draw(ctx, opts)
     Draw.Text(dl, text_x, text_y, text_color, label)
   elseif style == STYLE.ACTION then
     -- Simple colored rectangles with dark text for action chips
-    local bg_color = opts.bg_color or hexrgb('#5B8FB9')
-    local text_color = opts.text_color or hexrgb('#1a1a1a')
-    local border_color = opts.border_color or Colors.WithAlpha(hexrgb('#000000'), 100)
+    local bg_color = opts.bg_color or 0x5B8FB9FF
+    local text_color = opts.text_color or 0x1A1A1AFF
+    local border_color = opts.border_color or Colors.WithAlpha(0x000000FF, 100)
 
     -- Apply state changes to background
     local draw_bg = bg_color
@@ -327,7 +325,7 @@ function M.Draw(ctx, opts)
 
     -- Subtle inner shadow when active
     if is_active then
-      local inner_shadow = Colors.WithAlpha(hexrgb('#000000'), 60)
+      local inner_shadow = Colors.WithAlpha(0x000000FF, 60)
       Draw.RectFilled(dl, start_x, start_y, start_x + chip_w, start_y + 2, inner_shadow, 0)
     end
 

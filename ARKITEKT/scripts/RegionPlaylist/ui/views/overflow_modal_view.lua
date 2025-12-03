@@ -7,8 +7,6 @@ local Ark = require('arkitekt')
 
 local Container = require('arkitekt.gui.widgets.overlays.overlay.container')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 local OverflowModalView = {}
@@ -60,7 +58,7 @@ function OverflowModalView:draw(ctx, window)
     tab_items[#tab_items + 1] = {
       id = tab.id,
       label = tab.label .. count_str,
-      color = tab.chip_color or hexrgb('#888888'),
+      color = tab.chip_color or 0x888888FF,
     }
   end
   
@@ -98,7 +96,7 @@ function OverflowModalView:draw(ctx, window)
         selected_ids = selected_ids,
         search_text = self.search_text,
         use_dot_style = true,
-        bg_color = hexrgb('#3a3a3a'),  -- Grey fill
+        bg_color = 0x3A3A3AFF,  -- Grey fill
         item_height = text_h + 1,  -- Further reduced (was text_h + 4, now ~30% smaller)
         dot_size = 7,
         dot_spacing = 7,
@@ -181,7 +179,7 @@ function OverflowModalView:draw(ctx, window)
             selected_ids = selected_ids,
             search_text = self.search_text,
             use_dot_style = true,
-            bg_color = hexrgb('#3a3a3a'),  -- Grey fill
+            bg_color = 0x3A3A3AFF,  -- Grey fill
             item_height = text_h + 1,  -- Further reduced (was text_h + 4, now ~30% smaller)
             dot_size = 7,
             dot_spacing = 7,

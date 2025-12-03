@@ -14,8 +14,6 @@ local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local RadioButton = require('arkitekt.gui.widgets.primitives.radio_button')
 local Unicode = require('arkitekt.core.unicode')
-local hexrgb = Colors.Hexrgb
-
 local M = {}
 
 local BatchRenameModal = {}
@@ -203,7 +201,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local title_text = string.format('Rename %d %s', count, self.item_type or 'items')
   local title_w = ImGui.CalcTextSize(ctx, title_text)
   ImGui.SetCursorPosX(ctx, math.floor(ImGui.GetCursorPosX(ctx) + (modal_w - title_w) * 0.5))
-  ImGui.TextColored(ctx, hexrgb('#CCCCCCFF'), title_text)
+  ImGui.TextColored(ctx, 0xCCCCCCFF, title_text)
   ImGui.Dummy(ctx, 0, 24)
 
   -- ========================================================================
@@ -240,7 +238,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- Check if hovering
   local is_help_hovered = ImGui.IsMouseHoveringRect(ctx, help_x, help_y, help_x + help_size, help_y + help_size)
 
-  local icon_color = is_help_hovered and hexrgb('#FFFFFF') or hexrgb('#888888')
+  local icon_color = is_help_hovered and 0xFFFFFFFF or 0x888888FF
 
   -- Get icon font from shell_state
   local icon_font = self.shell_state and self.shell_state.fonts and self.shell_state.fonts.icons
@@ -263,21 +261,21 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   if is_help_hovered then
     ImGui.BeginTooltip(ctx)
     ImGui.PushTextWrapPos(ctx, 400)
-    ImGui.TextColored(ctx, hexrgb('#EEEEEE'), 'Batch Rename & Recolor Help')
+    ImGui.TextColored(ctx, 0xEEEEEEFF, 'Batch Rename & Recolor Help')
     ImGui.Separator(ctx)
     ImGui.Dummy(ctx, 0, 4)
-    ImGui.TextColored(ctx, hexrgb('#CCCCCC'), 'Wildcards:')
+    ImGui.TextColored(ctx, 0xCCCCCCFF, 'Wildcards:')
     ImGui.BulletText(ctx, '$n = number (0, 1, 2... or 1, 2, 3...)')
     ImGui.BulletText(ctx, '$l = letter (a, b, c... or A, B, C...)')
     ImGui.BulletText(ctx, 'Right-click wildcards for options')
     ImGui.Dummy(ctx, 0, 4)
-    ImGui.TextColored(ctx, hexrgb('#CCCCCC'), 'Common Names:')
+    ImGui.TextColored(ctx, 0xCCCCCCFF, 'Common Names:')
     ImGui.BulletText(ctx, 'Click to insert into pattern')
     ImGui.BulletText(ctx, 'Color-coded by category/emotion')
     ImGui.BulletText(ctx, 'SHIFT+Click = insert without separator')
     ImGui.BulletText(ctx, 'SHIFT+CTRL+Click = capitalize & no separator')
     ImGui.Dummy(ctx, 0, 4)
-    ImGui.TextColored(ctx, hexrgb('#CCCCCC'), 'Separator:')
+    ImGui.TextColored(ctx, 0xCCCCCCFF, 'Separator:')
     ImGui.BulletText(ctx, 'Added before wildcards automatically')
     ImGui.PopTextWrapPos(ctx)
     ImGui.EndTooltip(ctx)
@@ -324,7 +322,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Wildcards label and chips (with right-click context menus)
   ImGui.SetCursorPosX(ctx, right_col_x)
-  ImGui.TextColored(ctx, hexrgb('#999999FF'), 'Wildcards (right-click for options):')
+  ImGui.TextColored(ctx, 0x999999FF, 'Wildcards (right-click for options):')
   ImGui.Dummy(ctx, 0, 6)
   ImGui.SetCursorPosX(ctx, right_col_x)
 
@@ -348,7 +346,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
       id = 'wildcard_' .. i,
       bg_color = wildcard_config.bg_color,
       text_color = wildcard_config.text_color,
-      border_color = hexrgb('#00000000'),  -- Transparent border (flat color fill)
+      border_color = 0x00000000,  -- Transparent border (flat color fill)
       rounding = wildcard_config.rounding,
       padding_h = wildcard_config.padding_h,
     })
@@ -383,7 +381,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
     -- Context menu for number wildcard
     if chip_data.type == 'number' and ContextMenu.begin(ctx, 'wildcard_context_number') then
-      ImGui.TextColored(ctx, hexrgb('#999999FF'), 'Number Options')
+      ImGui.TextColored(ctx, 0x999999FF, 'Number Options')
       ContextMenu.separator(ctx)
 
       -- Start from options
@@ -422,7 +420,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
     -- Context menu for letter wildcard
     if chip_data.type == 'letter' and ContextMenu.begin(ctx, 'wildcard_context_letter') then
-      ImGui.TextColored(ctx, hexrgb('#999999FF'), 'Letter Case')
+      ImGui.TextColored(ctx, 0x999999FF, 'Letter Case')
       ContextMenu.separator(ctx)
 
       if ContextMenu.checkbox_item(ctx, 'lowercase (a, b, c...)', self.letter_case == 'lowercase') then
@@ -445,7 +443,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Common names label with category dropdown
   ImGui.SetCursorPosX(ctx, right_col_x)
-  ImGui.TextColored(ctx, hexrgb('#999999FF'), 'Common Names:')
+  ImGui.TextColored(ctx, 0x999999FF, 'Common Names:')
   ImGui.SameLine(ctx, 0, 12)
 
   local dropdown_x, dropdown_y = ImGui.GetCursorScreenPos(ctx)
@@ -478,19 +476,19 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- Common names organized by category with color coding
   -- Color palette: 16 desaturated colors for different musical/emotional categories
   local COLORS = {
-    intense_red = hexrgb('#B85C5C'),      -- Combat, battle, boss, action
-    tension_yellow = hexrgb('#B8A55C'),   -- Tension, suspense
-    calm_green = hexrgb('#6B9B7C'),       -- Calm, peaceful, ambience, explore
-    structure_gray = hexrgb('#8B8B8B'),   -- Intro, outro, verse, chorus, refrain, bridge, part
-    special_purple = hexrgb('#9B7CB8'),   -- Break, stinger, loop
-    victory_gold = hexrgb('#B89B5C'),     -- Victory, theme
-    defeat_dark = hexrgb('#6B5C5C'),      -- Defeat
-    menu_blue = hexrgb('#5C7CB8'),        -- Menu, interlude
-    musical_teal = hexrgb('#5C9B9B'),     -- Solo, tutti, crescendo, diminuendo
-    stealth_indigo = hexrgb('#6B6B8B'),   -- Stealth
-    puzzle_cyan = hexrgb('#5C9BB8'),      -- Puzzle
-    cinematic_slate = hexrgb('#7C7C8B'),  -- Cinematic, cutscene
-    variation_brown = hexrgb('#9B8B6B'),  -- Variation, reprise, coda
+    intense_red = 0xB85C5CFF,      -- Combat, battle, boss, action
+    tension_yellow = 0xB8A55CFF,   -- Tension, suspense
+    calm_green = 0x6B9B7CFF,       -- Calm, peaceful, ambience, explore
+    structure_gray = 0x8B8B8BFF,   -- Intro, outro, verse, chorus, refrain, bridge, part
+    special_purple = 0x9B7CB8FF,   -- Break, stinger, loop
+    victory_gold = 0xB89B5CFF,     -- Victory, theme
+    defeat_dark = 0x6B5C5CFF,      -- Defeat
+    menu_blue = 0x5C7CB8FF,        -- Menu, interlude
+    musical_teal = 0x5C9B9BFF,     -- Solo, tutti, crescendo, diminuendo
+    stealth_indigo = 0x6B6B8BFF,   -- Stealth
+    puzzle_cyan = 0x5C9BB8FF,      -- Puzzle
+    cinematic_slate = 0x7C7C8BFF,  -- Cinematic, cutscene
+    variation_brown = 0x9B8B6BFF,  -- Variation, reprise, coda
   }
 
   local game_music_names = {
@@ -587,7 +585,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
         id = 'common_name_' .. i,
         bg_color = color,
         text_color = tag_config.text_color,
-        border_color = hexrgb('#00000000'),  -- Transparent border (flat color fill)
+        border_color = 0x00000000,  -- Transparent border (flat color fill)
         rounding = tag_config.rounding,
         padding_h = tag_config.padding_h,
       })
@@ -633,7 +631,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Wildcard separator radio buttons
   ImGui.SetCursorPosX(ctx, right_col_x)
-  ImGui.TextColored(ctx, hexrgb('#999999FF'), 'Separator before wildcard:')
+  ImGui.TextColored(ctx, 0x999999FF, 'Separator before wildcard:')
   ImGui.Dummy(ctx, 0, 6)
   ImGui.SetCursorPosX(ctx, right_col_x)
 
@@ -691,12 +689,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   if #self.preview_items > 0 then
     ImGui.SetCursorPosX(ctx, start_x)
-    ImGui.TextColored(ctx, hexrgb('#999999FF'), 'Preview:')
+    ImGui.TextColored(ctx, 0x999999FF, 'Preview:')
     ImGui.Dummy(ctx, 0, 4)
     ImGui.Indent(ctx, start_x + 12)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 2)
     for _, name in ipairs(self.preview_items) do
-      ImGui.TextColored(ctx, hexrgb('#DDDDDDFF'), name)
+      ImGui.TextColored(ctx, 0xDDDDDDFF, name)
     end
     ImGui.PopStyleVar(ctx, 1)
     ImGui.Unindent(ctx, start_x + 12)
@@ -888,8 +886,8 @@ function BatchRenameModal:draw(ctx, item_count, window, shell_state)
                 ImGui.WindowFlags_NoDocking
 
   -- Apply consistent styling
-  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, hexrgb('#1A1A1AFF'))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb('#404040FF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, 0x1A1A1AFF)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x404040FF)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 16, 12)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 10)
 

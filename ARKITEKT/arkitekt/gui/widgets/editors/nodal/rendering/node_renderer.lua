@@ -13,8 +13,6 @@ local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local Port = require('arkitekt.gui.widgets.editors.nodal.core.port')
 
 local M = {}
-local hexrgb = Colors.Hexrgb
-
 -- Store available nodes for dropdowns (set by canvas)
 M.available_nodes = {}
 
@@ -43,7 +41,7 @@ function M.render(ctx, node, animator, config)
   local x2, y2 = node.x + node.width, node.y + node.height
   
   -- Use dark neutral background instead of base_color
-  local bg_color = config.colors.bg_base or hexrgb('#1A1A1A')
+  local bg_color = config.colors.bg_base or 0x1A1A1AFF
   
   -- Get colored chip color from mirror_mode
   local chip_color = require('arkitekt.gui.widgets.editors.nodal.core.node').get_base_color(node, config)
@@ -86,7 +84,7 @@ function M.render_header(ctx, dl, node, config, chip_color)
   local seq_w, seq_h = ImGui.CalcTextSize(ctx, sequence_text)
   local seq_x = x1 + 24
   local seq_y = y1
-  Draw.Text(dl, seq_x, seq_y, hexrgb('#888888'), sequence_text)
+  Draw.Text(dl, seq_x, seq_y, 0x888888FF, sequence_text)
   
   local name_x = seq_x + seq_w + 8
   local name_y = y1
@@ -117,7 +115,7 @@ function M.render_loop_badge(ctx, dl, node, config, chip_color)
     padding_x = 6,
     padding_y = 3,
     margin = 6,
-    bg = hexrgb('#14181C'),
+    bg = 0x14181CFF,
     border_alpha = 0x33,
     font_scale = 0.88,
   }
@@ -140,7 +138,7 @@ function M.render_loop_badge(ctx, dl, node, config, chip_color)
     badge_config.rounding, 0, 0.5)
   
   Draw.Text(dl, badge_x + badge_config.padding_x, badge_y + badge_config.padding_y, 
-    hexrgb('#FFFFFFDD'), badge_text)
+    0xFFFFFFDD, badge_text)
 end
 
 function M.render_triggers_ui(ctx, dl, node, config, chip_color)

@@ -5,8 +5,6 @@
 local Ark = require('arkitekt')
 local TemplateTile = require('ThemeAdjuster.ui.grids.renderers.template_tile')
 local TemplateGroupConfig = require('ThemeAdjuster.ui.grids.renderers.template_group_config')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- State for inline group renaming
@@ -202,14 +200,14 @@ function M.create_opts(view, config)
 
   -- Visual feedback configurations
   local dim_config = config.dim_config or {
-    fill_color = hexrgb('#00000088'),
-    stroke_color = hexrgb('#FFFFFF33'),
+    fill_color = 0x00000088,
+    stroke_color = 0xFFFFFF33,
     stroke_thickness = 1.5,
     rounding = 3,
   }
 
   local drop_config = config.drop_config or {
-    indicator_color = hexrgb('#7788FFAA'),
+    indicator_color = 0x7788FFAA,
     indicator_thickness = 2,
     enabled = true,
   }

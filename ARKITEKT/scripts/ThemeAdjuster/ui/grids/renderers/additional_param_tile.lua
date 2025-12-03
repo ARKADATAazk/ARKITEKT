@@ -5,8 +5,6 @@
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- Tile dimensions
@@ -114,7 +112,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
   -- Linked params indicator (same line, right side)
   if is_in_group and #other_params > 0 then
     ImGui.SameLine(ctx, avail_w - 250)
-    local group_color = ParameterLinkManager.get_group_color(param_name) or hexrgb('#4AE290')
+    local group_color = ParameterLinkManager.get_group_color(param_name) or 0x4AE290FF
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, group_color)
     local linked_text = 'Linked: ' .. table.concat(other_params, ', ')
     if #linked_text > 30 then
@@ -271,7 +269,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
   -- UNLINKED button
   local is_unlinked = link_mode == ParameterLinkManager.LINK_MODE.UNLINKED
   if is_unlinked then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb('#555555'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, 0x555555FF)
   end
   if ImGui.Button(ctx, 'UNLINKED##' .. param_name, 80, 20) then
     ParameterLinkManager.set_link_mode(param_name, ParameterLinkManager.LINK_MODE.UNLINKED)
@@ -289,7 +287,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
   -- LINK button
   local is_link = link_mode == ParameterLinkManager.LINK_MODE.LINK
   if is_link then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb('#4A90E2'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, 0x4A90E2FF)
   end
   if ImGui.Button(ctx, 'LINK##' .. param_name, 60, 20) then
     ParameterLinkManager.set_link_mode(param_name, ParameterLinkManager.LINK_MODE.LINK)
@@ -307,7 +305,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
   -- SYNC button
   local is_sync = link_mode == ParameterLinkManager.LINK_MODE.SYNC
   if is_sync then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb('#4AE290'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, 0x4AE290FF)
   end
   if ImGui.Button(ctx, 'SYNC##' .. param_name, 60, 20) then
     ParameterLinkManager.set_link_mode(param_name, ParameterLinkManager.LINK_MODE.SYNC)

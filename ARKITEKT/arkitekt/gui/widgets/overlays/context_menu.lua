@@ -39,8 +39,6 @@ local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.theme')
 
 local M = {}
-local hexrgb = Colors.Hexrgb
-
 -- Get dynamic defaults from Theme.COLORS
 local function get_defaults()
   local C = Theme.COLORS

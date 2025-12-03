@@ -6,7 +6,6 @@ local ColorDefs = require('arkitekt.config.colors')
 local Ark = require('arkitekt')
 local Unicode = require('arkitekt.core.unicode')
 local Lookup = require('arkitekt.core.lookup')
-local hexrgb = Ark.Colors.Hexrgb
 local utf8 = Unicode.utf8
 
 local M = {}
@@ -26,25 +25,25 @@ M.ANIMATION = {
 -- Semantic operation colors (move/copy/delete visual feedback)
 -- Using centralized colors from framework
 M.ACCENT = {
-  MOVE = hexrgb(ColorDefs.OPERATIONS.move),    -- White - move operation
-  COPY = hexrgb(ColorDefs.OPERATIONS.copy),    -- Teal - copy operation
-  DELETE = hexrgb(ColorDefs.OPERATIONS.delete), -- Red - delete operation
+  MOVE = ColorDefs.OPERATIONS.move,    -- White - move operation
+  COPY = ColorDefs.OPERATIONS.copy,    -- Teal - copy operation
+  DELETE = ColorDefs.OPERATIONS.delete, -- Red - delete operation
 }
 
 -- Dimmed tile appearance
 M.DIM = {
-  FILL = hexrgb('#00000088'),
-  STROKE = hexrgb('#FFFFFF33'),
+  FILL = 0x00000088,
+  STROKE = 0xFFFFFF33,
 }
 
 -- Status bar colors
 M.STATUS = {
-  ERROR = hexrgb('#E04141'),
-  WARNING = hexrgb('#E0B341'),
-  INFO = hexrgb('#CCCCCC'),
-  PLAYING = hexrgb('#CCCCCC'),
-  READY = hexrgb('#CCCCCC'),
-  IDLE = hexrgb('#888888'),
+  ERROR = 0xE04141FF,
+  WARNING = 0xE0B341FF,
+  INFO = 0xCCCCCCFF,
+  PLAYING = 0xCCCCCCFF,
+  READY = 0xCCCCCCFF,
+  IDLE = 0x888888FF,
 }
 
 -- ============================================================================

@@ -13,7 +13,7 @@ local total_attachments = 0  -- Track total attachments (never decreases)
 local MAX_ATTACHMENTS = 64  -- Hard limit on total textures ever created
 
 -- NOTE: ReaImGui DrawList functions expect colors in 0xRRGGBBAA format
--- This matches hexrgb() output - no conversion needed!
+-- This matches hex() output - no conversion needed!
 
 -- ============================================================================
 -- TEXTURE BAKING: Create tileable pattern textures for performance

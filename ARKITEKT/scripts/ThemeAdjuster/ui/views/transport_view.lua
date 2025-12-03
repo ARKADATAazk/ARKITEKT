@@ -7,8 +7,6 @@ local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 local Strings = require('ThemeAdjuster.config.strings')
-local hexrgb = Ark.Colors.Hexrgb
-
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
@@ -73,14 +71,14 @@ function TransportView:draw(ctx, shell_state)
   ImGui.Text(ctx, 'Transport Bar')
   ImGui.PopFont(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
   ImGui.Text(ctx, 'Configure transport bar appearance and visibility')
   ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 8)
 
   -- Single scrollable content area
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1A1A1A'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
   if ImGui.BeginChild(ctx, 'transport_content', avail_w, 0, 1) then
     -- Draw background pattern (using panel defaults)
     local child_x, child_y = ImGui.GetWindowPos(ctx)
@@ -169,7 +167,7 @@ function TransportView:draw(ctx, shell_state)
       local label_text_w = ImGui.CalcTextSize(ctx, label)
       ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + label_w - label_text_w)
       ImGui.AlignTextToFramePadding(ctx)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
       ImGui.Text(ctx, label)
       ImGui.PopStyleColor(ctx)
 
@@ -202,7 +200,7 @@ function TransportView:draw(ctx, shell_state)
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
     ImGui.Text(ctx, 'Toggle transport display options')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 6)
@@ -264,7 +262,7 @@ function TransportView:draw(ctx, shell_state)
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#999999'))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
     ImGui.Text(ctx, 'Control which transport elements are visible')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 2)

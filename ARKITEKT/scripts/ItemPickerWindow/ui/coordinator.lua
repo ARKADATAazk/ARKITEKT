@@ -22,8 +22,8 @@ local function get_audio_container_config(opts)
     header = {
       height = 36,
       padding = 8,
-      bg_color = Ark.Colors.Hexrgb('#1A1A1A'),
-      border_color = Ark.Colors.Hexrgb('#2A2A2A'),
+      bg_color = 0x1A1A1AFF,
+      border_color = 0x2A2A2AFF,
     },
     sort_modes = {
       { id = 'none', label = 'None' },
@@ -48,8 +48,8 @@ local function get_midi_container_config(opts)
     header = {
       height = 36,
       padding = 8,
-      bg_color = Ark.Colors.Hexrgb('#1A1A1A'),
-      border_color = Ark.Colors.Hexrgb('#2A2A2A'),
+      bg_color = 0x1A1A1AFF,
+      border_color = 0x2A2A2AFF,
     },
     sort_modes = {
       { id = 'none', label = 'None' },

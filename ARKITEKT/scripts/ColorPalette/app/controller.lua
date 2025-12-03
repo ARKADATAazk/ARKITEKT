@@ -3,8 +3,6 @@
 -- Handles color application to REAPER targets
 
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 local Controller = {}

@@ -3,18 +3,16 @@
 -- Pure value constants: colors, dimensions, tabs
 
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- ============================================================================
 -- STATUS COLORS
 -- ============================================================================
 M.STATUS = {
-  READY = hexrgb('#41E0A3'),
-  WARNING = hexrgb('#E0B341'),
-  ERROR = hexrgb('#E04141'),
-  INFO = hexrgb('#CCCCCC'),
+  READY = 0x41E0A3FF,
+  WARNING = 0xE0B341FF,
+  ERROR = 0xE04141FF,
+  INFO = 0xCCCCCCFF,
 }
 
 -- ============================================================================
@@ -22,23 +20,23 @@ M.STATUS = {
 -- ============================================================================
 M.THEME_CATEGORY_COLORS = {
   -- Track/Channel panels
-  tcp_blue = hexrgb('#5C7CB8'),
-  mcp_green = hexrgb('#6B9B7C'),
-  envcp_purple = hexrgb('#9B7CB8'),
+  tcp_blue = 0x5C7CB8FF,
+  mcp_green = 0x6B9B7CFF,
+  envcp_purple = 0x9B7CB8FF,
   -- Media items
-  items_pink = hexrgb('#B85C8B'),
-  midi_teal = hexrgb('#5C9B9B'),
+  items_pink = 0xB85C8BFF,
+  midi_teal = 0x5C9B9BFF,
   -- Transport/Toolbar
-  transport_gold = hexrgb('#B8A55C'),
-  toolbar_gold = hexrgb('#B89B5C'),
+  transport_gold = 0xB8A55CFF,
+  toolbar_gold = 0xB89B5CFF,
   -- Utility
-  meter_cyan = hexrgb('#5C9BB8'),
-  docker_brown = hexrgb('#9B8B6B'),
-  fx_orange = hexrgb('#B87C5C'),
-  menu_blue = hexrgb('#7C8BB8'),
+  meter_cyan = 0x5C9BB8FF,
+  docker_brown = 0x9B8B6BFF,
+  fx_orange = 0xB87C5CFF,
+  menu_blue = 0x7C8BB8FF,
   -- General
-  global_gray = hexrgb('#8B8B8B'),
-  other_slate = hexrgb('#6B6B8B'),
+  global_gray = 0x8B8B8BFF,
+  other_slate = 0x6B6B8BFF,
 }
 
 -- ============================================================================

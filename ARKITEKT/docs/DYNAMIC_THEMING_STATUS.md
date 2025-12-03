@@ -290,7 +290,7 @@ ThemeManager.sync_with_reaper()
 ThemeManager.apply_theme("pro_tools")
 
 -- Option 3: Custom theme from one color
-local user_color = Colors.hexrgb("#FF6B6BFF")
+local user_color = Colors.hex("#FF6B6BFF")
 ThemeManager.generate_and_apply(
   user_color,
   Colors.auto_text_color(user_color)

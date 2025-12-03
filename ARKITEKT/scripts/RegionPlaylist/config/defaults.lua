@@ -5,11 +5,11 @@
 local ColorDefs = require('arkitekt.config.colors')
 local Ark = require('arkitekt')
 local Constants = require('RegionPlaylist.config.constants')
-local hexrgb = Ark.Colors.Hexrgb
 
--- Helper for glow colors
-local function glow_color(base_hex, alpha)
-  return hexrgb(base_hex:sub(1, 7) .. alpha)
+-- Helper for glow colors (takes byte color and alpha hex string like '33')
+local function glow_color(base_color, alpha_hex)
+  local alpha = tonumber(alpha_hex, 16)
+  return (base_color & 0xFFFFFF00) | alpha
 end
 
 local M = {}
@@ -32,7 +32,7 @@ M.TRANSPORT = {
   padding = 12,
   spacing = 12,
   -- panel_bg_color: Transparent - Transport uses TransportFX for dynamic themed background
-  panel_bg_color = hexrgb('#00000000'),
+  panel_bg_color = 0x00000000,
 
   corner_buttons = {
     size = 30,
@@ -52,7 +52,7 @@ M.TRANSPORT = {
     -- status_color: nil falls back to Style.COLORS.TEXT_DIM
     -- region_color: nil falls back to Style.COLORS.TEXT_NORMAL
     -- track_color: nil falls back to Style.COLORS.BG_HOVER
-    fill_color = hexrgb('#41E0A3'),  -- Accent color (keep explicit)
+    fill_color = 0x41E0A3FF,  -- Accent color (keep explicit)
     progress_height = 3,
   },
 
@@ -176,7 +176,7 @@ M.REGION_TILES = {
     border_lerp = 0.5,
     base_fill_desaturation = 0.4,
     base_fill_brightness = 0.4,
-    base_fill_alpha = hexrgb('#00000066'),
+    base_fill_alpha = 0x00000066,
   },
 
   dim = {

@@ -1,6 +1,6 @@
 -- @noindex
 -- RegionPlaylist/ui/tiles/renderers/pool.lua
--- MODIFIED: Using Ark.Colors.Hexrgb() for all color definitions
+-- Pool tile renderer with byte color literals (0xRRGGBBAA)
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
@@ -17,34 +17,34 @@ local sqrt = math.sqrt
 local M = {}
 
 M.CONFIG = {
-  bg_base = Ark.Colors.Hexrgb('#1A1A1A'),
+  bg_base = 0x1A1A1AFF,
   disabled = { desaturate = 0.9, brightness = 0.5, alpha_multiplier = 0.6, min_lightness = 0.28 },
   responsive = { hide_length_below = 35, hide_text_below = 15 },
   playlist_tile = { 
-    base_color = Ark.Colors.Hexrgb('#3A3A3A'), 
-    name_color = Ark.Colors.Hexrgb('#CCCCCC'), 
-    badge_color = Ark.Colors.Hexrgb('#999999') 
+    base_color = 0x3A3A3AFF, 
+    name_color = 0xCCCCCCFF, 
+    badge_color = 0x999999FF 
   },
   text_margin_right = 6,
   badge_margin = 6,
   badge_padding_x = 6,
   badge_padding_y = 3,
   badge_rounding = 4,
-  badge_bg = Ark.Colors.Hexrgb('#14181C'),
+  badge_bg = 0x14181CFF,
   badge_border_alpha = 0x33,
   badge_nudge_x = 0,
   badge_nudge_y = 0,
   badge_text_nudge_x = -1,
   badge_text_nudge_y = -2,
   circular = {
-    base_color = Ark.Colors.Hexrgb('#240C0Cff'),
-    stripe_color = Ark.Colors.WithOpacity(Ark.Colors.Hexrgb('#430d0d85'), 0.2),
-    border_color = Ark.Colors.Hexrgb('#240f0fff'),
-    text_color = Ark.Colors.Hexrgb('#901b1bff'),
-    lock_color = Ark.Colors.Hexrgb('#901b1bff'),
-    playlist_chip_color = Ark.Colors.Hexrgb('#901b1bff'),
-    badge_bg = Ark.Colors.Hexrgb('#240C0Cff'),
-    badge_border_color = Ark.Colors.Hexrgb('#652a2aff'),
+    base_color = 0x240C0CFF,
+    stripe_color = Ark.Colors.WithOpacity(0x430D0D85, 0.2),
+    border_color = 0x240F0FFF,
+    text_color = 0x901B1BFF,
+    lock_color = 0x901B1BFF,
+    playlist_chip_color = 0x901B1BFF,
+    badge_bg = 0x240C0CFF,
+    badge_border_color = 0x652A2AFF,
     lock_base_w = 11,
     lock_base_h = 7,
     lock_handle_w = 2,
@@ -191,7 +191,7 @@ function M.render_playlist(opts)
   local base_color = M.CONFIG.playlist_tile.base_color
   local playlist_data = {
     name = playlist.name or 'Unnamed Playlist',
-    chip_color = playlist.chip_color or Ark.Colors.Hexrgb('#FF5733'),
+    chip_color = playlist.chip_color or 0xFF5733FF,
     total_duration = playlist.total_duration or 0
   }
 
@@ -241,7 +241,7 @@ function M.render_playlist(opts)
       name_color = Ark.Colors.AdjustBrightness(name_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     end
     if (state.hover or state.selected) and not is_disabled then
-      name_color = Ark.Colors.Hexrgb('#FFFFFF')
+      name_color = 0xFFFFFFFF
     end
 
     BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, name_color, actual_height, rect, grid, base_color, key)
@@ -271,7 +271,7 @@ function M.render_playlist(opts)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Ark.Colors.WithAlpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
     
     -- Use whiter text like active tiles
-    Ark.Draw.Text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#FFFFFFDD'), text_alpha), badge_text)
+    Ark.Draw.Text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Ark.Colors.WithAlpha(0xFFFFFFDD, text_alpha), badge_text)
   end
   
   -- Draw playlist duration in bottom right (like regions)

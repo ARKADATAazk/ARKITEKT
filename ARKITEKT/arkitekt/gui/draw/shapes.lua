@@ -39,7 +39,7 @@ function M.draw_favorite_star(ctx, dl, x, y, size, alpha, is_favorite, icon_font
   end
 
   -- Default base color if not provided
-  base_color = base_color or Colors.Hexrgb('#555555')
+  base_color = base_color or 0x555555FF
 
   -- Render using modular badge system
   Badge.Icon(ctx, {

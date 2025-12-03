@@ -3,8 +3,6 @@
 -- Parameter linking and synchronization system (GROUP-BASED)
 
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- ============================================================================
@@ -25,22 +23,22 @@ M.PARAM_TYPE = {
 
 -- 16 distinct colors for link groups (cycling)
 M.GROUP_COLORS = {
-  hexrgb('#E74C3C'), -- Red
-  hexrgb('#3498DB'), -- Blue
-  hexrgb('#2ECC71'), -- Green
-  hexrgb('#F39C12'), -- Orange
-  hexrgb('#9B59B6'), -- Purple
-  hexrgb('#1ABC9C'), -- Turquoise
-  hexrgb('#E91E63'), -- Pink
-  hexrgb('#00BCD4'), -- Cyan
-  hexrgb('#FF9800'), -- Amber
-  hexrgb('#8BC34A'), -- Light Green
-  hexrgb('#673AB7'), -- Deep Purple
-  hexrgb('#FF5722'), -- Deep Orange
-  hexrgb('#009688'), -- Teal
-  hexrgb('#FFC107'), -- Yellow
-  hexrgb('#795548'), -- Brown
-  hexrgb('#607D8B'), -- Blue Grey
+  0xE74C3CFF, -- Red
+  0x3498DBFF, -- Blue
+  0x2ECC71FF, -- Green
+  0xF39C12FF, -- Orange
+  0x9B59B6FF, -- Purple
+  0x1ABC9CFF, -- Turquoise
+  0xE91E63FF, -- Pink
+  0x00BCD4FF, -- Cyan
+  0xFF9800FF, -- Amber
+  0x8BC34AFF, -- Light Green
+  0x673AB7FF, -- Deep Purple
+  0xFF5722FF, -- Deep Orange
+  0x009688FF, -- Teal
+  0xFFC107FF, -- Yellow
+  0x795548FF, -- Brown
+  0x607D8BFF, -- Blue Grey
 }
 
 -- ============================================================================

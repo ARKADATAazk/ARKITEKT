@@ -64,6 +64,22 @@ end
 
 For full widget API, see `cookbook/QUICKSTART.md` and `cookbook/WIDGETS.md`.
 
+**Colors**
+
+Use byte literals (`0xRRGGBBAA`) for static colors:
+
+```lua
+local COLORS = {
+    red = 0xFF0000FF,      -- Opaque red (RRGGBB + FF alpha)
+    blue = 0x0000FF80,     -- 50% transparent blue
+}
+
+-- For dynamic opacity, use WithOpacity:
+local fill = Ark.Colors.WithOpacity(base_color, 0.5)
+```
+
+**Note:** `Colors.hex()` exists for runtime user input (theme manager, palettes) but should NOT be used for static color definitions.
+
 ---
 
 ## 2. Where to Work – Routing Map
@@ -194,17 +210,18 @@ Typical workflow for a new widget:
 
 ---
 
-## 6. Anti-Patterns – Hard No’s
+## 6. Anti-Patterns – Hard No's
 
 Never do these:
 
 - UI / ImGui calls in `domain/*`.
 - New globals or module-level side effects.
 - Hardcoded magic numbers when a `config/` constant exists.
-- Creating new folders just because “it feels cleaner” – check existing structure first.
-- Touching unrelated files “while you’re here”.
+- Creating new folders just because "it feels cleaner" – check existing structure first.
+- Touching unrelated files "while you're here".
 - Re-declaring default config values (colors, padding, rounding, etc.) just to restate defaults.
 - Overriding core defaults unless explicitly requested.
+- **Adding backwards compatibility / legacy fallbacks.** ARKITEKT is fully internal with no external consumers. During refactors, just change the code directly—no shims, no "legacy support", no deprecation warnings. Clean breaks are preferred.
 
 ---
 

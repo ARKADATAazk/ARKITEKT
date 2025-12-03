@@ -23,8 +23,6 @@ local function get_script_colors()
 end
 
 local M = {}
-local hexrgb = Colors.Hexrgb
-
 -- Performance: Cache frequently-called ImGui functions (15-25% improvement in hot paths)
 local CalcTextSize = ImGui.CalcTextSize
 
@@ -79,11 +77,11 @@ M.CONFIG = {
 
   -- Static fallback colors (used when ScriptColors not available)
   colors_static = {
-    bg = { inactive = hexrgb('#1A1A1A'), active = hexrgb('#2D4A37'), hover_tint = hexrgb('#2A2A2A'), hover_influence = 0.4 },
-    border = { inactive = hexrgb('#303030'), active = nil, hover = nil, thickness = 0.5 },
-    text = { active = hexrgb('#FFFFFF'), inactive = hexrgb('#999999'), secondary = hexrgb('#888888'), conflict = hexrgb('#FFA500') },
-    badge = { bg_active = hexrgb('#00000099'), bg_inactive = hexrgb('#00000066'), text = hexrgb('#AAAAAA') },
-    footer = { gradient = hexrgb('#00000044') },
+    bg = { inactive = 0x1A1A1AFF, active = 0x2D4A37FF, hover_tint = 0x2A2A2AFF, hover_influence = 0.4 },
+    border = { inactive = 0x303030FF, active = nil, hover = nil, thickness = 0.5 },
+    text = { active = 0xFFFFFFFF, inactive = 0x999999FF, secondary = 0x888888FF, conflict = 0xFFA500FF },
+    badge = { bg_active = 0x00000099, bg_inactive = 0x00000066, text = 0xAAAAAAFF },
+    footer = { gradient = 0x00000044 },
   },
   
   selection = {
@@ -123,22 +121,22 @@ M.CONFIG = {
     },
     -- Color palette matching active assignment tagging system
     colors = {
-      TCP = hexrgb('#5A7A9A'),      -- Blue
-      MCP = hexrgb('#9A9A5A'),      -- Yellow
-      ENVCP = hexrgb('#5A9A8A'),    -- Teal
-      TRANSPORT = hexrgb('#9A5A5A'),-- Red
-      GLOBAL = hexrgb('#6A6A6A'),   -- Grey
-      TOOLBARS = hexrgb('#8A6A5A'), -- Brown/orange
-      ITEMS = hexrgb('#7A8A5A'),    -- Olive
-      MIDI = hexrgb('#6A5A8A'),     -- Purple
-      RTCONFIG = hexrgb('#5AAA5A'), -- Green (important!)
+      TCP = 0x5A7A9AFF,      -- Blue
+      MCP = 0x9A9A5AFF,      -- Yellow
+      ENVCP = 0x5A9A8AFF,    -- Teal
+      TRANSPORT = 0x9A5A5AFF,-- Red
+      GLOBAL = 0x6A6A6AFF,   -- Grey
+      TOOLBARS = 0x8A6A5AFF, -- Brown/orange
+      ITEMS = 0x7A8A5AFF,    -- Olive
+      MIDI = 0x6A5A8AFF,     -- Purple
+      RTCONFIG = 0x5AAA5AFF, -- Green (important!)
     },
-    text_color = hexrgb('#000000'),  -- Black text
+    text_color = 0x000000FF,  -- Black text
   },
   
   mosaic = {
     padding = 15, max_size = 50, gap = 6, count = 3,
-    rounding = 3, border_color = hexrgb('#00000088'), border_thickness = 1, y_offset = 45,
+    rounding = 3, border_color = 0x00000088, border_thickness = 1, y_offset = 45,
   },
   
   animation = { speed_hover = 12.0, speed_active = 8.0 },
@@ -245,11 +243,10 @@ function M.TileRenderer.border(dl, rect, base_color, is_selected, is_active, is_
     if M.CONFIG.selection.ant_color then
       ant_color = M.CONFIG.selection.ant_color
     else
-      ant_color = Colors.GenerateMarchingAntsColor(
-        base_color,
-        M.CONFIG.selection.brightness_factor,
-        M.CONFIG.selection.saturation_factor
-      )
+      ant_color = Colors.DeriveMarchingAnts(base_color, {
+        brightness = M.CONFIG.selection.brightness_factor,
+        saturation = M.CONFIG.selection.saturation_factor,
+      })
     end
     
     MarchingAnts.Draw(
@@ -264,19 +261,19 @@ function M.TileRenderer.border(dl, rect, base_color, is_selected, is_active, is_
       if M.CONFIG.colors.border.hover then
         border_color = M.CONFIG.colors.border.hover
       else
-        border_color = Colors.GenerateActiveBorder(base_color, 0.6, 1.8)
+        border_color = Colors.DeriveBorder(base_color, { mode = 'intensify', saturation = 0.6, brightness = 1.8 })
       end
     elseif is_active then
       if M.CONFIG.colors.border.active then
         border_color = M.CONFIG.colors.border.active
       else
-        border_color = Colors.GenerateActiveBorder(base_color, 0.7, 1.6)
+        border_color = Colors.DeriveBorder(base_color, { mode = 'intensify', saturation = 0.7, brightness = 1.6 })
       end
     else
       if M.CONFIG.colors.border.inactive then
         border_color = M.CONFIG.colors.border.inactive
       else
-        border_color = Colors.GenerateBorder(base_color, 0.2, 0.8)
+        border_color = Colors.DeriveBorder(base_color, { mode = 'muted', desaturate = 0.2, brightness = 0.8 })
       end
     end
     
@@ -599,7 +596,7 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
                   M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
 
         local label = key:sub(1, 3):upper()
-        Draw.CenteredText(ctx, label, cx, cy, cx + cell_size, cy + cell_size, hexrgb('#FFFFFF'))
+        Draw.CenteredText(ctx, label, cx, cy, cx + cell_size, cy + cell_size, 0xFFFFFFFF)
       end
     end
   end

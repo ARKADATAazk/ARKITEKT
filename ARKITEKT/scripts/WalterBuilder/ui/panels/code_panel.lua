@@ -6,8 +6,6 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Serializer = require('WalterBuilder.domain.serializer')
 
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 local Panel = {}
 Panel.__index = Panel
@@ -82,7 +80,7 @@ function Panel:draw_code_highlighted(ctx, code)
   for line in (code .. '\n'):gmatch('([^\n]*)\n') do
     if line:match('^;') then
       -- Comment line
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#6A9955'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x6A9955FF)
       ImGui.Text(ctx, line)
       ImGui.PopStyleColor(ctx)
     elseif line:match('^%s*set%s+') then
@@ -90,13 +88,13 @@ function Panel:draw_code_highlighted(ctx, code)
       local element_id, coords = line:match('^(%s*set%s+[%w._]+)%s+(.*)$')
       if element_id then
         -- 'set element.id' part
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#569CD6'))
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x569CD6FF)
         ImGui.Text(ctx, element_id)
         ImGui.PopStyleColor(ctx)
 
         -- Coordinates part
         ImGui.SameLine(ctx, 0, 0)
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CE9178'))
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCE9178FF)
         ImGui.Text(ctx, ' ' .. coords)
         ImGui.PopStyleColor(ctx)
       else
@@ -104,12 +102,12 @@ function Panel:draw_code_highlighted(ctx, code)
       end
     elseif line:match('^%s*clear%s+') then
       -- Clear command
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#C586C0'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xC586C0FF)
       ImGui.Text(ctx, line)
       ImGui.PopStyleColor(ctx)
     elseif line:match('^Layout%s+') or line:match('^EndLayout') then
       -- Layout keywords
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#4EC9B0'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x4EC9B0FF)
       ImGui.Text(ctx, line)
       ImGui.PopStyleColor(ctx)
     elseif line == '' then
@@ -129,7 +127,7 @@ function Panel:draw(ctx)
   end
 
   -- Header with options
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFFFFFFF)
   ImGui.Text(ctx, 'Generated WALTER Code')
   ImGui.PopStyleColor(ctx)
 
@@ -151,7 +149,7 @@ function Panel:draw(ctx)
   ImGui.Dummy(ctx, 0, 4)
 
   -- Layout name input
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#AAAAAA'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
   ImGui.Text(ctx, 'Layout name (optional):')
   ImGui.PopStyleColor(ctx)
 
@@ -167,7 +165,7 @@ function Panel:draw(ctx)
 
   -- Copy button
   local copy_label = self.copy_feedback_timer > 0 and 'Copied!' or 'Copy to Clipboard'
-  local copy_color = self.copy_feedback_timer > 0 and hexrgb('#2A4A2A') or hexrgb('#2A2A2A')
+  local copy_color = self.copy_feedback_timer > 0 and 0x2A4A2AFF or 0x2A2A2AFF
 
   ImGui.PushStyleColor(ctx, ImGui.Col_Button, copy_color)
   if ImGui.Button(ctx, copy_label, -1, 26) then
@@ -182,14 +180,14 @@ function Panel:draw(ctx)
   -- Code display area
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb('#1E1E1E'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1E1E1EFF)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 8, 8)
 
   if ImGui.BeginChild(ctx, 'code_view', avail_w, avail_h - 4, ImGui.ChildFlags_Borders, 0) then
     local code = self:generate_code()
 
     if code == '' or #self.elements == 0 then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
       ImGui.Text(ctx, 'No elements in layout')
       ImGui.Dummy(ctx, 0, 8)
       ImGui.Text(ctx, 'Add elements from the Elements panel')
@@ -197,7 +195,7 @@ function Panel:draw(ctx)
       ImGui.PopStyleColor(ctx)
     else
       -- Use monospace-style display
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#D4D4D4'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xD4D4D4FF)
       self:draw_code_highlighted(ctx, code)
       ImGui.PopStyleColor(ctx)
     end

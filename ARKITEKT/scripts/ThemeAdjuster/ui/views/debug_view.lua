@@ -6,8 +6,6 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Theme = require('ThemeAdjuster.domain.theme.reader')
 local ImageCache = require('arkitekt.core.images')  -- Use ARKITEKT's central image system
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 local DebugView = {}
 DebugView.__index = DebugView
@@ -214,7 +212,7 @@ function DebugView:draw_theme_info(ctx)
 
   ImGui.Text(ctx, 'Theme:')
   ImGui.SameLine(ctx)
-  ImGui.TextColored(ctx, hexrgb('#FFFFFF'), info.theme_name or 'Unknown')
+  ImGui.TextColored(ctx, 0xFFFFFFFF, info.theme_name or 'Unknown')
 
   ImGui.BulletText(ctx, ('Path: %s'):format(info.theme_path or '—'))
   ImGui.BulletText(ctx, ('Type: %s'):format(info.theme_ext or '—'))
@@ -227,17 +225,17 @@ function DebugView:draw_theme_info(ctx)
   ImGui.SameLine(ctx)
 
   if status == 'direct' and dir then
-    ImGui.TextColored(ctx, hexrgb('#41E0A3'), ('READY - Direct: %s'):format(dir))
+    ImGui.TextColored(ctx, 0x41E0A3FF, ('READY - Direct: %s'):format(dir))
   elseif (status == 'linked-ready' or status == 'zip-ready') and dir then
     local msg = zip_name and ('READY - ZIP Cache: %s'):format(zip_name) or ('READY - ZIP Cache: %s'):format(dir)
-    ImGui.TextColored(ctx, hexrgb('#E0B341'), msg)
+    ImGui.TextColored(ctx, 0xE0B341FF, msg)
   elseif status == 'linked-needs-build' then
     local msg = zip_name and ('LINKED - Build needed: %s'):format(zip_name) or 'LINKED - Build cache to continue'
-    ImGui.TextColored(ctx, hexrgb('#E0B341'), msg)
+    ImGui.TextColored(ctx, 0xE0B341FF, msg)
   elseif status == 'needs-link' then
-    ImGui.TextColored(ctx, hexrgb('#E04141'), 'NOT LINKED - Pick a .ReaperThemeZip to continue')
+    ImGui.TextColored(ctx, 0xE04141FF, 'NOT LINKED - Pick a .ReaperThemeZip to continue')
   else
-    ImGui.TextColored(ctx, hexrgb('#E04141'), 'ERROR - Check theme status')
+    ImGui.TextColored(ctx, 0xE04141FF, 'ERROR - Check theme status')
   end
 
   ImGui.Separator(ctx)

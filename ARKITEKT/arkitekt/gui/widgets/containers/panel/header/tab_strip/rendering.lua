@@ -10,8 +10,6 @@ local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ColorPickerMenu = require('arkitekt.gui.widgets.menus.color_picker_menu')
 
-local hexrgb = Colors.Hexrgb
-
 local M = {}
 
 -- Animation module reference (set via set_animation_module)

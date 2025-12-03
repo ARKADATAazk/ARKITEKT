@@ -181,8 +181,8 @@ function MyModal:draw_popup_mode(ctx, args)
   ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
 
   -- Apply styling
-  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, hexrgb("#1A1A1AFF"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#404040FF"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, hex("#1A1A1AFF"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hex("#404040FF"))
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 16, 12)
 
   local visible, open = ImGui.BeginPopupModal(ctx, "My Modal##unique_id", true, flags)
@@ -346,10 +346,10 @@ local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 -- Standard colors
-local bg_color = hexrgb("#1A1A1A")     -- Dark background
-local border_color = hexrgb("#404040")  -- Subtle border
-local text_color = hexrgb("#CCCCCC")    -- Light text
-local hint_color = hexrgb("#999999")    -- Dimmed hints
+local bg_color = hex("#1A1A1A")     -- Dark background
+local border_color = hex("#404040")  -- Subtle border
+local text_color = hex("#CCCCCC")    -- Light text
+local hint_color = hex("#999999")    -- Dimmed hints
 ```
 
 ### Spacing

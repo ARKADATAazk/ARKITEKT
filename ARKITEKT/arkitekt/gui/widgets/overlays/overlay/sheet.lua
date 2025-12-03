@@ -10,8 +10,6 @@ local Theme  = require('arkitekt.theme')
 local OverlayConfig = require('arkitekt.gui.widgets.overlays.overlay.defaults')
 
 local Sheet = {}
-local hexrgb = Colors.Hexrgb
-
 function Sheet.render(ctx, alpha, bounds, content_fn, opts)
   opts = opts or {}
   
@@ -34,7 +32,7 @@ function Sheet.render(ctx, alpha, bounds, content_fn, opts)
     for i = config.sheet.shadow.layers, 1, -1 do
       local shadow_offset = math.floor((i / config.sheet.shadow.layers) * config.sheet.shadow.max_offset)
       local shadow_alpha = Colors.Opacity((config.sheet.shadow.base_alpha / i) * alpha / 255)
-      local shadow_color = Colors.WithAlpha(hexrgb('#000000'), shadow_alpha)
+      local shadow_color = Colors.WithAlpha(0x000000FF, shadow_alpha)
       Draw.RectFilled(dl, 
         x - shadow_offset, y - shadow_offset, 
         x + w + shadow_offset, y + h + shadow_offset, 

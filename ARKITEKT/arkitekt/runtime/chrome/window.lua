@@ -313,7 +313,7 @@ function M.new(opts)
       if ok and StatusBar and StatusBar.new then
         win.status_bar = StatusBar.new({
           height = Constants.STATUS_BAR.height + Constants.STATUS_BAR.compensation,
-          get_status = opts.get_status_func or function() return { text = 'READY', color = hexrgb('#41E0A3') } end,
+          get_status = opts.get_status_func or function() return { text = 'READY', color = 0x41E0A3FF } end,
           style = opts.style and { palette = opts.style.palette } or nil
         })
       end

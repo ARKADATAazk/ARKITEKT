@@ -142,8 +142,8 @@ local function draw_template_panel(ctx, gui, width, height)
       local clicked = Chip(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
-        bg_color = Ark.Colors.Hexrgb('#888888'),
-        text_color = Ark.Colors.Hexrgb('#000000'),
+        bg_color = 0x888888FF,
+        text_color = 0x000000FF,
         height = chip_height,
         padding_h = 8,
         rounding = 2,

@@ -12,8 +12,6 @@ local TileUtil = require('RegionPlaylist.ui.tile_utilities')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 
 local M = {}
-local hexrgb = Ark.Colors.Hexrgb
-
 M.CONFIG = {
   rounding = 6,
   badge_font_scale = 0.88,
@@ -265,7 +263,7 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
   else
     name_color = Ark.Colors.WithAlpha(Ark.Colors.AdjustBrightness(fx_config.name_base_color, fx_config.name_brightness), text_alpha)
     if state.hover or state.selected then
-      name_color = Ark.Colors.WithAlpha(hexrgb('#FFFFFF'), text_alpha)
+      name_color = Ark.Colors.WithAlpha(0xFFFFFFFF, text_alpha)
     end
   end
 

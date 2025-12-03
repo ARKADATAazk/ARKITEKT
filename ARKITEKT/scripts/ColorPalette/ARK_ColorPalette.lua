@@ -28,8 +28,6 @@ local cache_dir = reaper.GetResourcePath() .. SEP .. 'Scripts' .. SEP .. 'Arkite
 
 -- Initialize settings and state
 local Settings = require('arkitekt.core.settings')
-local hexrgb = Ark.Colors.Hexrgb
-
 local settings = Settings.open(cache_dir, 'settings.json')
 
 State.initialize(settings)
@@ -64,8 +62,8 @@ Shell.run({
   -- Frameless overlay window
   chrome = 'overlay',
   imgui_flags = ImGui.WindowFlags_NoBackground,
-  bg_color_floating = hexrgb('#00000000'),
-  bg_color_docked = hexrgb('#00000000'),
+  bg_color_floating = 0x00000000,
+  bg_color_docked = 0x00000000,
   
   -- Pass overlay manager to window
   overlay = overlay,

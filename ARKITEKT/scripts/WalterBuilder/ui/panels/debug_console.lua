@@ -5,8 +5,6 @@
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 
 -- Singleton log storage
@@ -22,10 +20,10 @@ M.LEVEL = {
 }
 
 local level_colors = {
-  info = '#AAAAAA',
-  success = '#88CC88',
-  warn = '#CCCC88',
-  error = '#CC6666',
+  info = 0xAAAAAAFF,
+  success = 0x88CC88FF,
+  warn = 0xCCCC88FF,
+  error = 0xCC6666FF,
 }
 
 -- Add a log entry
@@ -96,7 +94,7 @@ function M.Draw(ctx)
   end
 
   ImGui.SameLine(ctx)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
   ImGui.Text(ctx, string.format('(%d entries)', #logs))
   ImGui.PopStyleColor(ctx)
 
@@ -106,24 +104,24 @@ function M.Draw(ctx)
   local log_h = avail_h - 35
   if ImGui.BeginChild(ctx, 'debug_log_area', avail_w, log_h, ImGui.ChildFlags_Borders, 0) then
     for _, entry in ipairs(logs) do
-      local color = level_colors[entry.level] or '#AAAAAA'
+      local color = level_colors[entry.level] or 0xAAAAAAFF
 
       -- Time prefix
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#666666'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
       ImGui.Text(ctx, entry.time)
       ImGui.PopStyleColor(ctx)
 
       ImGui.SameLine(ctx)
 
       -- Level badge
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb(color))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, color)
       ImGui.Text(ctx, string.format('[%s]', entry.level:upper():sub(1, 4)))
       ImGui.PopStyleColor(ctx)
 
       ImGui.SameLine(ctx)
 
       -- Message
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#CCCCCC'))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCCCCCCFF)
       ImGui.TextWrapped(ctx, entry.message)
       ImGui.PopStyleColor(ctx)
     end

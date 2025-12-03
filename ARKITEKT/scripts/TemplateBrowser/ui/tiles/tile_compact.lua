@@ -9,8 +9,6 @@ local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local TileHelpers = require('TemplateBrowser.ui.tiles.helpers')
 
 local M = {}
-local hexrgb = Ark.Colors.Hexrgb
-
 -- Configuration for compact tiles
 M.CONFIG = {
   tile_height = 15,  -- Fixed compact height (reduced by 3)
@@ -46,10 +44,10 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local hover_factor = animator:get(template.uuid, 'hover')
 
   -- Color definitions (inspired by Parameter Library)
-  local BG_BASE = hexrgb('#252525')
-  local BG_HOVER = hexrgb('#2D2D2D')
-  local BRD_BASE = hexrgb('#333333')
-  local BRD_HOVER = hexrgb('#5588FF')
+  local BG_BASE = 0x252525FF
+  local BG_HOVER = 0x2D2D2DFF
+  local BRD_BASE = 0x333333FF
+  local BRD_HOVER = 0x5588FFFF
   local rounding = 3
 
   -- Background color with smooth hover transition and subtle color tint
@@ -92,7 +90,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
       local b = math.floor(190 * (1 - blend) + cb * blend)
       ant_color = Ark.Colors.ComponentsToRgba(r, g, b, 0x99)
     else
-      ant_color = hexrgb('#C0C0C099')  -- Lighter grey with 60% opacity
+      ant_color = 0xC0C0C099  -- Lighter grey with 60% opacity
     end
     MarchingAnts.Draw(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y1 + tile_h - 0.5, ant_color, 1.5, rounding, 8, 6, 20)
   else
@@ -128,9 +126,9 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Section 1: Template Name (left-aligned, takes ~35% width)
   local available_width = tile_w - (padding * 2)
   local name_width = math.floor(available_width * M.CONFIG.name_width_fraction)
-  local name_color = hexrgb('#CCCCCC')  -- Match Parameter Library text color
+  local name_color = 0xCCCCCCFF  -- Match Parameter Library text color
   if state.selected or state.hover then
-    name_color = hexrgb('#FFFFFF')
+    name_color = 0xFFFFFFFF
   end
 
   local truncated_name = truncate_text(ctx, template.name, name_width - 8)
@@ -141,7 +139,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local track_count = template.track_count or 1
   if track_count > 1 then
     local track_text = track_count .. 'T'
-    local track_color = Ark.Colors.WithAlpha(hexrgb('#A8A8A8'), 200)
+    local track_color = Ark.Colors.WithAlpha(0xA8A8A8FF, 200)
     Ark.Draw.Text(dl, cursor_x, cursor_y, track_color, track_text)
     cursor_x = cursor_x + ImGui.CalcTextSize(ctx, track_text) + 12
   end
@@ -149,7 +147,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Section 3: VST Info (just show count badge, no chips due to small height)
   if template.fx and #template.fx > 0 then
     local vst_text = string.format('VST:%d', #template.fx)
-    local vst_color = Ark.Colors.WithAlpha(hexrgb('#6A9EFF'), 200)
+    local vst_color = Ark.Colors.WithAlpha(0x6A9EFFFF, 200)
     Ark.Draw.Text(dl, cursor_x, cursor_y, vst_color, vst_text)
     cursor_x = cursor_x + ImGui.CalcTextSize(ctx, vst_text) + 12
   else
@@ -159,7 +157,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Section 4: Tags (just show count, no chips due to small height)
   if tmpl_meta and tmpl_meta.tags and #tmpl_meta.tags > 0 then
     local tags_text = string.format('Tags:%d', #tmpl_meta.tags)
-    local tags_color = Ark.Colors.WithAlpha(hexrgb('#888888'), 180)
+    local tags_color = Ark.Colors.WithAlpha(0x888888FF, 180)
     Ark.Draw.Text(dl, cursor_x, cursor_y, tags_color, tags_text)
   end
 
@@ -177,9 +175,9 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Star color: light grey when enabled, dark when disabled
   local star_color
   if is_favorite then
-    star_color = hexrgb('#E8E8E8')  -- Light grey when enabled
+    star_color = 0xE8E8E8FF  -- Light grey when enabled
   else
-    star_color = is_star_hovered and hexrgb('#282828A0') or hexrgb('#18181850')
+    star_color = is_star_hovered and 0x282828A0 or 0x18181850
   end
 
   -- Render star using remix icon font

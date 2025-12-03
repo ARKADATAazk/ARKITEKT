@@ -109,7 +109,7 @@ Many widgets use hex literals instead of `Theme.COLORS`:
 
 ```lua
 -- BAD (slider.lua:77)
-local bg_color = config.bg_color or hexrgb("#1A1A1A")
+local bg_color = config.bg_color or hex("#1A1A1A")
 
 -- GOOD (checkbox.lua)
 local bg_color = Theme.COLORS.BG_BASE

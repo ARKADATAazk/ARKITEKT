@@ -5,9 +5,6 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.Hexrgb
-
-
 local M = {}
 local utils
 local SCRIPT_DIRECTORY
@@ -697,7 +694,7 @@ function M.DisplayPreviewLine(ctx, preview_start, preview_end, draw_list)
     local item_x2, item_y2 = ImGui.GetItemRectMax(ctx)
     local item_w, item_h = ImGui.GetItemRectSize(ctx)
     local x = item_x1 + item_w * progress
-    ImGui.DrawList_AddLine(draw_list, x, item_y1, x, item_y2, hexrgb('#FFFFFF'))
+    ImGui.DrawList_AddLine(draw_list, x, item_y1, x, item_y2, 0xFFFFFFFF)
   end
 end
 

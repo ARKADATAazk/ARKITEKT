@@ -17,8 +17,6 @@ local profiler_enabled = ProfilerInit.init()
 
 local Shell = require('arkitekt.runtime.shell')
 local App = require('RegionPlaylist.app.init')
-local hexrgb = Ark.Colors.Hexrgb
-
 -- Register script palette (for Theme Debugger)
 require('RegionPlaylist.config.palette')
 
@@ -75,7 +73,7 @@ Shell.run({
   settings     = settings,
   initial_pos  = { x = 120, y = 120 },
   initial_size = { w = 1000, h = 700 },
-  icon_color   = hexrgb('#41E0A3'),
+  icon_color   = 0x41E0A3FF,
   icon_size    = 18,
   min_size     = { w = 700, h = 500 },
   get_status_func = App.status.get_status_func and App.status.get_status_func(App.state) or nil,

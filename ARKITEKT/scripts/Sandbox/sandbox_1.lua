@@ -11,8 +11,6 @@ local Shell = require('arkitekt.runtime.shell')
 local HatchedFill = require('arkitekt.gui.widgets.effects.hatched_fill')
 
 local ImGui = Ark.ImGui
-local hexrgb = Ark.Colors.Hexrgb
-
 -- Demo state
 local demo_state = {
   active_tab = 1,
@@ -33,7 +31,7 @@ local TABS = {
 Shell.run({
   title = 'Hatched Fill Effects Demo',
   version = 'v0.1.0',
-  version_color = hexrgb('#888888FF'),
+  version_color = 0x888888FF,
   initial_pos = { x = 100, y = 100 },
   initial_size = { w = 900, h = 700 },
   min_size = { w = 600, h = 400 },
@@ -98,12 +96,12 @@ Shell.run({
       local panel_x, panel_y = ImGui.GetCursorScreenPos(ctx)
 
       -- Panel background
-      ImGui.DrawList_AddRectFilled(dl, panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, hexrgb('#1a1a2aFF'), 8)
+      ImGui.DrawList_AddRectFilled(dl, panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, 0x1A1A2AFF, 8)
 
       -- Draw the corner radial effect
       HatchedFill.draw_corner_radial(ctx, {
         x = panel_x, y = panel_y, w = panel_w, h = panel_h,
-        color = hexrgb('#8844FFCC'),
+        color = 0x8844FFCC,
         spacing = demo_state.spacing,
         thickness = demo_state.thickness,
         corner = demo_state.corner,
@@ -113,11 +111,11 @@ Shell.run({
       })
 
       -- Panel border
-      ImGui.DrawList_AddRect(dl, panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, hexrgb('#8844FF80'), 8, 0, 2)
+      ImGui.DrawList_AddRect(dl, panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, 0x8844FF80, 8, 0, 2)
 
       -- Label
-      ImGui.DrawList_AddText(dl, panel_x + 15, panel_y + 15, hexrgb('#FFFFFFCC'), 'Corner Radial Effect (like WALTER Builder)')
-      ImGui.DrawList_AddText(dl, panel_x + 15, panel_y + 35, hexrgb('#FFFFFF88'),
+      ImGui.DrawList_AddText(dl, panel_x + 15, panel_y + 15, 0xFFFFFFCC, 'Corner Radial Effect (like WALTER Builder)')
+      ImGui.DrawList_AddText(dl, panel_x + 15, panel_y + 35, 0xFFFFFF88,
         string.format('Corner: %s | Spacing: %d | Layers: %d | Intensity: %.1f',
           demo_state.corner, demo_state.spacing, demo_state.layers, demo_state.intensity))
 
@@ -152,17 +150,17 @@ Shell.run({
 
       for i, pat in ipairs(patterns) do
         local px = win_x + (i - 1) * (box_w + gap)
-        ImGui.DrawList_AddRectFilled(dl, px, win_y, px + box_w, win_y + box_h, hexrgb('#1a1a1aFF'), 4)
+        ImGui.DrawList_AddRectFilled(dl, px, win_y, px + box_w, win_y + box_h, 0x1A1A1AFF, 4)
         HatchedFill.Draw(ctx, {
           x = px, y = win_y, w = box_w, h = box_h,
           direction = pat.dir,
-          color = hexrgb(pat.color),
+          color = hex(pat.color),
           spacing = demo_state.spacing,
           thickness = demo_state.thickness,
           draw_list = dl,
         })
-        ImGui.DrawList_AddRect(dl, px, win_y, px + box_w, win_y + box_h, hexrgb(pat.color:gsub('AA$', 'FF')), 4)
-        ImGui.DrawList_AddText(dl, px + 5, win_y + box_h - 18, hexrgb('#FFFFFFCC'), pat.label)
+        ImGui.DrawList_AddRect(dl, px, win_y, px + box_w, win_y + box_h, hex(pat.color:gsub('AA$', 'FF')), 4)
+        ImGui.DrawList_AddText(dl, px + 5, win_y + box_h - 18, 0xFFFFFFCC, pat.label)
       end
 
       ImGui.Dummy(ctx, 0, box_h + 30)
@@ -172,29 +170,29 @@ Shell.run({
       ImGui.Dummy(ctx, 0, 5)
       local row2_x, row2_y = ImGui.GetCursorScreenPos(ctx)
 
-      ImGui.DrawList_AddRectFilled(dl, row2_x, row2_y, row2_x + 300, row2_y + 80, hexrgb('#1a1a2aFF'), 4)
+      ImGui.DrawList_AddRectFilled(dl, row2_x, row2_y, row2_x + 300, row2_y + 80, 0x1A1A2AFF, 4)
       HatchedFill.draw_marching_ants(ctx, {
         x = row2_x, y = row2_y, w = 300, h = 80,
-        color = hexrgb('#FFFFFFCC'),
+        color = 0xFFFFFFCC,
         dash_length = 6,
         gap_length = 4,
         thickness = 2,
         speed = 40,
         draw_list = dl,
       })
-      ImGui.DrawList_AddText(dl, row2_x + 10, row2_y + 30, hexrgb('#FFFFFFAA'), 'Selection indicator style')
+      ImGui.DrawList_AddText(dl, row2_x + 10, row2_y + 30, 0xFFFFFFAA, 'Selection indicator style')
 
-      ImGui.DrawList_AddRectFilled(dl, row2_x + 320, row2_y, row2_x + 620, row2_y + 80, hexrgb('#2a1a1aFF'), 4)
+      ImGui.DrawList_AddRectFilled(dl, row2_x + 320, row2_y, row2_x + 620, row2_y + 80, 0x2A1A1AFF, 4)
       HatchedFill.draw_marching_ants(ctx, {
         x = row2_x + 320, y = row2_y, w = 300, h = 80,
-        color = hexrgb('#FF6644FF'),
+        color = 0xFF6644FF,
         dash_length = 10,
         gap_length = 6,
         thickness = 1,
         speed = 20,
         draw_list = dl,
       })
-      ImGui.DrawList_AddText(dl, row2_x + 330, row2_y + 30, hexrgb('#FF8866AA'), 'Slower variant')
+      ImGui.DrawList_AddText(dl, row2_x + 330, row2_y + 30, 0xFF8866AA, 'Slower variant')
 
       ImGui.Dummy(ctx, 0, 100)
 
@@ -222,7 +220,7 @@ Shell.run({
       -- Glitch effect (original bug)
       HatchedFill.draw_glitch(ctx, {
         x = win_x, y = win_y, w = glitch_w, h = glitch_h,
-        color = hexrgb('#FF5555CC'),
+        color = 0xFF5555CC,
         spacing = demo_state.spacing,
         thickness = demo_state.thickness,
         intensity = demo_state.intensity,
@@ -230,13 +228,13 @@ Shell.run({
         show_box = true,
         draw_list = dl,
       })
-      ImGui.DrawList_AddText(dl, win_x + 5, win_y + glitch_h + 5, hexrgb('#FFFFFFAA'), 'GLITCH (original bug math)')
+      ImGui.DrawList_AddText(dl, win_x + 5, win_y + glitch_h + 5, 0xFFFFFFAA, 'GLITCH (original bug math)')
 
       -- Curved effect
       local x2 = win_x + glitch_w + 40
       HatchedFill.draw_curved(ctx, {
         x = x2, y = win_y, w = glitch_w, h = glitch_h,
-        color = hexrgb('#55FF55CC'),
+        color = 0x55FF55CC,
         spacing = demo_state.spacing,
         thickness = demo_state.thickness,
         curve_factor = demo_state.intensity,
@@ -244,14 +242,14 @@ Shell.run({
         direction = 'both',
         draw_list = dl,
       })
-      ImGui.DrawList_AddRect(dl, x2, win_y, x2 + glitch_w, win_y + glitch_h, hexrgb('#55FF5560'), 0, 0, 1)
-      ImGui.DrawList_AddText(dl, x2 + 5, win_y + glitch_h + 5, hexrgb('#FFFFFFAA'), 'CURVED (exponential)')
+      ImGui.DrawList_AddRect(dl, x2, win_y, x2 + glitch_w, win_y + glitch_h, 0x55FF5560, 0, 0, 1)
+      ImGui.DrawList_AddText(dl, x2 + 5, win_y + glitch_h + 5, 0xFFFFFFAA, 'CURVED (exponential)')
 
       -- Corner radial preview
       local x3 = x2 + glitch_w + 40
       HatchedFill.draw_corner_radial(ctx, {
         x = x3, y = win_y, w = glitch_w, h = glitch_h,
-        color = hexrgb('#5555FFCC'),
+        color = 0x5555FFCC,
         spacing = demo_state.spacing,
         thickness = demo_state.thickness,
         corner = 'bottom_right',
@@ -259,8 +257,8 @@ Shell.run({
         intensity = demo_state.intensity,
         draw_list = dl,
       })
-      ImGui.DrawList_AddRect(dl, x3, win_y, x3 + glitch_w, win_y + glitch_h, hexrgb('#5555FF60'), 0, 0, 1)
-      ImGui.DrawList_AddText(dl, x3 + 5, win_y + glitch_h + 5, hexrgb('#FFFFFFAA'), 'CORNER RADIAL')
+      ImGui.DrawList_AddRect(dl, x3, win_y, x3 + glitch_w, win_y + glitch_h, 0x5555FF60, 0, 0, 1)
+      ImGui.DrawList_AddText(dl, x3 + 5, win_y + glitch_h + 5, 0xFFFFFFAA, 'CORNER RADIAL')
 
       ImGui.Dummy(ctx, 0, glitch_h + 40)
     end

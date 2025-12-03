@@ -5,7 +5,7 @@
 -- ============================================================================
 -- COLOR FORMAT REFERENCE
 -- ============================================================================
--- ARKITEKT internal:        0xRRGGBBAA (use Hexrgb() to parse strings)
+-- ARKITEKT internal:        0xRRGGBBAA (use hex() to parse strings)
 -- ImGui ColorEdit4/Picker4: 0xRRGGBBAA (direct, no conversion needed)
 -- ImGui ColorEdit3/Picker3: 0xAARRGGBB (use RgbaToArgb / ArgbToRgba)
 -- REAPER native:            platform-specific (use RgbaToReaperNative)
@@ -18,24 +18,54 @@ local min = math.min
 local M = {}
 
 -- ============================================================================
--- SECTION 0: Hex String Conversion
+-- SECTION 0: Hex String Conversion (Memoized)
 -- ============================================================================
 
--- Convert hex string to 0xRRGGBBAA format
--- Accepts #RRGGBB, #RRGGBBAA, RRGGBB, or RRGGBBAA
-function M.Hexrgb(hex_string)
-  if hex_string:sub(1, 1) == '#' then
-    hex_string = hex_string:sub(2)
+-- Cache for parsed hex colors (auto-populated, never cleared)
+local hex_cache = {}
+
+--- Convert hex string to 0xRRGGBBAA format (memoized)
+--- Accepts #RRGGBB, #RRGGBBAA, RRGGBB, or RRGGBBAA
+--- Results are cached internally - safe to call repeatedly with no performance cost.
+--- @param hex_string string Hex color string
+--- @param opacity number|nil Optional opacity (0.0-1.0). Overrides alpha in hex string.
+--- @return number Color in 0xRRGGBBAA format
+function M.hex(hex_string, opacity)
+  -- Fast path: no opacity override, use cache
+  if not opacity then
+    local cached = hex_cache[hex_string]
+    if cached then return cached end
   end
 
-  local hex = tonumber(hex_string, 16)
-  if not hex then return 0xFFFFFFFF end
+  local s = hex_string
+  if s:sub(1, 1) == '#' then
+    s = s:sub(2)
+  end
 
-  if #hex_string == 8 then
-    return hex
+  local hex = tonumber(s, 16)
+  if not hex then
+    if not opacity then
+      hex_cache[hex_string] = 0xFFFFFFFF
+    end
+    return 0xFFFFFFFF
+  end
+
+  local result
+  if #s == 8 then
+    result = hex
   else
-    return (hex << 8) | 0xFF
+    result = (hex << 8) | 0xFF  -- Auto-opaque
   end
+
+  -- Apply opacity override if provided
+  if opacity then
+    local alpha_byte = ((opacity * 255) + 0.5) // 1
+    alpha_byte = max(0, min(255, alpha_byte))
+    return (result & 0xFFFFFF00) | alpha_byte
+  end
+
+  hex_cache[hex_string] = result
+  return result
 end
 
 -- Convert 0xRRGGBBAA color to hex string '#RRGGBB' (without alpha)
@@ -53,24 +83,6 @@ function M.ToHexrgba(color)
   local b = (color >> 8) & 0xFF
   local a = color & 0xFF
   return string.format('#%02X%02X%02X%02X', r, g, b, a)
-end
-
--- Convert hex string or color to 0xRRGGBBAA format with specified alpha
--- If first param is a string, converts from hex. If number, uses as-is.
--- Alpha is a float 0.0-1.0 that gets converted to 0-255 range
-function M.Hexrgba(hex_or_color, alpha)
-  local color
-  if type(hex_or_color) == 'string' then
-    color = M.Hexrgb(hex_or_color)
-  else
-    color = hex_or_color or 0xFFFFFFFF
-  end
-
-  -- Convert alpha from 0.0-1.0 to 0-255 range
-  local alpha_byte = ((alpha or 1.0) * 255 + 0.5) // 1
-  alpha_byte = math.max(0, math.min(255, alpha_byte))
-
-  return M.WithAlpha(color, alpha_byte)
 end
 
 -- ============================================================================
@@ -125,13 +137,6 @@ function M.WithOpacity(color, opacity_float)
   return (color & 0xFFFFFF00) | M.Opacity(opacity_float)
 end
 
---- Convert byte alpha (0-255) to float opacity (0.0-1.0)
---- @param byte number Byte alpha value
---- @return number Float opacity value
-function M.ToOpacity(byte)
-  return (byte or 255) / 255
-end
-
 --- Get alpha component of a color as float opacity (0.0-1.0)
 --- @param color number RGBA color
 --- @return number Float opacity value
@@ -165,10 +170,6 @@ function M.Luminance(color)
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255
 end
 
-function M.LerpComponent(a, b, t)
-  return (a + (b - a) * t + 0.5)//1
-end
-
 --- Interpolate between two colors
 --- PERFORMANCE: Fully inlined version eliminates function call overhead
 --- @param color_a number First color (RGBA)
@@ -200,37 +201,12 @@ end
 
 function M.AutoTextColor(bg_color)
   local lum = M.Luminance(bg_color)
-  return lum > 0.5 and M.Hexrgb('#000000') or M.Hexrgb('#FFFFFF')
+  return lum > 0.5 and 0x000000FF or 0xFFFFFFFF
 end
 
 -- ============================================================================
 -- SECTION 1.5: Color Space Conversions
 -- ============================================================================
-
-function M.RgbToReaper(rgb_color)
-  local rgb_hex
-
-  if type(rgb_color) == 'string' then
-    rgb_hex = tonumber(rgb_color, 16)
-  else
-    rgb_hex = rgb_color
-  end
-
-  local r, g, b, a
-
-  if rgb_hex > 0xFFFFFF then
-    r = (rgb_hex >> 24) & 0xFF
-    g = (rgb_hex >> 16) & 0xFF
-    b = (rgb_hex >> 8) & 0xFF
-    a = rgb_hex & 0xFF
-    return (b << 24) | (g << 16) | (r << 8) | a
-  else
-    r = (rgb_hex >> 16) & 0xFF
-    g = (rgb_hex >> 8) & 0xFF
-    b = rgb_hex & 0xFF
-    return (b << 16) | (g << 8) | r | 0xFF000000
-  end
-end
 
 --- Convert RGBA color to REAPER native format with custom color flag
 --- REAPER native format is BGR (not RGB) with 0x1000000 custom color flag
@@ -625,7 +601,7 @@ end
 
 function M.DeriveMarchingAnts(base_color, opts)
   if not base_color or base_color == 0 then
-    return M.Hexrgb('#42E896')
+    return 0x42E896FF
   end
 
   opts = opts or {}
@@ -636,7 +612,7 @@ function M.DeriveMarchingAnts(base_color, opts)
   local max_ch = max(r, g, b)
 
   if max_ch == 0 then
-    return M.Hexrgb('#42E896')
+    return 0x42E896FF
   end
 
   local boost = 255 / max_ch
@@ -728,58 +704,15 @@ function M.DerivePaletteAdaptive(base_color, preset)
 end
 
 -- ============================================================================
--- SECTION 6: Legacy Compatibility Functions
+-- SECTION 6: Hue-Preserving Helpers (for tile text)
 -- ============================================================================
 
-function M.GenerateBorder(base_color, desaturate_amt, brightness_factor)
-  return M.DeriveBorder(base_color, {
-    mode = 'muted',
-    desaturate = desaturate_amt or 0.3,
-    brightness = brightness_factor or 0.6,
-  })
-end
-
-function M.GenerateHover(base_color, brightness_factor)
-  return M.DeriveHover(base_color, { brightness = brightness_factor or 1.3 })
-end
-
-function M.GenerateActiveBorder(base_color, saturation_boost, brightness_boost)
-  return M.DeriveBorder(base_color, {
-    mode = 'intensify',
-    saturation = saturation_boost or 0.8,
-    brightness = brightness_boost or 1.4,
-  })
-end
-
-function M.GenerateSelectionColor(base_color, brightness_boost, saturation_boost)
-  return M.DeriveSelection(base_color, {
-    brightness = brightness_boost or 1.6,
-    saturation = saturation_boost or 0.5,
-  })
-end
-
-function M.GenerateMarchingAntsColor(base_color, brightness_factor, saturation_factor)
-  return M.DeriveMarchingAnts(base_color, {
-    brightness = brightness_factor or 1.5,
-    saturation = saturation_factor or 0.5,
-  })
-end
-
-function M.AutoPalette(base_color)
-  return M.DerivePalette(base_color)
-end
-
-function M.FlashyPalette(base_color)
-  return M.DerivePalette(base_color, {
-    fill = { desaturate = 0.5, brightness = 0.45, alpha = 0xCC },
-    border = { mode = 'normalize', pullback = 0.95 },
-  })
-end
-
--- ============================================================================
--- SECTION 7: Hue-Preserving Helpers (for tile text)
--- ============================================================================
-
+--- Adjust saturation and value while preserving hue (HSV-based)
+--- @param col number Color in RGBA format
+--- @param s_mult number Saturation multiplier (1.0 = unchanged)
+--- @param v_mult number Value/brightness multiplier (1.0 = unchanged)
+--- @param new_a number|nil New alpha byte (nil = keep original)
+--- @return number Adjusted color in RGBA format
 function M.SameHueVariant(col, s_mult, v_mult, new_a)
   local r = (col >> 24) & 0xFF
   local g = (col >> 16) & 0xFF
@@ -790,17 +723,6 @@ function M.SameHueVariant(col, s_mult, v_mult, new_a)
   v = max(0, min(1, v * (v_mult or 1)))
   local rr, gg, bb = _hsv_to_rgb(h, s, v)
   return (rr << 24) | (gg << 16) | (bb << 8) | (new_a or a)
-end
-
-function M.TileTextColors(base_color)
-  local accent = M.SameHueVariant(base_color, 1.25, 1.15, 0xFF)
-  local name = M.Hexrgb('#DDE3E9')
-  return accent, name
-end
-
-function M.TileMetaColor(name_color, alpha)
-  alpha = alpha or 0xBB
-  return M.WithAlpha(name_color, alpha)
 end
 
 return M

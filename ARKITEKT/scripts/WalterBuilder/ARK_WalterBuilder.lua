@@ -24,8 +24,6 @@ local State = require('WalterBuilder.app.state')
 local Controller = require('WalterBuilder.core.controller')
 local GUI = require('WalterBuilder.ui.gui')
 
-local hexrgb = Ark.Colors.Hexrgb
-
 -- ============================================================================
 -- INITIALIZE SETTINGS AND STATE
 -- ============================================================================
@@ -55,7 +53,7 @@ Shell.run({
   settings     = settings,
   initial_pos  = { x = 60, y = 60 },
   initial_size = { w = 1200, h = 700 },
-  icon_color   = hexrgb('#FF6B35'),  -- Orange for WALTER
+  icon_color   = 0xFF6B35FF,  -- Orange for WALTER
   icon_size    = 18,
   min_size     = { w = 900, h = 500 },
   content_padding = 8,

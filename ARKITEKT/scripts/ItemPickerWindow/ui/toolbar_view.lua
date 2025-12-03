@@ -45,7 +45,7 @@ function ToolbarView:draw(ctx, shell_state)
   local draw_list = ImGui.GetWindowDrawList(ctx)
 
   -- Draw toolbar background
-  local bg_color = Ark.Colors.Hexrgb('#1A1A1AFF')
+  local bg_color = 0x1A1A1AFF
   ImGui.DrawList_AddRectFilled(draw_list, start_x, start_y, start_x + avail_w, start_y + toolbar_height, bg_color, 0)
 
   -- Sort modes
@@ -86,7 +86,7 @@ function ToolbarView:draw(ctx, shell_state)
   local layout_x = search_x - layout_button_width - button_gap
 
   -- Draw layout toggle button
-  local icon_color = Ark.Colors.Hexrgb('#AAAAAA')
+  local icon_color = 0xAAAAAAFF
   local draw_layout_icon = function(btn_draw_list, icon_x, icon_y)
     local icon_size = 14
     local gap = 2
@@ -145,7 +145,7 @@ function ToolbarView:draw(ctx, shell_state)
   -- Draw 'Sorting:' label
   local sort_label = 'Sort:'
   local sort_label_width = ImGui.CalcTextSize(ctx, sort_label)
-  local sort_label_color = Ark.Colors.WithAlpha(Ark.Colors.Hexrgb('#AAAAAA'), 200)
+  local sort_label_color = Ark.Colors.WithAlpha(0xAAAAAAFF, 200)
   ImGui.DrawList_AddText(draw_list, sort_x, search_y + 6, sort_label_color, sort_label)
 
   sort_x = sort_x + sort_label_width + 8

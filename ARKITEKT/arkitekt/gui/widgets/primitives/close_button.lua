@@ -8,8 +8,6 @@ local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
 
 local M = {}
-local hexrgb = Colors.Hexrgb
-
 -- ============================================================================
 -- DEFAULTS
 -- ============================================================================
@@ -145,10 +143,10 @@ local function render_close_button(ctx, config, instance)
   local hover_alpha = instance.hover_alpha:value()
 
   -- Get colors with defaults
-  local bg_color = config.bg_color or hexrgb('#000000')
-  local icon_color = config.icon_color or hexrgb('#FFFFFF')
-  local hover_color = config.hover_color or hexrgb('#FF4444')
-  local active_color = config.active_color or hexrgb('#FF0000')
+  local bg_color = config.bg_color or 0x000000FF
+  local icon_color = config.icon_color or 0xFFFFFFFF
+  local hover_color = config.hover_color or 0xFF4444FF
+  local active_color = config.active_color or 0xFF0000FF
 
   -- Calculate final colors
   local bg_opacity = config.bg_opacity + (config.bg_opacity_hover - config.bg_opacity) * hover_alpha
@@ -232,15 +230,15 @@ function M.new(opts)
     margin = opts.margin or DEFAULTS.margin,
     proximity_distance = opts.proximity_distance or DEFAULTS.proximity_distance,
 
-    bg_color = opts.bg_color or hexrgb('#000000'),
+    bg_color = opts.bg_color or 0x000000FF,
     bg_opacity = opts.bg_opacity or DEFAULTS.bg_opacity,
     bg_opacity_hover = opts.bg_opacity_hover or DEFAULTS.bg_opacity_hover,
 
-    icon_color = opts.icon_color or hexrgb('#FFFFFF'),
+    icon_color = opts.icon_color or 0xFFFFFFFF,
     icon_opacity = opts.icon_opacity or DEFAULTS.icon_opacity,
 
-    hover_color = opts.hover_color or hexrgb('#FF4444'),
-    active_color = opts.active_color or hexrgb('#FF0000'),
+    hover_color = opts.hover_color or 0xFF4444FF,
+    active_color = opts.active_color or 0xFF0000FF,
 
     alpha = create_alpha_tracker(12.0),
     hover_alpha = create_alpha_tracker(16.0),

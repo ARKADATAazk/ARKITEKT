@@ -6,8 +6,6 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local PackageTilesGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
 local PackageManager = require('ThemeAdjuster.data.packages.manager')
-local hexrgb = Ark.Colors.Hexrgb
-
 local M = {}
 local PackagesView = {}
 PackagesView.__index = PackagesView
@@ -179,7 +177,7 @@ function PackagesView:draw_header_content(ctx)
     self.package_model.tile = new_size
   end
   ImGui.SameLine(ctx)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb('#FFFFFF'))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFFFFFFF)
   ImGui.Text(ctx, string.format('%dpx', tile_size))
   ImGui.PopStyleColor(ctx)
 
