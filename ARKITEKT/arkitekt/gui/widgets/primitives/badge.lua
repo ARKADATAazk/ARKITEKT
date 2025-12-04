@@ -4,6 +4,7 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
+local Theme = require('arkitekt.theme')
 local Base = require('arkitekt.gui.widgets.base')
 
 local M = {}
@@ -18,11 +19,11 @@ local DEFAULTS = {
   size = 18,
   text = '',
   icon = nil,
-  base_color = 0x555555FF,
+  base_color = nil,    -- Theme.COLORS.BORDER_FOCUS
   alpha = 255,
-  bg_color = 0x14181CFF,
-  text_color = 0xFFFFFFDD,
-  icon_color = 0xFFFFFFFF,
+  bg_color = nil,      -- Theme.COLORS.BADGE_BG
+  text_color = nil,    -- Theme.COLORS.BADGE_TEXT
+  icon_color = nil,    -- Theme.COLORS.TEXT_BRIGHT
   padding_x = 5,
   padding_y = 1,
   rounding = 3,
@@ -53,6 +54,13 @@ function M.Text(ctx_or_dl, opts_or_x, y, text, text_w, text_h, cfg)
     -- Opts mode (flexible, allocates)
     local ctx, opts = ctx_or_dl, opts_or_x
     opts = Base.parse_opts(opts, DEFAULTS)
+
+    -- Resolve colors from Theme (at runtime)
+    local C = Theme.COLORS
+    opts.base_color = opts.base_color or C.BORDER_FOCUS
+    opts.bg_color = opts.bg_color or C.BADGE_BG
+    opts.text_color = opts.text_color or C.BADGE_TEXT
+    opts.icon_color = opts.icon_color or C.TEXT_BRIGHT
 
     local dl = Base.get_draw_list(ctx, opts)
     local x, y = opts.x, opts.y
@@ -103,57 +111,105 @@ function M.Text(ctx_or_dl, opts_or_x, y, text, text_w, text_h, cfg)
   end
 end
 
-function M.Icon(ctx, opts)
-  opts = Base.parse_opts(opts, DEFAULTS)
+--- Draw an icon badge
+--- Supports two calling conventions:
+---   Opts mode:       Badge.Icon(ctx, { x=x, y=y, icon=icon, ... })
+---   Positional mode: Badge.Icon(dl, x, y, icon_char, icon_w, icon_h, size, cfg)
+--- Positional mode is zero-allocation for hot paths (tiles, grids)
+--- @overload fun(ctx: userdata, opts: table): table
+--- @overload fun(dl: userdata, x: number, y: number, icon_char: string, icon_w: number, icon_h: number, size: number, cfg: table): number, number, number, number
+function M.Icon(ctx_or_dl, opts_or_x, y, icon_char, icon_w, icon_h, size, cfg)
+  -- Detect calling convention: opts mode if second arg is table
+  if type(opts_or_x) == 'table' then
+    -- Opts mode (flexible, allocates)
+    local ctx, opts = ctx_or_dl, opts_or_x
+    opts = Base.parse_opts(opts, DEFAULTS)
 
-  local dl = Base.get_draw_list(ctx, opts)
-  local x, y = opts.x, opts.y
-  local size = opts.size or 18
-  local icon_char = opts.icon or ''
-  local alpha = opts.alpha or 255
-  local x2, y2 = x + size, y + size
+    -- Resolve colors from Theme (at runtime)
+    local C = Theme.COLORS
+    opts.base_color = opts.base_color or C.BORDER_FOCUS
+    opts.bg_color = opts.bg_color or C.BADGE_BG
+    opts.icon_color = opts.icon_color or C.TEXT_BRIGHT
 
-  -- Background
-  local bg_alpha = math.floor((opts.bg_color & 0xFF) * (alpha / 255))
-  local bg = (opts.bg_color & 0xFFFFFF00) | bg_alpha
-  ImGui.DrawList_AddRectFilled(dl, x, y, x2, y2, bg, opts.rounding)
+    local dl = Base.get_draw_list(ctx, opts)
+    local x, y = opts.x, opts.y
+    local badge_size = opts.size or 18
+    local badge_icon = opts.icon or ''
+    local alpha = opts.alpha or 255
+    local x2, y2 = x + badge_size, y + badge_size
 
-  -- Border
-  local border = Colors.AdjustBrightness(opts.base_color, opts.border_darken)
-  border = Colors.WithAlpha(border, opts.border_alpha)
-  ImGui.DrawList_AddRect(dl, x, y, x2, y2, border, opts.rounding, 0, 0.5)
+    -- Background
+    local bg_alpha = math.floor((opts.bg_color & 0xFF) * (alpha / 255))
+    local bg = (opts.bg_color & 0xFFFFFF00) | bg_alpha
+    ImGui.DrawList_AddRectFilled(dl, x, y, x2, y2, bg, opts.rounding)
 
-  -- Icon
-  if opts.icon_font then
-    ImGui.PushFont(ctx, opts.icon_font, opts.icon_font_size or 14)
+    -- Border
+    local border = Colors.AdjustBrightness(opts.base_color, opts.border_darken)
+    border = Colors.WithAlpha(border, opts.border_alpha)
+    ImGui.DrawList_AddRect(dl, x, y, x2, y2, border, opts.rounding, 0, 0.5)
+
+    -- Icon
+    if opts.icon_font then
+      ImGui.PushFont(ctx, opts.icon_font, opts.icon_font_size or 14)
+    end
+
+    local icon_color = Colors.WithAlpha(opts.icon_color, alpha)
+    local iw, ih = ImGui.CalcTextSize(ctx, badge_icon)
+    ImGui.DrawList_AddText(dl, x + (badge_size - iw) / 2, y + (badge_size - ih) / 2, icon_color, badge_icon)
+
+    if opts.icon_font then
+      ImGui.PopFont(ctx)
+    end
+
+    return Base.create_result({ x1 = x, y1 = y, x2 = x2, y2 = y2, width = badge_size, height = badge_size })
+  else
+    -- Positional mode (fast, zero allocation)
+    -- Args: dl, x, y, icon_char, icon_w, icon_h, size, cfg
+    -- cfg should have: bg_color, border, icon_color, rounding (all pre-computed with alpha)
+    local dl, x = ctx_or_dl, opts_or_x
+    local x2, y2 = x + size, y + size
+
+    -- Background (cfg.bg_color already includes alpha)
+    ImGui.DrawList_AddRectFilled(dl, x, y, x2, y2, cfg.bg_color, cfg.rounding)
+
+    -- Border (pre-computed in cfg)
+    ImGui.DrawList_AddRect(dl, x, y, x2, y2, cfg.border, cfg.rounding, 0, 0.5)
+
+    -- Icon (centered)
+    local icon_x = x + (size - icon_w) / 2
+    local icon_y = y + (size - icon_h) / 2
+    ImGui.DrawList_AddText(dl, icon_x, icon_y, cfg.icon_color, icon_char)
+
+    -- Return raw coords (no table allocation)
+    return x, y, x2, y2
   end
-
-  local icon_color = Colors.WithAlpha(opts.icon_color, alpha)
-  local icon_w, icon_h = ImGui.CalcTextSize(ctx, icon_char)
-  ImGui.DrawList_AddText(dl, x + (size - icon_w) / 2, y + (size - icon_h) / 2, icon_color, icon_char)
-
-  if opts.icon_font then
-    ImGui.PopFont(ctx)
-  end
-
-  return Base.create_result({ x1 = x, y1 = y, x2 = x2, y2 = y2, width = size, height = size })
 end
 
 function M.Clickable(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
+  -- Check disabled state (opts or stack)
+  local actx = Base.get_context(ctx)
+  local is_disabled = opts.is_disabled or actx:is_disabled()
+
   local result = M.Text(ctx, opts)
 
-  local unique_id = opts.id or 'badge'
-  ImGui.SetCursorScreenPos(ctx, result.x1, result.y1)
-  ImGui.InvisibleButton(ctx, '##badge_' .. unique_id, result.width, result.height)
+  local left_clicked = false
+  local right_clicked = false
 
-  local left_clicked = ImGui.IsItemClicked(ctx, 0)
-  local right_clicked = ImGui.IsItemClicked(ctx, 1)
+  -- Only handle interaction when not disabled
+  if not is_disabled then
+    local unique_id = opts.id or 'badge'
+    ImGui.SetCursorScreenPos(ctx, result.x1, result.y1)
+    ImGui.InvisibleButton(ctx, '##badge_' .. unique_id, result.width, result.height)
 
-  if opts.on_click then
-    if left_clicked then opts.on_click(1)
-    elseif right_clicked then opts.on_click(-1)
+    left_clicked = ImGui.IsItemClicked(ctx, 0)
+    right_clicked = ImGui.IsItemClicked(ctx, 1)
+
+    if opts.on_click then
+      if left_clicked then opts.on_click(1)
+      elseif right_clicked then opts.on_click(-1)
+      end
     end
   end
 

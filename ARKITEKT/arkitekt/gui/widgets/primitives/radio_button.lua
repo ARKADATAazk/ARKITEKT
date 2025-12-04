@@ -147,16 +147,17 @@ function M.Draw(ctx, label_or_opts, active)
   local center_y = y + outer_radius
 
   -- Determine colors
+  local C = Theme.COLORS
   local bg_color, inner_color, selected_color, text_color, border_inner, border_outer
-  local white_overlay = 0xFFFFFFFF
+  local white_overlay = C.TEXT_BRIGHT
 
   -- Base colors
-  bg_color = opts.bg_color or Theme.COLORS.BG_BASE
-  inner_color = Colors.AdjustBrightness(opts.inner_color or Theme.COLORS.BG_BASE, 0.85)
-  selected_color = opts.selected_color or 0x7E7E7EFF
-  text_color = opts.text_color or Theme.COLORS.TEXT_NORMAL
-  border_inner = opts.border_inner_color or Theme.COLORS.BORDER_INNER
-  border_outer = opts.border_outer_color or Theme.COLORS.BORDER_OUTER
+  bg_color = opts.bg_color or C.BG_BASE
+  inner_color = Colors.AdjustBrightness(opts.inner_color or C.BG_BASE, 0.85)
+  selected_color = opts.selected_color or C.TEXT_DARK
+  text_color = opts.text_color or C.TEXT_NORMAL
+  border_inner = opts.border_inner_color or C.BORDER_INNER
+  border_outer = opts.border_outer_color or C.BORDER_OUTER
 
   if disabled then
     bg_color = Colors.WithOpacity(Colors.Desaturate(bg_color, 0.5), 0.5)

@@ -104,8 +104,9 @@ local slider_locks = {}  -- Prevents double-click interference with drag
 -- ============================================================================
 
 local function render_slider_background(dl, x, y, w, h, config, gradient_fn)
-  local bg_color = config.bg_color or 0x1A1A1AFF
-  local border_color = config.border_color or 0x000000FF
+  local C = Theme.COLORS
+  local bg_color = config.bg_color or C.BG_PANEL
+  local border_color = config.border_color or C.BORDER_OUTER
 
   -- Background
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, bg_color, config.rounding or 0)
@@ -120,32 +121,33 @@ local function render_slider_background(dl, x, y, w, h, config, gradient_fn)
 end
 
 local function render_grab(dl, gx, y, h, grab_w, active, hovered, disabled, config)
+  local C = Theme.COLORS
   local x_left = Base.snap_pixel(gx - grab_w / 2)
   local x_right = Base.snap_pixel(gx + grab_w / 2)
 
   -- Determine grab color
   local grab_color
   if disabled then
-    grab_color = Colors.WithOpacity(Colors.Desaturate(config.grab_color or 0x383C45FF, 0.5), 0.5)
+    grab_color = Colors.WithOpacity(Colors.Desaturate(config.grab_color or C.BG_BASE, 0.5), 0.5)
   elseif active then
-    grab_color = config.grab_active_color or 0x585C65FF
+    grab_color = config.grab_active_color or C.BG_ACTIVE
   elseif hovered then
-    grab_color = config.grab_hover_color or 0x484C55FF
+    grab_color = config.grab_hover_color or C.BG_HOVER
   else
-    grab_color = config.grab_color or 0x383C45FF
+    grab_color = config.grab_color or C.BG_BASE
   end
 
   -- Shadow
   if not disabled then
     ImGui.DrawList_AddRectFilled(dl, x_left + 1, y + 1, x_right + 1, y + h + 1,
-      0x00000050, 0)
+      Colors.WithAlpha(C.BORDER_OUTER, 0x50), 0)
   end
 
   -- Grab body
   ImGui.DrawList_AddRectFilled(dl, x_left, y, x_right, y + h, grab_color, 0)
 
   -- Border
-  ImGui.DrawList_AddRect(dl, x_left, y, x_right, y + h, 0x000000FF, 0, 0, 1)
+  ImGui.DrawList_AddRect(dl, x_left, y, x_right, y + h, C.BORDER_OUTER, 0, 0, 1)
 end
 
 -- ============================================================================

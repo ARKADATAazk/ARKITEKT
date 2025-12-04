@@ -19,11 +19,11 @@ local DEFAULTS = {
   height = 120,
   text = '',
   placeholder = 'Double-click to edit...',
-  view_bg_color = 0x0D0D0DFF,
-  edit_bg_color = 0x1A1A1AFF,
-  edit_border_color = 0x4A9EFFFF,
-  text_color = 0xFFFFFFFF,
-  placeholder_color = 0x666666FF,
+  view_bg_color = nil,       -- Theme.COLORS.BG_CHROME
+  edit_bg_color = nil,       -- Theme.COLORS.BG_PANEL
+  edit_border_color = nil,   -- Theme.COLORS.ACCENT_PRIMARY
+  text_color = nil,          -- Theme.COLORS.TEXT_BRIGHT
+  placeholder_color = nil,   -- Theme.COLORS.TEXT_DARK
   rounding = 4,
   padding = 8,
 }
@@ -85,8 +85,26 @@ end
 function M.Draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
+  -- Resolve colors from Theme (at runtime, not module load)
+  local C = Theme.COLORS
+  opts.view_bg_color = opts.view_bg_color or C.BG_CHROME
+  opts.edit_bg_color = opts.edit_bg_color or C.BG_PANEL
+  opts.edit_border_color = opts.edit_border_color or C.ACCENT_PRIMARY
+  opts.text_color = opts.text_color or C.TEXT_BRIGHT
+  opts.placeholder_color = opts.placeholder_color or C.TEXT_DARK
+
+  -- Check disabled state (opts or stack)
+  local actx = Base.get_context(ctx)
+  local is_disabled = opts.is_disabled or actx:is_disabled()
+
   local unique_id = Base.resolve_id(ctx, opts, 'markdown_field')
   local state = Base.get_or_create_instance(instances, unique_id, create_instance, ctx)
+
+  -- Exit edit mode if disabled while editing
+  if is_disabled and state.editing then
+    state.editing = false
+    state.focus_set = false
+  end
 
   -- Sync external text changes
   if opts.text ~= state.text and not state.editing then
@@ -105,7 +123,7 @@ function M.Draw(ctx, opts)
 
   if state.editing then
     -- Edit mode
-    local dl = Base.get_context(ctx):draw_list()
+    local dl = actx:draw_list()
     ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + width, cursor_y + height, opts.edit_bg_color, rounding)
     ImGui.DrawList_AddRect(dl, cursor_x, cursor_y, cursor_x + width, cursor_y + height, opts.edit_border_color, rounding, 0, 1.5)
 
@@ -116,10 +134,10 @@ function M.Draw(ctx, opts)
       state.focus_set = true
     end
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0x00000000)
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0x00000000)
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0x00000000)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x00000000)
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, C.BG_TRANSPARENT)
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, C.BG_TRANSPARENT)
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, C.BG_TRANSPARENT)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Border, C.BG_TRANSPARENT)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, opts.text_color)
 
     local input_changed, input_text = ImGui.InputTextMultiline(ctx, '##edit_' .. unique_id, state.text,
@@ -173,7 +191,7 @@ function M.Draw(ctx, opts)
     state.hover_alpha = math.max(0.0, math.min(1.0, state.hover_alpha))
 
     if state.hover_alpha > 0.01 then
-      local dl = Base.get_context(ctx):draw_list()
+      local dl = actx:draw_list()
       local hover_bg = Colors.WithOpacity(opts.view_bg_color, state.hover_alpha * 0.19)
       ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + width, cursor_y + height, hover_bg, rounding)
     end
@@ -195,7 +213,7 @@ function M.Draw(ctx, opts)
       renderer:render(ctx)
     end
 
-    if is_hovered and ImGui.IsMouseDoubleClicked(ctx, ImGui.MouseButton_Left) then
+    if is_hovered and not is_disabled and ImGui.IsMouseDoubleClicked(ctx, ImGui.MouseButton_Left) then
       state.editing = true
       state.focus_set = false
     end

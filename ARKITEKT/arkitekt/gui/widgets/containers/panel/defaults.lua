@@ -23,7 +23,6 @@ M.DEFAULTS = {
 
   scroll = {
     flags = 0,
-    custom_scrollbar = false,
     -- bg_color: Dynamically reads from Theme.COLORS.BG_TRANSPARENT
   },
 
