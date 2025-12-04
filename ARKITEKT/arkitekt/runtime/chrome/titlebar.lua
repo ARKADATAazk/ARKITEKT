@@ -159,7 +159,9 @@ function M.new(opts)
         self.icon_image = Icon.load_image(ctx, 'ARKITEKT', dpi)
       end
       if self.icon_image then
-        local success = Icon.draw_png(ctx, x, y, self.icon_size, self.icon_image)
+        -- Use theme-aware tint: white on dark theme, black on light theme
+        local png_tint = ThemeManager and ThemeManager.COLORS and ThemeManager.COLORS.TEXT_BRIGHT or 0xFFFFFFFF
+        local success = Icon.draw_png(ctx, x, y, self.icon_size, self.icon_image, png_tint)
         if success then
           return
         else

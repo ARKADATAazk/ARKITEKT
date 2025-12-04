@@ -139,7 +139,8 @@ function M.load_image(ctx, base_name, dpi_scale)
 end
 
 -- Draw PNG icon at native size (22×22 logical pixels)
-function M.draw_png(ctx, x, y, size, image_data)
+-- tint: optional color tint (default: 0xFFFFFFFF white = full color)
+function M.draw_png(ctx, x, y, size, image_data, tint)
   if not image_data or not image_data.image then return false end
 
   -- Validate image pointer before using it
@@ -162,14 +163,14 @@ function M.draw_png(ctx, x, y, size, image_data)
   -- Render at native 22×22 size (no DPI scaling - we use DPI-appropriate variants instead)
   local native_size = 22
 
-  -- Draw the image
+  -- Draw the image with optional tint (default white = full color)
   ImGui.DrawList_AddImage(
     draw_list,
     image_data.image,
     x, y,
     x + native_size, y + native_size,
     0, 0, 1, 1,  -- UV coordinates
-    0xFFFFFFFF   -- White tint (full color)
+    tint or 0xFFFFFFFF
   )
 
   return true

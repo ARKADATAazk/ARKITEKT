@@ -3,6 +3,7 @@
 -- Manages timed status messages with automatic timeouts
 -- Integrates with arkitekt/runtime/chrome/status_bar.lua via get_status() callback
 
+local Theme = require('arkitekt.theme')
 local M = {}
 
 -- ============================================================================
@@ -17,13 +18,30 @@ M.TYPE = {
   ERROR = 'error',
 }
 
--- Default colors by message type
+-- Default colors by message type (fallbacks if Theme.COLORS unavailable)
 M.DEFAULT_COLORS = {
   info = 0xCCCCCCFF,
   success = 0x41E0A3FF,
   warning = 0xE0B341FF,
   error = 0xE04141FF,
 }
+
+-- Get theme-aware color for message type (called each frame for live theme updates)
+local function get_theme_color(msg_type)
+  local C = Theme.COLORS
+  if not C then return M.DEFAULT_COLORS[msg_type] end
+
+  if msg_type == 'info' then
+    return C.TEXT_DIMMED or M.DEFAULT_COLORS.info
+  elseif msg_type == 'success' then
+    return C.ACCENT_SUCCESS or M.DEFAULT_COLORS.success
+  elseif msg_type == 'warning' then
+    return C.ACCENT_WARNING or M.DEFAULT_COLORS.warning
+  elseif msg_type == 'error' then
+    return C.ACCENT_DANGER or M.DEFAULT_COLORS.error
+  end
+  return M.DEFAULT_COLORS.info
+end
 
 -- Default timeouts (seconds) by message type
 M.DEFAULT_TIMEOUTS = {
@@ -61,9 +79,11 @@ function M.new(opts)
     self.timeouts[type_name] = (opts.timeouts and opts.timeouts[type_name]) or default_timeout
   end
 
-  -- Merge colors with defaults
-  for type_name, default_color in pairs(M.DEFAULT_COLORS) do
-    self.colors[type_name] = (opts.colors and opts.colors[type_name]) or default_color
+  -- Store only custom color overrides (theme colors used as fallback)
+  if opts.colors then
+    for type_name, color in pairs(opts.colors) do
+      self.colors[type_name] = color
+    end
   end
 
   --- Show a status message
@@ -119,13 +139,15 @@ function M.new(opts)
     return self.current_message ~= nil
   end
 
-  --- Get message color based on current type
+  --- Get message color based on current type (theme-aware, fetched each frame)
+  --- Custom colors passed via opts.colors take priority over theme colors
   --- @return number|nil color The RGBA color for the message, or nil if no message
   function self:get_color()
     if not self.current_type then
       return nil
     end
-    return self.colors[self.current_type] or self.colors[M.TYPE.INFO]
+    -- Custom override takes priority, otherwise use theme-aware color
+    return self.colors[self.current_type] or get_theme_color(self.current_type)
   end
 
   --- Update: Check if message has expired and auto-clear
