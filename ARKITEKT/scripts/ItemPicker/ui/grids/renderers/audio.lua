@@ -110,10 +110,13 @@ local _cached = {
   pool_badges = {},      -- pool_count -> {text, width, height}
   -- PERF: Cycle badge cache (limited set: index/total combos)
   cycle_badges = {},     -- (index * 10000 + total) -> {text, width, height}
+  -- PERF: Region chip caches
+  region_text = {},      -- region_name -> {text_w, text_h}
+  region_colors = {},    -- region_color -> adjusted_color (ensure_min_lightness result)
 }
 
 -- PERF: Call once per frame before rendering tiles (avoids per-tile overhead)
-function M.begin_frame(ctx, config)
+function M.begin_frame(ctx, config, state)
   local frame_count = ImGui.GetFrameCount(ctx)
   if _cached.palette_frame ~= frame_count then
     _cached.palette = Palette.get()
@@ -122,6 +125,10 @@ function M.begin_frame(ctx, config)
   -- PERF: Cache config values for render_tile_text (eliminates ~30ms of config lookups)
   if config then
     BaseRenderer.cache_config(config)
+  end
+  -- PERF: Cache state.settings values (eliminates ~40k+ table lookups per frame)
+  if state then
+    BaseRenderer.cache_settings(state)
   end
 end
 
@@ -322,7 +329,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local header_alpha_factor = 1.0 - compact_factor
 
   -- Trigger disable animation if item is being disabled when show_disabled_items = false
-  if disable_animator and item_data.key and is_disabled and not state.settings.show_disabled_items then
+  -- PERF: Use cached settings (BaseRenderer.settings) instead of per-tile state.settings lookup
+  local settings = BaseRenderer.settings
+  if disable_animator and item_data.key and is_disabled and not settings.show_disabled_items then
     if not disable_animator:is_disabling(item_data.key) then
       -- Use animation_color (actual tile appearance before alpha) for matching color
       disable_animator:disable(item_data.key, {scaled_x1, scaled_y1, scaled_x2, scaled_y2}, animation_color)
@@ -330,13 +339,14 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   -- Render base tile fill with rounding
-  DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
+  -- PERF: Use cached cfg.tile_rounding instead of config.TILE.ROUNDING
+  DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, cfg.tile_rounding)
 
   -- Render dark backdrop for disabled items (skip if show_disabled_items = false, animation handles it)
-  if enabled_factor < 0.999 and state.settings.show_disabled_items then
+  if enabled_factor < 0.999 and settings.show_disabled_items then
     local backdrop_alpha = cfg.disabled_backdrop_alpha * (1.0 - enabled_factor) * cascade_factor
     local backdrop_color = with_alpha(cfg.disabled_backdrop_color, backdrop_alpha // 1)
-    DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, backdrop_color, config.TILE.ROUNDING)
+    DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, backdrop_color, cfg.tile_rounding)
   end
 
   -- PROFILER: After base draw
@@ -370,9 +380,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       if waveform then
         if visualization.DisplayWaveformTransparent then
           -- Apply waveform quality multiplier to reduce resolution (better performance with many items)
-          local quality = state.settings.waveform_quality or 0.2
-          local target_width = (content_w * quality) // 1
-          local use_filled = state.settings.waveform_filled
+          -- PERF: Use cached settings instead of per-tile state.settings lookup
+          local target_width = (content_w * settings.waveform_quality) // 1
+          local use_filled = settings.waveform_filled
           if use_filled == nil then use_filled = true end
           visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache, use_filled)
         end
@@ -683,36 +693,35 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- Render region tags (bottom left, only on larger tiles)
   -- Only show region chips if show_region_tags is enabled (regions are already processed if enable_region_processing is true)
-  local show_region_tags = state.settings and state.settings.show_region_tags
-  if show_region_tags and item_data.regions and #item_data.regions > 0 and
-     not is_small_tile and scaled_h >= config.REGION_TAGS.min_tile_height and
+  -- PERF: Use cached config values (cfg.region_*) instead of config.REGION_TAGS lookups
+  -- PERF: Use cached settings instead of per-tile state.settings lookup
+  if settings.show_region_tags and item_data.regions and #item_data.regions > 0 and
+     not is_small_tile and scaled_h >= cfg.region_min_tile_height and
      cascade_factor > 0.5 then
 
-    local chip_cfg = config.REGION_TAGS.chip
+    local chip_cfg = cfg.region_chip
     local chip_x = scaled_x1 + chip_cfg.margin_left
     local chip_y = scaled_y2 - chip_cfg.height - chip_cfg.margin_bottom
 
     -- Calculate available width for chips (accounting for duration if enabled)
     local max_chip_x = scaled_x2 - chip_cfg.margin_left
-    local show_duration_for_chips = state.settings.show_duration
+    local show_duration_for_chips = settings.show_duration
     if show_duration_for_chips == nil then show_duration_for_chips = true end
-    if show_duration_for_chips and compact_factor < 0.5 and item_data.item then
-      -- PERF: Use cached duration if available
+    -- PERF: Use cached duration from item_data
+    local chip_duration = item_data.duration or 0
+    if show_duration_for_chips and compact_factor < 0.5 and chip_duration > 0 then
+      -- PERF: Use cached duration text width if available
       local dur_cache = _cached.duration_text[item_data.uuid]
       if dur_cache then
         max_chip_x = max_chip_x - dur_cache[2] - cfg.duration_text_margin_x - chip_cfg.margin_x
       else
-        local duration = GetMediaItemInfo_Value(item_data.item, 'D_LENGTH')
-        if duration > 0 then
-          -- Conservative estimate
-          max_chip_x = max_chip_x - 50 - cfg.duration_text_margin_x - chip_cfg.margin_x
-        end
+        -- Conservative estimate (duration text not yet cached)
+        max_chip_x = max_chip_x - 50 - cfg.duration_text_margin_x - chip_cfg.margin_x
       end
     end
 
     -- Limit number of chips displayed
-    local max_chips = config.REGION_TAGS.max_chips_per_tile
-    local num_chips = min(#item_data.regions, max_chips)
+    local num_chips = min(#item_data.regions, cfg.region_max_chips)
     local chip_h = chip_cfg.height
     local chip_pad_x = chip_cfg.padding_x
     local chip_pad_x2 = chip_pad_x * 2
@@ -722,7 +731,15 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local region_name = region.name or region  -- Support both {name, color} and plain string
       local region_color = region.color or palette.region_chip_default or 0x4A5A6AFF
 
-      local text_w, text_h = CalcTextSize(ctx, region_name)
+      -- PERF: Cache region text dimensions (region names repeat across tiles)
+      local cached_text = _cached.region_text[region_name]
+      local text_w, text_h
+      if cached_text then
+        text_w, text_h = cached_text[1], cached_text[2]
+      else
+        text_w, text_h = CalcTextSize(ctx, region_name)
+        _cached.region_text[region_name] = {text_w, text_h}
+      end
       local chip_w = text_w + chip_pad_x2
 
       -- Check available space for this chip
@@ -731,37 +748,25 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         break  -- Not enough space for even a minimal chip
       end
 
-      -- Truncate text if needed to fit
+      -- Truncate text if needed to fit (simplified: just truncate at fixed ratio, skip binary search)
       local display_name = region_name
       if chip_w > available_width then
-        -- Binary search to find max text that fits with '...'
-        local ellipsis = '...'
-        local ellipsis_w = CalcTextSize(ctx, ellipsis)
-        local target_w = available_width - chip_pad_x2 - ellipsis_w
-
-        if target_w > 0 then
-          local low, high = 1, #region_name
-          local best_len = 0
-          while low <= high do
-            local mid_idx = (low + high) // 2
-            local test_text = region_name:sub(1, mid_idx)
-            local test_w = CalcTextSize(ctx, test_text)
-            if test_w <= target_w then
-              best_len = mid_idx
-              low = mid_idx + 1
-            else
-              high = mid_idx - 1
-            end
-          end
-          if best_len > 0 then
-            display_name = region_name:sub(1, best_len) .. ellipsis
-            text_w, text_h = CalcTextSize(ctx, display_name)
-            chip_w = text_w + chip_pad_x2
+        -- PERF: Simple truncation instead of binary search (good enough, much faster)
+        local max_chars = (#region_name * (available_width - chip_pad_x2 - 20) / chip_w) // 1
+        if max_chars >= 3 then
+          display_name = region_name:sub(1, max_chars) .. '...'
+          -- Re-measure truncated text (still cached if same truncation)
+          local truncated_cache_key = region_name .. '_' .. max_chars
+          local cached_trunc = _cached.region_text[truncated_cache_key]
+          if cached_trunc then
+            text_w, text_h = cached_trunc[1], cached_trunc[2]
           else
-            break  -- Can't fit even one character
+            text_w, text_h = CalcTextSize(ctx, display_name)
+            _cached.region_text[truncated_cache_key] = {text_w, text_h}
           end
+          chip_w = text_w + chip_pad_x2
         else
-          break  -- Not enough space
+          break  -- Can't fit even a minimal truncation
         end
       end
 
@@ -770,8 +775,12 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local bg_color = (chip_cfg.bg_color & 0xFFFFFF00) | bg_alpha
       DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, bg_color, chip_cfg.rounding)
 
-      -- Chip text (region color with minimum lightness for readability)
-      local chip_text_color = BaseRenderer.ensure_min_lightness(region_color, chip_cfg.text_min_lightness)
+      -- PERF: Cache ensure_min_lightness result (region colors repeat)
+      local chip_text_color = _cached.region_colors[region_color]
+      if not chip_text_color then
+        chip_text_color = BaseRenderer.ensure_min_lightness(region_color, chip_cfg.text_min_lightness)
+        _cached.region_colors[region_color] = chip_text_color
+      end
       local text_alpha_val = float_to_alpha(combined_alpha)
       chip_text_color = (chip_text_color & 0xFFFFFF00) | text_alpha_val
       local chip_text_x = chip_x + chip_pad_x
@@ -834,11 +843,12 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- Render duration text at bottom right (plain text, no badge - matches Region Playlist style)
   -- Don't render on compact tiles or if show_duration is disabled
-  local show_duration = state.settings.show_duration
+  -- PERF: Use cached settings instead of per-tile state.settings lookup
+  local show_duration = settings.show_duration
   if show_duration == nil then show_duration = true end
-  if show_duration and cascade_factor > 0.3 and compact_factor < 0.5 and item_data.item then
-    local duration = GetMediaItemInfo_Value(item_data.item, 'D_LENGTH')
-    if duration > 0 then
+  -- PERF: Use cached duration from item_data (avoids GetMediaItemInfo_Value per frame)
+  local duration = item_data.duration or 0
+  if show_duration and cascade_factor > 0.3 and compact_factor < 0.5 and duration > 0 then
       -- PERF: Cache duration text and dimensions by UUID (consistent with region chips)
       local dur_cache = _cached.duration_text[item_data.uuid]
       local duration_text, dur_text_w, dur_text_h
@@ -854,20 +864,28 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local dur_x = scaled_x2 - dur_text_w - cfg.duration_text_margin_x
       local dur_y = scaled_y2 - dur_text_h - cfg.duration_text_margin_y
 
-      -- Adaptive color: dark grey with subtle tile coloring for most tiles, light only for very dark
-      local luminance = Colors_luminance(render_color)
+      -- PERF: Use cached dur_text_color for settled tiles (avoids luminance + SameHueVariant per frame)
       local dur_text_color
-      if luminance < cfg.duration_text_dark_tile_threshold then
-        -- Very dark tile only: use light text
-        dur_text_color = Colors_SameHueVariant(render_color, cfg.duration_text_light_saturation, cfg.duration_text_light_value, float_to_alpha(combined_alpha))
+      if can_use_cache and cached_state.dur_text_color then
+        dur_text_color = cached_state.dur_text_color
       else
-        -- All other tiles: dark grey with subtle tile color
-        dur_text_color = Colors_SameHueVariant(render_color, cfg.duration_text_dark_saturation, cfg.duration_text_dark_value, float_to_alpha(combined_alpha))
+        -- Adaptive color: dark grey with subtle tile coloring for most tiles, light only for very dark
+        local luminance = Colors_luminance(render_color)
+        if luminance < cfg.duration_text_dark_tile_threshold then
+          -- Very dark tile only: use light text
+          dur_text_color = Colors_SameHueVariant(render_color, cfg.duration_text_light_saturation, cfg.duration_text_light_value, float_to_alpha(combined_alpha))
+        else
+          -- All other tiles: dark grey with subtle tile color
+          dur_text_color = Colors_SameHueVariant(render_color, cfg.duration_text_dark_saturation, cfg.duration_text_dark_value, float_to_alpha(combined_alpha))
+        end
+        -- Cache if settled
+        if cached_state and cached_state.settled and cascade_factor >= 0.999 and not tile_state.selected then
+          cached_state.dur_text_color = dur_text_color
+        end
       end
 
       -- Draw duration text (PERF: use localized DrawList function)
       DrawList_AddText(dl, dur_x, dur_y, dur_text_color, duration_text)
-    end
   end
 
   -- PROFILER: Accumulate and report

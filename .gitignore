@@ -5,3 +5,9 @@
 # Windows reserved device names (cannot be deleted normally)
 nul
 NUL
+
+# Editor/Dropbox temp files
+*.tmp.*
+
+# Node.js (devtools)
+node_modules/

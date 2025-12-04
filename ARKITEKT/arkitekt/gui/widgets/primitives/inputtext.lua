@@ -210,10 +210,11 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   ImGui.PushItemWidth(ctx, width - padding_x * 2)
 
   -- Make input background transparent
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0x00000000)
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0x00000000)
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0x00000000)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x00000000)
+  local C = Theme.COLORS
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, C.BG_TRANSPARENT)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, C.BG_TRANSPARENT)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, C.BG_TRANSPARENT)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, C.BG_TRANSPARENT)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
 
   local changed, new_text

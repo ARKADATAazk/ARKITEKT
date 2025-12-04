@@ -99,6 +99,25 @@ local function create_behaviors(rt)
       end
     end,
 
+    -- Mouse wheel resize (CTRL = vertical, ALT = horizontal)
+    wheel_resize = function(grid, direction, delta)
+      if direction == 'vertical' then
+        -- Adjust tile height (use override to bypass responsive calculation)
+        local step = 12  -- pixels per scroll tick
+        local current = rt._pool_tile_height_override or rt._pool_tile_height or 72
+        local new_height = current + (delta * step)
+        -- Clamp between 32 and 80
+        rt._pool_tile_height_override = math.max(32, math.min(80, new_height))
+      else
+        -- Adjust column width (larger step for width changes)
+        local step = 36  -- pixels per scroll tick
+        local current = rt._pool_col_width or PoolTile.CONFIG.tile_width
+        local new_width = current + (delta * step)
+        -- Clamp between 80 and 400
+        rt._pool_col_width = math.max(80, math.min(400, new_width))
+      end
+    end,
+
     -- Inline editing: Double-click to edit single tile
     start_inline_edit = function(grid, key)
       local GridInput = require('arkitekt.gui.widgets.containers.grid.input')
@@ -342,7 +361,7 @@ function M.create_opts(rt, config)
   return {
     id = 'pool_grid',
     gap = rt._pool_gap or PoolTile.CONFIG.gap,
-    min_col_w = function() return PoolTile.CONFIG.tile_width end,
+    min_col_w = function() return rt._pool_col_width or PoolTile.CONFIG.tile_width end,
     fixed_tile_h = rt._pool_tile_height or base_tile_height,
     items = rt._pool_items or {},
 

@@ -313,9 +313,23 @@ function Coordinator:draw_active(ctx, playlist, height, shell_state)
 
     -- Set per-frame state for opts
     self._active_items = playlist.items
-    self._active_tile_height = responsive_height
-    self._active_gap = raw_gap
-    self._active_rounding = raw_rounding
+    -- Use manual override if set, otherwise use responsive height
+    local actual_height = self._active_tile_height_override or responsive_height
+    self._active_tile_height = actual_height
+    -- Recalculate gap based on actual tile height (links gap to height)
+    self._active_gap = ResponsiveGrid.calculate_scaled_gap(
+      actual_height,
+      ActiveTile.CONFIG.gap,
+      self.responsive_config.base_tile_height_active,
+      self.responsive_config.min_tile_height,
+      self.responsive_config
+    )
+    self._active_rounding = ResponsiveGrid.calculate_scaled_rounding(
+      actual_height,
+      self.responsive_config.base_tile_height_active,
+      self.responsive_config.min_tile_height,
+      self.responsive_config
+    )
     self._active_clip_bounds = self.active_container.visible_bounds
 
     local wheel_y = ImGui.GetMouseWheel(ctx)
@@ -346,7 +360,7 @@ function Coordinator:draw_active(ctx, playlist, height, shell_state)
 
     -- Draw grid using opts-based API
     local opts = ActiveGridFactory.create_opts(self, self.config)
-    opts.gap = raw_gap
+    opts.gap = self._active_gap
     local result = Ark.Grid(ctx, opts)
 
     -- Store grid reference for other operations
@@ -458,15 +472,29 @@ function Coordinator:draw_pool(ctx, regions, height, shell_state)
 
     -- Set per-frame state for opts
     self._pool_items = regions
-    self._pool_tile_height = responsive_height
-    self._pool_gap = raw_gap
-    self._pool_rounding = raw_rounding
+    -- Use manual override if set, otherwise use responsive height
+    local actual_height = self._pool_tile_height_override or responsive_height
+    self._pool_tile_height = actual_height
+    -- Recalculate gap based on actual tile height (links gap to height)
+    self._pool_gap = ResponsiveGrid.calculate_scaled_gap(
+      actual_height,
+      PoolTile.CONFIG.gap,
+      self.responsive_config.base_tile_height_pool,
+      self.responsive_config.min_tile_height,
+      self.responsive_config
+    )
+    self._pool_rounding = ResponsiveGrid.calculate_scaled_rounding(
+      actual_height,
+      self.responsive_config.base_tile_height_pool,
+      self.responsive_config.min_tile_height,
+      self.responsive_config
+    )
     self._pool_clip_bounds = self.pool_container.visible_bounds
     self._pool_disable_background_clicks = ImGui.IsPopupOpen(ctx, 'PoolActionsMenu')
 
     -- Draw grid using opts-based API
     local opts = PoolGridFactory.create_opts(self, self.config)
-    opts.gap = raw_gap
+    opts.gap = self._pool_gap
     local result = Ark.Grid(ctx, opts)
 
     -- Store grid reference for other operations

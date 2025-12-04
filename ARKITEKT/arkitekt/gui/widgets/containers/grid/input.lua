@@ -31,15 +31,15 @@ M.DEFAULT_SHORTCUTS = {
   { key = ImGui.Key_Enter, name = 'enter' },
   { key = ImGui.Key_Escape, name = 'escape' },
 
-  -- Navigation (arrow keys)
-  { key = ImGui.Key_LeftArrow, name = 'nav_left' },
-  { key = ImGui.Key_RightArrow, name = 'nav_right' },
-  { key = ImGui.Key_UpArrow, name = 'nav_up' },
-  { key = ImGui.Key_DownArrow, name = 'nav_down' },
-  { key = ImGui.Key_LeftArrow, shift = true, name = 'nav_left:shift' },
-  { key = ImGui.Key_RightArrow, shift = true, name = 'nav_right:shift' },
-  { key = ImGui.Key_UpArrow, shift = true, name = 'nav_up:shift' },
-  { key = ImGui.Key_DownArrow, shift = true, name = 'nav_down:shift' },
+  -- Navigation (arrow keys) - repeating = true for continuous hold
+  { key = ImGui.Key_LeftArrow, name = 'nav_left', repeating = true },
+  { key = ImGui.Key_RightArrow, name = 'nav_right', repeating = true },
+  { key = ImGui.Key_UpArrow, name = 'nav_up', repeating = true },
+  { key = ImGui.Key_DownArrow, name = 'nav_down', repeating = true },
+  { key = ImGui.Key_LeftArrow, shift = true, name = 'nav_left:shift', repeating = true },
+  { key = ImGui.Key_RightArrow, shift = true, name = 'nav_right:shift', repeating = true },
+  { key = ImGui.Key_UpArrow, shift = true, name = 'nav_up:shift', repeating = true },
+  { key = ImGui.Key_DownArrow, shift = true, name = 'nav_down:shift', repeating = true },
   { key = ImGui.Key_Home, name = 'nav_home' },
   { key = ImGui.Key_End, name = 'nav_end' },
 
@@ -121,6 +121,9 @@ local function navigate_to_index(grid, new_index, extend_selection)
 
   -- Track focus for future navigation
   grid.focus_key = new_key
+
+  -- Request scroll-to-selection (will be handled in next frame with ctx available)
+  grid.pending_scroll_to_key = new_key
 
   if grid.behaviors and grid.behaviors.on_select then
     grid.behaviors.on_select(grid, grid.selection:selected_keys())
@@ -285,17 +288,10 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
     return false
   end,
 
-  -- ALT+click: delete
+  -- ALT+click: disabled (Alt is reserved for Alt+double-click actions)
+  -- Delete functionality is available via Delete key
   ['click:alt'] = function(grid, key, selected_keys)
-    local behavior = grid.behaviors and (grid.behaviors['click:alt'] or grid.behaviors.delete)
-    if behavior then
-      if grid.selection:is_selected(key) and #selected_keys > 1 then
-        behavior(grid, selected_keys)
-      else
-        behavior(grid, {key})
-      end
-      return true
-    end
+    -- No-op: Alt+click is intentionally disabled
     return false
   end,
 
@@ -324,6 +320,15 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
       return true
     elseif grid.behaviors and grid.behaviors.double_click then
       grid.behaviors.double_click(grid, key)
+      return true
+    end
+    return false
+  end,
+
+  -- ALT+Double-click: immediate action (e.g., quantized jump)
+  ['double_click:alt'] = function(grid, key)
+    if grid.behaviors and grid.behaviors['double_click:alt'] then
+      grid.behaviors['double_click:alt'](grid, key)
       return true
     end
     return false
@@ -439,28 +444,33 @@ function M.find_hovered_item(grid, ctx, items)
 end
 
 function M.is_shortcut_pressed(ctx, shortcut, state)
-  if not ImGui.IsKeyPressed(ctx, shortcut.key) then return false end
-  
+  -- Use repeat flag for navigation keys (continuous hold support)
+  local allow_repeat = shortcut.repeating or false
+  if not ImGui.IsKeyPressed(ctx, shortcut.key, allow_repeat) then return false end
+
   local ctrl_required = shortcut.ctrl or false
   local shift_required = shortcut.shift or false
   local alt_required = shortcut.alt or false
-  
+
   local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
   local shift_down = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
   local alt_down = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
-  
+
   if ctrl_required and not ctrl_down then return false end
   if not ctrl_required and ctrl_down then return false end
-  
+
   if shift_required and not shift_down then return false end
   if not shift_required and shift_down then return false end
-  
+
   if alt_required and not alt_down then return false end
   if not alt_required and alt_down then return false end
-  
+
+  -- Skip frame-based debounce for repeating shortcuts (ImGui handles repeat timing)
+  if allow_repeat then return true end
+
   local state_key = shortcut.name .. '_pressed_last_frame'
   if state[state_key] then return false end
-  
+
   state[state_key] = true
   return true
 end
@@ -479,6 +489,11 @@ end
 function M.handle_shortcuts(grid, ctx)
   -- Block shortcuts when any popup is open
   if ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId) then
+    return false
+  end
+
+  -- Block shortcuts when a text input or other widget has keyboard focus
+  if ImGui.IsAnyItemActive(ctx) then
     return false
   end
 
@@ -518,10 +533,11 @@ function M.handle_wheel_input(grid, ctx, items)
     return false
   end
 
-  -- Block wheel input when mouse is over a DIFFERENT window (e.g., popup on top of this grid)
-  local is_current_window_hovered = ImGui.IsWindowHovered(ctx)
-  local is_any_window_hovered = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow)
-  if is_any_window_hovered and not is_current_window_hovered then
+  -- Check if mouse is within grid bounds (more reliable than window hover for child windows)
+  if not grid.visual_bounds then return false end
+  local mx, my = ImGui.GetMousePos(ctx)
+  local vb = grid.visual_bounds
+  if mx < vb[1] or mx > vb[3] or my < vb[2] or my > vb[4] then
     return false
   end
 
@@ -673,8 +689,16 @@ function M.handle_tile_input(grid, ctx, item, rect)
         end
       end
 
+      -- Check for Alt modifier (for immediate actions like quantized jump)
+      local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+
       if in_text_zone then
         local behavior = M.resolve_mouse_behavior(grid, 'double_click:text')
+        if behavior then
+          behavior(grid, key)
+        end
+      elseif alt then
+        local behavior = M.resolve_mouse_behavior(grid, 'double_click:alt')
         if behavior then
           behavior(grid, key)
         end
@@ -874,6 +898,53 @@ function M.check_start_drag(grid, ctx)
     if grid.behaviors and grid.behaviors.drag_start then
       grid.behaviors.drag_start(grid, grid.drag.ids)
     end
+  end
+end
+
+-- =============================================================================
+-- SCROLL-TO-SELECTION
+-- =============================================================================
+
+--- Handle pending scroll-to-selection request
+--- Call this from grid core after handle_shortcuts, when ctx is available
+--- @param grid table Grid instance
+--- @param ctx userdata ImGui context
+function M.handle_pending_scroll(grid, ctx)
+  local key = grid.pending_scroll_to_key
+  if not key then return end
+
+  grid.pending_scroll_to_key = nil
+
+  -- Get the rect for the target item
+  local rect = grid.rect_track and grid.rect_track:get(key)
+  if not rect then return end
+
+  -- Get visible bounds
+  local bounds = grid.visual_bounds
+  if not bounds then return end
+
+  local scroll_y = ImGui.GetScrollY(ctx)
+  local scroll_max_y = ImGui.GetScrollMaxY(ctx)
+  local visible_top = bounds[2]
+  local visible_bottom = bounds[4]
+  local visible_height = visible_bottom - visible_top
+
+  -- Item position relative to scroll area
+  local item_top = rect[2]
+  local item_bottom = rect[4]
+  local item_height = item_bottom - item_top
+
+  -- Padding to keep item away from edges
+  local padding = 10
+
+  -- Check if item is above visible area
+  if item_top < visible_top + padding then
+    local delta = visible_top - item_top + padding
+    ImGui.SetScrollY(ctx, math.max(0, scroll_y - delta))
+  -- Check if item is below visible area
+  elseif item_bottom > visible_bottom - padding then
+    local delta = item_bottom - visible_bottom + padding
+    ImGui.SetScrollY(ctx, math.min(scroll_max_y, scroll_y + delta))
   end
 end
 

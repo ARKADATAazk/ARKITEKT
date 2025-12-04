@@ -131,7 +131,6 @@ M.REGION_TILES = {
     padding = 8,
     scroll = {
       flags = 0,
-      custom_scrollbar = false,
     },
     anti_jitter = {
       enabled = true,

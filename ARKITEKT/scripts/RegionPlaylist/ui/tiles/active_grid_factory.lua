@@ -104,6 +104,27 @@ local function create_behaviors(rt)
     space = function(grid, selected_keys)
     end,
 
+    -- Mouse wheel resize (CTRL = vertical, ALT = horizontal)
+    wheel_resize = function(grid, direction, delta)
+      if direction == 'vertical' then
+        -- Adjust tile height (use override to bypass responsive calculation)
+        local step = 12  -- pixels per scroll tick
+        local current = rt._active_tile_height_override or rt._active_tile_height or 72
+        local new_height = current + (delta * step)
+        -- Clamp between 32 and 80
+        rt._active_tile_height_override = math.max(32, math.min(80, new_height))
+      else
+        -- Adjust column width (larger step for width changes)
+        local step = 36  -- pixels per scroll tick
+        local current = rt._active_col_width or ActiveTile.CONFIG.tile_width
+        local new_width = current + (delta * step)
+        -- Clamp between 80 and 400
+        rt._active_col_width = math.max(80, math.min(400, new_width))
+        -- Update the min_col_w function
+        rt._active_min_col_w_fn = function() return rt._active_col_width end
+      end
+    end,
+
     reorder = function(grid, new_order)
       if not grid or not grid.drag then return end
 
@@ -286,31 +307,38 @@ local function create_behaviors(rt)
       end
     end,
 
-    -- Double-click outside text zone: Move cursor and seek to region/playlist
+    -- Double-click: Start playback or schedule transition
+    -- When stopped: Start playback from this item
+    -- When playing: Schedule transition (skip to item after current ends)
     double_click_seek = function(grid, key)
-      local playlist_items = grid.get_items()
-      for _, item in ipairs(playlist_items) do
-        if item.key == key then
-          if item.type == 'playlist' then
-            -- For playlists, seek to the first item in the playlist
-            local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.playlist_id)
-            if playlist and playlist.items and #playlist.items > 0 then
-              local first_item = playlist.items[1]
-              if first_item.rid then
-                local region = rt.get_region_by_rid(first_item.rid)
-                if region and region.start then
-                  reaper.SetEditCurPos(region.start, true, true)
-                end
-              end
-            end
-          else
-            -- For regions, seek to region start
-            local region = rt.get_region_by_rid(item.rid)
-            if region and region.start then
-              reaper.SetEditCurPos(region.start, true, true)
-            end
-          end
-          break
+      local playback_bridge = rt.State and rt.State.bridge
+      if not playback_bridge then return end
+
+      local is_playing = playback_bridge:get_state().is_playing
+
+      if is_playing then
+        -- During playback: Schedule for after current region ends
+        playback_bridge:set_next_item(key)
+      else
+        -- Not playing: Start playback from this item
+        playback_bridge:set_position_by_key(key)
+        playback_bridge:play()
+      end
+    end,
+
+    -- Alt+Double-click: Immediate quantized jump following current quantize rules
+    ['double_click:alt'] = function(grid, key)
+      local playback_bridge = rt.State and rt.State.bridge
+      local is_playing = playback_bridge and playback_bridge:get_state().is_playing
+
+      if is_playing and playback_bridge then
+        -- During playback: Immediate quantized jump (uses saved lookahead setting)
+        playback_bridge:schedule_seek_to_item(key)
+      else
+        -- Not playing: Start playback from this item
+        if playback_bridge then
+          playback_bridge:set_position_by_key(key)
+          playback_bridge:play()
         end
       end
     end,

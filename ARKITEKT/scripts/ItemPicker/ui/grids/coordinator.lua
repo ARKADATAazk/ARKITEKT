@@ -154,8 +154,8 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
       self.audio_grid_opts.clip_rendering = false
     end
 
-    -- PERF: Cache renderer config values once per frame before rendering tiles
-    AudioRenderer.begin_frame(ctx, self.config)
+    -- PERF: Cache renderer config and settings values once per frame before rendering tiles
+    AudioRenderer.begin_frame(ctx, self.config, self.state)
 
     -- Call Grid with options and store result
     local result = Ark.Grid(ctx, self.audio_grid_opts)
@@ -220,8 +220,8 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
       self.midi_grid_opts.clip_rendering = false
     end
 
-    -- PERF: Cache renderer config values once per frame before rendering tiles
-    MidiRenderer.begin_frame(ctx, self.config)
+    -- PERF: Cache renderer config and settings values once per frame before rendering tiles
+    MidiRenderer.begin_frame(ctx, self.config, self.state)
 
     -- Call Grid with options and store result
     local result = Ark.Grid(ctx, self.midi_grid_opts)

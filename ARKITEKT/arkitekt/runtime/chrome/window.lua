@@ -685,7 +685,11 @@ function M.new(opts)
     end
 
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
-    
+
+    -- Hide nav cursor (default blue is distracting)
+    ImGui.PushStyleColor(ctx, ImGui.Col_NavCursor, 0x00000000)
+    self._nav_highlight_pushed = true
+
     if self.fullscreen.enabled then
       if self.fullscreen.window_bg_override then
         local alpha_val = self.fullscreen.alpha:value()
@@ -963,6 +967,11 @@ function M.new(opts)
     if self._bg_color_pushed then
       ImGui.PopStyleColor(ctx)
       self._bg_color_pushed = false
+    end
+
+    if self._nav_highlight_pushed then
+      ImGui.PopStyleColor(ctx)
+      self._nav_highlight_pushed = false
     end
   end
 

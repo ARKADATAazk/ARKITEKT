@@ -101,6 +101,9 @@ function M.create_options(config, state, visualization, animator, disable_animat
       -- Convert cached track color to ImGui color
       local color = shared.convert_track_color(entry.track_color or 0)
 
+      -- PERF: Cache duration to avoid GetMediaItemInfo_Value calls in renderer
+      local duration = (item and reaper.ValidatePtr2(0, item, 'MediaItem*')) and reaper.GetMediaItemInfo_Value(item, 'D_LENGTH') or 0
+
       filtered[#filtered + 1] = {
         track_guid = track_guid,
         item = item,
@@ -116,6 +119,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
         regions = entry.regions,  -- Region tags from loader
         track_muted = track_muted,  -- Track mute state
         item_muted = item_muted,  -- Item mute state
+        duration = duration,  -- Cached duration for renderer
       }
 
       ::continue::
@@ -126,16 +130,10 @@ function M.create_options(config, state, visualization, animator, disable_animat
     local sort_reverse = state.settings.sort_reverse or false
 
     if sort_mode == 'length' then
-      -- Sort by item length/duration
+      -- Sort by item length/duration (using cached duration)
       table.sort(filtered, function(a, b)
-        local a_len = 0
-        local b_len = 0
-        if a.item then
-          a_len = reaper.GetMediaItemInfo_Value(a.item, 'D_LENGTH')
-        end
-        if b.item then
-          b_len = reaper.GetMediaItemInfo_Value(b.item, 'D_LENGTH')
-        end
+        local a_len = a.duration or 0
+        local b_len = b.duration or 0
         if sort_reverse then
           return a_len > b_len  -- Longest first
         else
@@ -354,6 +352,8 @@ function M.create_options(config, state, visualization, animator, disable_animat
 
     -- F key: toggle favorite
     f = function(grid, keys)
+      if not keys or #keys == 0 then return end
+
       local items = get_items()
       local track_guid_map = {}
       for _, data in ipairs(items) do
@@ -376,7 +376,6 @@ function M.create_options(config, state, visualization, animator, disable_animat
             end
           end
         end
-        state.persist_favorites()
       else
         -- Single item: toggle
         local track_guid = track_guid_map[keys[1]]
@@ -384,6 +383,8 @@ function M.create_options(config, state, visualization, animator, disable_animat
           state.toggle_midi_favorite(track_guid)
         end
       end
+      state.persist_favorites()
+      state.runtime_cache.midi_filter_hash = nil
     end,
 
     -- Wheel cycling through pooled items
