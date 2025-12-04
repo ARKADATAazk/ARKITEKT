@@ -35,8 +35,8 @@ local Colors_RgbToHsl = Ark.Colors.RgbToHsl
 local Colors_HslToRgb = Ark.Colors.HslToRgb
 local Colors_ComponentsToRgba = Ark.Colors.ComponentsToRgba
 
--- PERF: Localize Badge.TextDirect for hot path
-local Badge_TextDirect = Badge.TextDirect
+-- PERF: Localize Badge.Text for hot path (positional mode)
+local Badge_Text = Badge.Text
 
 -- PERF: Inline pixel snapping (avoids function call overhead)
 local function snap(x)
@@ -573,14 +573,18 @@ function M.cache_config(config)
   c.badge_cycle_border_darken = tr.badges.cycle.border_darken
   c.badge_cycle_border_alpha = tr.badges.cycle.border_alpha
   c.badge_cycle_text_color = tr.badges.cycle.text_color
-  -- PERF: Badge.TextDirect compatible config (avoids per-call table creation)
+  -- PERF: Badge positional mode config (avoids per-call table creation)
+  -- Pre-compute border color once per frame
+  local badge_border = Colors_WithAlpha(
+    Colors_AdjustBrightness(tr.badges.cycle.bg, tr.badges.cycle.border_darken),
+    tr.badges.cycle.border_alpha
+  )
   c.badge_cycle_cfg = {
     padding_x = tr.badges.cycle.padding_x,
     padding_y = tr.badges.cycle.padding_y,
     rounding = tr.badges.cycle.rounding,
     bg_color = tr.badges.cycle.bg,
-    border_darken = tr.badges.cycle.border_darken,
-    border_alpha = tr.badges.cycle.border_alpha,
+    border = badge_border,
     text_color = tr.badges.cycle.text_color or 0xFFFFFFFF,
   }
 
@@ -694,7 +698,7 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
   DrawList_AddText(dl, snap(text_x), snap(text_y), with_alpha(final_text_color, text_alpha), truncated_name or '')
 
   -- Render cycle badge (vertically centered in header)
-  -- PERF: Uses Badge.TextDirect - no opts parsing, no table allocations
+  -- PERF: Uses Badge.Text positional mode - zero allocation
   if show_badge and total and total > 1 then
     -- badge_text, bw, bh already computed above
     -- Calculate badge position (centered vertically in header)
@@ -703,9 +707,9 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
     local badge_x = x2 - badge_w - c.badge_cycle_margin
     local badge_y = y1 + (header_height - badge_h) / 2
 
-    -- Draw badge using fast path (config created once per frame in begin_frame)
-    local bx1, by1, bx2, by2 = Badge_TextDirect(
-      dl, badge_x, badge_y, badge_text, bw, bh, base_color, text_alpha, c.badge_cycle_cfg
+    -- Draw badge using positional mode (zero allocation, config pre-computed per frame)
+    local bx1, by1, bx2, by2 = Badge_Text(
+      dl, badge_x, badge_y, badge_text, bw, bh, c.badge_cycle_cfg
     )
 
     -- Store badge rect for exclusion zones AND post-render click detection

@@ -79,6 +79,26 @@ local Colors_SameHueVariant = Ark.Colors.SameHueVariant
 local Colors_RgbaToComponents = Ark.Colors.RgbaToComponents
 local Colors_ComponentsToRgba = Ark.Colors.ComponentsToRgba
 
+-- PERF: Inline color functions for hot paths (avoids function call overhead)
+local function with_alpha(color, alpha)
+  return (color & 0xFFFFFF00) | (alpha & 0xFF)
+end
+
+local function adjust_brightness(color, factor)
+  local r = (color >> 24) & 0xFF
+  local g = (color >> 16) & 0xFF
+  local b = (color >> 8) & 0xFF
+  local a = color & 0xFF
+  r = min(255, max(0, (r * factor) // 1))
+  g = min(255, max(0, (g * factor) // 1))
+  b = min(255, max(0, (b * factor) // 1))
+  return (r << 24) | (g << 16) | (b << 8) | a
+end
+
+local function float_to_alpha(opacity)
+  return (max(0, min(1, opacity)) * 255 + 0.5) // 1
+end
+
 -- PERF: Cache constant values computed once
 local _cached = {
   text_height = nil,     -- Cached per-frame (ctx dependent)
@@ -277,7 +297,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   -- Capture animation color for disable animation (without alpha)
-  local animation_color = Colors_WithAlpha(render_color, 0xFF)
+  local animation_color = with_alpha(render_color, 0xFF)
 
   local text_alpha = (0xFF * combined_alpha) // 1
   local text_color = BaseRenderer.get_text_color(muted_factor, config)
@@ -315,7 +335,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Render dark backdrop for disabled items (skip if show_disabled_items = false, animation handles it)
   if enabled_factor < 0.999 and state.settings.show_disabled_items then
     local backdrop_alpha = cfg.disabled_backdrop_alpha * (1.0 - enabled_factor) * cascade_factor
-    local backdrop_color = Colors_WithAlpha(cfg.disabled_backdrop_color, backdrop_alpha // 1)
+    local backdrop_color = with_alpha(cfg.disabled_backdrop_color, backdrop_alpha // 1)
     DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, backdrop_color, config.TILE.ROUNDING)
   end
 
@@ -341,7 +361,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
     local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config, palette)
     local waveform_alpha = combined_alpha * cfg.waveform_line_alpha
-    dark_color = Colors_WithAlpha(dark_color, Colors_Opacity(waveform_alpha))
+    dark_color = with_alpha(dark_color, float_to_alpha(waveform_alpha))
 
     -- Skip all waveform rendering if skip_visualizations is enabled (fast mode)
     if not state.skip_visualizations then
@@ -752,7 +772,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
       -- Chip text (region color with minimum lightness for readability)
       local chip_text_color = BaseRenderer.ensure_min_lightness(region_color, chip_cfg.text_min_lightness)
-      local text_alpha_val = Colors_Opacity(combined_alpha)
+      local text_alpha_val = float_to_alpha(combined_alpha)
       chip_text_color = (chip_text_color & 0xFFFFFF00) | text_alpha_val
       local chip_text_x = chip_x + chip_pad_x
       local chip_text_y = chip_y + (chip_h - text_h) / 2
@@ -803,13 +823,12 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     local badge_bg = (cfg.badge_pool_bg & 0xFFFFFF00) | badge_bg_alpha
     DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, cfg.badge_pool_rounding)
 
-    -- Border using darker tile color
-    local border_color = Colors_AdjustBrightness(render_color, cfg.badge_pool_border_darken)
-    border_color = Colors_WithAlpha(border_color, cfg.badge_pool_border_alpha)
+    -- Border using darker tile color (PERF: inline functions)
+    local border_color = with_alpha(adjust_brightness(render_color, cfg.badge_pool_border_darken), cfg.badge_pool_border_alpha)
     DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, border_color, cfg.badge_pool_rounding, 0, 0.5)
 
-    -- Pool count text (match cycle badge brightness)
-    local pool_text_color = Colors_WithAlpha(palette.pool_badge_text or 0xFFFFFFDD, Colors_Opacity(combined_alpha))
+    -- Pool count text (match cycle badge brightness) (PERF: inline functions)
+    local pool_text_color = with_alpha(palette.pool_badge_text or 0xFFFFFFDD, float_to_alpha(combined_alpha))
     DrawList_AddText(dl, badge_x + cfg.badge_pool_padding_x, badge_y + cfg.badge_pool_padding_y, pool_text_color, pool_text)
   end
 
@@ -840,10 +859,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local dur_text_color
       if luminance < cfg.duration_text_dark_tile_threshold then
         -- Very dark tile only: use light text
-        dur_text_color = Colors_SameHueVariant(render_color, cfg.duration_text_light_saturation, cfg.duration_text_light_value, Colors_Opacity(combined_alpha))
+        dur_text_color = Colors_SameHueVariant(render_color, cfg.duration_text_light_saturation, cfg.duration_text_light_value, float_to_alpha(combined_alpha))
       else
         -- All other tiles: dark grey with subtle tile color
-        dur_text_color = Colors_SameHueVariant(render_color, cfg.duration_text_dark_saturation, cfg.duration_text_dark_value, Colors_Opacity(combined_alpha))
+        dur_text_color = Colors_SameHueVariant(render_color, cfg.duration_text_dark_saturation, cfg.duration_text_dark_value, float_to_alpha(combined_alpha))
       end
 
       -- Draw duration text (PERF: use localized DrawList function)
