@@ -428,6 +428,9 @@ function Grid:_draw_virtual(ctx, items, num_items)
   if not self.block_all_input then
     keyboard_consumed = Input.handle_shortcuts(self, ctx)
     wheel_consumed = Input.handle_wheel_input(self, ctx, items)
+
+    -- Handle scroll-to-selection after keyboard navigation
+    Input.handle_pending_scroll(self, ctx)
   end
 
   if wheel_consumed then
@@ -766,8 +769,11 @@ function Grid:draw(ctx)
   if not self.block_all_input then
     keyboard_consumed = Input.handle_shortcuts(self, ctx)
     wheel_consumed = Input.handle_wheel_input(self, ctx, items)
+
+    -- Handle scroll-to-selection after keyboard navigation
+    Input.handle_pending_scroll(self, ctx)
   end
-  
+
   if wheel_consumed then
     local current_scroll_y = ImGui.GetScrollY(ctx)
     ImGui.SetScrollY(ctx, current_scroll_y)
@@ -1316,10 +1322,16 @@ local function _build_result(grid)
     -- Hover
     hovered_key = grid.hover_id,
 
+    -- Focus (for keyboard navigation)
+    focus_key = grid.focus_key,
+
+    -- Selection instance (for advanced operations)
+    selection = grid.selection,
+
     -- Animation state (useful for throttling expensive operations during resize)
     is_animating = grid.rect_track:is_animating(),
 
-    -- Grid instance for advanced operations (selection, behaviors, etc.)
+    -- Grid instance for advanced operations (behaviors, etc.)
     grid = grid,
   }
 end

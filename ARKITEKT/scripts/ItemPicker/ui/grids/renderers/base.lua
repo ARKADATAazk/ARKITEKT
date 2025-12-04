@@ -141,6 +141,50 @@ function M.get_dark_waveform_color(base_color, config, palette)
   return ImGui.ColorConvertDouble4ToU32(r, g, b, c.waveform_line_alpha)
 end
 
+-- PERF: Get cached header color (avoids 4 color conversions per tile)
+-- Returns {r, g, b} without alpha - caller applies alpha
+local function get_cached_header_color(base_color, is_small_tile, palette)
+  local c = _frame_config
+  local p = palette or {}
+
+  -- Build cache key from palette values that affect header color
+  local header_sat = p.header_saturation or c.header_saturation_factor
+  local header_bright = p.header_brightness or c.header_brightness_factor
+  local cache_key_num = header_sat * 10000 + header_bright * 100 +
+                        c.small_tile_header_saturation_factor +
+                        c.small_tile_header_brightness_factor * 0.01
+
+  -- Invalidate cache if palette/config changed
+  if _header_color_cache_key ~= cache_key_num then
+    _header_color_cache = {}
+    _header_color_cache_key = cache_key_num
+  end
+
+  local cached = _header_color_cache[base_color]
+  if not cached then
+    local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
+    local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
+
+    -- Normal mode
+    local ns = s * (p.header_saturation or c.header_saturation_factor)
+    local nv = v * (p.header_brightness or c.header_brightness_factor)
+    local nr, ng, nb = ImGui.ColorConvertHSVtoRGB(h, ns, nv)
+
+    -- Small tile mode
+    local ss = s * c.small_tile_header_saturation_factor
+    local sv = v * c.small_tile_header_brightness_factor
+    local sr, sg, sb = ImGui.ColorConvertHSVtoRGB(h, ss, sv)
+
+    cached = {
+      normal = {nr, ng, nb},
+      small = {sr, sg, sb}
+    }
+    _header_color_cache[base_color] = cached
+  end
+
+  return is_small_tile and cached.small or cached.normal
+end
+
 -- Render header bar (now accepts optional palette for theme-reactive values)
 function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, config, is_small_tile, palette)
   -- PERF: Use cached config values
@@ -152,23 +196,9 @@ function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, c
     return
   end
 
-  local p = palette or {}
-
-  -- Normal header rendering with colored background
-  local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
-  local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
-
-  -- Choose appropriate config section based on tile mode
-  -- Use palette values if available, fallback to config
-  if is_small_tile then
-    s = s * c.small_tile_header_saturation_factor
-    v = v * c.small_tile_header_brightness_factor
-  else
-    s = s * (p.header_saturation or c.header_saturation_factor)
-    v = v * (p.header_brightness or c.header_brightness_factor)
-  end
-
-  r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
+  -- PERF: Get cached header RGB (avoids 4 color conversions per tile)
+  local rgb = get_cached_header_color(base_color, is_small_tile, palette)
+  local r, g, b = rgb[1], rgb[2], rgb[3]
 
   -- For small tiles, header_alpha is a multiplier (0.0-1.0), so convert it
   local base_header_alpha = c.header_alpha / 255
@@ -187,7 +217,8 @@ function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, c
 
   -- Round only top corners of header (top-left and top-right)
   -- Use slightly less rounding than tile for better visual alignment
-  local header_rounding = max(0, config.TILE.ROUNDING - c.header_rounding_offset)
+  -- PERF: Use cached tile_rounding
+  local header_rounding = max(0, c.tile_rounding - c.header_rounding_offset)
   local round_flags = ImGui.DrawFlags_RoundCornersTop
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, header_color, header_rounding, round_flags)
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, text_shadow, header_rounding, round_flags)
@@ -257,6 +288,11 @@ end
 -- Each entry stores the adjusted color (saturation + brightness + min lightness applied)
 local _tile_color_cache = {}
 local _tile_color_cache_key = nil  -- Track config+palette to invalidate on change
+
+-- PERF: Cache for header colors: base_color -> { normal = {r,g,b}, small = {r,g,b} }
+-- Avoids 4 color conversions per tile per frame
+local _header_color_cache = {}
+local _header_color_cache_key = nil
 
 -- Get or compute the base tile color (expensive operations cached)
 -- Now uses palette values for theme-reactive brightness/saturation
@@ -613,7 +649,31 @@ function M.cache_config(config)
   c.duration_text_light_value = tr.duration_text.light_value
   c.duration_text_dark_saturation = tr.duration_text.dark_saturation
   c.duration_text_dark_value = tr.duration_text.dark_value
+
+  -- PERF: Region tags (avoid per-tile config.REGION_TAGS lookups)
+  local rt = config.REGION_TAGS
+  c.region_min_tile_height = rt.min_tile_height
+  c.region_max_chips = rt.max_chips_per_tile
+  c.region_chip = rt.chip  -- Cache the whole chip config table
+
+  -- PERF: Tile rounding (avoid per-tile config.TILE.ROUNDING lookups)
+  c.tile_rounding = config.TILE.ROUNDING
 end
+
+-- PERF: Cache state.settings values once per frame (call from begin_frame)
+-- These don't change during a frame but are accessed per-tile
+local _settings_cache = {}
+function M.cache_settings(state)
+  local s = state.settings or {}
+  _settings_cache.show_disabled_items = s.show_disabled_items
+  _settings_cache.show_duration = s.show_duration
+  _settings_cache.show_region_tags = s.show_region_tags
+  _settings_cache.waveform_quality = s.waveform_quality or 0.2
+  _settings_cache.waveform_filled = s.waveform_filled
+  _settings_cache.show_visualization_in_small_tiles = s.show_visualization_in_small_tiles
+end
+
+M.settings = _settings_cache
 
 -- Expose the cache for renderers to access directly
 M.cfg = _frame_config
