@@ -105,7 +105,7 @@ function M.Draw(ctx, opts)
 
   if state.editing then
     -- Edit mode
-    local dl = ImGui.GetWindowDrawList(ctx)
+    local dl = Base.get_context(ctx):draw_list()
     ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + width, cursor_y + height, opts.edit_bg_color, rounding)
     ImGui.DrawList_AddRect(dl, cursor_x, cursor_y, cursor_x + width, cursor_y + height, opts.edit_border_color, rounding, 0, 1.5)
 
@@ -173,7 +173,7 @@ function M.Draw(ctx, opts)
     state.hover_alpha = math.max(0.0, math.min(1.0, state.hover_alpha))
 
     if state.hover_alpha > 0.01 then
-      local dl = ImGui.GetWindowDrawList(ctx)
+      local dl = Base.get_context(ctx):draw_list()
       local hover_bg = Colors.WithOpacity(opts.view_bg_color, state.hover_alpha * 0.19)
       ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + width, cursor_y + height, hover_bg, rounding)
     end

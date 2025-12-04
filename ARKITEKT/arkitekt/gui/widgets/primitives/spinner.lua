@@ -90,7 +90,7 @@ local function draw_arrow(dl, x, y, w, h, color, direction)
 end
 
 local function draw_spinner_button(ctx, id, x, y, w, h, direction, disabled, hover_alpha)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   x = (x + 0.5) // 1
   y = (y + 0.5) // 1
@@ -231,7 +231,8 @@ function M.Draw(ctx, opts)
   -- Get state
   local current_index = opts.value or 1
   local options = opts.options or {}
-  local disabled = opts.is_disabled or false
+  local actx = Base.get_context(ctx)
+  local disabled = opts.is_disabled or actx:is_disabled()
 
   current_index = math.max(1, math.min(current_index, #options))
 

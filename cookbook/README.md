@@ -11,6 +11,7 @@
 | [CONVENTIONS.md](CONVENTIONS.md) | Naming conventions, file organization, module patterns |
 | [API_DESIGN_PHILOSOPHY.md](API_DESIGN_PHILOSOPHY.md) | When to match ImGui vs when to improve |
 | [WIDGETS.md](WIDGETS.md) | Widget development patterns and API contract |
+| [ARKCONTEXT.md](ARKCONTEXT.md) | Frame-scoped context, caching, and Disabled Stack |
 | [THEME_MANAGER.md](THEME_MANAGER.md) | Dynamic theming system with REAPER integration |
 | [STORAGE.md](STORAGE.md) | Persistence options: ExtState, JSON, Settings |
 | [SHORTCUTS.md](SHORTCUTS.md) | Keyboard input handling patterns |

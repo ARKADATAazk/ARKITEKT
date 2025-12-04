@@ -5,6 +5,7 @@
 -- Enhanced with easing curves and close button support
 
 local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 
 local Draw   = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
@@ -269,7 +270,7 @@ function M:render(ctx, dt)
     end
 
     -- Call render directly with full viewport, no modal/scrim
-    local dl = ImGui.GetWindowDrawList(ctx)
+    local dl = Base.get_context(ctx):draw_list()
     top.render(ctx, 1.0, {x=x, y=y, w=w, h=h, dl=dl})
 
     -- Check for escape key even in passthrough mode
@@ -362,7 +363,7 @@ function M:render(ctx, dt)
   local visible = ImGui.BeginPopupModal(ctx, popup_id, nil, window_flags)
 
   if visible then
-    local dl = ImGui.GetWindowDrawList(ctx)
+    local dl = Base.get_context(ctx):draw_list()
 
     -- Draw the scrim explicitly so debug colors remain even if later style pushes
     -- override WindowBg/ModalWindowDimBg (e.g. TemplateBrowser style stack)

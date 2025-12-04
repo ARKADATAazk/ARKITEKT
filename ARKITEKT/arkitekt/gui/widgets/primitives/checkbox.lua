@@ -164,7 +164,8 @@ end
 
 local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, total_width)
   local size = config.size
-  local is_disabled = config.is_disabled or false
+  local actx = Base.get_context(ctx)
+  local is_disabled = config.is_disabled or actx:is_disabled()
   local is_blocking = config.is_blocking or false
 
   -- Check hover using IsMouseHoveringRect (ImGui built-in, respects clipping)

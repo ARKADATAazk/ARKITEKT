@@ -3,6 +3,7 @@
 -- Read-only colored text viewer with native selection support
 
 local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Colors = require('arkitekt.core.colors')
 local M = {}
 
@@ -422,7 +423,7 @@ function ColoredTextView:render(ctx, width, height)
     return
   end
   
-  local draw_list = ImGui.GetWindowDrawList(ctx)
+  local draw_list = Base.get_context(ctx):draw_list()
   
   -- Render visible lines
   for line_idx = first_line, last_line do

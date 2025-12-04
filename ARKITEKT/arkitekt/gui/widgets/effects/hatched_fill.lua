@@ -4,6 +4,7 @@
 -- Useful for backgrounds, overlays, progress indicators, stretch zones, etc.
 
 local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Colors = require('arkitekt.core.colors')
 
 local M = {}
@@ -140,7 +141,7 @@ function M.Draw(ctx, opts)
   end
 
   -- Get draw list
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
 
   -- Draw background if specified
   if bg_color then
@@ -197,7 +198,7 @@ function M.draw_overflow(ctx, opts)
   local overflow = opts.overflow or 20  -- How far lines extend beyond bounds
   local glow_layers = opts.glow_layers or 3
 
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
 
   -- Draw multiple layers with decreasing alpha for glow effect
   for layer = glow_layers, 1, -1 do
@@ -239,7 +240,7 @@ function M.draw_marching_ants(ctx, opts)
   local thickness = opts.thickness or 1
   local speed = opts.speed or 30  -- Pixels per second
 
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
 
   -- Calculate offset based on time
   local pattern_length = dash + gap
@@ -313,7 +314,7 @@ function M.draw_glitch(ctx, opts)
   local layers = opts.layers or 3
   local show_box = opts.show_box ~= false
 
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
 
   -- Draw multiple layers for depth
   for layer = layers, 1, -1 do
@@ -378,7 +379,7 @@ function M.draw_corner_radial(ctx, opts)
   local layers = opts.layers or 4
   local intensity = opts.intensity or 1.5
 
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
 
   -- Calculate corner position
   local cx, cy
@@ -490,7 +491,7 @@ function M.draw_curved(ctx, opts)
   local layers = opts.layers or 4
   local direction = opts.direction or 'both'  -- 'forward', 'backward', 'both'
 
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
 
   for layer = layers, 1, -1 do
     local layer_mult = layer / layers

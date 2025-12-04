@@ -332,8 +332,12 @@ function M.Draw(ctx, label_or_opts, text, width)
   local width = opts.width or 200
   local height = opts.height or 24
 
+  -- Compute disabled state (opts override or context stack)
+  local actx = Base.get_context(ctx)
+  local is_disabled = opts.is_disabled or actx:is_disabled()
+
   -- Render text field
-  local changed, is_hovered = render_text_field(ctx, dl, x, y, width, height, config, state, unique_id, opts.is_disabled, opts.corner_rounding)
+  local changed, is_hovered = render_text_field(ctx, dl, x, y, width, height, config, state, unique_id, is_disabled, opts.corner_rounding)
 
   -- Handle tooltip
   if is_hovered and opts.tooltip then

@@ -3,6 +3,7 @@
 -- Modal for batch renaming with wildcard support
 
 local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.theme')
 local Container = require('arkitekt.gui.widgets.overlays.overlay.container')
@@ -185,7 +186,7 @@ end
 -- Draw modal content (shared between popup and overlay modes)
 function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, content_h)
   local modal_w = content_w or 520  -- Use provided content_w or fallback to 520
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   -- Use full available width without centering constraint
   local actual_content_w = modal_w

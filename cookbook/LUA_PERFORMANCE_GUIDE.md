@@ -492,6 +492,28 @@ local _frame_cache = {}  -- Too late!
 | Config has metatables | Essential |
 | Single item render | Not needed |
 
+### Alternative: ArkContext for Simpler Cases
+
+For framework widgets and simpler caching needs, ArkContext provides built-in per-frame memoization:
+
+```lua
+local actx = Base.get_context(ctx)
+
+-- Compute once per frame, reuse across all calls
+local colors = actx:cache('my_widget_colors', function()
+  return {
+    bg = Theme.COLORS.BG_BASE,
+    border = Theme.COLORS.BORDER_OUTER,
+  }
+end)
+```
+
+**When to use which:**
+- **ArkContext** (`actx:cache`): Framework widgets, shared computations, simpler caching
+- **Custom `_frame_config`**: App-specific high-volume rendering (1000+ items), metatable-heavy configs
+
+See `cookbook/ARKCONTEXT.md` for full ArkContext documentation.
+
 ### ARKITEKT Example
 
 From `scripts/ItemPicker/ui/grids/renderers/base.lua`:

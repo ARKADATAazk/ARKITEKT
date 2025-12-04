@@ -43,7 +43,7 @@ local DEFAULTS = {
 function M.Text(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
   local x, y = opts.x, opts.y
   local text = opts.text or ''
   local alpha = opts.alpha or 255
@@ -73,7 +73,7 @@ end
 function M.Icon(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
   local x, y = opts.x, opts.y
   local size = opts.size or 18
   local icon_char = opts.icon or ''

@@ -3,6 +3,7 @@
 -- Unified modal dialog system using overlay system like overflow modal
 
 local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 
 local Sheet = require('arkitekt.gui.widgets.overlays.overlay.sheet')
 local Button = require('arkitekt.gui.widgets.primitives.button')
@@ -73,7 +74,7 @@ local function draw_text_input(ctx, x, y, width, height, unique_id, text, placeh
   local border_inner = cfg.border_inner_color
   local border_outer = cfg.border_outer_color
 
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   -- Background
   ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, 0)

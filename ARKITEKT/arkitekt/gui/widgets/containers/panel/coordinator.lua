@@ -3,6 +3,7 @@
 -- Main panel rendering coordinator - orchestrates all panel subsystems
 
 local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 
 -- Module dependencies
 local Toolbar = require('arkitekt.gui.widgets.containers.panel.toolbar')
@@ -121,7 +122,7 @@ function Panel:begin_draw(ctx)
   local h = self.height or avail_h
 
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   local x1, y1 = cursor_x, cursor_y
   local x2, y2 = x1 + w, y1 + h
@@ -421,7 +422,7 @@ function Panel:end_draw(ctx)
     -- ============================================================================
 
     if self.config.overlay_toolbars and self._corner_button_bounds then
-      local dl = ImGui.GetWindowDrawList(ctx)
+      local dl = Base.get_context(ctx):draw_list()
       local x1, y1, w, h = table.unpack(self._corner_button_bounds)
       local panel_bounds = {x1, y1, x1 + w, y1 + h}
 

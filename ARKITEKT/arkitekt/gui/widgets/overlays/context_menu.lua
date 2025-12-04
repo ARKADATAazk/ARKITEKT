@@ -35,6 +35,7 @@
 --   end
 
 local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Colors = require('arkitekt.core.colors')
 local Theme = require('arkitekt.theme')
 
@@ -134,7 +135,7 @@ function M.MenuItem(ctx, label, shortcut, selected, enabled, config)
   local icon_font = config.icon_font
   local tooltip = config.tooltip
 
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
@@ -252,7 +253,7 @@ function M.checkbox_item(ctx, label, checked, config)
   local item_text_color = config.item_text_color or defaults.item_text_color
   local item_text_hover_color = config.item_text_hover_color or defaults.item_text_hover_color
 
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
@@ -327,7 +328,7 @@ function M.radiobutton_item(ctx, label, selected, config)
   local item_text_color = config.item_text_color or defaults.item_text_color
   local item_text_hover_color = config.item_text_hover_color or defaults.item_text_hover_color
 
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
@@ -407,7 +408,7 @@ function M.Separator(ctx, label, config)
   local x, y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   if label and label ~= '' then
     -- Separator with label (like VSCode section headers)
@@ -463,7 +464,7 @@ function M.BeginMenu(ctx, label, enabled, config)
   local item_text_color = enabled and (config.item_text_color or defaults.item_text_color) or defaults.item_disabled_color
   local item_text_hover_color = enabled and (config.item_text_hover_color or defaults.item_text_hover_color) or defaults.item_disabled_color
 
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 

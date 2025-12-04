@@ -3,6 +3,7 @@
 -- Renders collapsible group headers for tile groups
 
 local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Colors = require('arkitekt.core.colors')
 local Defaults = require('arkitekt.gui.widgets.containers.tile_group.defaults')
 local M = {}
@@ -24,7 +25,7 @@ function M.render(ctx, rect, group, state, config)
   end
 
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   -- Determine background color based on state
   local bg_color = cfg.bg_color

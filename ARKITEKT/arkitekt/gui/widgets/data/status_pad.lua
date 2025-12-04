@@ -3,7 +3,7 @@
 -- Interactive status tile with a modern, flat design. (ReaImGui 0.9)
 
 local ImGui = require('arkitekt.core.imgui')
-
+local Base = require('arkitekt.gui.widgets.base')
 local Draw   = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
@@ -92,7 +92,7 @@ function StatusPad:_draw_icon(ctx, dl, x, y)
 end
 
 function StatusPad:draw(ctx, x, y)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local x1, y1 = x, y
   local x2, y2 = x + self.width, y + self.height
   local cfg = self.config

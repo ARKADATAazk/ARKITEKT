@@ -8,6 +8,7 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local IdStack = require('arkitekt.core.id_stack')
+local Base = require('arkitekt.gui.widgets.base')
 
 local LayoutGrid = require('arkitekt.gui.widgets.containers.grid.layout')
 local Tracks = require('arkitekt.gui.animation.tracks')
@@ -519,7 +520,7 @@ function Grid:_draw_virtual(ctx, items, num_items)
 
   self.hover_id = nil
   self.current_rects = {}
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   if self.clip_rendering and self.visual_bounds then
     ImGui.PushClipRect(ctx, self.visual_bounds[1], self.visual_bounds[2], self.visual_bounds[3], self.visual_bounds[4], true)
@@ -737,7 +738,7 @@ function Grid:draw(ctx)
     ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
     -- Render destruction animations even when grid is empty
-    local dl = ImGui.GetWindowDrawList(ctx)
+    local dl = Base.get_context(ctx):draw_list()
     self.animator:render_destroy_effects(ctx, dl)
 
     self:_update_external_drop_target(ctx)
@@ -961,7 +962,7 @@ function Grid:draw(ctx)
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
   self.hover_id = nil
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   
   if self.clip_rendering and self.visual_bounds then
     ImGui.PushClipRect(ctx, self.visual_bounds[1], self.visual_bounds[2], self.visual_bounds[3], self.visual_bounds[4], true)

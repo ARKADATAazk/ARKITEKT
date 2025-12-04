@@ -131,7 +131,8 @@ function M.Draw(ctx, label_or_opts, active)
   local total_h = math.max(outer_radius * 2, text_h)
 
   -- Get state
-  local disabled = opts.is_disabled or false
+  local actx = Base.get_context(ctx)
+  local disabled = opts.is_disabled or actx:is_disabled()
   local selected = opts.is_selected or false
 
   -- Check interaction

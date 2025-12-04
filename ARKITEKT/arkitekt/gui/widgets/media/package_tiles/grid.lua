@@ -4,6 +4,7 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
+local Base = require('arkitekt.gui.widgets.base')
 
 local Colors = require('arkitekt.core.colors')
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
@@ -37,7 +38,7 @@ local function get_tile_base_color(pkg, P)
 end
 
 local function draw_package_tile(ctx, pkg, theme, P, rect, state, settings, custom_state)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local tile_w, tile_h = x2 - x1, y2 - y1
   

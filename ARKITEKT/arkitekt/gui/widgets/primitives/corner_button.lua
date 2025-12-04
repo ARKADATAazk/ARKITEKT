@@ -206,7 +206,8 @@ function M.Draw(ctx, opts)
   local size = opts.size or 24
 
   -- Get state
-  local disabled = opts.is_disabled or false
+  local actx = Base.get_context(ctx)
+  local disabled = opts.is_disabled or actx:is_disabled()
   local is_blocking = opts.is_blocking or false
 
   local hovered = false

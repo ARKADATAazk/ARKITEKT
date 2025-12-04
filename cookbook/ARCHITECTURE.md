@@ -22,6 +22,8 @@ ARKITEKT code runs **exclusively inside REAPER**. This shapes our architecture p
 ```
 arkitekt/
 ├── core/           # General utilities (fs, json, settings, colors, etc.)
+│   ├── context.lua   # ArkContext - frame-scoped state & caching
+│   ├── id_stack.lua  # ID stack for widget scoping
 │   ├── json.lua
 │   ├── uuid.lua
 │   ├── settings.lua

@@ -202,7 +202,8 @@ function M.Draw(ctx, label_or_opts, value, min, max)
   local value = Base.clamp(opts.value or default_val, min_val, max_val)
 
   -- State
-  local disabled = opts.is_disabled or false
+  local actx = Base.get_context(ctx)
+  local disabled = opts.is_disabled or actx:is_disabled()
   local changed = false
 
   -- Create invisible button for interaction

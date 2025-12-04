@@ -119,8 +119,8 @@ function M.Draw(ctx, opts)
   local x, y = ImGui.GetCursorScreenPos(ctx)
   local w, h = config.width, 20
 
-  -- Draw
-  local dl = ImGui.GetWindowDrawList(ctx)
+  -- Draw (use Base helper for cached draw list)
+  local dl = Base.get_draw_list(ctx, opts)
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, config.bg_color)
 
   -- Handle input
@@ -230,19 +230,28 @@ end
 ## Drawing Patterns
 
 ### DrawList Usage
+
+Use `Base.get_draw_list()` for automatic caching via ArkContext:
+
 ```lua
-local dl = ImGui.GetWindowDrawList(ctx)
+local Base = require('arkitekt.gui.widgets.base')
 
--- Rectangles
-ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, color, rounding)
-ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, color, rounding, flags, thickness)
+function M.Draw(ctx, opts)
+  local dl = Base.get_draw_list(ctx, opts)  -- Cached per-frame
 
--- Text
-ImGui.DrawList_AddText(dl, x, y, color, text)
+  -- Rectangles
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, color, rounding)
+  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, color, rounding, flags, thickness)
 
--- Lines
-ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, color, thickness)
+  -- Text
+  ImGui.DrawList_AddText(dl, x, y, color, text)
+
+  -- Lines
+  ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, color, thickness)
+end
 ```
+
+For advanced caching (expensive computations), see `cookbook/ARKCONTEXT.md`.
 
 ### Cursor Management
 ```lua
@@ -272,9 +281,14 @@ local right_clicked = ImGui.IsItemClicked(ctx, 1)
 
 ### Mouse Position
 ```lua
-local mx, my = ImGui.GetMousePos(ctx)
+-- Via ArkContext (cached per-frame)
+local actx = Base.get_context(ctx)
+local mx, my = actx:mouse_pos()
 local rel_x = mx - x  -- Relative to widget
 local rel_y = my - y
+
+-- Or direct ImGui call (not cached)
+local mx, my = ImGui.GetMousePos(ctx)
 ```
 
 ### Keyboard Input

@@ -3,6 +3,7 @@
 -- Node rendering with dropdown-based trigger targeting
 
 local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
@@ -21,7 +22,7 @@ function M.set_available_nodes(nodes)
 end
 
 function M.render(ctx, node, animator, config)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   
   local hover_key = node.guid .. '_hover'
   if not animator.values then animator.values = {} end
@@ -194,7 +195,7 @@ function M.render_triggers_ui(ctx, dl, node, config, chip_color)
 end
 
 function M.render_trigger_item(ctx, node, trigger, index, x, y, config, chip_color)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local trigger_config = config.trigger_ui
   local indent = x + trigger_config.indent
   local item_width = node.width - config.node.padding * 2 - trigger_config.indent - trigger_config.delete_button_size - 4

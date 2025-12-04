@@ -367,7 +367,8 @@ function M.Draw(ctx, label_or_opts, value, min, max)
   local max_val = opts.max or 100
   local default_val = opts.default or min_val
   local current_value = Base.clamp(opts.value or default_val, min_val, max_val)
-  local disabled = opts.is_disabled or false
+  local actx = Base.get_context(ctx)
+  local disabled = opts.is_disabled or actx:is_disabled()
   local changed = false
 
   ImGui.SetCursorScreenPos(ctx, x, y)

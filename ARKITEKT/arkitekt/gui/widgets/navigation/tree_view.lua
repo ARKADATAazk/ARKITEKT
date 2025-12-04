@@ -212,7 +212,7 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
   -- Get item rect for drawing overlays
   local item_min_x, item_min_y = ImGui.GetItemRectMin(ctx)
   local item_max_x, item_max_y = ImGui.GetItemRectMax(ctx)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   -- Update result for hovered
   if tree_item_hovered then

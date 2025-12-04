@@ -3,6 +3,7 @@
 -- Reusable dark container pattern for non-blocking modals
 
 local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Colors = require('arkitekt.core.colors')
 local M = {}
 
@@ -60,7 +61,7 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
   ImGui.BeginChild(ctx, '##modal_container', w, h, child_flags, window_flags)
 
   -- Draw simple 1px black border
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local border_color = Colors.WithAlpha(config.border_color, (255 * config.border_opacity * alpha) // 1)
   ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_color, r, 0, config.border_thickness)
 

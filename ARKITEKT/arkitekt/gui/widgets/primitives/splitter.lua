@@ -156,6 +156,10 @@ function M.Draw(ctx, opts)
   -- Get position
   local x, y = Base.get_position(ctx, opts)
 
+  -- Compute disabled state (opts override or context stack)
+  local actx = Base.get_context(ctx)
+  local is_disabled = opts.is_disabled or actx:is_disabled()
+
   -- Render based on orientation
   local action, position
   if opts.orientation == 'vertical' then
@@ -163,14 +167,14 @@ function M.Draw(ctx, opts)
     if not height then
       error('splitter: height required for vertical orientation')
     end
-    action, position = render_vertical(ctx, instance, x, y, height, opts.thickness, opts.is_disabled)
+    action, position = render_vertical(ctx, instance, x, y, height, opts.thickness, is_disabled)
   else
     -- Horizontal (default)
     local width = opts.width
     if not width then
       error('splitter: width required for horizontal orientation')
     end
-    action, position = render_horizontal(ctx, instance, x, y, width, opts.thickness, opts.is_disabled)
+    action, position = render_horizontal(ctx, instance, x, y, width, opts.thickness, is_disabled)
   end
 
   -- Handle callbacks

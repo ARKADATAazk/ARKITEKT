@@ -60,9 +60,17 @@ for i, track in ipairs(tracks) do
     Ark.Grid(ctx, { items = track.items })  -- ID = '1/grid', '2/grid', ...
   Ark.PopID(ctx)
 end
+
+-- Disabled Stack (disable region of widgets)
+Ark.BeginDisabled(ctx, is_loading)
+  Ark.Button(ctx, 'Save')      -- All disabled when is_loading
+  Ark.Button(ctx, 'Cancel')
+  Ark.InputText(ctx, { id = 'name' })
+Ark.EndDisabled(ctx)
 ```
 
 For full widget API, see `cookbook/QUICKSTART.md` and `cookbook/WIDGETS.md`.
+For ArkContext and stacks, see `cookbook/ARKCONTEXT.md`.
 
 **Colors**
 

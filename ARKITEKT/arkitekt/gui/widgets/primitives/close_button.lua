@@ -162,7 +162,7 @@ local function render_close_button(ctx, config, instance)
   final_icon = Colors.WithAlpha(final_icon, (255 * config.icon_opacity * alpha) // 1)
 
   -- Draw button
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local corner_radius = size / 2
 
   Draw.RectFilled(dl, button_x, button_y, button_x + size, button_y + size, final_bg, corner_radius)

@@ -3,6 +3,7 @@
 -- Main container for node system with vertical sequencer
 
 local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 
 local Config = require('arkitekt.gui.widgets.editors.nodal.defaults')
 local Node = require('arkitekt.gui.widgets.editors.nodal.core.node')
@@ -98,7 +99,7 @@ function M.render(canvas, ctx, bounds_x, bounds_y, bounds_w, bounds_h)
     return
   end
   
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   
   -- Apply inset to create visual padding for border
   local inset = M.VIEWPORT_CONFIG.inset

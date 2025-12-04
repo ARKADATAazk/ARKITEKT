@@ -344,7 +344,8 @@ end
 -- ============================================================================
 
 local function render_button(ctx, dl, x, y, width, height, config, instance, unique_id)
-  local is_disabled = config.is_disabled or false
+  local actx = Base.get_context(ctx)
+  local is_disabled = config.is_disabled or actx:is_disabled()
   local is_toggled = config.is_toggled or false
 
   -- Create InvisibleButton FIRST so IsItemHovered works for everything

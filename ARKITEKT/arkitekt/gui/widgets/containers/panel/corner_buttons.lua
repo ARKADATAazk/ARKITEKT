@@ -86,7 +86,7 @@ function M.Draw(ctx, x, y, w, h, config, panel_id)
   })
 
   -- Setup clipping to panel bounds
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   ImGui.DrawList_PushClipRect(dl, x, y, x + w, y + h, true)
 
   -- Track drawn buttons for edge border rendering

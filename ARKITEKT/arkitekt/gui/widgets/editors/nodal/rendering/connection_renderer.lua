@@ -3,6 +3,7 @@
 -- Connection rendering with Manhattan routing
 
 local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 
 local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
@@ -10,7 +11,7 @@ local Connection = require('arkitekt.gui.widgets.editors.nodal.core.connection')
 
 local M = {}
 function M.render(ctx, connection, nodes, config)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   
   local points = Connection.get_manhattan_points(connection, nodes, config)
   if not points or #points < 4 then
@@ -193,7 +194,7 @@ function M.render_connection_label_manhattan(ctx, dl, connection, points, config
 end
 
 function M.render_drag_connection(ctx, start_x, start_y, end_x, end_y, color, config)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   
   -- Simple Manhattan routing for drag preview using config values
   local horizontal_offset = config.connection.manhattan_horizontal_offset or 40

@@ -213,6 +213,21 @@ local IdStack = require('arkitekt.core.id_stack')
 Ark.PushID = IdStack.push
 Ark.PopID = IdStack.pop
 
+-- ArkContext for frame-scoped caching (loaded eagerly for performance)
+local Context = require('arkitekt.core.context')
+Ark.Context = Context
+Ark.GetContext = Context.get
+
+-- Disabled Stack - scope-based disabled regions
+-- Usage: Ark.BeginDisabled(ctx, is_loading) ... Ark.EndDisabled(ctx)
+function Ark.BeginDisabled(ctx, condition)
+  Context.get(ctx):begin_disabled(condition)
+end
+
+function Ark.EndDisabled(ctx)
+  Context.get(ctx):end_disabled()
+end
+
 -- Module registry - maps names to module paths
 -- Lazy loaded on first access to minimize startup overhead
 local MODULES = {
@@ -247,7 +262,7 @@ local MODULES = {
   -- Navigation
   Tree = 'arkitekt.gui.widgets.navigation.tree_view',
 
-  -- Core Services
+  -- Core Services (Context loaded eagerly above, not lazy)
   Theme = 'arkitekt.theme',
   Settings = 'arkitekt.core.settings',
   Logger = 'arkitekt.debug.logger',

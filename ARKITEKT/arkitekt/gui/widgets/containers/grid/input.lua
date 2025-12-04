@@ -4,7 +4,7 @@
 -- FIXED: Tiles outside grid bounds are no longer interactive
 
 local ImGui = require('arkitekt.core.imgui')
-
+local Base = require('arkitekt.gui.widgets.base')
 local Draw = require('arkitekt.gui.draw.primitives')
 
 -- Load overlay manager for modal blocking checks (optional dependency)
@@ -744,7 +744,7 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
   state.frames_active = (state.frames_active or 0) + 1
 
   local Colors = require('arkitekt.core.colors')
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   -- Calculate text line dimensions
   local text_height = ImGui.GetTextLineHeight(ctx)

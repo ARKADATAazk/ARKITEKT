@@ -5,6 +5,7 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local IdStack = require('arkitekt.core.id_stack')
+local Context = require('arkitekt.core.context')
 local Colors = require('arkitekt.core.colors')
 local Anim = require('arkitekt.config.animation')
 local CoreMath = require('arkitekt.core.math')
@@ -103,22 +104,11 @@ local last_cleanup_time = 0
 local CLEANUP_INTERVAL = 60.0  -- Cleanup every 60 seconds
 local STALE_THRESHOLD = 30.0   -- Remove instances not accessed for 30 seconds
 
--- PERFORMANCE: Cache time once per frame instead of calling reaper.time_precise() per widget
-local _cached_frame_time = nil
-local _last_frame_id = nil
-
---- Get current time (cached per frame for performance)
---- PERFORMANCE: Samples reaper.time_precise() once per frame instead of per widget
---- @param ctx userdata ImGui context (used to detect frame changes)
+--- Get current time (cached per frame via ArkContext)
+--- @param ctx userdata ImGui context
 --- @return number Current time in seconds
 local function get_frame_time(ctx)
-  -- Detect frame change using ImGui's frame count
-  local frame_id = ImGui.GetFrameCount(ctx)
-  if frame_id ~= _last_frame_id then
-    _cached_frame_time = reaper.time_precise()
-    _last_frame_id = frame_id
-  end
-  return _cached_frame_time
+  return Context.get(ctx).time
 end
 
 --- Create a new instance registry with access tracking
@@ -260,12 +250,20 @@ function M.resolve_id(ctx, opts, default_prefix)
   return id
 end
 
---- Get draw list from options or window
+--- Get ArkContext for frame-cached values
+--- Widgets can use this for draw_list, time, mouse_pos, delta_time, cache, etc.
+--- @param ctx userdata ImGui context
+--- @return table ArkContext instance
+function M.get_context(ctx)
+  return Context.get(ctx)
+end
+
+--- Get draw list from options or window (cached via ArkContext)
 --- @param ctx userdata ImGui context
 --- @param opts table Options potentially containing draw_list
 --- @return userdata Draw list
 function M.get_draw_list(ctx, opts)
-  return opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  return opts.draw_list or Context.get(ctx):draw_list()
 end
 
 --- Get position from options or cursor

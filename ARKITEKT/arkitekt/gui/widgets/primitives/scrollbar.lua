@@ -124,7 +124,7 @@ function M.Draw(ctx, opts)
     end
   end
 
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local track_x = x + padding
   local track_y = y
   local track_w = width - padding * 2

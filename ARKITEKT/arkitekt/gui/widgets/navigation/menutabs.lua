@@ -3,6 +3,7 @@
 -- Equal-width menu tabs for ReaImGui 0.9+
 
 local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Colors = require('arkitekt.core.colors')
 local Config = require('arkitekt.core.merge')
 local Theme = require('arkitekt.theme')
@@ -149,7 +150,7 @@ function M:draw(ctx)
   local x = snap(content_x1)
   local y = snap(cury)
   local w = snap(content_x2 - content_x1)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   local edges = {}
   for i = 0, n do

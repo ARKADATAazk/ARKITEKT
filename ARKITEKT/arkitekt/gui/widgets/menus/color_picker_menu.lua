@@ -3,6 +3,7 @@
 -- Reusable color picker for context menus with Chip rendering
 
 local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Colors = require('arkitekt.config.colors')
 local ColorUtils = require('arkitekt.core.colors')
 local Chip = require('arkitekt.gui.widgets.data.chip')
@@ -54,7 +55,7 @@ function M.render(ctx, opts)
   local none_label = opts.none_label or DEFAULTS.none_label
 
   local selected = false
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   -- Use size or radius based on shape
   local is_square = shape == Chip.SHAPE.SQUARE

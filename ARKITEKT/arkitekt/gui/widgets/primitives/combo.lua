@@ -179,14 +179,14 @@ function Dropdown:handle_mousewheel(ctx, is_hovered)
   return false
 end
 
-function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
+function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding, is_disabled)
   local cfg = self.config
-  
+
   local x1, y1 = x, y
   local x2, y2 = x + width, y + height
-  
+
   local mx, my = ImGui.GetMousePos(ctx)
-  local is_hovered = mx >= x1 and mx < x2 and my >= y1 and my < y2
+  local is_hovered = not is_disabled and mx >= x1 and mx < x2 and my >= y1 and my < y2
   
   -- Animate hover alpha
   local target_alpha = (is_hovered or self.is_open) and 1.0 or 0.0
@@ -200,8 +200,14 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
   local text_color = cfg.text_color
   local border_inner = cfg.border_inner_color
   local arrow_color = cfg.arrow_color
-  
-  if self.is_open then
+
+  if is_disabled then
+    -- Disabled state: dimmed colors
+    bg_color = Colors.Darken(cfg.bg_color, 0.2)
+    text_color = Colors.WithOpacity(cfg.text_color, 0.5)
+    border_inner = Colors.WithOpacity(cfg.border_inner_color, 0.5)
+    arrow_color = Colors.WithOpacity(cfg.arrow_color, 0.4)
+  elseif self.is_open then
     bg_color = cfg.bg_active_color
     text_color = cfg.text_active_color
     border_inner = cfg.border_active_color
@@ -249,12 +255,12 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
   ImGui.SetCursorScreenPos(ctx, x1, y1)
   ImGui.InvisibleButton(ctx, self.id .. '_btn', width, height)
 
-  local clicked = ImGui.IsItemClicked(ctx, 0)
-  local right_clicked = ImGui.IsItemClicked(ctx, 1)
-  local wheel_changed = self:handle_mousewheel(ctx, is_hovered)
+  local clicked = not is_disabled and ImGui.IsItemClicked(ctx, 0)
+  local right_clicked = not is_disabled and ImGui.IsItemClicked(ctx, 1)
+  local wheel_changed = not is_disabled and self:handle_mousewheel(ctx, is_hovered)
 
-  -- Right-click to toggle sort direction (only when enabled)
-  if cfg.enable_sort and right_clicked and self.current_value then
+  -- Right-click to toggle sort direction (only when enabled and not disabled)
+  if cfg.enable_sort and right_clicked and self.current_value and not is_disabled then
     self.sort_direction = (self.sort_direction == 'asc') and 'desc' or 'asc'
     if cfg.on_direction_change then
       cfg.on_direction_change(self.sort_direction)
@@ -291,7 +297,7 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
     border_thickness = popup_cfg.border_thickness,
     min_width = math.max(width * 1.5, 180),
   }) then
-    local popup_dl = ImGui.GetWindowDrawList(ctx)
+    local popup_dl = Base.get_context(ctx):draw_list()
     self.popup_hover_index = -1
     self.footer_interacting = false
 
@@ -557,7 +563,7 @@ function M.Draw(ctx, label_or_opts, selected, items)
   end
   local width = opts.width
   local height = opts.height
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
   local state_or_id = opts.panel_state or opts.id or 'combo'
 
   -- Build user_config from remaining opts (excluding the extracted fields)
@@ -580,8 +586,12 @@ function M.Draw(ctx, label_or_opts, selected, items)
   -- Get or create instance
   local instance = get_or_create_instance(context, config, state_or_id)
 
+  -- Compute disabled state
+  local actx = Base.get_context(ctx)
+  local is_disabled = opts.is_disabled or actx:is_disabled()
+
   -- Draw dropdown
-  local changed = instance:draw(ctx, dl, x, y, width, height, context.corner_rounding)
+  local changed = instance:draw(ctx, dl, x, y, width, height, context.corner_rounding, is_disabled)
 
   -- Sync state back
   sync_to_state(instance, state_or_id, context)

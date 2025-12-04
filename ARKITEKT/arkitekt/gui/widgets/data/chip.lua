@@ -3,7 +3,7 @@
 -- Unified chip component: pills, dots, indicators
 
 local ImGui = require('arkitekt.core.imgui')
-
+local Base = require('arkitekt.gui.widgets.base')
 local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
@@ -128,7 +128,7 @@ function M.Draw(ctx, opts)
   local is_active = opts.is_active or false
   
   if style == STYLE.INDICATOR then
-    local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+    local dl = Base.get_draw_list(ctx, opts)
     local x = opts.x or 0
     local y = opts.y or 0
     local shape = opts.shape or SHAPE.CIRCLE
@@ -227,7 +227,7 @@ function M.Draw(ctx, opts)
   end
   
   local is_clicked = is_interactive and ImGui.IsItemClicked(ctx) or false
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   
   if style == STYLE.DOT then
     local bg_color = opts.bg_color or 0x1E1E1EFF
