@@ -214,11 +214,11 @@ M.TITLEBAR = {
     branding_opacity = 0.15,
     branding_color = nil,
 
-    -- Colors
+    -- Colors (nil = auto-contrast from background)
     bg_color = nil,
     bg_color_active = nil,
     text_color = nil,
-    version_color = 0xFFFFFF5B,
+    version_color = nil,
 
     -- Button colors (minimal style)
     button_maximize_normal = 0x00000000,
