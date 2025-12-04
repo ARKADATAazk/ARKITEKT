@@ -402,8 +402,8 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
   end
   state.open_nodes[node_id] = node_open
 
-  -- Handle F2 key for rename
-  if is_selected and opts.renameable ~= false and ImGui.IsKeyPressed(ctx, ImGui.Key_F2) and not is_renaming then
+  -- Handle F2 key for rename (only when no text input is active)
+  if is_selected and opts.renameable ~= false and ImGui.IsKeyPressed(ctx, ImGui.Key_F2) and not is_renaming and not ImGui.IsAnyItemActive(ctx) then
     local can_rename = true
     if opts.can_rename then
       can_rename = opts.can_rename(node)
@@ -414,8 +414,8 @@ local function render_tree_node(ctx, node, opts, state, result, depth, node_coun
     end
   end
 
-  -- Handle Delete key
-  if is_selected and ImGui.IsKeyPressed(ctx, ImGui.Key_Delete) and not is_renaming then
+  -- Handle Delete key (only when no text input is active)
+  if is_selected and ImGui.IsKeyPressed(ctx, ImGui.Key_Delete) and not is_renaming and not ImGui.IsAnyItemActive(ctx) then
     if opts.on_delete then
       opts.on_delete(node)
     end

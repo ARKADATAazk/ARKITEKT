@@ -253,7 +253,8 @@ function M:draw(ctx)
     ImGui.Dummy(ctx, 1, self.style.spacing_after)
   end
 
-  if ImGui.IsWindowFocused(ctx, ImGui.FocusedFlags_ChildWindows or 0) then
+  -- Keyboard navigation (only when no text input is active)
+  if ImGui.IsWindowFocused(ctx, ImGui.FocusedFlags_ChildWindows or 0) and not ImGui.IsAnyItemActive(ctx) then
     local left  = ImGui.IsKeyPressed(ctx, ImGui.Key_LeftArrow  or 0, false)
     local right = ImGui.IsKeyPressed(ctx, ImGui.Key_RightArrow or 0, false)
     local home  = ImGui.IsKeyPressed(ctx, ImGui.Key_Home       or 0, false)
