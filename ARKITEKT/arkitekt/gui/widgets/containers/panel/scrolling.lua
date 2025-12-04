@@ -1,9 +1,8 @@
 -- @noindex
 -- panel/scrolling.lua
--- Scrollbar management and anti-jitter logic
+-- Scrollbar anti-jitter logic for native ImGui scrollbars
 
 local ImGui = require('arkitekt.core.imgui')
-local Scrollbar = require('arkitekt.gui.widgets.primitives.scrollbar')
 
 local M = {}
 
@@ -37,82 +36,25 @@ function M.get_effective_child_width(ctx, panel, base_width)
 end
 
 -- ============================================================================
--- SCROLLBAR INITIALIZATION
+-- SCROLLBAR STUBS (custom scrollbar removed - use native ImGui)
 -- ============================================================================
 
---- Create custom scrollbar if enabled
---- @param panel_id string Panel ID
---- @param config table Panel config
---- @return table|nil Scrollbar instance or nil
+--- Stub: Custom scrollbar creation disabled
 function M.create_scrollbar(panel_id, config)
-  if not config.scroll or not config.scroll.custom_scrollbar then
-    return nil
-  end
-
-  return Scrollbar.new({
-    id = panel_id .. '_scrollbar',
-    config = config.scroll.scrollbar_config,
-    on_scroll = function(scroll_pos)
-      -- Callback handled in panel update
-    end,
-  })
+  return nil
 end
 
--- ============================================================================
--- SCROLLBAR UPDATE
--- ============================================================================
-
---- Update scrollbar state and sync with ImGui scroll
---- @param ctx userdata ImGui context
---- @param panel table Panel instance
+--- Stub: No-op for custom scrollbar update
 function M.update_scrollbar(ctx, panel)
-  if not panel.scrollbar or not panel._child_began_successfully then
-    return
-  end
-
-  local content_height = ImGui.GetCursorPosY(ctx)
-  local scroll_y = ImGui.GetScrollY(ctx)
-
-  panel.scrollbar:set_content_height(content_height)
-  panel.scrollbar:set_visible_height(panel.child_height)
-  panel.scrollbar:set_scroll_pos(scroll_y)
-
-  -- Sync scroll position if user is dragging scrollbar
-  if panel.scrollbar.is_dragging then
-    ImGui.SetScrollY(ctx, panel.scrollbar:get_scroll_pos())
-  end
 end
 
--- ============================================================================
--- SCROLLBAR RENDERING
--- ============================================================================
-
---- Draw custom scrollbar if enabled and scrollable
---- @param ctx userdata ImGui context
---- @param panel table Panel instance
+--- Stub: No-op for custom scrollbar draw
 function M.draw_scrollbar(ctx, panel)
-  if not panel.scrollbar or not panel.scrollbar:is_scrollable() then
-    return
-  end
-
-  local scrollbar_x = panel.child_x + panel.child_width - panel.config.scroll.scrollbar_config.width
-  local scrollbar_y = panel.child_y
-
-  panel.scrollbar:draw(ctx, scrollbar_x, scrollbar_y, panel.child_height)
 end
 
--- ============================================================================
--- SCROLLBAR WIDTH CALCULATION
--- ============================================================================
-
---- Get scrollbar width for layout calculations
---- @param panel table Panel instance
---- @return number Scrollbar width (0 if disabled)
+--- Stub: Returns 0 (native scrollbar width handled by ImGui)
 function M.get_scrollbar_width(panel)
-  if not panel.scrollbar then
-    return 0
-  end
-  return panel.config.scroll.scrollbar_config.width or 0
+  return 0
 end
 
 return M

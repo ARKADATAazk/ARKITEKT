@@ -6,6 +6,7 @@ local ImGui = require('arkitekt.core.imgui')
 local Base = require('arkitekt.gui.widgets.base')
 local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
+local Theme = require('arkitekt.theme')
 
 local M = {}
 -- ============================================================================
@@ -87,7 +88,7 @@ end
 -- RENDERING
 -- ============================================================================
 
-local function render_close_button(ctx, config, instance)
+local function render_close_button(ctx, config, instance, is_disabled)
   local dt = ImGui.GetDeltaTime(ctx)
 
   -- Get bounds from config
@@ -122,11 +123,11 @@ local function render_close_button(ctx, config, instance)
     return false, false  -- Not visible, not clicked
   end
 
-  -- Check hover (only when sufficiently visible)
+  -- Check hover (only when sufficiently visible and not disabled)
   local is_hovered = false
   local clicked = false
 
-  if alpha > 0.8 then
+  if alpha > 0.8 and not is_disabled then
     ImGui.SetCursorScreenPos(ctx, button_x, button_y)
     if ImGui.InvisibleButton(ctx, '##' .. instance.id, size, size) then
       clicked = true
@@ -142,11 +143,12 @@ local function render_close_button(ctx, config, instance)
   end
   local hover_alpha = instance.hover_alpha:value()
 
-  -- Get colors with defaults
-  local bg_color = config.bg_color or 0x000000FF
-  local icon_color = config.icon_color or 0xFFFFFFFF
-  local hover_color = config.hover_color or 0xFF4444FF
-  local active_color = config.active_color or 0xFF0000FF
+  -- Get colors with defaults (from Theme)
+  local C = Theme.COLORS
+  local bg_color = config.bg_color or C.BORDER_OUTER
+  local icon_color = config.icon_color or C.TEXT_BRIGHT
+  local hover_color = config.hover_color or C.ACCENT_DANGER
+  local active_color = config.active_color or Colors.AdjustBrightness(C.ACCENT_DANGER, -0.2)
 
   -- Calculate final colors
   local bg_opacity = config.bg_opacity + (config.bg_opacity_hover - config.bg_opacity) * hover_alpha
@@ -197,6 +199,10 @@ end
 function M.Draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
+  -- Check disabled state (opts or stack)
+  local actx = Base.get_context(ctx)
+  local is_disabled = opts.is_disabled or actx:is_disabled()
+
   -- Resolve unique ID
   local unique_id = Base.resolve_id(ctx, opts, 'close_button')
 
@@ -204,7 +210,7 @@ function M.Draw(ctx, opts)
   local instance = Base.get_or_create_instance(instances, unique_id, CloseButton.new, ctx)
 
   -- Render
-  local is_hovered, clicked = render_close_button(ctx, opts, instance)
+  local is_hovered, clicked = render_close_button(ctx, opts, instance, is_disabled)
 
   -- Handle callback
   if clicked and opts.on_click then
@@ -224,21 +230,22 @@ end
 --- @return table Close button instance with :update() and :render() methods
 function M.new(opts)
   opts = opts or {}
+  local C = Theme.COLORS
 
   local button = {
     size = opts.size or DEFAULTS.size,
     margin = opts.margin or DEFAULTS.margin,
     proximity_distance = opts.proximity_distance or DEFAULTS.proximity_distance,
 
-    bg_color = opts.bg_color or 0x000000FF,
+    bg_color = opts.bg_color or C.BORDER_OUTER,
     bg_opacity = opts.bg_opacity or DEFAULTS.bg_opacity,
     bg_opacity_hover = opts.bg_opacity_hover or DEFAULTS.bg_opacity_hover,
 
-    icon_color = opts.icon_color or 0xFFFFFFFF,
+    icon_color = opts.icon_color or C.TEXT_BRIGHT,
     icon_opacity = opts.icon_opacity or DEFAULTS.icon_opacity,
 
-    hover_color = opts.hover_color or 0xFF4444FF,
-    active_color = opts.active_color or 0xFF0000FF,
+    hover_color = opts.hover_color or C.ACCENT_DANGER,
+    active_color = opts.active_color or Colors.AdjustBrightness(C.ACCENT_DANGER, -0.2),
 
     alpha = create_alpha_tracker(12.0),
     hover_alpha = create_alpha_tracker(16.0),
