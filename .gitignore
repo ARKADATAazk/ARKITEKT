@@ -8,3 +8,6 @@ NUL
 
 # Editor/Dropbox temp files
 *.tmp.*
+
+# Node.js (devtools)
+node_modules/
