@@ -702,6 +702,9 @@ function Grid:_draw_virtual(ctx, items, num_items)
 end
 
 function Grid:draw(ctx)
+  -- Store ctx for behavior callbacks that need ImGui access
+  self._ctx = ctx
+
   local items = self.get_items()
   -- Cache table length for performance (avoid recalculating #items multiple times)
   local num_items = #items

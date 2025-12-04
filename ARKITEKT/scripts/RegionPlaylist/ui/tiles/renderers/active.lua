@@ -96,6 +96,31 @@ M.CONFIG = {
   badge_text_nudge_y = -1,
   -- Spawn animation
   spawn = { enabled = true, duration = 0.25, scale_start = 0.8 },
+  -- Overlap warning badge (RED - nested regions)
+  overlap = {
+    icon = '⚠',
+    badge_size = 18,
+    badge_bg = 0x4A2020FF,
+    badge_border = 0xFF4444FF,
+    icon_color = 0xFFBB33FF,
+  },
+  -- Beyond project end warning badge (YELLOW/ORANGE)
+  beyond = {
+    icon = '⚠',
+    badge_size = 18,
+    badge_bg = 0x3A3010FF,
+    badge_border = 0xFFAA22FF,
+    icon_color = 0xFFDD44FF,
+  },
+  -- Skip badge (BLUE - scheduled transition will skip this tile)
+  skip = {
+    icon = '→',
+    badge_bg = 0x1A2A3AFF,
+    badge_border = 0x4488CCFF,
+    icon_color = 0x66AAFFFF,
+    desaturate = 0.7,
+    brightness = 0.5,
+  },
 }
 
 local function clamp_min_lightness(color, min_l)
@@ -153,17 +178,34 @@ function M.render_region(opts)
   if not region then return end
 
   local is_enabled = item.enabled ~= false
+
+  -- Check if this item is being skipped due to scheduled transition
+  local is_skipped = false
+  if bridge then
+    local skipped_keys = bridge:get_skipped_keys()
+    is_skipped = skipped_keys and skipped_keys[item.key] or false
+  end
+
   animator:track(item.key, 'hover', state.hover and 1.0 or 0.0, hover_config and hover_config.animation_speed_hover or 12.0)
   animator:track(item.key, 'enabled', is_enabled and 1.0 or 0.0, M.CONFIG.disabled.fade_speed)
+  animator:track(item.key, 'skipped', is_skipped and 1.0 or 0.0, M.CONFIG.disabled.fade_speed)
   local hover_factor = animator:get(item.key, 'hover')
   local enabled_factor = animator:get(item.key, 'enabled')
+  local skip_factor = animator:get(item.key, 'skipped')
 
   local t1 = PROFILE_ENABLED and time_precise() or 0
 
   local base_color = region.color or M.CONFIG.bg_base
+  -- Apply disabled styling
   if enabled_factor < 1.0 then
     base_color = Colors_Desaturate(base_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
     base_color = Colors_AdjustBrightness(base_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
+    base_color = clamp_min_lightness(base_color, M.CONFIG.disabled.min_lightness or 0.28)
+  end
+  -- Apply skip styling (blue-tinted dim)
+  if skip_factor > 0 then
+    base_color = Colors_Desaturate(base_color, M.CONFIG.skip.desaturate * skip_factor)
+    base_color = Colors_AdjustBrightness(base_color, 1.0 - (1.0 - M.CONFIG.skip.brightness) * skip_factor)
     base_color = clamp_min_lightness(base_color, M.CONFIG.disabled.min_lightness or 0.28)
   end
 
@@ -214,7 +256,15 @@ function M.render_region(opts)
   local show_text = actual_height >= M.CONFIG.responsive.hide_text_below
   local show_badge = actual_height >= M.CONFIG.responsive.hide_badge_below
   local show_length = actual_height >= M.CONFIG.responsive.hide_length_below
-  local text_alpha = (0xFF * enabled_factor + M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))//1
+  -- Compute text alpha accounting for both disabled and skip states
+  local combined_factor = enabled_factor * (1.0 - skip_factor * 0.5)  -- Skip dims to 50%
+  local text_alpha = (0xFF * combined_factor + M.CONFIG.disabled.min_alpha * (1.0 - combined_factor))//1
+
+  -- Check for region warnings early (needed for right_elements calculation)
+  -- Priority: Overlap (red) > Beyond project end (yellow)
+  local has_overlap = State.has_region_overlap and State.has_region_overlap(item.rid)
+  local is_beyond = not has_overlap and State.is_region_beyond_project_end and State.is_region_beyond_project_end(item.rid)
+  local has_warning = has_overlap or is_beyond
 
   local right_elements = {}
 
@@ -232,6 +282,26 @@ function M.render_region(opts)
     )
   end
 
+  -- Add warning badge to right_elements if needed (will be drawn left of reps badge)
+  local warning_cfg = has_overlap and M.CONFIG.overlap or M.CONFIG.beyond
+  if has_warning and show_badge then
+    right_elements[#right_elements + 1] = BaseRenderer.create_element(
+      true,
+      warning_cfg.badge_size,
+      4  -- Small gap between warning and reps badge
+    )
+  end
+
+  -- Add skip badge to right_elements if item is being skipped
+  if is_skipped and show_badge then
+    local skip_icon_w = CalcTextSize(ctx, M.CONFIG.skip.icon) * BaseRenderer.CONFIG.badge_font_scale
+    right_elements[#right_elements + 1] = BaseRenderer.create_element(
+      true,
+      skip_icon_w + M.CONFIG.badge_padding_x * 2,
+      4  -- Small gap
+    )
+  end
+
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
     local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
@@ -240,6 +310,8 @@ function M.render_region(opts)
 
   local t6 = PROFILE_ENABLED and time_precise() or 0
 
+  -- Track reps badge position for overlap badge positioning
+  local reps_badge_x, reps_badge_y, reps_badge_height = x2, y1, 0
   if show_badge then
     -- badge_text, bw, bh already computed above
     local badge_height = bh + M.CONFIG.badge_padding_y * 2
@@ -255,15 +327,99 @@ function M.render_region(opts)
     SetCursorScreenPos(ctx, badge_x, badge_y)
     InvisibleButton(ctx, '##badge_' .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
     if IsItemClicked(ctx, 0) and on_repeat_cycle then on_repeat_cycle(item.key) end
+
+    -- Track for overlap badge alignment
+    reps_badge_x = badge_x
+    reps_badge_y = badge_y
+    reps_badge_height = badge_height
   end
 
   local t7 = PROFILE_ENABLED and time_precise() or 0
 
   if show_length then BaseRenderer.draw_length_display(ctx, dl, rect, region, base_color, text_alpha) end
 
+  local t8 = PROFILE_ENABLED and time_precise() or 0
+
+  -- Track leftmost badge position for stacking badges
+  local next_badge_x = reps_badge_x
+
+  -- Draw warning badge (right side, left of reps badge, matching size)
+  if has_warning and show_badge then
+    -- Use same sizing as reps badge (text height + padding), but square
+    local icon_w, icon_h = CalcTextSize(ctx, warning_cfg.icon)
+    icon_w, icon_h = icon_w * BaseRenderer.CONFIG.badge_font_scale, icon_h * BaseRenderer.CONFIG.badge_font_scale
+    local badge_w = icon_w + M.CONFIG.badge_padding_x * 2
+    local badge_h = icon_h + M.CONFIG.badge_padding_y * 2
+    local badge_x = next_badge_x - badge_w - 4  -- 4px gap from previous badge
+    local badge_y = reps_badge_y  -- Same Y position as reps badge
+    local badge_x2 = badge_x + badge_w
+    local badge_y2 = badge_y + badge_h
+
+    -- Draw badge background (same style as reps badge)
+    local badge_bg = (warning_cfg.badge_bg & 0xFFFFFF00) | ((((warning_cfg.badge_bg & 0xFF) * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor)))//1)
+    DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
+    DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, warning_cfg.badge_border, M.CONFIG.badge_rounding, 0, 0.5)
+
+    -- Draw warning icon centered
+    local icon_x = badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x
+    local icon_y = badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y
+    Draw_Text(dl, icon_x, icon_y, warning_cfg.icon_color, warning_cfg.icon)
+
+    -- Tooltip
+    SetCursorScreenPos(ctx, badge_x, badge_y)
+    InvisibleButton(ctx, item.key .. '_warning_tooltip', badge_w, badge_h)
+    if ImGui.IsItemHovered(ctx) then
+      if has_overlap then
+        local nested_rids = State.get_nested_regions(item.rid)
+        local nested_count = nested_rids and #nested_rids or 0
+        ImGui.SetTooltip(ctx, string.format('Contains %d nested region%s', nested_count, nested_count ~= 1 and 's' or ''))
+      else
+        ImGui.SetTooltip(ctx, 'Region starts beyond project end')
+      end
+    end
+
+    next_badge_x = badge_x  -- Update for next badge
+  end
+
+  -- Draw skip badge (blue, left of other badges) when tile is being skipped
+  if skip_factor > 0 and show_badge then
+    local skip_cfg = M.CONFIG.skip
+    local icon_w, icon_h = CalcTextSize(ctx, skip_cfg.icon)
+    icon_w, icon_h = icon_w * BaseRenderer.CONFIG.badge_font_scale, icon_h * BaseRenderer.CONFIG.badge_font_scale
+    local badge_w = icon_w + M.CONFIG.badge_padding_x * 2
+    local badge_h = icon_h + M.CONFIG.badge_padding_y * 2
+    local badge_x = next_badge_x - badge_w - 4  -- 4px gap from previous badge
+    local badge_y = reps_badge_y
+    local badge_x2 = badge_x + badge_w
+    local badge_y2 = badge_y + badge_h
+
+    -- Fade badge alpha with skip_factor for smooth transition
+    local skip_alpha = ((skip_cfg.badge_bg & 0xFF) * skip_factor)//1
+    local badge_bg = (skip_cfg.badge_bg & 0xFFFFFF00) | skip_alpha
+    local border_alpha = ((skip_cfg.badge_border & 0xFF) * skip_factor)//1
+    local border_color = (skip_cfg.badge_border & 0xFFFFFF00) | border_alpha
+    local icon_alpha = ((skip_cfg.icon_color & 0xFF) * skip_factor)//1
+    local icon_color = (skip_cfg.icon_color & 0xFFFFFF00) | icon_alpha
+
+    DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
+    DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, border_color, M.CONFIG.badge_rounding, 0, 0.5)
+
+    -- Draw skip icon
+    local icon_x = badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x
+    local icon_y = badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y
+    Draw_Text(dl, icon_x, icon_y, icon_color, skip_cfg.icon)
+
+    -- Tooltip
+    SetCursorScreenPos(ctx, badge_x, badge_y)
+    InvisibleButton(ctx, item.key .. '_skip_tooltip', badge_w, badge_h)
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, 'Will be skipped (scheduled transition)')
+    end
+  end
+
   -- Profiling accumulation
   if PROFILE_ENABLED then
-    local t8 = time_precise()
+    local t9 = time_precise()
     _profile.animator = _profile.animator + (t1 - t0)
     _profile.color = _profile.color + (t2 - t1)
     _profile.fx_config = _profile.fx_config + (t3 - t2)
@@ -271,7 +427,7 @@ function M.render_region(opts)
     _profile.base_tile = _profile.base_tile + (t5 - t4)
     _profile.text = _profile.text + (t6 - t5)
     _profile.badge = _profile.badge + (t7 - t6)
-    _profile.length = _profile.length + (t8 - t7)
+    _profile.length = _profile.length + (t8 - t7) + (t9 - t8)  -- Include overlap badge time
     _profile.count = _profile.count + 1
     profile_report()
   end

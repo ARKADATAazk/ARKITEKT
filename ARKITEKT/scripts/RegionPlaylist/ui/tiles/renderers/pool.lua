@@ -93,6 +93,22 @@ M.CONFIG = {
   badge_text_nudge_y = -2,
   -- Spawn animation
   spawn = { enabled = true, duration = 0.25, scale_start = 0.8 },
+  -- Overlap warning badge (RED - nested regions)
+  overlap = {
+    icon = '⚠',
+    badge_size = 18,
+    badge_bg = 0x4A2020FF,
+    badge_border = 0xFF4444FF,
+    icon_color = 0xFFBB33FF,
+  },
+  -- Beyond project end warning badge (YELLOW/ORANGE)
+  beyond = {
+    icon = '⚠',
+    badge_size = 18,
+    badge_bg = 0x3A3010FF,
+    badge_border = 0xFFAA22FF,
+    icon_color = 0xFFDD44FF,
+  },
   circular = {
     base_color = 0x240C0CFF,
     stripe_color = Ark.Colors.WithOpacity(0x430D0D85, 0.2),
@@ -227,14 +243,55 @@ function M.render_region(opts)
 
   if show_length then BaseRenderer.draw_length_display(ctx, dl, rect, region, base_color, 0xFF) end
 
+  local t5 = PROFILE_ENABLED and time_precise() or 0
+
+  -- Check for region warnings and show appropriate badge
+  -- Priority: Overlap (red) > Beyond project end (yellow)
+  local State = require('RegionPlaylist.app.state')
+  local has_overlap = State.has_region_overlap and State.has_region_overlap(region.rid)
+  local is_beyond = not has_overlap and State.is_region_beyond_project_end and State.is_region_beyond_project_end(region.rid)
+
+  if has_overlap or is_beyond then
+    local warning_cfg = has_overlap and M.CONFIG.overlap or M.CONFIG.beyond
+    local badge_size = warning_cfg.badge_size
+    local badge_x = x2 - badge_size - M.CONFIG.badge_margin
+    local badge_y = y1 + M.CONFIG.badge_margin
+    local badge_x2 = badge_x + badge_size
+    local badge_y2 = badge_y + badge_size
+
+    -- Draw badge background
+    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, warning_cfg.badge_bg, M.CONFIG.badge_rounding)
+    DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, warning_cfg.badge_border, M.CONFIG.badge_rounding, 0, 1)
+
+    -- Draw warning icon centered
+    local icon_w, icon_h = ImGui.CalcTextSize(ctx, warning_cfg.icon)
+    local icon_x = badge_x + (badge_size - icon_w) * 0.5
+    local icon_y = badge_y + (badge_size - icon_h) * 0.5 - 1
+    Draw_Text(dl, icon_x, icon_y, warning_cfg.icon_color, warning_cfg.icon)
+
+    -- Tooltip
+    ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
+    ImGui.InvisibleButton(ctx, key .. '_warning_tooltip', badge_size, badge_size)
+    if ImGui.IsItemHovered(ctx) then
+      if has_overlap then
+        local nested_rids = State.get_nested_regions(region.rid)
+        local nested_count = nested_rids and #nested_rids or 0
+        ImGui.SetTooltip(ctx, string.format('Contains %d nested region%s', nested_count, nested_count ~= 1 and 's' or ''))
+      else
+        ImGui.SetTooltip(ctx, 'Region starts beyond project end')
+      end
+    end
+  end
+
   -- Profiling accumulation
   if PROFILE_ENABLED then
-    local t5 = time_precise()
+    local t6 = time_precise()
     _profile.animator = _profile.animator + (t1 - t0)
     _profile.color = _profile.color + (t2 - t1)
     _profile.base_tile = _profile.base_tile + (t3 - t2)
     _profile.text = _profile.text + (t4 - t3)
     _profile.length = _profile.length + (t5 - t4)
+    _profile.badge = _profile.badge + (t6 - t5)
     _profile.count = _profile.count + 1
     profile_report()
   end

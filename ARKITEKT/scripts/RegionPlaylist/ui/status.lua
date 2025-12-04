@@ -9,10 +9,12 @@ local M = {}
 
 -- Status priority (highest priority wins):
 -- 1. Errors (red)
--- 2. Warnings (yellow/orange)
--- 3. Info states (light grey)
--- 4. Playing (light grey)
--- 5. Ready (light grey)
+-- 2. State change notifications (blue/orange)
+-- 3. Overlap warning during playback (red)
+-- 4. Warnings (yellow/orange)
+-- 5. Info states (blue)
+-- 6. Playing (green)
+-- 7. Ready (light grey)
 
 local STATUS_COLORS = Constants.STATUS
 
@@ -55,7 +57,29 @@ local function get_app_status(State)
       end
     end
 
-    -- Priority 3: Warnings (ORANGE) - only if no errors/notifications
+    -- Priority 3: Overlap Warning (RED) - nested regions during playback
+    if not status_message and bridge_state.is_playing then
+      if State.get_playlist_overlap_warning then
+        local overlap_warning = State.get_playlist_overlap_warning()
+        if overlap_warning then
+          status_message = '⚠ Nested regions detected, playback might not work as expected'
+          status_color = STATUS_COLORS.ERROR
+        end
+      end
+    end
+
+    -- Priority 3b: Beyond Project End Warning (ORANGE) - during playback
+    if not status_message and bridge_state.is_playing then
+      if State.get_playlist_beyond_warning then
+        local beyond_warning = State.get_playlist_beyond_warning()
+        if beyond_warning then
+          status_message = '⚠ Playlist contains regions beyond project end, playback may stop early'
+          status_color = STATUS_COLORS.WARNING
+        end
+      end
+    end
+
+    -- Priority 4: Warnings (ORANGE) - only if no errors/notifications
     if not status_message then
       local active_playlist = State.get_active_playlist and State.get_active_playlist()
       if active_playlist and active_playlist.order and #active_playlist.order == 0 and not bridge_state.is_playing then
@@ -64,7 +88,7 @@ local function get_app_status(State)
       end
     end
 
-    -- Priority 4: Info (BLUE) - only if no errors/warnings/notifications
+    -- Priority 5: Info (BLUE) - only if no errors/warnings/notifications
     if not status_message then
       local selection_info = State.get_selection_info and State.get_selection_info()
       if selection_info and (selection_info.region_count > 0 or selection_info.playlist_count > 0) then
@@ -80,7 +104,7 @@ local function get_app_status(State)
       end
     end
 
-    -- Priority 5: Playback state (GREEN) - overrides info/warnings but not errors/notifications
+    -- Priority 6: Playback state (GREEN) - overrides info/warnings but not errors/notifications
     if bridge_state.is_playing then
       local current_rid = bridge:get_current_rid()
       if current_rid then
