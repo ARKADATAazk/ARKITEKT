@@ -199,7 +199,10 @@ function M.new(config)
       local ok, err = xpcall(new_state_def.on_enter, debug.traceback, self.context, action, prev_state, payload)
       if not ok then
         -- State already changed, log error but don't revert
-        -- Logger would go here if we wanted to add dependency
+        local Logger = package.loaded['arkitekt.debug.logger']
+        if Logger then
+          Logger.error('FSM', 'on_enter error for state \'%s\':\n%s', target, err)
+        end
       end
     end
 
@@ -232,7 +235,13 @@ function M.new(config)
 
     -- Exit current state
     if state_def and state_def.on_exit then
-      xpcall(state_def.on_exit, debug.traceback, self.context, '_force', target, payload)
+      local ok, err = xpcall(state_def.on_exit, debug.traceback, self.context, '_force', target, payload)
+      if not ok then
+        local Logger = package.loaded['arkitekt.debug.logger']
+        if Logger then
+          Logger.error('FSM', 'on_exit error for state \'%s\' (force):\n%s', prev_state, err)
+        end
+      end
     end
 
     -- Transition
@@ -244,7 +253,13 @@ function M.new(config)
     -- Enter new state
     local new_state_def = self.states[target]
     if new_state_def and new_state_def.on_enter then
-      xpcall(new_state_def.on_enter, debug.traceback, self.context, '_force', prev_state, payload)
+      local ok, err = xpcall(new_state_def.on_enter, debug.traceback, self.context, '_force', prev_state, payload)
+      if not ok then
+        local Logger = package.loaded['arkitekt.debug.logger']
+        if Logger then
+          Logger.error('FSM', 'on_enter error for state \'%s\' (force):\n%s', target, err)
+        end
+      end
     end
 
     return true

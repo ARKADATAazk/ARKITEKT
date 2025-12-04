@@ -15,7 +15,9 @@ local M = {}
 function M.compare_alpha(a, b, opts)
   opts = opts or {}
   local get = opts.get_value or function(x) return x.name or '' end
-  return get(a):lower() < get(b):lower()
+  local val_a = get(a) or ''
+  local val_b = get(b) or ''
+  return val_a:lower() < val_b:lower()
 end
 
 -- Numeric index comparison
@@ -120,6 +122,7 @@ end
 --   get_value: optional accessor function for the comparator
 -- @return table The sorted list (same reference)
 function M.apply(list, opts)
+  if not list then return {} end
   opts = opts or {}
   local mode = opts.mode
   local direction = opts.direction or 'asc'
@@ -158,6 +161,7 @@ end
 -- @param list table The list to reverse
 -- @return table The reversed list (same reference)
 function M.reverse(list)
+  if not list then return {} end
   local n = #list
   for i = 1, n // 2 do
     list[i], list[n - i + 1] = list[n - i + 1], list[i]

@@ -164,7 +164,7 @@ function M.new(opts)
   opts = opts or {}
   local self = setmetatable({
     _cache        = {},
-    _cache_order  = {},  -- Track insertion order for LRU
+    _cache_order  = {},  -- Track insertion order for FIFO eviction
     _creates_left = 0,
     _budget       = math.max(0, tonumber(opts.budget or 48)),
     _max_cache    = tonumber(opts.max_cache or 200),  -- Max cached images

@@ -264,7 +264,7 @@ function Graph:topological_sort()
 
     in_stack[node_id] = nil
     visited[node_id] = true
-    table.insert(sorted, 1, node_id)  -- Prepend (reverse postorder)
+    sorted[#sorted + 1] = node_id  -- Append (postorder)
     return true
   end
 
@@ -274,6 +274,12 @@ function Graph:topological_sort()
         return nil  -- Cycle detected
       end
     end
+  end
+
+  -- Reverse to get dependencies before dependents (O(n) total instead of O(n²))
+  local n = #sorted
+  for i = 1, n // 2 do
+    sorted[i], sorted[n - i + 1] = sorted[n - i + 1], sorted[i]
   end
 
   return sorted

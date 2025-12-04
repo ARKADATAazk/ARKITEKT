@@ -10,7 +10,7 @@ local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])")
 -- ============================================================================
 -- IMPORTS
 -- ============================================================================
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 local Colors = Ark.Colors
 
 -- ============================================================================

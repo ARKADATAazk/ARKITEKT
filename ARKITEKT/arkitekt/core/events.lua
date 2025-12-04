@@ -12,9 +12,12 @@
 --   -- Emit
 --   bus:emit('user.clicked', { x = 100, y = 200 })
 
-local Logger = require('arkitekt.debug.logger')
-
 local M = {}
+
+-- Lazy Logger access to avoid hard dependency
+local function get_logger()
+  return package.loaded['arkitekt.debug.logger']
+end
 
 --- Create a new event bus instance
 --- @param options table Optional configuration { debug = false, max_history = 100 }
@@ -27,6 +30,7 @@ function M.new(options)
     debug = options.debug or false,
     max_history = options.max_history or 100,
     history = {},                -- Recent events (for debugging)
+    _next_id = 1,                -- Monotonic counter for unique listener IDs
   }
 
   --- Subscribe to an event
@@ -51,8 +55,9 @@ function M.new(options)
     local listener = {
       callback = callback,
       priority = priority,
-      id = #self.listeners[event_name] + 1
+      id = self._next_id
     }
+    self._next_id = self._next_id + 1
 
     self.listeners[event_name][#self.listeners[event_name] + 1] = listener
 
@@ -62,7 +67,8 @@ function M.new(options)
     end)
 
     if self.debug then
-      Logger.debug('EVENTS', 'Subscribed to \'%s\' (priority: %d)', event_name, priority)
+      local Logger = get_logger()
+      if Logger then Logger.debug('EVENTS', 'Subscribed to \'%s\' (priority: %d)', event_name, priority) end
     end
 
     -- Return unsubscribe function
@@ -74,7 +80,8 @@ function M.new(options)
         if l.id == listener_id then
           table.remove(self.listeners[event_name], i)
           if self.debug then
-            Logger.debug('EVENTS', 'Unsubscribed from \'%s\'', event_name)
+            local Logger = get_logger()
+            if Logger then Logger.debug('EVENTS', 'Unsubscribed from \'%s\'', event_name) end
           end
           break
         end
@@ -110,7 +117,8 @@ function M.new(options)
     end
 
     if self.debug then
-      Logger.debug('EVENTS', 'Emitting \'%s\'', event_name)
+      local Logger = get_logger()
+      if Logger then Logger.debug('EVENTS', 'Emitting \'%s\'', event_name) end
     end
 
     -- Call specific listeners
@@ -119,7 +127,8 @@ function M.new(options)
       for _, listener in ipairs(callbacks) do
         local ok, err = xpcall(listener.callback, debug.traceback, data)
         if not ok then
-          Logger.error('EVENTS', 'Error in listener for \'%s\':\n%s', event_name, err)
+          local Logger = get_logger()
+          if Logger then Logger.error('EVENTS', 'Error in listener for \'%s\':\n%s', event_name, err) end
         end
       end
     end
@@ -130,7 +139,8 @@ function M.new(options)
       for _, listener in ipairs(wildcard_callbacks) do
         local ok, err = xpcall(listener.callback, debug.traceback, event_name, data)
         if not ok then
-          Logger.error('EVENTS', 'Error in wildcard listener for \'%s\':\n%s', event_name, err)
+          local Logger = get_logger()
+          if Logger then Logger.error('EVENTS', 'Error in wildcard listener for \'%s\':\n%s', event_name, err) end
         end
       end
     end
@@ -141,7 +151,8 @@ function M.new(options)
   function bus:off(event_name)
     self.listeners[event_name] = nil
     if self.debug then
-      Logger.debug('EVENTS', 'Removed all listeners for \'%s\'', event_name)
+      local Logger = get_logger()
+      if Logger then Logger.debug('EVENTS', 'Removed all listeners for \'%s\'', event_name) end
     end
   end
 
@@ -149,7 +160,8 @@ function M.new(options)
   function bus:clear()
     self.listeners = {}
     if self.debug then
-      Logger.debug('EVENTS', 'Cleared all listeners')
+      local Logger = get_logger()
+      if Logger then Logger.debug('EVENTS', 'Cleared all listeners') end
     end
   end
 
@@ -169,10 +181,13 @@ function M.new(options)
   --- @param count number Optional max number of events to print
   function bus:print_history(count)
     count = count or 10
-    Logger.info('EVENTS', 'Last %d events:', count)
-    for i = 1, math.min(count, #self.history) do
-      local event = self.history[i]
-      Logger.info('EVENTS', '  [%.3f] %s', event.timestamp, event.event)
+    local Logger = get_logger()
+    if Logger then
+      Logger.info('EVENTS', 'Last %d events:', count)
+      for i = 1, math.min(count, #self.history) do
+        local event = self.history[i]
+        Logger.info('EVENTS', '  [%.3f] %s', event.timestamp, event.event)
+      end
     end
   end
 
@@ -197,7 +212,8 @@ function M.new(options)
   function bus:set_debug(enabled)
     self.debug = enabled
     if enabled then
-      Logger.info('EVENTS', 'Debug mode enabled')
+      local Logger = get_logger()
+      if Logger then Logger.info('EVENTS', 'Debug mode enabled') end
     end
   end
 

@@ -100,22 +100,29 @@ function Settings:maybe_flush()
 end
 
 function Settings:flush()
-  if not self._dirty then return end
+  if not self._dirty then return true end
   ensure_dir(self._dir)
   local ok, serialized = pcall(json.encode, self._data)
-  if ok then
-    local write_ok, write_err = write_file_atomic(self._path, serialized)
-    if write_ok then
-      self._dirty = false
-      self._last_write = now()
-    else
-      -- Log error if Logger is available, otherwise silent fail
-      local Logger = package.loaded['arkitekt.debug.logger']
-      if Logger then
-        Logger.error('STORAGE', 'Settings flush failed: %s', write_err or 'unknown')
-      end
+  if not ok then
+    local Logger = package.loaded['arkitekt.debug.logger']
+    if Logger then
+      Logger.error('STORAGE', 'Settings JSON encode failed: %s', serialized or 'unknown')
     end
+    return false, 'JSON encode failed: ' .. tostring(serialized)
   end
+
+  local write_ok, write_err = write_file_atomic(self._path, serialized)
+  if not write_ok then
+    local Logger = package.loaded['arkitekt.debug.logger']
+    if Logger then
+      Logger.error('STORAGE', 'Settings flush failed: %s', write_err or 'unknown')
+    end
+    return false, write_err
+  end
+
+  self._dirty = false
+  self._last_write = now()
+  return true
 end
 
 -- Factory

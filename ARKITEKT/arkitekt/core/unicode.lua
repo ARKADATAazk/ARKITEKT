@@ -14,7 +14,10 @@ function M.utf8(codepoint)
     codepoint = tonumber(codepoint, 16)
   end
 
-  if not codepoint then return '' end
+  -- Validate codepoint range (0 to 0x10FFFF max Unicode)
+  if not codepoint or codepoint < 0 or codepoint > 0x10FFFF then
+    return ''
+  end
 
   if codepoint < 0x80 then
     -- 1-byte ASCII

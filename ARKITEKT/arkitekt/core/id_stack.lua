@@ -8,9 +8,9 @@ local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 
--- Per-context ID stacks
+-- Per-context ID stacks (weak keys to prevent memory leaks when ctx is GC'd)
 -- _stacks[ctx] = { 'parent', 'child', ... }
-local _stacks = {}
+local _stacks = setmetatable({}, { __mode = 'k' })
 
 --- Push an ID onto the stack for this context
 -- Syncs with ImGui.PushID for red square debugging support

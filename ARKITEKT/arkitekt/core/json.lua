@@ -86,6 +86,7 @@ end
 -- ===== DECODE =====
 -- Lightweight recursive descent parser (good enough for settings)
 local sp = '[ \n\r\t]*'
+local DEFAULT_MAX_DEPTH = 100
 local function parse_err(msg, s, i) error(('json decode error @%d: %s'):format(i, msg)) end
 
 -- Convert Unicode code point to UTF-8 string
@@ -106,7 +107,11 @@ local function codepoint_to_utf8(cp)
   end
 end
 
-local function parse_val(s, i)
+local function parse_val(s, i, depth, max_depth)
+  if depth > max_depth then
+    parse_err('max depth exceeded', s, i)
+  end
+
   i = s:find(sp, i) or i
   local c = s:sub(i,i)
   if c == '"' then -- string
@@ -148,10 +153,10 @@ local function parse_val(s, i)
     i = s:find(sp, i) or i
     if s:sub(i,i) == '}' then return obj, i+1 end
     while true do
-      local key; key, i = parse_val(s, i)
+      local key; key, i = parse_val(s, i, depth + 1, max_depth)
       if type(key) ~= 'string' then parse_err('object key must be string', s, i) end
       i = s:match('^'..sp..':()' , i) or parse_err('\':\'  expected', s, i)
-      local val; val, i = parse_val(s, i)
+      local val; val, i = parse_val(s, i, depth + 1, max_depth)
       obj[key] = val
       i = s:match('^'..sp..',()' , i) or i
       if s:sub(i,i) == '}' then return obj, i+1 end
@@ -163,7 +168,7 @@ local function parse_val(s, i)
     if s:sub(i,i) == ']' then return arr, i+1 end
     local k = 1
     while true do
-      local val; val, i = parse_val(s, i)
+      local val; val, i = parse_val(s, i, depth + 1, max_depth)
       arr[k] = val; k = k + 1
       i = s:match('^'..sp..',()' , i) or i
       if s:sub(i,i) == ']' then return arr, i+1 end
@@ -179,10 +184,15 @@ local function parse_val(s, i)
   end
 end
 
-function M.decode(str)
+--- Decode a JSON string
+--- @param str string JSON string to decode
+--- @param max_depth number|nil Maximum nesting depth (default: 100)
+--- @return any|nil Decoded value, or nil on error
+function M.decode(str, max_depth)
   if type(str) ~= 'string' or str == '' then return nil end
+  max_depth = max_depth or DEFAULT_MAX_DEPTH
   local ok, val = pcall(function()
-    local v, i = parse_val(str, 1)
+    local v, _ = parse_val(str, 1, 1, max_depth)
     return v
   end)
   return ok and val or nil

@@ -205,6 +205,7 @@ end
 --- @param seed? number Optional seed (WARNING: affects global math.randomseed!)
 --- @return table sampled Array of sampled items
 function M.weighted_shuffle(items, weights, count, seed)
+  if not items or not weights then return {} end
   if #items ~= #weights then
     error('Items and weights must have same length')
   end
@@ -221,7 +222,12 @@ function M.weighted_shuffle(items, weights, count, seed)
   -- Simple weighted sampling (not optimal but works for small arrays)
   local total_weight = 0
   for _, w in ipairs(weights) do
-    total_weight = total_weight + w
+    total_weight = total_weight + (w or 0)
+  end
+
+  -- If all weights are zero, fall back to regular shuffle
+  if total_weight <= 0 then
+    return M.fisher_yates_copy(items, seed)
   end
 
   local sampled = {}
