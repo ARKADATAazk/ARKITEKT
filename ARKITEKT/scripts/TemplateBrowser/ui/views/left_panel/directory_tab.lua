@@ -512,10 +512,9 @@ function M.Draw(ctx, state, config, width, height, gui)
   local physical_open = state.physical_section_open
 
   if physical_open then
-    local scroll_height = physical_actual_height - header_height
-    if scroll_height > 10 and Helpers.begin_child_compat(ctx, 'PhysicalTreeScroll', 0, scroll_height, false) then
-      TreeViewModule.draw_physical_tree(ctx, state, config)
-      ImGui.EndChild(ctx)
+    local tree_height = physical_actual_height - header_height
+    if tree_height > 10 then
+      TreeViewModule.draw_physical_tree(ctx, state, config, tree_height)
     end
   end
 
@@ -571,10 +570,9 @@ function M.Draw(ctx, state, config, width, height, gui)
   local virtual_open = state.virtual_section_open
 
   if virtual_open then
-    local scroll_height = virtual_actual_height - header_height
-    if scroll_height > 10 and Helpers.begin_child_compat(ctx, 'VirtualTreeScroll', 0, scroll_height, false) then
-      TreeViewModule.draw_virtual_tree(ctx, state, config)
-      ImGui.EndChild(ctx)
+    local tree_height = virtual_actual_height - header_height
+    if tree_height > 10 then
+      TreeViewModule.draw_virtual_tree(ctx, state, config, tree_height)
     end
   end
 
@@ -630,10 +628,9 @@ function M.Draw(ctx, state, config, width, height, gui)
   local inbox_open = state.inbox_section_open
 
   if inbox_open then
-    local scroll_height = inbox_actual_height - header_height
-    if scroll_height > 10 and Helpers.begin_child_compat(ctx, 'InboxTreeScroll', 0, scroll_height, false) then
-      TreeViewModule.draw_inbox_tree(ctx, state, config)
-      ImGui.EndChild(ctx)
+    local tree_height = inbox_actual_height - header_height
+    if tree_height > 10 then
+      TreeViewModule.draw_inbox_tree(ctx, state, config, tree_height)
     end
   end
 
@@ -689,10 +686,9 @@ function M.Draw(ctx, state, config, width, height, gui)
   local archive_open = state.archive_section_open
 
   if archive_open then
-    local scroll_height = archive_actual_height - header_height
-    if scroll_height > 10 and Helpers.begin_child_compat(ctx, 'ArchiveTreeScroll', 0, scroll_height, false) then
-      TreeViewModule.draw_archive_tree(ctx, state, config)
-      ImGui.EndChild(ctx)
+    local tree_height = archive_actual_height - header_height
+    if tree_height > 10 then
+      TreeViewModule.draw_archive_tree(ctx, state, config, tree_height)
     end
   end
 end

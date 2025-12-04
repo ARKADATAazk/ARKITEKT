@@ -278,4 +278,19 @@ function M.find_virtual_folder(metadata, id)
   return metadata.virtual_folders[id]
 end
 
+-- Layout state persistence
+-- Stores splitter positions and other UI layout preferences
+
+function M.load_layout()
+  return M.load_json('layout.json')
+end
+
+function M.save_layout(layout)
+  if not layout then
+    Logger.error('STORAGE', 'Cannot save nil layout')
+    return false
+  end
+  return M.save_json('layout.json', layout)
+end
+
 return M

@@ -51,6 +51,7 @@ M.separator1_ratio = nil    -- Ratio for first separator (left column width)
 M.separator2_ratio = nil    -- Ratio for second separator (left+middle width)
 M.explorer_height_ratio = nil  -- Ratio for explorer vs tags panel height
 M.quick_access_separator_position = nil  -- Height of main grid (above quick access panel)
+M.left_panel_separator_ratio = nil  -- Ratio for left panel internal split (directory/convenience)
 
 -- Undo manager
 M.undo_manager = nil
@@ -121,10 +122,43 @@ function M.initialize(config)
   M.separator2_ratio = (config.FOLDERS_PANEL_WIDTH_RATIO or 0.22) + (config.TEMPLATES_PANEL_WIDTH_RATIO or 0.50)
   M.explorer_height_ratio = 0.6
   M.quick_access_separator_position = 350  -- Default main grid height (px)
+  M.left_panel_separator_ratio = 0.65     -- Default left panel internal split
 
   -- Create undo manager
   local Undo = require('TemplateBrowser.data.undo')
   M.undo_manager = Undo.new()
+end
+
+-- Load layout from persistent storage
+function M.load_layout()
+  local Storage = require('TemplateBrowser.data.storage')
+  local layout = Storage.load_layout()
+  if not layout then return end
+
+  -- Apply saved values (only if they exist)
+  if layout.separator1_ratio then
+    M.separator1_ratio = layout.separator1_ratio
+  end
+  if layout.separator2_ratio then
+    M.separator2_ratio = layout.separator2_ratio
+  end
+  if layout.quick_access_separator_position then
+    M.quick_access_separator_position = layout.quick_access_separator_position
+  end
+  if layout.left_panel_separator_ratio then
+    M.left_panel_separator_ratio = layout.left_panel_separator_ratio
+  end
+end
+
+-- Save layout to persistent storage
+function M.save_layout()
+  local Storage = require('TemplateBrowser.data.storage')
+  Storage.save_layout({
+    separator1_ratio = M.separator1_ratio,
+    separator2_ratio = M.separator2_ratio,
+    quick_access_separator_position = M.quick_access_separator_position,
+    left_panel_separator_ratio = M.left_panel_separator_ratio,
+  })
 end
 
 function M.Cleanup()
