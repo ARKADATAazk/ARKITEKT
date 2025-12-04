@@ -19,6 +19,7 @@ local Constants = require('TemplateBrowser.config.constants')
 
 -- Initialize state
 State.initialize(Config)
+State.load_layout()
 
 -- Create GUI instance (scanner will run after window opens)
 local gui = GUI.new(Config, State, Scanner)
@@ -62,6 +63,7 @@ Shell.run({
   end,
 
   on_close = function()
+    State.save_layout()
     State.Cleanup()
   end,
 })

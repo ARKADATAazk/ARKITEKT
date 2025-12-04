@@ -259,8 +259,8 @@ local MODULES = {
   SlidingZone = 'arkitekt.gui.widgets.containers.sliding_zone',
   TileGroup = 'arkitekt.gui.widgets.containers.tile_group',
 
-  -- Navigation
-  Tree = 'arkitekt.gui.widgets.navigation.tree_view',
+  -- Navigation / Tree (Ark.Tree and Ark.Tree.TreeTable)
+  Tree = 'arkitekt.gui.widgets.tree',
 
   -- Core Services (Context loaded eagerly above, not lazy)
   Theme = 'arkitekt.theme',
