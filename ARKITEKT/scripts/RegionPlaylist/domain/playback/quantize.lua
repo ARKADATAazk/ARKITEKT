@@ -281,9 +281,10 @@ function Quantize:jump_to_next_quantized(lookahead)
   
   self.trigger_region.is_active = true
   self.trigger_region.target_rid = self.state.playlist_order[self.state.next_idx]
+  self.trigger_region.target_idx = self.state.next_idx  -- Store target index for same-region handling
   self.trigger_region.fire_position = next_quantize
   self.trigger_region.last_playpos = playpos
-  
+
   return true
 end
 
@@ -312,7 +313,13 @@ function Quantize:update()
     local target_region = self.state:get_region_by_rid(self.trigger_region.target_rid)
     if target_region then
       if playpos >= target_region.start and playpos < target_region['end'] then
-        Logger.debug('QUANTIZE', 'Entered target region rid=%d, cleanup', self.trigger_region.target_rid)
+        Logger.debug('QUANTIZE', 'Entered target region rid=%d idx=%d, cleanup',
+          self.trigger_region.target_rid, self.trigger_region.target_idx or -1)
+        -- Update indices (handles same-region appearing multiple times)
+        if self.trigger_region.target_idx then
+          self.state.current_idx = self.trigger_region.target_idx
+          self.state.playlist_pointer = self.trigger_region.target_idx
+        end
         self:_cleanup_trigger()
         return
       end
@@ -320,12 +327,19 @@ function Quantize:update()
   end
   
   if playpos >= self.trigger_region.fire_position and playpos < self.trigger_region.fire_position + 0.1 then
-    Logger.info('QUANTIZE', 'FIRING NOW: playpos=%.3f fire_pos=%.3f', playpos, self.trigger_region.fire_position)
-    
+    Logger.info('QUANTIZE', 'FIRING NOW: playpos=%.3f fire_pos=%.3f target_idx=%d',
+      playpos, self.trigger_region.fire_position, self.trigger_region.target_idx or -1)
+
     if self.trigger_region.target_rid then
+      -- Update indices BEFORE seeking (handles same-region appearing multiple times)
+      if self.trigger_region.target_idx then
+        self.state.current_idx = self.trigger_region.target_idx
+        self.state.playlist_pointer = self.trigger_region.target_idx
+      end
+
       self.transport:_seek_to_region(self.trigger_region.target_rid)
     end
-    
+
     self:_cleanup_trigger()
   elseif playpos >= self.trigger_region.fire_position + 0.1 then
     Logger.warn('QUANTIZE', 'Missed trigger window, cleanup')
@@ -343,6 +357,7 @@ function Quantize:_cleanup_trigger()
   
   self.trigger_region.is_active = false
   self.trigger_region.target_rid = nil
+  self.trigger_region.target_idx = nil
   self.trigger_region.fire_position = nil
   self.trigger_region.last_playpos = nil
 end

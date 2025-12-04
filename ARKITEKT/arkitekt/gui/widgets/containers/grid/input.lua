@@ -285,17 +285,10 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
     return false
   end,
 
-  -- ALT+click: delete
+  -- ALT+click: disabled (Alt is reserved for Alt+double-click actions)
+  -- Delete functionality is available via Delete key
   ['click:alt'] = function(grid, key, selected_keys)
-    local behavior = grid.behaviors and (grid.behaviors['click:alt'] or grid.behaviors.delete)
-    if behavior then
-      if grid.selection:is_selected(key) and #selected_keys > 1 then
-        behavior(grid, selected_keys)
-      else
-        behavior(grid, {key})
-      end
-      return true
-    end
+    -- No-op: Alt+click is intentionally disabled
     return false
   end,
 
@@ -324,6 +317,15 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
       return true
     elseif grid.behaviors and grid.behaviors.double_click then
       grid.behaviors.double_click(grid, key)
+      return true
+    end
+    return false
+  end,
+
+  -- ALT+Double-click: immediate action (e.g., quantized jump)
+  ['double_click:alt'] = function(grid, key)
+    if grid.behaviors and grid.behaviors['double_click:alt'] then
+      grid.behaviors['double_click:alt'](grid, key)
       return true
     end
     return false
@@ -518,10 +520,11 @@ function M.handle_wheel_input(grid, ctx, items)
     return false
   end
 
-  -- Block wheel input when mouse is over a DIFFERENT window (e.g., popup on top of this grid)
-  local is_current_window_hovered = ImGui.IsWindowHovered(ctx)
-  local is_any_window_hovered = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow)
-  if is_any_window_hovered and not is_current_window_hovered then
+  -- Check if mouse is within grid bounds (more reliable than window hover for child windows)
+  if not grid.visual_bounds then return false end
+  local mx, my = ImGui.GetMousePos(ctx)
+  local vb = grid.visual_bounds
+  if mx < vb[1] or mx > vb[3] or my < vb[2] or my > vb[4] then
     return false
   end
 
@@ -673,8 +676,16 @@ function M.handle_tile_input(grid, ctx, item, rect)
         end
       end
 
+      -- Check for Alt modifier (for immediate actions like quantized jump)
+      local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+
       if in_text_zone then
         local behavior = M.resolve_mouse_behavior(grid, 'double_click:text')
+        if behavior then
+          behavior(grid, key)
+        end
+      elseif alt then
+        local behavior = M.resolve_mouse_behavior(grid, 'double_click:alt')
         if behavior then
           behavior(grid, key)
         end

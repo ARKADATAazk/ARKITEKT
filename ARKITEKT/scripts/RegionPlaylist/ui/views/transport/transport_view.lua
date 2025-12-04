@@ -82,12 +82,28 @@ local function get_region_colors()
     return { current = current_color }
   end
 
+  -- Check for scheduled transition first (takes priority over natural next)
+  local scheduled_key = bridge:get_scheduled_next_key()
   local next_rid = nil
-  for i = current_idx + 1, #sequence do
-    local entry = sequence[i]
-    if entry and entry.rid and entry.rid ~= current_rid then
-      next_rid = entry.rid
-      break
+
+  if scheduled_key then
+    -- Find the rid for the scheduled key
+    for _, entry in ipairs(sequence) do
+      if entry.item_key == scheduled_key then
+        next_rid = entry.rid
+        break
+      end
+    end
+  end
+
+  -- Fall back to natural next if no scheduled transition
+  if not next_rid then
+    for i = current_idx + 1, #sequence do
+      local entry = sequence[i]
+      if entry and entry.rid and entry.rid ~= current_rid then
+        next_rid = entry.rid
+        break
+      end
     end
   end
 
@@ -821,12 +837,33 @@ function M.Draw(ctx, shell_state, is_blocking)
       if sequence and #sequence > 0 then
         local current_idx = bridge:get_state().playlist_pointer
         if current_idx and current_idx >= 1 then
-          for i = current_idx + 1, #sequence do
-            local entry = sequence[i]
-            if entry and entry.rid and entry.rid ~= current_rid then
-              next_region = view.state.get_region_by_rid(entry.rid)
-              break
+          -- Check for scheduled transition first (takes priority over natural next)
+          local scheduled_key = bridge:get_scheduled_next_key()
+          local next_rid = nil
+
+          if scheduled_key then
+            -- Find the rid for the scheduled key
+            for _, entry in ipairs(sequence) do
+              if entry.item_key == scheduled_key then
+                next_rid = entry.rid
+                break
+              end
             end
+          end
+
+          -- Fall back to natural next if no scheduled transition
+          if not next_rid then
+            for i = current_idx + 1, #sequence do
+              local entry = sequence[i]
+              if entry and entry.rid and entry.rid ~= current_rid then
+                next_rid = entry.rid
+                break
+              end
+            end
+          end
+
+          if next_rid then
+            next_region = view.state.get_region_by_rid(next_rid)
           end
         end
       end

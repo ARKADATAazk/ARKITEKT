@@ -393,6 +393,103 @@ function M.create(opts)
     return self.engine:jump_to_next_quantized(lookahead)
   end
 
+  --- Seek directly to a specific item by key (immediate jump)
+  --- @param key string Item key to seek to
+  --- @return boolean success
+  function bridge:seek_to_item(key)
+    return self.engine:seek_to_item(key)
+  end
+
+  --- Schedule a quantized jump to a specific item by key
+  --- @param key string Item key to seek to
+  --- @param lookahead number|nil Lookahead time in seconds (uses saved setting if nil)
+  --- @return boolean success
+  function bridge:schedule_seek_to_item(key, lookahead)
+    if not key then return false end
+    self:_ensure_sequence()
+
+    -- Use bridge's sequence_lookup (reliable)
+    local idx = self.sequence_lookup[key]
+    if not idx then return false end
+
+    -- Use saved lookahead setting if not provided (same as Jump button)
+    if not lookahead then
+      local settings = RegionState.load_settings(self.proj)
+      lookahead = settings.quantize_lookahead or 0.30
+    end
+
+    -- Set next_idx to target and trigger quantized jump
+    self.engine.state.next_idx = idx
+    return self.engine:jump_to_next_quantized(lookahead)
+  end
+
+  --- Set the next item to play after current region ends (no immediate jump)
+  --- Used for "schedule transition" - skip intervening items when current ends
+  --- @param key string Item key to set as next
+  --- @return boolean success
+  function bridge:set_next_item(key)
+    if not key then return false end
+    self:_ensure_sequence()
+
+    -- Use bridge's sequence_lookup (reliable)
+    local idx = self.sequence_lookup[key]
+    if not idx then return false end
+
+    -- Just set next_idx - transitions logic will handle the jump when current region ends
+    self.engine.state.next_idx = idx
+    return true
+  end
+
+  --- Get keys of items that will be skipped due to scheduled transition
+  --- Returns a set (table with key -> true) of item keys being skipped
+  --- @return table|nil skipped_keys Set of skipped keys, or nil if not skipping
+  function bridge:get_skipped_keys()
+    if not self.engine:get_is_playing() then return nil end
+
+    local state = self.engine.state
+    local current_idx = state.current_idx or -1
+    local next_idx = state.next_idx or -1
+    local sequence = state.sequence or {}
+
+    -- No skip if next is immediately after current
+    if next_idx <= current_idx + 1 then return nil end
+    if next_idx <= 0 or current_idx < 0 then return nil end
+
+    -- Build set of skipped keys (from current_idx + 1 to next_idx - 1)
+    local skipped = {}
+    for i = current_idx + 1, next_idx - 1 do
+      local entry = sequence[i]
+      if entry and entry.item_key then
+        skipped[entry.item_key] = true
+      end
+    end
+
+    -- Return nil if nothing actually skipped
+    local count = 0
+    for _ in pairs(skipped) do count = count + 1 end
+    if count == 0 then return nil end
+
+    return skipped
+  end
+
+  --- Get the key of the scheduled next item (if different from natural next)
+  --- @return string|nil scheduled_key Key of scheduled next item, or nil
+  function bridge:get_scheduled_next_key()
+    if not self.engine:get_is_playing() then return nil end
+
+    local state = self.engine.state
+    local current_idx = state.current_idx or -1
+    local next_idx = state.next_idx or -1
+    local sequence = state.sequence or {}
+
+    -- No scheduled transition if next is natural (current + 1)
+    if next_idx <= current_idx + 1 then return nil end
+    if next_idx <= 0 then return nil end
+
+    local entry = sequence[next_idx]
+    return entry and entry.item_key or nil
+  end
+
   function bridge:set_quantize_mode(mode)
     self.engine:set_quantize_mode(mode)
     local settings = RegionState.load_settings(self.proj)

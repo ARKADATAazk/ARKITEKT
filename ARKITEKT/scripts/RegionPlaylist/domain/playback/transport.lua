@@ -269,6 +269,66 @@ function Transport:prev()
   return false
 end
 
+--- Seek directly to a specific playlist index
+--- @param target_idx number Target playlist index (1-based)
+--- @param immediate boolean If true, seek immediately; if false, schedule after current region ends
+--- @return boolean success
+function Transport:seek_to_index(target_idx, immediate)
+  if #self.state.playlist_order == 0 then return false end
+  if target_idx < 1 or target_idx > #self.state.playlist_order then
+    Logger.warn('TRANSPORT', 'seek_to_index: invalid index %d (playlist has %d items)', target_idx, #self.state.playlist_order)
+    return false
+  end
+
+  Logger.info('TRANSPORT', 'SEEK_TO_INDEX -> idx %d/%d (immediate=%s)', target_idx, #self.state.playlist_order, tostring(immediate))
+
+  -- Update playlist pointer and sync indices
+  self.state.playlist_pointer = target_idx
+  self.state.current_idx = target_idx
+  if target_idx < #self.state.playlist_order then
+    self.state.next_idx = target_idx + 1
+  elseif self.loop_playlist then
+    self.state.next_idx = 1
+  else
+    self.state.next_idx = -1
+  end
+  self.state:update_bounds()
+
+  -- Reset loop count for the target item
+  local meta = self.state.playlist_metadata[target_idx]
+  if meta then
+    meta.current_loop = 1
+  end
+
+  if _is_playing(self.proj) then
+    local rid = self.state:get_current_rid()
+    local region = self.state:get_region_by_rid(rid)
+    if region then
+      return self:_seek_to_region(region.rid)
+    end
+  else
+    return self:play()
+  end
+
+  return false
+end
+
+--- Find playlist index by item key
+--- @param key string Item key to find
+--- @return number|nil index Playlist index (1-based), or nil if not found
+function Transport:find_index_by_key(key)
+  if not key then return nil end
+
+  -- Check sequence for key mapping
+  for i, entry in ipairs(self.state.sequence or {}) do
+    if entry.item_key == key then
+      return i
+    end
+  end
+
+  return nil
+end
+
 function Transport:poll_transport_sync()
   if not self.transport_override then return end
   if self.is_playing then return end

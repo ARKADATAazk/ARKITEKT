@@ -227,14 +227,6 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   local truncated_name = get_truncated_text(ctx, cache_key, name_str, name_width)
   DrawList_AddText(dl, name_start_x, pos.y, name_color, truncated_name)
 
-  -- Store text zone bounds in grid for double-click detection
-  if grid and rect and item_key_override then
-    if not grid.text_zones then grid.text_zones = {} end
-    local text_h = get_text_height(ctx)
-    grid.text_zones[item_key_override] = {
-      name_start_x, pos.y, right_bound_x, pos.y + text_h
-    }
-  end
 end
 
 function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, right_bound_x, name_color_override, actual_height, rect, grid, base_color, item_key_override)
@@ -301,13 +293,6 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
   local truncated_name = get_truncated_text(ctx, cache_key, name_str, name_width)
   DrawList_AddText(dl, name_start_x, pos.y, name_color, truncated_name)
 
-  -- Store text zone bounds in grid for double-click detection
-  if grid and rect and item_key_override then
-    if not grid.text_zones then grid.text_zones = {} end
-    grid.text_zones[item_key_override] = {
-      name_start_x, pos.y, right_bound_x, pos.y + text_height
-    }
-  end
 end
 
 function M.draw_length_display(ctx, dl, rect, region, base_color, text_alpha)

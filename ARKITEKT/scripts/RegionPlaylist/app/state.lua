@@ -68,6 +68,7 @@ local UIPreferences = require('RegionPlaylist.ui.state.preferences')
 local Region = require('RegionPlaylist.domain.region')
 local Dependency = require('RegionPlaylist.domain.dependency')
 local Playlist = require('RegionPlaylist.domain.playlist')
+local Overlap = require('RegionPlaylist.domain.overlap')
 local PoolQueries = require('RegionPlaylist.app.pool_queries')
 local Logger = require('arkitekt.debug.logger')
 
@@ -142,6 +143,14 @@ M.undo_manager = nil                          -- UndoManager instance
 
 -- Project monitoring
 M.project_monitor = nil                       -- ProjectMonitor instance
+
+-- Overlap detection (lazy computed)
+M.overlap_map = nil                           -- Map of outer_rid -> {inner_rid1, ...}
+M.overlap_map_dirty = true                    -- Whether overlap map needs recomputation
+
+-- Beyond project end detection (lazy computed)
+M.beyond_map = nil                            -- Map of rid -> true for regions beyond project end
+M.beyond_map_dirty = true                     -- Whether beyond map needs recomputation
 
 -- Event callbacks (set by GUI)
 M.on_state_restored = nil                     -- Called when undo/redo restores state
@@ -404,6 +413,113 @@ function M.check_override_state_change(current_override_state)
   M.notification:check_override_state_change(current_override_state)
 end
 
+-- >>> OVERLAP DETECTION (BEGIN)
+-- Lazy-computed overlap map for detecting nested regions
+
+function M._ensure_overlap_map()
+  if M.overlap_map_dirty or not M.overlap_map then
+    local region_cache = M.bridge and M.bridge.engine and M.bridge.engine.state.region_cache
+    if region_cache then
+      M.overlap_map = Overlap.find_overlaps(region_cache)
+    else
+      M.overlap_map = {}
+    end
+    M.overlap_map_dirty = false
+  end
+end
+
+function M.get_overlap_map()
+  M._ensure_overlap_map()
+  return M.overlap_map
+end
+
+function M.has_region_overlap(rid)
+  M._ensure_overlap_map()
+  return Overlap.has_nested(rid, M.overlap_map)
+end
+
+function M.get_nested_regions(rid)
+  M._ensure_overlap_map()
+  return Overlap.get_nested(rid, M.overlap_map)
+end
+
+function M.count_overlapping_regions()
+  M._ensure_overlap_map()
+  return Overlap.count_overlapping(M.overlap_map)
+end
+
+--- Get overlap warning for current playlist (for playback warning)
+--- @return string|nil warning Warning message if playlist has overlaps
+function M.get_playlist_overlap_warning()
+  M._ensure_overlap_map()
+  local playlist = M.get_active_playlist()
+  if not playlist then return nil end
+
+  local first_overlap = Overlap.find_playlist_overlap(playlist, M.overlap_map)
+  if first_overlap then
+    local region = M.get_region_by_rid(first_overlap.rid)
+    local region_name = region and region.name or ('Region ' .. first_overlap.rid)
+    return string.format('Nested regions detected (%s)', region_name)
+  end
+
+  return nil
+end
+
+function M.invalidate_overlap_map()
+  M.overlap_map_dirty = true
+end
+
+-- <<< OVERLAP DETECTION (END)
+
+-- >>> BEYOND PROJECT END DETECTION (BEGIN)
+-- Lazy-computed map for regions that start after project length
+
+function M._ensure_beyond_map()
+  if M.beyond_map_dirty or not M.beyond_map then
+    local region_cache = M.bridge and M.bridge.engine and M.bridge.engine.state.region_cache
+    if region_cache then
+      local project_length = reaper.GetProjectLength(0)
+      M.beyond_map = Overlap.find_beyond_project_end(region_cache, project_length)
+    else
+      M.beyond_map = {}
+    end
+    M.beyond_map_dirty = false
+  end
+end
+
+function M.get_beyond_map()
+  M._ensure_beyond_map()
+  return M.beyond_map
+end
+
+function M.is_region_beyond_project_end(rid)
+  M._ensure_beyond_map()
+  return Overlap.is_beyond_project_end(rid, M.beyond_map)
+end
+
+--- Get beyond-end warning for current playlist (for playback warning)
+--- @return string|nil warning Warning message if playlist has beyond-end regions
+function M.get_playlist_beyond_warning()
+  M._ensure_beyond_map()
+  local playlist = M.get_active_playlist()
+  if not playlist then return nil end
+
+  local first_beyond = Overlap.find_playlist_beyond_end(playlist, M.beyond_map)
+  if first_beyond then
+    local region = M.get_region_by_rid(first_beyond.rid)
+    local region_name = region and region.name or ('Region ' .. first_beyond.rid)
+    return string.format('Region beyond project end (%s)', region_name)
+  end
+
+  return nil
+end
+
+function M.invalidate_beyond_map()
+  M.beyond_map_dirty = true
+end
+
+-- <<< BEYOND PROJECT END DETECTION (END)
+
 -- <<< CANONICAL ACCESSORS (END)
 
 function M.get_tabs()
@@ -417,6 +533,8 @@ end
 function M.refresh_regions()
   local regions = M.bridge:get_regions_for_ui()
   M.region:refresh_from_bridge(regions)
+  M.invalidate_overlap_map()
+  M.invalidate_beyond_map()
 end
 
 function M.persist()
