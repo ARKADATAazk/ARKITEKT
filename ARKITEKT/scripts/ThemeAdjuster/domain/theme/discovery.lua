@@ -26,7 +26,7 @@ function M.discover_all_params()
       max = max or 1,
       type = M.infer_control_type(min or 0, max or 1),
       category = M.infer_category(name),
-      scope = M.infer_scope(desc or ""),
+      scope = M.infer_scope(desc or ''),
     }
 
     i = i + 1
@@ -38,43 +38,43 @@ end
 -- Infer the appropriate control type based on min/max range
 function M.infer_control_type(min, max)
   if min == 0 and max == 1 then
-    return "toggle"  -- Boolean toggle
+    return 'toggle'  -- Boolean toggle
   elseif (max - min) <= 10 and (max - min) > 0 then
-    return "spinner"  -- Discrete options (like A/B/C or small ranges)
+    return 'spinner'  -- Discrete options (like A/B/C or small ranges)
   elseif max > min then
-    return "slider"  -- Continuous range
+    return 'slider'  -- Continuous range
   else
-    return "value"  -- Static value display
+    return 'value'  -- Static value display
   end
 end
 
 -- Infer which page/category this parameter belongs to
 function M.infer_category(param_name)
-  -- Extract prefix (e.g., "tcp_" from "tcp_LabelSize")
-  local prefix = param_name:match("^([^_]+)_")
+  -- Extract prefix (e.g., 'tcp_' from 'tcp_LabelSize')
+  local prefix = param_name:match('^([^_]+)_')
 
-  if prefix == "tcp" then
-    return "Track Panel"
-  elseif prefix == "mcp" then
-    return "Mixer Panel"
-  elseif prefix == "envcp" then
-    return "Envelope Panel"
-  elseif prefix == "trans" then
-    return "Transport"
-  elseif prefix == "glb" then
-    return "Global"
+  if prefix == 'tcp' then
+    return 'Track Panel'
+  elseif prefix == 'mcp' then
+    return 'Mixer Panel'
+  elseif prefix == 'envcp' then
+    return 'Envelope Panel'
+  elseif prefix == 'trans' then
+    return 'Transport'
+  elseif prefix == 'glb' then
+    return 'Global'
   else
-    return "Uncategorized"
+    return 'Uncategorized'
   end
 end
 
 -- Infer scope from description (Global/Per-layout)
 function M.infer_scope(description)
-  -- REAPER uses "Layout A", "Layout B", etc. in descriptions for per-layout params
-  if description:match("Layout [ABC]") then
-    return "per_layout"
+  -- REAPER uses 'Layout A', 'Layout B', etc. in descriptions for per-layout params
+  if description:match('Layout [ABC]') then
+    return 'per_layout'
   else
-    return "global"
+    return 'global'
   end
 end
 
@@ -96,7 +96,7 @@ function M.group_by_category(params)
   local grouped = {}
 
   for _, param in ipairs(params) do
-    local category = param.category or "Uncategorized"
+    local category = param.category or 'Uncategorized'
 
     if not grouped[category] then
       grouped[category] = {}
@@ -112,51 +112,51 @@ end
 function M.get_current_theme_name()
   local theme_path = reaper.GetLastColorThemeFile()
 
-  if not theme_path or theme_path == "" then
-    return "Unknown"
+  if not theme_path or theme_path == '' then
+    return 'Unknown'
   end
 
   -- Extract theme name from path
-  -- "C:/REAPER/ColorThemes/MyTheme.ReaperThemeZip" → "MyTheme"
-  local theme_name = theme_path:match("([^/\\]+)%.ReaperTheme[Zz]?[Ii]?[Pp]?$")
+  -- 'C:/REAPER/ColorThemes/MyTheme.ReaperThemeZip' → 'MyTheme'
+  local theme_name = theme_path:match('([^/\\]+)%.ReaperTheme[Zz]?[Ii]?[Pp]?$')
 
-  return theme_name or "Unknown"
+  return theme_name or 'Unknown'
 end
 
 -- Get ColorThemes directory path
 function M.get_colorthemes_dir()
   local theme_path = reaper.GetLastColorThemeFile()
 
-  if not theme_path or theme_path == "" then
+  if not theme_path or theme_path == '' then
     return nil
   end
 
-  -- Extract directory: "C:/REAPER/ColorThemes/MyTheme.ReaperThemeZip" → "C:/REAPER/ColorThemes"
-  local dir = theme_path:match("(.+)[/\\][^/\\]+$")
+  -- Extract directory: 'C:/REAPER/ColorThemes/MyTheme.ReaperThemeZip' → 'C:/REAPER/ColorThemes'
+  local dir = theme_path:match('(.+)[/\\][^/\\]+$')
 
   return dir
 end
 
 -- Detect if a parameter is a group header
 function M.is_group_header(param)
-  local desc = param.description or ""
-  local name = param.name or ""
+  local desc = param.description or ''
+  local name = param.name or ''
 
-  -- Primary detection: description ends with "Parameters" or "Parameter"
-  if desc:match("Parameters?%s*$") then
+  -- Primary detection: description ends with 'Parameters' or 'Parameter'
+  if desc:match('Parameters?%s*$') then
     return true
   end
 
   -- Secondary detection: name patterns
-  if name:match("Param$") or
-     name == "defaultV6" or
-     name == "reaperV6Def" or
-     name:match("^user_notice") then
+  if name:match('Param$') or
+     name == 'defaultV6' or
+     name == 'reaperV6Def' or
+     name:match('^user_notice') then
     return true
   end
 
   -- Tertiary detection: separator lines (dashes or empty)
-  if desc:match("^%-+") or (desc:match("^%s*$") and param.max == 1) then
+  if desc:match('^%-+') or (desc:match('^%s*$') and param.max == 1) then
     return true
   end
 
@@ -167,8 +167,8 @@ end
 function M.organize_into_groups(params)
   local groups = {}
   local current_group = {
-    name = "ungrouped",
-    display_name = "Ungrouped Parameters",
+    name = 'ungrouped',
+    display_name = 'Ungrouped Parameters',
     header_index = nil,
     params = {}
   }

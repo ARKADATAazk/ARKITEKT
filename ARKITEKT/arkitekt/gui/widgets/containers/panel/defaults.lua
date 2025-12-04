@@ -2,14 +2,12 @@
 -- Arkitekt/gui/widgets/panel/config.lua
 -- Default configuration for panel with enhanced features
 
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 local C = Theme.COLORS          -- Shared primitives
 local PC = Theme.build_panel_colors()   -- Panel-specific colors
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
-
-local Config = require('arkitekt.core.config')
+local Config = require('arkitekt.core.merge')
 
 local M = {}
 
@@ -25,7 +23,6 @@ M.DEFAULTS = {
 
   scroll = {
     flags = 0,
-    custom_scrollbar = false,
     -- bg_color: Dynamically reads from Theme.COLORS.BG_TRANSPARENT
   },
 
@@ -59,7 +56,7 @@ M.DEFAULTS = {
   header = {
     enabled = false,
     height = 30,
-    position = "top", -- "top" or "bottom"
+    position = 'top', -- 'top' or 'bottom'
     -- bg_color: Dynamically reads from Theme.COLORS.BG_HEADER (don't set static value here!)
     -- border_color: Dynamically reads from Theme.COLORS.BORDER_OUTER
     rounding = 8,
@@ -84,9 +81,9 @@ M.DEFAULTS = {
   --   margin = 8,
   --   min_width_to_show = 150, -- Hide corner buttons if panel width < this value (responsive behavior)
   --   bottom_left = {
-  --     icon = "⚙",
-  --     label = "",
-  --     tooltip = "Settings",
+  --     icon = '⚙',
+  --     label = '',
+  --     tooltip = 'Settings',
   --     on_click = function() ... end,
   --     bg_color = C.BG_BASE,
   --     bg_hover_color = C.BG_HOVER,
@@ -105,7 +102,7 @@ M.DEFAULTS = {
     width = 36,
     -- bg_color: Dynamically reads from Theme.COLORS.BG_HEADER
     -- border_color: Dynamically reads from Theme.COLORS.BORDER_OUTER
-    valign = "center",  -- "top", "center", "bottom"
+    valign = 'center',  -- 'top', 'center', 'bottom'
     padding = {
       top = 4,
       bottom = 4,
@@ -120,7 +117,7 @@ M.DEFAULTS = {
     width = 36,
     -- bg_color: Dynamically reads from Theme.COLORS.BG_HEADER
     -- border_color: Dynamically reads from Theme.COLORS.BORDER_OUTER
-    valign = "center",
+    valign = 'center',
     padding = {
       top = 4,
       bottom = 4,
@@ -153,7 +150,7 @@ M.ELEMENT_STYLE = {
   search = {
     -- InputText widget handles its own dynamic colors
     -- Only non-color properties are specified here
-    placeholder = "Search...",
+    placeholder = 'Search...',
     fade_speed = 8.0,
   },
   
@@ -171,7 +168,7 @@ M.ALIGNED_HEADER_EXAMPLE = {
   header = {
     enabled = true,
     height = 30,
-    position = "top",
+    position = 'top',
     -- bg_color/border_color: Uses dynamic Theme.COLORS.BG_HEADER
     rounding = 8,
 
@@ -183,47 +180,47 @@ M.ALIGNED_HEADER_EXAMPLE = {
     elements = {
       -- Left-aligned elements
       {
-        id = "title",
-        type = "button",
-        align = "left",
+        id = 'title',
+        type = 'button',
+        align = 'left',
         spacing_before = 0,
         config = {
-          label = "My Panel",
+          label = 'My Panel',
         }
       },
       {
-        id = "search",
-        type = "inputtext",
-        align = "left",
+        id = 'search',
+        type = 'inputtext',
+        align = 'left',
         width = 200,
         spacing_before = 8,
         config = {
-          placeholder = "Search...",
+          placeholder = 'Search...',
         }
       },
-      
+
       -- Right-aligned elements
       {
-        id = "sort",
-        type = "combo",
-        align = "right",
+        id = 'sort',
+        type = 'combo',
+        align = 'right',
         width = 120,
         spacing_before = 8,
         config = {
           enable_sort = true,
           options = {
-            { label = "Name", value = "name" },
-            { label = "Date", value = "date" },
+            { label = 'Name', value = 'name' },
+            { label = 'Date', value = 'date' },
           },
         }
       },
       {
-        id = "settings",
-        type = "button",
-        align = "right",
+        id = 'settings',
+        type = 'button',
+        align = 'right',
         spacing_before = 8,
         config = {
-          label = "⚙",
+          label = '⚙',
         }
       },
     },
@@ -235,16 +232,16 @@ M.BOTTOM_HEADER_EXAMPLE = {
   header = {
     enabled = true,
     height = 30,
-    position = "bottom", -- Header at bottom
+    position = 'bottom', -- Header at bottom
     -- bg_color/border_color: Uses dynamic Theme.COLORS.BG_HEADER
     rounding = 8,
 
     elements = {
       {
-        id = "status",
-        type = "button",
+        id = 'status',
+        type = 'button',
         config = {
-          label = "Status: Ready",
+          label = 'Status: Ready',
         }
       },
     },
@@ -261,8 +258,8 @@ M.TAB_MODE_WITH_CORNER_BUTTONS = {
 
     elements = {
       {
-        id = "tabs",
-        type = "tab_strip",
+        id = 'tabs',
+        type = 'tab_strip',
         flex = 1,
         config = {
           -- tab strip config
@@ -275,9 +272,9 @@ M.TAB_MODE_WITH_CORNER_BUTTONS = {
     size = 24,
     margin = 8,
     bottom_left = {
-      icon = "+",
-      tooltip = "Add item",
-      on_click = function() print("Add clicked") end,
+      icon = '+',
+      tooltip = 'Add item',
+      on_click = nil,  -- Override in implementation
     },
   },
   

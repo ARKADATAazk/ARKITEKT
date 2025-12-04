@@ -7,7 +7,7 @@ local Logger = require('arkitekt.debug.logger')
 local Persistence = require('TemplateBrowser.data.storage')
 local FXQueue = require('TemplateBrowser.domain.fx.queue')
 local FuzzySearch = require('TemplateBrowser.domain.search.fuzzy')
-local Constants = require('TemplateBrowser.defs.constants')
+local Constants = require('TemplateBrowser.config.constants')
 
 -- Scan state for incremental scanning
 local scan_state = {
@@ -22,12 +22,12 @@ local scan_state = {
 
 -- Count tracks in a template file (quick parse)
 local function count_tracks(filepath)
-  local file = io.open(filepath, "r")
+  local file = io.open(filepath, 'r')
   if not file then return 1 end  -- Default to 1 if can't read
 
   local count = 0
   for line in file:lines() do
-    if line:match("^<TRACK") then
+    if line:match('^<TRACK') then
       count = count + 1
     end
   end
@@ -40,12 +40,12 @@ end
 local function get_template_path()
   local resource_path = reaper.GetResourcePath()
   local sep = package.config:sub(1,1)
-  return resource_path .. sep .. "TrackTemplates" .. sep
+  return resource_path .. sep .. 'TrackTemplates' .. sep
 end
 
 -- Recursively scan directory for .RTrackTemplate files
 local function scan_directory(path, relative_path, metadata)
-  relative_path = relative_path or ""
+  relative_path = relative_path or ''
 
   local templates = {}
   local folders = {}
@@ -58,21 +58,21 @@ local function scan_directory(path, relative_path, metadata)
     if not file then break end
 
     -- Check if it's a track template
-    if file:match("%.RTrackTemplate$") then
-      local template_name = file:gsub("%.RTrackTemplate$", "")
+    if file:match('%.RTrackTemplate$') then
+      local template_name = file:gsub('%.RTrackTemplate$', '')
       local full_path = path .. file
       local relative_folder = relative_path
 
       -- Get file size for change detection
-      local file_handle, err = io.open(full_path, "r")
+      local file_handle, err = io.open(full_path, 'r')
       local file_size = nil
       if file_handle then
-        file_size = file_handle:seek("end")  -- Returns position at end = file size
+        file_size = file_handle:seek('end')  -- Returns position at end = file size
         file_handle:close()
       else
-        Logger.warn("SCANNER", "Cannot open file for size check: %s", full_path)
+        Logger.warn('SCANNER', 'Cannot open file for size check: %s', full_path)
         if err then
-          Logger.error("SCANNER", "%s", tostring(err))
+          Logger.error('SCANNER', '%s', tostring(err))
         end
       end
 
@@ -81,8 +81,10 @@ local function scan_directory(path, relative_path, metadata)
 
       local uuid
       local fx_list = {}
+      local tracks = {}
       local track_count = 1
       local needs_fx_parse = false
+      local parse_reason = nil
 
       if existing then
         uuid = existing.uuid
@@ -98,10 +100,10 @@ local function scan_directory(path, relative_path, metadata)
         elseif file_size and not existing.file_size then
           -- We have size now but didn't before - old metadata without file_size
           size_changed = true  -- Re-parse to get FX with new system
-          Logger.debug("SCANNER", "FX: Old metadata (no file_size): %s", template_name)
+          Logger.debug('SCANNER', 'FX: Old metadata (no file_size): %s', template_name)
         elseif not file_size and existing.file_size then
           -- Had size before but can't read now - something wrong
-          Logger.warn("SCANNER", "Could not read file size for: %s", template_name)
+          Logger.warn('SCANNER', 'Could not read file size for: %s', template_name)
           size_changed = false  -- Don't re-parse due to read error
         end
 
@@ -109,15 +111,17 @@ local function scan_directory(path, relative_path, metadata)
         local missing_fx = (existing.fx == nil)
 
         if size_changed then
-          Logger.debug("SCANNER", "FX: File changed (size): %s (%s -> %s)", template_name, tostring(existing.file_size), tostring(file_size))
+          Logger.debug('SCANNER', 'FX: File changed (size): %s (%s -> %s)', template_name, tostring(existing.file_size), tostring(file_size))
           needs_fx_parse = true
+          parse_reason = 'size_changed'
           fx_list = {}
           -- Re-count tracks on file change
           track_count = count_tracks(full_path)
           existing.track_count = track_count
         elseif missing_fx then
-          Logger.debug("SCANNER", "FX: Missing FX data: %s", template_name)
+          Logger.debug('SCANNER', 'FX: Missing FX data: %s', template_name)
           needs_fx_parse = true
+          parse_reason = 'missing_fx'
           fx_list = {}
           -- Count tracks if missing
           if not existing.track_count then
@@ -130,6 +134,7 @@ local function scan_directory(path, relative_path, metadata)
           -- File unchanged - use cached data
           fx_list = existing.fx or {}
           track_count = existing.track_count or 1
+          tracks = existing.tracks or {}
         end
 
         -- Update file size in metadata
@@ -139,6 +144,7 @@ local function scan_directory(path, relative_path, metadata)
       else
         -- Create new UUID and metadata entry
         uuid = Persistence.generate_uuid()
+        parse_reason = 'new_template'
 
         -- Count tracks for new template
         track_count = count_tracks(full_path)
@@ -148,7 +154,7 @@ local function scan_directory(path, relative_path, metadata)
           name = template_name,
           path = relative_path,
           tags = {},
-          notes = "",
+          notes = '',
           fx = {},
           track_count = track_count,
           created = os.time(),
@@ -165,7 +171,7 @@ local function scan_directory(path, relative_path, metadata)
 
         metadata.templates[uuid] = new_metadata
         needs_fx_parse = true
-        Logger.debug("SCANNER", "New template UUID: %s -> %s (%dT)", template_name, uuid, track_count)
+        Logger.debug('SCANNER', 'New template UUID: %s -> %s (%dT)', template_name, uuid, track_count)
       end
 
       templates[#templates + 1] = {
@@ -174,10 +180,12 @@ local function scan_directory(path, relative_path, metadata)
         file = file,
         path = full_path,
         relative_path = relative_path,
-        folder = relative_path ~= "" and relative_path or "Root",
+        folder = relative_path ~= '' and relative_path or 'Root',
         fx = fx_list,
+        tracks = tracks,
         track_count = track_count,
         needs_fx_parse = needs_fx_parse,  -- Flag for queue
+        parse_reason = parse_reason,       -- Reason for parsing (debugging)
       }
     end
 
@@ -192,7 +200,7 @@ local function scan_directory(path, relative_path, metadata)
 
     -- Skip .archive folder (it's managed separately)
     if subdir ~= Constants.FOLDERS.ARCHIVE then
-      local new_relative = relative_path ~= "" and (relative_path .. sep .. subdir) or subdir
+      local new_relative = relative_path ~= '' and (relative_path .. sep .. subdir) or subdir
       local sub_path = path .. subdir .. sep
 
       -- Try to find existing folder in metadata
@@ -215,7 +223,7 @@ local function scan_directory(path, relative_path, metadata)
           created = os.time(),
           last_seen = os.time()
         }
-        Logger.debug("SCANNER", "New folder UUID: %s -> %s", subdir, folder_uuid)
+        Logger.debug('SCANNER', 'New folder UUID: %s -> %s', subdir, folder_uuid)
       end
 
       -- Recursively scan subdirectory
@@ -257,20 +265,20 @@ end
 -- Build folder tree structure
 local function build_folder_tree(folders)
   local tree = {
-    name = "Root",
-    path = "",
+    name = 'Root',
+    path = '',
     children = {},
     is_root = true,
   }
 
   -- Sort folders by path depth
   table.sort(folders, function(a, b)
-    local a_depth = select(2, a.path:gsub("/", "")) + select(2, a.path:gsub("\\", ""))
-    local b_depth = select(2, b.path:gsub("/", "")) + select(2, b.path:gsub("\\", ""))
+    local a_depth = select(2, a.path:gsub('/', '')) + select(2, a.path:gsub('\\', ''))
+    local b_depth = select(2, b.path:gsub('/', '')) + select(2, b.path:gsub('\\', ''))
     return a_depth < b_depth
   end)
 
-  local path_to_node = {[""] = tree}
+  local path_to_node = {[''] = tree}
 
   for _, folder in ipairs(folders) do
     local parent_node = path_to_node[folder.parent] or tree
@@ -294,8 +302,8 @@ end
 function M.scan_templates(state)
   local template_path = get_template_path()
 
-  Logger.info("SCANNER", "=== Scanning templates ===")
-  Logger.info("SCANNER", "Template path: %s", template_path)
+  Logger.info('SCANNER', '=== Scanning templates ===')
+  Logger.info('SCANNER', 'Template path: %s', template_path)
 
   -- Load metadata
   local metadata = Persistence.load_metadata()
@@ -309,12 +317,12 @@ function M.scan_templates(state)
     end
   end
   local sep = package.config:sub(1,1)
-  Persistence.log("=== Scanning Templates ===")
-  Persistence.log("Path separator: '" .. sep .. "' (ASCII: " .. string.byte(sep) .. ")")
-  Persistence.log("Loaded metadata with " .. template_count .. " templates")
+  Persistence.log('=== Scanning Templates ===')
+  Persistence.log("Path separator: '' .. sep .. '' (ASCII: ' .. string.byte(sep) .. ')")
+  Persistence.log('Loaded metadata with ' .. template_count .. ' templates')
 
   -- Scan with UUID tracking (FX parsing is deferred to background queue)
-  local templates, folders = scan_directory(template_path, "", metadata)
+  local templates, folders = scan_directory(template_path, '', metadata)
 
   state.templates = templates
   state.filtered_templates = templates
@@ -323,7 +331,7 @@ function M.scan_templates(state)
   -- Save updated metadata
   Persistence.save_metadata(metadata)
 
-  Logger.info("SCANNER", "Found %d templates in %d folders", #templates, #folders)
+  Logger.info('SCANNER', 'Found %d templates in %d folders', #templates, #folders)
 
   -- Start background FX parsing
   FXQueue.add_to_queue(state, templates)
@@ -350,19 +358,19 @@ function M.filter_templates(state)
   local escaped_folder_paths = {}  -- Pre-escaped paths for regex matching
   local sep = package.config:sub(1,1)
 
-  if state.selected_folder and state.selected_folder ~= "" then
+  if state.selected_folder and state.selected_folder ~= '' then
     -- Check if we have multi-selection
     if state.selected_folders and next(state.selected_folders) then
       -- Multi-select: use all selected folders
       for folder_path, _ in pairs(state.selected_folders) do
         selected_folders[#selected_folders + 1] = folder_path
         -- Pre-escape special regex characters for path matching
-        escaped_folder_paths[folder_path] = folder_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1")
+        escaped_folder_paths[folder_path] = folder_path:gsub('([%(%)%.%%%+%-%*%?%[%]%^%$])', '%%%1')
       end
     else
       -- Single select: use state.selected_folder
       selected_folders[#selected_folders + 1] = state.selected_folder
-      escaped_folder_paths[state.selected_folder] = state.selected_folder:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1")
+      escaped_folder_paths[state.selected_folder] = state.selected_folder:gsub('([%(%)%.%%%+%-%*%?%[%]%^%$])', '%%%1')
     end
   end
 
@@ -383,7 +391,7 @@ function M.filter_templates(state)
 
         if is_virtual_folder then
           -- Special case: __VIRTUAL_ROOT__ means show all templates from all virtual folders
-          if folder_path == "__VIRTUAL_ROOT__" then
+          if folder_path == '__VIRTUAL_ROOT__' then
             -- Check if template exists in ANY virtual folder
             for _, vfolder in pairs(state.metadata.virtual_folders) do
               if vfolder.template_refs then
@@ -432,19 +440,19 @@ function M.filter_templates(state)
         else
           -- Physical folder: check if template is in this folder or any subfolder
           -- Special case: __ROOT__ means show all physical templates
-          if folder_path == "__ROOT__" or folder_path == "" then
+          if folder_path == '__ROOT__' or folder_path == '' then
             found_in_folder = true
             break
           end
 
           -- Check exact match OR if template path starts with folder path + separator
-          local tmpl_path = tmpl.relative_path or ""
+          local tmpl_path = tmpl.relative_path or ''
 
           if tmpl_path == folder_path then
             -- Exact match: template is directly in this folder
             found_in_folder = true
             break
-          elseif tmpl_path:find("^" .. escaped_folder_paths[folder_path] .. sep) then
+          elseif tmpl_path:find('^' .. escaped_folder_paths[folder_path] .. sep) then
             -- Template is in a subfolder (using pre-escaped path for performance)
             found_in_folder = true
             break
@@ -458,7 +466,7 @@ function M.filter_templates(state)
     end
 
     -- Filter by search query (fuzzy match)
-    if matches and state.search_query ~= "" then
+    if matches and state.search_query ~= '' then
       local score = FuzzySearch.score(state.search_query, tmpl.name)
       if score == 0 then
         matches = false
@@ -517,7 +525,7 @@ function M.filter_templates(state)
 
   -- Sort filtered templates based on sort mode
   -- When searching, sort by fuzzy score first (best matches at top)
-  if state.search_query ~= "" then
+  if state.search_query ~= '' then
     table.sort(filtered, function(a, b)
       local a_score = a._fuzzy_score or 0
       local b_score = b._fuzzy_score or 0
@@ -526,11 +534,11 @@ function M.filter_templates(state)
       end
       return a.name:lower() < b.name:lower()  -- Tie-breaker: alphabetical
     end)
-  elseif state.sort_mode == "alphabetical" then
+  elseif state.sort_mode == 'alphabetical' then
     table.sort(filtered, function(a, b)
       return a.name:lower() < b.name:lower()
     end)
-  elseif state.sort_mode == "usage" then
+  elseif state.sort_mode == 'usage' then
     table.sort(filtered, function(a, b)
       local a_usage = (state.metadata and state.metadata.templates[a.uuid] and state.metadata.templates[a.uuid].usage_count) or 0
       local b_usage = (state.metadata and state.metadata.templates[b.uuid] and state.metadata.templates[b.uuid].usage_count) or 0
@@ -540,7 +548,7 @@ function M.filter_templates(state)
       end
       return a_usage > b_usage  -- Most used first
     end)
-  elseif state.sort_mode == "insertion" then
+  elseif state.sort_mode == 'insertion' then
     table.sort(filtered, function(a, b)
       local a_created = (state.metadata and state.metadata.templates[a.uuid] and state.metadata.templates[a.uuid].created) or 0
       local b_created = (state.metadata and state.metadata.templates[b.uuid] and state.metadata.templates[b.uuid].created) or 0
@@ -550,7 +558,7 @@ function M.filter_templates(state)
       end
       return a_created > b_created  -- Most recent first
     end)
-  elseif state.sort_mode == "color" then
+  elseif state.sort_mode == 'color' then
     -- Sort by color: colored templates first (grouped by color), then uncolored (alphabetical)
     table.sort(filtered, function(a, b)
       local a_metadata = state.metadata and state.metadata.templates[a.uuid]
@@ -587,9 +595,6 @@ end
 function M.scan_init(state)
   local template_path = get_template_path()
 
-  Logger.info("SCANNER", "=== Starting incremental scan ===")
-  Logger.info("SCANNER", "Template path: %s", template_path)
-
   -- Load metadata
   local metadata = Persistence.load_metadata()
   state.metadata = metadata
@@ -599,7 +604,7 @@ function M.scan_init(state)
   local folders = {}
 
   local function enumerate_all(path, relative_path)
-    relative_path = relative_path or ""
+    relative_path = relative_path or ''
     local sep = package.config:sub(1,1)
 
     -- Enumerate files
@@ -608,7 +613,7 @@ function M.scan_init(state)
       local file = reaper.EnumerateFiles(path, idx)
       if not file then break end
 
-      if file:match("%.RTrackTemplate$") then
+      if file:match('%.RTrackTemplate$') then
         files_to_scan[#files_to_scan + 1] = {
           path = path,
           file = file,
@@ -625,7 +630,7 @@ function M.scan_init(state)
       if not subdir then break end
 
       if subdir ~= Constants.FOLDERS.ARCHIVE then
-        local new_relative = relative_path ~= "" and (relative_path .. sep .. subdir) or subdir
+        local new_relative = relative_path ~= '' and (relative_path .. sep .. subdir) or subdir
         local sub_path = path .. subdir .. sep
 
         -- Add folder info
@@ -644,7 +649,7 @@ function M.scan_init(state)
     end
   end
 
-  enumerate_all(template_path, "")
+  enumerate_all(template_path, '')
 
   -- Store scan state
   scan_state.active = true
@@ -655,7 +660,7 @@ function M.scan_init(state)
   scan_state.templates = {}
   scan_state.folders = folders
 
-  Logger.info("SCANNER", "Found %d templates to scan", #files_to_scan)
+  Logger.info('SCANNER', 'Found %d templates to scan', #files_to_scan)
 end
 
 -- Scan a batch of templates (call this each frame)
@@ -677,14 +682,14 @@ function M.scan_batch(state, batch_size)
     local file = file_info.file
     local relative_path = file_info.relative_path
 
-    local template_name = file:gsub("%.RTrackTemplate$", "")
+    local template_name = file:gsub('%.RTrackTemplate$', '')
     local full_path = path .. file
 
     -- Get file size for change detection
-    local file_handle, err = io.open(full_path, "r")
+    local file_handle, err = io.open(full_path, 'r')
     local file_size = nil
     if file_handle then
-      file_size = file_handle:seek("end")
+      file_size = file_handle:seek('end')
       file_handle:close()
     end
 
@@ -693,8 +698,10 @@ function M.scan_batch(state, batch_size)
 
     local uuid
     local fx_list = {}
+    local tracks = {}
     local track_count = 1
     local needs_fx_parse = false
+    local parse_reason = nil
 
     if existing then
       uuid = existing.uuid
@@ -714,13 +721,17 @@ function M.scan_batch(state, batch_size)
 
       if size_changed then
         needs_fx_parse = true
+        parse_reason = 'size_changed'
         fx_list = {}
+        tracks = {}
         -- Re-count tracks on file change
         track_count = count_tracks(full_path)
         existing.track_count = track_count
       elseif missing_fx then
         needs_fx_parse = true
+        parse_reason = 'missing_fx'
         fx_list = {}
+        tracks = {}
         -- Count tracks if missing
         if not existing.track_count then
           track_count = count_tracks(full_path)
@@ -731,6 +742,7 @@ function M.scan_batch(state, batch_size)
       else
         -- File unchanged - use cached data
         fx_list = existing.fx or {}
+        tracks = existing.tracks or {}
         track_count = existing.track_count or 1
       end
 
@@ -740,6 +752,7 @@ function M.scan_batch(state, batch_size)
     else
       -- Create new UUID
       uuid = Persistence.generate_uuid()
+      parse_reason = 'new_template'
 
       -- Count tracks for new template
       track_count = count_tracks(full_path)
@@ -749,7 +762,7 @@ function M.scan_batch(state, batch_size)
         name = template_name,
         path = relative_path,
         tags = {},
-        notes = "",
+        notes = '',
         fx = {},
         track_count = track_count,
         created = os.time(),
@@ -773,10 +786,12 @@ function M.scan_batch(state, batch_size)
       file = file,
       path = full_path,
       relative_path = relative_path,
-      folder = relative_path ~= "" and relative_path or "Root",
+      folder = relative_path ~= '' and relative_path or 'Root',
       fx = fx_list,
+      tracks = tracks,
       track_count = track_count,
       needs_fx_parse = needs_fx_parse,
+      parse_reason = parse_reason,
     }
   end
 
@@ -828,7 +843,7 @@ function M.scan_batch(state, batch_size)
     -- Save metadata
     Persistence.save_metadata(scan_state.metadata)
 
-    Logger.info("SCANNER", "Scan complete: %d templates in %d folders",
+    Logger.info('SCANNER', 'Scan complete: %d templates in %d folders',
       #scan_state.templates, #folders_with_uuids)
 
     -- Start background FX parsing

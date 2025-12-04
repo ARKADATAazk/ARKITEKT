@@ -158,7 +158,7 @@ local mock_tree = {
     name = "Root",
     flags = { checkable = true },
     checked = false,
-    color = hexrgb("#4A9EFFFF"),
+    color = hex("#4A9EFFFF"),
     children = {
       {
         id = "child1",

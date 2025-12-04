@@ -2,7 +2,7 @@
 -- panel/rendering.lua
 -- Core panel rendering: backgrounds, borders, per-corner rounding
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

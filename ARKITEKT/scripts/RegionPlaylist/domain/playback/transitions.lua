@@ -3,7 +3,7 @@
 -- Smooth transition logic between regions - FIXED: Handle same-region repeats with time-based transitions
 -- MODIFIED: Integrated Logger for debug output
 
-local Logger = require("arkitekt.debug.logger")
+local Logger = require('arkitekt.debug.logger')
 
 -- Performance: Localize math functions for hot path (runs every frame during playback)
 local max = math.max
@@ -48,15 +48,15 @@ function Transitions:handle_smooth_transitions()
 
   -- Live slot for playback position (updates in place, doesn't flood console)
   local curr_region = self.state.current_idx >= 1 and self.state:get_region_by_rid(self.state.playlist_order[self.state.current_idx])
-  local region_name = curr_region and curr_region.name or "---"
-  Logger.live("PLAYBACK", "position", "%.2fs | %d/%d | %s",
+  local region_name = curr_region and curr_region.name or '---'
+  Logger.live('PLAYBACK', 'position', '%.2fs | %d/%d | %s',
     playpos,
     self.state.playlist_pointer,
     #self.state.playlist_order,
     region_name)
 
   if DEBUG_PLAYPOS then
-    Logger.debug("TRANSITIONS", "playpos=%.3f curr_idx=%d next_idx=%d curr_bounds=[%.3f-%.3f] next_bounds=[%.3f-%.3f]",
+    Logger.debug('TRANSITIONS', 'playpos=%.3f curr_idx=%d next_idx=%d curr_bounds=[%.3f-%.3f] next_bounds=[%.3f-%.3f]',
       playpos, self.state.current_idx, self.state.next_idx,
       self.state.current_bounds.start_pos, self.state.current_bounds.end_pos,
       self.state.next_bounds.start_pos, self.state.next_bounds.end_pos)
@@ -71,13 +71,13 @@ function Transitions:handle_smooth_transitions()
      playpos >= self.state.next_bounds.start_pos and 
      playpos < self.state.next_bounds.end_pos + self.state.boundary_epsilon then
     
-    if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "Branch 1: In next_bounds (different region)") end
+    if DEBUG_PLAYPOS then Logger.debug('TRANSITIONS', 'Branch 1: In next_bounds (different region)') end
     
     local entering_different_region = (self.state.current_idx ~= self.state.next_idx)
     local playhead_went_backward = (playpos < self.state.last_play_pos - 0.1)
     
     if entering_different_region or playhead_went_backward then
-      Logger.info("TRANSITIONS", "TRANSITION FIRING: %d -> %d", self.state.current_idx, self.state.next_idx)
+      Logger.info('TRANSITIONS', 'TRANSITION FIRING: %d -> %d', self.state.current_idx, self.state.next_idx)
       
       self.state.current_idx = self.state.next_idx
       self.state.playlist_pointer = self.state.current_idx
@@ -85,7 +85,7 @@ function Transitions:handle_smooth_transitions()
       local region = self.state:get_region_by_rid(rid)
       if region then
         self.state.current_bounds.start_pos = region.start
-        self.state.current_bounds.end_pos = region["end"]
+        self.state.current_bounds.end_pos = region['end']
       end
       
       local meta = self.state.playlist_metadata[self.state.current_idx]
@@ -109,12 +109,12 @@ function Transitions:handle_smooth_transitions()
         local region = self.state:get_region_by_rid(rid)
         if region then
           self.state.next_bounds.start_pos = region.start
-          self.state.next_bounds.end_pos = region["end"]
+          self.state.next_bounds.end_pos = region['end']
           self:_queue_next_region_if_near_end(playpos)
         end
       else
         self.state.next_idx = -1
-        Logger.info("TRANSITIONS", "No next candidate")
+        Logger.info('TRANSITIONS', 'No next candidate')
       end
     end
     
@@ -126,7 +126,7 @@ function Transitions:handle_smooth_transitions()
       local time_to_end = self.state.current_bounds.end_pos - playpos
       
       if time_to_end <= 0.05 and time_to_end >= -0.01 then
-        Logger.info("TRANSITIONS", "TIME-BASED TRANSITION (same region): %d -> %d", self.state.current_idx, self.state.next_idx)
+        Logger.info('TRANSITIONS', 'TIME-BASED TRANSITION (same region): %d -> %d', self.state.current_idx, self.state.next_idx)
         
         self.state.current_idx = self.state.next_idx
         self.state.playlist_pointer = self.state.current_idx
@@ -152,7 +152,7 @@ function Transitions:handle_smooth_transitions()
           local region = self.state:get_region_by_rid(rid)
           if region then
             self.state.next_bounds.start_pos = region.start
-            self.state.next_bounds.end_pos = region["end"]
+            self.state.next_bounds.end_pos = region['end']
           end
         else
           self.state.next_idx = -1
@@ -165,12 +165,12 @@ function Transitions:handle_smooth_transitions()
     end
     
   else
-    if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "Branch 3: Out of bounds, syncing") end
+    if DEBUG_PLAYPOS then Logger.debug('TRANSITIONS', 'Branch 3: Out of bounds, syncing') end
 
     -- Use current item_key as hint to resolve multi-loop ambiguity
     local current_key = self.state:get_current_item_key()
     local found_idx = self.state:find_index_at_position(playpos, current_key)
-    if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "find_index_at_position(%.3f, key=%s) returned: %d", playpos, tostring(current_key), found_idx) end
+    if DEBUG_PLAYPOS then Logger.debug('TRANSITIONS', 'find_index_at_position(%.3f, key=%s) returned: %d', playpos, tostring(current_key), found_idx) end
 
     if found_idx >= 1 then
       local was_uninitialized = (self.state.current_idx == -1)
@@ -181,7 +181,7 @@ function Transitions:handle_smooth_transitions()
       local region = self.state:get_region_by_rid(rid)
       if region then
         self.state.current_bounds.start_pos = region.start
-        self.state.current_bounds.end_pos = region["end"]
+        self.state.current_bounds.end_pos = region['end']
       end
       
       local next_candidate
@@ -199,7 +199,7 @@ function Transitions:handle_smooth_transitions()
         local region_next = self.state:get_region_by_rid(rid_next)
         if region_next then
           self.state.next_bounds.start_pos = region_next.start
-          self.state.next_bounds.end_pos = region_next["end"]
+          self.state.next_bounds.end_pos = region_next['end']
           
           if was_uninitialized then
             self:_queue_next_region_if_near_end(playpos)
@@ -214,7 +214,7 @@ function Transitions:handle_smooth_transitions()
         self.state.current_idx = -1
         self.state.next_idx = 1
         self.state.next_bounds.start_pos = first_region.start
-        self.state.next_bounds.end_pos = first_region["end"]
+        self.state.next_bounds.end_pos = first_region['end']
       end
     end
   end
@@ -230,7 +230,7 @@ function Transitions:_queue_next_region_if_near_end(playpos)
       local rid = self.state.playlist_order[self.state.next_idx]
       local region = self.state:get_region_by_rid(rid)
       if region then
-        Logger.info("TRANSPORT", "Queuing GoToRegion(%d) - %.2fs to end", region.rid, time_to_end)
+        Logger.info('TRANSPORT', 'Queuing GoToRegion(%d) - %.2fs to end', region.rid, time_to_end)
         self.transport:_seek_to_region(region.rid)
         self.state.goto_region_queued = true
         self.state.goto_region_target = self.state.next_idx

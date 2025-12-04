@@ -2,11 +2,11 @@
 -- MediaContainer/core/app_state.lua
 -- Single-source-of-truth state management for media containers
 
-local Persistence = require("MediaContainer.storage.persistence")
+local Persistence = require('MediaContainer.storage.persistence')
 local Ark = require('arkitekt')
 local M = {}
 
-package.loaded["MediaContainer.core.app_state"] = M
+package.loaded['MediaContainer.core.app_state'] = M
 
 -- Container registry
 M.containers = {}
@@ -28,16 +28,16 @@ M.track_guid_cache = {}  -- GUID -> track pointer (O(1) lookup)
 M.guid_cache_dirty = true  -- Flag to rebuild caches
 
 local function get_current_project_filename()
-  local proj_path = reaper.GetProjectPath("")
-  local proj_name = reaper.GetProjectName(0, "")
-  if proj_path == "" or proj_name == "" then
+  local proj_path = reaper.GetProjectPath('')
+  local proj_name = reaper.GetProjectName(0, '')
+  if proj_path == '' or proj_name == '' then
     return nil
   end
-  return proj_path .. "/" .. proj_name
+  return proj_path .. '/' .. proj_name
 end
 
 local function get_current_project_ptr()
-  local proj, _ = reaper.EnumProjects(-1, "")
+  local proj, _ = reaper.EnumProjects(-1, '')
   return proj
 end
 
@@ -140,25 +140,25 @@ end
 -- Item state hashing for change detection
 -- Uses RELATIVE position to container, so moving whole container doesn't trigger sync
 function M.get_item_state_hash(item, container)
-  if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+  if not item or not reaper.ValidatePtr2(0, item, 'MediaItem*') then
     return nil
   end
 
-  local abs_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
-  local len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+  local abs_pos = reaper.GetMediaItemInfo_Value(item, 'D_POSITION')
+  local len = reaper.GetMediaItemInfo_Value(item, 'D_LENGTH')
 
   -- Use relative position if container provided, otherwise absolute
   local pos = abs_pos
   if container then
     pos = abs_pos - container.start_time
   end
-  local mute = reaper.GetMediaItemInfo_Value(item, "B_MUTE")
-  local vol = reaper.GetMediaItemInfo_Value(item, "D_VOL")
-  local fadein = reaper.GetMediaItemInfo_Value(item, "D_FADEINLEN")
-  local fadeout = reaper.GetMediaItemInfo_Value(item, "D_FADEOUTLEN")
-  local fadein_shape = reaper.GetMediaItemInfo_Value(item, "C_FADEINSHAPE")
-  local fadeout_shape = reaper.GetMediaItemInfo_Value(item, "C_FADEOUTSHAPE")
-  local snapoffs = reaper.GetMediaItemInfo_Value(item, "D_SNAPOFFSET")
+  local mute = reaper.GetMediaItemInfo_Value(item, 'B_MUTE')
+  local vol = reaper.GetMediaItemInfo_Value(item, 'D_VOL')
+  local fadein = reaper.GetMediaItemInfo_Value(item, 'D_FADEINLEN')
+  local fadeout = reaper.GetMediaItemInfo_Value(item, 'D_FADEOUTLEN')
+  local fadein_shape = reaper.GetMediaItemInfo_Value(item, 'C_FADEINSHAPE')
+  local fadeout_shape = reaper.GetMediaItemInfo_Value(item, 'C_FADEOUTSHAPE')
+  local snapoffs = reaper.GetMediaItemInfo_Value(item, 'D_SNAPOFFSET')
 
   -- Get take-specific properties
   local take = reaper.GetActiveTake(item)
@@ -166,12 +166,12 @@ function M.get_item_state_hash(item, container)
   local rate = 1
   local take_vol = 1
   if take then
-    pitch = reaper.GetMediaItemTakeInfo_Value(take, "D_PITCH")
-    rate = reaper.GetMediaItemTakeInfo_Value(take, "D_PLAYRATE")
-    take_vol = reaper.GetMediaItemTakeInfo_Value(take, "D_VOL")
+    pitch = reaper.GetMediaItemTakeInfo_Value(take, 'D_PITCH')
+    rate = reaper.GetMediaItemTakeInfo_Value(take, 'D_PLAYRATE')
+    take_vol = reaper.GetMediaItemTakeInfo_Value(take, 'D_VOL')
   end
 
-  return string.format("%.6f_%.6f_%d_%.6f_%.6f_%.6f_%d_%d_%.6f_%.6f_%.6f_%.6f",
+  return string.format('%.6f_%.6f_%d_%.6f_%.6f_%.6f_%d_%d_%.6f_%.6f_%.6f_%.6f',
     pos, len, mute, vol, fadein, fadeout, fadein_shape, fadeout_shape,
     snapoffs, pitch, rate, take_vol)
 end
@@ -232,7 +232,7 @@ function M.find_item_by_guid(guid)
 
   -- Try cache first
   local item = M.item_guid_cache[guid]
-  if item and reaper.ValidatePtr2(0, item, "MediaItem*") then
+  if item and reaper.ValidatePtr2(0, item, 'MediaItem*') then
     return item
   end
 
@@ -252,7 +252,7 @@ function M.find_track_by_guid(guid)
 
   -- Try cache first
   local track = M.track_guid_cache[guid]
-  if track and reaper.ValidatePtr2(0, track, "MediaTrack*") then
+  if track and reaper.ValidatePtr2(0, track, 'MediaTrack*') then
     return track
   end
 
@@ -263,7 +263,7 @@ end
 
 -- Get track index (0-based)
 function M.get_track_index(track)
-  return reaper.GetMediaTrackInfo_Value(track, "IP_TRACKNUMBER") - 1
+  return reaper.GetMediaTrackInfo_Value(track, 'IP_TRACKNUMBER') - 1
 end
 
 -- Generate random color for container
@@ -272,12 +272,12 @@ function M.generate_container_color()
   local saturation = 0.65 + math.random() * 0.25
   local lightness = 0.50 + math.random() * 0.15
 
-  local r, g, b = Ark.Colors.hsl_to_rgb(hue, saturation, lightness)
-  return Ark.Colors.components_to_rgba(r, g, b, 0xFF)
+  local r, g, b = Ark.Colors.HslToRgb(hue, saturation, lightness)
+  return Ark.Colors.ComponentsToRgba(r, g, b, 0xFF)
 end
 
 -- Check for project changes
-function M.update()
+function M.Update()
   local current_project_filename = get_current_project_filename()
   local current_project_ptr = get_current_project_ptr()
 

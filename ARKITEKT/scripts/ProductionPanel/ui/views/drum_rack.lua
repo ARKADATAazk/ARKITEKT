@@ -6,29 +6,29 @@ local M = {}
 
 -- DEPENDENCIES
 local Ark = require('arkitekt')
-local Defaults = require('scripts.ProductionPanel.defs.defaults')
+local Defaults = require('scripts.ProductionPanel.config.defaults')
 local ImGui = Ark.ImGui
 local Colors = Ark.Colors
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 -- MOCK DATA
 local mock_pads = {
-  { name = "Kick", note = 36, color = Colors.hexrgb("#D94A4A"), has_sample = true },
-  { name = "Snare", note = 38, color = Colors.hexrgb("#D9884A"), has_sample = true },
-  { name = "Clap", note = 39, color = Colors.hexrgb("#D9C84A"), has_sample = true },
-  { name = "Hat Closed", note = 42, color = Colors.hexrgb("#88D94A"), has_sample = true },
-  { name = "Tom Low", note = 43, color = Colors.hexrgb("#4AD988"), has_sample = false },
-  { name = "Hat Open", note = 46, color = Colors.hexrgb("#4AD9D9"), has_sample = true },
-  { name = "Tom Mid", note = 47, color = Colors.hexrgb("#4A88D9"), has_sample = false },
-  { name = "Tom High", note = 48, color = Colors.hexrgb("#884AD9"), has_sample = false },
-  { name = "Crash", note = 49, color = Colors.hexrgb("#D94AD9"), has_sample = true },
-  { name = "Ride", note = 51, color = Colors.hexrgb("#D94A88"), has_sample = false },
-  { name = "", note = 52, color = Colors.hexrgb("#505050"), has_sample = false },
-  { name = "", note = 53, color = Colors.hexrgb("#505050"), has_sample = false },
-  { name = "", note = 54, color = Colors.hexrgb("#505050"), has_sample = false },
-  { name = "", note = 55, color = Colors.hexrgb("#505050"), has_sample = false },
-  { name = "", note = 56, color = Colors.hexrgb("#505050"), has_sample = false },
-  { name = "", note = 57, color = Colors.hexrgb("#505050"), has_sample = false },
+  { name = 'Kick', note = 36, color = 0xD94A4AFF, has_sample = true },
+  { name = 'Snare', note = 38, color = 0xD9884AFF, has_sample = true },
+  { name = 'Clap', note = 39, color = 0xD9C84AFF, has_sample = true },
+  { name = 'Hat Closed', note = 42, color = 0x88D94AFF, has_sample = true },
+  { name = 'Tom Low', note = 43, color = 0x4AD988FF, has_sample = false },
+  { name = 'Hat Open', note = 46, color = 0x4AD9D9FF, has_sample = true },
+  { name = 'Tom Mid', note = 47, color = 0x4A88D9FF, has_sample = false },
+  { name = 'Tom High', note = 48, color = 0x884AD9FF, has_sample = false },
+  { name = 'Crash', note = 49, color = 0xD94AD9FF, has_sample = true },
+  { name = 'Ride', note = 51, color = 0xD94A88FF, has_sample = false },
+  { name = '', note = 52, color = 0x505050FF, has_sample = false },
+  { name = '', note = 53, color = 0x505050FF, has_sample = false },
+  { name = '', note = 54, color = 0x505050FF, has_sample = false },
+  { name = '', note = 55, color = 0x505050FF, has_sample = false },
+  { name = '', note = 56, color = 0x505050FF, has_sample = false },
+  { name = '', note = 57, color = 0x505050FF, has_sample = false },
 }
 
 -- STATE
@@ -114,7 +114,7 @@ local function draw_pad(ctx, index, x, y, size)
 
   -- Invisible button for interaction (must be first)
   ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, "pad_" .. index, size, size)
+  ImGui.InvisibleButton(ctx, 'pad_' .. index, size, size)
 
   local hovered = ImGui.IsItemHovered(ctx)
   local clicked = ImGui.IsItemClicked(ctx, 0)
@@ -157,7 +157,7 @@ local function draw_pad(ctx, index, x, y, size)
   -- Shadow (if pad has sample)
   if pad.has_sample and not active then
     local shadow_offset = 2
-    local shadow_color = Colors.with_opacity(Colors.hexrgb("#000000"), 0.3)
+    local shadow_color = Colors.WithOpacity(0x000000FF, 0.3)
     ImGui.DrawList_AddRectFilled(dl,
       x + shadow_offset, y + shadow_offset,
       x + size + shadow_offset, y + size + shadow_offset,
@@ -205,7 +205,7 @@ local function draw_pad(ctx, index, x, y, size)
     ImGui.DrawList_AddRectFilled(dl,
       x + 3, bar_y,
       x + size - 3, bar_y + bar_height,
-      Colors.with_opacity(Colors.hexrgb("#000000"), 0.3), 2)
+      Colors.WithOpacity(0x000000FF, 0.3), 2)
 
     -- Volume level
     local vol_color = adjust_brightness(bg_color, 1.4)
@@ -216,13 +216,13 @@ local function draw_pad(ctx, index, x, y, size)
   end
 
   -- Pad label (with shadow for better readability)
-  if pad.name and pad.name ~= "" then
+  if pad.name and pad.name ~= '' then
     local label_x = x + 8
     local label_y = y + 8
 
     -- Shadow
     ImGui.DrawList_AddText(dl, label_x + 1, label_y + 1,
-      Colors.with_opacity(Colors.hexrgb("#000000"), 0.6), pad.name)
+      Colors.WithOpacity(0x000000FF, 0.6), pad.name)
 
     -- Main text
     ImGui.DrawList_AddText(dl, label_x, label_y, text_color, pad.name)
@@ -238,7 +238,7 @@ local function draw_pad(ctx, index, x, y, size)
   local badge_h = note_h + badge_padding
 
   -- Note badge background
-  local badge_bg = Colors.with_opacity(Colors.hexrgb("#000000"), 0.5)
+  local badge_bg = Colors.WithOpacity(0x000000FF, 0.5)
   ImGui.DrawList_AddRectFilled(dl,
     badge_x, badge_y,
     badge_x + badge_w, badge_y + badge_h,
@@ -247,7 +247,7 @@ local function draw_pad(ctx, index, x, y, size)
   -- Note number text
   ImGui.DrawList_AddText(dl,
     badge_x + badge_padding, badge_y + badge_padding / 2,
-    Colors.with_opacity(text_color, 0.9), note_text)
+    Colors.WithOpacity(text_color, 0.9), note_text)
 
   -- Handle interaction (button was drawn first)
   if clicked then
@@ -257,33 +257,33 @@ local function draw_pad(ctx, index, x, y, size)
 
   -- Right-click menu
   if hovered and ImGui.IsMouseClicked(ctx, 1) then
-    ImGui.OpenPopup(ctx, "pad_menu_" .. index)
+    ImGui.OpenPopup(ctx, 'pad_menu_' .. index)
   end
 
-  if ImGui.BeginPopup(ctx, "pad_menu_" .. index) then
-    if ImGui.MenuItem(ctx, "Load Sample...") then
+  if ImGui.BeginPopup(ctx, 'pad_menu_' .. index) then
+    if ImGui.MenuItem(ctx, 'Load Sample...') then
       -- TODO: Open sample browser
     end
-    if ImGui.MenuItem(ctx, "Clear Sample", nil, false, pad.has_sample) then
+    if ImGui.MenuItem(ctx, 'Clear Sample', nil, false, pad.has_sample) then
       pad.has_sample = false
-      pad.name = ""
+      pad.name = ''
     end
     ImGui.Separator(ctx)
-    if ImGui.MenuItem(ctx, "Edit FX Chain...") then
+    if ImGui.MenuItem(ctx, 'Edit FX Chain...') then
       -- TODO: Open FX chain editor
     end
     ImGui.EndPopup(ctx)
   end
 
   -- Hover tooltip
-  if hovered and pad.name ~= "" then
-    ImGui.SetTooltip(ctx, string.format("%s (MIDI Note %d)", pad.name, pad.note))
+  if hovered and pad.name ~= '' then
+    ImGui.SetTooltip(ctx, string.format('%s (MIDI Note %d)', pad.name, pad.note))
   end
 end
 
 ---Draw drum rack view
 ---@param ctx userdata ImGui context
-function M.draw(ctx)
+function M.Draw(ctx)
   if #state.pads == 0 then
     M.init()
   end
@@ -294,8 +294,8 @@ function M.draw(ctx)
   local cols = Defaults.DRUM_RACK.COLS
 
   -- Header
-  -- ImGui.PushFont(ctx, "font_title" or 0)  -- Font API requires font object + size, disabled for now
-  ImGui.Text(ctx, "Drum Rack")
+  -- ImGui.PushFont(ctx, 'font_title' or 0)  -- Font API requires font object + size, disabled for now
+  ImGui.Text(ctx, 'Drum Rack')
   -- ImGui.PopFont(ctx)
 
   ImGui.Spacing(ctx)
@@ -303,15 +303,15 @@ function M.draw(ctx)
   ImGui.Spacing(ctx)
 
   -- Controls
-  ImGui.Text(ctx, "MIDI Input: All Channels")
+  ImGui.Text(ctx, 'MIDI Input: All Channels')
   ImGui.SameLine(ctx)
-  ImGui.Text(ctx, "  |  ")
+  ImGui.Text(ctx, '  |  ')
   ImGui.SameLine(ctx)
-  if ImGui.Button(ctx, "Load Kit...", 100, 0) then
+  if ImGui.Button(ctx, 'Load Kit...', 100, 0) then
     -- TODO: Load drum kit
   end
   ImGui.SameLine(ctx)
-  if ImGui.Button(ctx, "Save Kit...", 100, 0) then
+  if ImGui.Button(ctx, 'Save Kit...', 100, 0) then
     -- TODO: Save drum kit
   end
 
@@ -340,31 +340,31 @@ function M.draw(ctx)
   -- Selected pad info
   if state.selected_pad then
     local pad = state.pads[state.selected_pad]
-    ImGui.Text(ctx, string.format("Selected: Pad %d - %s (Note %d)",
-      state.selected_pad, pad.name ~= "" and pad.name or "Empty", pad.note))
+    ImGui.Text(ctx, string.format('Selected: Pad %d - %s (Note %d)',
+      state.selected_pad, pad.name ~= '' and pad.name or 'Empty', pad.note))
 
     if pad.has_sample then
       ImGui.Spacing(ctx)
-      ImGui.Text(ctx, "Volume:")
+      ImGui.Text(ctx, 'Volume:')
       ImGui.SameLine(ctx)
       ImGui.SetNextItemWidth(ctx, 200)
-      local changed, new_vol = ImGui.SliderDouble(ctx, "##volume", pad.volume, 0.0, 1.0, "%.2f")
+      local changed, new_vol = ImGui.SliderDouble(ctx, '##volume', pad.volume, 0.0, 1.0, '%.2f')
       if changed then
         pad.volume = new_vol
       end
 
       ImGui.SameLine(ctx)
-      ImGui.Text(ctx, "Pan:")
+      ImGui.Text(ctx, 'Pan:')
       ImGui.SameLine(ctx)
       ImGui.SetNextItemWidth(ctx, 200)
-      local changed_pan, new_pan = ImGui.SliderDouble(ctx, "##pan", pad.pan, 0.0, 1.0, "%.2f")
+      local changed_pan, new_pan = ImGui.SliderDouble(ctx, '##pan', pad.pan, 0.0, 1.0, '%.2f')
       if changed_pan then
         pad.pan = new_pan
       end
     end
   else
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, Theme.COLORS.TEXT_DARK)
-    ImGui.Text(ctx, "📝 Mockup: Click a pad to select, right-click for options")
+    ImGui.Text(ctx, '📝 Mockup: Click a pad to select, right-click for options')
     ImGui.PopStyleColor(ctx)
   end
 end

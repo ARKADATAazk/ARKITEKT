@@ -82,7 +82,7 @@ config = {
     brightness_factor = 0.7,
     alpha = 0xDD,
     min_height = 22,
-    text_shadow = hexrgb("#00000099"),
+    text_shadow = hex("#00000099"),
   },
 
   badge = {
@@ -90,12 +90,12 @@ config = {
     padding_y = 3,
     margin = 6,
     rounding = 4,
-    bg = hexrgb("#14181C"),
+    bg = hex("#14181C"),
     border_alpha = 0x33,
   },
 
   text = {
-    primary_color = hexrgb("#FFFFFF"),
+    primary_color = hex("#FFFFFF"),
     padding_left = 6,
     margin_right = 6,
   },

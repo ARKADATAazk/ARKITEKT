@@ -3,7 +3,7 @@
 -- Main layout view with absolute positioning and fade animations
 -- Refactored: Now uses separate modules for settings, search toolbar, and content panels
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local StatusBar = require('ItemPicker.ui.components.status')
 local RegionFilterBar = require('ItemPicker.ui.components.filters.region')
@@ -42,7 +42,7 @@ end
 local _Theme
 local function get_theme()
   if not _Theme then
-    local ok, theme = pcall(require, 'arkitekt.core.theme')
+    local ok, theme = pcall(require, 'arkitekt.theme')
     if ok then _Theme = theme end
   end
   return _Theme
@@ -68,8 +68,8 @@ function LayoutView:handle_shortcuts(ctx)
 
   -- ESC to clear search
   if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-    if self.state.settings.search_string and self.state.settings.search_string ~= "" then
-      self.state.set_search_filter("")
+    if self.state.settings.search_string and self.state.settings.search_string ~= '' then
+      self.state.set_search_filter('')
     end
   end
 end
@@ -114,7 +114,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Draw dotted pattern
   local Theme = get_theme()
   local ThemeColors = Theme and Theme.COLORS or {}
-  local pattern_color = ThemeColors.PATTERN_PRIMARY or Ark.Colors.hexrgb("#2A2A2A")
+  local pattern_color = ThemeColors.PATTERN_PRIMARY or 0x2A2A2AFF
 
   local overlay_pattern_config = {
     enabled = true,
@@ -123,12 +123,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       type = 'dots',
       spacing = 16,
       dot_size = 1.5,
-      color = Ark.Colors.with_alpha(pattern_color, math.floor(overlay_alpha * 180)),
+      color = Ark.Colors.WithAlpha(pattern_color, math.floor(overlay_alpha * 180)),
       offset_x = 0,
       offset_y = 0,
     }
   }
-  Background.draw(ctx, draw_list, coord_offset_x, coord_offset_y,
+  Background.Draw(ctx, draw_list, coord_offset_x, coord_offset_y,
       coord_offset_x + screen_w, coord_offset_y + screen_h, overlay_pattern_config)
 
   local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
@@ -147,8 +147,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Settings panel (using SlidingZone)
   local settings_result = Ark.SlidingZone(ctx, {
-    id = "settings_panel",
-    edge = "top",
+    id = 'settings_panel',
+    edge = 'top',
     bounds = {
       x = coord_offset_x,
       y = search_base_y - settings_offset,  -- Position 11px higher
@@ -198,7 +198,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       local settings_height = bounds.h
       local settings_alpha = visibility * ui_fade
       local settings_y = bounds.y
-      SettingsPanel.draw(zone_ctx, dl, coord_offset_x, settings_y, settings_height, settings_alpha, self.state, self.config)
+      SettingsPanel.Draw(zone_ctx, dl, coord_offset_x, settings_y, settings_height, settings_alpha, self.state, self.config)
     end,
   })
 
@@ -208,7 +208,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Draw search toolbar
   self.state.focus_search = self.focus_search
-  SearchToolbar.draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_fade, title_font, self.state, self.config)
+  SearchToolbar.Draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_fade, title_font, self.state, self.config)
   self.focus_search = false
 
   -- Region filter bar
@@ -246,8 +246,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
     -- Region filter using SlidingZone (extends upward to cover SettingsPanel area)
     local filter_result = Ark.SlidingZone(ctx, {
-      id = "region_filter_bar",
-      edge = "top",
+      id = 'region_filter_bar',
+      edge = 'top',
       bounds = {
         x = coord_offset_x,
         y = filter_bar_base_y,
@@ -282,7 +282,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       draw = function(zone_ctx, dl, bounds, visibility)
         local filter_alpha = visibility * ui_fade
         if filter_alpha > 0.01 then
-          RegionFilterBar.draw(zone_ctx, dl, coord_offset_x, filter_bar_base_y, screen_w, self.state, self.config, filter_alpha)
+          RegionFilterBar.Draw(zone_ctx, dl, coord_offset_x, filter_bar_base_y, screen_w, self.state, self.config, filter_alpha)
         end
       end,
     })
@@ -306,13 +306,13 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local header_height = self.config.LAYOUT.HEADER_HEIGHT
   local panel_right_padding = 12
 
-  if view_mode == "MIDI" then
+  if view_mode == 'MIDI' then
     ContentPanels.draw_midi_only(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, self.state, self.config, self.coordinator)
-  elseif view_mode == "AUDIO" then
+  elseif view_mode == 'AUDIO' then
     ContentPanels.draw_audio_only(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, self.state, self.config, self.coordinator)
   else
-    local layout_mode = self.state.settings.layout_mode or "vertical"
-    if layout_mode == "horizontal" then
+    local layout_mode = self.state.settings.layout_mode or 'vertical'
+    if layout_mode == 'horizontal' then
       ContentPanels.draw_mixed_horizontal(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, self.state, self.config, self.coordinator)
     else
       ContentPanels.draw_mixed_vertical(ctx, draw_list, title_font, start_x, start_y, content_width, content_height, header_height, section_fade, panel_right_padding, self.state, self.config, self.coordinator)

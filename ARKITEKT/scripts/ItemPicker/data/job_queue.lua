@@ -46,7 +46,7 @@ function M.add_waveform_job(job_queue, item, cache_key, is_visible)
   end
 
   target_queue[#target_queue + 1] = {
-    type = "waveform",
+    type = 'waveform',
     item = item,
     cache_key = cache_key,
   }
@@ -74,7 +74,7 @@ function M.add_midi_job(job_queue, item, width, height, cache_key, is_visible)
   end
 
   target_queue[#target_queue + 1] = {
-    type = "midi",
+    type = 'midi',
     item = item,
     width = width,
     height = height,
@@ -112,7 +112,7 @@ function M.process_jobs(job_queue, visualization, runtime_cache, imgui_ctx)
     if job then
       job_queue.processing_keys[job.cache_key] = true
 
-      if job.type == "waveform" then
+      if job.type == 'waveform' then
         -- Try disk cache first
         local cached_waveform = disk_cache.load_waveform(job.item, job.cache_key)
         if cached_waveform then
@@ -130,7 +130,7 @@ function M.process_jobs(job_queue, visualization, runtime_cache, imgui_ctx)
             end
           end
         end
-      elseif job.type == "midi" then
+      elseif job.type == 'midi' then
         -- Try disk cache first
         local cached_thumbnail = disk_cache.load_midi_thumbnail(job.item, job.cache_key)
         if cached_thumbnail then
@@ -172,7 +172,7 @@ function M.get_queue_stats(job_queue)
   }
 end
 
-function M.clear(job_queue)
+function M.Clear(job_queue)
   job_queue.waveform_queue = {}
   job_queue.midi_queue = {}
   job_queue.waveform_queue_priority = {}

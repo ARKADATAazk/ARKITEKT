@@ -38,10 +38,10 @@ LuaLS reads special comments (annotations) in your code to understand types.
 ### Before Annotations
 
 ```lua
--- User types: Ark.Button.draw(ctx, {
+-- User types: Ark.Button(ctx, {
 -- IDE shows: Nothing helpful, just generic "table"
 
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   -- opts.??? - IDE has no idea what fields exist
 end
 ```
@@ -49,7 +49,7 @@ end
 ### After Annotations
 
 ```lua
--- User types: Ark.Button.draw(ctx, {
+-- User types: Ark.Button(ctx, {
 -- IDE shows dropdown with all valid options:
 --   label, icon, width, height, on_click, disabled, preset_name...
 
@@ -535,11 +535,11 @@ local M = {}
 ---
 ---Examples:
 ---```lua
----Colors.hexrgb("#F00")      -- 0xFF0000FF (red)
----Colors.hexrgb("#00FF00")   -- 0x00FF00FF (green)
----Colors.hexrgb("#0000FF80") -- 0x0000FF80 (blue, 50% alpha)
+---Colors.hex("#F00")      -- 0xFF0000FF (red)
+---Colors.hex("#00FF00")   -- 0x00FF00FF (green)
+---Colors.hex("#0000FF80") -- 0x0000FF80 (blue, 50% alpha)
 ---```
-function M.hexrgb(hex)
+function M.hex(hex)
 end
 
 ---Extract RGBA components from color
@@ -771,10 +771,10 @@ Not just:
 ---
 ---Examples:
 ---```lua
----local red = hexrgb("#FF0000")
----local transparent_blue = hexrgb("#0000FF80")
+---local red = hex("#FF0000")
+---local transparent_blue = hex("#0000FF80")
 ---```
-function M.hexrgb(hex)
+function M.hex(hex)
 ```
 
 ### 6. Use Inheritance for Related Types

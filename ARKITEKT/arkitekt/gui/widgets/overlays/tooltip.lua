@@ -2,12 +2,9 @@
 -- Arkitekt/gui/widgets/controls/tooltip.lua
 -- Reusable styled tooltip widget
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
-local Theme = require('arkitekt.core.theme')
-local hexrgb = Colors.hexrgb
-
-
+local Theme = require('arkitekt.theme')
 local M = {}
 
 -- Get dynamic defaults from Theme.COLORS
@@ -33,12 +30,12 @@ local DEFAULTS = get_defaults()
 
 local tooltip_state = {
   hover_start_time = 0,
-  last_text = "",
+  last_text = '',
   is_visible = false,
 }
 
 function M.show(ctx, text, config)
-  if not text or text == "" then return end
+  if not text or text == '' then return end
 
   config = config or {}
   local defaults = get_defaults()  -- Get fresh colors from Theme.COLORS
@@ -66,9 +63,9 @@ function M.show(ctx, text, config)
 end
 
 function M.show_delayed(ctx, text, config)
-  if not text or text == "" then
+  if not text or text == '' then
     tooltip_state.is_visible = false
-    tooltip_state.last_text = ""
+    tooltip_state.last_text = ''
     return
   end
 
@@ -91,7 +88,7 @@ function M.show_delayed(ctx, text, config)
 end
 
 function M.show_at_mouse(ctx, text, config)
-  if not text or text == "" then return end
+  if not text or text == '' then return end
 
   config = config or {}
   local defaults = get_defaults()  -- Get fresh colors from Theme.COLORS
@@ -133,9 +130,9 @@ function M.show_at_mouse(ctx, text, config)
   ImGui.DrawList_AddText(dl, x + padding_x, y + padding_y, text_color, text)
 end
 
-function M.reset()
+function M.Reset()
   tooltip_state.hover_start_time = 0
-  tooltip_state.last_text = ""
+  tooltip_state.last_text = ''
   tooltip_state.is_visible = false
 end
 

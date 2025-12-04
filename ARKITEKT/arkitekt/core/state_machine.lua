@@ -6,19 +6,19 @@
 -- Supports guards, context, history, and per-state lifecycle hooks.
 --
 -- Usage:
---   local StateMachine = require("arkitekt.core.state_machine")
+--   local StateMachine = require('arkitekt.core.state_machine')
 --   local fsm = StateMachine.new({
---     initial = "idle",
+--     initial = 'idle',
 --     states = { idle = {}, playing = {}, paused = {} },
 --     transitions = {
---       idle = { play = "playing" },
---       playing = { pause = "paused", stop = "idle" },
---       paused = { play = "playing", stop = "idle" },
+--       idle = { play = 'playing' },
+--       playing = { pause = 'paused', stop = 'idle' },
+--       paused = { play = 'playing', stop = 'idle' },
 --     },
 --   })
 --
---   fsm:send("play")  -- idle → playing
---   fsm:is("playing") -- true
+--   fsm:send('play')  -- idle → playing
+--   fsm:is('playing') -- true
 
 local M = {}
 
@@ -38,11 +38,11 @@ local DEFAULT_MAX_HISTORY = 20
 --- @param payload any Payload from send()
 --- @return string|nil resolved_target Resolved target state or nil if guard fails
 local function _resolve_target(target, context, payload)
-  if type(target) == "function" then
+  if type(target) == 'function' then
     -- Guard function: returns target state or nil to block
     return target(context, payload)
-  elseif type(target) == "table" then
-    -- Table with guard: { target = "state", guard = fn }
+  elseif type(target) == 'table' then
+    -- Table with guard: { target = 'state', guard = fn }
     if target.guard then
       local allowed = target.guard(context, payload)
       if not allowed then
@@ -94,7 +94,7 @@ function M.new(config)
   config = config or {}
 
   if not config.initial then
-    error("StateMachine requires 'initial' state")
+    error('StateMachine requires \'initial\' state')
   end
 
   local fsm = {
@@ -157,23 +157,23 @@ function M.new(config)
   function fsm:send(action, payload)
     local from_transitions = self.transitions[self.state]
     if not from_transitions then
-      return false, string.format("No transitions defined for state '%s'", self.state)
+      return false, string.format('No transitions defined for state \'%s\'', self.state)
     end
 
     local target_def = from_transitions[action]
     if not target_def then
-      return false, string.format("No transition '%s' from state '%s'", action, self.state)
+      return false, string.format('No transition \'%s\' from state \'%s\'', action, self.state)
     end
 
     -- Resolve target (handles guards)
     local target = _resolve_target(target_def, self.context, payload)
     if not target then
-      return false, string.format("Guard blocked transition '%s' from '%s'", action, self.state)
+      return false, string.format('Guard blocked transition \'%s\' from \'%s\'', action, self.state)
     end
 
     -- Validate target state exists (if states are defined)
     if next(self.states) and not self.states[target] then
-      return false, string.format("Target state '%s' not defined", target)
+      return false, string.format('Target state \'%s\' not defined', target)
     end
 
     local prev_state = self.state
@@ -181,9 +181,9 @@ function M.new(config)
 
     -- Exit current state
     if state_def and state_def.on_exit then
-      local ok, err = pcall(state_def.on_exit, self.context, action, target, payload)
+      local ok, err = xpcall(state_def.on_exit, debug.traceback, self.context, action, target, payload)
       if not ok then
-        return false, string.format("on_exit error: %s", tostring(err))
+        return false, string.format('on_exit error:\n%s', err)
       end
     end
 
@@ -196,21 +196,24 @@ function M.new(config)
     -- Enter new state
     local new_state_def = self.states[target]
     if new_state_def and new_state_def.on_enter then
-      local ok, err = pcall(new_state_def.on_enter, self.context, action, prev_state, payload)
+      local ok, err = xpcall(new_state_def.on_enter, debug.traceback, self.context, action, prev_state, payload)
       if not ok then
         -- State already changed, log error but don't revert
-        -- Logger would go here if we wanted to add dependency
+        local Logger = package.loaded['arkitekt.debug.logger']
+        if Logger then
+          Logger.error('FSM', 'on_enter error for state \'%s\':\n%s', target, err)
+        end
       end
     end
 
     -- Global transition callback
     if self.on_transition then
-      pcall(self.on_transition, prev_state, target, action, payload)
+      xpcall(self.on_transition, debug.traceback, prev_state, target, action, payload)
     end
 
     -- Emit event if bus connected
     if self.events then
-      self.events:emit("state.changed", {
+      self.events:emit('state.changed', {
         from = prev_state,
         to = target,
         action = action,
@@ -232,19 +235,31 @@ function M.new(config)
 
     -- Exit current state
     if state_def and state_def.on_exit then
-      pcall(state_def.on_exit, self.context, "_force", target, payload)
+      local ok, err = xpcall(state_def.on_exit, debug.traceback, self.context, '_force', target, payload)
+      if not ok then
+        local Logger = package.loaded['arkitekt.debug.logger']
+        if Logger then
+          Logger.error('FSM', 'on_exit error for state \'%s\' (force):\n%s', prev_state, err)
+        end
+      end
     end
 
     -- Transition
     self.state = target
 
     -- Record history
-    _record_history(self._history, self._max_history, prev_state, target, "_force")
+    _record_history(self._history, self._max_history, prev_state, target, '_force')
 
     -- Enter new state
     local new_state_def = self.states[target]
     if new_state_def and new_state_def.on_enter then
-      pcall(new_state_def.on_enter, self.context, "_force", prev_state, payload)
+      local ok, err = xpcall(new_state_def.on_enter, debug.traceback, self.context, '_force', prev_state, payload)
+      if not ok then
+        local Logger = package.loaded['arkitekt.debug.logger']
+        if Logger then
+          Logger.error('FSM', 'on_enter error for state \'%s\' (force):\n%s', target, err)
+        end
+      end
     end
 
     return true

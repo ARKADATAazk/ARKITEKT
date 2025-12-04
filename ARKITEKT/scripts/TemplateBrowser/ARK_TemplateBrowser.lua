@@ -5,30 +5,29 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
+local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 
 -- Load required modules
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 
 -- Load TemplateBrowser modules (using canonical paths)
 local Config = require('TemplateBrowser.app.config')
 local State = require('TemplateBrowser.app.state')
 local GUI = require('TemplateBrowser.ui.init')
 local Scanner = require('TemplateBrowser.domain.template.scanner')
-local Constants = require('TemplateBrowser.defs.constants')
-
-local hexrgb = Ark.Colors.hexrgb
+local Constants = require('TemplateBrowser.config.constants')
 
 -- Initialize state
 State.initialize(Config)
+State.load_layout()
 
 -- Create GUI instance (scanner will run after window opens)
 local gui = GUI.new(Config, State, Scanner)
 
 -- Run in overlay mode
 Shell.run({
-  mode = "overlay",
-  title = "Template Browser",
+  mode = 'overlay',
+  title = 'Template Browser',
   toggle_button = true,
 
   overlay = {
@@ -64,6 +63,7 @@ Shell.run({
   end,
 
   on_close = function()
-    State.cleanup()
+    State.save_layout()
+    State.Cleanup()
   end,
 })

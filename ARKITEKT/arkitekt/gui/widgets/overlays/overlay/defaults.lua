@@ -7,18 +7,16 @@
 -- The overlay will automatically adapt to the current theme.
 
 local Colors = require('arkitekt.core.colors')
-local ConfigUtil = require('arkitekt.core.config')
-local Constants = require('arkitekt.defs.app')
-local Timing = require('arkitekt.defs.timing')
+local ConfigUtil = require('arkitekt.core.merge')
+local Constants = require('arkitekt.config.app')
+local Timing = require('arkitekt.config.timing')
 
 local M = {}
-local hexrgb = Colors.hexrgb
-
 -- Lazy load Theme to avoid circular dependency
 local _Theme
 local function get_theme()
   if not _Theme then
-    local ok, theme = pcall(require, 'arkitekt.core.theme')
+    local ok, theme = pcall(require, 'arkitekt.theme')
     if ok then _Theme = theme end
   end
   return _Theme
@@ -30,10 +28,10 @@ local function build_config()
   local Theme = get_theme()
 
   -- Use Theme.COLORS if available, otherwise fall back to dark defaults
-  local bg_chrome = Theme and Theme.COLORS and Theme.COLORS.BG_CHROME or hexrgb("#121212")
-  local border_outer = Theme and Theme.COLORS and Theme.COLORS.BORDER_OUTER or hexrgb("#404040")
-  local text_normal = Theme and Theme.COLORS and Theme.COLORS.TEXT_NORMAL or hexrgb("#FFFFFF")
-  local text_dimmed = Theme and Theme.COLORS and Theme.COLORS.TEXT_DIMMED or hexrgb("#666666")
+  local bg_chrome = Theme and Theme.COLORS and Theme.COLORS.BG_CHROME or 0x121212FF
+  local border_outer = Theme and Theme.COLORS and Theme.COLORS.BORDER_OUTER or 0x404040FF
+  local text_normal = Theme and Theme.COLORS and Theme.COLORS.TEXT_NORMAL or 0xFFFFFFFF
+  local text_dimmed = Theme and Theme.COLORS and Theme.COLORS.TEXT_DIMMED or 0x666666FF
 
   -- Determine if we're in a light theme (t > 0.5)
   local is_light = Theme and Theme.get_t and Theme.get_t() > 0.5 or false
@@ -61,19 +59,19 @@ local function build_config()
         outer_color = border_outer,
         outer_opacity = is_light and 0.5 or 0.7,
         outer_thickness = 1.5,
-        inner_color = is_light and hexrgb("#000000") or hexrgb("#FFFFFF"),
+        inner_color = is_light and 0x000000FF or 0xFFFFFFFF,
         inner_opacity = is_light and 0.08 or 0.10,
         inner_thickness = 1.0,
       },
 
       gradient = {
         top_enabled = false,
-        top_color = is_light and hexrgb("#000000") or hexrgb("#FFFFFF"),
+        top_color = is_light and 0x000000FF or 0xFFFFFFFF,
         top_height = 80,
         top_max_alpha = 0.06,
 
         bottom_enabled = false,
-        bottom_color = is_light and hexrgb("#FFFFFF") or hexrgb("#000000"),
+        bottom_color = is_light and 0xFFFFFFFF or 0x000000FF,
         bottom_height = 60,
         bottom_max_alpha = 0.08,
       },
@@ -88,7 +86,7 @@ local function build_config()
         divider_thickness = 1.0,
         divider_fade_width = 60,
 
-        highlight_color = is_light and hexrgb("#000000") or hexrgb("#FFFFFF"),
+        highlight_color = is_light and 0x000000FF or 0xFFFFFFFF,
         highlight_opacity = 0.06,
         highlight_thickness = 1.0,
       },
@@ -132,7 +130,7 @@ function M.override(overrides)
   return ConfigUtil.deepMerge(config, overrides)
 end
 
-function M.reset()
+function M.Reset()
   current_config = nil
 end
 
@@ -163,8 +161,8 @@ end
 --   - scrim_opacity: Optional, 0.0-1.0
 -- @return Complete overlay configuration table
 function M.create_overlay_config(opts)
-  assert(opts and opts.id, "Overlay config requires 'id' field")
-  assert(opts.render, "Overlay config requires 'render' function")
+  assert(opts and opts.id, 'Overlay config requires "id" field')
+  assert(opts.render, 'Overlay config requires "render" function')
 
   local C = Constants.OVERLAY
   local config = M.get()

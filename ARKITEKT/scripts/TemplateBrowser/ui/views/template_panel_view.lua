@@ -3,7 +3,7 @@
 -- Middle panel view: Recent templates + template grid
 
 -- Dependencies (cached at module load per Lua Performance Guide)
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.factory')
 local Chip = require('arkitekt.gui.widgets.data.chip')
@@ -43,7 +43,7 @@ local function handle_tile_resize(ctx, state, config)
 
   if not shift and not ctrl then return false end
 
-  local is_list_mode = state.template_view_mode == "list"
+  local is_list_mode = state.template_view_mode == 'list'
   local delta = wheel > 0 and 1 or -1
 
   if shift then
@@ -107,16 +107,16 @@ local function draw_template_panel(ctx, gui, width, height)
         end
 
         ImGui.SetCursorScreenPos(ctx, chip_x, chip_y)
-        local clicked = Chip.draw(ctx, {
+        local clicked = Chip(ctx, {
           style = Chip.STYLE.ACTION,
           label = tag_name,
           bg_color = tag_data.color,
-          text_color = Ark.Colors.auto_text_color(tag_data.color),
+          text_color = Ark.Colors.AutoTextColor(tag_data.color),
           height = chip_height,
           padding_h = 8,
           rounding = 2,
           is_selected = true,
-          interactive = true,
+          is_interactive = true,
         })
 
         if clicked then
@@ -139,16 +139,16 @@ local function draw_template_panel(ctx, gui, width, height)
       end
 
       ImGui.SetCursorScreenPos(ctx, chip_x, chip_y)
-      local clicked = Chip.draw(ctx, {
+      local clicked = Chip(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
-        bg_color = Ark.Colors.hexrgb("#888888"),
-        text_color = Ark.Colors.hexrgb("#000000"),
+        bg_color = 0x888888FF,
+        text_color = 0x000000FF,
         height = chip_height,
         padding_h = 8,
         rounding = 2,
         is_selected = true,
-        interactive = true,
+        is_interactive = true,
       })
 
       if clicked then
@@ -201,18 +201,18 @@ local function draw_template_panel(ctx, gui, width, height)
 
   -- 4. DRAW DRAGGABLE SEPARATOR
   local sep_y = panel_y + grid_panel_height + separator_gap / 2
-  local sep_result = Ark.Splitter.draw(ctx, {
-    id = "quick_access_separator",
+  local sep_result = Ark.Splitter(ctx, {
+    id = 'quick_access_separator',
     x = content_x,
     y = sep_y,
     width = width,
-    orientation = "horizontal",
+    orientation = 'horizontal',
     thickness = 6,
   })
 
-  if sep_result.action == "reset" then
+  if sep_result.action == 'reset' then
     state.quick_access_separator_position = 350
-  elseif sep_result.action == "drag" then
+  elseif sep_result.action == 'drag' then
     local new_grid_height = sep_result.position - panel_y - separator_gap / 2
     new_grid_height = math.max(min_grid_height, math.min(new_grid_height, panel_height - min_quick_access_height - separator_gap))
     state.quick_access_separator_position = new_grid_height

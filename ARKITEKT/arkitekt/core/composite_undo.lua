@@ -4,7 +4,7 @@
 -- Extracted from RegionPlaylist undo_bridge for reuse
 -- Upgrades basic undo_manager with deep state snapshotting and change tracking
 
-local UndoManager = require("arkitekt.core.undo_manager")
+local UndoManager = require('arkitekt.core.undo_manager')
 
 local M = {}
 local CompositeBridge = {}

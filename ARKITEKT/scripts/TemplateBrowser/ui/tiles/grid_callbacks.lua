@@ -4,7 +4,7 @@
 -- Eliminates ~300 LOC duplication between template_grid and quick_access_grid
 
 -- Dependencies (cached at module load per Lua Performance Guide)
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local TemplateOps = require('TemplateBrowser.domain.template.operations')
 local Persistence = require('TemplateBrowser.data.storage')
 local Tags = require('TemplateBrowser.domain.tags.service')
@@ -33,7 +33,7 @@ function M.create(gui, get_templates_fn, opts)
       -- Update selected template from grid selection
       if selected_keys and #selected_keys > 0 then
         local key = selected_keys[1]
-        local uuid = key:match("template_(.+)")
+        local uuid = key:match('template_(.+)')
         local templates = get_templates_fn()
 
         for _, tmpl in ipairs(templates) do
@@ -58,7 +58,7 @@ function M.create(gui, get_templates_fn, opts)
         if ctrl_down then
           -- Start rename
           gui.state.renaming_item = template
-          gui.state.renaming_type = "template"
+          gui.state.renaming_type = 'template'
           gui.state.rename_buffer = template.name
           return
         end
@@ -83,12 +83,12 @@ function M.create(gui, get_templates_fn, opts)
     on_star_click = function(template)
       if not template then return end
 
-      local favorites_id = "__FAVORITES__"
+      local favorites_id = '__FAVORITES__'
 
       -- Get favorites folder
       local favorites = gui.state.metadata.virtual_folders[favorites_id]
       if not favorites then
-        gui.state.set_status("Favorites folder not found", "error")
+        gui.state.set_status('Favorites folder not found', 'error')
         return
       end
 
@@ -106,10 +106,10 @@ function M.create(gui, get_templates_fn, opts)
       -- Toggle favorite status
       if is_favorited then
         table.remove(favorites.template_refs, favorite_index)
-        gui.state.set_status("Removed from Favorites: " .. template.name, "success")
+        gui.state.set_status('Removed from Favorites: ' .. template.name, 'success')
       else
         table.insert(favorites.template_refs, template.uuid)
-        gui.state.set_status("Added to Favorites: " .. template.name, "success")
+        gui.state.set_status('Added to Favorites: ' .. template.name, 'success')
       end
 
       -- Save metadata
@@ -132,7 +132,7 @@ function M.create(gui, get_templates_fn, opts)
       if not tag_name then return end
 
       -- Check if dropped template is in selection
-      local template_key = "template_" .. template.uuid
+      local template_key = 'template_' .. template.uuid
       local is_selected = false
       local selected_keys = is_quick_access and {} or (gui.state.selected_template_keys or {})
 
@@ -148,7 +148,7 @@ function M.create(gui, get_templates_fn, opts)
       if is_selected and #selected_keys > 1 then
         -- Multi-select: tag all selected templates
         for _, key in ipairs(selected_keys) do
-          local uuid = key:match("template_(.+)")
+          local uuid = key:match('template_(.+)')
           if uuid and Tags.add_tag_to_template(gui.state.metadata, uuid, tag_name) then
             tagged_count = tagged_count + 1
           end
@@ -170,9 +170,9 @@ function M.create(gui, get_templates_fn, opts)
 
       -- Status message
       if tagged_count > 1 then
-        gui.state.set_status("Tagged " .. tagged_count .. " templates with " .. tag_name, "success")
+        gui.state.set_status('Tagged ' .. tagged_count .. ' templates with ' .. tag_name, 'success')
       elseif tagged_count == 1 then
-        gui.state.set_status("Tagged \"" .. template.name .. "\" with " .. tag_name, "success")
+        gui.state.set_status('Tagged \"' .. template.name .. '\" with ' .. tag_name, 'success')
       end
     end,
   }

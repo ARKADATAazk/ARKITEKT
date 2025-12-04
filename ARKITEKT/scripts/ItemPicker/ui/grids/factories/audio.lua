@@ -2,7 +2,7 @@
 -- ItemPicker/ui/grids/factories/audio.lua
 -- Factory for creating audio items grid
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
 local shared = require('ItemPicker.ui.grids.factories.shared')
@@ -58,10 +58,10 @@ function M.create_options(config, state, visualization, animator, disable_animat
       local item_muted = entry.item_muted or false
       local uuid = entry.uuid
       local pool_count = entry.pool_count or 1
-      local track_name = entry.track_name or ""
+      local track_name = entry.track_name or ''
 
       -- Safety check: ensure item_name is a valid string
-      if not item_name or type(item_name) ~= "string" then
+      if not item_name or type(item_name) ~= 'string' then
         goto continue
       end
 
@@ -80,7 +80,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
         local item_has_selected_region = false
         if entry.regions then
           for _, region in ipairs(entry.regions) do
-            local region_name = type(region) == "table" and region.name or region
+            local region_name = type(region) == 'table' and region.name or region
             if state.selected_regions[region_name] then
               item_has_selected_region = true
               break
@@ -100,6 +100,9 @@ function M.create_options(config, state, visualization, animator, disable_animat
       -- Convert cached track color to ImGui color
       local color = shared.convert_track_color(entry.track_color or 0)
 
+      -- PERF: Cache duration to avoid GetMediaItemInfo_Value calls in renderer
+      local duration = (item and reaper.ValidatePtr2(0, item, 'MediaItem*')) and reaper.GetMediaItemInfo_Value(item, 'D_LENGTH') or 0
+
       filtered[#filtered + 1] = {
         filename = filename,
         item = item,
@@ -114,44 +117,39 @@ function M.create_options(config, state, visualization, animator, disable_animat
         regions = entry.regions,  -- Region tags from loader
         track_muted = track_muted,  -- Track mute state
         item_muted = item_muted,  -- Item mute state
+        duration = duration,  -- Cached duration for renderer
       }
 
       ::continue::
     end
 
     -- Apply sorting
-    local sort_mode = state.settings.sort_mode or "none"
+    local sort_mode = state.settings.sort_mode or 'none'
     local sort_reverse = state.settings.sort_reverse or false
 
-    if sort_mode == "length" then
-      -- Sort by item length/duration
+    if sort_mode == 'length' then
+      -- Sort by item length/duration (using cached duration)
       table.sort(filtered, function(a, b)
-        local a_len = 0
-        local b_len = 0
-        if a.item then
-          a_len = reaper.GetMediaItemInfo_Value(a.item, "D_LENGTH")
-        end
-        if b.item then
-          b_len = reaper.GetMediaItemInfo_Value(b.item, "D_LENGTH")
-        end
+        local a_len = a.duration or 0
+        local b_len = b.duration or 0
         if sort_reverse then
           return a_len > b_len  -- Longest first
         else
           return a_len < b_len  -- Shortest first
         end
       end)
-    elseif sort_mode == "color" then
+    elseif sort_mode == 'color' then
       -- Sort by color using library's color comparison
       -- Uses HSL: Hue → Saturation (desc) → Lightness (desc)
       -- Grays (sat < 0.08) are grouped at the end
       table.sort(filtered, function(a, b)
         if sort_reverse then
-          return Ark.Colors.compare_colors(b.color, a.color)
+          return Ark.Colors.CompareColors(b.color, a.color)
         else
-          return Ark.Colors.compare_colors(a.color, b.color)
+          return Ark.Colors.CompareColors(a.color, b.color)
         end
       end)
-    elseif sort_mode == "name" then
+    elseif sort_mode == 'name' then
       -- Sort alphabetically by name
       table.sort(filtered, function(a, b)
         if sort_reverse then
@@ -160,7 +158,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
           return a.name:lower() < b.name:lower()
         end
       end)
-    elseif sort_mode == "pool" then
+    elseif sort_mode == 'pool' then
       -- Sort by pool count (descending), then by name
       table.sort(filtered, function(a, b)
         local a_pool = a.pool_count or 1
@@ -172,7 +170,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
             return a_pool > b_pool  -- Higher pool counts first
           end
         else
-          return (a.name or "") < (b.name or "")  -- Then alphabetically
+          return (a.name or '') < (b.name or '')  -- Then alphabetically
         end
       end)
     end
@@ -238,7 +236,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
 
   -- Grid options (returned for callable API)
   local grid_opts = {
-    id = "audio_items",
+    id = 'audio_items',
     gap = config.TILE.GAP,
     min_col_w = function() return state.get_tile_width() end,
     fixed_tile_h = state.get_tile_height(),
@@ -352,6 +350,8 @@ function M.create_options(config, state, visualization, animator, disable_animat
 
     -- F key: toggle favorite
     f = function(grid, keys)
+      if not keys or #keys == 0 then return end
+
       local items = get_items()
       local filename_map = {}
       for _, data in ipairs(items) do
@@ -374,7 +374,6 @@ function M.create_options(config, state, visualization, animator, disable_animat
             end
           end
         end
-        state.persist_favorites()
       else
         -- Single item: toggle
         local filename = filename_map[keys[1]]
@@ -382,6 +381,8 @@ function M.create_options(config, state, visualization, animator, disable_animat
           state.toggle_audio_favorite(filename)
         end
       end
+      state.persist_favorites()
+      state.runtime_cache.audio_filter_hash = nil
     end,
 
     -- Wheel cycling through pooled items
@@ -488,7 +489,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
           if state.is_previewing(item_data.item) then
             state.stop_preview()
           else
-            state.start_preview(item_data.item, "through_track")
+            state.start_preview(item_data.item, 'through_track')
           end
           return
         end
@@ -507,7 +508,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
           if state.is_previewing(item_data.item) then
             state.stop_preview()
           else
-            state.start_preview(item_data.item, "direct")
+            state.start_preview(item_data.item, 'direct')
           end
           return
         end

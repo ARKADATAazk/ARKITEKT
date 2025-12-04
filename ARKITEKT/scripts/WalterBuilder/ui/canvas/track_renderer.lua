@@ -2,11 +2,9 @@
 -- WalterBuilder/ui/canvas/track_renderer.lua
 -- Renders TCP tracks vertically on the canvas
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local TrackDefaults = require('WalterBuilder.defs.track_defaults')
-
-local hexrgb = Ark.Colors.hexrgb
+local TrackDefaults = require('WalterBuilder.config.track_defaults')
 
 local M = {}
 local Renderer = {}
@@ -15,31 +13,31 @@ Renderer.__index = Renderer
 -- Track visualization colors
 local COLORS = {
   -- Track backgrounds
-  BG_NORMAL = hexrgb("#1E1E1E"),
-  BG_SELECTED = hexrgb("#2A3A4A"),
-  BG_ARMED = hexrgb("#3A2A2A"),
-  BG_FOLDER = hexrgb("#252525"),
+  BG_NORMAL = 0x1E1E1EFF,
+  BG_SELECTED = 0x2A3A4AFF,
+  BG_ARMED = 0x3A2A2AFF,
+  BG_FOLDER = 0x252525FF,
 
   -- Track borders
-  BORDER_NORMAL = hexrgb("#3A3A3A"),
-  BORDER_SELECTED = hexrgb("#5588CC"),
-  BORDER_FOLDER = hexrgb("#4A4A4A"),
+  BORDER_NORMAL = 0x3A3A3AFF,
+  BORDER_SELECTED = 0x5588CCFF,
+  BORDER_FOLDER = 0x4A4A4AFF,
 
   -- Text colors
-  TEXT_NORMAL = hexrgb("#AAAAAA"),
-  TEXT_SELECTED = hexrgb("#FFFFFF"),
-  TEXT_MUTED = hexrgb("#666666"),
+  TEXT_NORMAL = 0xAAAAAAFF,
+  TEXT_SELECTED = 0xFFFFFFFF,
+  TEXT_MUTED = 0x666666FF,
 
   -- State indicators
-  ARMED = hexrgb("#CC4444"),
-  MUTED = hexrgb("#888844"),
-  SOLOED = hexrgb("#44AA44"),
+  ARMED = 0xCC4444FF,
+  MUTED = 0x888844FF,
+  SOLOED = 0x44AA44FF,
 
   -- Folder indent
-  FOLDER_LINE = hexrgb("#4A4A4AFF"),
+  FOLDER_LINE = 0x4A4A4AFF,
 
   -- Separator
-  SEPARATOR = hexrgb("#2A2A2A"),
+  SEPARATOR = 0x2A2A2AFF,
 }
 
 function M.new(opts)
@@ -141,11 +139,11 @@ function Renderer:draw_track(ctx, dl, x, y, w, track, opts)
   -- Folder icon
   if track.folder_state == 1 then
     -- Open folder
-    ImGui.DrawList_AddText(dl, text_x, text_y, COLORS.TEXT_NORMAL, "▼")
+    ImGui.DrawList_AddText(dl, text_x, text_y, COLORS.TEXT_NORMAL, '▼')
     text_x = text_x + 14
   elseif track.folder_state == -1 or track.folder_state == -2 then
     -- Closed folder or last in folder
-    ImGui.DrawList_AddText(dl, text_x, text_y, COLORS.TEXT_MUTED, "▶")
+    ImGui.DrawList_AddText(dl, text_x, text_y, COLORS.TEXT_MUTED, '▶')
     text_x = text_x + 14
   end
 
@@ -160,21 +158,21 @@ function Renderer:draw_track(ctx, dl, x, y, w, track, opts)
   -- Armed indicator
   if track.armed then
     ImGui.DrawList_AddRectFilled(dl, indicator_x, y + 4, indicator_x + 12, y + 16, COLORS.ARMED, 2)
-    ImGui.DrawList_AddText(dl, indicator_x + 2, y + 3, 0xFFFFFFFF, "R")
+    ImGui.DrawList_AddText(dl, indicator_x + 2, y + 3, 0xFFFFFFFF, 'R')
     indicator_x = indicator_x - 16
   end
 
   -- Mute indicator
   if track.muted then
     ImGui.DrawList_AddRectFilled(dl, indicator_x, y + 4, indicator_x + 12, y + 16, COLORS.MUTED, 2)
-    ImGui.DrawList_AddText(dl, indicator_x + 2, y + 3, 0xFFFFFFFF, "M")
+    ImGui.DrawList_AddText(dl, indicator_x + 2, y + 3, 0xFFFFFFFF, 'M')
     indicator_x = indicator_x - 16
   end
 
   -- Solo indicator
   if track.soloed then
     ImGui.DrawList_AddRectFilled(dl, indicator_x, y + 4, indicator_x + 12, y + 16, COLORS.SOLOED, 2)
-    ImGui.DrawList_AddText(dl, indicator_x + 2, y + 3, 0xFFFFFFFF, "S")
+    ImGui.DrawList_AddText(dl, indicator_x + 2, y + 3, 0xFFFFFFFF, 'S')
   end
 
   return h
@@ -210,7 +208,7 @@ function Renderer:draw_track_elements(ctx, dl, track_x, track_y, track_w, track,
   opts = opts or {}
 
   -- Elements are drawn relative to the track position
-  -- The track acts as the "parent" container for WALTER coordinates
+  -- The track acts as the 'parent' container for WALTER coordinates
   local track_h = track.height
   local indent = track.folder_depth * self.folder_indent
 

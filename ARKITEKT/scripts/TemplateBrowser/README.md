@@ -19,43 +19,70 @@ A powerful template management tool for REAPER with advanced organization featur
 
 ```
 TemplateBrowser/
-├── core/                    # Core systems
-│   ├── config.lua          # Configuration constants
-│   ├── state.lua           # Application state
-│   ├── shortcuts.lua       # Keyboard shortcuts
-│   └── tooltips.lua        # Tooltip definitions
+├── app/                     # Application layer
+│   ├── config.lua          # Configuration (re-exports from config/)
+│   └── state.lua           # Application state
+│
+├── config/                  # Configuration constants
+│   ├── constants.lua       # App-wide constants
+│   ├── defaults.lua        # Default values
+│   └── strings.lua         # UI strings
+│
+├── data/                    # Data persistence layer
+│   ├── storage.lua         # Metadata save/load (JSON)
+│   ├── file_ops.lua        # File system operations
+│   └── undo.lua            # Undo/redo manager
 │
 ├── domain/                  # Business logic (no UI)
-│   ├── scanner.lua         # Template discovery & filtering
-│   ├── file_ops.lua        # File system operations
-│   ├── template_ops.lua    # Template actions (apply/insert)
-│   ├── tags.lua            # Tag management
-│   ├── fx_parser.lua       # VST/FX parsing
-│   ├── fx_queue.lua        # Background FX parsing queue
-│   └── persistence.lua     # Metadata save/load
+│   ├── template/
+│   │   ├── scanner.lua     # Template discovery & filtering
+│   │   ├── operations.lua  # Template actions (apply/insert)
+│   │   ├── stats.lua       # Usage statistics
+│   │   └── track_parser.lua # Track chunk parsing
+│   ├── tags/
+│   │   └── service.lua     # Tag management
+│   ├── fx/
+│   │   ├── parser.lua      # VST/FX parsing
+│   │   └── queue.lua       # Background FX parsing queue
+│   └── search/
+│       └── fuzzy.lua       # Fuzzy search
 │
 ├── ui/                      # User interface
-│   ├── gui.lua             # Main GUI orchestrator (479 lines)
-│   ├── ui_constants.lua    # UI layout constants
-│   ├── status_bar.lua      # Status bar component
-│   ├── template_container_config.lua
+│   ├── init.lua            # Main GUI orchestrator
+│   ├── status.lua          # Status bar component
+│   ├── shortcuts.lua       # Keyboard shortcuts
+│   ├── tooltips.lua        # Tooltip definitions & rendering
+│   │
+│   ├── config/             # UI-specific constants
+│   │   ├── constants.lua   # Layout constants
+│   │   ├── left_panel.lua
+│   │   ├── template.lua
+│   │   ├── info.lua
+│   │   ├── convenience.lua
+│   │   └── recent.lua
 │   │
 │   ├── views/              # Modular view components
-│   │   ├── helpers.lua     # Common view helpers
-│   │   ├── left_panel_view.lua      # Tab orchestration (62 lines)
-│   │   ├── template_panel_view.lua  # Template grid (192 lines)
-│   │   ├── info_panel_view.lua      # Template info (184 lines)
-│   │   ├── template_modals_view.lua # Context menus & modals (317 lines)
-│   │   ├── tree_view.lua   # Folder tree logic (672 lines)
-│   │   │
-│   │   └── left_panel/     # Left panel tab modules
-│   │       ├── directory_tab.lua  # Folder tree + creation
-│   │       ├── vsts_tab.lua       # VST list & filtering
-│   │       └── tags_tab.lua       # Tag management
+│   │   ├── helpers.lua
+│   │   ├── left_panel_view.lua
+│   │   ├── template_panel_view.lua
+│   │   ├── info_panel_view.lua
+│   │   ├── convenience_panel_view.lua
+│   │   ├── template_modals_view.lua
+│   │   ├── tree_view.lua
+│   │   ├── left_panel/
+│   │   │   ├── directory_tab.lua
+│   │   │   ├── vsts_tab.lua
+│   │   │   └── tags_tab.lua
+│   │   └── convenience_panel/
+│   │       ├── tags_tab.lua
+│   │       └── vsts_tab.lua
 │   │
 │   └── tiles/              # Template tile rendering
-│       ├── template_grid_factory.lua
-│       └── template_tile.lua
+│       ├── factory.lua
+│       ├── grid_callbacks.lua
+│       ├── helpers.lua
+│       ├── tile.lua
+│       └── tile_compact.lua
 ```
 
 ### Data Flow
@@ -91,10 +118,10 @@ return M
 ```
 
 **Key principles:**
-- Views are **stateless** - all state lives in `core/state.lua`
+- Views are **stateless** - all state lives in `app/state.lua`
 - Views **read** state and **write** state directly
 - Domain logic is **separate** from UI logic
-- UI constants live in `ui/ui_constants.lua`
+- UI constants live in `ui/config/constants.lua`
 
 ## Common Development Tasks
 
@@ -102,7 +129,7 @@ return M
 
 **Example: Add "Duplicate Template" button**
 
-1. **Add domain logic** (`domain/template_ops.lua`):
+1. **Add domain logic** (`domain/template/operations.lua`):
 ```lua
 function M.duplicate_template(template_path, state)
   -- Implementation
@@ -120,7 +147,7 @@ if Button.draw_at_cursor(ctx, {
 end
 ```
 
-3. **Add keyboard shortcut** (`core/shortcuts.lua`):
+3. **Add keyboard shortcut** (`ui/shortcuts.lua`):
 ```lua
 if ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl) and
    ImGui.IsKeyPressed(ctx, ImGui.Key_D) then
@@ -128,7 +155,7 @@ if ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl) and
 end
 ```
 
-4. **Wire shortcut** (`ui/gui.lua`):
+4. **Wire shortcut** (`ui/init.lua`):
 ```lua
 elseif action == "duplicate_template" then
   if self.state.selected_template then
@@ -143,7 +170,7 @@ elseif action == "duplicate_template" then
 
 **Example: Add "Archive Folder" to context menu**
 
-1. **Add domain logic** (`domain/file_ops.lua`):
+1. **Add domain logic** (`data/file_ops.lua`):
 ```lua
 function M.archive_folder(folder_path)
   -- Implementation
@@ -202,13 +229,13 @@ end
 
 ### Changing UI Layout
 
-**Panel widths** are controlled by separator ratios in `gui.lua`:
+**Panel widths** are controlled by separator ratios in `ui/init.lua`:
 ```lua
 self.state.separator1_ratio  -- Left panel width
 self.state.separator2_ratio  -- Template panel width
 ```
 
-**Spacing/padding** constants live in `ui/ui_constants.lua`:
+**Spacing/padding** constants live in `ui/config/constants.lua`:
 ```lua
 M.PADDING = {
   PANEL = 14,
@@ -240,7 +267,7 @@ After making changes:
 
 ## State Management
 
-All state lives in `core/state.lua`:
+All state lives in `app/state.lua`:
 
 ```lua
 State = {
@@ -276,7 +303,7 @@ State = {
 
 ## Metadata Persistence
 
-Metadata is stored in: `REAPER/Scripts/arkitekt_data/TemplateBrowser/metadata.json`
+Metadata is stored in: `REAPER/Data/ARKITEKT/TemplateBrowser/metadata.json`
 
 Contains:
 - Template notes, colors, tags, usage stats
@@ -326,8 +353,8 @@ Potential improvements:
 - Force rescan: VSTs tab → "Force Reparse All"
 
 **Metadata lost:**
-- Check arkitekt_data/TemplateBrowser/metadata.json
-- Backup created on each save: metadata.json.backup
+- Check REAPER/Data/ARKITEKT/TemplateBrowser/metadata.json
+- Layout preferences stored in layout.json
 
 **Performance issues:**
 - Large FX chains take time to parse
@@ -339,6 +366,6 @@ Potential improvements:
 When making changes:
 1. Follow the module structure above
 2. Keep views stateless
-3. Add constants to `ui_constants.lua`
+3. Add constants to `ui/config/constants.lua`
 4. Test all undo/redo operations
 5. Update this README if adding features

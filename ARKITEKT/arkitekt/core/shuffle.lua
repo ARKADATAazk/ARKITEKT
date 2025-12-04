@@ -63,7 +63,7 @@ ShuffleManager.__index = ShuffleManager
 --- Create a new shuffle manager
 --- @param array table Initial array to manage
 --- @param opts? table Options
----   - mode: string "true_shuffle" or "random" (default: "true_shuffle")
+---   - mode: string 'true_shuffle' or 'random' (default: 'true_shuffle')
 ---   - auto_reshuffle: boolean Auto reshuffle when exhausted (default: true)
 --- @return table manager The shuffle manager
 function M.new_manager(array, opts)
@@ -73,7 +73,7 @@ function M.new_manager(array, opts)
     original = array,
     shuffled = {},
     current_index = 1,
-    mode = opts.mode or "true_shuffle",
+    mode = opts.mode or 'true_shuffle',
     auto_reshuffle = opts.auto_reshuffle ~= false,
     seed = nil,
     last_item = nil,
@@ -94,10 +94,10 @@ function ShuffleManager:reshuffle()
   -- Generate new seed for each shuffle
   self.seed = M.generate_seed()
 
-  if self.mode == "true_shuffle" then
+  if self.mode == 'true_shuffle' then
     -- Fisher-Yates: play each item once before reshuffling
     M.fisher_yates(self.shuffled, self.seed)
-  elseif self.mode == "random" then
+  elseif self.mode == 'random' then
     -- Pure random: can repeat items, but try to avoid consecutive repeats
     M.fisher_yates(self.shuffled, self.seed)
 
@@ -166,10 +166,10 @@ function ShuffleManager:reset()
 end
 
 --- Change shuffle mode
---- @param mode string "true_shuffle" or "random"
+--- @param mode string 'true_shuffle' or 'random'
 function ShuffleManager:set_mode(mode)
-  if mode ~= "true_shuffle" and mode ~= "random" then
-    error("Invalid shuffle mode: " .. tostring(mode))
+  if mode ~= 'true_shuffle' and mode ~= 'random' then
+    error('Invalid shuffle mode: ' .. tostring(mode))
   end
   self.mode = mode
   self:reshuffle()
@@ -205,8 +205,9 @@ end
 --- @param seed? number Optional seed (WARNING: affects global math.randomseed!)
 --- @return table sampled Array of sampled items
 function M.weighted_shuffle(items, weights, count, seed)
+  if not items or not weights then return {} end
   if #items ~= #weights then
-    error("Items and weights must have same length")
+    error('Items and weights must have same length')
   end
 
   if #items == 0 then return {} end
@@ -221,7 +222,12 @@ function M.weighted_shuffle(items, weights, count, seed)
   -- Simple weighted sampling (not optimal but works for small arrays)
   local total_weight = 0
   for _, w in ipairs(weights) do
-    total_weight = total_weight + w
+    total_weight = total_weight + (w or 0)
+  end
+
+  -- If all weights are zero, fall back to regular shuffle
+  if total_weight <= 0 then
+    return M.fisher_yates_copy(items, seed)
   end
 
   local sampled = {}

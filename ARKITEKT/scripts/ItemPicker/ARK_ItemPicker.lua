@@ -4,7 +4,7 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
+local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
@@ -13,15 +13,15 @@ local ProfilerInit = require('arkitekt.debug.profiler_init')
 local profiler_enabled = ProfilerInit.init()
 
 if profiler_enabled then
-  reaper.ShowConsoleMsg("[ItemPicker] ✓ Profiler enabled and initialized\n")
+  reaper.ShowConsoleMsg('[ItemPicker] ✓ Profiler enabled and initialized\n')
 else
-  reaper.ShowConsoleMsg("[ItemPicker] ✗ Profiler disabled or not found\n")
-  reaper.ShowConsoleMsg("[ItemPicker]   To enable: Set PROFILER_ENABLED=true in arkitekt/defs/features.lua\n")
+  reaper.ShowConsoleMsg('[ItemPicker] ✗ Profiler disabled or not found\n')
+  reaper.ShowConsoleMsg('[ItemPicker]   To enable: Set PROFILER_ENABLED=true in arkitekt/defs/features.lua\n')
   reaper.ShowConsoleMsg("[ItemPicker]   Install profiler: ReaPack > Browse > Search 'cfillion Lua profiler'\n")
 end
 
 -- Load required modules
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 
 -- Load new refactored modules
 local Config = require('ItemPicker.app.config')
@@ -64,18 +64,18 @@ end
 
 local function cleanup()
   SetButtonState()
-  reaper.Main_OnCommand(reaper.NamedCommandLookup("_SWS_STOPPREVIEW"), 0)
-  State.cleanup()
+  reaper.Main_OnCommand(reaper.NamedCommandLookup('_SWS_STOPPREVIEW'), 0)
+  State.Cleanup()
 end
 
 SetButtonState(1)
 
 -- Run in overlay mode with passthrough for drag handling
 Shell.run({
-  mode = "overlay",
-  title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),
+  mode = 'overlay',
+  title = 'Item Picker' .. (profiler_enabled and ' [Profiling]' or ''),
   toggle_button = true,
-  app_name = "item_picker",
+  app_name = 'item_picker',
 
   fonts = {
     title_size = 24,

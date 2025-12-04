@@ -5,10 +5,10 @@
 -- ============================================================================
 -- COLOR FORMAT REFERENCE
 -- ============================================================================
--- ARKITEKT internal:        0xRRGGBBAA (use hexrgb() to parse strings)
+-- ARKITEKT internal:        0xRRGGBBAA (use byte literals, e.g. 0xFF0000FF for red)
 -- ImGui ColorEdit4/Picker4: 0xRRGGBBAA (direct, no conversion needed)
--- ImGui ColorEdit3/Picker3: 0xAARRGGBB (use rgba_to_argb / argb_to_rgba)
--- REAPER native:            platform-specific (use rgba_to_reaper_native)
+-- ImGui ColorEdit3/Picker3: 0xAARRGGBB (use RgbaToArgb / ArgbToRgba)
+-- REAPER native:            platform-specific (use RgbaToReaperNative)
 -- ============================================================================
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
@@ -18,66 +18,10 @@ local min = math.min
 local M = {}
 
 -- ============================================================================
--- SECTION 0: Hex String Conversion
--- ============================================================================
-
--- Convert hex string to 0xRRGGBBAA format
--- Accepts #RRGGBB, #RRGGBBAA, RRGGBB, or RRGGBBAA
-function M.hexrgb(hex_string)
-  if hex_string:sub(1, 1) == "#" then
-    hex_string = hex_string:sub(2)
-  end
-
-  local hex = tonumber(hex_string, 16)
-  if not hex then return 0xFFFFFFFF end
-
-  if #hex_string == 8 then
-    return hex
-  else
-    return (hex << 8) | 0xFF
-  end
-end
-
--- Convert 0xRRGGBBAA color to hex string "#RRGGBB" (without alpha)
-function M.to_hexrgb(color)
-  local r = (color >> 24) & 0xFF
-  local g = (color >> 16) & 0xFF
-  local b = (color >> 8) & 0xFF
-  return string.format("#%02X%02X%02X", r, g, b)
-end
-
--- Convert 0xRRGGBBAA color to hex string "#RRGGBBAA" (with alpha)
-function M.to_hexrgba(color)
-  local r = (color >> 24) & 0xFF
-  local g = (color >> 16) & 0xFF
-  local b = (color >> 8) & 0xFF
-  local a = color & 0xFF
-  return string.format("#%02X%02X%02X%02X", r, g, b, a)
-end
-
--- Convert hex string or color to 0xRRGGBBAA format with specified alpha
--- If first param is a string, converts from hex. If number, uses as-is.
--- Alpha is a float 0.0-1.0 that gets converted to 0-255 range
-function M.hexrgba(hex_or_color, alpha)
-  local color
-  if type(hex_or_color) == "string" then
-    color = M.hexrgb(hex_or_color)
-  else
-    color = hex_or_color or 0xFFFFFFFF
-  end
-
-  -- Convert alpha from 0.0-1.0 to 0-255 range
-  local alpha_byte = ((alpha or 1.0) * 255 + 0.5) // 1
-  alpha_byte = math.max(0, math.min(255, alpha_byte))
-
-  return M.with_alpha(color, alpha_byte)
-end
-
--- ============================================================================
 -- SECTION 1: Basic Color Operations
 -- ============================================================================
 
-function M.rgba_to_components(color)
+function M.RgbaToComponents(color)
   local r = (color >> 24) & 0xFF
   local g = (color >> 16) & 0xFF
   local b = (color >> 8) & 0xFF
@@ -85,12 +29,13 @@ function M.rgba_to_components(color)
   return r, g, b, a
 end
 
-function M.components_to_rgba(r, g, b, a)
-  return (r << 24) | (g << 16) | (b << 8) | a
+function M.ComponentsToRgba(r, g, b, a)
+  -- Coerce to integers (handles floats safely, //1 is essentially free)
+  return ((r//1) << 24) | ((g//1) << 16) | ((b//1) << 8) | (a//1)
 end
 
 -- ImGui uses ARGB format, convert to/from our RGBA format
-function M.argb_to_rgba(argb_color)
+function M.ArgbToRgba(argb_color)
   local a = (argb_color >> 24) & 0xFF
   local r = (argb_color >> 16) & 0xFF
   local g = (argb_color >> 8) & 0xFF
@@ -98,7 +43,7 @@ function M.argb_to_rgba(argb_color)
   return (r << 24) | (g << 16) | (b << 8) | a
 end
 
-function M.rgba_to_argb(rgba_color)
+function M.RgbaToArgb(rgba_color)
   local r = (rgba_color >> 24) & 0xFF
   local g = (rgba_color >> 16) & 0xFF
   local b = (rgba_color >> 8) & 0xFF
@@ -106,67 +51,60 @@ function M.rgba_to_argb(rgba_color)
   return (a << 24) | (r << 16) | (g << 8) | b
 end
 
-function M.with_alpha(color, alpha)
+function M.WithAlpha(color, alpha)
+  color = color or 0
+  alpha = alpha or 0xFF
   return (color & 0xFFFFFF00) | (alpha & 0xFF)
 end
 
 --- Convert float opacity (0.0-1.0) to byte (0-255)
---- @param opacity number Float opacity value
---- @return number Byte alpha value
-function M.opacity(opacity)
-  return ((opacity or 1.0) * 255 + 0.5) // 1
+--- @param opacity number Float opacity value (clamped to 0.0-1.0)
+--- @return number Byte alpha value (0-255)
+function M.Opacity(opacity)
+  opacity = max(0, min(1, opacity or 1.0))
+  return (opacity * 255 + 0.5) // 1
 end
 
 --- Set alpha channel using float opacity (0.0-1.0) instead of byte value
 --- @param color number RGBA color
 --- @param opacity_float number Opacity value (0.0-1.0)
 --- @return number Color with new opacity
-function M.with_opacity(color, opacity_float)
-  return (color & 0xFFFFFF00) | M.opacity(opacity_float)
-end
-
---- Convert byte alpha (0-255) to float opacity (0.0-1.0)
---- @param byte number Byte alpha value
---- @return number Float opacity value
-function M.to_opacity(byte)
-  return (byte or 255) / 255
+function M.WithOpacity(color, opacity_float)
+  return (color & 0xFFFFFF00) | M.Opacity(opacity_float)
 end
 
 --- Get alpha component of a color as float opacity (0.0-1.0)
 --- @param color number RGBA color
---- @return number Float opacity value
-function M.get_opacity(color)
+--- @return number Float opacity value (returns 1.0 for nil/0 color)
+function M.GetOpacity(color)
+  if not color then return 1.0 end
   return (color & 0xFF) / 255
 end
 
-function M.adjust_brightness(color, factor)
-  local r, g, b, a = M.rgba_to_components(color)
+function M.AdjustBrightness(color, factor)
+  local r, g, b, a = M.RgbaToComponents(color)
   r = min(255, max(0, (r * factor)//1))
   g = min(255, max(0, (g * factor)//1))
   b = min(255, max(0, (b * factor)//1))
-  return M.components_to_rgba(r, g, b, a)
+  return M.ComponentsToRgba(r, g, b, a)
 end
 
-function M.desaturate(color, amount)
-  local r, g, b, a = M.rgba_to_components(color)
+function M.Desaturate(color, amount)
+  local r, g, b, a = M.RgbaToComponents(color)
   local gray = r * 0.299 + g * 0.587 + b * 0.114
-  r = (r + (gray - r) * amount)//1
-  g = (g + (gray - g) * amount)//1
-  b = (b + (gray - b) * amount)//1
-  return M.components_to_rgba(r, g, b, a)
+  r = min(255, max(0, (r + (gray - r) * amount)//1))
+  g = min(255, max(0, (g + (gray - g) * amount)//1))
+  b = min(255, max(0, (b + (gray - b) * amount)//1))
+  return M.ComponentsToRgba(r, g, b, a)
 end
 
-function M.saturate(color, amount)
-  return M.desaturate(color, -amount)
+function M.Saturate(color, amount)
+  return M.Desaturate(color, -amount)
 end
 
-function M.luminance(color)
-  local r, g, b, _ = M.rgba_to_components(color)
+function M.Luminance(color)
+  local r, g, b, _ = M.RgbaToComponents(color)
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255
-end
-
-function M.lerp_component(a, b, t)
-  return (a + (b - a) * t + 0.5)//1
 end
 
 --- Interpolate between two colors
@@ -175,9 +113,12 @@ end
 --- @param color_b number Second color (RGBA)
 --- @param t number Interpolation factor (0.0 = color_a, 1.0 = color_b)
 --- @return number Interpolated color (RGBA)
-function M.lerp(color_a, color_b, t)
+function M.Lerp(color_a, color_b, t)
+  -- Clamp t to [0, 1]
+  t = max(0, min(1, t or 0))
+
   -- OPTIMIZATION: Inline all operations to eliminate 10+ function calls
-  -- Extract components (inline rgba_to_components)
+  -- Extract components (inline RgbaToComponents)
   local r1 = (color_a >> 24) & 0xFF
   local g1 = (color_a >> 16) & 0xFF
   local b1 = (color_a >> 8) & 0xFF
@@ -188,55 +129,30 @@ function M.lerp(color_a, color_b, t)
   local b2 = (color_b >> 8) & 0xFF
   local a2 = color_b & 0xFF
 
-  -- Lerp each component (inline lerp_component)
+  -- Lerp each component (inline LerpComponent)
   local r = (r1 + (r2 - r1) * t + 0.5)//1
   local g = (g1 + (g2 - g1) * t + 0.5)//1
   local b = (b1 + (b2 - b1) * t + 0.5)//1
   local a = (a1 + (a2 - a1) * t + 0.5)//1
 
-  -- Pack components (inline components_to_rgba)
+  -- Pack components (inline ComponentsToRgba)
   return (r << 24) | (g << 16) | (b << 8) | a
 end
 
-function M.auto_text_color(bg_color)
-  local lum = M.luminance(bg_color)
-  return lum > 0.5 and M.hexrgb("#000000") or M.hexrgb("#FFFFFF")
+function M.AutoTextColor(bg_color)
+  local lum = M.Luminance(bg_color)
+  return lum > 0.5 and 0x000000FF or 0xFFFFFFFF
 end
 
 -- ============================================================================
 -- SECTION 1.5: Color Space Conversions
 -- ============================================================================
 
-function M.rgb_to_reaper(rgb_color)
-  local rgb_hex
-  
-  if type(rgb_color) == "string" then
-    rgb_hex = tonumber(rgb_color, 16)
-  else
-    rgb_hex = rgb_color
-  end
-  
-  local r, g, b, a
-  
-  if rgb_hex > 0xFFFFFF then
-    r = (rgb_hex >> 24) & 0xFF
-    g = (rgb_hex >> 16) & 0xFF
-    b = (rgb_hex >> 8) & 0xFF
-    a = rgb_hex & 0xFF
-    return (b << 24) | (g << 16) | (r << 8) | a
-  else
-    r = (rgb_hex >> 16) & 0xFF
-    g = (rgb_hex >> 8) & 0xFF
-    b = rgb_hex & 0xFF
-    return (b << 16) | (g << 8) | r | 0xFF000000
-  end
-end
-
 --- Convert RGBA color to REAPER native format with custom color flag
 --- REAPER native format is BGR (not RGB) with 0x1000000 custom color flag
 --- @param rgba_color number Color in RGBA format (0xRRGGBBAA)
 --- @return number Native REAPER color with 0x1000000 flag (0x01BBGGRR)
-function M.rgba_to_reaper_native(rgba_color)
+function M.RgbaToReaperNative(rgba_color)
   local r = (rgba_color >> 24) & 0xFF
   local g = (rgba_color >> 16) & 0xFF
   local b = (rgba_color >> 8) & 0xFF
@@ -244,21 +160,21 @@ function M.rgba_to_reaper_native(rgba_color)
   return (b << 16) | (g << 8) | r | 0x1000000
 end
 
-function M.rgb_to_hsl(color)
-  local r, g, b, a = M.rgba_to_components(color)
+function M.RgbToHsl(color)
+  local r, g, b, a = M.RgbaToComponents(color)
   r, g, b = r / 255, g / 255, b / 255
-  
+
   local max_c = max(r, g, b)
   local min_c = min(r, g, b)
   local delta = max_c - min_c
-  
+
   local h = 0
   local s = 0
   local l = (max_c + min_c) / 2
-  
+
   if delta ~= 0 then
     s = (l > 0.5) and (delta / (2 - max_c - min_c)) or (delta / (max_c + min_c))
-    
+
     if max_c == r then
       h = ((g - b) / delta + (g < b and 6 or 0)) / 6
     elseif max_c == g then
@@ -267,11 +183,11 @@ function M.rgb_to_hsl(color)
       h = ((r - g) / delta + 4) / 6
     end
   end
-  
+
   return h, s, l
 end
 
-function M.hsl_to_rgb(h, s, l)
+function M.HslToRgb(h, s, l)
   local function hue_to_rgb(p, q, t)
     if t < 0 then t = t + 1 end
     if t > 1 then t = t - 1 end
@@ -280,9 +196,9 @@ function M.hsl_to_rgb(h, s, l)
     if t < 2/3 then return p + (q - p) * (2/3 - t) * 6 end
     return p
   end
-  
+
   local r, g, b
-  
+
   if s == 0 then
     r, g, b = l, l, l
   else
@@ -292,7 +208,7 @@ function M.hsl_to_rgb(h, s, l)
     g = hue_to_rgb(p, q, h)
     b = hue_to_rgb(p, q, h - 1/3)
   end
-  
+
   return (r * 255 + 0.5)//1, (g * 255 + 0.5)//1, (b * 255 + 0.5)//1
 end
 
@@ -304,73 +220,105 @@ end
 --- @param color number Color in RGBA format
 --- @param delta number Lightness adjustment (-1.0 to 1.0, typically -0.2 to 0.2)
 --- @return number Adjusted color in RGBA format
-function M.adjust_lightness(color, delta)
-  local h, s, l = M.rgb_to_hsl(color)
+function M.AdjustLightness(color, delta)
+  local h, s, l = M.RgbToHsl(color)
   l = max(0, min(1, l + delta))
-  local r, g, b = M.hsl_to_rgb(h, s, l)
-  local _, _, _, a = M.rgba_to_components(color)
-  return M.components_to_rgba(r, g, b, a)
+  local r, g, b = M.HslToRgb(h, s, l)
+  local _, _, _, a = M.RgbaToComponents(color)
+  return M.ComponentsToRgba(r, g, b, a)
+end
+
+--- Clamp background color to safe lightness and saturation range
+--- Prevents pure black/white backgrounds and overly saturated (colored) themes
+--- @param color number Color in RGBA format
+--- @param min_lightness number|nil Minimum lightness (default: 0.10)
+--- @param max_lightness number|nil Maximum lightness (default: 0.92)
+--- @param max_saturation number|nil Maximum saturation (default: 0.12)
+--- @return number Clamped color in RGBA format
+--- @return boolean Whether clamping was applied
+function M.ClampBgColor(color, min_lightness, max_lightness, max_saturation)
+  min_lightness = min_lightness or 0.10
+  max_lightness = max_lightness or 0.92
+  max_saturation = max_saturation or 0.12
+
+  local h, s, l = M.RgbToHsl(color)
+
+  -- Clamp lightness and saturation
+  local clamped_l = max(min_lightness, min(max_lightness, l))
+  local clamped_s = min(max_saturation, s)  -- Only clamp upper bound
+
+  -- Check if clamping was needed
+  local was_clamped = (clamped_l ~= l) or (clamped_s ~= s)
+
+  if not was_clamped then
+    return color, false
+  end
+
+  -- Apply clamped values
+  local r, g, b = M.HslToRgb(h, clamped_s, clamped_l)
+  local _, _, _, a = M.RgbaToComponents(color)
+  return M.ComponentsToRgba(r, g, b, a), true
 end
 
 --- Set absolute lightness of a color in HSL space
 --- @param color number Color in RGBA format
 --- @param lightness number Target lightness (0.0 to 1.0)
 --- @return number Color with new lightness in RGBA format
-function M.set_lightness(color, lightness)
-  local h, s, _ = M.rgb_to_hsl(color)
+function M.SetLightness(color, lightness)
+  local h, s, _ = M.RgbToHsl(color)
   lightness = max(0, min(1, lightness))
-  local r, g, b = M.hsl_to_rgb(h, s, lightness)
-  local _, _, _, a = M.rgba_to_components(color)
-  return M.components_to_rgba(r, g, b, a)
+  local r, g, b = M.HslToRgb(h, s, lightness)
+  local _, _, _, a = M.RgbaToComponents(color)
+  return M.ComponentsToRgba(r, g, b, a)
 end
 
 --- Adjust saturation of a color in HSL space
 --- @param color number Color in RGBA format
 --- @param delta number Saturation adjustment (-1.0 to 1.0)
 --- @return number Adjusted color in RGBA format
-function M.adjust_saturation(color, delta)
-  local h, s, l = M.rgb_to_hsl(color)
+function M.AdjustSaturation(color, delta)
+  local h, s, l = M.RgbToHsl(color)
   s = max(0, min(1, s + delta))
-  local r, g, b = M.hsl_to_rgb(h, s, l)
-  local _, _, _, a = M.rgba_to_components(color)
-  return M.components_to_rgba(r, g, b, a)
+  local r, g, b = M.HslToRgb(h, s, l)
+  local _, _, _, a = M.RgbaToComponents(color)
+  return M.ComponentsToRgba(r, g, b, a)
 end
 
 --- Adjust hue of a color in HSL space
 --- @param color number Color in RGBA format
 --- @param delta number Hue rotation (-1.0 to 1.0, wraps around)
 --- @return number Adjusted color in RGBA format
-function M.adjust_hue(color, delta)
-  local h, s, l = M.rgb_to_hsl(color)
+function M.AdjustHue(color, delta)
+  local h, s, l = M.RgbToHsl(color)
   h = (h + delta) % 1  -- Wrap around
-  local r, g, b = M.hsl_to_rgb(h, s, l)
-  local _, _, _, a = M.rgba_to_components(color)
-  return M.components_to_rgba(r, g, b, a)
+  local r, g, b = M.HslToRgb(h, s, l)
+  local _, _, _, a = M.RgbaToComponents(color)
+  return M.ComponentsToRgba(r, g, b, a)
 end
 
---- Lighten a color (convenience alias for adjust_lightness with positive delta)
+--- Lighten a color (convenience alias for AdjustLightness with positive delta)
 --- @param color number Color in RGBA format
 --- @param amount number Amount to lighten (0.0 to 1.0, typically 0.1 to 0.3)
 --- @return number Lightened color in RGBA format
-function M.lighten(color, amount)
-  return M.adjust_lightness(color, amount)
+function M.Lighten(color, amount)
+  return M.AdjustLightness(color, amount)
 end
 
---- Darken a color (convenience alias for adjust_lightness with negative delta)
+--- Darken a color (convenience alias for AdjustLightness with negative delta)
 --- @param color number Color in RGBA format
 --- @param amount number Amount to darken (0.0 to 1.0, typically 0.1 to 0.3)
 --- @return number Darkened color in RGBA format
-function M.darken(color, amount)
-  return M.adjust_lightness(color, -amount)
+function M.Darken(color, amount)
+  return M.AdjustLightness(color, -amount)
 end
 
---- Blend two colors (convenience alias for lerp)
+--- Blend two colors (convenience alias for Lerp)
 --- @param color_a number First color in RGBA format
 --- @param color_b number Second color in RGBA format
 --- @param t number Blend factor (0.0 = all color_a, 1.0 = all color_b)
 --- @return number Blended color in RGBA format
-function M.blend(color_a, color_b, t)
-  return M.lerp(color_a, color_b, t)
+function M.Blend(color_a, color_b, t)
+  return M.Lerp(color_a, color_b, t)
 end
 
 --- Set specific HSL values while preserving others
@@ -379,14 +327,14 @@ end
 --- @param s_new number|nil New saturation (0-1) or nil to keep current
 --- @param l_new number|nil New lightness (0-1) or nil to keep current
 --- @return number Adjusted color in RGBA format
-function M.set_hsl(color, h_new, s_new, l_new)
-  local h, s, l = M.rgb_to_hsl(color)
+function M.SetHsl(color, h_new, s_new, l_new)
+  local h, s, l = M.RgbToHsl(color)
   h = h_new or h
   s = s_new or s
   l = l_new or l
-  local r, g, b = M.hsl_to_rgb(h, s, l)
-  local _, _, _, a = M.rgba_to_components(color)
-  return M.components_to_rgba(r, g, b, a)
+  local r, g, b = M.HslToRgb(h, s, l)
+  local _, _, _, a = M.RgbaToComponents(color)
+  return M.ComponentsToRgba(r, g, b, a)
 end
 
 -- ============================================================================
@@ -421,29 +369,40 @@ local function _hsv_to_rgb(h, s, v)
   return (r * 255 + 0.5)//1, (g * 255 + 0.5)//1, (b * 255 + 0.5)//1
 end
 
+--- Convert HSV to RGBA color
+--- @param h number Hue in degrees (0-360)
+--- @param s number Saturation (0-1)
+--- @param v number Value/brightness (0-1)
+--- @param a number|nil Alpha byte (0-255, default 255)
+--- @return number RGBA color
+function M.FromHSV(h, s, v, a)
+  local r, g, b = _hsv_to_rgb((h % 360) / 360, s, v)
+  return (r << 24) | (g << 16) | (b << 8) | (a or 0xFF)
+end
+
 -- ============================================================================
 -- SECTION 1.8: Color Sorting Utilities
 -- ============================================================================
 
-function M.get_color_sort_key(color)
+function M.GetColorSortKey(color)
   if not color or color == 0 then
     return 999, 0, 0  -- No color sorts to end (after all hues)
   end
 
-  local h, s, l = M.rgb_to_hsl(color)
-  
+  local h, s, l = M.RgbToHsl(color)
+
   if s < 0.08 then
     return 999, l, s
   end
-  
+
   local hue_degrees = h * 360
-  
+
   return hue_degrees, s, l
 end
 
-function M.compare_colors(color_a, color_b)
-  local h_a, s_a, l_a = M.get_color_sort_key(color_a)
-  local h_b, s_b, l_b = M.get_color_sort_key(color_b)
+function M.CompareColors(color_a, color_b)
+  local h_a, s_a, l_a = M.GetColorSortKey(color_a)
+  local h_b, s_b, l_b = M.GetColorSortKey(color_b)
 
   -- Primary: sort by hue (ascending = RED → ORANGE → YELLOW → GREEN → CYAN → BLUE → PURPLE)
   -- Use 0.5 degree threshold for hue binning
@@ -464,13 +423,13 @@ end
 -- SECTION 2: Color Characteristics (for adaptive palettes)
 -- ============================================================================
 
-function M.analyze_color(color)
-  local r, g, b, a = M.rgba_to_components(color)
+function M.AnalyzeColor(color)
+  local r, g, b, a = M.RgbaToComponents(color)
   local max_ch = max(r, g, b)
   local min_ch = min(r, g, b)
-  local lum = M.luminance(color)
+  local lum = M.Luminance(color)
   local saturation = (max_ch > 0) and ((max_ch - min_ch) / max_ch) or 0
-  
+
   return {
     luminance = lum,
     saturation = saturation,
@@ -487,15 +446,15 @@ end
 -- SECTION 3: Derivation Strategies (how to transform colors)
 -- ============================================================================
 
-function M.derive_normalized(color, pullback)
+function M.DeriveNormalized(color, pullback)
   pullback = pullback or 0.95
-  local r, g, b, a = M.rgba_to_components(color)
+  local r, g, b, a = M.RgbaToComponents(color)
   local max_ch = max(r, g, b)
-  
+
   if max_ch == 0 then return color end
-  
+
   local boost = (255 / max_ch) * pullback
-  return M.components_to_rgba(
+  return M.ComponentsToRgba(
     min(255, (r * boost)//1),
     min(255, (g * boost)//1),
     min(255, (b * boost)//1),
@@ -503,150 +462,150 @@ function M.derive_normalized(color, pullback)
   )
 end
 
-function M.derive_brightened(color, factor)
-  return M.adjust_brightness(color, factor)
+function M.DeriveBrightened(color, factor)
+  return M.AdjustBrightness(color, factor)
 end
 
-function M.derive_intensified(color, sat_boost, bright_boost)
+function M.DeriveIntensified(color, sat_boost, bright_boost)
   sat_boost = sat_boost or 0.3
   bright_boost = bright_boost or 1.2
-  local saturated = M.saturate(color, sat_boost)
-  return M.adjust_brightness(saturated, bright_boost)
+  local saturated = M.Saturate(color, sat_boost)
+  return M.AdjustBrightness(saturated, bright_boost)
 end
 
-function M.derive_muted(color, desat_amt, dark_amt)
+function M.DeriveMuted(color, desat_amt, dark_amt)
   desat_amt = desat_amt or 0.5
   dark_amt = dark_amt or 0.45
-  local desat = M.desaturate(color, desat_amt)
-  return M.adjust_brightness(desat, dark_amt)
+  local desat = M.Desaturate(color, desat_amt)
+  return M.AdjustBrightness(desat, dark_amt)
 end
 
 -- ============================================================================
 -- SECTION 4: Role-Based Derivation (UI purposes)
 -- ============================================================================
 
-function M.derive_fill(base_color, opts)
+function M.DeriveFill(base_color, opts)
   opts = opts or {}
   local desat = opts.desaturate or 0.5
   local bright = opts.brightness or 0.45
   local alpha = opts.alpha or 0xCC
-  
-  local color = M.desaturate(base_color, desat)
-  color = M.adjust_brightness(color, bright)
-  return M.with_alpha(color, alpha)
+
+  local color = M.Desaturate(base_color, desat)
+  color = M.AdjustBrightness(color, bright)
+  return M.WithAlpha(color, alpha)
 end
 
-function M.derive_border(base_color, opts)
+function M.DeriveBorder(base_color, opts)
   opts = opts or {}
   local mode = opts.mode or 'normalize'
-  
+
   if mode == 'normalize' then
     local pullback = opts.pullback or 0.95
-    return M.derive_normalized(base_color, pullback)
-    
+    return M.DeriveNormalized(base_color, pullback)
+
   elseif mode == 'brighten' then
     local factor = opts.factor or 1.3
-    return M.derive_brightened(base_color, factor)
-    
+    return M.DeriveBrightened(base_color, factor)
+
   elseif mode == 'intensify' then
     local sat = opts.saturation or 0.3
     local bright = opts.brightness or 1.2
-    return M.derive_intensified(base_color, sat, bright)
-    
+    return M.DeriveIntensified(base_color, sat, bright)
+
   elseif mode == 'muted' then
     local desat = opts.desaturate or 0.3
     local dark = opts.brightness or 0.6
-    local color = M.desaturate(base_color, desat)
-    return M.adjust_brightness(color, dark)
+    local color = M.Desaturate(base_color, desat)
+    return M.AdjustBrightness(color, dark)
   end
-  
+
   return base_color
 end
 
-function M.derive_hover(base_color, opts)
+function M.DeriveHover(base_color, opts)
   opts = opts or {}
   local brightness = opts.brightness or 1.15
-  return M.adjust_brightness(base_color, brightness)
+  return M.AdjustBrightness(base_color, brightness)
 end
 
-function M.derive_selection(base_color, opts)
+function M.DeriveSelection(base_color, opts)
   opts = opts or {}
   local brightness = opts.brightness or 1.6
   local saturation = opts.saturation or 0.5
-  
-  local r, g, b, a = M.rgba_to_components(base_color)
+
+  local r, g, b, a = M.RgbaToComponents(base_color)
   local max_ch = max(r, g, b)
   local boost = (max_ch > 0) and (255 / max_ch) or 1
-  
+
   r = min(255, (r * boost * brightness)//1)
   g = min(255, (g * boost * brightness)//1)
   b = min(255, (b * boost * brightness)//1)
-  
-  local result = M.components_to_rgba(r, g, b, a)
-  
+
+  local result = M.ComponentsToRgba(r, g, b, a)
+
   if saturation > 0 then
-    result = M.saturate(result, saturation)
+    result = M.Saturate(result, saturation)
   end
-  
+
   return result
 end
 
-function M.derive_marching_ants(base_color, opts)
+function M.DeriveMarchingAnts(base_color, opts)
   if not base_color or base_color == 0 then
-    return M.hexrgb("#42E896")
+    return 0x42E896FF
   end
 
   opts = opts or {}
   local brightness = opts.brightness or 1.5
   local saturation = opts.saturation or 0.5
 
-  local r, g, b, a = M.rgba_to_components(base_color)
+  local r, g, b, a = M.RgbaToComponents(base_color)
   local max_ch = max(r, g, b)
 
   if max_ch == 0 then
-    return M.hexrgb("#42E896")
+    return 0x42E896FF
   end
-  
+
   local boost = 255 / max_ch
   r = min(255, (r * boost * brightness)//1)
   g = min(255, (g * boost * brightness)//1)
   b = min(255, (b * boost * brightness)//1)
-  
+
   if saturation > 0 then
     local gray = r * 0.299 + g * 0.587 + b * 0.114
     r = min(255, max(0, (r + (r - gray) * saturation)//1))
     g = min(255, max(0, (g + (g - gray) * saturation)//1))
     b = min(255, max(0, (b + (b - gray) * saturation)//1))
   end
-  
-  return M.components_to_rgba(r, g, b, 0xFF)
+
+  return M.ComponentsToRgba(r, g, b, 0xFF)
 end
 
 -- ============================================================================
 -- SECTION 5: Palette Generation
 -- ============================================================================
 
-function M.derive_palette(base_color, opts)
+function M.DerivePalette(base_color, opts)
   opts = opts or {}
-  
+
   return {
     base = base_color,
-    fill = M.derive_fill(base_color, opts.fill),
-    border = M.derive_border(base_color, opts.border),
-    hover = M.derive_hover(base_color, opts.hover),
-    selection = M.derive_selection(base_color, opts.selection),
-    marching_ants = M.derive_marching_ants(base_color, opts.marching_ants),
-    text = M.auto_text_color(base_color),
-    dim = M.with_opacity(base_color, 0.53),
+    fill = M.DeriveFill(base_color, opts.fill),
+    border = M.DeriveBorder(base_color, opts.border),
+    hover = M.DeriveHover(base_color, opts.hover),
+    selection = M.DeriveSelection(base_color, opts.selection),
+    marching_ants = M.DeriveMarchingAnts(base_color, opts.marching_ants),
+    text = M.AutoTextColor(base_color),
+    dim = M.WithOpacity(base_color, 0.53),
   }
 end
 
-function M.derive_palette_adaptive(base_color, preset)
+function M.DerivePaletteAdaptive(base_color, preset)
   preset = preset or 'auto'
-  
+
   if preset == 'auto' then
-    local info = M.analyze_color(base_color)
-    
+    local info = M.AnalyzeColor(base_color)
+
     if info.is_bright then
       preset = 'bright'
     elseif info.is_gray then
@@ -657,7 +616,7 @@ function M.derive_palette_adaptive(base_color, preset)
       preset = 'normal'
     end
   end
-  
+
   local presets = {
     bright = {
       fill = { desaturate = 0.7, brightness = 0.35, alpha = 0xCC },
@@ -666,7 +625,7 @@ function M.derive_palette_adaptive(base_color, preset)
       selection = { brightness = 1.4, saturation = 0.4 },
       marching_ants = { brightness = 1.3, saturation = 0.4 },
     },
-    
+
     grayscale = {
       fill = { desaturate = 0.3, brightness = 0.5, alpha = 0xCC },
       border = { mode = 'brighten', factor = 1.4 },
@@ -674,7 +633,7 @@ function M.derive_palette_adaptive(base_color, preset)
       selection = { brightness = 1.8, saturation = 0.2 },
       marching_ants = { brightness = 1.6, saturation = 0.3 },
     },
-    
+
     vivid = {
       fill = { desaturate = 0.6, brightness = 0.4, alpha = 0xCC },
       border = { mode = 'normalize', pullback = 0.95 },
@@ -682,7 +641,7 @@ function M.derive_palette_adaptive(base_color, preset)
       selection = { brightness = 1.6, saturation = 0.6 },
       marching_ants = { brightness = 1.5, saturation = 0.5 },
     },
-    
+
     normal = {
       fill = { desaturate = 0.5, brightness = 0.45, alpha = 0xCC },
       border = { mode = 'normalize', pullback = 0.95 },
@@ -691,64 +650,21 @@ function M.derive_palette_adaptive(base_color, preset)
       marching_ants = { brightness = 1.5, saturation = 0.5 },
     },
   }
-  
-  return M.derive_palette(base_color, presets[preset])
+
+  return M.DerivePalette(base_color, presets[preset])
 end
 
 -- ============================================================================
--- SECTION 6: Legacy Compatibility Functions
+-- SECTION 6: Hue-Preserving Helpers (for tile text)
 -- ============================================================================
 
-function M.generate_border(base_color, desaturate_amt, brightness_factor)
-  return M.derive_border(base_color, {
-    mode = 'muted',
-    desaturate = desaturate_amt or 0.3,
-    brightness = brightness_factor or 0.6,
-  })
-end
-
-function M.generate_hover(base_color, brightness_factor)
-  return M.derive_hover(base_color, { brightness = brightness_factor or 1.3 })
-end
-
-function M.generate_active_border(base_color, saturation_boost, brightness_boost)
-  return M.derive_border(base_color, {
-    mode = 'intensify',
-    saturation = saturation_boost or 0.8,
-    brightness = brightness_boost or 1.4,
-  })
-end
-
-function M.generate_selection_color(base_color, brightness_boost, saturation_boost)
-  return M.derive_selection(base_color, {
-    brightness = brightness_boost or 1.6,
-    saturation = saturation_boost or 0.5,
-  })
-end
-
-function M.generate_marching_ants_color(base_color, brightness_factor, saturation_factor)
-  return M.derive_marching_ants(base_color, {
-    brightness = brightness_factor or 1.5,
-    saturation = saturation_factor or 0.5,
-  })
-end
-
-function M.auto_palette(base_color)
-  return M.derive_palette(base_color)
-end
-
-function M.flashy_palette(base_color)
-  return M.derive_palette(base_color, {
-    fill = { desaturate = 0.5, brightness = 0.45, alpha = 0xCC },
-    border = { mode = 'normalize', pullback = 0.95 },
-  })
-end
-
--- ============================================================================
--- SECTION 7: Hue-Preserving Helpers (for tile text)
--- ============================================================================
-
-function M.same_hue_variant(col, s_mult, v_mult, new_a)
+--- Adjust saturation and value while preserving hue (HSV-based)
+--- @param col number Color in RGBA format
+--- @param s_mult number Saturation multiplier (1.0 = unchanged)
+--- @param v_mult number Value/brightness multiplier (1.0 = unchanged)
+--- @param new_a number|nil New alpha byte (nil = keep original)
+--- @return number Adjusted color in RGBA format
+function M.SameHueVariant(col, s_mult, v_mult, new_a)
   local r = (col >> 24) & 0xFF
   local g = (col >> 16) & 0xFF
   local b = (col >> 8) & 0xFF
@@ -758,17 +674,6 @@ function M.same_hue_variant(col, s_mult, v_mult, new_a)
   v = max(0, min(1, v * (v_mult or 1)))
   local rr, gg, bb = _hsv_to_rgb(h, s, v)
   return (rr << 24) | (gg << 16) | (bb << 8) | (new_a or a)
-end
-
-function M.tile_text_colors(base_color)
-  local accent = M.same_hue_variant(base_color, 1.25, 1.15, 0xFF)
-  local name = M.hexrgb("#DDE3E9")
-  return accent, name
-end
-
-function M.tile_meta_color(name_color, alpha)
-  alpha = alpha or 0xBB
-  return M.with_alpha(name_color, alpha)
 end
 
 return M

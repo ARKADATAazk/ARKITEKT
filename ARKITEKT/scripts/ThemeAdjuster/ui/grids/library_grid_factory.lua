@@ -4,8 +4,6 @@
 
 local Ark = require('arkitekt')
 local LibraryTile = require('ThemeAdjuster.ui.grids.renderers.library_tile')
-local hexrgb = Ark.Colors.hexrgb
-
 local M = {}
 
 local function create_behaviors(view)
@@ -91,8 +89,8 @@ function M.create_opts(view, config)
 
   -- Visual feedback configurations
   local dim_config = config.dim_config or {
-    fill_color = hexrgb("#00000088"),
-    stroke_color = hexrgb("#FFFFFF33"),
+    fill_color = 0x00000088,
+    stroke_color = 0xFFFFFF33,
     stroke_thickness = 1.5,
     rounding = 3,
   }
@@ -103,7 +101,7 @@ function M.create_opts(view, config)
   }
 
   return {
-    id = "param_library",
+    id = 'param_library',
     gap = 2,  -- Compact spacing
     min_col_w = function() return 600 end,  -- Single column layout
     fixed_tile_h = 32,  -- Compact tile height
@@ -114,12 +112,12 @@ function M.create_opts(view, config)
     key = function(item)
       -- Handle group headers
       if Ark.TileGroup.is_group_header(item) then
-        return "group_header_" .. item.__group_id
+        return 'group_header_' .. item.__group_id
       end
 
       -- Handle regular or grouped parameter items
       local param = Ark.TileGroup.get_original_item(item)
-      return "lib_" .. tostring(param.index)
+      return 'lib_' .. tostring(param.index)
     end,
 
     get_exclusion_zones = create_exclusion_zones(view),

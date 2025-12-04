@@ -3,7 +3,7 @@
 -- Shared utilities for audio and MIDI grid factories
 -- Extracts common filtering, sorting, and conversion logic
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local pool_utils = require('ItemPicker.domain.filters.pool')
 
@@ -11,16 +11,16 @@ local M = {}
 
 -- Build filter hash for cache invalidation
 function M.build_filter_hash(settings, indexes)
-  return string.format("%s|%s|%s|%s|%s|%s|%s|%s|%s|%d",
+  return string.format('%s|%s|%s|%s|%s|%s|%s|%s|%s|%d',
     tostring(settings.show_favorites_only),
     tostring(settings.show_disabled_items),
     tostring(settings.show_muted_tracks),
     tostring(settings.show_muted_items),
-    settings.search_string or "",
-    settings.search_mode or "items",
-    settings.sort_mode or "none",
+    settings.search_string or '',
+    settings.search_mode or 'items',
+    settings.sort_mode or 'none',
     tostring(settings.sort_reverse or false),
-    table.concat(indexes, ","),
+    table.concat(indexes, ','),
     #indexes
   )
 end
@@ -54,29 +54,29 @@ end
 
 -- Check if item passes search filter (supports items/tracks/regions/mixed modes)
 function M.passes_search_filter(settings, item_name, track_name, regions)
-  local search = settings.search_string or ""
-  if type(search) ~= "string" or search == "" then
+  local search = settings.search_string or ''
+  if type(search) ~= 'string' or search == '' then
     return true
   end
 
-  local search_mode = settings.search_mode or "items"
+  local search_mode = settings.search_mode or 'items'
   local search_lower = search:lower()
 
-  if search_mode == "items" then
+  if search_mode == 'items' then
     return item_name:lower():find(search_lower, 1, true) ~= nil
-  elseif search_mode == "tracks" then
+  elseif search_mode == 'tracks' then
     return track_name and track_name:lower():find(search_lower, 1, true) ~= nil
-  elseif search_mode == "regions" then
+  elseif search_mode == 'regions' then
     if regions then
       for _, region in ipairs(regions) do
-        local region_name = type(region) == "table" and region.name or region
+        local region_name = type(region) == 'table' and region.name or region
         if region_name and region_name:lower():find(search_lower, 1, true) then
           return true
         end
       end
     end
     return false
-  elseif search_mode == "mixed" then
+  elseif search_mode == 'mixed' then
     -- Search all: item names, track names, and region names
     if item_name:lower():find(search_lower, 1, true) then
       return true
@@ -86,7 +86,7 @@ function M.passes_search_filter(settings, item_name, track_name, regions)
     end
     if regions then
       for _, region in ipairs(regions) do
-        local region_name = type(region) == "table" and region.name or region
+        local region_name = type(region) == 'table' and region.name or region
         if region_name and region_name:lower():find(search_lower, 1, true) then
           return true
         end
@@ -134,7 +134,7 @@ end
 
 -- Sort filtered items by various criteria
 function M.apply_sorting(filtered, sort_mode, sort_reverse)
-  if sort_mode == "length" then
+  if sort_mode == 'length' then
     table.sort(filtered, function(a, b)
       local a_len = a.length or 0
       local b_len = b.length or 0
@@ -144,7 +144,7 @@ function M.apply_sorting(filtered, sort_mode, sort_reverse)
         return a_len > b_len
       end
     end)
-  elseif sort_mode == "color" then
+  elseif sort_mode == 'color' then
     table.sort(filtered, function(a, b)
       local a_color = a.color or 0
       local b_color = b.color or 0
@@ -154,17 +154,17 @@ function M.apply_sorting(filtered, sort_mode, sort_reverse)
         return a_color > b_color
       end
     end)
-  elseif sort_mode == "name" then
+  elseif sort_mode == 'name' then
     table.sort(filtered, function(a, b)
-      local a_name = (a.name or ""):lower()
-      local b_name = (b.name or ""):lower()
+      local a_name = (a.name or ''):lower()
+      local b_name = (b.name or ''):lower()
       if sort_reverse then
         return a_name > b_name
       else
         return a_name < b_name
       end
     end)
-  elseif sort_mode == "pool" then
+  elseif sort_mode == 'pool' then
     table.sort(filtered, function(a, b)
       local a_pool = a.pool_count or 1
       local b_pool = b.pool_count or 1
@@ -176,8 +176,8 @@ function M.apply_sorting(filtered, sort_mode, sort_reverse)
         end
       end
       -- Tie-breaker: sort by name
-      local a_name = (a.name or ""):lower()
-      local b_name = (b.name or ""):lower()
+      local a_name = (a.name or ''):lower()
+      local b_name = (b.name or ''):lower()
       return a_name < b_name
     end)
   end

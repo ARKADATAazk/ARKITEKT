@@ -15,6 +15,133 @@
 
 ## Naming Conventions
 
+### Constructor Patterns
+
+**Standard: Use `M.new(opts)` for most cases**
+
+```lua
+-- ✅ RECOMMENDED: opts-based (extensible, clear)
+function M.new(opts)
+  opts = opts or {}
+  return setmetatable({
+    config = opts.config,
+    state = opts.state,
+    id = opts.id,
+  }, { __index = M })
+end
+
+-- Usage: Widget.new({ config = cfg, state = state, id = "widget1" })
+```
+
+**Valid alternatives based on context:**
+
+```lua
+-- ✅ VALID: No dependencies (domain objects)
+function M.new()
+  return setmetatable({ items = {} }, { __index = M })
+end
+
+-- ✅ VALID: Single config dependency only
+function M.new(config)
+  return setmetatable({ config = config }, { __index = M })
+end
+
+-- ❌ AVOID: Multiple direct params (hard to extend)
+function M.new(config, state, controller, animator)
+  -- Hard to add dependencies, unclear parameter order
+end
+```
+
+**When to use each:**
+- `M.new(opts)` → Framework widgets, 3+ dependencies, extensible modules
+- `M.new()` → Domain objects, self-contained modules
+- `M.new(config)` → Simple renderers, single dependency only
+
+### M.new() vs M.create() - Critical Distinction
+
+**ALWAYS use `M.new()` for constructors (returns object with methods):**
+
+```lua
+-- ✅ CORRECT: Constructor pattern
+function M.new(opts)
+  local self = setmetatable({}, { __index = M })
+  -- ... initialization ...
+  return self
+end
+
+-- Usage:
+local coordinator = Coordinator.new({ config = cfg })
+coordinator:draw(ctx)        -- Has methods
+coordinator:update(dt)       -- Has lifetime & state
+```
+
+**ONLY use `M.create_*()` for factory/builder functions (returns data):**
+
+```lua
+-- ✅ CORRECT: Factory pattern (returns data/config)
+function M.create_opts(rt, config)
+  return {
+    items = rt._items,
+    tile_height = rt._tile_height,
+    -- ... configuration data ...
+  }
+end
+
+-- Usage:
+local opts = Factory.create_opts(rt, config)
+Ark.Grid(ctx, opts)  -- Data passed to another function
+```
+
+**Why this matters:**
+
+| Pattern | Returns | Has Methods | Use Case |
+|---------|---------|-------------|----------|
+| `M.new()` | Instance | ✅ Yes | Stateful objects (coordinators, managers, services) |
+| `M.create_*()` | Data/Config | ❌ No | Configuration tables, options, builders |
+
+**Common mistakes:**
+
+```lua
+-- ❌ WRONG: Using create() for constructor
+function M.create(opts)
+  return setmetatable({}, M)  -- Returns instance → should be M.new()
+end
+
+-- ❌ WRONG: Using new() for factory
+function M.new_options(config)
+  return { items = {}, height = 150 }  -- Returns data → should be M.create_options()
+end
+```
+
+**ARKITEKT framework evidence:** 42+ core modules use `M.new()` for constructors (TileAnim, HeightStabilizer, GridBridge, Selection, etc.). Only 1 uses `M.create()` and it's for a factory pattern.
+
+### Local Variable Standards
+
+**Authoritative abbreviations** (based on framework analysis):
+
+| Full Name | Local Variable | Usage | Never Use |
+|-----------|---------------|-------|-----------|
+| `config` | `cfg` | `local cfg = self.config` | `configuration` |
+| `context` (ImGui) | `ctx` | `function M.draw(ctx)` | `context` |
+| `options` | `opts` | `function M.new(opts)` | `options` |
+| `state` | `state` | `local state = self.state` | `st` ❌ |
+
+```lua
+-- ✅ CORRECT - Framework standard
+function M:draw(ctx)
+  local cfg = self.config  -- Use 'cfg' for locals
+  local state = self.state -- NEVER abbreviate 'state'
+
+  ImGui.Button(ctx, cfg.labels.save)
+end
+
+-- ❌ WRONG - Verbose or wrong abbreviations
+function M:draw(context)
+  local config = self.config  -- Use 'cfg'
+  local st = self.state       -- NEVER 'st'
+end
+```
+
 ### File Naming
 
 | Rule | Good | Bad |
@@ -89,7 +216,7 @@ function M.create(config) end
 | **data/ handles persistence** | ExtState, JSON files |
 | **ui/init.lua** | Always the UI orchestrator entry point |
 | **ui/state/** | UI-only state (preferences, animation, NOT business data) |
-| **Keep defs/** | This name is clear and doesn't collide |
+| **Keep config/** | This name is clear and doesn't collide |
 
 > **Note:** Scripts take a pragmatic approach - `domain/` can use `reaper.*` directly since all code runs in REAPER anyway. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the framework vs scripts distinction.
 
@@ -111,7 +238,10 @@ function M.create(config) end
 | < 200 lines | Excellent | No action needed |
 | 200-400 lines | Good | Monitor |
 | 400-700 lines | Warning | Consider splitting |
-| > 700 lines | **Must split** | Break into modules |
+| 700-1000 lines | **Avoid** | Split if logical boundaries exist |
+| > 1000 lines | **God file** | Must refactor (exceptions rare) |
+
+**Avoid god files (800-1000+ lines).** Split when it makes logical sense (extract menus, helpers, initialization). If splitting creates artificial complexity, exceptions can be made - but 1000+ lines is almost always a code smell.
 
 ### Flattening Deep Nesting
 
@@ -557,6 +687,13 @@ local clamped_pos = max(region.start, min(playpos, region["end"]))
 
 ## Quick Reference Card
 
+### Naming Standards Checklist
+
+- [ ] Constructor: `M.new(opts)` for 3+ deps, `M.new(config)` for 1 dep, `M.new()` for 0 deps
+- [ ] Local variables: `cfg` (not `config`), `state` (never `st`), `ctx`, `opts`
+- [ ] Parameters: `ctx` for ImGui, `opts` for options tables
+- [ ] Avoid multi-param constructors (use `opts` instead)
+
 ### File Naming Checklist
 
 - [ ] Lowercase with underscores
@@ -586,13 +723,81 @@ local clamped_pos = max(region.start, min(playpos, region["end"]))
 
 ---
 
+## Lua Idioms & Gotchas
+
+### Falsy Values in Lua
+
+**Critical for LLMs:** Only `false` and `nil` are falsy in Lua. Zero and empty strings are truthy!
+
+```lua
+-- ⚠️ GOTCHA: These are ALL truthy in Lua
+if 0 then        -- TRUE (unlike C, JavaScript, Python)
+if "" then       -- TRUE (unlike Python, JavaScript)
+if {} then       -- TRUE (always)
+
+-- ✅ CORRECT: Only false and nil are falsy
+if false then    -- FALSE
+if nil then      -- FALSE
+
+-- Use explicit checks when needed
+if value ~= nil then      -- Distinguishes false from nil
+if value ~= "" then       -- Check for empty string
+if value ~= 0 then        -- Check for zero
+if #items > 0 then        -- Check for non-empty table
+```
+
+### Ternary Pattern (Use with Caution)
+
+```lua
+-- ✅ SAFE: When truthy value can't be false/nil
+local label = is_active and "Active" or "Inactive"
+local count = items and #items or 0
+
+-- ⚠️ UNSAFE: Fails if truthy value can be false
+local value = condition and false or "default"  -- Always returns "default"!
+
+-- ✅ SAFE: Use explicit if/else for complex cases
+local value
+if condition then
+  value = get_value()  -- Might return false
+else
+  value = "default"
+end
+```
+
+### Tables with Holes (Sparse Arrays)
+
+```lua
+-- ⚠️ GOTCHA: # operator undefined for tables with nils
+local items = { "a", "b", nil, "d" }
+local count = #items  -- Might be 2, 3, or 4 (undefined!)
+
+-- ✅ SOLUTION 1: Store explicit count
+local items = { "a", "b", nil, "d" }
+items.n = 4  -- Explicit count
+
+-- ✅ SOLUTION 2: Use table.maxn (Lua 5.1/5.2)
+local count = table.maxn(items)
+
+-- ✅ SOLUTION 3: Avoid holes - use index tables
+local items = {
+  [1] = "a",
+  [2] = "b",
+  [4] = "d",  -- Gap at 3
+}
+-- Track valid indices separately
+local valid_indices = {1, 2, 4}
+```
+
+---
+
 ## Appendix: Lua Style Guide Summary
 
 Based on the [Lua Style Guide](http://lua-users.org/wiki/LuaStyleGuide):
 
 1. **Indentation**: 2 spaces (no tabs)
-2. **Line length**: Max 100 characters
-3. **Strings**: Double quotes for display strings, single quotes for identifiers
+2. **Line length**: Max 100 characters (flexible, break at 120 for readability)
+3. **Strings**: Single quotes preferred (`'text'`), double quotes when string contains single quotes (`"it's"`)
 4. **Tables**: Trailing comma on multi-line tables
 5. **Operators**: Spaces around binary operators
 6. **Comments**: Space after `--`
@@ -601,11 +806,11 @@ Based on the [Lua Style Guide](http://lua-users.org/wiki/LuaStyleGuide):
 -- Example following all conventions
 local M = {}
 
-local DEFAULT_NAME = "Untitled"
+local DEFAULT_NAME = 'Untitled'
 local MAX_ITEMS = 100
 
 local function _validate(input)
-  return input ~= nil and input ~= ""
+  return input ~= nil and input ~= ''
 end
 
 --- Create a new item

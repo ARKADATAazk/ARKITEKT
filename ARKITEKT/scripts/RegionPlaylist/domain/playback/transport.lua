@@ -64,8 +64,8 @@ function Transport:_enter_playlist_mode_if_needed()
 
   -- Save and override SWS settings
   if _has_sws() then
-    self._old_smoothseek = reaper.SNM_GetIntConfigVar("smoothseek", -1)
-    reaper.SNM_SetIntConfigVar("smoothseek", 3)
+    self._old_smoothseek = reaper.SNM_GetIntConfigVar('smoothseek', -1)
+    reaper.SNM_SetIntConfigVar('smoothseek', 3)
 
     self._old_repeat = reaper.GetSetRepeat(-1)
     if self._old_repeat == 1 then
@@ -91,7 +91,7 @@ function Transport:_leave_playlist_mode_if_needed()
   -- Restore SWS settings
   if _has_sws() then
     if self._old_smoothseek ~= nil then
-      reaper.SNM_SetIntConfigVar("smoothseek", self._old_smoothseek)
+      reaper.SNM_SetIntConfigVar('smoothseek', self._old_smoothseek)
       self._old_smoothseek = nil
     end
     if self._old_repeat == 1 then
@@ -138,13 +138,13 @@ end
 function Transport:play()
   local rid = self.state:get_current_rid()
   if not rid then
-    Logger.warn("TRANSPORT", "play() called but no current RID")
+    Logger.warn('TRANSPORT', 'play() called but no current RID')
     return false
   end
 
   local region = self.state:get_region_by_rid(rid)
   if not region then
-    Logger.warn("TRANSPORT", "play() called but region RID %d not found", rid)
+    Logger.warn('TRANSPORT', 'play() called but region RID %d not found', rid)
     return false
   end
 
@@ -154,18 +154,18 @@ function Transport:play()
   local is_resuming = self.is_paused
 
   if _is_playing(self.proj) then
-    Logger.info("TRANSPORT", "SEEK to region '%s' (RID %d) at %.2fs", region.name or "?", region.rid, region.start)
+    Logger.info('TRANSPORT', "SEEK to region '%s' (RID %d) at %.2fs", region.name or '?', region.rid, region.start)
     local region_num = region.rid
     self:_seek_to_region(region_num)
   else
     if is_resuming then
       -- Resuming from pause - just unpause without seeking
-      Logger.info("TRANSPORT", "RESUME playback")
+      Logger.info('TRANSPORT', 'RESUME playback')
       reaper.OnPlayButton()
       self.is_paused = false  -- Clear pause flag
     else
       -- Starting fresh - seek to region start and reset indices
-      Logger.info("TRANSPORT", "PLAY '%s' (RID %d) from %.2fs", region.name or "?", region.rid, region.start)
+      Logger.info('TRANSPORT', "PLAY '%s' (RID %d) from %.2fs", region.name or '?', region.rid, region.start)
       reaper.SetEditCurPos2(self.proj, region.start, false, false)
       reaper.OnPlayButton()
       self.state.current_idx = -1
@@ -180,7 +180,7 @@ function Transport:play()
 end
 
 function Transport:stop()
-  Logger.info("TRANSPORT", "STOP - resetting to beginning")
+  Logger.info('TRANSPORT', 'STOP - resetting to beginning')
   reaper.OnStopButton()
   self.is_playing = false
   self.is_paused = false  -- Clear pause flag
@@ -192,7 +192,7 @@ function Transport:stop()
 end
 
 function Transport:pause()
-  Logger.info("TRANSPORT", "PAUSE at idx %d", self.state.playlist_pointer)
+  Logger.info('TRANSPORT', 'PAUSE at idx %d', self.state.playlist_pointer)
   -- Pause without resetting playlist state (for resume)
   reaper.OnPauseButton()
   self.is_playing = false
@@ -204,12 +204,12 @@ end
 function Transport:next()
   if #self.state.playlist_order == 0 then return false end
   if self.state.playlist_pointer >= #self.state.playlist_order then
-    Logger.debug("TRANSPORT", "NEXT blocked - at end of playlist")
+    Logger.debug('TRANSPORT', 'NEXT blocked - at end of playlist')
     return false
   end
 
   self.state.playlist_pointer = self.state.playlist_pointer + 1
-  Logger.info("TRANSPORT", "NEXT -> idx %d/%d", self.state.playlist_pointer, #self.state.playlist_order)
+  Logger.info('TRANSPORT', 'NEXT -> idx %d/%d', self.state.playlist_pointer, #self.state.playlist_order)
 
   -- Sync indices immediately to prevent desync with transitions logic
   self.state.current_idx = self.state.playlist_pointer
@@ -238,12 +238,12 @@ end
 function Transport:prev()
   if #self.state.playlist_order == 0 then return false end
   if self.state.playlist_pointer <= 1 then
-    Logger.debug("TRANSPORT", "PREV blocked - at start of playlist")
+    Logger.debug('TRANSPORT', 'PREV blocked - at start of playlist')
     return false
   end
 
   self.state.playlist_pointer = self.state.playlist_pointer - 1
-  Logger.info("TRANSPORT", "PREV -> idx %d/%d", self.state.playlist_pointer, #self.state.playlist_order)
+  Logger.info('TRANSPORT', 'PREV -> idx %d/%d', self.state.playlist_pointer, #self.state.playlist_order)
 
   -- Sync indices immediately to prevent desync with transitions logic
   self.state.current_idx = self.state.playlist_pointer
@@ -269,6 +269,66 @@ function Transport:prev()
   return false
 end
 
+--- Seek directly to a specific playlist index
+--- @param target_idx number Target playlist index (1-based)
+--- @param immediate boolean If true, seek immediately; if false, schedule after current region ends
+--- @return boolean success
+function Transport:seek_to_index(target_idx, immediate)
+  if #self.state.playlist_order == 0 then return false end
+  if target_idx < 1 or target_idx > #self.state.playlist_order then
+    Logger.warn('TRANSPORT', 'seek_to_index: invalid index %d (playlist has %d items)', target_idx, #self.state.playlist_order)
+    return false
+  end
+
+  Logger.info('TRANSPORT', 'SEEK_TO_INDEX -> idx %d/%d (immediate=%s)', target_idx, #self.state.playlist_order, tostring(immediate))
+
+  -- Update playlist pointer and sync indices
+  self.state.playlist_pointer = target_idx
+  self.state.current_idx = target_idx
+  if target_idx < #self.state.playlist_order then
+    self.state.next_idx = target_idx + 1
+  elseif self.loop_playlist then
+    self.state.next_idx = 1
+  else
+    self.state.next_idx = -1
+  end
+  self.state:update_bounds()
+
+  -- Reset loop count for the target item
+  local meta = self.state.playlist_metadata[target_idx]
+  if meta then
+    meta.current_loop = 1
+  end
+
+  if _is_playing(self.proj) then
+    local rid = self.state:get_current_rid()
+    local region = self.state:get_region_by_rid(rid)
+    if region then
+      return self:_seek_to_region(region.rid)
+    end
+  else
+    return self:play()
+  end
+
+  return false
+end
+
+--- Find playlist index by item key
+--- @param key string Item key to find
+--- @return number|nil index Playlist index (1-based), or nil if not found
+function Transport:find_index_by_key(key)
+  if not key then return nil end
+
+  -- Check sequence for key mapping
+  for i, entry in ipairs(self.state.sequence or {}) do
+    if entry.item_key == key then
+      return i
+    end
+  end
+
+  return nil
+end
+
 function Transport:poll_transport_sync()
   if not self.transport_override then return end
   if self.is_playing then return end
@@ -279,7 +339,7 @@ function Transport:poll_transport_sync()
   for i, rid in ipairs(self.state.playlist_order) do
     local region = self.state:get_region_by_rid(rid)
     if region then
-      if playpos >= region.start and playpos < region["end"] then
+      if playpos >= region.start and playpos < region['end'] then
         self.state.playlist_pointer = i
         self.is_playing = true
         self.state.current_idx = i
@@ -348,7 +408,7 @@ end
 
 function Transport:set_shuffle_enabled(enabled)
   self.shuffle_enabled = not not enabled
-  Logger.info("TRANSPORT", "Shuffle %s", enabled and "ENABLED" or "DISABLED")
+  Logger.info('TRANSPORT', 'Shuffle %s', enabled and 'ENABLED' or 'DISABLED')
   -- Notify state to reshuffle if needed
   if self.state and self.state.on_shuffle_changed then
     self.state:on_shuffle_changed(enabled)
@@ -369,7 +429,7 @@ function Transport:get_shuffle_mode()
   if self.state and self.state.get_shuffle_mode then
     return self.state:get_shuffle_mode()
   end
-  return "true_shuffle"
+  return 'true_shuffle'
 end
 
 function Transport:set_loop_playlist(enabled)

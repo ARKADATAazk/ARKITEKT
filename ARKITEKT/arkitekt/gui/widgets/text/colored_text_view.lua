@@ -2,11 +2,9 @@
 -- arkitekt/gui/widgets/colored_text_view.lua
 -- Read-only colored text viewer with native selection support
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
-
-
 local M = {}
 
 local ColoredTextView = {}
@@ -44,7 +42,7 @@ function M.new(opts)
   local self = setmetatable({}, ColoredTextView)
   
   -- Text data: array of line objects
-  -- Each line: {segments = {{text="...", color=0x...}, ...}}
+  -- Each line: {segments = {{text='...', color=0x...}, ...}}
   self.lines = {}
   
   -- Selection state
@@ -70,7 +68,7 @@ function M.new(opts)
 end
 
 -- Set lines from console log format
--- Input format: array of {segments = {{text="...", color=0x...}, ...}}
+-- Input format: array of {segments = {{text='...', color=0x...}, ...}}
 function ColoredTextView:set_lines(lines)
   self.lines = lines or {}
   
@@ -97,10 +95,10 @@ end
 
 -- Get text content of a line (all segments concatenated)
 function ColoredTextView:get_line_text(line_idx)
-  if line_idx < 0 or line_idx >= #self.lines then return "" end
+  if line_idx < 0 or line_idx >= #self.lines then return '' end
   
   local line = self.lines[line_idx + 1]
-  local text = ""
+  local text = ''
   
   for _, segment in ipairs(line.segments or {}) do
     text = text .. segment.text
@@ -182,14 +180,14 @@ function ColoredTextView:find_word_start(coord)
   if col == 0 then return coord end
   
   -- Skip trailing spaces
-  while col > 0 and text:sub(col, col):match("%s") do
+  while col > 0 and text:sub(col, col):match('%s') do
     col = col - 1
   end
   
   -- Find word start
   while col > 0 do
     local char = text:sub(col, col)
-    if char:match("%s") or char:match("%p") then
+    if char:match('%s') or char:match('%p') then
       col = col + 1
       break
     end
@@ -209,14 +207,14 @@ function ColoredTextView:find_word_end(coord)
   if col >= #text then return coord end
   
   -- Skip leading spaces
-  while col < #text and text:sub(col + 1, col + 1):match("%s") do
+  while col < #text and text:sub(col + 1, col + 1):match('%s') do
     col = col + 1
   end
   
   -- Find word end
   while col < #text do
     local char = text:sub(col + 1, col + 1)
-    if char:match("%s") or char:match("%p") then
+    if char:match('%s') or char:match('%p') then
       break
     end
     col = col + 1
@@ -260,9 +258,9 @@ end
 
 -- Get selected text
 function ColoredTextView:get_selected_text()
-  if not self:has_selection() then return "" end
+  if not self:has_selection() then return '' end
   
-  local result = ""
+  local result = ''
   local start_line = self.selection_start.line
   local end_line = self.selection_end.line
   
@@ -274,13 +272,13 @@ function ColoredTextView:get_selected_text()
       result = text:sub(self.selection_start.col + 1, self.selection_end.col)
     elseif line_idx == start_line then
       -- First line
-      result = result .. text:sub(self.selection_start.col + 1) .. "\n"
+      result = result .. text:sub(self.selection_start.col + 1) .. '\n'
     elseif line_idx == end_line then
       -- Last line
       result = result .. text:sub(1, self.selection_end.col)
     else
       -- Middle lines
-      result = result .. text .. "\n"
+      result = result .. text .. '\n'
     end
   end
   
@@ -394,7 +392,7 @@ end
 function ColoredTextView:render(ctx, width, height)
   -- Calculate metrics
   local font_size = ImGui.GetFontSize(ctx)
-  local char_width = ImGui.CalcTextSize(ctx, "#")
+  local char_width = ImGui.CalcTextSize(ctx, '#')
   self.char_advance = {
     x = char_width,
     y = ImGui.GetTextLineHeightWithSpacing(ctx)
@@ -414,18 +412,18 @@ function ColoredTextView:render(ctx, width, height)
   
   -- Create invisible button to capture all mouse input
   local button_start_x, button_start_y = ImGui.GetCursorScreenPos(ctx)
-  ImGui.InvisibleButton(ctx, "##text_view_input", width, total_height)
+  ImGui.InvisibleButton(ctx, '##text_view_input', width, total_height)
   local is_hovered = ImGui.IsItemHovered(ctx)
   
   -- Reset cursor for drawing
   ImGui.SetCursorScreenPos(ctx, button_start_x, button_start_y)
   
   if #self.lines == 0 then
-    ImGui.Text(ctx, "(empty)")
+    ImGui.Text(ctx, '(empty)')
     return
   end
   
-  local draw_list = ImGui.GetWindowDrawList(ctx)
+  local draw_list = Base.get_context(ctx):draw_list()
   
   -- Render visible lines
   for line_idx = first_line, last_line do
@@ -474,7 +472,7 @@ function ColoredTextView:render(ctx, width, height)
           local sel_y2 = line_y + self.char_advance.y
           
           -- Draw selection rectangle with dark grey
-          ImGui.DrawList_AddRectFilled(draw_list, sel_x1, sel_y1, sel_x2, sel_y2, hexrgb("#404040CC"))
+          ImGui.DrawList_AddRectFilled(draw_list, sel_x1, sel_y1, sel_x2, sel_y2, 0x404040CC)
         end
       end
     end

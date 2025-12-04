@@ -2,17 +2,19 @@
 -- RegionPlaylist/ui/status.lua
 -- Status bar configuration
 
-local StatusBar = require("arkitekt.app.chrome.status_bar")
-local Constants = require('RegionPlaylist.defs.constants')
+local StatusBar = require('arkitekt.runtime.chrome.status_bar')
+local Constants = require('RegionPlaylist.config.constants')
 
 local M = {}
 
 -- Status priority (highest priority wins):
 -- 1. Errors (red)
--- 2. Warnings (yellow/orange)
--- 3. Info states (light grey)
--- 4. Playing (light grey)
--- 5. Ready (light grey)
+-- 2. State change notifications (blue/orange)
+-- 3. Overlap warning during playback (red)
+-- 4. Warnings (yellow/orange)
+-- 5. Info states (blue)
+-- 6. Playing (green)
+-- 7. Ready (light grey)
 
 local STATUS_COLORS = Constants.STATUS
 
@@ -46,7 +48,7 @@ local function get_app_status(State)
         if notification then
           status_message = notification
           -- JUMP messages get WARNING color (orange), others get INFO (blue)
-          if notification:match("^Jump:") then
+          if notification:match('^Jump:') then
             status_color = STATUS_COLORS.WARNING
           else
             status_color = STATUS_COLORS.INFO
@@ -55,32 +57,54 @@ local function get_app_status(State)
       end
     end
 
-    -- Priority 3: Warnings (ORANGE) - only if no errors/notifications
+    -- Priority 3: Overlap Warning (RED) - nested regions during playback
+    if not status_message and bridge_state.is_playing then
+      if State.get_playlist_overlap_warning then
+        local overlap_warning = State.get_playlist_overlap_warning()
+        if overlap_warning then
+          status_message = '⚠ Nested regions detected, playback might not work as expected'
+          status_color = STATUS_COLORS.ERROR
+        end
+      end
+    end
+
+    -- Priority 3b: Beyond Project End Warning (ORANGE) - during playback
+    if not status_message and bridge_state.is_playing then
+      if State.get_playlist_beyond_warning then
+        local beyond_warning = State.get_playlist_beyond_warning()
+        if beyond_warning then
+          status_message = '⚠ Playlist contains regions beyond project end, playback may stop early'
+          status_color = STATUS_COLORS.WARNING
+        end
+      end
+    end
+
+    -- Priority 4: Warnings (ORANGE) - only if no errors/notifications
     if not status_message then
       local active_playlist = State.get_active_playlist and State.get_active_playlist()
       if active_playlist and active_playlist.order and #active_playlist.order == 0 and not bridge_state.is_playing then
-        status_message = "Playlist is empty"
+        status_message = 'Playlist is empty'
         status_color = STATUS_COLORS.WARNING
       end
     end
 
-    -- Priority 4: Info (BLUE) - only if no errors/warnings/notifications
+    -- Priority 5: Info (BLUE) - only if no errors/warnings/notifications
     if not status_message then
       local selection_info = State.get_selection_info and State.get_selection_info()
       if selection_info and (selection_info.region_count > 0 or selection_info.playlist_count > 0) then
         local parts = {}
         if selection_info.region_count > 0 then
-          parts[#parts + 1] = string.format("%d Region%s", selection_info.region_count, selection_info.region_count > 1 and "s" or "")
+          parts[#parts + 1] = string.format('%d Region%s', selection_info.region_count, selection_info.region_count > 1 and 's' or '')
         end
         if selection_info.playlist_count > 0 then
-          parts[#parts + 1] = string.format("%d Playlist%s", selection_info.playlist_count, selection_info.playlist_count > 1 and "s" or "")
+          parts[#parts + 1] = string.format('%d Playlist%s', selection_info.playlist_count, selection_info.playlist_count > 1 and 's' or '')
         end
-        status_message = table.concat(parts, ", ") .. " selected"
+        status_message = table.concat(parts, ', ') .. ' selected'
         status_color = STATUS_COLORS.INFO
       end
     end
 
-    -- Priority 5: Playback state (GREEN) - overrides info/warnings but not errors/notifications
+    -- Priority 6: Playback state (GREEN) - overrides info/warnings but not errors/notifications
     if bridge_state.is_playing then
       local current_rid = bridge:get_current_rid()
       if current_rid then
@@ -95,26 +119,26 @@ local function get_app_status(State)
           -- Add playlist name
           local active_playlist = State.get_active_playlist and State.get_active_playlist()
           if active_playlist then
-            play_parts[#play_parts + 1] = string.format("Playing '%s'", active_playlist.name or "Untitled")
+            play_parts[#play_parts + 1] = string.format("Playing '%s'", active_playlist.name or 'Untitled')
           end
 
-          play_parts[#play_parts + 1] = string.format("▶ %s", region.name)
-          play_parts[#play_parts + 1] = string.format("[%d/%d]", bridge_state.playlist_pointer, #bridge_state.playlist_order)
+          play_parts[#play_parts + 1] = string.format('▶ %s', region.name)
+          play_parts[#play_parts + 1] = string.format('[%d/%d]', bridge_state.playlist_pointer, #bridge_state.playlist_order)
 
           -- Add loop info if looping
           if bridge_state.current_loop and bridge_state.total_loops and bridge_state.total_loops > 1 then
-            play_parts[#play_parts + 1] = string.format("Loop %d/%d", bridge_state.current_loop, bridge_state.total_loops)
+            play_parts[#play_parts + 1] = string.format('Loop %d/%d', bridge_state.current_loop, bridge_state.total_loops)
           end
 
           -- Add progress percentage
-          play_parts[#play_parts + 1] = string.format("%.0f%%", progress * 100)
+          play_parts[#play_parts + 1] = string.format('%.0f%%', progress * 100)
 
           -- Add time remaining
           if time_remaining then
-            play_parts[#play_parts + 1] = string.format("%.1fs left", time_remaining)
+            play_parts[#play_parts + 1] = string.format('%.1fs left', time_remaining)
           end
 
-          local play_text = table.concat(play_parts, "  ")
+          local play_text = table.concat(play_parts, '  ')
 
           -- Playing state takes precedence over info/warnings but not errors or notifications
           local has_notification = State.get_state_change_notification and State.get_state_change_notification()
@@ -127,7 +151,7 @@ local function get_app_status(State)
     end
 
     -- Build final status text (no base info, message only)
-    local info_text = status_message or ""
+    local info_text = status_message or ''
       -- <<< STATUS DETECTION (END)
       
       return {
@@ -144,7 +168,7 @@ local function get_app_status(State)
       -- Error occurred, return diagnostic
       return {
         color = STATUS_COLORS.ERROR,
-        text = "Status Error: " .. tostring(result),
+        text = 'Status Error: ' .. tostring(result),
         buttons = nil,
         right_buttons = nil,
       }

@@ -2,17 +2,16 @@
 -- Arkitekt/gui/widgets/nodal/rendering/connection_renderer.lua
 -- Connection rendering with Manhattan routing
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 
 local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
 local Connection = require('arkitekt.gui.widgets.editors.nodal.core.connection')
 
 local M = {}
-local hexrgb = Colors.hexrgb
-
 function M.render(ctx, connection, nodes, config)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   
   local points = Connection.get_manhattan_points(connection, nodes, config)
   if not points or #points < 4 then
@@ -25,7 +24,7 @@ function M.render(ctx, connection, nodes, config)
   end
   
   -- Draw Manhattan path (series of line segments)
-  M.render_manhattan_path(dl, points, connection.color, thickness, connection.type == "trigger", config)
+  M.render_manhattan_path(dl, points, connection.color, thickness, connection.type == 'trigger', config)
   
   if connection.animated then
     M.render_animated_dot_manhattan(dl, points, connection.color, config)
@@ -181,13 +180,13 @@ function M.render_connection_label_manhattan(ctx, dl, connection, points, config
       local bg_y2 = mid_y + text_h / 2 + padding
       
       ImGui.DrawList_AddRectFilled(dl, bg_x1, bg_y1, bg_x2, bg_y2, 
-        config.colors.connection_label_bg or hexrgb("#1A1A1AEE"), 
+        config.colors.connection_label_bg or 0x1A1A1AEE, 
         config.connection.label_bg_rounding or 4)
       
       ImGui.DrawList_AddRect(dl, bg_x1, bg_y1, bg_x2, bg_y2, connection.color, 
         config.connection.label_bg_rounding or 4, 0, 1.0)
       
-      Draw.text(dl, mid_x - text_w / 2, mid_y - text_h / 2, config.colors.text.port_label, label)
+      Draw.Text(dl, mid_x - text_w / 2, mid_y - text_h / 2, config.colors.text.port_label, label)
       return
     end
     accumulated = accumulated + seg.length
@@ -195,7 +194,7 @@ function M.render_connection_label_manhattan(ctx, dl, connection, points, config
 end
 
 function M.render_drag_connection(ctx, start_x, start_y, end_x, end_y, color, config)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   
   -- Simple Manhattan routing for drag preview using config values
   local horizontal_offset = config.connection.manhattan_horizontal_offset or 40

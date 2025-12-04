@@ -8,7 +8,7 @@ local M = {}
 -- CONSTANTS
 -- ============================================================================
 
---- Platform path separator ("/" on Unix, "\\" on Windows)
+--- Platform path separator ('/' on Unix, '\\' on Windows)
 M.SEP = package.config:sub(1,1)
 
 -- ============================================================================
@@ -20,10 +20,10 @@ M.SEP = package.config:sub(1,1)
 --- @param b string Second path segment
 --- @return string joined Joined path
 function M.join(a, b)
-  if not a or a == "" then return b or "" end
-  if not b or b == "" then return a end
+  if not a or a == '' then return b or '' end
+  if not b or b == '' then return a end
   local sep = M.SEP
-  if a:sub(-1) == sep or a:sub(-1) == "/" or a:sub(-1) == "\\" then
+  if a:sub(-1) == sep or a:sub(-1) == '/' or a:sub(-1) == '\\' then
     return a .. b
   end
   return a .. sep .. b
@@ -33,16 +33,16 @@ end
 --- @param path string Path to extract directory from
 --- @return string dir Directory portion (with trailing separator)
 function M.dirname(path)
-  if not path then return "" end
-  return path:match("^(.*[/\\])") or ""
+  if not path then return '' end
+  return path:match('^(.*[/\\])') or ''
 end
 
 --- Get the filename portion of a path
 --- @param path string Path to extract filename from
 --- @return string filename Filename portion
 function M.basename(path)
-  if not path then return "" end
-  return path:match("[^/\\]+$") or path
+  if not path then return '' end
+  return path:match('[^/\\]+$') or path
 end
 
 --- Get the filename without extension
@@ -50,7 +50,7 @@ end
 --- @return string name Filename without extension
 function M.basename_no_ext(path)
   local name = M.basename(path)
-  return name and name:gsub("%.[^%.]*$", "") or ""
+  return name and name:gsub('%.[^%.]*$', '') or ''
 end
 
 --- Get the file extension (with dot)
@@ -58,7 +58,7 @@ end
 --- @return string|nil ext Extension including dot, or nil
 function M.extension(path)
   if not path then return nil end
-  return path:match("(%.[^./\\]*)$")
+  return path:match('(%.[^./\\]*)$')
 end
 
 -- ============================================================================
@@ -70,7 +70,7 @@ end
 --- @return boolean exists True if file exists and is readable
 function M.file_exists(path)
   if not path then return false end
-  local f = io.open(path, "rb")
+  local f = io.open(path, 'rb')
   if f then
     f:close()
     return true
@@ -83,9 +83,9 @@ end
 --- @return string|nil content File contents, or nil on error
 function M.read_text(path)
   if not path then return nil end
-  local f = io.open(path, "rb")
+  local f = io.open(path, 'rb')
   if not f then return nil end
-  local s = f:read("*a")
+  local s = f:read('*a')
   f:close()
   return s
 end
@@ -103,10 +103,10 @@ end
 --- @return boolean success True on success
 --- @return string|nil error Error message on failure
 function M.write_text(path, content)
-  if not path then return false, "No path specified" end
-  local f, err = io.open(path, "wb")
+  if not path then return false, 'No path specified' end
+  local f, err = io.open(path, 'wb')
   if not f then return false, err end
-  local ok, write_err = f:write(content or "")
+  local ok, write_err = f:write(content or '')
   f:close()
   if not ok then return false, write_err end
   return true
@@ -118,22 +118,22 @@ end
 --- @return boolean success True on success
 --- @return string|nil error Error message on failure
 function M.write_text_atomic(path, content)
-  if not path then return false, "No path specified" end
-  local tmp = path .. ".tmp"
-  local f, err = io.open(tmp, "wb")
+  if not path then return false, 'No path specified' end
+  local tmp = path .. '.tmp'
+  local f, err = io.open(tmp, 'wb')
   if not f then
-    return false, "Failed to create temp file: " .. (err or "unknown")
+    return false, 'Failed to create temp file: ' .. (err or 'unknown')
   end
-  local ok, write_err = f:write(content or "")
+  local ok, write_err = f:write(content or '')
   f:close()
   if not ok then
     os.remove(tmp)
-    return false, "Failed to write: " .. (write_err or "unknown")
+    return false, 'Failed to write: ' .. (write_err or 'unknown')
   end
   os.remove(path)  -- Windows-safe replace
   local rename_ok, rename_err = os.rename(tmp, path)
   if not rename_ok then
-    return false, "Failed to rename: " .. (rename_err or "unknown")
+    return false, 'Failed to rename: ' .. (rename_err or 'unknown')
   end
   return true
 end
@@ -146,9 +146,17 @@ end
 --- @param path string Path to check
 --- @return boolean exists True if directory exists
 function M.dir_exists(path)
-  if not path then return false end
-  return (reaper.EnumerateFiles(path, 0) or
-          reaper.EnumerateSubdirectories(path, 0)) ~= nil
+  if not path or path == '' then return false end
+  -- reaper.file_exists returns true for both files and directories
+  -- We check it exists AND is not a file (can't be opened for reading)
+  if not reaper.file_exists(path) then return false end
+  -- If it exists but can't be opened as a file, it's a directory
+  local f = io.open(path, 'rb')
+  if f then
+    f:close()
+    return false -- It's a file, not a directory
+  end
+  return true
 end
 
 --- Create directory (and parents if needed)
@@ -165,7 +173,7 @@ end
 --- @return boolean success True if parent directory exists/was created
 function M.ensure_parent_dir(file_path)
   local dir = M.dirname(file_path)
-  if dir and dir ~= "" then
+  if dir and dir ~= '' then
     return M.mkdir(dir)
   end
   return true
@@ -173,7 +181,7 @@ end
 
 --- List files in a directory
 --- @param dir string Directory path
---- @param ext string|nil Optional extension filter (e.g., ".png")
+--- @param ext string|nil Optional extension filter (e.g., '.png')
 --- @return table files Array of full file paths
 function M.list_files(dir, ext)
   local out = {}
@@ -211,18 +219,27 @@ end
 --- List files recursively
 --- @param dir string Directory path
 --- @param ext string|nil Optional extension filter
+--- @param max_depth number|nil Maximum recursion depth (default: 20)
 --- @return table files Array of full file paths
-function M.list_files_recursive(dir, ext)
-  local out = M.list_files(dir, ext)
+function M.list_files_recursive(dir, ext, max_depth)
+  max_depth = max_depth or 20
 
-  for _, subdir in ipairs(M.list_subdirs(dir)) do
-    local sub_files = M.list_files_recursive(subdir, ext)
-    for _, f in ipairs(sub_files) do
-      out[#out + 1] = f
+  local function recurse(current_dir, depth)
+    local out = M.list_files(current_dir, ext)
+
+    if depth < max_depth then
+      for _, subdir in ipairs(M.list_subdirs(current_dir)) do
+        local sub_files = recurse(subdir, depth + 1)
+        for _, f in ipairs(sub_files) do
+          out[#out + 1] = f
+        end
+      end
     end
+
+    return out
   end
 
-  return out
+  return recurse(dir, 1)
 end
 
 --- Copy a file (ensures parent directory exists)
@@ -231,12 +248,12 @@ end
 --- @return boolean success True on success
 --- @return string|nil error Error message on failure
 function M.copy_file(src, dst)
-  if not src then return false, "No source path" end
-  if not dst then return false, "No destination path" end
+  if not src then return false, 'No source path' end
+  if not dst then return false, 'No destination path' end
 
   local content = M.read_binary(src)
   if not content then
-    return false, "Cannot read source: " .. src
+    return false, 'Cannot read source: ' .. src
   end
 
   -- Ensure destination directory exists

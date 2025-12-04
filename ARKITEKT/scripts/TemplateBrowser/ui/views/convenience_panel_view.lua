@@ -2,7 +2,7 @@
 -- TemplateBrowser/ui/views/convenience_panel_view.lua
 -- Convenience panel view: Tags / VSTs mini tabs (for quick access)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 -- Import tab modules
 local ConvTagsTab = require('TemplateBrowser.ui.views.convenience_panel.tags_tab')
@@ -26,10 +26,10 @@ function M.draw_convenience_panel(ctx, gui, width, height)
     local content_height = height - header_height - (padding * 2)
 
     -- Draw content based on active tab
-    if state.convenience_panel_tab == "tags" then
-      ConvTagsTab.draw(ctx, state, gui.config, width, content_height)
-    elseif state.convenience_panel_tab == "vsts" then
-      ConvVstsTab.draw(ctx, state, gui.config, width, content_height)
+    if state.convenience_panel_tab == 'tags' then
+      ConvTagsTab.Draw(ctx, state, gui.config, width, content_height)
+    elseif state.convenience_panel_tab == 'vsts' then
+      ConvVstsTab.Draw(ctx, state, gui.config, width, content_height)
     end
 
     gui.convenience_panel_container:end_draw(ctx)

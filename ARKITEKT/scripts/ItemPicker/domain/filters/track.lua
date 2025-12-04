@@ -18,14 +18,14 @@ function M.build_track_tree()
 
     local guid = reaper.GetTrackGUID(track)
     local _, name = reaper.GetTrackName(track)
-    local color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
-    local depth = reaper.GetMediaTrackInfo_Value(track, "I_FOLDERDEPTH")
+    local color = reaper.GetMediaTrackInfo_Value(track, 'I_CUSTOMCOLOR')
+    local depth = reaper.GetMediaTrackInfo_Value(track, 'I_FOLDERDEPTH')
     local folder_depth = reaper.GetTrackDepth(track)
 
     all_tracks[i + 1] = {
       track = track,
       guid = guid,
-      name = name or ("Track " .. (i + 1)),
+      name = name or ('Track ' .. (i + 1)),
       color = color,
       index = i + 1,
       depth = folder_depth,
@@ -90,7 +90,7 @@ function M.is_parent_disabled(track, whitelist)
   return false
 end
 
--- Build full track path string (e.g., "Folder > Subfolder > Track")
+-- Build full track path string (e.g., 'Folder > Subfolder > Track')
 function M.get_track_path(track)
   local path_parts = {}
   local current = track
@@ -98,7 +98,7 @@ function M.get_track_path(track)
     table.insert(path_parts, 1, current.name)
     current = current.parent
   end
-  return table.concat(path_parts, " > ")
+  return table.concat(path_parts, ' > ')
 end
 
 -- Calculate total height needed for track tree display

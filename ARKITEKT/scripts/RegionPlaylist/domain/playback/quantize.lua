@@ -3,7 +3,7 @@
 -- Quantized transitions using trigger region hack
 -- MODIFIED: Integrated Logger for debug output
 
-local Logger = require("arkitekt.debug.logger")
+local Logger = require('arkitekt.debug.logger')
 
 -- Performance: Use VM operations instead of C function calls
 -- floor(x) = x//1 (5-10% faster in loops)
@@ -13,7 +13,7 @@ local M = {}
 local Quantize = {}
 Quantize.__index = Quantize
 
-local TRIGGER_REGION_NAME = "__TRANSITION_TRIGGER"
+local TRIGGER_REGION_NAME = '__TRANSITION_TRIGGER'
 
 local function _is_playing(proj)
   proj = proj or 0
@@ -33,7 +33,7 @@ function M.new(opts)
   self.state = opts.state
   self.transport = opts.transport
   
-  self.quantize_mode = "measure"
+  self.quantize_mode = 'measure'
   self.min_lookahead = 0.25
   self.max_lookahead = 3.0
   
@@ -107,7 +107,7 @@ function Quantize:_reposition_trigger_region(start_pos, end_pos)
     0
   )
   
-  Logger.debug("QUANTIZE", "Moved trigger: [%.3f - %.3f] retval=%s", start_pos, end_pos, tostring(retval))
+  Logger.debug('QUANTIZE', 'Moved trigger: [%.3f - %.3f] retval=%s', start_pos, end_pos, tostring(retval))
   
   return retval
 end
@@ -115,43 +115,43 @@ end
 function Quantize:_calculate_next_quantize_point(playpos, skip_count)
   skip_count = skip_count or 0
   
-  if self.quantize_mode == "measure" then
+  if self.quantize_mode == 'measure' then
     local retval, measures, cml, fullbeats, cdenom = reaper.TimeMap2_timeToBeats(self.proj, playpos)
     local next_measure_num = measures//1 + 1 + skip_count
     local next_time = reaper.TimeMap2_beatsToTime(self.proj, 0, next_measure_num)
     
-    Logger.debug("QUANTIZE", "Mode=measure, skip=%d -> measure=%d (%.3fs)", skip_count, next_measure_num, next_time)
+    Logger.debug('QUANTIZE', 'Mode=measure, skip=%d -> measure=%d (%.3fs)', skip_count, next_measure_num, next_time)
     
     return next_time
-  elseif self.quantize_mode == "2bar" then
+  elseif self.quantize_mode == '2bar' then
     local retval, measures, cml, fullbeats, cdenom = reaper.TimeMap2_timeToBeats(self.proj, playpos)
 
     -- Simply add 2 bars from current position (skip * 2 for additional cycles)
     local target_measure = measures + 2 + (skip_count * 2)
     local next_time = reaper.TimeMap2_beatsToTime(self.proj, 0, target_measure)
 
-    Logger.debug("QUANTIZE", "Mode=2bar, current=%.3f -> target=%.3f (%.3fs)",
+    Logger.debug('QUANTIZE', 'Mode=2bar, current=%.3f -> target=%.3f (%.3fs)',
       measures, target_measure, next_time)
 
     return next_time
-  elseif self.quantize_mode == "4bar" then
+  elseif self.quantize_mode == '4bar' then
     local retval, measures, cml, fullbeats, cdenom = reaper.TimeMap2_timeToBeats(self.proj, playpos)
 
     -- Simply add 4 bars from current position (skip * 4 for additional cycles)
     local target_measure = measures + 4 + (skip_count * 4)
     local next_time = reaper.TimeMap2_beatsToTime(self.proj, 0, target_measure)
 
-    Logger.debug("QUANTIZE", "Mode=4bar, current=%.3f -> target=%.3f (%.3fs)",
+    Logger.debug('QUANTIZE', 'Mode=4bar, current=%.3f -> target=%.3f (%.3fs)',
       measures, target_measure, next_time)
 
     return next_time
-  elseif self.quantize_mode == "beat" then
+  elseif self.quantize_mode == 'beat' then
     -- Quantize to next beat (1.0 grid division)
     local retval, measures, cml, fullbeats, cdenom = reaper.TimeMap2_timeToBeats(self.proj, playpos)
     local next_beat = fullbeats//1 + 1 + skip_count
     local next_time = reaper.TimeMap2_QNToTime(self.proj, next_beat)
     
-    Logger.debug("QUANTIZE", "Mode=beat, skip=%d -> beat=%d (%.3fs)", skip_count, next_beat, next_time)
+    Logger.debug('QUANTIZE', 'Mode=beat, skip=%d -> beat=%d (%.3fs)', skip_count, next_beat, next_time)
     
     return next_time
   else
@@ -185,7 +185,7 @@ function Quantize:_calculate_next_quantize_point(playpos, skip_count)
     local target_qn = (target_measure * cml) + next_beat_in_measure
     local next_time = reaper.TimeMap2_QNToTime(self.proj, target_qn)
     
-    Logger.debug("QUANTIZE", "Mode=grid(%.4f), skip=%d -> m=%d b=%.3f qn=%.3f (%.3fs)", 
+    Logger.debug('QUANTIZE', 'Mode=grid(%.4f), skip=%d -> m=%d b=%.3f qn=%.3f (%.3fs)', 
       grid_div, skip_count, target_measure, next_beat_in_measure, target_qn, next_time)
     
     return next_time
@@ -203,15 +203,15 @@ end
 function Quantize:jump_to_next_quantized(lookahead)
   lookahead = lookahead or 0.05
   
-  Logger.debug("QUANTIZE", "jump_to_next_quantized called")
+  Logger.debug('QUANTIZE', 'jump_to_next_quantized called')
   
   if not self.transport.is_playing then
-    Logger.debug("QUANTIZE", "Not playing, fallback to next()")
+    Logger.debug('QUANTIZE', 'Not playing, fallback to next()')
     return self.transport:next()
   end
   
   if not self:_ensure_trigger_region() then
-    Logger.warn("QUANTIZE", "Failed to ensure trigger region")
+    Logger.warn('QUANTIZE', 'Failed to ensure trigger region')
     return self.transport:next()
   end
   
@@ -220,11 +220,11 @@ function Quantize:jump_to_next_quantized(lookahead)
   local next_quantize = self:_calculate_next_quantize_point(playpos, 0)
   
   if not next_quantize then
-    Logger.warn("QUANTIZE", "Failed to calculate quantize point")
+    Logger.warn('QUANTIZE', 'Failed to calculate quantize point')
     return self.transport:next()
   end
   
-  Logger.debug("QUANTIZE", "playpos=%.3f next_quantize=%.3f lookahead=%.3f", playpos, next_quantize, lookahead)
+  Logger.debug('QUANTIZE', 'playpos=%.3f next_quantize=%.3f lookahead=%.3f', playpos, next_quantize, lookahead)
   
   local skip_count = 0
   while next_quantize - playpos < lookahead do
@@ -232,29 +232,29 @@ function Quantize:jump_to_next_quantized(lookahead)
     next_quantize = self:_calculate_next_quantize_point(playpos, skip_count)
     
     if not next_quantize then
-      Logger.warn("QUANTIZE", "Failed to calculate next quantize point")
+      Logger.warn('QUANTIZE', 'Failed to calculate next quantize point')
       return self.transport:next()
     end
     
     if skip_count > 100 then
-      Logger.error("QUANTIZE", "Too many skips, fallback to next()")
+      Logger.error('QUANTIZE', 'Too many skips, fallback to next()')
       return self.transport:next()
     end
   end
   
   if skip_count > 0 then
-    Logger.debug("QUANTIZE", "Skipped %d grid points to: %.3f (safety margin: %.3fs)", 
+    Logger.debug('QUANTIZE', 'Skipped %d grid points to: %.3f (safety margin: %.3fs)', 
       skip_count, next_quantize, next_quantize - playpos)
   end
   
   if self.state.current_bounds.end_pos > 0 and 
      next_quantize >= self.state.current_bounds.end_pos - 0.6 then
-    Logger.debug("QUANTIZE", "Too close to region end, natural transition will happen")
+    Logger.debug('QUANTIZE', 'Too close to region end, natural transition will happen')
     return
   end
   
   if self.state.next_idx < 1 or self.state.next_idx > #self.state.playlist_order then
-    Logger.warn("QUANTIZE", "No valid next_idx")
+    Logger.warn('QUANTIZE', 'No valid next_idx')
     return false
   end
   
@@ -262,18 +262,18 @@ function Quantize:jump_to_next_quantized(lookahead)
   local trigger_end = next_quantize
   
   if not self:_reposition_trigger_region(trigger_start, trigger_end) then
-    Logger.error("QUANTIZE", "Failed to reposition trigger region")
+    Logger.error('QUANTIZE', 'Failed to reposition trigger region')
     return false
   end
   
   local cursor_pos = reaper.GetCursorPositionEx(self.proj)
   
-  Logger.debug("QUANTIZE", "Calling UpdateTimeline")
+  Logger.debug('QUANTIZE', 'Calling UpdateTimeline')
   reaper.UpdateTimeline()
   
   local target_region = self.state:get_region_by_rid(self.state.playlist_order[self.state.next_idx])
   if target_region then
-    Logger.debug("QUANTIZE", "Queuing GoToRegion(%d)", target_region.rid)
+    Logger.debug('QUANTIZE', 'Queuing GoToRegion(%d)', target_region.rid)
     reaper.GoToRegion(self.proj, target_region.rid, false)
   end
   
@@ -281,9 +281,10 @@ function Quantize:jump_to_next_quantized(lookahead)
   
   self.trigger_region.is_active = true
   self.trigger_region.target_rid = self.state.playlist_order[self.state.next_idx]
+  self.trigger_region.target_idx = self.state.next_idx  -- Store target index for same-region handling
   self.trigger_region.fire_position = next_quantize
   self.trigger_region.last_playpos = playpos
-  
+
   return true
 end
 
@@ -293,7 +294,7 @@ function Quantize:update()
   end
   
   if not self.transport.is_playing then
-    Logger.debug("QUANTIZE", "update: Playback stopped, cleanup")
+    Logger.debug('QUANTIZE', 'update: Playback stopped, cleanup')
     self:_cleanup_trigger()
     return
   end
@@ -301,7 +302,7 @@ function Quantize:update()
   local playpos = _get_play_pos(self.proj)
   
   if self.trigger_region.last_playpos and playpos < self.trigger_region.last_playpos - 0.2 then
-    Logger.debug("QUANTIZE", "Backward seek detected, cleanup")
+    Logger.debug('QUANTIZE', 'Backward seek detected, cleanup')
     self:_cleanup_trigger()
     return
   end
@@ -311,8 +312,14 @@ function Quantize:update()
   if self.trigger_region.target_rid then
     local target_region = self.state:get_region_by_rid(self.trigger_region.target_rid)
     if target_region then
-      if playpos >= target_region.start and playpos < target_region["end"] then
-        Logger.debug("QUANTIZE", "Entered target region rid=%d, cleanup", self.trigger_region.target_rid)
+      if playpos >= target_region.start and playpos < target_region['end'] then
+        Logger.debug('QUANTIZE', 'Entered target region rid=%d idx=%d, cleanup',
+          self.trigger_region.target_rid, self.trigger_region.target_idx or -1)
+        -- Update indices (handles same-region appearing multiple times)
+        if self.trigger_region.target_idx then
+          self.state.current_idx = self.trigger_region.target_idx
+          self.state.playlist_pointer = self.trigger_region.target_idx
+        end
         self:_cleanup_trigger()
         return
       end
@@ -320,15 +327,22 @@ function Quantize:update()
   end
   
   if playpos >= self.trigger_region.fire_position and playpos < self.trigger_region.fire_position + 0.1 then
-    Logger.info("QUANTIZE", "FIRING NOW: playpos=%.3f fire_pos=%.3f", playpos, self.trigger_region.fire_position)
-    
+    Logger.info('QUANTIZE', 'FIRING NOW: playpos=%.3f fire_pos=%.3f target_idx=%d',
+      playpos, self.trigger_region.fire_position, self.trigger_region.target_idx or -1)
+
     if self.trigger_region.target_rid then
+      -- Update indices BEFORE seeking (handles same-region appearing multiple times)
+      if self.trigger_region.target_idx then
+        self.state.current_idx = self.trigger_region.target_idx
+        self.state.playlist_pointer = self.trigger_region.target_idx
+      end
+
       self.transport:_seek_to_region(self.trigger_region.target_rid)
     end
-    
+
     self:_cleanup_trigger()
   elseif playpos >= self.trigger_region.fire_position + 0.1 then
-    Logger.warn("QUANTIZE", "Missed trigger window, cleanup")
+    Logger.warn('QUANTIZE', 'Missed trigger window, cleanup')
     self:_cleanup_trigger()
   end
 end
@@ -343,6 +357,7 @@ function Quantize:_cleanup_trigger()
   
   self.trigger_region.is_active = false
   self.trigger_region.target_rid = nil
+  self.trigger_region.target_idx = nil
   self.trigger_region.fire_position = nil
   self.trigger_region.last_playpos = nil
 end

@@ -18,13 +18,37 @@ How to create and extend ARKITEKT widgets.
 
 ## Widget API Contract
 
-### Signature
+### Callable Module Pattern (Preferred)
+
+Widgets are **callable modules** - users call them directly without `.Draw`:
+
 ```lua
-function M.draw(ctx, opts)
+-- User API (no .Draw!)
+local r = Ark.Button(ctx, 'Save')
+local r = Ark.Button(ctx, { label = 'Save', preset = 'success' })
+
+-- NOT: Ark.Button.Draw(ctx, ...)  -- Wrong!
+```
+
+### Internal Signature
+```lua
+function M.Draw(ctx, opts)
   -- ctx: ImGui context (userdata)
   -- opts: Configuration table (optional fields)
   return result  -- State table for caller
 end
+
+-- Make module callable via __call metamethod
+return setmetatable(M, {
+  __call = function(_, ctx, label_or_opts, ...)
+    -- Detect positional vs opts mode
+    if type(label_or_opts) == 'table' then
+      return M.Draw(ctx, label_or_opts)
+    else
+      return M.Draw(ctx, { label = label_or_opts, ... })
+    end
+  end
+})
 ```
 
 ### opts Table Convention
@@ -35,9 +59,19 @@ end
 ---@field y? number            Y position (nil = cursor position)
 ---@field width? number        Widget width
 ---@field height? number       Widget height
----@field disabled? boolean    Disable interactions
+---@field is_disabled? boolean Disable interactions
 ---@field preset_name? string  Style preset name
 ```
+
+### Boolean Property Naming (is_ prefix)
+All boolean config properties use the `is_` prefix for clarity and autocomplete:
+- `is_disabled` - Widget cannot be interacted with
+- `is_checked` - Checkbox checked state
+- `is_selected` - Item selection state
+- `is_toggled` - Toggle button state
+- `is_blocking` - Block interaction without visual change
+- `is_multiline` - InputText multiline mode
+- `is_interactive` - Chip/item can be clicked
 
 ### Result Table Convention
 ```lua
@@ -56,7 +90,7 @@ end
 -- @noindex
 -- arkitekt/gui/widgets/primitives/my_widget.lua
 
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 local Base = require('arkitekt.gui.widgets.base')
 
 local M = {}
@@ -64,7 +98,7 @@ local M = {}
 ---@param ctx userdata
 ---@param opts table
 ---@return table
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = opts or {}
   local ImGui = reaper.ImGui
 
@@ -85,8 +119,8 @@ function M.draw(ctx, opts)
   local x, y = ImGui.GetCursorScreenPos(ctx)
   local w, h = config.width, 20
 
-  -- Draw
-  local dl = ImGui.GetWindowDrawList(ctx)
+  -- Draw (use Base helper for cached draw list)
+  local dl = Base.get_draw_list(ctx, opts)
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, config.bg_color)
 
   -- Handle input
@@ -115,7 +149,12 @@ function M.draw(ctx, opts)
   }
 end
 
-return M
+-- Make module callable: Ark.MyWidget(ctx, opts) -> M.Draw(ctx, opts)
+return setmetatable(M, {
+  __call = function(_, ctx, opts)
+    return M.Draw(ctx, opts)
+  end
+})
 ```
 
 ---
@@ -127,7 +166,7 @@ return M
 **Critical**: Read `Theme.COLORS` during render, not at module load.
 
 ```lua
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 local function resolve_config(opts)
   -- Base config from theme (fresh every frame)
@@ -191,19 +230,28 @@ end
 ## Drawing Patterns
 
 ### DrawList Usage
+
+Use `Base.get_draw_list()` for automatic caching via ArkContext:
+
 ```lua
-local dl = ImGui.GetWindowDrawList(ctx)
+local Base = require('arkitekt.gui.widgets.base')
 
--- Rectangles
-ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, color, rounding)
-ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, color, rounding, flags, thickness)
+function M.Draw(ctx, opts)
+  local dl = Base.get_draw_list(ctx, opts)  -- Cached per-frame
 
--- Text
-ImGui.DrawList_AddText(dl, x, y, color, text)
+  -- Rectangles
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, color, rounding)
+  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, color, rounding, flags, thickness)
 
--- Lines
-ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, color, thickness)
+  -- Text
+  ImGui.DrawList_AddText(dl, x, y, color, text)
+
+  -- Lines
+  ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, color, thickness)
+end
 ```
+
+For advanced caching (expensive computations), see `cookbook/ARKCONTEXT.md`.
 
 ### Cursor Management
 ```lua
@@ -233,9 +281,14 @@ local right_clicked = ImGui.IsItemClicked(ctx, 1)
 
 ### Mouse Position
 ```lua
-local mx, my = ImGui.GetMousePos(ctx)
+-- Via ArkContext (cached per-frame)
+local actx = Base.get_context(ctx)
+local mx, my = actx:mouse_pos()
 local rel_x = mx - x  -- Relative to widget
 local rel_y = my - y
+
+-- Or direct ImGui call (not cached)
+local mx, my = ImGui.GetMousePos(ctx)
 ```
 
 ### Keyboard Input

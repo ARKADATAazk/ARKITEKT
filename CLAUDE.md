@@ -36,28 +36,57 @@ Lua 5.3 framework for building ReaImGui apps in REAPER. It provides widgets, win
    - Always read the file (and nearby modules) **before** editing.
    - Diffs must be **surgical**: no reformatting, no drive-by refactors.
 
+6. **Naming standards**
+   - Constructors: `M.new(opts)` preferred (extensible), `M.new(config)` or `M.new()` valid
+   - Local vars: `cfg` (not `config`), `state` (never `st`), `ctx`, `opts`
+   - See `cookbook/CONVENTIONS.md` for full standards
+
 **Quick examples**
 
 ```lua
 -- Button - ImGui-style positional mode
-if Ark.Button(ctx, "Save") then ... end
-if Ark.Button(ctx, "Save", 100) then ... end  -- with width
+if Ark.Button(ctx, 'Save') then ... end
+if Ark.Button(ctx, 'Save', 100) then ... end  -- with width
 
 -- Button - Opts mode with semantic presets
-if Ark.Button(ctx, { label = "Delete", preset = "danger" }) then ... end
--- Presets: "primary", "danger", "success", "secondary"
+if Ark.Button(ctx, { label = 'Delete', preset = 'danger' }) then ... end
+-- Presets: 'primary', 'danger', 'success', 'secondary'
 
 -- ID Stack (for loops with multiple widgets)
 for i, track in ipairs(tracks) do
   Ark.PushID(ctx, i)
-    if Ark.Button(ctx, "M") then ... end  -- ID = "1/M", "2/M", ...
-    if Ark.Button(ctx, "S") then ... end  -- ID = "1/S", "2/S", ...
-    Ark.Grid(ctx, { items = track.items })  -- ID = "1/grid", "2/grid", ...
+    if Ark.Button(ctx, 'M') then ... end  -- ID = '1/M', '2/M', ...
+    if Ark.Button(ctx, 'S') then ... end  -- ID = '1/S', '2/S', ...
+    Ark.Grid(ctx, { items = track.items })  -- ID = '1/grid', '2/grid', ...
   Ark.PopID(ctx)
 end
+
+-- Disabled Stack (disable region of widgets)
+Ark.BeginDisabled(ctx, is_loading)
+  Ark.Button(ctx, 'Save')      -- All disabled when is_loading
+  Ark.Button(ctx, 'Cancel')
+  Ark.InputText(ctx, { id = 'name' })
+Ark.EndDisabled(ctx)
 ```
 
 For full widget API, see `cookbook/QUICKSTART.md` and `cookbook/WIDGETS.md`.
+For ArkContext and stacks, see `cookbook/ARKCONTEXT.md`.
+
+**Colors**
+
+Use byte literals (`0xRRGGBBAA`) for static colors:
+
+```lua
+local COLORS = {
+    red = 0xFF0000FF,      -- Opaque red (RRGGBB + FF alpha)
+    blue = 0x0000FF80,     -- 50% transparent blue
+}
+
+-- For dynamic opacity, use WithOpacity:
+local fill = Ark.Colors.WithOpacity(base_color, 0.5)
+```
+
+**Note:** `Colors.hex()` exists for runtime user input (theme manager, palettes) but should NOT be used for static color definitions.
 
 ---
 
@@ -66,17 +95,18 @@ For full widget API, see `cookbook/QUICKSTART.md` and `cookbook/WIDGETS.md`.
 | You want to…                       | Go to…                                           |
 |-----------------------------------|--------------------------------------------------|
 | Add/modify a **widget**           | `arkitekt/gui/widgets/[category]/`              |
-| Change **app bootstrap/runtime**  | `arkitekt/app/` (init/, runtime/, chrome/)      |
-| Add **constants/defaults**        | `arkitekt/defs/` or `scripts/[AppName]/defs/`   |
-| Modify **theming**                | `arkitekt/core/theme_manager/`                  |
+| Change **app bootstrap/runtime**  | `arkitekt/runtime/` (shell.lua, chrome/)        |
+| Add **constants/defaults**        | `arkitekt/config/` or `scripts/[AppName]/config/` |
+| Modify **theming**                | `arkitekt/theme/` or `arkitekt/theme/manager/`  |
 | Work on **animations**            | `arkitekt/gui/animation/`                       |
 | Work on **drawing/rendering**     | `arkitekt/gui/draw/` or `arkitekt/gui/renderers/` |
 | Add **interaction handlers**      | `arkitekt/gui/interaction/` (drag-drop, selection, reorder) |
 | Add **layout utilities**          | `arkitekt/gui/layout/`                          |
-| Change **font loading**           | `arkitekt/app/chrome/fonts.lua`                 |
+| Change **font loading**           | `arkitekt/runtime/chrome/fonts.lua`             |
 | Edit a **specific app**           | `scripts/[AppName]/`                            |
 | Add **reusable utilities**        | `arkitekt/core/` (fs, json, settings, etc.)     |
-| Add **platform abstractions**     | `arkitekt/platform/`                            |
+| Add **assets** (fonts, icons)     | `arkitekt/assets/`                              |
+| Add **vendor/external libs**      | `arkitekt/vendor/`                              |
 | Check detailed **guides**         | `cookbook/`                                     |
 | Find **actionable tasks**         | `TODO/`                                         |
 
@@ -86,11 +116,10 @@ For full widget API, see `cookbook/QUICKSTART.md` and `cookbook/WIDGETS.md`.
 app/      # Orchestration, wiring, runtime
 domain/   # Business logic (no ImGui)
 core/     # Reusable utilities (fs/json/settings/math)
-platform/ # ImGui/REAPER abstractions
 storage/  # Persistence logic
 ui/       # Views, components
 widgets/  # Reusable UI elements
-defs/     # Constants & configuration
+config/   # Constants & configuration
 tests/    # Unit tests
 ```
 
@@ -109,7 +138,7 @@ For full workflows, see the corresponding sections in `cookbook/`.
 - Find a similar widget in `arkitekt/gui/widgets/[category]/` and copy its pattern.
 - Single-frame widget → `M.draw(ctx, opts)` returning result.
 - Multi-frame widget → `M.begin_*` / `M.end_*` (ImGui-style).
-- Never hardcode colors/timing; use `arkitekt/defs/*` + `Theme.COLORS`.
+- Never hardcode colors/timing; use `arkitekt/config/*` + `Theme.COLORS`.
 
 ### Fix a Bug
 
@@ -189,21 +218,22 @@ Typical workflow for a new widget:
 
 ---
 
-## 6. Anti-Patterns – Hard No’s
+## 6. Anti-Patterns – Hard No's
 
 Never do these:
 
 - UI / ImGui calls in `domain/*`.
 - New globals or module-level side effects.
-- Hardcoded magic numbers when a `defs/` constant exists.
-- Creating new folders just because “it feels cleaner” – check existing structure first.
-- Touching unrelated files “while you’re here”.
+- Hardcoded magic numbers when a `config/` constant exists.
+- Creating new folders just because "it feels cleaner" – check existing structure first.
+- Touching unrelated files "while you're here".
 - Re-declaring default config values (colors, padding, rounding, etc.) just to restate defaults.
 - Overriding core defaults unless explicitly requested.
+- **Adding backwards compatibility / legacy fallbacks.** ARKITEKT is fully internal with no external consumers. During refactors, just change the code directly—no shims, no "legacy support", no deprecation warnings. Clean breaks are preferred.
 
 ---
 
-## 7. Final Checklist Before You Say “Done”
+## 7. Final Checklist Before You Say "Done"
 
 Make sure:
 
@@ -214,5 +244,6 @@ Make sure:
 - [ ] Diff is small and focused.
 - [ ] Code matches existing patterns in that folder.
 - [ ] You actually read the file(s) before editing.
+- [ ] Naming follows standards: `M.new(opts)`, `cfg` locals, `state` never `st`
 
 If in doubt: **stop, re-read, then adjust.**

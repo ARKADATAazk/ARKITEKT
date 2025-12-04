@@ -87,7 +87,7 @@ function Graph:rebuild()
   end
 
   -- Phase 2: Build disabled relationships
-  -- A node is "disabled for" another if adding it would create a cycle
+  -- A node is 'disabled for' another if adding it would create a cycle
   for target_id, target_node in pairs(self.nodes) do
     target_node.is_disabled_for = {}
 
@@ -136,7 +136,7 @@ function Graph:would_create_cycle(target_id, source_id)
       path[#path + 1] = target_id  -- Complete the cycle
       return true, path
     end
-    return true, {source_id, "...", target_id}
+    return true, {source_id, '...', target_id}
   end
 
   return false
@@ -264,7 +264,7 @@ function Graph:topological_sort()
 
     in_stack[node_id] = nil
     visited[node_id] = true
-    table.insert(sorted, 1, node_id)  -- Prepend (reverse postorder)
+    sorted[#sorted + 1] = node_id  -- Append (postorder)
     return true
   end
 
@@ -274,6 +274,12 @@ function Graph:topological_sort()
         return nil  -- Cycle detected
       end
     end
+  end
+
+  -- Reverse to get dependencies before dependents (O(n) total instead of O(n²))
+  local n = #sorted
+  for i = 1, n // 2 do
+    sorted[i], sorted[n - i + 1] = sorted[n - i + 1], sorted[i]
   end
 
   return sorted

@@ -3,8 +3,12 @@
 -- Settings panel with checkboxes and waveform quality slider
 -- Uses cursor flow for checkbox layout
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
+
+-- Renderers for profiler toggle
+local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
+local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')
 
 local M = {}
 
@@ -15,7 +19,7 @@ local function checkbox(ctx, id, label, is_checked, alpha, on_click)
     label = label,
     is_checked = is_checked,
     alpha = alpha,
-    advance = "none",
+    advance = 'none',
   })
   if result.clicked and on_click then
     on_click()
@@ -23,7 +27,7 @@ local function checkbox(ctx, id, label, is_checked, alpha, on_click)
   return result
 end
 
-function M.draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha, state, config)
+function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha, state, config)
   if settings_height <= 1 then return end
 
   local spacing = 20
@@ -33,29 +37,29 @@ function M.draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   -- ============================================================================
   ImGui.SetCursorScreenPos(ctx, base_x + 14, base_y)
 
-  checkbox(ctx, "play_item_through_track",
-    "Play Item Through Track (will add delay to preview playback)",
+  checkbox(ctx, 'play_item_through_track',
+    'Play Item Through Track (will add delay to preview playback)',
     state.settings.play_item_through_track, settings_alpha,
     function() state.set_setting('play_item_through_track', not state.settings.play_item_through_track) end
   )
   ImGui.SameLine(ctx, 0, spacing)
 
-  checkbox(ctx, "show_muted_tracks",
-    "Show Muted Tracks",
+  checkbox(ctx, 'show_muted_tracks',
+    'Show Muted Tracks',
     state.settings.show_muted_tracks, settings_alpha,
     function() state.set_setting('show_muted_tracks', not state.settings.show_muted_tracks) end
   )
   ImGui.SameLine(ctx, 0, spacing)
 
-  checkbox(ctx, "show_muted_items",
-    "Show Muted Items",
+  checkbox(ctx, 'show_muted_items',
+    'Show Muted Items',
     state.settings.show_muted_items, settings_alpha,
     function() state.set_setting('show_muted_items', not state.settings.show_muted_items) end
   )
   ImGui.SameLine(ctx, 0, spacing)
 
-  checkbox(ctx, "show_disabled_items",
-    "Show Disabled Items",
+  checkbox(ctx, 'show_disabled_items',
+    'Show Disabled Items',
     state.settings.show_disabled_items, settings_alpha,
     function() state.set_setting('show_disabled_items', not state.settings.show_disabled_items) end
   )
@@ -65,29 +69,29 @@ function M.draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   -- ============================================================================
   ImGui.SetCursorScreenPos(ctx, base_x + 14, base_y + 24)
 
-  checkbox(ctx, "show_favorites_only",
-    "Show Favorites Only",
+  checkbox(ctx, 'show_favorites_only',
+    'Show Favorites Only',
     state.settings.show_favorites_only, settings_alpha,
     function() state.set_setting('show_favorites_only', not state.settings.show_favorites_only) end
   )
   ImGui.SameLine(ctx, 0, spacing)
 
-  checkbox(ctx, "show_audio",
-    "Show Audio",
+  checkbox(ctx, 'show_audio',
+    'Show Audio',
     state.settings.show_audio, settings_alpha,
     function() state.set_setting('show_audio', not state.settings.show_audio) end
   )
   ImGui.SameLine(ctx, 0, spacing)
 
-  checkbox(ctx, "show_midi",
-    "Show MIDI",
+  checkbox(ctx, 'show_midi',
+    'Show MIDI',
     state.settings.show_midi, settings_alpha,
     function() state.set_setting('show_midi', not state.settings.show_midi) end
   )
   ImGui.SameLine(ctx, 0, spacing)
 
-  checkbox(ctx, "group_items_by_name",
-    "Group Items of Same Name",
+  checkbox(ctx, 'group_items_by_name',
+    'Group Items of Same Name',
     state.settings.group_items_by_name, settings_alpha,
     function()
       state.set_setting('group_items_by_name', not state.settings.group_items_by_name)
@@ -98,26 +102,18 @@ function M.draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
 
   local enable_fx = state.settings.enable_tile_fx
   if enable_fx == nil then enable_fx = true end
-  checkbox(ctx, "enable_fx",
-    "Tile FX",
+  checkbox(ctx, 'enable_fx',
+    'Tile FX',
     enable_fx, settings_alpha,
     function() state.set_setting('enable_tile_fx', not enable_fx) end
   )
   ImGui.SameLine(ctx, 0, spacing)
 
-  local show_viz_small = state.settings.show_visualization_in_small_tiles
-  if show_viz_small == nil then show_viz_small = true end
-  checkbox(ctx, "show_viz_small",
-    "Show Viz in Small Tiles",
-    show_viz_small, settings_alpha,
-    function() state.set_setting('show_visualization_in_small_tiles', not show_viz_small) end
-  )
-  ImGui.SameLine(ctx, 0, spacing)
 
   local enable_regions = state.settings.enable_region_processing
   if enable_regions == nil then enable_regions = false end
-  checkbox(ctx, "enable_regions",
-    "Enable Regions",
+  checkbox(ctx, 'enable_regions',
+    'Enable Regions',
     enable_regions, settings_alpha,
     function()
       state.set_setting('enable_region_processing', not enable_regions)
@@ -134,8 +130,8 @@ function M.draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
 
   local show_region_tags = state.settings.show_region_tags
   if show_region_tags == nil then show_region_tags = false end
-  checkbox(ctx, "show_region_tags",
-    "Show on Tiles",
+  checkbox(ctx, 'show_region_tags',
+    'Show on Tiles',
     show_region_tags, settings_alpha,
     function() state.set_setting('show_region_tags', not show_region_tags) end
   )
@@ -149,10 +145,10 @@ function M.draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, settings_alpha)
 
   -- Slider label
-  local slider_label = "Waveform Quality:"
+  local slider_label = 'Waveform Quality:'
   local slider_label_width = ImGui.CalcTextSize(ctx, slider_label)
   ImGui.DrawList_AddText(draw_list, waveform_x, waveform_y + 3,
-    Ark.Colors.with_alpha(Ark.Colors.hexrgb("#FFFFFF"), (settings_alpha * 180) // 1), slider_label)
+    Ark.Colors.WithAlpha(0xFFFFFFFF, (settings_alpha * 180) // 1), slider_label)
 
   -- Slider track
   local slider_width = 120
@@ -161,12 +157,15 @@ function M.draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   local track_h = 6
   local track_rounding = 3
 
-  local track_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#1A1A1A"), (settings_alpha * 200) // 1)
+  local track_color = Ark.Colors.WithAlpha(0x1A1A1AFF, (settings_alpha * 200) // 1)
   ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + slider_width, track_y + track_h, track_color, track_rounding)
 
-  local quality = state.settings.waveform_quality or 1.0
-  local fill_width = slider_width * quality
-  local fill_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#4A9EFF"), (settings_alpha * 200) // 1)
+  local quality = state.settings.waveform_quality or 0.2
+  -- Map quality (0.05-0.70) to slider position (0-1)
+  local slider_min, slider_max = 0.05, 0.70
+  local slider_pos = (quality - slider_min) / (slider_max - slider_min)
+  local fill_width = slider_width * slider_pos
+  local fill_color = Ark.Colors.WithAlpha(0x4A9EFFFF, (settings_alpha * 200) // 1)
   if fill_width > 1 then
     ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + fill_width, track_y + track_h, fill_color, track_rounding)
   end
@@ -178,14 +177,16 @@ function M.draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   local thumb_radius = 6
   local is_thumb_hovered = (mouse_x - thumb_x) * (mouse_x - thumb_x) + (mouse_y - thumb_y) * (mouse_y - thumb_y) <= thumb_radius * thumb_radius
 
-  local thumb_color = is_thumb_hovered and Ark.Colors.hexrgb("#5AAFFF") or Ark.Colors.hexrgb("#4A9EFF")
-  thumb_color = Ark.Colors.with_alpha(thumb_color, Ark.Colors.opacity(settings_alpha))
+  local thumb_color = is_thumb_hovered and 0x5AAFFFFF or 0x4A9EFFFF
+  thumb_color = Ark.Colors.WithAlpha(thumb_color, Ark.Colors.Opacity(settings_alpha))
   ImGui.DrawList_AddCircleFilled(draw_list, thumb_x, thumb_y, thumb_radius, thumb_color)
 
   -- Slider interaction
   local is_slider_hovered = mouse_x >= track_x and mouse_x < track_x + slider_width and mouse_y >= track_y - 4 and mouse_y < track_y + track_h + 4
   if is_slider_hovered and ImGui.IsMouseDown(ctx, 0) then
-    local new_quality = math.max(0.1, math.min(1.0, (mouse_x - track_x) / slider_width))
+    -- Map slider position (0-1) back to quality (0.05-0.70)
+    local new_slider_pos = math.max(0, math.min(1.0, (mouse_x - track_x) / slider_width))
+    local new_quality = slider_min + new_slider_pos * (slider_max - slider_min)
     state.set_setting('waveform_quality', new_quality)
     if state.runtime_cache and state.runtime_cache.waveforms then
       state.runtime_cache.waveforms = {}
@@ -193,10 +194,10 @@ function M.draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   end
 
   -- Percentage value
-  local percent_text = string.format("%d%%", (quality * 100) // 1)
+  local percent_text = string.format('%d%%', (quality * 100) // 1)
   local percent_x = track_x + slider_width + 8
   ImGui.DrawList_AddText(draw_list, percent_x, waveform_y + 3,
-    Ark.Colors.with_alpha(Ark.Colors.hexrgb("#AAAAAA"), (settings_alpha * 180) // 1), percent_text)
+    Ark.Colors.WithAlpha(0xAAAAAAFF, (settings_alpha * 180) // 1), percent_text)
 
   ImGui.PopStyleVar(ctx)
 
@@ -206,8 +207,8 @@ function M.draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
 
   local waveform_filled = state.settings.waveform_filled
   if waveform_filled == nil then waveform_filled = true end
-  checkbox(ctx, "waveform_filled",
-    "Fill",
+  checkbox(ctx, 'waveform_filled',
+    'Fill',
     waveform_filled, settings_alpha,
     function()
       state.set_setting('waveform_filled', not waveform_filled)
@@ -218,28 +219,36 @@ function M.draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   )
   ImGui.SameLine(ctx, 0, spacing)
 
-  local waveform_zero_line = state.settings.waveform_zero_line or false
-  checkbox(ctx, "waveform_zero_line",
-    "Zero Line",
-    waveform_zero_line, settings_alpha,
-    function() state.set_setting('waveform_zero_line', not waveform_zero_line) end
-  )
-  ImGui.SameLine(ctx, 0, spacing)
 
   local show_duration = state.settings.show_duration
   if show_duration == nil then show_duration = true end
-  checkbox(ctx, "show_duration",
-    "Show Duration",
+  checkbox(ctx, 'show_duration',
+    'Show Duration',
     show_duration, settings_alpha,
     function() state.set_setting('show_duration', not show_duration) end
   )
   ImGui.SameLine(ctx, 0, spacing)
 
   local auto_preview = state.settings.auto_preview_on_hover or false
-  checkbox(ctx, "auto_preview_on_hover",
-    "Auto-Preview on Hover",
+  checkbox(ctx, 'auto_preview_on_hover',
+    'Auto-Preview on Hover',
     auto_preview, settings_alpha,
     function() state.set_setting('auto_preview_on_hover', not auto_preview) end
+  )
+  ImGui.SameLine(ctx, 0, spacing)
+
+  -- Profiler checkboxes (outputs to console)
+  checkbox(ctx, 'profile_audio',
+    'Profile Audio',
+    AudioRenderer.profile_enabled, settings_alpha,
+    function() AudioRenderer.profile_enabled = not AudioRenderer.profile_enabled end
+  )
+  ImGui.SameLine(ctx, 0, spacing)
+
+  checkbox(ctx, 'profile_midi',
+    'Profile MIDI',
+    MidiRenderer.profile_enabled, settings_alpha,
+    function() MidiRenderer.profile_enabled = not MidiRenderer.profile_enabled end
   )
 end
 

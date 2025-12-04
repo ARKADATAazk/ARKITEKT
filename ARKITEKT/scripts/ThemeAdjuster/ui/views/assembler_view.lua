@@ -2,18 +2,29 @@
 -- ThemeAdjuster/ui/views/assembler_view.lua
 -- Assembler tab with Panel + package grid
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local PackageTilesGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
 local PackageManager = require('ThemeAdjuster.data.packages.manager')
 local Config = require('ThemeAdjuster.app.config')
 local Theme = require('ThemeAdjuster.domain.theme.reader')
 local PackageModal = require('ThemeAdjuster.ui.views.package_modal')
-local hexrgb = Ark.Colors.hexrgb
-
+local ResultModal = require('ThemeAdjuster.ui.views.result_modal')
+local ImageMap = require('ThemeAdjuster.domain.packages.image_map')
+local Renderer = require('arkitekt.gui.widgets.media.package_tiles.renderer')
+local Draw = require('arkitekt.gui.draw.primitives')
+local Colors = require('arkitekt.core.colors')
 local M = {}
 local AssemblerView = {}
 AssemblerView.__index = AssemblerView
+
+-- Result tile colors (golden/amber theme)
+local RESULT_BG_COLOR = 0x3D3520FF      -- Dark amber background
+local RESULT_BG_HOVER = 0x4A4228FF      -- Slightly lighter on hover
+local RESULT_BORDER_COLOR = 0xD4A84AFF  -- Golden border
+local RESULT_TEXT_PRIMARY = 0xFFFFFFFF
+local RESULT_TEXT_SECONDARY = 0xD4A84AFF
+local RESULT_TEXT_DIM = 0x999999FF
 
 function M.new(State, AppConfig, settings)
   local self = setmetatable({
@@ -25,6 +36,7 @@ function M.new(State, AppConfig, settings)
     package_model = nil,
     theme_model = nil,
     package_modal = nil,
+    result_modal = nil,
 
     -- ZIP linking state
     selected_zip_index = 0,
@@ -36,6 +48,16 @@ function M.new(State, AppConfig, settings)
 
   -- Create package modal
   self.package_modal = PackageModal.new(State, settings)
+
+  -- Create result modal with pin change callback
+  self.result_modal = ResultModal.new(State, settings, {
+    on_pin_changed = function(key, package_id)
+      -- Re-resolve packages with updated pins
+      State.update_resolution()
+      -- Refresh the modal's cache
+      self.result_modal:refresh()
+    end,
+  })
 
   -- Create package model (adapter for the grid)
   self.package_model = self:create_package_model()
@@ -118,8 +140,8 @@ function M.new(State, AppConfig, settings)
   container_config.footer = {
     enabled = true,
     height = 32,
-    bg_color = hexrgb("#1E1E1E"),
-    border_color = hexrgb("#000000"),
+    bg_color = 0x1E1E1EFF,
+    border_color = 0x000000FF,
     elements = {
       -- Left: ZIP status (flex to take remaining space)
       {
@@ -696,13 +718,13 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
 
   -- Show status indicator
   if status == "needs-link" then
-    ImGui.TextColored(ctx, hexrgb("#E04141"), "NOT LINKED")
+    ImGui.TextColored(ctx, 0xE04141FF, "NOT LINKED")
   elseif status == "linked-ready" or status == "zip-ready" then
-    ImGui.TextColored(ctx, hexrgb("#41E0A3"), "ZIP")
+    ImGui.TextColored(ctx, 0x41E0A3FF, "ZIP")
   elseif status == "linked-needs-build" then
-    ImGui.TextColored(ctx, hexrgb("#E0B341"), "BUILD NEEDED")
+    ImGui.TextColored(ctx, 0xE0B341FF, "BUILD NEEDED")
   elseif status == "direct" then
-    ImGui.TextColored(ctx, hexrgb("#41E0A3"), "DIRECT")
+    ImGui.TextColored(ctx, 0x41E0A3FF, "DIRECT")
   end
 
   -- Show inline ZIP picker for ZIP modes
@@ -732,7 +754,7 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
 
       -- Set current value before drawing
       if current_value then
-        Ark.Combo.set_value("zip_picker_state", current_value)
+        Ark.Combo.SetValue("zip_picker_state", current_value)
       end
 
       -- Position for dropdown (on same line after status)
@@ -744,8 +766,8 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
       -- Draw dropdown using arkitekt widget
       local dropdown_width = 220
       local dropdown_height = 20
-      local result = Ark.Combo.draw(ctx, {
-        id = "zip_picker",
+      local result = Ark.Combo(ctx, {
+        id = 'zip_picker',
         draw_list = dl,
         x = screen_x,
         y = screen_y,
@@ -794,6 +816,93 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
   end
 end
 
+function AssemblerView:draw_result_bar(ctx)
+  local stats = ImageMap.get_stats()
+  local cfg = Renderer.CONFIG
+
+  -- Spacing above
+  ImGui.Dummy(ctx, 0, 3)
+
+  -- Bar dimensions
+  local BAR_HEIGHT = 28
+  local MARGIN_X = 12  -- Match grid gap
+  local PADDING_X = 10  -- Internal content padding
+
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
+  local x1, y1 = ImGui.GetCursorScreenPos(ctx)
+
+  -- Inset bar by margin to align with grid tiles
+  x1 = x1 + MARGIN_X
+  local bar_w = avail_w - MARGIN_X * 2
+  local x2, y2 = x1 + bar_w, y1 + BAR_HEIGHT
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local rect = {x1, y1, x2, y2}
+
+  -- Invisible button for click detection (full width for easier clicking)
+  ImGui.InvisibleButton(ctx, '##result_bar', avail_w, BAR_HEIGHT)
+  local clicked = ImGui.IsItemClicked(ctx)
+  local hovered = ImGui.IsItemHovered(ctx)
+
+  -- Background (same as package tiles)
+  local bg_color = hovered and RESULT_BG_HOVER or RESULT_BG_COLOR
+  Renderer.TileRenderer.background(dl, rect, bg_color, hovered and 0.3 or 0)
+
+  -- Border (same as package tiles)
+  local border_color = hovered and 0xFFCC55FF or RESULT_BORDER_COLOR
+  Draw.Rect(dl, x1, y1, x2, y2, border_color, cfg.tile.rounding, cfg.colors.border.thickness)
+
+  -- Content vertical center
+  local content_y = y1 + (BAR_HEIGHT - 14) / 2 - 1
+
+  -- "RESULT" title
+  local text_x = x1 + PADDING_X
+  Draw.Text(dl, text_x, content_y, RESULT_TEXT_PRIMARY, 'RESULT')
+
+  -- Stats from ImageMap (live data)
+  local providers = stats.active_providers or {}
+  local provider_count = 0
+  for _ in pairs(providers) do provider_count = provider_count + 1 end
+  local stats_text = string.format('%d keys • %d sources', stats.total_keys or 0, provider_count)
+  local result_w = ImGui.CalcTextSize(ctx, 'RESULT   ')
+  Draw.Text(dl, text_x + result_w, content_y, RESULT_TEXT_DIM, stats_text)
+
+  -- "[View Details]" button (right side)
+  local btn_text = '[View Details]'
+  local btn_w = ImGui.CalcTextSize(ctx, btn_text)
+  local btn_x = x2 - PADDING_X - btn_w
+  Draw.Text(dl, btn_x, content_y, hovered and 0xFFCC55FF or RESULT_TEXT_SECONDARY, btn_text)
+
+  -- Handle click
+  if clicked then
+    self.result_modal:show()
+  end
+
+  -- Hover cursor
+  if hovered then
+    ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_Hand)
+  end
+
+end
+
+-- Calculate tile height (same formula as grid.lua)
+local function calculate_tile_height(avail_w, min_col_w, gap, max_height)
+  local cols = math.max(1, (avail_w + gap) // (min_col_w + gap))
+  local inner_w = math.max(0, avail_w - gap * (cols + 1))
+  local base_w_total = min_col_w * cols
+  local extra = inner_w - base_w_total
+
+  local base_w = min_col_w
+  if cols == 1 then
+    base_w = math.max(80, inner_w)
+    extra = 0
+  end
+
+  local per_col_add = (cols > 0) and (math.max(0, extra) / cols) // 1 or 0
+  local responsive_height = ((base_w + per_col_add) * 0.65) // 1
+
+  return math.min(responsive_height, max_height)
+end
+
 function AssemblerView:draw(ctx, shell_state)
   local visible_packages = self.package_model:visible()
 
@@ -807,7 +916,10 @@ function AssemblerView:draw(ctx, shell_state)
         ImGui.BulletText(ctx, 'Enable "Demo Mode" to preview the interface.')
       end
     else
-      -- Draw grid
+      -- Draw result bar above grid
+      self:draw_result_bar(ctx)
+
+      -- Draw grid (package tiles)
       self.grid:draw(ctx)
     end
   end
@@ -817,6 +929,12 @@ function AssemblerView:draw(ctx, shell_state)
   if self.package_modal then
     local window = shell_state and shell_state.window
     self.package_modal:draw(ctx, window)
+  end
+
+  -- Draw result modal (outside panel, as overlay)
+  if self.result_modal then
+    local window = shell_state and shell_state.window
+    self.result_modal:draw(ctx, window)
   end
 end
 

@@ -7,10 +7,10 @@ The ARKITEKT namespace provides ImGui-style access to all widgets and utilities 
 ```lua
 local Ark = require('arkitekt')
 
--- Access widgets directly
-Ark.Button.draw(ctx, {label = "Click"})
-Ark.Checkbox.draw(ctx, {checked = true})
-Ark.Panel.draw(ctx, {title = "Panel", body = ...})
+-- Access widgets directly (ImGui-style callable)
+Ark.Button(ctx, 'Click')
+Ark.Checkbox(ctx, {label = 'Enable', is_checked = true})
+Ark.Panel(ctx, {title = 'Panel', body = ...})
 
 -- Access utilities
 local color = Ark.Colors.hex_to_rgba("#3B82F6")
@@ -24,7 +24,7 @@ Following ImGui's namespace pattern:
 - **Single import**: `local Ark = require('arkitekt')` gives access to everything
 - **Lazy loading**: Modules only load when first accessed
 - **No circular dependencies**: Widgets use direct requires internally
-- **Familiar syntax**: `Ark.Widget.method()` mirrors `ImGui.Widget()`
+- **Callable modules**: `Ark.Widget(ctx, ...)` mirrors `ImGui.Widget(ctx, ...)`
 
 ## Available Modules
 
@@ -65,8 +65,8 @@ local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
 local Panel = require('arkitekt.gui.widgets.containers.panel')
 local Colors = require('arkitekt.core.colors')
 
-Button.draw(ctx, {label = "Click"})
-Checkbox.draw(ctx, {checked = true})
+Button(ctx, 'Click')
+Checkbox(ctx, {is_checked = true})
 ```
 
 **Pros**: Explicit, LSP-friendly, minimal overhead
@@ -76,8 +76,8 @@ Checkbox.draw(ctx, {checked = true})
 ```lua
 local Ark = require('arkitekt')
 
-Ark.Button.draw(ctx, {label = "Click"})
-Ark.Checkbox.draw(ctx, {checked = true})
+Ark.Button(ctx, 'Click')
+Ark.Checkbox(ctx, {is_checked = true})
 ```
 
 **Pros**: Clean, consistent, one import, lazy loaded
@@ -92,9 +92,9 @@ Modules are loaded **only when first accessed**:
 local Ark = require('arkitekt')
 -- At this point: NO widgets are loaded yet!
 
-Ark.Button.draw(...)  -- Now button.lua loads
-Ark.Button.draw(...)  -- Cached! No reload
-Ark.Checkbox.draw(...) -- Now checkbox.lua loads
+Ark.Button(ctx, 'Click')     -- Now button.lua loads
+Ark.Button(ctx, 'Again')     -- Cached! No reload
+Ark.Checkbox(ctx, {...})     -- Now checkbox.lua loads
 ```
 
 This means:
@@ -122,7 +122,7 @@ Invalid widgets produce clear errors:
 ```lua
 local Ark = require('arkitekt')
 
-Ark.InvalidWidget.draw(...)
+Ark.InvalidWidget(ctx, {...})
 -- Error: Ark.InvalidWidget is not a valid widget.
 --        See MODULES table in arkitekt/init.lua
 ```
@@ -135,12 +135,12 @@ Use `Ark.*` namespace everywhere:
 ```lua
 local Ark = require('arkitekt')
 
--- Widgets
-Ark.Button.draw(ctx, {...})
-Ark.Panel.draw(ctx, {...})
+-- Widgets (callable, ImGui-style)
+Ark.Button(ctx, 'Click')
+Ark.Panel(ctx, {...})
 
 -- Utilities
-local color = Ark.Colors.hex_to_rgba("#FF0000")
+local color = Ark.Colors.hex_to_rgba('#FF0000')
 local eased = Ark.Easing.ease_in_out_quad(t)
 ```
 
@@ -155,8 +155,8 @@ local Button = require('arkitekt.gui.widgets.primitives.button')
 local Ark = require('arkitekt')
 
 -- Both work fine together!
-Button.draw(ctx, {...})
-Ark.Checkbox.draw(ctx, {...})
+Button(ctx, {...})
+Ark.Checkbox(ctx, {...})
 ```
 
 ## Why "Ark"?
@@ -178,8 +178,8 @@ local Ark = require('arkitekt')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
 -- These are IDENTICAL after first access:
-Ark.Button.draw(...)    -- Just a table lookup!
-Button.draw(...)        -- Direct reference
+Ark.Button(ctx, ...)    -- Just a table lookup + __call!
+Button(ctx, ...)        -- Direct reference + __call
 ```
 
 ## Examples

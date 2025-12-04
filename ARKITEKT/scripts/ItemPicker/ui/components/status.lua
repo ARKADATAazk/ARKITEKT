@@ -2,10 +2,10 @@
 -- ItemPicker/ui/components/status.lua
 -- Status bar showing selection info and tips
 
-local ImGui = require('arkitekt.platform.imgui')
-local Constants = require('ItemPicker.defs.constants')
-local Strings = require('ItemPicker.defs.strings')
-local Defaults = require('ItemPicker.defs.defaults')
+local ImGui = require('arkitekt.core.imgui')
+local Constants = require('ItemPicker.config.constants')
+local Strings = require('ItemPicker.config.strings')
+local Defaults = require('ItemPicker.config.defaults')
 
 local M = {}
 local StatusBar = {}
@@ -50,7 +50,7 @@ function StatusBar:render(ctx)
                       (filtered_midi and filtered_midi ~= total_midi)
 
   -- Left side: Selection info, loading progress, and preview status
-  local status_text = ""
+  local status_text = ''
 
   -- Loading status (highest priority)
   if self.state.is_loading then
@@ -70,7 +70,7 @@ function StatusBar:render(ctx)
   -- Preview status
   elseif self.state.previewing and self.state.previewing ~= 0 and self.state.preview_item then
     local take = reaper.GetActiveTake(self.state.preview_item)
-    local item_name = take and reaper.GetTakeName(take) or "Item"
+    local item_name = take and reaper.GetTakeName(take) or 'Item'
     status_text = string.format(Strings.STATUS.preview_format, item_name)
     ImGui.Text(ctx, status_text)
   elseif selected_audio > 0 or selected_midi > 0 then
@@ -81,13 +81,13 @@ function StatusBar:render(ctx)
     if selected_midi > 0 then
       parts[#parts + 1] = string.format(Strings.STATUS.selection_midi, selected_midi)
     end
-    status_text = string.format(Strings.STATUS.selection_combined, table.concat(parts, ", "))
+    status_text = string.format(Strings.STATUS.selection_combined, table.concat(parts, ', '))
     ImGui.Text(ctx, status_text)
   elseif is_filtered then
     -- Show filtered count when filters are active
     local visible_audio = filtered_audio or total_audio
     local visible_midi = filtered_midi or total_midi
-    status_text = string.format("%d/%d audio, %d/%d midi visible",
+    status_text = string.format('%d/%d audio, %d/%d midi visible',
       visible_audio, total_audio, visible_midi, total_midi)
     ImGui.TextColored(ctx, Constants.COLORS.HINT, status_text)
   else

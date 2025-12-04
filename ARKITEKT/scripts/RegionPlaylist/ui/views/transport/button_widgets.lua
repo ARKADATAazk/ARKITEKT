@@ -2,13 +2,10 @@
 -- RegionPlaylist/ui/views/transport/button_widgets.lua
 -- Transport button widgets (view mode, toggle buttons, jump controls)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')
-local Style = require('arkitekt.gui.style')
-local hexrgb = Ark.Colors.hexrgb
-
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
 local min = math.min
@@ -26,7 +23,7 @@ function M.ViewModeButton_new(config)
 end
 
 function ViewModeButton:draw_icon(ctx, dl, x, y, mode)
-  local color = self.config.icon_color or Style.COLORS.TEXT_DIMMED
+  local color = self.config.icon_color or Ark.Style.COLORS.TEXT_DIMMED
   local icon_size = 16  -- Smaller icon for 30px button (was 20px for 32px button)
 
   if mode == 'vertical' then
@@ -67,10 +64,10 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
     self.hover_alpha = max(0, min(1, self.hover_alpha))
   end
 
-  -- Use dynamic colors from Style.COLORS
-  local C = Style.COLORS
-  local bg = Ark.Colors.lerp(cfg.bg_color or C.BG_BASE, cfg.bg_hover or C.BG_HOVER, self.hover_alpha)
-  local border_inner = Ark.Colors.lerp(cfg.border_inner or C.BORDER_INNER, cfg.border_hover or C.BORDER_HOVER, self.hover_alpha)
+  -- Use dynamic colors from Ark.Style.COLORS
+  local C = Ark.Style.COLORS
+  local bg = Ark.Colors.Lerp(cfg.bg_color or C.BG_BASE, cfg.bg_hover or C.BG_HOVER, self.hover_alpha)
+  local border_inner = Ark.Colors.Lerp(cfg.border_inner or C.BORDER_INNER, cfg.border_hover or C.BORDER_HOVER, self.hover_alpha)
   local border_outer = cfg.border_outer or C.BORDER_OUTER
 
   local rounding = cfg.rounding or 4
@@ -93,7 +90,7 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
       end
     else
       ImGui.SetCursorScreenPos(ctx, x, y)
-      ImGui.InvisibleButton(ctx, "##view_mode_toggle", btn_size, btn_size)
+      ImGui.InvisibleButton(ctx, '##view_mode_toggle', btn_size, btn_size)
 
       if ImGui.IsItemClicked(ctx, 0) and on_click then
         on_click()
@@ -102,7 +99,7 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
 
     -- Only show tooltip if not blocking
     if is_hovered then
-      local tooltip = current_mode == 'horizontal' and "Switch to List Mode" or "Switch to Timeline Mode"
+      local tooltip = current_mode == 'horizontal' and 'Switch to List Mode' or 'Switch to Timeline Mode'
       Tooltip.show(ctx, tooltip)
     end
   end
@@ -138,13 +135,13 @@ function SimpleToggleButton:draw(ctx, x, y, state, on_click, color)
   self.hover_alpha = self.hover_alpha + (target - self.hover_alpha) * 12.0 * dt
   self.hover_alpha = max(0, min(1, self.hover_alpha))
 
-  -- Use dynamic colors from Style.COLORS
-  local C = Style.COLORS
+  -- Use dynamic colors from Ark.Style.COLORS
+  local C = Ark.Style.COLORS
   local bg_off = C.BG_BASE
   local bg_off_hover = C.BG_HOVER
   local accent = color or C.ACCENT_PRIMARY
-  local bg_on = Ark.Colors.with_opacity(accent, 0.25)
-  local bg_on_hover = Ark.Colors.with_opacity(accent, 0.31)
+  local bg_on = Ark.Colors.WithOpacity(accent, 0.25)
+  local bg_on_hover = Ark.Colors.WithOpacity(accent, 0.31)
 
   local bg = state and (is_hovered and bg_on_hover or bg_on) or (is_hovered and bg_off_hover or bg_off)
 

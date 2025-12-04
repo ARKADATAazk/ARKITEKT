@@ -8,9 +8,9 @@
 --   -- Create group structure
 --   local groups = {
 --     TileGroup.create_group({
---       id = "group_1",
---       name = "Custom Meters",
---       color = "#FF6600",
+--       id = 'group_1',
+--       name = 'Custom Meters',
+--       color = '#FF6600',
 --       collapsed = false,
 --       items = {item1, item2, item3}
 --     }),
@@ -44,9 +44,9 @@ local M = {}
 
 -- Item type markers
 M.ITEM_TYPE = {
-  GROUP_HEADER = "__tile_group_header__",
-  GROUPED_ITEM = "__tile_group_item__",
-  REGULAR_ITEM = "__regular_item__",
+  GROUP_HEADER = '__tile_group_header__',
+  GROUPED_ITEM = '__tile_group_item__',
+  REGULAR_ITEM = '__regular_item__',
 }
 
 --- Creates a new tile group structure
@@ -54,8 +54,8 @@ M.ITEM_TYPE = {
 --- @return table - Group structure
 function M.create_group(opts)
   return {
-    id = opts.id or ("group_" .. tostring(math.random(100000))),
-    name = opts.name or "Unnamed Group",
+    id = opts.id or ('group_' .. tostring(math.random(100000))),
+    name = opts.name or 'Unnamed Group',
     color = opts.color,
     collapsed = opts.collapsed or false,
     items = opts.items or {},
@@ -182,7 +182,7 @@ end
 --- @return boolean - True if clicked
 function M.render_header(ctx, rect, group_header, state, config)
   if not M.is_group_header(group_header) then
-    error("TileGroup.render_header: item is not a group header")
+    error('TileGroup.render_header: item is not a group header')
   end
 
   return Header.render(ctx, rect, group_header, state, config)

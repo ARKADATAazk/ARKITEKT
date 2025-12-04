@@ -1,11 +1,43 @@
 -- @noindex
 -- RegionPlaylist/ui/tiles/active_grid_factory.lua
--- Opts-based grid factory for active playlist tiles
+-- Active Grid Configuration Factory
+--
+-- PURPOSE:
+-- Builds opts table configuration for the active playlist Grid widget.
+-- This is an adapter between app state (coordinator) and ARKITEKT Grid API.
+--
+-- RESPONSIBILITIES:
+--   - Map app state to Grid widget parameters (items, height, column width)
+--   - Wire interaction callbacks (drag, drop, reorder, select, delete)
+--   - Configure animations (spawn, destroy, hover)
+--   - Set up external drag handling (from pool grid)
+--   - Configure visual effects (dim, ghost, drop indicators)
+--
+-- PATTERN: Factory Function
+-- Instead of a Grid subclass, this module exports create_opts(rt, config)
+-- which returns a fresh opts table each frame. The coordinator calls this
+-- per frame and passes opts to Ark.Grid(ctx, opts).
+--
+-- WHY FACTORY?
+-- - Grid configuration is complex (400+ lines)
+-- - Separates concerns: state management (coordinator) vs widget config (factory)
+-- - Keeps coordinator.lua readable
+-- - Follows ARKITEKT opts-based API pattern
+--
+-- FLOW:
+-- coordinator_render.draw_active()
+--   → ActiveGridFactory.create_opts(self, self.config)
+--   → Returns opts table
+--   → Ark.Grid(ctx, opts)
+--   → Grid renders with behaviors, animations, etc.
+--
+-- SEE ALSO:
+--   - ui/tiles/coordinator.lua (orchestrator that uses this factory)
+--   - ui/tiles/renderers/active.lua (tile rendering implementation)
+--   - ui/tiles/pool_grid_factory.lua (similar factory for pool grid)
 
 local Ark = require('arkitekt')
 local ActiveTile = require('RegionPlaylist.ui.tiles.renderers.active')
-local hexrgb = Ark.Colors.hexrgb
-
 local M = {}
 
 -- Handle delete with destroy animation
@@ -44,29 +76,23 @@ local function create_behaviors(rt)
     ['click:right'] = function(grid, key, selected_keys)
       if not rt.on_active_toggle_enabled then return end
 
-      if #selected_keys > 1 then
-        local playlist_items = grid.get_items()
-        local item_map = {}
-        for _, item in ipairs(playlist_items) do
-          item_map[item.key] = item
-        end
+      local playlist_items = grid.get_items()
+      local item_map = {}
+      for _, item in ipairs(playlist_items) do
+        item_map[item.key] = item
+      end
 
-        local clicked_item = item_map[key]
-        if clicked_item then
-          local new_state = not (clicked_item.enabled ~= false)
-          for _, sel_key in ipairs(selected_keys) do
-            rt.on_active_toggle_enabled(sel_key, new_state)
-          end
-        end
+      local clicked_item = item_map[key]
+      if not clicked_item then return end
+
+      local new_state = not (clicked_item.enabled ~= false)
+
+      if #selected_keys > 1 and rt.on_active_toggle_enabled_batch then
+        -- Batch operation: single undo/persist/flatten
+        rt.on_active_toggle_enabled_batch(selected_keys, new_state)
       else
-        local playlist_items = grid.get_items()
-        for _, item in ipairs(playlist_items) do
-          if item.key == key then
-            local new_state = not (item.enabled ~= false)
-            rt.on_active_toggle_enabled(key, new_state)
-            break
-          end
-        end
+        -- Single item
+        rt.on_active_toggle_enabled(key, new_state)
       end
     end,
 
@@ -76,6 +102,27 @@ local function create_behaviors(rt)
 
     -- SPACE: empty for now
     space = function(grid, selected_keys)
+    end,
+
+    -- Mouse wheel resize (CTRL = vertical, ALT = horizontal)
+    wheel_resize = function(grid, direction, delta)
+      if direction == 'vertical' then
+        -- Adjust tile height (use override to bypass responsive calculation)
+        local step = 12  -- pixels per scroll tick
+        local current = rt._active_tile_height_override or rt._active_tile_height or 72
+        local new_height = current + (delta * step)
+        -- Clamp between 32 and 80
+        rt._active_tile_height_override = math.max(32, math.min(80, new_height))
+      else
+        -- Adjust column width (larger step for width changes)
+        local step = 36  -- pixels per scroll tick
+        local current = rt._active_col_width or ActiveTile.CONFIG.tile_width
+        local new_width = current + (delta * step)
+        -- Clamp between 80 and 400
+        rt._active_col_width = math.max(80, math.min(400, new_width))
+        -- Update the min_col_w function
+        rt._active_min_col_w_fn = function() return rt._active_col_width end
+      end
     end,
 
     reorder = function(grid, new_order)
@@ -118,17 +165,17 @@ local function create_behaviors(rt)
 
             local parts = {}
             if region_count > 0 then
-              parts[#parts + 1] = string.format("%d region%s", region_count, region_count > 1 and "s" or "")
+              parts[#parts + 1] = string.format('%d region%s', region_count, region_count > 1 and 's' or '')
             end
             if playlist_count > 0 then
-              parts[#parts + 1] = string.format("%d playlist%s", playlist_count, playlist_count > 1 and "s" or "")
+              parts[#parts + 1] = string.format('%d playlist%s', playlist_count, playlist_count > 1 and 's' or '')
             end
 
             if #parts > 0 then
-              local items_text = table.concat(parts, ", ")
+              local items_text = table.concat(parts, ', ')
               local active_playlist = rt.State.get_active_playlist and rt.State.get_active_playlist()
-              local playlist_name = active_playlist and active_playlist.name or "Active Grid"
-              rt.State.set_state_change_notification(string.format("Copied %s within Active Grid (%s)", items_text, playlist_name))
+              local playlist_name = active_playlist and active_playlist.name or 'Active Grid'
+              rt.State.set_state_change_notification(string.format('Copied %s within Active Grid (%s)', items_text, playlist_name))
             end
           end
         end
@@ -167,17 +214,17 @@ local function create_behaviors(rt)
 
             local parts = {}
             if region_count > 0 then
-              parts[#parts + 1] = string.format("%d region%s", region_count, region_count > 1 and "s" or "")
+              parts[#parts + 1] = string.format('%d region%s', region_count, region_count > 1 and 's' or '')
             end
             if playlist_count > 0 then
-              parts[#parts + 1] = string.format("%d playlist%s", playlist_count, playlist_count > 1 and "s" or "")
+              parts[#parts + 1] = string.format('%d playlist%s', playlist_count, playlist_count > 1 and 's' or '')
             end
 
             if #parts > 0 then
-              local items_text = table.concat(parts, ", ")
+              local items_text = table.concat(parts, ', ')
               local active_playlist = rt.State.get_active_playlist and rt.State.get_active_playlist()
-              local playlist_name = active_playlist and active_playlist.name or "Active Grid"
-              rt.State.set_state_change_notification(string.format("Moved %s within Active Grid (%s)", items_text, playlist_name))
+              local playlist_name = active_playlist and active_playlist.name or 'Active Grid'
+              rt.State.set_state_change_notification(string.format('Moved %s within Active Grid (%s)', items_text, playlist_name))
             end
           end
         end
@@ -215,7 +262,7 @@ local function create_behaviors(rt)
         local pool_selected_keys = rt.pool_grid.selection:selected_keys()
 
         for _, key in ipairs(pool_selected_keys) do
-          if key:match("^pool_playlist_") then
+          if key:match('^pool_playlist_') then
             pool_selection_info.playlist_count = pool_selection_info.playlist_count + 1
           else
             pool_selection_info.region_count = pool_selection_info.region_count + 1
@@ -240,12 +287,12 @@ local function create_behaviors(rt)
         if item.key == key then
           -- Get current name
           local current_name
-          if item.type == "playlist" then
+          if item.type == 'playlist' then
             local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.playlist_id)
-            current_name = playlist and playlist.name or "Playlist"
+            current_name = playlist and playlist.name or 'Playlist'
           else
             local region = rt.get_region_by_rid(item.rid)
-            current_name = region and region.name or "Region"
+            current_name = region and region.name or 'Region'
           end
           GridInput.start_inline_edit(grid, key, current_name)
           break
@@ -260,31 +307,38 @@ local function create_behaviors(rt)
       end
     end,
 
-    -- Double-click outside text zone: Move cursor and seek to region/playlist
+    -- Double-click: Start playback or schedule transition
+    -- When stopped: Start playback from this item
+    -- When playing: Schedule transition (skip to item after current ends)
     double_click_seek = function(grid, key)
-      local playlist_items = grid.get_items()
-      for _, item in ipairs(playlist_items) do
-        if item.key == key then
-          if item.type == "playlist" then
-            -- For playlists, seek to the first item in the playlist
-            local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.playlist_id)
-            if playlist and playlist.items and #playlist.items > 0 then
-              local first_item = playlist.items[1]
-              if first_item.rid then
-                local region = rt.get_region_by_rid(first_item.rid)
-                if region and region.start then
-                  reaper.SetEditCurPos(region.start, true, true)
-                end
-              end
-            end
-          else
-            -- For regions, seek to region start
-            local region = rt.get_region_by_rid(item.rid)
-            if region and region.start then
-              reaper.SetEditCurPos(region.start, true, true)
-            end
-          end
-          break
+      local playback_bridge = rt.State and rt.State.bridge
+      if not playback_bridge then return end
+
+      local is_playing = playback_bridge:get_state().is_playing
+
+      if is_playing then
+        -- During playback: Schedule for after current region ends
+        playback_bridge:set_next_item(key)
+      else
+        -- Not playing: Start playback from this item
+        playback_bridge:set_position_by_key(key)
+        playback_bridge:play()
+      end
+    end,
+
+    -- Alt+Double-click: Immediate quantized jump following current quantize rules
+    ['double_click:alt'] = function(grid, key)
+      local playback_bridge = rt.State and rt.State.bridge
+      local is_playing = playback_bridge and playback_bridge:get_state().is_playing
+
+      if is_playing and playback_bridge then
+        -- During playback: Immediate quantized jump (uses saved lookahead setting)
+        playback_bridge:schedule_seek_to_item(key)
+      else
+        -- Not playing: Start playback from this item
+        if playback_bridge then
+          playback_bridge:set_position_by_key(key)
+          playback_bridge:play()
         end
       end
     end,
@@ -301,12 +355,12 @@ local function create_behaviors(rt)
         for _, item in ipairs(playlist_items) do
           if item.key == key then
             local current_name
-            if item.type == "playlist" then
+            if item.type == 'playlist' then
               local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.playlist_id)
-              current_name = playlist and playlist.name or "Playlist"
+              current_name = playlist and playlist.name or 'Playlist'
             else
               local region = rt.get_region_by_rid(item.rid)
-              current_name = region and region.name or "Region"
+              current_name = region and region.name or 'Region'
             end
             GridInput.start_inline_edit(grid, key, current_name)
             break
@@ -320,7 +374,7 @@ local function create_behaviors(rt)
             rt.on_active_batch_rename(selected_keys, pattern)
           end
         end, {
-          item_type = "regions",  -- Label for Region Playlist items
+          item_type = 'regions',  -- Label for Region Playlist items
           on_rename_and_recolor = function(pattern, color)
             if rt.on_active_batch_rename_and_recolor then
               rt.on_active_batch_rename_and_recolor(selected_keys, pattern, color)
@@ -367,9 +421,22 @@ end
 local function create_render_tile(rt, tile_config)
   return function(ctx, rect, item, state, grid)
     local tile_height = rect[4] - rect[2]
-    ActiveTile.render(ctx, rect, item, state, rt.get_region_by_rid, rt.active_animator,
-                    rt.on_repeat_cycle, rt.hover_config, tile_height, tile_config.border_thickness,
-                    rt.app_bridge, rt.get_playlist_by_id, grid)
+    ActiveTile.render({
+      ctx = ctx,
+      rect = rect,
+      item = item,
+      state = state,
+      get_region_by_rid = rt.get_region_by_rid,
+      animator = rt.active_animator,
+      on_repeat_cycle = rt.on_repeat_cycle,
+      hover_config = rt.hover_config,
+      tile_height = tile_height,
+      border_thickness = tile_config.border_thickness,
+      rounding = rt._active_rounding,
+      bridge = rt.app_bridge,
+      get_playlist_by_id = rt.get_playlist_by_id,
+      grid = grid,
+    })
   end
 end
 
@@ -383,8 +450,8 @@ function M.create_opts(rt, config)
   local base_tile_height = config.base_tile_height_active or 72
   local tile_config = config.tile_config or { border_thickness = 0.5, rounding = 6 }
   local dim_config = config.dim_config or {
-    fill_color = hexrgb("#00000088"),
-    stroke_color = hexrgb("#FFFFFF33"),
+    fill_color = 0x00000088,
+    stroke_color = 0xFFFFFF33,
     stroke_thickness = 1.5,
     rounding = 6,
   }
@@ -393,8 +460,8 @@ function M.create_opts(rt, config)
   local padding = config.container and config.container.padding or 8
 
   return {
-    id = "active_grid",
-    gap = ActiveTile.CONFIG.gap,
+    id = 'active_grid',
+    gap = rt._active_gap or ActiveTile.CONFIG.gap,
     min_col_w = rt._active_min_col_w_fn or function() return ActiveTile.CONFIG.tile_width end,
     fixed_tile_h = rt._active_tile_height or base_tile_height,
     items = rt._active_items or {},

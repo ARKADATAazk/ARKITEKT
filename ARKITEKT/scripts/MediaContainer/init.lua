@@ -2,9 +2,9 @@
 -- MediaContainer/init.lua
 -- Main initialization and deferred loop for media container sync
 
-local State = require("MediaContainer.core.app_state")
-local Container = require("MediaContainer.core.container")
-local Overlay = require("MediaContainer.ui.overlay")
+local State = require('MediaContainer.core.app_state')
+local Container = require('MediaContainer.core.container')
+local Overlay = require('MediaContainer.ui.overlay')
 
 local M = {}
 
@@ -18,9 +18,9 @@ function M.initialize()
 end
 
 -- Main update loop - call this from deferred
-function M.update(ctx, draw_list)
+function M.Update(ctx, draw_list)
   -- Check for project changes
-  local project_changed = State.update()
+  local project_changed = State.Update()
   if project_changed then
     return
   end

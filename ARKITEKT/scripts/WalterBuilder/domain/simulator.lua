@@ -40,7 +40,7 @@ function M.compute_delta(element, size1, size2)
 end
 
 -- Get attachment info for visualization
--- Returns which edges are "attached" (will move/stretch)
+-- Returns which edges are 'attached' (will move/stretch)
 function M.get_attachment_info(element)
   local c = element.coords
   return {
@@ -70,58 +70,58 @@ function M.classify_behavior(element)
   local v = element:get_vertical_behavior()
 
   -- Special case: completely fixed
-  if h == "fixed" and v == "fixed" then
+  if h == 'fixed' and v == 'fixed' then
     return {
-      type = "fixed",
-      description = "Fixed size and position",
+      type = 'fixed',
+      description = 'Fixed size and position',
     }
   end
 
   -- Anchored to corner
-  if h == "move" and v == "move" then
+  if h == 'move' and v == 'move' then
     local c = element.coords
-    local h_anchor = c.ls == 1 and "right" or (c.ls == 0.5 and "center" or "left")
-    local v_anchor = c.ts == 1 and "bottom" or (c.ts == 0.5 and "middle" or "top")
+    local h_anchor = c.ls == 1 and 'right' or (c.ls == 0.5 and 'center' or 'left')
+    local v_anchor = c.ts == 1 and 'bottom' or (c.ts == 0.5 and 'middle' or 'top')
     return {
-      type = "anchored",
+      type = 'anchored',
       h_anchor = h_anchor,
       v_anchor = v_anchor,
-      description = string.format("Anchored to %s-%s", v_anchor, h_anchor),
+      description = string.format('Anchored to %s-%s', v_anchor, h_anchor),
     }
   end
 
   -- Stretches horizontally
-  if (h == "stretch_end" or h == "stretch_start") and (v == "fixed" or v == "move") then
+  if (h == 'stretch_end' or h == 'stretch_start') and (v == 'fixed' or v == 'move') then
     return {
-      type = "stretch_horizontal",
-      direction = h == "stretch_end" and "right" or "left",
-      description = "Stretches horizontally",
+      type = 'stretch_horizontal',
+      direction = h == 'stretch_end' and 'right' or 'left',
+      description = 'Stretches horizontally',
     }
   end
 
   -- Stretches vertically
-  if (v == "stretch_end" or v == "stretch_start") and (h == "fixed" or h == "move") then
+  if (v == 'stretch_end' or v == 'stretch_start') and (h == 'fixed' or h == 'move') then
     return {
-      type = "stretch_vertical",
-      direction = v == "stretch_end" and "down" or "up",
-      description = "Stretches vertically",
+      type = 'stretch_vertical',
+      direction = v == 'stretch_end' and 'down' or 'up',
+      description = 'Stretches vertically',
     }
   end
 
   -- Stretches both ways
-  if (h == "stretch_end" or h == "stretch_start") and (v == "stretch_end" or v == "stretch_start") then
+  if (h == 'stretch_end' or h == 'stretch_start') and (v == 'stretch_end' or v == 'stretch_start') then
     return {
-      type = "stretch_both",
-      description = "Stretches both directions",
+      type = 'stretch_both',
+      description = 'Stretches both directions',
     }
   end
 
   -- Complex behavior
   return {
-    type = "complex",
+    type = 'complex',
     h_behavior = h,
     v_behavior = v,
-    description = "Complex resize behavior",
+    description = 'Complex resize behavior',
   }
 end
 

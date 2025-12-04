@@ -2,40 +2,41 @@
 -- TemplateBrowser/ui/views/left_panel/tags_tab.lua
 -- Tags tab: Full tag management
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Tags = require('TemplateBrowser.domain.tags.service')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
 local UI = require('TemplateBrowser.ui.config.constants')
-local Constants = require('TemplateBrowser.defs.constants')
+local Constants = require('TemplateBrowser.config.constants')
 
 local M = {}
 
 -- Draw TAGS content (full tag management)
-function M.draw(ctx, state, config, width, height)
-  -- Header with "+" button
+function M.Draw(ctx, state, config, width, height)
+  -- Header with '+' button
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
 
   -- Position button at the right
   local button_x = width - UI.BUTTON.WIDTH_SMALL - config.PANEL_PADDING * 2
   ImGui.SetCursorPosX(ctx, button_x)
 
-  if Ark.Button.draw_at_cursor(ctx, {
-    label = "+",
+  if Ark.Button(ctx, {
+    id = 'createtag',
+    label = '+',
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
-  }, "createtag") then
+  }).clicked then
     -- Create new tag - prompt for name
     local tag_num = 1
-    local new_tag_name = "Tag " .. tag_num
+    local new_tag_name = 'Tag ' .. tag_num
 
     -- Find unique name
     if state.metadata and state.metadata.tags then
       while state.metadata.tags[new_tag_name] do
         tag_num = tag_num + 1
-        new_tag_name = "Tag " .. tag_num
+        new_tag_name = 'Tag ' .. tag_num
       end
     end
 
@@ -52,7 +53,7 @@ function M.draw(ctx, state, config, width, height)
   ImGui.Spacing(ctx)
 
   -- List all tags using justified layout
-  if Helpers.begin_child_compat(ctx, "TagsList", width - config.PANEL_PADDING * 2, height - 30, false) then
+  if Helpers.begin_child_compat(ctx, 'TagsList', width - config.PANEL_PADDING * 2, height - 30, false) then
     if state.metadata and state.metadata.tags then
       -- Build sorted list of tags
       local tag_items = {}
@@ -70,14 +71,14 @@ function M.draw(ctx, state, config, width, height)
       if #tag_items > 0 then
         -- Check if any tag is being renamed
         local renaming_tag = nil
-        if state.renaming_type == "tag" then
+        if state.renaming_type == 'tag' then
           renaming_tag = state.renaming_item
         end
 
         -- Draw tags using justified chip_list (ACTION style)
         -- Unselected tags at 30% opacity (77 = 0.3 * 255)
         local content_w = ImGui.GetContentRegionAvail(ctx)
-        local clicked_id, _, right_clicked_id = ChipList.draw(ctx, tag_items, {
+        local clicked_id, _, right_clicked_id = ChipList.Draw(ctx, tag_items, {
           justified = true,
           max_stretch_ratio = 1.5,
           style = Chip.STYLE.ACTION,
@@ -96,7 +97,7 @@ function M.draw(ctx, state, config, width, height)
           -- Check for double-click
           if ImGui.IsMouseDoubleClicked(ctx, 0) then
             state.renaming_item = clicked_id
-            state.renaming_type = "tag"
+            state.renaming_type = 'tag'
             state.rename_buffer = clicked_id
           end
         end
@@ -109,21 +110,22 @@ function M.draw(ctx, state, config, width, height)
         -- Handle rename mode separately (show input field overlay)
         if renaming_tag then
           -- Initialize field with current name
-          if Ark.InputText.get_text("tag_rename_" .. renaming_tag) == "" then
-            Ark.InputText.set_text("tag_rename_" .. renaming_tag, state.rename_buffer)
+          if Ark.InputText.GetText('tag_rename_' .. renaming_tag) == '' then
+            Ark.InputText.SetText('tag_rename_' .. renaming_tag, state.rename_buffer)
           end
 
           ImGui.Spacing(ctx)
-          ImGui.Text(ctx, "Renaming: " .. renaming_tag)
+          ImGui.Text(ctx, 'Renaming: ' .. renaming_tag)
 
-          local changed, new_name = Ark.InputText.draw_at_cursor(ctx, {
+          local result = Ark.InputText(ctx, {
+            id = 'tag_rename_' .. renaming_tag,
             width = -1,
             height = UI.CHIP.HEIGHT_SMALL,
             text = state.rename_buffer,
-          }, "tag_rename_" .. renaming_tag)
+          })
 
-          if changed then
-            state.rename_buffer = new_name
+          if result.changed then
+            state.rename_buffer = result.value
           end
 
           -- Auto-focus on first frame
@@ -133,7 +135,7 @@ function M.draw(ctx, state, config, width, height)
 
           -- Commit on Enter or deactivate
           if ImGui.IsItemDeactivatedAfterEdit(ctx) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
-            if state.rename_buffer ~= "" and state.rename_buffer ~= renaming_tag then
+            if state.rename_buffer ~= '' and state.rename_buffer ~= renaming_tag then
               -- Rename tag
               Tags.rename_tag(state.metadata, renaming_tag, state.rename_buffer)
               local Persistence = require('TemplateBrowser.data.storage')
@@ -141,19 +143,19 @@ function M.draw(ctx, state, config, width, height)
             end
             state.renaming_item = nil
             state.renaming_type = nil
-            state.rename_buffer = ""
+            state.rename_buffer = ''
           end
 
           -- Cancel on Escape
           if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
             state.renaming_item = nil
             state.renaming_type = nil
-            state.rename_buffer = ""
+            state.rename_buffer = ''
           end
         end
       end
     else
-      ImGui.TextDisabled(ctx, "No tags yet")
+      ImGui.TextDisabled(ctx, 'No tags yet')
     end
 
     ImGui.EndChild(ctx)

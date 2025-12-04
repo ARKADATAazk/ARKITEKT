@@ -10,29 +10,29 @@ local M = {}
 -- Create a new tag
 function M.create_tag(metadata, tag_name, color)
   if metadata.tags[tag_name] then
-    Logger.warn("TAGS", "Tag already exists: %s", tag_name)
+    Logger.warn('TAGS', 'Tag already exists: %s', tag_name)
     return false
   end
 
   metadata.tags[tag_name] = {
     name = tag_name,
-    color = color or Ark.Colors.hexrgb("#646464"),  -- Default dark grey
+    color = color or 0x646464FF,  -- Default dark grey
     created = os.time()
   }
 
-  Logger.info("TAGS", "Created tag: %s", tag_name)
+  Logger.info('TAGS', 'Created tag: %s', tag_name)
   return true
 end
 
 -- Rename a tag
 function M.rename_tag(metadata, old_name, new_name)
   if not metadata.tags[old_name] then
-    Logger.warn("TAGS", "Tag not found: %s", old_name)
+    Logger.warn('TAGS', 'Tag not found: %s', old_name)
     return false
   end
 
   if metadata.tags[new_name] then
-    Logger.warn("TAGS", "Tag already exists: %s", new_name)
+    Logger.warn('TAGS', 'Tag already exists: %s', new_name)
     return false
   end
 
@@ -64,7 +64,7 @@ function M.rename_tag(metadata, old_name, new_name)
     end
   end
 
-  Logger.info("TAGS", "Renamed tag: %s -> %s", old_name, new_name)
+  Logger.info('TAGS', 'Renamed tag: %s -> %s', old_name, new_name)
   return true
 end
 
@@ -97,7 +97,7 @@ function M.delete_tag(metadata, tag_name)
   end
 
   metadata.tags[tag_name] = nil
-  Logger.info("TAGS", "Deleted tag: %s", tag_name)
+  Logger.info('TAGS', 'Deleted tag: %s', tag_name)
   return true
 end
 
@@ -105,12 +105,12 @@ end
 function M.add_tag_to_template(metadata, template_uuid, tag_name)
   local tmpl = metadata.templates[template_uuid]
   if not tmpl then
-    Logger.warn("TAGS", "Template not found: %s", template_uuid)
+    Logger.warn('TAGS', 'Template not found: %s', template_uuid)
     return false
   end
 
   if not metadata.tags[tag_name] then
-    Logger.warn("TAGS", "Tag not found: %s", tag_name)
+    Logger.warn('TAGS', 'Tag not found: %s', tag_name)
     return false
   end
 
@@ -126,7 +126,7 @@ function M.add_tag_to_template(metadata, template_uuid, tag_name)
   end
 
   tmpl.tags[#tmpl.tags + 1] = tag_name
-  Logger.debug("TAGS", "Added tag '%s' to template: %s", tag_name, tmpl.name)
+  Logger.debug('TAGS', "Added tag '%s' to template: %s", tag_name, tmpl.name)
   return true
 end
 
@@ -140,7 +140,7 @@ function M.remove_tag_from_template(metadata, template_uuid, tag_name)
   for i, t in ipairs(tmpl.tags) do
     if t == tag_name then
       table.remove(tmpl.tags, i)
-      Logger.debug("TAGS", "Removed tag '%s' from template: %s", tag_name, tmpl.name)
+      Logger.debug('TAGS', "Removed tag '%s' from template: %s", tag_name, tmpl.name)
       return true
     end
   end
@@ -171,7 +171,7 @@ function M.add_tag_to_folder(metadata, folder_uuid, tag_name)
   end
 
   fld.tags[#fld.tags + 1] = tag_name
-  Logger.debug("TAGS", "Added tag '%s' to folder: %s", tag_name, fld.name)
+  Logger.debug('TAGS', "Added tag '%s' to folder: %s", tag_name, fld.name)
   return true
 end
 
@@ -200,7 +200,7 @@ function M.set_template_notes(metadata, template_uuid, notes)
   end
 
   tmpl.notes = notes
-  Logger.debug("TAGS", "Updated notes for template: %s", tmpl.name)
+  Logger.debug('TAGS', 'Updated notes for template: %s', tmpl.name)
   return true
 end
 

@@ -2,7 +2,7 @@
 -- TemplateBrowser/app/config.lua
 -- Configuration settings (re-exports from defs for backward compatibility)
 
-local Constants = require('TemplateBrowser.defs.constants')
+local Constants = require('TemplateBrowser.config.constants')
 
 local M = {}
 

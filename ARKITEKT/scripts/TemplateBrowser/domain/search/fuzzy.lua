@@ -16,9 +16,9 @@ local SCORE = {
 
 -- Characters that indicate word boundaries
 local WORD_SEPARATORS = {
-  [" "] = true, ["-"] = true, ["_"] = true,
-  ["."] = true, ["/"] = true, ["\\"] = true,
-  ["("] = true, [")"] = true, [":"] = true,
+  [' '] = true, ['-'] = true, ['_'] = true,
+  ['.'] = true, ['/'] = true, ['\\'] = true,
+  ['('] = true, [')'] = true, [':'] = true,
 }
 
 -- Check if character is at a word boundary
@@ -33,16 +33,16 @@ local function is_camel_boundary(str, pos)
   if pos == 1 then return false end
   local curr = str:sub(pos, pos)
   local prev = str:sub(pos - 1, pos - 1)
-  return curr:match("%u") and prev:match("%l")
+  return curr:match('%u') and prev:match('%l')
 end
 
 -- Calculate fuzzy match score between query and target
 -- Returns score (0 if no match) and match positions
 function M.score(query, target)
-  if not query or query == "" then
+  if not query or query == '' then
     return 0, {}
   end
-  if not target or target == "" then
+  if not target or target == '' then
     return 0, {}
   end
 
@@ -134,7 +134,7 @@ end
 -- query: search string
 -- Returns: filtered and sorted array of {item, score, positions}
 function M.filter(items, get_text, query)
-  if not query or query == "" then
+  if not query or query == '' then
     -- No query: return all items with score 0
     local results = {}
     for _, item in ipairs(items) do

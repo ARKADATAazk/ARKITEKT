@@ -103,7 +103,7 @@ function M.insert_item_at_mouse(item, state, use_pooled_copy)
   local success = reaper_interface.InsertItemAtMousePos(item, state, use_pooled_copy)
 
   reaper.PreventUIRefresh(-1)
-  local undo_msg = use_pooled_copy and "Insert Pooled MIDI Item from ItemPicker" or "Insert Item from ItemPicker"
+  local undo_msg = use_pooled_copy and 'Insert Pooled MIDI Item from ItemPicker' or 'Insert Item from ItemPicker'
   reaper.Undo_EndBlock(undo_msg, -1)
 
   return success
@@ -125,7 +125,7 @@ function M.insert_items_at_cursor(selected_keys, state, is_audio, use_pooled_cop
     local item_data = lookup and lookup[uuid]
     if item_data then
       local media_item = item_data[1]  -- MediaItem pointer
-      if media_item and reaper.ValidatePtr2(0, media_item, "MediaItem*") then
+      if media_item and reaper.ValidatePtr2(0, media_item, 'MediaItem*') then
         items_to_insert[#items_to_insert + 1] = media_item
       end
     end
@@ -140,7 +140,7 @@ function M.insert_items_at_cursor(selected_keys, state, is_audio, use_pooled_cop
 
   reaper.PreventUIRefresh(-1)
   local count = #items_to_insert
-  local undo_msg = string.format("Insert %d item%s at cursor from ItemPicker", count, count > 1 and "s" or "")
+  local undo_msg = string.format('Insert %d item%s at cursor from ItemPicker', count, count > 1 and 's' or '')
   reaper.Undo_EndBlock(undo_msg, -1)
 
   return success

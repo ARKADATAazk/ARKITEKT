@@ -2,44 +2,45 @@
 -- TemplateBrowser/ui/views/convenience_panel/tags_tab.lua
 -- Mini tags tab for convenience panel
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Tags = require('TemplateBrowser.domain.tags.service')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
 local UI = require('TemplateBrowser.ui.config.constants')
-local Constants = require('TemplateBrowser.defs.constants')
+local Constants = require('TemplateBrowser.config.constants')
 
 local M = {}
 
 -- Draw mini tags list with filtering
-function M.draw(ctx, state, config, width, height)
-  if not Helpers.begin_child_compat(ctx, "ConvenienceTags", width, height, false) then
+function M.Draw(ctx, state, config, width, height)
+  if not Helpers.begin_child_compat(ctx, 'ConvenienceTags', width, height, false) then
     return
   end
 
-  -- Header with "+" button
+  -- Header with '+' button
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
 
   -- Position button at the right
   local button_x = width - UI.BUTTON.WIDTH_SMALL - 8
   ImGui.SetCursorPosX(ctx, button_x)
 
-  if Ark.Button.draw_at_cursor(ctx, {
-    label = "+",
+  if Ark.Button(ctx, {
+    id = 'createtag_conv',
+    label = '+',
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
-  }, "createtag_conv") then
+  }).clicked then
     -- Create new tag - prompt for name
     local tag_num = 1
-    local new_tag_name = "Tag " .. tag_num
+    local new_tag_name = 'Tag ' .. tag_num
 
     -- Find unique name
     if state.metadata and state.metadata.tags then
       while state.metadata.tags[new_tag_name] do
         tag_num = tag_num + 1
-        new_tag_name = "Tag " .. tag_num
+        new_tag_name = 'Tag ' .. tag_num
       end
     end
 
@@ -59,7 +60,7 @@ function M.draw(ctx, state, config, width, height)
   local tags_list_height = height - UI.HEADER.DEFAULT - UI.PADDING.SEPARATOR_SPACING
 
   -- List all tags with filtering (scrollable) using justified layout
-  if Helpers.begin_child_compat(ctx, "ConvenienceTagsList", 0, tags_list_height, false) then
+  if Helpers.begin_child_compat(ctx, 'ConvenienceTagsList', 0, tags_list_height, false) then
     if state.metadata and state.metadata.tags then
       -- Build sorted list of tags
       local tag_items = {}
@@ -84,7 +85,7 @@ function M.draw(ctx, state, config, width, height)
         -- Draw tags using justified chip_list (ACTION style)
         -- Unselected tags at 30% opacity (77 = 0.3 * 255)
         local content_w = ImGui.GetContentRegionAvail(ctx)
-        local clicked_id, _, right_clicked_id = ChipList.draw(ctx, tag_items, {
+        local clicked_id, _, right_clicked_id = ChipList.Draw(ctx, tag_items, {
           justified = true,
           max_stretch_ratio = 1.5,
           selected_ids = selected_ids,
@@ -118,7 +119,7 @@ function M.draw(ctx, state, config, width, height)
         end
       end
     else
-      ImGui.TextDisabled(ctx, "No tags yet")
+      ImGui.TextDisabled(ctx, 'No tags yet')
     end
 
     ImGui.EndChild(ctx)  -- End ConvenienceTagsList

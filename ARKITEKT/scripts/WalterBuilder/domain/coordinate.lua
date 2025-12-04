@@ -25,13 +25,13 @@ function M.new(opts)
   }
 end
 
--- Parse WALTER coordinate list string: "[0 0 20 20 0 0 1 1]"
+-- Parse WALTER coordinate list string: '[0 0 20 20 0 0 1 1]'
 function M.parse(str)
-  if not str or str == "" then return nil end
+  if not str or str == '' then return nil end
 
   -- Extract values from brackets
   local values = {}
-  for num in str:gmatch("[%-%.%d]+") do
+  for num in str:gmatch('[%-%.%d]+') do
     values[#values + 1] = tonumber(num)
   end
 
@@ -51,7 +51,7 @@ end
 
 -- Serialize coordinate list to WALTER format
 function M.serialize(coord)
-  if not coord then return "[0]" end
+  if not coord then return '[0]' end
 
   -- Check if we can use shortened form
   local parts = {coord.x, coord.y, coord.w, coord.h, coord.ls, coord.ts, coord.rs, coord.bs}
@@ -67,7 +67,7 @@ function M.serialize(coord)
 
   -- Build output with only necessary values
   if last_nonzero == 0 then
-    return "[0]"
+    return '[0]'
   end
 
   local out = {}
@@ -77,11 +77,11 @@ function M.serialize(coord)
     if v == math.floor(v) then
       out[i] = tostring(math.floor(v))
     else
-      out[i] = string.format("%.2f", v):gsub("%.?0+$", "")
+      out[i] = string.format('%.2f', v):gsub('%.?0+$', '')
     end
   end
 
-  return "[" .. table.concat(out, " ") .. "]"
+  return '[' .. table.concat(out, ' ') .. ']'
 end
 
 -- Compute actual rectangle given parent dimensions
@@ -107,7 +107,7 @@ function M.compute_rect(coord, parent_w, parent_h)
   end
 
   -- Handle negative dimensions (stretch from edge)
-  -- e.g., w=-27 means "stretch to 27px from right edge"
+  -- e.g., w=-27 means 'stretch to 27px from right edge'
   if w < 0 and rs == 0 then
     w = parent_w - x + w
   end
@@ -132,20 +132,20 @@ function M.compute_rect(coord, parent_w, parent_h)
 end
 
 -- Get attachment behavior type for an axis
--- Returns: "fixed", "stretch", "move", "scale"
+-- Returns: 'fixed', 'stretch', 'move', 'scale'
 function M.get_axis_behavior(start_attach, end_attach)
   local s, e = start_attach or 0, end_attach or 0
 
   if s == 0 and e == 0 then
-    return "fixed"  -- Both edges fixed - element doesn't respond to parent size
+    return 'fixed'  -- Both edges fixed - element doesn't respond to parent size
   elseif s == 0 and e ~= 0 then
-    return "stretch_end"  -- Start fixed, end moves - element stretches from start
+    return 'stretch_end'  -- Start fixed, end moves - element stretches from start
   elseif s ~= 0 and e == 0 then
-    return "stretch_start"  -- Start moves, end fixed - element stretches from end
+    return 'stretch_start'  -- Start moves, end fixed - element stretches from end
   elseif s == e then
-    return "move"  -- Both edges move equally - element moves, size stays constant
+    return 'move'  -- Both edges move equally - element moves, size stays constant
   else
-    return "scale"  -- Complex scaling behavior
+    return 'scale'  -- Complex scaling behavior
   end
 end
 

@@ -3,21 +3,19 @@
 -- Test all new panel features: alignment, bottom headers, corner buttons
 -- Fixed: ID isolation and better layout
 
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
-local root_path = script_path:match("(.*)[\\/][^\\/]+[\\/]?$") or script_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
+local script_path = debug.getinfo(1, 'S').source:match('@?(.*)[\\/]') or ''
+local root_path = script_path:match('(.*)[\\/][^\\/]+[\\/]?$') or script_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+if not root_path:match('[\\/]$') then root_path = root_path .. '/' end
 
-local arkitekt_path = root_path .. "ARKITEKT/"
-package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. package.path
+local arkitekt_path = root_path .. 'ARKITEKT/'
+package.path = arkitekt_path .. '?.lua;' .. arkitekt_path .. '?/init.lua;' .. package.path
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 local Arkit = require('arkitekt.arkit')
 local ImGui = Arkit.ImGui
-local hexrgb = Arkit.hexrgb
-
 local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui')
 
 -- ============================================================================
@@ -36,12 +34,12 @@ local state = {
 
 local function create_alignment_panel()
   return Ark.Panel.new({
-    id = "alignment_panel",
+    id = 'alignment_panel',
     width = 850,
     height = 180,
     config = {
-      bg_color = hexrgb("#1A1A1AFF"),
-      border_color = hexrgb("#000000DD"),
+      bg_color = 0x1A1A1AFF,
+      border_color = 0x000000DD,
       border_thickness = 1,
       rounding = 8,
       padding = 16,
@@ -49,91 +47,91 @@ local function create_alignment_panel()
       header = {
         enabled = true,
         height = 30,
-        position = "top",
-        bg_color = hexrgb("#1E1E1EFF"),
-        border_color = hexrgb("#00000066"),
+        position = 'top',
+        bg_color = 0x1E1E1EFF,
+        border_color = 0x00000066,
         rounding = 8,
         
         elements = {
           -- Left-aligned elements
           {
-            id = "title",
-            type = "button",
-            align = "left",
+            id = 'title',
+            type = 'button',
+            align = 'left',
             spacing_before = 0,
             config = {
-              label = "📂 Left Side",
-              tooltip = "This button is left-aligned",
+              label = '📂 Left Side',
+              tooltip = 'This button is left-aligned',
               on_click = function()
-                reaper.ShowConsoleMsg("[LEFT] Title clicked\n")
+                reaper.ShowConsoleMsg('[LEFT] Title clicked\n')
               end,
             }
           },
           {
-            id = "search",
-            type = "inputtext",
-            align = "left",
+            id = 'search',
+            type = 'inputtext',
+            align = 'left',
             width = 200,
             spacing_before = 8,
             config = {
-              placeholder = "Search left...",
-              tooltip = "Left-aligned search",
+              placeholder = 'Search left...',
+              tooltip = 'Left-aligned search',
             }
           },
           
           -- Separator (creates visual break and rounds corners)
           {
-            id = "sep1",
-            type = "separator",
-            align = "left",
+            id = 'sep1',
+            type = 'separator',
+            align = 'left',
             width = 16,
             spacing_before = 8,
             config = {
               show_line = true,
-              line_color = hexrgb("#40404080"),
+              line_color = 0x40404080,
             }
           },
           
           {
-            id = "middle",
-            type = "button",
-            align = "left",
+            id = 'middle',
+            type = 'button',
+            align = 'left',
             spacing_before = 8,
             config = {
-              label = "Middle",
-              tooltip = "After separator - has rounded corners",
+              label = 'Middle',
+              tooltip = 'After separator - has rounded corners',
             }
           },
           
           -- Right-aligned elements
           {
-            id = "filter",
-            type = "combo",
-            align = "right",
+            id = 'filter',
+            type = 'combo',
+            align = 'right',
             width = 120,
             spacing_before = 8,
             config = {
               options = {
-                { label = "All Items", value = "all" },
-                { label = "Active", value = "active" },
-                { label = "Archived", value = "archived" },
+                { label = 'All Items', value = 'all' },
+                { label = 'Active', value = 'active' },
+                { label = 'Archived', value = 'archived' },
               },
-              tooltip = "Right-aligned dropdown",
+              tooltip = 'Right-aligned dropdown',
               on_change = function(value)
-                reaper.ShowConsoleMsg("[RIGHT] Filter: " .. value .. "\n")
+                reaper.ShowConsoleMsg('[RIGHT] Filter: ' .. value .. '\n')
               end,
             }
           },
           {
-            id = "settings",
-            type = "button",
-            align = "right",
+            id = 'settings',
+            type = 'button',
+            align = 'right',
             spacing_before = 8,
             config = {
-              label = "⚙",
-              tooltip = "Settings (right-aligned)",
+              label = '⚙',
+              tooltip = 'Settings (right-aligned)',
               on_click = function()
-                reaper.ShowConsoleMsg("[RIGHT] Settings clicked\n")
+                reaper.ShowConsoleMsg('[RIGHT] Settings clicked\n')
               end,
             }
           },
@@ -149,12 +147,12 @@ end
 
 local function create_bottom_header_panel()
   return Ark.Panel.new({
-    id = "bottom_panel",
+    id = 'bottom_panel',
     width = 850,
     height = 150,
     config = {
-      bg_color = hexrgb("#1A1A1AFF"),
-      border_color = hexrgb("#000000DD"),
+      bg_color = 0x1A1A1AFF,
+      border_color = 0x000000DD,
       border_thickness = 1,
       rounding = 8,
       padding = 16,
@@ -162,28 +160,28 @@ local function create_bottom_header_panel()
       header = {
         enabled = true,
         height = 30,
-        position = "bottom", -- Header at bottom!
-        bg_color = hexrgb("#1E1E1EFF"),
-        border_color = hexrgb("#00000066"),
+        position = 'bottom', -- Header at bottom!
+        bg_color = 0x1E1E1EFF,
+        border_color = 0x00000066,
         rounding = 8,
         
         elements = {
           {
-            id = "status",
-            type = "button",
-            align = "left",
+            id = 'status',
+            type = 'button',
+            align = 'left',
             config = {
-              label = "📊 Status: Ready",
-              tooltip = "Status indicator in bottom header",
+              label = '📊 Status: Ready',
+              tooltip = 'Status indicator in bottom header',
             }
           },
           {
-            id = "counter",
-            type = "button",
-            align = "right",
+            id = 'counter',
+            type = 'button',
+            align = 'right',
             config = {
-              label = string.format("Frame: %d", state.frame_count),
-              tooltip = "Frame counter",
+              label = string.format('Frame: %d', state.frame_count),
+              tooltip = 'Frame counter',
             }
           },
         },
@@ -198,12 +196,12 @@ end
 
 local function create_corner_buttons_panel()
   return Ark.Panel.new({
-    id = "corner_panel",
+    id = 'corner_panel',
     width = 850,
     height = 200,
     config = {
-      bg_color = hexrgb("#1A1A1AFF"),
-      border_color = hexrgb("#000000DD"),
+      bg_color = 0x1A1A1AFF,
+      border_color = 0x000000DD,
       border_thickness = 1,
       rounding = 8,
       padding = 16,
@@ -219,35 +217,35 @@ local function create_corner_buttons_panel()
         margin = 12,
         
         top_left = {
-          icon = "📌",
-          tooltip = "Pin panel",
+          icon = '📌',
+          tooltip = 'Pin panel',
           on_click = function()
-            reaper.ShowConsoleMsg("[CORNER] Top-left clicked\n")
+            reaper.ShowConsoleMsg('[CORNER] Top-left clicked\n')
           end,
         },
         
         top_right = {
-          icon = "✕",
-          tooltip = "Close panel",
+          icon = '✕',
+          tooltip = 'Close panel',
           on_click = function()
-            reaper.ShowConsoleMsg("[CORNER] Top-right clicked\n")
+            reaper.ShowConsoleMsg('[CORNER] Top-right clicked\n')
           end,
         },
         
         bottom_left = {
-          icon = "+",
-          tooltip = "Add new item",
+          icon = '+',
+          tooltip = 'Add new item',
           on_click = function()
             state.corner_button_clicks = state.corner_button_clicks + 1
-            reaper.ShowConsoleMsg(string.format("[CORNER] Bottom-left clicked! (Total: %d)\n", state.corner_button_clicks))
+            reaper.ShowConsoleMsg(string.format('[CORNER] Bottom-left clicked! (Total: %d)\n', state.corner_button_clicks))
           end,
         },
         
         bottom_right = {
-          icon = "⚙",
-          tooltip = "Settings",
+          icon = '⚙',
+          tooltip = 'Settings',
           on_click = function()
-            reaper.ShowConsoleMsg("[CORNER] Bottom-right clicked\n")
+            reaper.ShowConsoleMsg('[CORNER] Bottom-right clicked\n')
           end,
         },
       },
@@ -261,12 +259,12 @@ end
 
 local function create_hybrid_panel()
   return Ark.Panel.new({
-    id = "hybrid_panel",
+    id = 'hybrid_panel',
     width = 850,
     height = 150,
     config = {
-      bg_color = hexrgb("#1A1A1AFF"),
-      border_color = hexrgb("#000000DD"),
+      bg_color = 0x1A1A1AFF,
+      border_color = 0x000000DD,
       border_thickness = 1,
       rounding = 8,
       padding = 16,
@@ -274,17 +272,17 @@ local function create_hybrid_panel()
       header = {
         enabled = true,
         height = 30,
-        position = "top",
-        bg_color = hexrgb("#1E1E1EFF"),
-        border_color = hexrgb("#00000066"),
+        position = 'top',
+        bg_color = 0x1E1E1EFF,
+        border_color = 0x00000066,
         rounding = 8,
         
         elements = {
           {
-            id = "title",
-            type = "button",
+            id = 'title',
+            type = 'button',
             config = {
-              label = "🎨 Hybrid Panel",
+              label = '🎨 Hybrid Panel',
             }
           },
         },
@@ -294,10 +292,10 @@ local function create_hybrid_panel()
         size = 28,
         margin = 10,
         bottom_left = {
-          icon = "💡",
-          tooltip = "Help",
+          icon = '💡',
+          tooltip = 'Help',
           on_click = function()
-            reaper.ShowConsoleMsg("[HYBRID] Help clicked\n")
+            reaper.ShowConsoleMsg('[HYBRID] Help clicked\n')
           end,
         },
       },
@@ -313,12 +311,12 @@ end
 
 local function create_sidebar_panel()
   return Ark.Panel.new({
-    id = "sidebar_panel",
+    id = 'sidebar_panel',
     width = 850,
     height = 200,
     config = {
-      bg_color = hexrgb("#1A1A1AFF"),
-      border_color = hexrgb("#000000DD"),
+      bg_color = 0x1A1A1AFF,
+      border_color = 0x000000DD,
       border_thickness = 1,
       rounding = 8,
       padding = 16,
@@ -326,17 +324,17 @@ local function create_sidebar_panel()
       header = {
         enabled = true,
         height = 30,
-        position = "top",
-        bg_color = hexrgb("#1E1E1EFF"),
-        border_color = hexrgb("#00000066"),
+        position = 'top',
+        bg_color = 0x1E1E1EFF,
+        border_color = 0x00000066,
         rounding = 8,
 
         elements = {
           {
-            id = "title",
-            type = "button",
+            id = 'title',
+            type = 'button',
             config = {
-              label = "📐 Sidebar Demo",
+              label = '📐 Sidebar Demo',
             }
           },
         },
@@ -346,35 +344,35 @@ local function create_sidebar_panel()
       left_sidebar = {
         enabled = true,
         width = 40,
-        bg_color = hexrgb("#1E1E1EFF"),
-        border_color = hexrgb("#00000066"),
-        valign = "center",
+        bg_color = 0x1E1E1EFF,
+        border_color = 0x00000066,
+        valign = 'center',
         padding = { top = 4, bottom = 4 },
         button_size = 28,
         button_spacing = 4,
         elements = {
           {
-            id = "nav_home",
-            icon = "🏠",
-            tooltip = "Home",
+            id = 'nav_home',
+            icon = '🏠',
+            tooltip = 'Home',
             on_click = function()
-              reaper.ShowConsoleMsg("[LEFT SIDEBAR] Home clicked\n")
+              reaper.ShowConsoleMsg('[LEFT SIDEBAR] Home clicked\n')
             end,
           },
           {
-            id = "nav_search",
-            icon = "🔍",
-            tooltip = "Search",
+            id = 'nav_search',
+            icon = '🔍',
+            tooltip = 'Search',
             on_click = function()
-              reaper.ShowConsoleMsg("[LEFT SIDEBAR] Search clicked\n")
+              reaper.ShowConsoleMsg('[LEFT SIDEBAR] Search clicked\n')
             end,
           },
           {
-            id = "nav_settings",
-            icon = "⚙",
-            tooltip = "Settings",
+            id = 'nav_settings',
+            icon = '⚙',
+            tooltip = 'Settings',
             on_click = function()
-              reaper.ShowConsoleMsg("[LEFT SIDEBAR] Settings clicked\n")
+              reaper.ShowConsoleMsg('[LEFT SIDEBAR] Settings clicked\n')
             end,
           },
         },
@@ -384,27 +382,27 @@ local function create_sidebar_panel()
       right_sidebar = {
         enabled = true,
         width = 40,
-        bg_color = hexrgb("#1E1E1EFF"),
-        border_color = hexrgb("#00000066"),
-        valign = "top",
+        bg_color = 0x1E1E1EFF,
+        border_color = 0x00000066,
+        valign = 'top',
         padding = { top = 4, bottom = 4 },
         button_size = 28,
         button_spacing = 4,
         elements = {
           {
-            id = "action_add",
-            icon = "+",
-            tooltip = "Add item",
+            id = 'action_add',
+            icon = '+',
+            tooltip = 'Add item',
             on_click = function()
-              reaper.ShowConsoleMsg("[RIGHT SIDEBAR] Add clicked\n")
+              reaper.ShowConsoleMsg('[RIGHT SIDEBAR] Add clicked\n')
             end,
           },
           {
-            id = "action_remove",
-            icon = "−",
-            tooltip = "Remove item",
+            id = 'action_remove',
+            icon = '−',
+            tooltip = 'Remove item',
             on_click = function()
-              reaper.ShowConsoleMsg("[RIGHT SIDEBAR] Remove clicked\n")
+              reaper.ShowConsoleMsg('[RIGHT SIDEBAR] Remove clicked\n')
             end,
           },
         },
@@ -437,12 +435,12 @@ local function draw(ctx, shell_state)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 20, 20)
   
   -- Header
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#41E0A3FF"))
-  ImGui.Text(ctx, "🎨 PANEL FEATURES TEST")
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x41E0A3FF)
+  ImGui.Text(ctx, '🎨 PANEL FEATURES TEST')
   ImGui.PopStyleColor(ctx, 1)
   
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888FF"))
-  ImGui.Text(ctx, "Testing new panel capabilities")
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
+  ImGui.Text(ctx, 'Testing new panel capabilities')
   ImGui.PopStyleColor(ctx, 1)
   
   ImGui.Spacing(ctx)
@@ -450,19 +448,19 @@ local function draw(ctx, shell_state)
   ImGui.Spacing(ctx)
   
   -- Panel 1: Left/Right Alignment
-  ImGui.PushID(ctx, "panel1")
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFD700FF"))
-  ImGui.Text(ctx, "1. LEFT/RIGHT ALIGNMENT + SEPARATOR")
+  ImGui.PushID(ctx, 'panel1')
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFD700FF)
+  ImGui.Text(ctx, '1. LEFT/RIGHT ALIGNMENT + SEPARATOR')
   ImGui.PopStyleColor(ctx, 1)
-  ImGui.Text(ctx, "Elements can be aligned left or right. Separator creates visual break.")
+  ImGui.Text(ctx, 'Elements can be aligned left or right. Separator creates visual break.')
   ImGui.Spacing(ctx)
   
   if state.panels.alignment:begin_draw(ctx) then
-    ImGui.Text(ctx, "✓ Left-aligned: Title, Search, Middle button")
-    ImGui.Text(ctx, "✓ Right-aligned: Filter dropdown, Settings")
-    ImGui.Text(ctx, "✓ Separator between left and middle creates rounded corners")
+    ImGui.Text(ctx, '✓ Left-aligned: Title, Search, Middle button')
+    ImGui.Text(ctx, '✓ Right-aligned: Filter dropdown, Settings')
+    ImGui.Text(ctx, '✓ Separator between left and middle creates rounded corners')
     ImGui.Spacing(ctx)
-    ImGui.Text(ctx, "Notice how elements adjacent to separator get corner rounding!")
+    ImGui.Text(ctx, 'Notice how elements adjacent to separator get corner rounding!')
   end
   state.panels.alignment:end_draw(ctx)
   ImGui.PopID(ctx)
@@ -472,19 +470,19 @@ local function draw(ctx, shell_state)
   ImGui.Spacing(ctx)
   
   -- Panel 2: Bottom Header
-  ImGui.PushID(ctx, "panel2")
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFD700FF"))
-  ImGui.Text(ctx, "2. BOTTOM HEADER")
+  ImGui.PushID(ctx, 'panel2')
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFD700FF)
+  ImGui.Text(ctx, '2. BOTTOM HEADER')
   ImGui.PopStyleColor(ctx, 1)
-  ImGui.Text(ctx, "Header can be positioned at top or bottom of panel.")
+  ImGui.Text(ctx, 'Header can be positioned at top or bottom of panel.')
   ImGui.Spacing(ctx)
   
   if state.panels.bottom:begin_draw(ctx) then
-    ImGui.Text(ctx, "✓ Header positioned at bottom")
-    ImGui.Text(ctx, "✓ Corner rounding adjusts automatically")
-    ImGui.Text(ctx, "✓ Content area is above the header")
+    ImGui.Text(ctx, '✓ Header positioned at bottom')
+    ImGui.Text(ctx, '✓ Corner rounding adjusts automatically')
+    ImGui.Text(ctx, '✓ Content area is above the header')
     ImGui.Spacing(ctx)
-    ImGui.Text(ctx, "Useful for status bars, action toolbars, footers!")
+    ImGui.Text(ctx, 'Useful for status bars, action toolbars, footers!')
   end
   state.panels.bottom:end_draw(ctx)
   ImGui.PopID(ctx)
@@ -494,22 +492,22 @@ local function draw(ctx, shell_state)
   ImGui.Spacing(ctx)
   
   -- Panel 3: Corner Buttons
-  ImGui.PushID(ctx, "panel3")
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFD700FF"))
-  ImGui.Text(ctx, "3. CORNER BUTTONS (NO HEADER)")
+  ImGui.PushID(ctx, 'panel3')
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFD700FF)
+  ImGui.Text(ctx, '3. CORNER BUTTONS (NO HEADER)')
   ImGui.PopStyleColor(ctx, 1)
-  ImGui.Text(ctx, "Floating buttons in panel corners without header.")
+  ImGui.Text(ctx, 'Floating buttons in panel corners without header.')
   ImGui.Spacing(ctx)
   
   if state.panels.corner:begin_draw(ctx) then
-    ImGui.Text(ctx, "✓ Top-left: Pin button")
-    ImGui.Text(ctx, "✓ Top-right: Close button")
-    ImGui.Text(ctx, "✓ Bottom-left: Add button")
-    ImGui.Text(ctx, "✓ Bottom-right: Settings button")
+    ImGui.Text(ctx, '✓ Top-left: Pin button')
+    ImGui.Text(ctx, '✓ Top-right: Close button')
+    ImGui.Text(ctx, '✓ Bottom-left: Add button')
+    ImGui.Text(ctx, '✓ Bottom-right: Settings button')
     ImGui.Spacing(ctx)
-    ImGui.Text(ctx, string.format("Bottom-left clicks: %d", state.corner_button_clicks))
+    ImGui.Text(ctx, string.format('Bottom-left clicks: %d', state.corner_button_clicks))
     ImGui.Spacing(ctx)
-    ImGui.Text(ctx, "Hover over corners to see the buttons!")
+    ImGui.Text(ctx, 'Hover over corners to see the buttons!')
   end
   state.panels.corner:end_draw(ctx)
   ImGui.PopID(ctx)
@@ -519,19 +517,19 @@ local function draw(ctx, shell_state)
   ImGui.Spacing(ctx)
   
   -- Panel 4: Hybrid
-  ImGui.PushID(ctx, "panel4")
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFD700FF"))
-  ImGui.Text(ctx, "4. HEADER + CORNER BUTTONS")
+  ImGui.PushID(ctx, 'panel4')
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFD700FF)
+  ImGui.Text(ctx, '4. HEADER + CORNER BUTTONS')
   ImGui.PopStyleColor(ctx, 1)
-  ImGui.Text(ctx, "Corner buttons can coexist with headers.")
+  ImGui.Text(ctx, 'Corner buttons can coexist with headers.')
   ImGui.Spacing(ctx)
   
   if state.panels.hybrid:begin_draw(ctx) then
-    ImGui.Text(ctx, "✓ Has both header and corner buttons")
-    ImGui.Text(ctx, "✓ Set corner_buttons_always_visible = true")
-    ImGui.Text(ctx, "✓ Useful for quick actions without cluttering header")
+    ImGui.Text(ctx, '✓ Has both header and corner buttons')
+    ImGui.Text(ctx, '✓ Set corner_buttons_always_visible = true')
+    ImGui.Text(ctx, '✓ Useful for quick actions without cluttering header')
     ImGui.Spacing(ctx)
-    ImGui.Text(ctx, "Look for the 💡 button in the bottom-left corner!")
+    ImGui.Text(ctx, 'Look for the 💡 button in the bottom-left corner!')
   end
   state.panels.hybrid:end_draw(ctx)
   ImGui.PopID(ctx)
@@ -541,19 +539,19 @@ local function draw(ctx, shell_state)
   ImGui.Spacing(ctx)
 
   -- Panel 5: Sidebars
-  ImGui.PushID(ctx, "panel5")
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFD700FF"))
-  ImGui.Text(ctx, "5. SIDEBARS")
+  ImGui.PushID(ctx, 'panel5')
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFD700FF)
+  ImGui.Text(ctx, '5. SIDEBARS')
   ImGui.PopStyleColor(ctx, 1)
-  ImGui.Text(ctx, "Vertical button bars on left/right sides of panel.")
+  ImGui.Text(ctx, 'Vertical button bars on left/right sides of panel.')
   ImGui.Spacing(ctx)
 
   if state.panels.sidebar:begin_draw(ctx) then
-    ImGui.Text(ctx, "✓ Left sidebar: 3 buttons, centered vertically")
-    ImGui.Text(ctx, "✓ Right sidebar: 2 buttons, top-aligned")
-    ImGui.Text(ctx, "✓ valign options: \"top\", \"center\", \"bottom\"")
+    ImGui.Text(ctx, '✓ Left sidebar: 3 buttons, centered vertically')
+    ImGui.Text(ctx, '✓ Right sidebar: 2 buttons, top-aligned')
+    ImGui.Text(ctx, '✓ valign options: \"top\", \"center\", \"bottom\"')
     ImGui.Spacing(ctx)
-    ImGui.Text(ctx, "Great for navigation, toolbars, or quick actions!")
+    ImGui.Text(ctx, 'Great for navigation, toolbars, or quick actions!')
   end
   state.panels.sidebar:end_draw(ctx)
   ImGui.PopID(ctx)
@@ -565,28 +563,28 @@ end
 -- STARTUP
 -- ============================================================================
 
-reaper.ShowConsoleMsg("\n")
-reaper.ShowConsoleMsg("═══════════════════════════════════════\n")
-reaper.ShowConsoleMsg("  PANEL FEATURES TEST\n")
-reaper.ShowConsoleMsg("═══════════════════════════════════════\n")
-reaper.ShowConsoleMsg("New features:\n")
-reaper.ShowConsoleMsg("  ✓ Left/Right alignment in headers\n")
-reaper.ShowConsoleMsg("  ✓ Bottom header positioning\n")
-reaper.ShowConsoleMsg("  ✓ Corner buttons (no header needed)\n")
-reaper.ShowConsoleMsg("  ✓ Separator corner rounding\n")
-reaper.ShowConsoleMsg("  ✓ Hybrid panels (header + corners)\n")
-reaper.ShowConsoleMsg("  ✓ Sidebars (vertical button bars)\n")
-reaper.ShowConsoleMsg("═══════════════════════════════════════\n\n")
+reaper.ShowConsoleMsg('\n')
+reaper.ShowConsoleMsg('═══════════════════════════════════════\n')
+reaper.ShowConsoleMsg('  PANEL FEATURES TEST\n')
+reaper.ShowConsoleMsg('═══════════════════════════════════════\n')
+reaper.ShowConsoleMsg('New features:\n')
+reaper.ShowConsoleMsg('  ✓ Left/Right alignment in headers\n')
+reaper.ShowConsoleMsg('  ✓ Bottom header positioning\n')
+reaper.ShowConsoleMsg('  ✓ Corner buttons (no header needed)\n')
+reaper.ShowConsoleMsg('  ✓ Separator corner rounding\n')
+reaper.ShowConsoleMsg('  ✓ Hybrid panels (header + corners)\n')
+reaper.ShowConsoleMsg('  ✓ Sidebars (vertical button bars)\n')
+reaper.ShowConsoleMsg('═══════════════════════════════════════\n\n')
 
 Shell.run({
-  title = "Panel Features Test",
-  version = "v3.0.0",
-  version_color = hexrgb("#888888FF"),
+  title = 'Panel Features Test',
+  version = 'v3.0.0',
+  version_color = 0x888888FF,
   style = StyleOK and Style or nil,
   initial_pos = { x = 100, y = 100 },
   initial_size = { w = 900, h = 1150 },
   min_size = { w = 900, h = 900 },
-  icon_color = hexrgb("#41E0A3FF"),
+  icon_color = 0x41E0A3FF,
   icon_size = 18,
 
   draw = draw,

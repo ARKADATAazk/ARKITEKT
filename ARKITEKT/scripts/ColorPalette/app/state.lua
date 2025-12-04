@@ -7,20 +7,20 @@ local M = {}
 
 -- Target types for color application
 M.TARGET_TYPES = {
-  "Tracks",
-  "Items", 
-  "Takes",
-  "Take Markers",
-  "Markers",
-  "Regions"
+  'Tracks',
+  'Items', 
+  'Takes',
+  'Take Markers',
+  'Markers',
+  'Regions'
 }
 
 -- Action types
 M.ACTION_TYPES = {
-  "Default",
-  "Random All",
-  "Random Each",
-  "In Order"
+  'Default',
+  'Random All',
+  'Random Each',
+  'In Order'
 }
 
 -- Default state
@@ -54,19 +54,19 @@ function M.initialize(settings)
   state.settings = settings
   
   -- Load palette config
-  state.palette.cols = settings:get("palette.cols", DEFAULTS.palette.cols)
-  state.palette.rows = settings:get("palette.rows", DEFAULTS.palette.rows)
-  state.palette.hue = settings:get("palette.hue", DEFAULTS.palette.hue)
-  state.palette.sat = settings:get("palette.sat", DEFAULTS.palette.sat)
-  state.palette.lum = settings:get("palette.lum", DEFAULTS.palette.lum)
-  state.palette.include_grey = settings:get("palette.include_grey", DEFAULTS.palette.include_grey)
-  state.palette.spacing = settings:get("palette.spacing", DEFAULTS.palette.spacing)
+  state.palette.cols = settings:get('palette.cols', DEFAULTS.palette.cols)
+  state.palette.rows = settings:get('palette.rows', DEFAULTS.palette.rows)
+  state.palette.hue = settings:get('palette.hue', DEFAULTS.palette.hue)
+  state.palette.sat = settings:get('palette.sat', DEFAULTS.palette.sat)
+  state.palette.lum = settings:get('palette.lum', DEFAULTS.palette.lum)
+  state.palette.include_grey = settings:get('palette.include_grey', DEFAULTS.palette.include_grey)
+  state.palette.spacing = settings:get('palette.spacing', DEFAULTS.palette.spacing)
   
   -- Load UI state
-  state.target_index = settings:get("target_index", DEFAULTS.target_index)
-  state.action_index = settings:get("action_index", DEFAULTS.action_index)
-  state.auto_close = settings:get("auto_close", DEFAULTS.auto_close)
-  state.set_children = settings:get("set_children", DEFAULTS.set_children)
+  state.target_index = settings:get('target_index', DEFAULTS.target_index)
+  state.action_index = settings:get('action_index', DEFAULTS.action_index)
+  state.auto_close = settings:get('auto_close', DEFAULTS.auto_close)
+  state.set_children = settings:get('set_children', DEFAULTS.set_children)
   
   -- Calculate initial palette
   M.recalculate_palette()
@@ -118,8 +118,8 @@ function M.recalculate_palette()
       end
       
       -- Convert HSL to RGB
-      local r, g, b = Ark.Colors.hsl_to_rgb(hue, sat, lum)
-      local color = Ark.Colors.components_to_rgba(r, g, b, 0xFF)
+      local r, g, b = Ark.Colors.HslToRgb(hue, sat, lum)
+      local color = Ark.Colors.ComponentsToRgba(r, g, b, 0xFF)
       
       state.palette_colors[#state.palette_colors + 1] = color
     end
@@ -141,7 +141,7 @@ end
 function M.set_target_type(index)
   state.target_index = index
   if state.settings then
-    state.settings:set("target_index", index)
+    state.settings:set('target_index', index)
   end
 end
 
@@ -152,14 +152,14 @@ end
 function M.set_action_type(index)
   state.action_index = index
   if state.settings then
-    state.settings:set("action_index", index)
+    state.settings:set('action_index', index)
   end
 end
 
 function M.set_auto_close(value)
   state.auto_close = value
   if state.settings then
-    state.settings:set("auto_close", value)
+    state.settings:set('auto_close', value)
   end
 end
 
@@ -170,7 +170,7 @@ end
 function M.set_children(value)
   state.set_children = value
   if state.settings then
-    state.settings:set("set_children", value)
+    state.settings:set('set_children', value)
   end
 end
 
@@ -181,7 +181,7 @@ end
 function M.update_palette_hue(hue)
   state.palette.hue = hue
   if state.settings then
-    state.settings:set("palette.hue", hue)
+    state.settings:set('palette.hue', hue)
   end
   M.recalculate_palette()
 end
@@ -189,7 +189,7 @@ end
 function M.update_palette_sat(sat_array)
   state.palette.sat = sat_array
   if state.settings then
-    state.settings:set("palette.sat", sat_array)
+    state.settings:set('palette.sat', sat_array)
   end
   M.recalculate_palette()
 end
@@ -197,7 +197,7 @@ end
 function M.update_palette_lum(lum_array)
   state.palette.lum = lum_array
   if state.settings then
-    state.settings:set("palette.lum", lum_array)
+    state.settings:set('palette.lum', lum_array)
   end
   M.recalculate_palette()
 end
@@ -205,7 +205,7 @@ end
 function M.update_palette_grey(include_grey)
   state.palette.include_grey = include_grey
   if state.settings then
-    state.settings:set("palette.include_grey", include_grey)
+    state.settings:set('palette.include_grey', include_grey)
   end
   M.recalculate_palette()
 end
@@ -214,13 +214,13 @@ function M.update_palette_size(cols, rows)
   if cols then 
     state.palette.cols = cols
     if state.settings then
-      state.settings:set("palette.cols", cols)
+      state.settings:set('palette.cols', cols)
     end
   end
   if rows then 
     state.palette.rows = rows
     if state.settings then
-      state.settings:set("palette.rows", rows)
+      state.settings:set('palette.rows', rows)
     end
   end
   M.recalculate_palette()
@@ -229,7 +229,7 @@ end
 function M.update_palette_spacing(spacing)
   state.palette.spacing = spacing
   if state.settings then
-    state.settings:set("palette.spacing", spacing)
+    state.settings:set('palette.spacing', spacing)
   end
 end
 
@@ -240,10 +240,10 @@ function M.restore_default_colors()
   state.palette.include_grey = DEFAULTS.palette.include_grey
   
   if state.settings then
-    state.settings:set("palette.hue", state.palette.hue)
-    state.settings:set("palette.sat", state.palette.sat)
-    state.settings:set("palette.lum", state.palette.lum)
-    state.settings:set("palette.include_grey", state.palette.include_grey)
+    state.settings:set('palette.hue', state.palette.hue)
+    state.settings:set('palette.sat', state.palette.sat)
+    state.settings:set('palette.lum', state.palette.lum)
+    state.settings:set('palette.include_grey', state.palette.include_grey)
   end
   
   M.recalculate_palette()
@@ -255,9 +255,9 @@ function M.restore_default_sizes()
   state.palette.spacing = DEFAULTS.palette.spacing
   
   if state.settings then
-    state.settings:set("palette.cols", state.palette.cols)
-    state.settings:set("palette.rows", state.palette.rows)
-    state.settings:set("palette.spacing", state.palette.spacing)
+    state.settings:set('palette.cols', state.palette.cols)
+    state.settings:set('palette.rows', state.palette.rows)
+    state.settings:set('palette.spacing', state.palette.spacing)
   end
   
   M.recalculate_palette()

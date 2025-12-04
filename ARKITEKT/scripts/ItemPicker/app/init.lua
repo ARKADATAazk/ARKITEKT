@@ -18,11 +18,11 @@ local M = {}
 
 --- Application configuration
 -- Re-exports constants from defs/
-M.config = require("ItemPicker.app.config")
+M.config = require('ItemPicker.app.config')
 
 --- Application state
 -- Centralized state management (single source of truth)
-M.state = require("ItemPicker.app.state")
+M.state = require('ItemPicker.app.state')
 
 -- ============================================================================
 -- DOMAIN LAYER (Business Logic)
@@ -30,19 +30,19 @@ M.state = require("ItemPicker.app.state")
 
 --- Item service
 -- Business logic controller for item operations
-M.items = require("ItemPicker.domain.items.service")
+M.items = require('ItemPicker.domain.items.service')
 
 --- Preview manager
 -- Handles audio/MIDI preview playback
-M.preview = require("ItemPicker.domain.preview.manager")
+M.preview = require('ItemPicker.domain.preview.manager')
 
 --- Filters
 -- Filtering logic for items, tracks, pools, regions
 M.filters = {
-  items = require("ItemPicker.domain.filters.items"),
-  track = require("ItemPicker.domain.filters.track"),
-  pool = require("ItemPicker.domain.filters.pool"),
-  region = require("ItemPicker.domain.filters.region"),
+  items = require('ItemPicker.domain.filters.items'),
+  track = require('ItemPicker.domain.filters.track'),
+  pool = require('ItemPicker.domain.filters.pool'),
+  region = require('ItemPicker.domain.filters.region'),
 }
 
 -- ============================================================================
@@ -52,23 +52,23 @@ M.filters = {
 M.data = {
   --- Settings storage
   -- Persistence using REAPER project extended state
-  storage = require("ItemPicker.data.storage"),
+  storage = require('ItemPicker.data.storage'),
 
   --- Disk cache
   -- Project-scoped disk cache with LRU eviction
-  cache = require("ItemPicker.data.cache"),
+  cache = require('ItemPicker.data.cache'),
 
   --- Job queue
   -- Async job processing for waveform/thumbnail generation
-  job_queue = require("ItemPicker.data.job_queue"),
+  job_queue = require('ItemPicker.data.job_queue'),
 
   --- REAPER API wrapper
   -- Abstraction over REAPER's item/track API
-  reaper_api = require("ItemPicker.data.reaper_api"),
+  reaper_api = require('ItemPicker.data.reaper_api'),
 
   --- Incremental loader
   -- Processes items in small batches per frame
-  loader = require("ItemPicker.data.loader"),
+  loader = require('ItemPicker.data.loader'),
 }
 
 -- ============================================================================
@@ -76,10 +76,10 @@ M.data = {
 -- ============================================================================
 
 --- Main window / GUI orchestrator
-M.ui = require("ItemPicker.ui.init")
+M.ui = require('ItemPicker.ui.init')
 
 --- Visualization
 -- Waveform and MIDI thumbnail generation
-M.visualization = require("ItemPicker.ui.visualization")
+M.visualization = require('ItemPicker.ui.visualization')
 
 return M

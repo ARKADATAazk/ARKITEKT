@@ -12,7 +12,7 @@ local M = {}
 local function get_data_dir()
   local resource_path = reaper.GetResourcePath()
   local sep = package.config:sub(1,1)
-  local data_dir = resource_path .. sep .. "Data" .. sep .. "ARKITEKT" .. sep .. "TemplateBrowser"
+  local data_dir = resource_path .. sep .. 'Data' .. sep .. 'ARKITEKT' .. sep .. 'TemplateBrowser'
 
   -- Create directory if it doesn't exist using REAPER's API
   if reaper.RecursiveCreateDirectory then
@@ -28,21 +28,21 @@ function M.log(message)
   if not log_file_handle then
     local data_dir = get_data_dir()
     local sep = package.config:sub(1,1)
-    local log_path = data_dir .. sep .. "debug.log"
-    log_file_handle = io.open(log_path, "w")  -- Overwrite on first open
+    local log_path = data_dir .. sep .. 'debug.log'
+    log_file_handle = io.open(log_path, 'w')  -- Overwrite on first open
     if log_file_handle then
-      log_file_handle:write("=== TemplateBrowser Debug Log ===\n")
-      log_file_handle:write(os.date("%Y-%m-%d %H:%M:%S") .. "\n\n")
+      log_file_handle:write('=== TemplateBrowser Debug Log ===\n')
+      log_file_handle:write(os.date('%Y-%m-%d %H:%M:%S') .. '\n\n')
     end
   end
 
   if log_file_handle then
-    log_file_handle:write(message .. "\n")
+    log_file_handle:write(message .. '\n')
     log_file_handle:flush()  -- Ensure it's written immediately
   end
 
   -- Also log to Logger
-  Logger.debug("STORAGE", "%s", message)
+  Logger.debug('STORAGE', '%s', message)
 end
 
 function M.close_log()
@@ -62,32 +62,24 @@ function M.save_json(filename, data)
 
   -- Ensure directory exists
   if reaper.RecursiveCreateDirectory then
-    local success = reaper.RecursiveCreateDirectory(data_dir, 0)
-    if not success then
-      Logger.error("STORAGE", "Failed to create directory: %s", data_dir)
-    end
+    reaper.RecursiveCreateDirectory(data_dir, 0)
   end
 
-  local file, err = io.open(filepath, "w")
+  local file, err = io.open(filepath, 'w')
   if not file then
-    Logger.error("STORAGE", "Failed to open file for writing: %s", filepath)
-    if err then
-      Logger.error("STORAGE", "%s", err)
-    end
+    Logger.error('STORAGE', 'Cannot write to: %s (%s)', filepath, tostring(err))
     return false
   end
 
   local json_str = JSON.encode(data, {pretty = true})
   local write_ok, write_err = file:write(json_str)
   if not write_ok then
-    Logger.error("STORAGE", "Failed to write data: %s", tostring(write_err))
+    Logger.error('STORAGE', 'Write failed: %s', tostring(write_err))
     file:close()
     return false
   end
 
   file:close()
-
-  Logger.debug("STORAGE", "Saved metadata: %s", filepath)
   return true
 end
 
@@ -97,54 +89,64 @@ function M.load_json(filename)
   local sep = package.config:sub(1,1)
   local filepath = data_dir .. sep .. filename
 
-  local file = io.open(filepath, "r")
+  local file = io.open(filepath, 'r')
   if not file then
-    Logger.debug("STORAGE", "No existing data: %s", filepath)
+    return nil  -- No file is normal on first run
+  end
+
+  local content = file:read('*all')
+  file:close()
+
+  if not content or content == '' then
     return nil
   end
 
-  local content = file:read("*all")
-  file:close()
-
   local data = JSON.decode(content)
-  Logger.debug("STORAGE", "Loaded: %s", filepath)
-  return data
+  if data then
+    return data
+  end
+
+  -- JSON decode failed - file might be corrupted, delete and start fresh
+  Logger.warn('STORAGE', 'JSON decode failed, deleting corrupt file: %s', filepath)
+  os.remove(filepath)
+
+  return nil
 end
 
 -- Data structure for template metadata
 -- {
 --   templates = {
 --     [uuid] = {
---       uuid = "...",
---       name = "Template Name",
---       path = "relative/path",
---       tags = {"tag1", "tag2"},
---       notes = "Some notes",
+--       uuid = '...',
+--       name = 'Template Name',
+--       path = 'relative/path',
+--       tags = {'tag1', 'tag2'},
+--       notes = 'Some notes',
 --       last_seen = timestamp
 --     }
 --   },
 --   folders = {
 --     [uuid] = {
---       uuid = "...",
---       name = "Folder Name",
---       path = "relative/path",
---       tags = {"tag1"},
+--       uuid = '...',
+--       name = 'Folder Name',
+--       path = 'relative/path',
+--       tags = {'tag1'},
 --       last_seen = timestamp
 --     }
 --   },
 --   virtual_folders = {
 --     [uuid] = {
---       id = "uuid",
---       name = "Virtual Folder Name",
---       parent_id = "__VIRTUAL_ROOT__" or parent virtual folder uuid,
---       template_refs = {"template-uuid-1", "template-uuid-2"},
---       color = "#FF5733" (optional),
+--       id = 'uuid',
+--       name = 'Virtual Folder Name',
+--       parent_id = '__VIRTUAL_ROOT__' or parent virtual folder uuid,
+--       template_refs = {'template-uuid-1', 'template-uuid-2'},
+--       color = '#FF5733' (optional),
 --       created = timestamp
 --     }
 --   },
 --   tags = {
---     "tag1" = {
---       name = "Tag Name",
+--     'tag1' = {
+--       name = 'Tag Name',
 --       color = 0xFF0000FF,
 --       created = timestamp
 --     }
@@ -153,7 +155,7 @@ end
 
 -- Load template metadata
 function M.load_metadata()
-  local data = M.load_json("metadata.json")
+  local data = M.load_json('metadata.json')
 
   -- Ensure structure exists
   if not data then
@@ -177,17 +179,17 @@ function M.load_metadata()
   end
 
   -- Ensure Favorites virtual folder exists (non-deletable)
-  local favorites_id = "__FAVORITES__"
+  local favorites_id = '__FAVORITES__'
   if not data.virtual_folders[favorites_id] then
     data.virtual_folders[favorites_id] = {
       id = favorites_id,
-      name = "Favorites",
-      parent_id = "__VIRTUAL_ROOT__",
+      name = 'Favorites',
+      parent_id = '__VIRTUAL_ROOT__',
       template_refs = {},
       is_system = true,  -- Mark as non-deletable system folder
       created = os.time(),
     }
-    Logger.debug("STORAGE", "Created default Favorites virtual folder")
+    Logger.debug('STORAGE', 'Created default Favorites virtual folder')
   elseif not data.virtual_folders[favorites_id].is_system then
     -- Mark existing Favorites as system folder
     data.virtual_folders[favorites_id].is_system = true
@@ -199,7 +201,7 @@ end
 -- Save template metadata
 function M.save_metadata(metadata)
   if not metadata then
-    Logger.error("STORAGE", "Cannot save nil metadata")
+    Logger.error('STORAGE', 'Cannot save nil metadata')
     return false
   end
 
@@ -220,7 +222,7 @@ function M.save_metadata(metadata)
     metadata.tags = {}
   end
 
-  return M.save_json("metadata.json", metadata)
+  return M.save_json('metadata.json', metadata)
 end
 
 -- Find template by UUID or fallback to name
@@ -239,23 +241,6 @@ function M.find_template(metadata, uuid, name, path)
   for _, tmpl in pairs(metadata.templates) do
     if tmpl.name == name and tmpl.path == path then
       return tmpl
-    end
-  end
-
-  -- Debug: log first failed lookup
-  if not M._logged_first_miss then
-    M._logged_first_miss = true
-    M.log("DEBUG find_template: Looking for name='" .. tostring(name) .. "', path='" .. tostring(path) .. "'")
-
-    -- Show first 5 templates from metadata for comparison
-    local count = 0
-    for _, tmpl in pairs(metadata.templates) do
-      if count < 5 then
-        M.log("  Metadata has: name='" .. tostring(tmpl.name) .. "', path='" .. tostring(tmpl.path) .. "'")
-        count = count + 1
-      else
-        break
-      end
     end
   end
 
@@ -291,6 +276,21 @@ function M.find_virtual_folder(metadata, id)
   end
 
   return metadata.virtual_folders[id]
+end
+
+-- Layout state persistence
+-- Stores splitter positions and other UI layout preferences
+
+function M.load_layout()
+  return M.load_json('layout.json')
+end
+
+function M.save_layout(layout)
+  if not layout then
+    Logger.error('STORAGE', 'Cannot save nil layout')
+    return false
+  end
+  return M.save_json('layout.json', layout)
 end
 
 return M

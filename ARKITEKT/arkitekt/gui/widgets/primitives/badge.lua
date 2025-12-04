@@ -1,10 +1,10 @@
 -- @noindex
 -- arkitekt/gui/widgets/primitives/badge.lua
 -- Standardized badge rendering system with consistent styling
--- Uses unified opts-based API
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
+local Theme = require('arkitekt.theme')
 local Base = require('arkitekt.gui.widgets.base')
 
 local M = {}
@@ -13,227 +13,231 @@ local M = {}
 -- DEFAULTS
 -- ============================================================================
 
-M.DEFAULTS = {
-  -- Position
+local DEFAULTS = {
   x = 0,
   y = 0,
-
-  -- Size
-  size = 18,  -- For icon badges
-
-  -- Content
-  text = "",
+  size = 18,
+  text = '',
   icon = nil,
-
-  -- Colors
-  base_color = Colors.hexrgb("#555555"),  -- For border derivation
+  base_color = nil,    -- Theme.COLORS.BORDER_FOCUS
   alpha = 255,
-  bg_color = Colors.hexrgb("#14181C"),
-  text_color = Colors.hexrgb("#FFFFFFDD"),
-  icon_color = Colors.hexrgb("#FFFFFF"),
-
-  -- Style
+  bg_color = nil,      -- Theme.COLORS.BADGE_BG
+  text_color = nil,    -- Theme.COLORS.BADGE_TEXT
+  icon_color = nil,    -- Theme.COLORS.TEXT_BRIGHT
   padding_x = 5,
   padding_y = 1,
   rounding = 3,
   border_alpha = 0x55,
   border_darken = 0.4,
-
-  -- Font
   icon_font = nil,
   icon_font_size = 14,
-
-  -- Interaction
   id = nil,
   on_click = nil,
-
-  -- Draw list
   draw_list = nil,
+  is_favorite = false,
 }
 
 -- ============================================================================
--- INTERNAL HELPERS
+-- PUBLIC API
 -- ============================================================================
 
-local function merge_config(opts)
-  return {
-    padding_x = opts.padding_x or M.DEFAULTS.padding_x,
-    padding_y = opts.padding_y or M.DEFAULTS.padding_y,
-    rounding = opts.rounding or M.DEFAULTS.rounding,
-    bg_color = opts.bg_color or M.DEFAULTS.bg_color,
-    border_alpha = opts.border_alpha or M.DEFAULTS.border_alpha,
-    border_darken = opts.border_darken or M.DEFAULTS.border_darken,
-    text_color = opts.text_color or M.DEFAULTS.text_color,
-    icon_color = opts.icon_color or M.DEFAULTS.icon_color,
-  }
-end
+--- Draw a text badge
+--- Supports two calling conventions:
+---   Opts mode:       Badge.Text(ctx, { x=x, y=y, text=text, ... })
+---   Positional mode: Badge.Text(dl, x, y, text, text_w, text_h, cfg)
+--- Positional mode is zero-allocation for hot paths (tiles, grids)
+--- @overload fun(ctx: userdata, opts: table): table
+--- @overload fun(dl: userdata, x: number, y: number, text: string, text_w: number, text_h: number, cfg: table): number, number, number, number
+function M.Text(ctx_or_dl, opts_or_x, y, text, text_w, text_h, cfg)
+  -- Detect calling convention: opts mode if second arg is table
+  if type(opts_or_x) == 'table' then
+    -- Opts mode (flexible, allocates)
+    local ctx, opts = ctx_or_dl, opts_or_x
+    opts = Base.parse_opts(opts, DEFAULTS)
 
--- ============================================================================
--- PUBLIC API (Standardized)
--- ============================================================================
+    -- Resolve colors from Theme (at runtime)
+    local C = Theme.COLORS
+    opts.base_color = opts.base_color or C.BORDER_FOCUS
+    opts.bg_color = opts.bg_color or C.BADGE_BG
+    opts.text_color = opts.text_color or C.BADGE_TEXT
+    opts.icon_color = opts.icon_color or C.TEXT_BRIGHT
 
---- Render a text badge
---- @param ctx userdata ImGui context
---- @param opts table Widget options
---- @return table Result { x1, y1, x2, y2, width, height }
-function M.text(ctx, opts)
-  opts = Base.parse_opts(opts, M.DEFAULTS)
-  local cfg = merge_config(opts)
+    local dl = Base.get_draw_list(ctx, opts)
+    local x, y = opts.x, opts.y
+    local badge_text = opts.text or ''
+    local alpha = opts.alpha or 255
 
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
-  local x, y = opts.x, opts.y
-  local text = opts.text or ""
-  local base_color = opts.base_color
-  local alpha = opts.alpha or 255
+    local tw, th = ImGui.CalcTextSize(ctx, badge_text)
+    local w = tw + opts.padding_x * 2
+    local h = th + opts.padding_y * 2
+    local x2, y2 = x + w, y + h
 
-  -- Calculate dimensions
-  local text_w, text_h = ImGui.CalcTextSize(ctx, text)
-  local badge_w = text_w + cfg.padding_x * 2
-  local badge_h = text_h + cfg.padding_y * 2
+    -- Background
+    local bg_alpha = math.floor((opts.bg_color & 0xFF) * (alpha / 255))
+    local bg = (opts.bg_color & 0xFFFFFF00) | bg_alpha
+    ImGui.DrawList_AddRectFilled(dl, x, y, x2, y2, bg, opts.rounding)
 
-  local x2 = x + badge_w
-  local y2 = y + badge_h
+    -- Border
+    local border = Colors.AdjustBrightness(opts.base_color, opts.border_darken)
+    border = Colors.WithAlpha(border, opts.border_alpha)
+    ImGui.DrawList_AddRect(dl, x, y, x2, y2, border, opts.rounding, 0, 0.5)
 
-  -- Background
-  local bg_alpha = math.floor((cfg.bg_color & 0xFF) * (alpha / 255))
-  local bg_color = (cfg.bg_color & 0xFFFFFF00) | bg_alpha
-  ImGui.DrawList_AddRectFilled(dl, x, y, x2, y2, bg_color, cfg.rounding)
+    -- Text
+    local text_color = Colors.WithAlpha(opts.text_color, alpha)
+    ImGui.DrawList_AddText(dl, x + opts.padding_x, y + opts.padding_y, text_color, badge_text)
 
-  -- Border using darker tile color
-  local border_color = Colors.adjust_brightness(base_color, cfg.border_darken)
-  border_color = Colors.with_alpha(border_color, cfg.border_alpha)
-  ImGui.DrawList_AddRect(dl, x, y, x2, y2, border_color, cfg.rounding, 0, 0.5)
+    return Base.create_result({ x1 = x, y1 = y, x2 = x2, y2 = y2, width = w, height = h })
+  else
+    -- Positional mode (fast, zero allocation)
+    -- Args: dl, x, y, text, text_w, text_h, cfg
+    -- cfg should have: padding_x, padding_y, rounding, bg_color, border, text_color
+    -- cfg.border should be pre-computed: Colors.WithAlpha(Colors.AdjustBrightness(...), ...)
+    local dl, x = ctx_or_dl, opts_or_x
+    local w = text_w + cfg.padding_x * 2
+    local h = text_h + cfg.padding_y * 2
+    local x2, y2 = x + w, y + h
 
-  -- Text
-  local text_x = x + cfg.padding_x
-  local text_y = y + cfg.padding_y
-  local text_final = Colors.with_alpha(cfg.text_color, alpha)
-  ImGui.DrawList_AddText(dl, text_x, text_y, text_final, text)
+    -- Background (cfg.bg_color already includes alpha)
+    ImGui.DrawList_AddRectFilled(dl, x, y, x2, y2, cfg.bg_color, cfg.rounding)
 
-  return {
-    x1 = x, y1 = y, x2 = x2, y2 = y2,
-    width = badge_w, height = badge_h,
-  }
-end
+    -- Border (pre-computed in cfg)
+    ImGui.DrawList_AddRect(dl, x, y, x2, y2, cfg.border, cfg.rounding, 0, 0.5)
 
---- Render an icon badge
---- @param ctx userdata ImGui context
---- @param opts table Widget options
---- @return table Result { x1, y1, x2, y2, width, height }
-function M.icon(ctx, opts)
-  opts = Base.parse_opts(opts, M.DEFAULTS)
-  local cfg = merge_config(opts)
+    -- Text
+    ImGui.DrawList_AddText(dl, x + cfg.padding_x, y + cfg.padding_y, cfg.text_color, text)
 
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
-  local x, y = opts.x, opts.y
-  local size = opts.size or 18
-  local icon_char = opts.icon or ""
-  local base_color = opts.base_color
-  local alpha = opts.alpha or 255
-
-  local x2 = x + size
-  local y2 = y + size
-
-  -- Background
-  local bg_alpha = math.floor((cfg.bg_color & 0xFF) * (alpha / 255))
-  local bg_color = (cfg.bg_color & 0xFFFFFF00) | bg_alpha
-  ImGui.DrawList_AddRectFilled(dl, x, y, x2, y2, bg_color, cfg.rounding)
-
-  -- Border using darker tile color
-  local border_color = Colors.adjust_brightness(base_color, cfg.border_darken)
-  border_color = Colors.with_alpha(border_color, cfg.border_alpha)
-  ImGui.DrawList_AddRect(dl, x, y, x2, y2, border_color, cfg.rounding, 0, 0.5)
-
-  -- Icon
-  if opts.icon_font then
-    ImGui.PushFont(ctx, opts.icon_font, opts.icon_font_size or 14)
+    -- Return raw coords (no table allocation)
+    return x, y, x2, y2
   end
-
-  local icon_color = Colors.with_alpha(cfg.icon_color, alpha)
-  local icon_w, icon_h = ImGui.CalcTextSize(ctx, icon_char)
-  local icon_x = x + (size - icon_w) / 2
-  local icon_y = y + (size - icon_h) / 2
-  ImGui.DrawList_AddText(dl, icon_x, icon_y, icon_color, icon_char)
-
-  if opts.icon_font then
-    ImGui.PopFont(ctx)
-  end
-
-  return {
-    x1 = x, y1 = y, x2 = x2, y2 = y2,
-    width = size, height = size,
-  }
 end
 
---- Render a clickable text badge
---- @param ctx userdata ImGui context
---- @param opts table Widget options
---- @return table Result { x1, y1, x2, y2, width, height, left_clicked, right_clicked }
-function M.clickable(ctx, opts)
-  opts = Base.parse_opts(opts, M.DEFAULTS)
+--- Draw an icon badge
+--- Supports two calling conventions:
+---   Opts mode:       Badge.Icon(ctx, { x=x, y=y, icon=icon, ... })
+---   Positional mode: Badge.Icon(dl, x, y, icon_char, icon_w, icon_h, size, cfg)
+--- Positional mode is zero-allocation for hot paths (tiles, grids)
+--- @overload fun(ctx: userdata, opts: table): table
+--- @overload fun(dl: userdata, x: number, y: number, icon_char: string, icon_w: number, icon_h: number, size: number, cfg: table): number, number, number, number
+function M.Icon(ctx_or_dl, opts_or_x, y, icon_char, icon_w, icon_h, size, cfg)
+  -- Detect calling convention: opts mode if second arg is table
+  if type(opts_or_x) == 'table' then
+    -- Opts mode (flexible, allocates)
+    local ctx, opts = ctx_or_dl, opts_or_x
+    opts = Base.parse_opts(opts, DEFAULTS)
 
-  -- Render the text badge first
-  local result = M.text(ctx, opts)
+    -- Resolve colors from Theme (at runtime)
+    local C = Theme.COLORS
+    opts.base_color = opts.base_color or C.BORDER_FOCUS
+    opts.bg_color = opts.bg_color or C.BADGE_BG
+    opts.icon_color = opts.icon_color or C.TEXT_BRIGHT
 
-  -- Create invisible button over badge
-  local unique_id = opts.id or "badge"
-  ImGui.SetCursorScreenPos(ctx, result.x1, result.y1)
-  ImGui.InvisibleButton(ctx, "##badge_" .. unique_id, result.width, result.height)
+    local dl = Base.get_draw_list(ctx, opts)
+    local x, y = opts.x, opts.y
+    local badge_size = opts.size or 18
+    local badge_icon = opts.icon or ''
+    local alpha = opts.alpha or 255
+    local x2, y2 = x + badge_size, y + badge_size
 
-  -- Handle clicks
-  local left_clicked = ImGui.IsItemClicked(ctx, 0)
-  local right_clicked = ImGui.IsItemClicked(ctx, 1)
+    -- Background
+    local bg_alpha = math.floor((opts.bg_color & 0xFF) * (alpha / 255))
+    local bg = (opts.bg_color & 0xFFFFFF00) | bg_alpha
+    ImGui.DrawList_AddRectFilled(dl, x, y, x2, y2, bg, opts.rounding)
 
-  if opts.on_click then
-    if left_clicked then
-      opts.on_click(1)  -- Left-click: increment (+1)
-    elseif right_clicked then
-      opts.on_click(-1)  -- Right-click: decrement (-1)
+    -- Border
+    local border = Colors.AdjustBrightness(opts.base_color, opts.border_darken)
+    border = Colors.WithAlpha(border, opts.border_alpha)
+    ImGui.DrawList_AddRect(dl, x, y, x2, y2, border, opts.rounding, 0, 0.5)
+
+    -- Icon
+    if opts.icon_font then
+      ImGui.PushFont(ctx, opts.icon_font, opts.icon_font_size or 14)
+    end
+
+    local icon_color = Colors.WithAlpha(opts.icon_color, alpha)
+    local iw, ih = ImGui.CalcTextSize(ctx, badge_icon)
+    ImGui.DrawList_AddText(dl, x + (badge_size - iw) / 2, y + (badge_size - ih) / 2, icon_color, badge_icon)
+
+    if opts.icon_font then
+      ImGui.PopFont(ctx)
+    end
+
+    return Base.create_result({ x1 = x, y1 = y, x2 = x2, y2 = y2, width = badge_size, height = badge_size })
+  else
+    -- Positional mode (fast, zero allocation)
+    -- Args: dl, x, y, icon_char, icon_w, icon_h, size, cfg
+    -- cfg should have: bg_color, border, icon_color, rounding (all pre-computed with alpha)
+    local dl, x = ctx_or_dl, opts_or_x
+    local x2, y2 = x + size, y + size
+
+    -- Background (cfg.bg_color already includes alpha)
+    ImGui.DrawList_AddRectFilled(dl, x, y, x2, y2, cfg.bg_color, cfg.rounding)
+
+    -- Border (pre-computed in cfg)
+    ImGui.DrawList_AddRect(dl, x, y, x2, y2, cfg.border, cfg.rounding, 0, 0.5)
+
+    -- Icon (centered)
+    local icon_x = x + (size - icon_w) / 2
+    local icon_y = y + (size - icon_h) / 2
+    ImGui.DrawList_AddText(dl, icon_x, icon_y, cfg.icon_color, icon_char)
+
+    -- Return raw coords (no table allocation)
+    return x, y, x2, y2
+  end
+end
+
+function M.Clickable(ctx, opts)
+  opts = Base.parse_opts(opts, DEFAULTS)
+
+  -- Check disabled state (opts or stack)
+  local actx = Base.get_context(ctx)
+  local is_disabled = opts.is_disabled or actx:is_disabled()
+
+  local result = M.Text(ctx, opts)
+
+  local left_clicked = false
+  local right_clicked = false
+
+  -- Only handle interaction when not disabled
+  if not is_disabled then
+    local unique_id = opts.id or 'badge'
+    ImGui.SetCursorScreenPos(ctx, result.x1, result.y1)
+    ImGui.InvisibleButton(ctx, '##badge_' .. unique_id, result.width, result.height)
+
+    left_clicked = ImGui.IsItemClicked(ctx, 0)
+    right_clicked = ImGui.IsItemClicked(ctx, 1)
+
+    if opts.on_click then
+      if left_clicked then opts.on_click(1)
+      elseif right_clicked then opts.on_click(-1)
+      end
     end
   end
 
-  result.left_clicked = left_clicked
-  result.right_clicked = right_clicked
-  result.clicked = left_clicked
-
-  return result
+  return Base.create_result({
+    x1 = result.x1, y1 = result.y1, x2 = result.x2, y2 = result.y2,
+    width = result.width, height = result.height,
+    clicked = left_clicked, right_clicked = right_clicked,
+  })
 end
 
---- Render a favorite badge (star icon)
---- @param ctx userdata ImGui context
---- @param opts table Widget options
---- @return table Result { x1, y1, x2, y2, width, height }
-function M.favorite(ctx, opts)
-  opts = Base.parse_opts(opts, M.DEFAULTS)
+function M.Favorite(ctx, opts)
+  opts = Base.parse_opts(opts, DEFAULTS)
 
-  -- Return empty result if not favorited
   if not opts.is_favorite then
-    return {
-      x1 = opts.x, y1 = opts.y, x2 = opts.x, y2 = opts.y,
-      width = 0, height = 0,
-    }
+    return Base.create_result({ x1 = opts.x, y1 = opts.y, x2 = opts.x, y2 = opts.y, width = 0, height = 0 })
   end
 
-  -- Use remixicon star-fill if available, otherwise fallback to Unicode star
-  local star_char
-  if opts.icon_font then
-    star_char = utf8.char(0xF186)  -- Remixicon star-fill
-  else
-    star_char = "★"  -- U+2605 BLACK STAR
-  end
-
+  local star_char = opts.icon_font and utf8.char(0xF186) or '★'
   opts.icon = star_char
-  return M.icon(ctx, opts)
+  return M.Icon(ctx, opts)
 end
 
 -- ============================================================================
--- MODULE EXPORT (Callable)
+-- MODULE EXPORT
 -- ============================================================================
 
--- Make module callable: Ark.Badge(ctx, opts) → M.text(ctx, opts)
--- Default to text badge as it's the most common variant
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.text(ctx, opts)
+    return M.Text(ctx, opts)
   end
 })

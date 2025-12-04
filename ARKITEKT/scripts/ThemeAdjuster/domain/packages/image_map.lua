@@ -81,7 +81,7 @@ end
 -- CLEAR
 -- ============================================================================
 
-function M.clear()
+function M.Clear()
   current_map = {}
   stats.total_keys = 0
   stats.active_providers = {}

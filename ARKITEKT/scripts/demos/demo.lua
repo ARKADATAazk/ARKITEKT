@@ -4,66 +4,63 @@
 -- Auto-injected package path setup for relocated script
 
 -- Package path setup for relocated script
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
+local script_path = debug.getinfo(1, 'S').source:match('@?(.*)[\\/]') or ''
 local root_path = script_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
 
 -- Ensure root_path ends with a slash
-if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
+if not root_path:match('[\\/]$') then root_path = root_path .. '/' end
 
 -- Add both module search paths
-local arkitekt_path= root_path .. "ARKITEKT/"
-local scripts_path = root_path .. "ARKITEKT/scripts/"
-package.path = arkitekt_path.. "?.lua;" .. arkitekt_path.. "?/init.lua;" .. 
-               scripts_path .. "?.lua;" .. scripts_path .. "?/init.lua;" .. 
+local arkitekt_path= root_path .. 'ARKITEKT/'
+local scripts_path = root_path .. 'ARKITEKT/scripts/'
+package.path = arkitekt_path.. '?.lua;' .. arkitekt_path.. '?/init.lua;' .. 
+               scripts_path .. '?.lua;' .. scripts_path .. '?/init.lua;' .. 
                package.path
 
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
+local script_path = debug.getinfo(1, 'S').source:match('@?(.*)[\\/]') or ''
 local root_path = script_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
-package.path = root_path .. "?.lua;" .. root_path .. "?/init.lua;" .. package.path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+if not root_path:match('[\\/]$') then root_path = root_path .. '/' end
+package.path = root_path .. '?.lua;' .. root_path .. '?/init.lua;' .. package.path
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Fs = require('arkitekt.core.fs')
 
-local function dirname(p) return p:match("^(.*)[/\\]") end
+local function dirname(p) return p:match('^(.*)[/\\]') end
 local join = Fs.join
-local function addpath(p) if p and p~="" and not package.path:find(p,1,true) then package.path = p .. ";" .. package.path end end
+local function addpath(p) if p and p~='' and not package.path:find(p,1,true) then package.path = p .. ';' .. package.path end end
 
-local SRC   = debug.getinfo(1,"S").source:sub(2)
-local HERE  = dirname(SRC) or "."
-local PARENT= dirname(HERE or ".") or "."
-addpath(join(PARENT,"?.lua")); addpath(join(PARENT,"?/init.lua"))
-addpath(join(HERE,  "?.lua")); addpath(join(HERE,  "?/init.lua"))
-addpath(join(HERE,  "Arkitekt/?.lua"))
-addpath(join(HERE,  "Arkitekt/?/init.lua"))
-addpath(join(HERE,  "Arkitekt/?/?.lua"))
+local SRC   = debug.getinfo(1,'S').source:sub(2)
+local HERE  = dirname(SRC) or '.'
+local PARENT= dirname(HERE or '.') or '.'
+addpath(join(PARENT,'?.lua')); addpath(join(PARENT,'?/init.lua'))
+addpath(join(HERE,  '?.lua')); addpath(join(HERE,  '?/init.lua'))
+addpath(join(HERE,  'Arkitekt/?.lua'))
+addpath(join(HERE,  'Arkitekt/?/init.lua'))
+addpath(join(HERE,  'Arkitekt/?/?.lua'))
 
-local Shell          = require("arkitekt.app.shell")
-local PackageGrid    = require("arkitekt.gui.widgets.media.package_tiles.grid")
-local Micromanage    = require("arkitekt.gui.widgets.media.package_tiles.micromanage")
-local SelRect        = require("arkitekt.gui.widgets.data.selection_rectangle")
+local Shell          = require('arkitekt.runtime.shell')
+local PackageGrid    = require('arkitekt.gui.widgets.media.package_tiles.grid')
+local Micromanage    = require('arkitekt.gui.widgets.media.package_tiles.micromanage')
+local SelRect        = require('arkitekt.gui.widgets.data.selection_rectangle')
 
-local SettingsOK, Settings = pcall(require, "arkitekt.core.settings")
-local StyleOK,    Style    = pcall(require, "arkitekt.gui.style.imgui")
-local hexrgb = Ark.Colors.hexrgb
-
-
+local SettingsOK, Settings = pcall(require, 'arkitekt.core.settings')
+local StyleOK,    Style    = pcall(require, 'arkitekt.gui.style.imgui')
 local settings = nil
-if SettingsOK and type(Settings.new)=="function" then
-  local data_dir = ARK.get_data_dir("demos")
-  local ok, inst = pcall(Settings.new, data_dir, "demo_packages.json")
+if SettingsOK and type(Settings.new)=='function' then
+  local data_dir = ARK.get_data_dir('demos')
+  local ok, inst = pcall(Settings.new, data_dir, 'demo_packages.json')
   if ok then settings = inst end
 end
 
 local pkg = {
   tile = 220,
-  search = "",
+  search = '',
   order = {},
   active = {},
   index = {},
@@ -73,41 +70,41 @@ local pkg = {
 }
 
 local mock_data = {
-  { id="TCP_Modern_Light", name="Modern Light Theme", type="TCP", assets=15, 
-    keys={"tcp_background.png", "tcp_button.png", "tcp_slider.png", "tcp_knob.png", "tcp_meter.png"} },
+  { id='TCP_Modern_Light', name='Modern Light Theme', type='TCP', assets=15, 
+    keys={'tcp_background.png', 'tcp_button.png', 'tcp_slider.png', 'tcp_knob.png', 'tcp_meter.png'} },
   
-  { id="TCP_Dark_Minimal", name="Dark Minimal", type="TCP", assets=22, 
-    keys={"tcp_background.png", "tcp_knob.png", "tcp_vu.png", "tcp_button.png", "tcp_fader.png"} },
+  { id='TCP_Dark_Minimal', name='Dark Minimal', type='TCP', assets=22, 
+    keys={'tcp_background.png', 'tcp_knob.png', 'tcp_vu.png', 'tcp_button.png', 'tcp_fader.png'} },
   
-  { id="MCP_Pro_Blue", name="Pro Blue Mixer", type="MCP", assets=18, 
-    keys={"mcp_strip.png", "mcp_fader.png", "mcp_pan.png", "mcp_solo.png", "mcp_mute.png"} },
+  { id='MCP_Pro_Blue', name='Pro Blue Mixer', type='MCP', assets=18, 
+    keys={'mcp_strip.png', 'mcp_fader.png', 'mcp_pan.png', 'mcp_solo.png', 'mcp_mute.png'} },
   
-  { id="Transport_Classic", name="Classic Transport", type="Transport", assets=12, 
-    keys={"transport_play.png", "transport_stop.png", "transport_record.png", "transport_pause.png"} },
+  { id='Transport_Classic', name='Classic Transport', type='Transport', assets=12, 
+    keys={'transport_play.png', 'transport_stop.png', 'transport_record.png', 'transport_pause.png'} },
   
-  { id="TCP_Colorful", name="Colorful TCP", type="TCP", assets=25, 
-    keys={"tcp_background.png", "tcp_label.png", "tcp_meter.png", "tcp_knob.png", "tcp_slider.png"} },
+  { id='TCP_Colorful', name='Colorful TCP', type='TCP', assets=25, 
+    keys={'tcp_background.png', 'tcp_label.png', 'tcp_meter.png', 'tcp_knob.png', 'tcp_slider.png'} },
   
-  { id="MCP_Compact", name="Compact Mixer", type="MCP", assets=14, 
-    keys={"mcp_strip.png", "mcp_solo.png", "mcp_mute.png", "mcp_fader.png", "mcp_volume.png"} },
+  { id='MCP_Compact', name='Compact Mixer', type='MCP', assets=14, 
+    keys={'mcp_strip.png', 'mcp_solo.png', 'mcp_mute.png', 'mcp_fader.png', 'mcp_volume.png'} },
   
-  { id="Global_Icons", name="Icon Pack", type="Global", assets=45, 
-    keys={"icon_save.png", "icon_load.png", "icon_export.png", "icon_settings.png"} },
+  { id='Global_Icons', name='Icon Pack', type='Global', assets=45, 
+    keys={'icon_save.png', 'icon_load.png', 'icon_export.png', 'icon_settings.png'} },
   
-  { id="TCP_Vintage", name="Vintage Look", type="TCP", assets=19, 
-    keys={"tcp_warm.png", "tcp_analog.png", "tcp_tape.png", "tcp_background.png", "tcp_slider.png"} },
+  { id='TCP_Vintage', name='Vintage Look', type='TCP', assets=19, 
+    keys={'tcp_warm.png', 'tcp_analog.png', 'tcp_tape.png', 'tcp_background.png', 'tcp_slider.png'} },
   
-  { id="MCP_Studio", name="Studio Mixer", type="MCP", assets=21, 
-    keys={"mcp_strip.png", "mcp_fader.png", "mcp_pan.png", "mcp_eq.png", "mcp_insert.png"} },
+  { id='MCP_Studio', name='Studio Mixer', type='MCP', assets=21, 
+    keys={'mcp_strip.png', 'mcp_fader.png', 'mcp_pan.png', 'mcp_eq.png', 'mcp_insert.png'} },
   
-  { id="Transport_Modern", name="Modern Transport", type="Transport", assets=16, 
-    keys={"transport_play.png", "transport_stop.png", "transport_record.png", "transport_loop.png"} },
+  { id='Transport_Modern', name='Modern Transport', type='Transport', assets=16, 
+    keys={'transport_play.png', 'transport_stop.png', 'transport_record.png', 'transport_loop.png'} },
 }
 
 for i, data in ipairs(mock_data) do
   local P = {
     id = data.id,
-    path = "mock://packages/" .. data.id,
+    path = 'mock://packages/' .. data.id,
     meta = {
       name = data.name,
       type = data.type,
@@ -129,7 +126,7 @@ end
 function pkg:visible()
   local result = {}
   for _, P in ipairs(self.index) do
-    local matches_search = (self.search == "" or P.id:lower():find(self.search:lower(), 1, true) or 
+    local matches_search = (self.search == '' or P.id:lower():find(self.search:lower(), 1, true) or 
                            (P.meta.name and P.meta.name:lower():find(self.search:lower(), 1, true)))
     local matches_filter = self.filters[P.meta.type] == true
     
@@ -221,7 +218,7 @@ local sel_rect = SelRect.new()
 local grid = PackageGrid.create(pkg, settings, theme)
 
 local container = Ark.Panel.new({
-  id = "packages_container",
+  id = 'packages_container',
   width = nil,
   height = nil,
   sel_rect = sel_rect,
@@ -244,14 +241,14 @@ local function get_app_status()
   
   if total_conflicts > 0 then
     return {
-      color = hexrgb("#FFA500"),
-      text = string.format("CONFLICTS: %d", total_conflicts),
+      color = 0xFFA500FF,
+      text = string.format('CONFLICTS: %d', total_conflicts),
     }
   end
   
   return {
-    color = hexrgb("#41E0A3"),
-    text = "READY",
+    color = 0x41E0A3FF,
+    text = 'READY',
   }
 end
 
@@ -308,65 +305,65 @@ local function draw_packages(ctx)
 end
 
 local function draw_settings(ctx)
-  ImGui.Text(ctx, "Settings")
+  ImGui.Text(ctx, 'Settings')
   ImGui.Separator(ctx)
-  ImGui.TextWrapped(ctx, "This demo showcases the colorblocks grid widget with:")
-  ImGui.BulletText(ctx, "Multi-select with Ctrl/Shift")
-  ImGui.BulletText(ctx, "Drag & drop reordering")
-  ImGui.BulletText(ctx, "Selection rectangle across entire container")
-  ImGui.BulletText(ctx, "Animated layout transitions")
-  ImGui.BulletText(ctx, "Marching ants selection borders")
-  ImGui.BulletText(ctx, "Right-click to toggle package state")
-  ImGui.BulletText(ctx, "Double-click to open micro-manage")
-  ImGui.BulletText(ctx, "Content padding managed by window system")
-  ImGui.BulletText(ctx, "Conflict detection and priority resolution")
+  ImGui.TextWrapped(ctx, 'This demo showcases the colorblocks grid widget with:')
+  ImGui.BulletText(ctx, 'Multi-select with Ctrl/Shift')
+  ImGui.BulletText(ctx, 'Drag & drop reordering')
+  ImGui.BulletText(ctx, 'Selection rectangle across entire container')
+  ImGui.BulletText(ctx, 'Animated layout transitions')
+  ImGui.BulletText(ctx, 'Marching ants selection borders')
+  ImGui.BulletText(ctx, 'Right-click to toggle package state')
+  ImGui.BulletText(ctx, 'Double-click to open micro-manage')
+  ImGui.BulletText(ctx, 'Content padding managed by window system')
+  ImGui.BulletText(ctx, 'Conflict detection and priority resolution')
   ImGui.Dummy(ctx, 1, 20)
-  ImGui.Text(ctx, string.format("Current packages visible: %d", #pkg:visible()))
-  ImGui.Text(ctx, string.format("Current selection count: %d", grid:get_selected_count()))
+  ImGui.Text(ctx, string.format('Current packages visible: %d', #pkg:visible()))
+  ImGui.Text(ctx, string.format('Current selection count: %d', grid:get_selected_count()))
   
   local conflicts = pkg:conflicts(true)
   local total_conflicts = 0
   for _, count in pairs(conflicts) do
     total_conflicts = total_conflicts + count
   end
-  ImGui.Text(ctx, string.format("Total asset conflicts: %d", total_conflicts))
+  ImGui.Text(ctx, string.format('Total asset conflicts: %d', total_conflicts))
 end
 
 local function draw_about(ctx)
-  ImGui.Text(ctx, "About Package Grid Demo")
+  ImGui.Text(ctx, 'About Package Grid Demo')
   ImGui.Separator(ctx)
-  ImGui.TextWrapped(ctx, "This demo uses the modular colorblocks widget system:")
+  ImGui.TextWrapped(ctx, 'This demo uses the modular colorblocks widget system:')
   ImGui.Dummy(ctx, 1, 10)
-  ImGui.BulletText(ctx, "colorblocks.lua - Reusable grid widget")
-  ImGui.BulletText(ctx, "package_tiles/grid.lua - Package grid logic")
-  ImGui.BulletText(ctx, "package_tiles/renderer.lua - Tile rendering")
-  ImGui.BulletText(ctx, "package_tiles/micromanage.lua - Asset management")
-  ImGui.BulletText(ctx, "tiles_container.lua - Visual container with scrolling")
-  ImGui.BulletText(ctx, "selection_rectangle.lua - Standalone selection widget")
-  ImGui.BulletText(ctx, "window.lua - Window with content padding")
-  ImGui.BulletText(ctx, "menutabs.lua - Tab navigation")
-  ImGui.BulletText(ctx, "Fully decoupled rendering and interaction")
+  ImGui.BulletText(ctx, 'colorblocks.lua - Reusable grid widget')
+  ImGui.BulletText(ctx, 'package_tiles/grid.lua - Package grid logic')
+  ImGui.BulletText(ctx, 'package_tiles/renderer.lua - Tile rendering')
+  ImGui.BulletText(ctx, 'package_tiles/micromanage.lua - Asset management')
+  ImGui.BulletText(ctx, 'tiles_container.lua - Visual container with scrolling')
+  ImGui.BulletText(ctx, 'selection_rectangle.lua - Standalone selection widget')
+  ImGui.BulletText(ctx, 'window.lua - Window with content padding')
+  ImGui.BulletText(ctx, 'menutabs.lua - Tab navigation')
+  ImGui.BulletText(ctx, 'Fully decoupled rendering and interaction')
   ImGui.Dummy(ctx, 1, 20)
-  ImGui.TextWrapped(ctx, "The grid widget provides selection, drag-drop, and layout systems that can be reused for any grid-based UI.")
+  ImGui.TextWrapped(ctx, 'The grid widget provides selection, drag-drop, and layout systems that can be reused for any grid-based UI.')
   ImGui.Dummy(ctx, 1, 20)
-  ImGui.TextWrapped(ctx, "Content padding is now centralized in the window system, eliminating duplication across tab functions.")
+  ImGui.TextWrapped(ctx, 'Content padding is now centralized in the window system, eliminating duplication across tab functions.')
   ImGui.Dummy(ctx, 1, 20)
-  ImGui.TextWrapped(ctx, "Tabs are now proper window chrome, rendered between titlebar and content with no gap.")
+  ImGui.TextWrapped(ctx, 'Tabs are now proper window chrome, rendered between titlebar and content with no gap.')
   ImGui.Dummy(ctx, 1, 20)
-  ImGui.TextWrapped(ctx, "Conflicts are auto-resolved by overwrite priority (#1 overwrites #2, etc). Orange badges show conflict counts.")
+  ImGui.TextWrapped(ctx, 'Conflicts are auto-resolved by overwrite priority (#1 overwrites #2, etc). Orange badges show conflict counts.')
 end
 
 local function draw(ctx, state)
   local active_tab = state.window:get_active_tab()
   
-  if     active_tab == "PACKAGES" then draw_packages(ctx)
-  elseif active_tab == "SETTINGS" then draw_settings(ctx)
-  elseif active_tab == "ABOUT"    then draw_about(ctx)
+  if     active_tab == 'PACKAGES' then draw_packages(ctx)
+  elseif active_tab == 'SETTINGS' then draw_settings(ctx)
+  elseif active_tab == 'ABOUT'    then draw_about(ctx)
   end
 end
 
 Shell.run({
-  title        = "Arkitekt - Package Grid Demo",
+  title        = 'Arkitekt - Package Grid Demo',
   draw         = draw,
   settings     = settings,
   style        = StyleOK and Style or nil,
@@ -377,10 +374,10 @@ Shell.run({
   content_padding = 12,
   tabs = {
     items = {
-      { id="PACKAGES", label="Packages" },
-      { id="SETTINGS", label="Settings" },
-      { id="ABOUT",    label="About" },
+      { id='PACKAGES', label='Packages' },
+      { id='SETTINGS', label='Settings' },
+      { id='ABOUT',    label='About' },
     },
-    active = "PACKAGES",
+    active = 'PACKAGES',
   },
 })

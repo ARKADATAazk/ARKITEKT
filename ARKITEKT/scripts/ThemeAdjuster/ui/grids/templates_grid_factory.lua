@@ -5,8 +5,6 @@
 local Ark = require('arkitekt')
 local TemplateTile = require('ThemeAdjuster.ui.grids.renderers.template_tile')
 local TemplateGroupConfig = require('ThemeAdjuster.ui.grids.renderers.template_group_config')
-local hexrgb = Ark.Colors.hexrgb
-
 local M = {}
 
 -- State for inline group renaming
@@ -30,15 +28,15 @@ local function create_behaviors(view)
     delete = function(grid, item_keys)
       -- Delete templates or groups
       for _, key in ipairs(item_keys) do
-        if key:match("^template_group_header_") then
+        if key:match('^template_group_header_') then
           -- Delete group
-          local group_id = key:match("^template_group_header_(.+)")
+          local group_id = key:match('^template_group_header_(.+)')
           if group_id then
             view:delete_template_group(group_id)
           end
         else
           -- Delete template
-          local template_id = key:match("^template_(.+)")
+          local template_id = key:match('^template_(.+)')
           if template_id then
             view:delete_template(template_id)
           end
@@ -80,7 +78,7 @@ local function create_render_tile(view)
   return function(ctx, rect, item, state, grid)
     -- Check if this is a group header
     if Ark.TileGroup.is_group_header(item) then
-      local ImGui = require('arkitekt.platform.imgui')
+      local ImGui = require('arkitekt.core.imgui')
       local group_id = item.__group_id
       local group_ref = item.__group_ref
 
@@ -95,7 +93,7 @@ local function create_render_tile(view)
 
         -- Initialize rename buffer if not set
         if not M._group_rename_state[group_id].buffer then
-          M._group_rename_state[group_id].buffer = group_ref.name or ""
+          M._group_rename_state[group_id].buffer = group_ref.name or ''
           M._group_rename_state[group_id].set_focus = true
         end
 
@@ -106,7 +104,7 @@ local function create_render_tile(view)
         end
 
         local flags = ImGui.InputTextFlags_EnterReturnsTrue
-        local rv, new_name = ImGui.InputText(ctx, "##group_rename_" .. group_id, M._group_rename_state[group_id].buffer, flags)
+        local rv, new_name = ImGui.InputText(ctx, '##group_rename_' .. group_id, M._group_rename_state[group_id].buffer, flags)
 
         -- Check if we should finish renaming
         local should_finish = rv  -- Enter was pressed
@@ -117,7 +115,7 @@ local function create_render_tile(view)
 
         if should_finish then
           -- Save the new name to the actual group object
-          if new_name and new_name ~= "" then
+          if new_name and new_name ~= '' then
             -- Find and update the actual group object in view.template_groups
             for _, g in ipairs(view.template_groups) do
               if g.id == group_id then
@@ -148,7 +146,7 @@ local function create_render_tile(view)
         -- Add invisible button for interactions
         local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
         ImGui.SetCursorScreenPos(ctx, x1, y1)
-        ImGui.InvisibleButton(ctx, "##group_header_interact_" .. group_id, x2 - x1, y2 - y1)
+        ImGui.InvisibleButton(ctx, '##group_header_interact_' .. group_id, x2 - x1, y2 - y1)
 
         -- Double-click to rename
         if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
@@ -156,20 +154,20 @@ local function create_render_tile(view)
         end
 
         -- Right-click context menu for group
-        if ImGui.BeginPopupContextItem(ctx, "group_context_" .. group_id) then
-          if ImGui.MenuItem(ctx, "Rename") then
+        if ImGui.BeginPopupContextItem(ctx, 'group_context_' .. group_id) then
+          if ImGui.MenuItem(ctx, 'Rename') then
             M._group_rename_state[group_id] = { buffer = nil, set_focus = true }
           end
 
           ImGui.Separator(ctx)
 
-          if ImGui.MenuItem(ctx, "Configure Group...") then
+          if ImGui.MenuItem(ctx, 'Configure Group...') then
             TemplateGroupConfig.open_config(group_id, view)
           end
 
           ImGui.Separator(ctx)
 
-          if ImGui.MenuItem(ctx, "Delete Group") then
+          if ImGui.MenuItem(ctx, 'Delete Group') then
             view:delete_template_group(group_id)
           end
 
@@ -202,14 +200,14 @@ function M.create_opts(view, config)
 
   -- Visual feedback configurations
   local dim_config = config.dim_config or {
-    fill_color = hexrgb("#00000088"),
-    stroke_color = hexrgb("#FFFFFF33"),
+    fill_color = 0x00000088,
+    stroke_color = 0xFFFFFF33,
     stroke_thickness = 1.5,
     rounding = 3,
   }
 
   local drop_config = config.drop_config or {
-    indicator_color = hexrgb("#7788FFAA"),
+    indicator_color = 0x7788FFAA,
     indicator_thickness = 2,
     enabled = true,
   }
@@ -220,7 +218,7 @@ function M.create_opts(view, config)
   }
 
   return {
-    id = "templates",
+    id = 'templates',
     gap = 2,
     min_col_w = function() return 400 end,
     fixed_tile_h = 32,
@@ -231,12 +229,12 @@ function M.create_opts(view, config)
     key = function(item)
       -- Handle group headers
       if Ark.TileGroup.is_group_header(item) then
-        return "template_group_header_" .. item.__group_id
+        return 'template_group_header_' .. item.__group_id
       end
 
       -- Handle regular or grouped template items
       local template_item = Ark.TileGroup.get_original_item(item)
-      return "template_" .. template_item.id
+      return 'template_' .. template_item.id
     end,
 
     external_drag_check = create_external_drag_check(view),

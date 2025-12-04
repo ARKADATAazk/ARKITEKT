@@ -3,7 +3,7 @@
 -- Generic pattern rendering with optional texture baking for performance
 -- Supports dots, grid lines, and diagonal stripes with automatic texture caching
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 
@@ -13,7 +13,7 @@ local total_attachments = 0  -- Track total attachments (never decreases)
 local MAX_ATTACHMENTS = 64  -- Hard limit on total textures ever created
 
 -- NOTE: ReaImGui DrawList functions expect colors in 0xRRGGBBAA format
--- This matches hexrgb() output - no conversion needed!
+-- This matches hex() output - no conversion needed!
 
 -- ============================================================================
 -- TEXTURE BAKING: Create tileable pattern textures for performance
@@ -22,7 +22,7 @@ local MAX_ATTACHMENTS = 64  -- Hard limit on total textures ever created
 -- Generate a unique cache key for a pattern configuration
 -- NOTE: Color is NOT part of the key - we use white textures and apply color as tint
 local function get_pattern_cache_key(pattern_type, spacing, size)
-  return string.format("%s_%d_%.1f", pattern_type, spacing, size)
+  return string.format('%s_%d_%.1f', pattern_type, spacing, size)
 end
 
 
@@ -372,7 +372,7 @@ end
 
 -- Draw pattern with automatic texture baking for dot patterns
 -- Set pattern_cfg.use_texture = false to disable texture baking
-function M.draw(ctx, dl, x1, y1, x2, y2, pattern_cfg)
+function M.Draw(ctx, dl, x1, y1, x2, y2, pattern_cfg)
   if not pattern_cfg or not pattern_cfg.enabled then
     return
   end

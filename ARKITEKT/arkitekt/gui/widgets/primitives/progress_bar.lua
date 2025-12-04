@@ -3,8 +3,8 @@
 -- Progress bar widget with theming support
 -- Uses unified opts-based API
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -16,7 +16,7 @@ local M = {}
 
 local DEFAULTS = {
   -- Identity
-  id = "progress_bar",
+  id = 'progress_bar',
 
   -- Position (nil = use cursor)
   x = nil,
@@ -39,11 +39,11 @@ local DEFAULTS = {
 
   -- Text overlay
   show_text = false,           -- Show percentage text
-  text_format = "%d%%",        -- Format string for text (receives progress * 100)
+  text_format = '%d%%',        -- Format string for text (receives progress * 100)
   text_color = nil,            -- nil = Theme.COLORS.TEXT_NORMAL
 
   -- Cursor control
-  advance = "vertical",
+  advance = 'vertical',
 
   -- Draw list
   draw_list = nil,
@@ -57,7 +57,7 @@ local DEFAULTS = {
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result { width, height, progress }
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Get position and draw list
@@ -98,7 +98,7 @@ function M.draw(ctx, opts)
 
   -- Draw text overlay if enabled
   if opts.show_text then
-    local text = string.format(opts.text_format or "%d%%", progress * 100)
+    local text = string.format(opts.text_format or '%d%%', progress * 100)
     local text_width, text_height = ImGui.CalcTextSize(ctx, text)
     local text_x = (x + (width - text_width) / 2 + 0.5) // 1
     local text_y = (y + (height - text_height) / 2 + 0.5) // 1
@@ -128,6 +128,6 @@ end
 -- Make module callable
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

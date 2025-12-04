@@ -2,26 +2,24 @@
 -- RegionPlaylist/ui/tiles/selector.lua
 -- Playlist selector widget with animated chips
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
 
 local M = {}
-local hexrgb = Ark.Colors.hexrgb
-
 M.CONFIG = {
   chip_width = 110,
   chip_height = 30,
   gap = 10,
-  bg_inactive = hexrgb("#1A2A3A"),
-  bg_active = hexrgb("#2A4A6A"),
-  bg_hover = hexrgb("#3A5A7A"),
-  border_inactive = hexrgb("#2A3A4A"),
-  border_active = hexrgb("#4A90E2"),
+  bg_inactive = 0x1A2A3AFF,
+  bg_active = 0x2A4A6AFF,
+  bg_hover = 0x3A5A7AFF,
+  border_inactive = 0x2A3A4AFF,
+  border_active = 0x4A90E2FF,
   border_thickness = 1.5,
   rounding = 4,
-  text_color = hexrgb("#FFFFFF"),
+  text_color = 0xFFFFFFFF,
   animation_speed = 10.0,
 }
 
@@ -50,7 +48,7 @@ function Selector:draw(ctx, playlists, active_id, height, on_playlist_changed)
   local x = cursor_x
   local y = cursor_y
   
-  local _ = ImGui.InvisibleButton(ctx, "##selector_area", total_width, height)
+  local _ = ImGui.InvisibleButton(ctx, '##selector_area', total_width, height)
   
   for i, pl in ipairs(playlists) do
     local chip_x = x + (i - 1) * (cfg.chip_width + cfg.gap)
@@ -68,21 +66,21 @@ function Selector:draw(ctx, playlists, active_id, height, on_playlist_changed)
     local hover_factor = self.animator:get(pl.id, 'hover')
     local active_factor = self.animator:get(pl.id, 'active')
     
-    local bg_base = Ark.Colors.lerp(cfg.bg_inactive, cfg.bg_active, active_factor)
-    local bg_final = Ark.Colors.lerp(bg_base, cfg.bg_hover, hover_factor * 0.5)
+    local bg_base = Ark.Colors.Lerp(cfg.bg_inactive, cfg.bg_active, active_factor)
+    local bg_final = Ark.Colors.Lerp(bg_base, cfg.bg_hover, hover_factor * 0.5)
     
-    local border_base = Ark.Colors.lerp(cfg.border_inactive, cfg.border_active, active_factor)
-    local border_final = Ark.Colors.lerp(border_base, cfg.border_active, hover_factor)
+    local border_base = Ark.Colors.Lerp(cfg.border_inactive, cfg.border_active, active_factor)
+    local border_final = Ark.Colors.Lerp(border_base, cfg.border_active, hover_factor)
     
     ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x2, chip_y2, bg_final, cfg.rounding)
     ImGui.DrawList_AddRect(dl, chip_x + 0.5, chip_y + 0.5, chip_x2 - 0.5, chip_y2 - 0.5,
                           border_final, cfg.rounding, 0, cfg.border_thickness)
     
-    local label = "#" .. i .. " " .. pl.name
-    Ark.Draw.centered_text(ctx, label, chip_x, chip_y, chip_x2, chip_y2, cfg.text_color)
+    local label = '#' .. i .. ' ' .. pl.name
+    Ark.Draw.CenteredText(ctx, label, chip_x, chip_y, chip_x2, chip_y2, cfg.text_color)
     
     ImGui.SetCursorScreenPos(ctx, chip_x, chip_y)
-    local _ = ImGui.InvisibleButton(ctx, "##selector_" .. pl.id, cfg.chip_width, cfg.chip_height)
+    local _ = ImGui.InvisibleButton(ctx, '##selector_' .. pl.id, cfg.chip_width, cfg.chip_height)
     
     if ImGui.IsItemClicked(ctx, 0) and on_playlist_changed then
       on_playlist_changed(pl.id, true)  -- Move to end when clicked

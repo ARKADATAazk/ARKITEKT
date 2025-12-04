@@ -3,7 +3,8 @@
 -- Visual effect: diagonal hatched/striped fill pattern
 -- Useful for backgrounds, overlays, progress indicators, stretch zones, etc.
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Colors = require('arkitekt.core.colors')
 
 local M = {}
@@ -13,11 +14,11 @@ local M = {}
 -- ============================================================================
 
 M.DIRECTION = {
-  FORWARD = "forward",       -- Lines go ↘ (top-left to bottom-right)
-  BACKWARD = "backward",     -- Lines go ↙ (top-right to bottom-left)
-  BOTH = "both",             -- Cross-hatch (both directions)
-  HORIZONTAL = "horizontal", -- Horizontal lines
-  VERTICAL = "vertical",     -- Vertical lines
+  FORWARD = 'forward',       -- Lines go ↘ (top-left to bottom-right)
+  BACKWARD = 'backward',     -- Lines go ↙ (top-right to bottom-left)
+  BOTH = 'both',             -- Cross-hatch (both directions)
+  HORIZONTAL = 'horizontal', -- Horizontal lines
+  VERTICAL = 'vertical',     -- Vertical lines
 }
 
 -- ============================================================================
@@ -32,7 +33,7 @@ local DEFAULTS = {
   h = 100,
 
   -- Pattern settings
-  direction = "forward",
+  direction = 'forward',
   spacing = 6,
   thickness = 1,
   angle = 45,  -- Only used for non-standard angles (future)
@@ -111,7 +112,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Options: x, y, w, h, direction, spacing, thickness, color, bg_color, offset, use_clip, draw_list
 --- @return table Result { width, height }
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = opts or {}
 
   -- Merge with defaults
@@ -140,7 +141,7 @@ function M.draw(ctx, opts)
   end
 
   -- Get draw list
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
 
   -- Draw background if specified
   if bg_color then
@@ -178,7 +179,7 @@ function M.draw(ctx, opts)
   return { width = w, height = h }
 end
 
---- Draw hatched fill with glow/overflow effect (the original "glitch" effect)
+--- Draw hatched fill with glow/overflow effect (the original 'glitch' effect)
 --- This intentionally lets lines escape bounds for a cool visual effect
 --- @param ctx userdata ImGui context
 --- @param opts table Options: x, y, w, h, direction, spacing, thickness, color, overflow, glow_layers
@@ -197,7 +198,7 @@ function M.draw_overflow(ctx, opts)
   local overflow = opts.overflow or 20  -- How far lines extend beyond bounds
   local glow_layers = opts.glow_layers or 3
 
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
 
   -- Draw multiple layers with decreasing alpha for glow effect
   for layer = glow_layers, 1, -1 do
@@ -222,7 +223,7 @@ function M.draw_overflow(ctx, opts)
   return { width = w, height = h }
 end
 
---- Draw animated "marching ants" style dashed border
+--- Draw animated 'marching ants' style dashed border
 --- @param ctx userdata ImGui context
 --- @param opts table Options: x, y, w, h, dash_length, gap_length, color, thickness, speed
 --- @return table Result { width, height }
@@ -239,7 +240,7 @@ function M.draw_marching_ants(ctx, opts)
   local thickness = opts.thickness or 1
   local speed = opts.speed or 30  -- Pixels per second
 
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
 
   -- Calculate offset based on time
   local pattern_length = dash + gap
@@ -294,7 +295,7 @@ function M.draw_marching_ants(ctx, opts)
   return { width = w, height = h }
 end
 
---- Draw the original "glitch" effect with curved/exponential pattern
+--- Draw the original 'glitch' effect with curved/exponential pattern
 --- This recreates the buggy math that created the cool visual artifact
 --- @param ctx userdata ImGui context
 --- @param opts table Options: x, y, w, h, spacing, thickness, color, intensity, layers
@@ -313,7 +314,7 @@ function M.draw_glitch(ctx, opts)
   local layers = opts.layers or 3
   local show_box = opts.show_box ~= false
 
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
 
   -- Draw multiple layers for depth
   for layer = layers, 1, -1 do
@@ -323,7 +324,7 @@ function M.draw_glitch(ctx, opts)
     local layer_thickness = thickness + (layers - layer) * 0.3
 
     -- The original buggy forward diagonal pattern (↘)
-    -- The "bug" was in how endpoints were calculated, creating curved appearance
+    -- The 'bug' was in how endpoints were calculated, creating curved appearance
     for i = -h * intensity, w * intensity, spacing do
       -- Original buggy math that created the cool effect
       local x1 = math.max(x, x + i)
@@ -350,7 +351,7 @@ function M.draw_glitch(ctx, opts)
     end
   end
 
-  -- Optional: draw the bounding box to show where the "clean" area would be
+  -- Optional: draw the bounding box to show where the 'clean' area would be
   if show_box then
     local box_color = (color & 0xFFFFFF00) | 0x40
     ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, box_color, 0, 0, 1)
@@ -374,19 +375,19 @@ function M.draw_corner_radial(ctx, opts)
   local spacing = opts.spacing or DEFAULTS.spacing
   local thickness = opts.thickness or DEFAULTS.thickness
   local color = opts.color or DEFAULTS.color
-  local corner = opts.corner or "bottom_right"  -- "top_left", "top_right", "bottom_left", "bottom_right"
+  local corner = opts.corner or 'bottom_right'  -- 'top_left', 'top_right', 'bottom_left', 'bottom_right'
   local layers = opts.layers or 4
   local intensity = opts.intensity or 1.5
 
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
 
   -- Calculate corner position
   local cx, cy
-  if corner == "top_left" then
+  if corner == 'top_left' then
     cx, cy = x, y
-  elseif corner == "top_right" then
+  elseif corner == 'top_right' then
     cx, cy = x + w, y
-  elseif corner == "bottom_left" then
+  elseif corner == 'bottom_left' then
     cx, cy = x, y + h
   else -- bottom_right (default)
     cx, cy = x + w, y + h
@@ -404,10 +405,10 @@ function M.draw_corner_radial(ctx, opts)
 
     -- Draw lines radiating from corner
     for dist = 0, max_dist, spacing do
-      -- The "buggy" effect comes from how endpoints are calculated
+      -- The 'buggy' effect comes from how endpoints are calculated
       local t = dist / max_dist
 
-      if corner == "bottom_right" then
+      if corner == 'bottom_right' then
         -- Lines go from bottom-right corner upward and leftward
         local x1 = cx - dist * layer_mult
         local y1 = cy
@@ -427,7 +428,7 @@ function M.draw_corner_radial(ctx, opts)
           ImGui.DrawList_AddLine(dl, x3, y3, x4, y4, layer_color, layer_thickness)
         end
 
-      elseif corner == "top_left" then
+      elseif corner == 'top_left' then
         local x1 = cx + dist * layer_mult
         local y1 = cy
         local x2 = cx
@@ -445,7 +446,7 @@ function M.draw_corner_radial(ctx, opts)
           ImGui.DrawList_AddLine(dl, x3, y3, x4, y4, layer_color, layer_thickness)
         end
 
-      elseif corner == "top_right" then
+      elseif corner == 'top_right' then
         local x1 = cx - dist * layer_mult
         local y1 = cy
         local x2 = cx
@@ -455,7 +456,7 @@ function M.draw_corner_radial(ctx, opts)
           ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, layer_color, layer_thickness)
         end
 
-      elseif corner == "bottom_left" then
+      elseif corner == 'bottom_left' then
         local x1 = cx + dist * layer_mult
         local y1 = cy
         local x2 = cx
@@ -488,9 +489,9 @@ function M.draw_curved(ctx, opts)
   local color = opts.color or DEFAULTS.color
   local curve_factor = opts.curve_factor or 2.0  -- How much curve (1=linear, 2+=exponential)
   local layers = opts.layers or 4
-  local direction = opts.direction or "both"  -- "forward", "backward", "both"
+  local direction = opts.direction or 'both'  -- 'forward', 'backward', 'both'
 
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_draw_list(ctx, opts)
 
   for layer = layers, 1, -1 do
     local layer_mult = layer / layers
@@ -505,7 +506,7 @@ function M.draw_curved(ctx, opts)
       -- Apply exponential curve to the interpolation
       local curved_t = t ^ curve_factor
 
-      if direction == "forward" or direction == "both" then
+      if direction == 'forward' or direction == 'both' then
         -- Forward diagonal with curve
         local x1 = x + (w * curved_t) * layer_mult
         local y1 = y
@@ -515,7 +516,7 @@ function M.draw_curved(ctx, opts)
         ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, layer_color, thickness)
       end
 
-      if direction == "backward" or direction == "both" then
+      if direction == 'backward' or direction == 'both' then
         -- Backward diagonal with curve
         local x1 = x
         local y1 = y + (h * curved_t) * layer_mult

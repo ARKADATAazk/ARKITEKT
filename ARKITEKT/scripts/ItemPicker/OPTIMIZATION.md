@@ -615,3 +615,227 @@ At ~45ms/sec cumulative for ~500 tiles (~1.4ms/frame), we've reached the perform
 6. **Use external profilers for overall view** - Inline timing shows where time is spent within your code, but external profilers (like Cfillion's Lua profiler) reveal hidden costs like metatable overhead that inline timing misses.
 
 7. **Cache at the right frequency** - Per-tile caching is wasteful when values don't change per-tile. Per-frame caching (once at frame start, used thousands of times) provides the best balance.
+
+---
+
+## Phase 9: Duration, Settings, and Header Caching
+
+### Problem
+Additional profiling revealed more per-tile bottlenecks:
+
+```
+[MIDI] badge:25ms (dur:18ms!)
+[MIDI] rgn:22-23ms
+[AUDIO] badge:11ms
+```
+
+Duration badges were calling `reaper.GetMediaItemInfo_Value(item, 'D_LENGTH')` per tile per frame. Region chips were calling `CalcTextSize` and color computations per chip. Settings lookups (`state.settings.show_duration`) happened ~40,000+ times per frame.
+
+### Solution 1: Duration Caching in Factories
+
+Cache duration when building item data, not when rendering:
+
+**scripts/ItemPicker/ui/grids/factories/midi.lua:**
+```lua
+-- PERF: Cache duration to avoid GetMediaItemInfo_Value calls in renderer
+local duration = (item and reaper.ValidatePtr2(0, item, 'MediaItem*'))
+                 and reaper.GetMediaItemInfo_Value(item, 'D_LENGTH') or 0
+
+filtered[#filtered + 1] = {
+  -- ... existing fields ...
+  duration = duration,  -- Cached duration for renderer
+}
+```
+
+**Result:** Duration badge: 18ms → 3.4ms (80% reduction)
+
+### Solution 2: Region Text/Color Caching
+
+Cache region chip calculations per unique region name/color:
+
+**scripts/ItemPicker/ui/grids/renderers/midi.lua:**
+```lua
+local _cached = {
+  region_text = {},    -- region_name -> {text_w, text_h}
+  region_colors = {},  -- region_color -> adjusted_color
+}
+
+-- In region chip rendering:
+local cached_text = _cached.region_text[region_name]
+if cached_text then
+  text_w, text_h = cached_text[1], cached_text[2]
+else
+  text_w, text_h = CalcTextSize(ctx, region_name)
+  _cached.region_text[region_name] = {text_w, text_h}
+end
+```
+
+**Result:** Region chips: 23ms → 7ms (70% reduction)
+
+### Solution 3: Settings Caching
+
+Cache `state.settings.*` values once per frame like config:
+
+**scripts/ItemPicker/ui/grids/renderers/base.lua:**
+```lua
+local _settings_cache = {}
+
+function M.cache_settings(state)
+  local s = state.settings or {}
+  _settings_cache.show_disabled_items = s.show_disabled_items
+  _settings_cache.show_duration = s.show_duration
+  _settings_cache.show_region_tags = s.show_region_tags
+  _settings_cache.waveform_quality = s.waveform_quality or 0.2
+  _settings_cache.waveform_filled = s.waveform_filled
+  _settings_cache.show_visualization_in_small_tiles = s.show_visualization_in_small_tiles
+end
+
+M.settings = _settings_cache
+```
+
+**Renderers:**
+```lua
+function M.begin_frame(ctx, config, state)
+  BaseRenderer.cache_config(config)
+  BaseRenderer.cache_settings(state)  -- NEW
+end
+
+-- In render: use settings.show_duration instead of state.settings.show_duration
+local settings = BaseRenderer.settings
+if settings.show_duration and ... then
+```
+
+**Result:** Eliminated ~40,000+ table lookups per frame.
+
+### Solution 4: Header Color Caching
+
+Cache HSV color conversions for header rendering:
+
+**scripts/ItemPicker/ui/grids/renderers/base.lua:**
+```lua
+local _header_color_cache = {}
+local _header_color_cache_key = nil
+
+local function get_cached_header_color(base_color, is_small_tile, palette)
+  local cached = _header_color_cache[base_color]
+  if cached then
+    return is_small_tile and cached.small or cached.normal
+  end
+
+  -- Compute both normal and small tile variants
+  local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
+  local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
+
+  -- Normal mode
+  local nr, ng, nb = ImGui.ColorConvertHSVtoRGB(h, s * sat_factor, v * bright_factor)
+  -- Small tile mode
+  local sr, sg, sb = ImGui.ColorConvertHSVtoRGB(h, s * small_sat, v * small_bright)
+
+  _header_color_cache[base_color] = {
+    normal = {nr, ng, nb},
+    small = {sr, sg, sb}
+  }
+  return is_small_tile and {sr, sg, sb} or {nr, ng, nb}
+end
+```
+
+**Result:** Header rendering: 10-11ms → 7ms (30% reduction)
+
+### Combined Results
+
+| Component | Before | After | Improvement |
+|-----------|--------|-------|-------------|
+| Duration badge | 18ms | 3.4ms | 80% |
+| Region chips | 23ms | 7ms | 70% |
+| Header | 10-11ms | 7ms | 30% |
+| Settings lookups | ~40k/frame | cached | ~95% |
+
+---
+
+## ArkContext vs Manual Optimization
+
+### What is ArkContext?
+
+`arkitekt/core/context.lua` provides a per-frame context object that:
+- Caches draw_list, time, mouse_pos, delta_time per frame
+- Provides `actx:cache(key, fn)` for per-frame memoization
+- Avoids the overhead of `parse_opts`, table allocations, and `merge_config`
+
+### When to Use Each Approach
+
+| Scenario | Approach | Reason |
+|----------|----------|--------|
+| Normal widgets | ArkContext | Automatic optimization, clean code |
+| Moderate hot paths | Badge positional mode | Zero allocation, still uses module |
+| Extreme hot paths (5000+ calls) | Direct inlining | Maximum performance |
+
+### Optimization Levels
+
+```
+Level 0: Naive widget calls
+         Ark.Badge.Icon(ctx, { x=x, y=y, ... })
+         → parse_opts, table allocs, merge_config
+         → SLOW (baseline)
+
+Level 1: ArkContext-powered widgets
+         Same API, but widget internally uses cached context
+         → ~5-6x faster (automatic)
+
+Level 2: Positional mode
+         Badge.Icon(dl, x, y, icon_char, icon_w, icon_h, size, cfg)
+         → Zero allocation, pre-computed cfg
+         → ~6-7x faster
+
+Level 3: Direct inlining (what ItemPicker renderers do)
+         DrawList_AddRectFilled(dl, x, y, ...)
+         → No function call overhead, duplicated code
+         → ~7-10x faster
+```
+
+### ItemPicker Renderer Architecture
+
+The renderers use Level 2-3 optimizations because:
+1. They render 5000+ tiles per second (extreme hot path)
+2. They bypass Ark widgets entirely for maximum speed
+3. Manual caching (`BaseRenderer.cfg`, `_cached` tables) is faster than generic `actx:cache()`
+
+For 90% of ARKITEKT code, ArkContext (Level 1) provides automatic optimization without manual work. Only go to Level 2-3 for extreme hot paths like tile rendering.
+
+### Badge Positional Mode
+
+Both `Badge.Text` and `Badge.Icon` support positional mode for hot paths:
+
+```lua
+-- Opts mode (flexible, allocates):
+Badge.Text(ctx, { x=x, y=y, text=text, ... })
+Badge.Icon(ctx, { x=x, y=y, icon='★', ... })
+
+-- Positional mode (fast, zero allocation):
+Badge.Text(dl, x, y, text, text_w, text_h, cfg)
+Badge.Icon(dl, x, y, icon_char, icon_w, icon_h, size, cfg)
+
+-- cfg must have pre-computed: bg_color, border, text_color/icon_color, rounding
+```
+
+This provides a middle ground: uses the Badge module (maintainable) but avoids allocation overhead (fast).
+
+---
+
+## Summary: Total Optimization Impact
+
+| Phase | Focus | Improvement |
+|-------|-------|-------------|
+| 1 | Profiling infrastructure | Baseline measurement |
+| 2 | Animator optimization | 50% animator time |
+| 3 | Resize throttling | Eliminated 200-300ms spikes |
+| 4 | MIDI LOD | ~60% MIDI rendering |
+| 5 | Text inlining | 50% text rendering |
+| 6 | Text truncation caching | Already implemented |
+| 7 | Per-frame config caching | 50% overall |
+| 7b | Badge click post-render | Eliminated per-tile widgets |
+| 8 | Comprehensive config cache | 60% overall |
+| 9 | Duration/settings/header cache | 30-80% per component |
+
+**Total: ~360ms → ~45-50ms cumulative (7-8x improvement)**
+
+At this point, the remaining time is actual ImGui DrawList operations - the irreducible cost of drawing pixels.

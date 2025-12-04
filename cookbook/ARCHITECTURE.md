@@ -21,35 +21,42 @@ ARKITEKT code runs **exclusively inside REAPER**. This shapes our architecture p
 
 ```
 arkitekt/
-├── core/           # Pure utilities - NO reaper.*, NO ImGui.*
+├── core/           # General utilities (fs, json, settings, colors, etc.)
+│   ├── context.lua   # ArkContext - frame-scoped state & caching
+│   ├── id_stack.lua  # ID stack for widget scoping
 │   ├── json.lua
 │   ├── uuid.lua
 │   ├── settings.lua
-│   └── theme/
+│   ├── colors.lua
+│   ├── images.lua
+│   └── imgui.lua
 │
-├── platform/       # REAPER/ImGui abstractions
-│   ├── imgui.lua   # Version compatibility (0.8/0.9)
-│   └── images.lua  # Image loading with cache
+├── config/         # Constants and configuration
+│   ├── animation.lua
+│   ├── colors/
+│   └── typography.lua
 │
-├── gui/            # Widgets and rendering (uses ImGui)
+├── theme/          # Theming system
+│   ├── init.lua
+│   └── manager/
+│
+├── gui/            # Widgets and rendering
 │   ├── widgets/
 │   ├── animation/
 │   └── interaction/
 │
-├── app/            # Bootstrap and runtime
+├── runtime/        # Bootstrap and runtime
 │   ├── shell.lua
 │   └── chrome/
+│
+├── assets/         # Fonts and icons
+│
+├── vendor/         # External dependencies
 │
 └── debug/          # Logger, test runner
 ```
 
-**Framework Rules:**
-
-| Folder | May use `reaper.*` | May use `ImGui.*` |
-|--------|-------------------|-------------------|
-| `core/` | ❌ No | ❌ No |
-| `platform/` | ✅ Yes | ✅ Yes |
-| `gui/`, `app/`, `debug/` | ✅ Yes | ✅ Yes |
+**Note:** Since ARKITEKT runs exclusively in REAPER, strict "purity" in `core/` isn't enforced. All modules may use `reaper.*` and `ImGui.*` as needed.
 
 ---
 
@@ -83,7 +90,7 @@ scripts/MyApp/
 ├── data/                 # Persistence
 │   └── persistence.lua   # JSON/ExtState
 │
-├── defs/                 # Constants
+├── config/               # Constants
 │   └── constants.lua
 │
 └── tests/                # Integration tests (run in REAPER)
@@ -109,6 +116,8 @@ Scripts can have multiple `domain/` subfolders for different concerns:
 **Files:**
 - `init.lua` - Wire dependencies, return configured app
 - `state.lua` - Hold service references (container only, no logic)
+- `config.lua` - Pure re-exports of constants from `config/`
+- `config_factory.lua` - Factory functions for dynamic configs (optional)
 
 **Example `app/state.lua`:**
 ```lua
@@ -130,6 +139,47 @@ end
 
 return M
 ```
+
+**Config Organization:**
+
+Split static constants from dynamic factories for clarity:
+
+```lua
+-- app/config.lua (pure re-exports)
+local Constants = require('MyApp.config.constants')
+local Defaults = require('MyApp.config.defaults')
+
+local M = {}
+M.ANIMATION = Constants.ANIMATION
+M.TRANSPORT = Defaults.TRANSPORT
+return M
+
+-- app/config_factory.lua (dynamic configs)
+local M = {}
+
+function M.get_transport_config(state_module)
+  return {
+    height = Defaults.TRANSPORT.height,
+    corner_buttons = {
+      bottom_left = create_viewmode_button(state_module), -- Needs state!
+    },
+  }
+end
+
+function M.get_container_config(callbacks)
+  return {
+    header = { ... },
+    on_tab_create = callbacks.on_create, -- Needs callbacks!
+  }
+end
+
+return M
+```
+
+**Why split?**
+- Clarity: Static vs dynamic at a glance
+- Dependency tracking: Factories show runtime deps explicitly
+- Cleaner imports: `config` for constants, `config_factory` for builders
 
 ---
 
@@ -252,7 +302,7 @@ function M:draw(ctx, window, shell_state)
 
   -- Render UI
   for _, pl in ipairs(playlists) do
-    if Ark.Button.draw(ctx, {label = pl.name}).clicked then
+    if Ark.Button(ctx, {label = pl.name}).clicked then
       self.state.services.playlist:activate(pl.id)
     end
   end
@@ -263,7 +313,7 @@ return M
 
 ---
 
-### `defs/` - Static Definitions
+### `config/` - Static Definitions
 
 **Purpose:** Constants, defaults, UI strings. Never changes at runtime.
 
@@ -271,7 +321,7 @@ return M
 local M = {}
 
 M.COLORS = {
-  HIGHLIGHT = Ark.Colors.hexrgb("#4A90D9"),
+  HIGHLIGHT = Ark.Colors.hex('#4A90D9'),
 }
 
 M.SIZES = {
@@ -297,7 +347,7 @@ return M
 | **`data/` handles persistence** | ExtState, JSON files |
 | **`ui/init.lua`** | Always the UI orchestrator entry point |
 | **`ui/state/`** | UI-only state (preferences, NOT business data) |
-| **Keep `defs/`** | Clear name, doesn't collide |
+| **Keep `config/`** | Clear name, doesn't collide |
 
 ---
 
@@ -467,7 +517,23 @@ State.initialize({
 | < 200 lines | Excellent | No action |
 | 200-400 lines | Good | Monitor |
 | 400-700 lines | Warning | Consider splitting |
-| > 700 lines | **Must split** | Break into modules |
+| > 700 lines | **Consider splitting** | Break into modules if concerns are separable |
+
+**Exceptions:** Cohesive modules can exceed 700 lines if splitting would harm clarity:
+- Coordinators with rendering methods (1200+ lines acceptable)
+- State machines with many transitions
+- View modules with inline logic
+- Converters/parsers with complex logic
+
+**When to split:**
+- Mixed concerns (e.g., `coordinator.lua` + `coordinator_render.lua` doing identical things)
+- Multiple unrelated responsibilities
+- Hard to navigate/understand
+
+**When NOT to split:**
+- Single cohesive responsibility
+- Artificial separation just to meet line count
+- Would require excessive delegation
 
 ---
 
@@ -504,7 +570,7 @@ Common script folders:
 | `ui/`, `views/` | Rendering, interaction | Yes (via ImGui) |
 | `domain/` | Business logic | Yes (pragmatic) |
 | `data/` | Persistence | Yes (ExtState, files) |
-| `defs/` | Constants | No |
+| `config/` | Constants | No |
 | `tests/` | Integration tests | Yes (runs in REAPER) |
 
 **The real rule:** Organize so it's **easy to find and understand**, not to satisfy abstract purity.

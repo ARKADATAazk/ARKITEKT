@@ -2,14 +2,13 @@
 -- Arkitekt/gui/widgets/overlay/modal_dialog.lua
 -- Unified modal dialog system using overlay system like overflow modal
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 
 local Sheet = require('arkitekt.gui.widgets.overlays.overlay.sheet')
 local Button = require('arkitekt.gui.widgets.primitives.button')
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
-
 local M = {}
 
 -- Default modal configuration
@@ -18,13 +17,13 @@ local DEFAULTS = {
   height = 0.25,         -- Percentage of window height
 
   -- Modal box styling (square, no gradients, double borders)
-  bg_color = hexrgb("#1A1A1AFF"),         -- Dark background
-  border_outer = hexrgb("#000000DD"),     -- Black outer border
-  border_inner = hexrgb("#404040FF"),     -- Gray inner border
+  bg_color = 0x1A1A1AFF,         -- Dark background
+  border_outer = 0x000000DD,     -- Black outer border
+  border_inner = 0x404040FF,     -- Gray inner border
 
   -- Title styling
-  title_bg = hexrgb("#1E1E1EFF"),         -- Title bar background
-  title_text = hexrgb("#CCCCCCFF"),       -- Title text color
+  title_bg = 0x1E1E1EFF,         -- Title bar background
+  title_text = 0xCCCCCCFF,       -- Title text color
   title_height = 32,                      -- Title bar height
 
   -- Content padding
@@ -41,7 +40,7 @@ local DEFAULTS = {
 local function draw_modal_content(ctx, dl, x, y, width, height, title, content_fn)
   -- Draw title bar if title provided
   local title_offset = 0
-  if title and title ~= "" then
+  if title and title ~= '' then
     title_offset = DEFAULTS.title_height
 
     ImGui.DrawList_AddRectFilled(
@@ -75,7 +74,7 @@ local function draw_text_input(ctx, x, y, width, height, unique_id, text, placeh
   local border_inner = cfg.border_inner_color
   local border_outer = cfg.border_outer_color
 
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   -- Background
   ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, 0)
@@ -90,16 +89,16 @@ local function draw_text_input(ctx, x, y, width, height, unique_id, text, placeh
   ImGui.SetCursorScreenPos(ctx, x + 8, y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5 - 2)
   ImGui.PushItemWidth(ctx, width - 16)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x00000000)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, cfg.text_color)
 
   local changed, new_text = ImGui.InputTextWithHint(
     ctx,
-    "##" .. unique_id,
-    placeholder or "",
+    '##' .. unique_id,
+    placeholder or '',
     text,
     ImGui.InputTextFlags_None
   )
@@ -121,8 +120,8 @@ local message_modal_open = {}
 
 function M.show_message(ctx, window, title, message, opts)
   opts = opts or {}
-  local id = opts.id or "##message_dialog"
-  local button_label = opts.button_label or "OK"
+  local id = opts.id or '##message_dialog'
+  local button_label = opts.button_label or 'OK'
   local on_close = opts.on_close
 
   if not window or not window.overlay then
@@ -181,9 +180,9 @@ local confirm_modal_open = {}
 
 function M.show_confirm(ctx, window, title, message, opts)
   opts = opts or {}
-  local id = opts.id or "##confirm_dialog"
-  local confirm_label = opts.confirm_label or "OK"
-  local cancel_label = opts.cancel_label or "Cancel"
+  local id = opts.id or '##confirm_dialog'
+  local confirm_label = opts.confirm_label or 'OK'
+  local cancel_label = opts.cancel_label or 'Cancel'
   local on_confirm = opts.on_confirm
   local on_cancel = opts.on_cancel
 
@@ -252,10 +251,10 @@ local input_state = {}
 
 function M.show_input(ctx, window, title, initial_text, opts)
   opts = opts or {}
-  local id = opts.id or "##input_dialog"
-  local placeholder = opts.placeholder or ""
-  local confirm_label = opts.confirm_label or "OK"
-  local cancel_label = opts.cancel_label or "Cancel"
+  local id = opts.id or '##input_dialog'
+  local placeholder = opts.placeholder or ''
+  local confirm_label = opts.confirm_label or 'OK'
+  local cancel_label = opts.cancel_label or 'Cancel'
   local on_confirm = opts.on_confirm
   local on_cancel = opts.on_cancel
 
@@ -266,7 +265,7 @@ function M.show_input(ctx, window, title, initial_text, opts)
   -- Initialize state
   if not input_state[id] then
     input_state[id] = {
-      text = initial_text or "",
+      text = initial_text or '',
       first_frame = true,
     }
   end
@@ -304,7 +303,7 @@ function M.show_input(ctx, window, title, initial_text, opts)
 
           local changed, new_text = ImGui.InputTextWithHint(
             ctx,
-            "##" .. id .. "_input",
+            '##' .. id .. '_input',
             placeholder,
             state.text,
             ImGui.InputTextFlags_None
@@ -341,7 +340,7 @@ function M.show_input(ctx, window, title, initial_text, opts)
 
           ImGui.SameLine(ctx, 0, DEFAULTS.button_spacing)
           if ImGui.Button(ctx, confirm_label, button_w, 28) then
-            if state.text and state.text ~= "" then
+            if state.text and state.text ~= '' then
               local result = state.text
               window.overlay:pop(id)
               input_modal_open[id] = nil

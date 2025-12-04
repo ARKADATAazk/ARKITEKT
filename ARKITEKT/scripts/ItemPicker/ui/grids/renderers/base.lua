@@ -2,14 +2,14 @@
 -- ItemPicker/ui/tiles/renderers/base.lua
 -- Base tile renderer with shared functionality
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.hexrgb
 local TileFX = require('arkitekt.gui.renderers.tile.renderer')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local Easing = require('arkitekt.gui.animation.easing')
 local MediaGridBase = require('arkitekt.gui.widgets.media.media_grid.renderers.base')
-local Palette = require('ItemPicker.defs.palette')
+local Palette = require('ItemPicker.config.palette')
+local Badge = require('arkitekt.gui.widgets.primitives.badge')
 local M = {}
 
 -- PERF: Localize frequently used functions to avoid table lookups in hot paths
@@ -19,24 +19,31 @@ local DrawList_AddRect = ImGui.DrawList_AddRect
 local SetCursorScreenPos = ImGui.SetCursorScreenPos
 local InvisibleButton = ImGui.InvisibleButton
 local IsItemClicked = ImGui.IsItemClicked
-local floor = math.floor
+local min = math.min
+local max = math.max
+local format = string.format
+local sin = math.sin
+local pi = math.pi
 
 -- PERF: Localize color functions (called many times per tile)
-local Colors_desaturate = Ark.Colors.desaturate
-local Colors_adjust_brightness = Ark.Colors.adjust_brightness
-local Colors_with_alpha = Ark.Colors.with_alpha
-local Colors_opacity = Ark.Colors.opacity
-local Colors_rgba_to_components = Ark.Colors.rgba_to_components
-local Colors_rgb_to_hsl = Ark.Colors.rgb_to_hsl
-local Colors_hsl_to_rgb = Ark.Colors.hsl_to_rgb
-local Colors_components_to_rgba = Ark.Colors.components_to_rgba
+local Colors_Desaturate = Ark.Colors.Desaturate
+local Colors_AdjustBrightness = Ark.Colors.AdjustBrightness
+local Colors_WithAlpha = Ark.Colors.WithAlpha
+local Colors_Opacity = Ark.Colors.Opacity
+local Colors_RgbaToComponents = Ark.Colors.RgbaToComponents
+local Colors_RgbToHsl = Ark.Colors.RgbToHsl
+local Colors_HslToRgb = Ark.Colors.HslToRgb
+local Colors_ComponentsToRgba = Ark.Colors.ComponentsToRgba
+
+-- PERF: Localize Badge.Text for hot path (positional mode)
+local Badge_Text = Badge.Text
 
 -- PERF: Inline pixel snapping (avoids function call overhead)
 local function snap(x)
   return (x + 0.5) // 1
 end
 
--- PERF: Inline with_alpha (avoids Ark.Colors.with_alpha function call)
+-- PERF: Inline with_alpha (avoids Colors_WithAlpha function call)
 local function with_alpha(color, alpha)
   return (color & 0xFFFFFF00) | (alpha & 0xFF)
 end
@@ -51,12 +58,12 @@ M.tile_spawn_times = MediaGridBase.tile_spawn_times
 
 -- Ensure color has minimum lightness for readability
 function M.ensure_min_lightness(color, min_lightness)
-  local h, s, l = Ark.Colors.rgb_to_hsl(color)
+  local h, s, l = Colors_RgbToHsl(color)
   if l < min_lightness then
     l = min_lightness
   end
-  local r, g, b = Ark.Colors.hsl_to_rgb(h, s, l)
-  return Ark.Colors.components_to_rgba(r, g, b, 0xFF)
+  local r, g, b = Colors_HslToRgb(h, s, l)
+  return Colors_ComponentsToRgba(r, g, b, 0xFF)
 end
 
 -- Calculate cascade animation factor (delegates to MediaGridBase)
@@ -73,7 +80,7 @@ local _ellipsis_cache = { width = nil, ctx = nil }
 -- Truncate text to fit width
 -- OPTIMIZED: Binary search truncation (O(log n) instead of O(n) CalcTextSize calls)
 function M.truncate_text(ctx, text, max_width)
-  if not text or max_width <= 0 then return "" end
+  if not text or max_width <= 0 then return '' end
 
   -- PERF: Quick length-based estimate to skip CalcTextSize for short text
   -- Use very conservative estimate: 12px per char covers most wide characters
@@ -87,12 +94,12 @@ function M.truncate_text(ctx, text, max_width)
 
   -- PERF: Cache ellipsis width per context
   if _ellipsis_cache.ctx ~= ctx then
-    _ellipsis_cache.width = ImGui.CalcTextSize(ctx, "...")
+    _ellipsis_cache.width = ImGui.CalcTextSize(ctx, '...')
     _ellipsis_cache.ctx = ctx
   end
   local ellipsis_width = _ellipsis_cache.width
 
-  if max_width <= ellipsis_width then return "" end
+  if max_width <= ellipsis_width then return '' end
 
   local available_width = max_width - ellipsis_width
 
@@ -112,9 +119,9 @@ function M.truncate_text(ctx, text, max_width)
   end
 
   if best > 0 then
-    return text:sub(1, best) .. "..."
+    return text:sub(1, best) .. '...'
   end
-  return "..."
+  return '...'
 end
 
 -- Get dark waveform color from base color (uses palette for theme-reactive values)
@@ -134,6 +141,50 @@ function M.get_dark_waveform_color(base_color, config, palette)
   return ImGui.ColorConvertDouble4ToU32(r, g, b, c.waveform_line_alpha)
 end
 
+-- PERF: Get cached header color (avoids 4 color conversions per tile)
+-- Returns {r, g, b} without alpha - caller applies alpha
+local function get_cached_header_color(base_color, is_small_tile, palette)
+  local c = _frame_config
+  local p = palette or {}
+
+  -- Build cache key from palette values that affect header color
+  local header_sat = p.header_saturation or c.header_saturation_factor
+  local header_bright = p.header_brightness or c.header_brightness_factor
+  local cache_key_num = header_sat * 10000 + header_bright * 100 +
+                        c.small_tile_header_saturation_factor +
+                        c.small_tile_header_brightness_factor * 0.01
+
+  -- Invalidate cache if palette/config changed
+  if _header_color_cache_key ~= cache_key_num then
+    _header_color_cache = {}
+    _header_color_cache_key = cache_key_num
+  end
+
+  local cached = _header_color_cache[base_color]
+  if not cached then
+    local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
+    local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
+
+    -- Normal mode
+    local ns = s * (p.header_saturation or c.header_saturation_factor)
+    local nv = v * (p.header_brightness or c.header_brightness_factor)
+    local nr, ng, nb = ImGui.ColorConvertHSVtoRGB(h, ns, nv)
+
+    -- Small tile mode
+    local ss = s * c.small_tile_header_saturation_factor
+    local sv = v * c.small_tile_header_brightness_factor
+    local sr, sg, sb = ImGui.ColorConvertHSVtoRGB(h, ss, sv)
+
+    cached = {
+      normal = {nr, ng, nb},
+      small = {sr, sg, sb}
+    }
+    _header_color_cache[base_color] = cached
+  end
+
+  return is_small_tile and cached.small or cached.normal
+end
+
 -- Render header bar (now accepts optional palette for theme-reactive values)
 function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, config, is_small_tile, palette)
   -- PERF: Use cached config values
@@ -145,32 +196,18 @@ function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, c
     return
   end
 
-  local p = palette or {}
-
-  -- Normal header rendering with colored background
-  local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
-  local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
-
-  -- Choose appropriate config section based on tile mode
-  -- Use palette values if available, fallback to config
-  if is_small_tile then
-    s = s * c.small_tile_header_saturation_factor
-    v = v * c.small_tile_header_brightness_factor
-  else
-    s = s * (p.header_saturation or c.header_saturation_factor)
-    v = v * (p.header_brightness or c.header_brightness_factor)
-  end
-
-  r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
+  -- PERF: Get cached header RGB (avoids 4 color conversions per tile)
+  local rgb = get_cached_header_color(base_color, is_small_tile, palette)
+  local r, g, b = rgb[1], rgb[2], rgb[3]
 
   -- For small tiles, header_alpha is a multiplier (0.0-1.0), so convert it
   local base_header_alpha = c.header_alpha / 255
   local final_alpha
   if is_small_tile then
     -- In small tile mode, alpha is already pre-multiplied by header_alpha in the caller
-    final_alpha = Ark.Colors.opacity(alpha)
+    final_alpha = Colors_Opacity(alpha)
   else
-    final_alpha = Ark.Colors.opacity(base_header_alpha * alpha)
+    final_alpha = Colors_Opacity(base_header_alpha * alpha)
   end
 
   local header_color = ImGui.ColorConvertDouble4ToU32(r, g, b, final_alpha / 255)
@@ -180,7 +217,8 @@ function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, c
 
   -- Round only top corners of header (top-left and top-right)
   -- Use slightly less rounding than tile for better visual alignment
-  local header_rounding = math.max(0, config.TILE.ROUNDING - c.header_rounding_offset)
+  -- PERF: Use cached tile_rounding
+  local header_rounding = max(0, c.tile_rounding - c.header_rounding_offset)
   local round_flags = ImGui.DrawFlags_RoundCornersTop
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, header_color, header_rounding, round_flags)
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, text_shadow, header_rounding, round_flags)
@@ -203,15 +241,15 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
   -- Loading spinner using reusable widget
   local center_x = (x1 + x2) / 2
   local center_y = (y1 + y2) / 2
-  local size = math.min(x2 - x1, y2 - y1) * 0.2
+  local size = min(x2 - x1, y2 - y1) * 0.2
 
   -- Dark spinner color from palette (slightly lighter than background)
   local palette = Palette.get()
   local spinner_alpha = (alpha * 100) // 1
-  local spinner_color = Ark.Colors.with_alpha(palette.placeholder_spinner or 0x808080FF, spinner_alpha)
-  local thickness = math.max(2, size * 0.2)
+  local spinner_color = Colors_WithAlpha(palette.placeholder_spinner or 0x808080FF, spinner_alpha)
+  local thickness = max(2, size * 0.2)
 
-  Ark.LoadingSpinner.draw_direct(dl, center_x, center_y, {
+  Ark.LoadingSpinner.DrawDirect(dl, center_x, center_y, {
     size = size,
     thickness = thickness,
     color = spinner_color,
@@ -228,15 +266,15 @@ function M.apply_state_effects(base_color, muted_factor, enabled_factor, config)
 
   -- Apply muted state first (lighter effect than disabled)
   if muted_factor > 0.001 then
-    render_color = Ark.Colors.desaturate(render_color, c.muted_desaturate * muted_factor)
-    render_color = Ark.Colors.adjust_brightness(render_color,
+    render_color = Colors_Desaturate(render_color, c.muted_desaturate * muted_factor)
+    render_color = Colors_AdjustBrightness(render_color,
       1.0 - (1.0 - c.muted_brightness) * muted_factor)
   end
 
   -- Apply disabled state (stronger effect, overrides muted)
   if enabled_factor < 1.0 then
-    render_color = Ark.Colors.desaturate(render_color, c.disabled_desaturate * (1.0 - enabled_factor))
-    render_color = Ark.Colors.adjust_brightness(render_color,
+    render_color = Colors_Desaturate(render_color, c.disabled_desaturate * (1.0 - enabled_factor))
+    render_color = Colors_AdjustBrightness(render_color,
       1.0 - (1.0 - c.disabled_brightness) * (1.0 - enabled_factor))
   end
 
@@ -250,6 +288,11 @@ end
 -- Each entry stores the adjusted color (saturation + brightness + min lightness applied)
 local _tile_color_cache = {}
 local _tile_color_cache_key = nil  -- Track config+palette to invalidate on change
+
+-- PERF: Cache for header colors: base_color -> { normal = {r,g,b}, small = {r,g,b} }
+-- Avoids 4 color conversions per tile per frame
+local _header_color_cache = {}
+local _header_color_cache_key = nil
 
 -- Get or compute the base tile color (expensive operations cached)
 -- Now uses palette values for theme-reactive brightness/saturation
@@ -286,14 +329,14 @@ function M.get_cached_tile_color(base_color, is_compact, config, palette)
 
     -- Normal mode color
     local normal = base_color
-    normal = Colors_desaturate(normal, 1.0 - sat_factor)
-    normal = Colors_adjust_brightness(normal, bright_factor)
+    normal = Colors_Desaturate(normal, 1.0 - sat_factor)
+    normal = Colors_AdjustBrightness(normal, bright_factor)
     normal = M._ensure_min_lightness_fast(normal, min_lightness)
 
     -- Compact mode color
     local compact = base_color
-    compact = Colors_desaturate(compact, 1.0 - compact_sat_factor)
-    compact = Colors_adjust_brightness(compact, compact_bright_factor)
+    compact = Colors_Desaturate(compact, 1.0 - compact_sat_factor)
+    compact = Colors_AdjustBrightness(compact, compact_bright_factor)
     compact = M._ensure_min_lightness_fast(compact, min_lightness)
 
     cached = { normal = normal, compact = compact }
@@ -305,21 +348,22 @@ end
 
 -- Fast min lightness check (simplified HSL)
 function M._ensure_min_lightness_fast(color, min_lightness)
-  local r, g, b, a = Colors_rgba_to_components(color)
+  local r, g, b, a = Colors_RgbaToComponents(color)
   -- Quick luminance approximation
   local lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255
   if lum >= min_lightness then
     return color
   end
   -- Only do full HSL conversion if needed
-  local h, s, l = Colors_rgb_to_hsl(color)
-  local r_new, g_new, b_new = Colors_hsl_to_rgb(h, s, min_lightness)
-  return Colors_components_to_rgba(r_new, g_new, b_new, a)
+  local h, s, l = Colors_RgbToHsl(color)
+  local r_new, g_new, b_new = Colors_HslToRgb(h, s, min_lightness)
+  return Colors_ComponentsToRgba(r_new, g_new, b_new, a)
 end
 
 -- Simplified color pipeline: cached base + dynamic effects (boolean states, no animation)
 -- Returns render_color ready for use (with alpha already applied)
-function M.compute_tile_color_fast(base_color, is_compact, is_muted, is_disabled, is_hovered, is_selected, cascade_factor, config, palette)
+-- selection_pulse: 0-1 value for pulsing glow effect (use get_selection_pulse to compute)
+function M.compute_tile_color_fast(base_color, is_compact, is_muted, is_disabled, is_hovered, selection_pulse, cascade_factor, config, palette)
   -- Get cached base color (no per-frame cost after first computation)
   local render_color = M.get_cached_tile_color(base_color, is_compact, config, palette)
 
@@ -329,24 +373,26 @@ function M.compute_tile_color_fast(base_color, is_compact, is_muted, is_disabled
 
   -- Apply dynamic state effects (only when actually muted/disabled)
   if is_muted then
-    render_color = Ark.Colors.desaturate(render_color, c.muted_desaturate)
-    render_color = Ark.Colors.adjust_brightness(render_color, c.muted_brightness)
+    render_color = Colors_Desaturate(render_color, c.muted_desaturate)
+    render_color = Colors_AdjustBrightness(render_color, c.muted_brightness)
   end
 
   if is_disabled then
-    render_color = Ark.Colors.desaturate(render_color, c.disabled_desaturate)
-    render_color = Ark.Colors.adjust_brightness(render_color, c.disabled_brightness)
+    render_color = Colors_Desaturate(render_color, c.disabled_desaturate)
+    render_color = Colors_AdjustBrightness(render_color, c.disabled_brightness)
   end
 
   -- Apply hover effect (simple brightness boost) - use palette if available
   if is_hovered then
     local hover_boost = p.hover_brightness or c.hover_brightness_boost
-    render_color = Ark.Colors.adjust_brightness(render_color, 1.0 + hover_boost)
+    render_color = Colors_AdjustBrightness(render_color, 1.0 + hover_boost)
   end
 
-  -- Apply selection effect
-  if is_selected then
-    render_color = Ark.Colors.adjust_brightness(render_color, 1.0 + c.selection_tile_brightness_boost)
+  -- Apply selection pulsing glow effect
+  if selection_pulse > 0 then
+    local brightness_boost = c.selection_pulse_brightness_min +
+      (c.selection_pulse_brightness_max - c.selection_pulse_brightness_min) * selection_pulse
+    render_color = Colors_AdjustBrightness(render_color, 1.0 + brightness_boost)
   end
 
   -- Apply alpha
@@ -359,7 +405,7 @@ function M.compute_tile_color_fast(base_color, is_compact, is_muted, is_disabled
     alpha = alpha * c.muted_alpha_factor
   end
 
-  render_color = Ark.Colors.with_alpha(render_color, Ark.Colors.opacity(alpha))
+  render_color = Colors_WithAlpha(render_color, Colors_Opacity(alpha))
 
   return render_color, alpha
 end
@@ -367,7 +413,8 @@ end
 -- Optimized color pipeline with animated factors (for smooth hover/muted/disabled transitions)
 -- This is the drop-in replacement for the original ~12 operation chain
 -- Returns: render_color (with alpha), combined_alpha (for text/badges)
-function M.compute_tile_color(base_color, is_compact, hover_factor, muted_factor, enabled_factor, is_selected, cascade_factor, config, palette)
+-- selection_pulse: 0-1 value for pulsing glow effect (0 = not selected, 0-1 = pulse phase)
+function M.compute_tile_color(base_color, is_compact, hover_factor, muted_factor, enabled_factor, selection_pulse, cascade_factor, config, palette)
   -- Get cached base color (saturation + brightness + min_lightness pre-computed)
   local render_color = M.get_cached_tile_color(base_color, is_compact, config, palette)
 
@@ -377,28 +424,32 @@ function M.compute_tile_color(base_color, is_compact, hover_factor, muted_factor
 
   -- Apply muted effect (only if animating or muted)
   if muted_factor > 0.001 then
-    render_color = Colors_desaturate(render_color, c.muted_desaturate * muted_factor)
-    render_color = Colors_adjust_brightness(render_color,
+    render_color = Colors_Desaturate(render_color, c.muted_desaturate * muted_factor)
+    render_color = Colors_AdjustBrightness(render_color,
       1.0 - (1.0 - c.muted_brightness) * muted_factor)
   end
 
   -- Apply disabled effect (only if animating or disabled)
   if enabled_factor < 0.999 then
     local disabled_factor = 1.0 - enabled_factor
-    render_color = Colors_desaturate(render_color, c.disabled_desaturate * disabled_factor)
-    render_color = Colors_adjust_brightness(render_color,
+    render_color = Colors_Desaturate(render_color, c.disabled_desaturate * disabled_factor)
+    render_color = Colors_AdjustBrightness(render_color,
       1.0 - (1.0 - c.disabled_brightness) * disabled_factor)
   end
 
   -- Apply hover effect - use palette if available
   if hover_factor > 0.001 then
     local hover_boost = (p.hover_brightness or c.hover_brightness_boost) * hover_factor
-    render_color = Colors_adjust_brightness(render_color, 1.0 + hover_boost)
+    render_color = Colors_AdjustBrightness(render_color, 1.0 + hover_boost)
   end
 
-  -- Apply selection effect
-  if is_selected then
-    render_color = Colors_adjust_brightness(render_color, 1.0 + c.selection_tile_brightness_boost)
+  -- Apply selection pulsing glow effect
+  -- selection_pulse is 0-1 representing the pulse phase
+  if selection_pulse > 0 then
+    -- Interpolate between min and max brightness boost based on pulse phase
+    local brightness_boost = c.selection_pulse_brightness_min +
+      (c.selection_pulse_brightness_max - c.selection_pulse_brightness_min) * selection_pulse
+    render_color = Colors_AdjustBrightness(render_color, 1.0 + brightness_boost)
   end
 
   -- Calculate combined alpha (matches original calculate_combined_alpha)
@@ -415,7 +466,7 @@ function M.compute_tile_color(base_color, is_compact, hover_factor, muted_factor
   -- final_alpha for the render_color includes base_alpha from the color itself
   local base_alpha = (render_color & 0xFF) / 255
   local final_alpha = base_alpha * combined_alpha
-  render_color = Colors_with_alpha(render_color, Colors_opacity(final_alpha))
+  render_color = Colors_WithAlpha(render_color, Colors_Opacity(final_alpha))
 
   return render_color, combined_alpha
 end
@@ -459,7 +510,7 @@ function M.get_text_color(muted_factor, config)
 end
 
 -- PERF: Cache for badge text dimensions (index/total -> {width, height})
--- Badge text is always "N/M" format, so limited combinations
+-- Badge text is always 'N/M' format, so limited combinations
 local _badge_size_cache = {}
 local _badge_size_cache_ctx = nil
 
@@ -526,6 +577,9 @@ function M.cache_config(config)
   c.selection_ants_dash = tr.selection.ants_dash
   c.selection_ants_gap = tr.selection.ants_gap
   c.selection_ants_speed = tr.selection.ants_speed
+  c.selection_pulse_speed = tr.selection.pulse_speed or 2.0
+  c.selection_pulse_brightness_min = tr.selection.pulse_brightness_min or 0.20
+  c.selection_pulse_brightness_max = tr.selection.pulse_brightness_max or 0.50
 
   -- Text
   c.text_padding_left = tr.text.padding_left
@@ -545,7 +599,7 @@ function M.cache_config(config)
   c.base_fill_compact_brightness_factor = tr.base_fill.compact_brightness_factor
   c.min_lightness = tr.min_lightness
 
-  -- Badges - cycle
+  -- Badges - cycle (individual fields for backwards compat)
   c.badge_cycle = tr.badges.cycle
   c.badge_cycle_padding_x = tr.badges.cycle.padding_x
   c.badge_cycle_padding_y = tr.badges.cycle.padding_y
@@ -555,6 +609,20 @@ function M.cache_config(config)
   c.badge_cycle_border_darken = tr.badges.cycle.border_darken
   c.badge_cycle_border_alpha = tr.badges.cycle.border_alpha
   c.badge_cycle_text_color = tr.badges.cycle.text_color
+  -- PERF: Badge positional mode config (avoids per-call table creation)
+  -- Pre-compute border color once per frame
+  local badge_border = Colors_WithAlpha(
+    Colors_AdjustBrightness(tr.badges.cycle.bg, tr.badges.cycle.border_darken),
+    tr.badges.cycle.border_alpha
+  )
+  c.badge_cycle_cfg = {
+    padding_x = tr.badges.cycle.padding_x,
+    padding_y = tr.badges.cycle.padding_y,
+    rounding = tr.badges.cycle.rounding,
+    bg_color = tr.badges.cycle.bg,
+    border = badge_border,
+    text_color = tr.badges.cycle.text_color or 0xFFFFFFFF,
+  }
 
   -- Badges - favorite
   c.badge_favorite = tr.badges.favorite
@@ -581,10 +649,50 @@ function M.cache_config(config)
   c.duration_text_light_value = tr.duration_text.light_value
   c.duration_text_dark_saturation = tr.duration_text.dark_saturation
   c.duration_text_dark_value = tr.duration_text.dark_value
+
+  -- PERF: Region tags (avoid per-tile config.REGION_TAGS lookups)
+  local rt = config.REGION_TAGS
+  c.region_min_tile_height = rt.min_tile_height
+  c.region_max_chips = rt.max_chips_per_tile
+  c.region_chip = rt.chip  -- Cache the whole chip config table
+
+  -- PERF: Tile rounding (avoid per-tile config.TILE.ROUNDING lookups)
+  c.tile_rounding = config.TILE.ROUNDING
 end
+
+-- PERF: Cache state.settings values once per frame (call from begin_frame)
+-- These don't change during a frame but are accessed per-tile
+local _settings_cache = {}
+function M.cache_settings(state)
+  local s = state.settings or {}
+  _settings_cache.show_disabled_items = s.show_disabled_items
+  _settings_cache.show_duration = s.show_duration
+  _settings_cache.show_region_tags = s.show_region_tags
+  _settings_cache.waveform_quality = s.waveform_quality or 0.2
+  _settings_cache.waveform_filled = s.waveform_filled
+  _settings_cache.show_visualization_in_small_tiles = s.show_visualization_in_small_tiles
+end
+
+M.settings = _settings_cache
 
 -- Expose the cache for renderers to access directly
 M.cfg = _frame_config
+
+-- Calculate selection pulse value (0-1) for pulsing glow effect
+-- Returns 0 when not selected, 0-1 oscillating value when selected
+-- Uses smooth sine wave for pleasant visual effect
+function M.get_selection_pulse(is_selected)
+  if not is_selected then return 0 end
+
+  local c = _frame_config
+  local time = reaper.time_precise()
+  local speed = c.selection_pulse_speed or 2.0
+
+  -- Use sine wave oscillating between 0 and 1
+  -- sin returns -1 to 1, we transform to 0 to 1
+  local pulse = (sin(time * speed * 2 * pi) + 1) / 2
+  return pulse
+end
 
 -- Render text with badge
 -- @param extra_text_margin Optional extra margin for text truncation only (doesn't affect badge position)
@@ -614,12 +722,12 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
   local badge_text, bw, bh
   if show_badge and total and total > 1 then
     -- PERF: Cache badge text dimensions by index/total combo
-    local cache_key = index * 10000 + total  -- Simple key for "N/M" where N,M < 10000
+    local cache_key = index * 10000 + total  -- Simple key for 'N/M' where N,M < 10000
     local cached = _badge_size_cache[cache_key]
     if cached then
       badge_text, bw, bh = cached[1], cached[2], cached[3]
     else
-      badge_text = string.format("%d/%d", index or 1, total)
+      badge_text = format('%d/%d', index or 1, total)
       bw, bh = ImGui.CalcTextSize(ctx, badge_text)
       _badge_size_cache[cache_key] = {badge_text, bw, bh}
     end
@@ -645,46 +753,30 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
   end
 
   -- Use custom text color if provided, otherwise use primary color
-  -- PERF: Inlined text rendering - bypasses Ark.Draw.text function call overhead
+  -- PERF: Inlined text rendering - bypasses Ark.Draw.Text function call overhead
   local final_text_color = text_color or c.text_primary_color
-  DrawList_AddText(dl, snap(text_x), snap(text_y), with_alpha(final_text_color, text_alpha), truncated_name or "")
+  DrawList_AddText(dl, snap(text_x), snap(text_y), with_alpha(final_text_color, text_alpha), truncated_name or '')
 
   -- Render cycle badge (vertically centered in header)
-  -- PERF: Inlined badge rendering - bypasses Ark.Badge.clickable overhead
-  -- (avoids: 2x parse_opts, table allocations, merge_config, function calls)
+  -- PERF: Uses Badge.Text positional mode - zero allocation
   if show_badge and total and total > 1 then
     -- badge_text, bw, bh already computed above
-
-    -- Calculate badge dimensions with padding
+    -- Calculate badge position (centered vertically in header)
     local badge_w = bw + c.badge_cycle_padding_x * 2
     local badge_h = bh + c.badge_cycle_padding_y * 2
-
-    -- Center vertically in header
     local badge_x = x2 - badge_w - c.badge_cycle_margin
     local badge_y = y1 + (header_height - badge_h) / 2
-    local badge_x2 = badge_x + badge_w
-    local badge_y2 = badge_y + badge_h
 
-    -- Background
-    local bg_color = c.badge_cycle_bg
-    local bg_alpha = floor((bg_color & 0xFF) * (text_alpha / 255))
-    bg_color = (bg_color & 0xFFFFFF00) | bg_alpha
-    DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, bg_color, c.badge_cycle_rounding)
-
-    -- Border using darker tile color
-    local border_color = Ark.Colors.adjust_brightness(base_color, c.badge_cycle_border_darken)
-    border_color = with_alpha(border_color, c.badge_cycle_border_alpha)
-    DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, border_color, c.badge_cycle_rounding, 0, 0.5)
-
-    -- Text (fallback to white if text_color not defined in config)
-    local badge_text_color = with_alpha(c.badge_cycle_text_color or 0xFFFFFFFF, text_alpha)
-    DrawList_AddText(dl, badge_x + c.badge_cycle_padding_x, badge_y + c.badge_cycle_padding_y, badge_text_color, badge_text)
+    -- Draw badge using positional mode (zero allocation, config pre-computed per frame)
+    local bx1, by1, bx2, by2 = Badge_Text(
+      dl, badge_x, badge_y, badge_text, bw, bh, c.badge_cycle_cfg
+    )
 
     -- Store badge rect for exclusion zones AND post-render click detection
     -- PERF: Removed InvisibleButton - click detection is now done once per frame
     -- in the coordinator via badge_rects hit testing (saves ~5000 widgets/frame)
     if badge_rects and item_key then
-      badge_rects[item_key] = {badge_x, badge_y, badge_x2, badge_y2}
+      badge_rects[item_key] = {bx1, by1, bx2, by2}
     end
   end
 end

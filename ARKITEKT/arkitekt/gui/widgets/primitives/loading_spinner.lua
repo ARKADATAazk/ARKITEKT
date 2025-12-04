@@ -3,8 +3,8 @@
 -- Loading spinner widget (rotating arc animation)
 -- Uses unified opts-based API
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -16,7 +16,7 @@ local M = {}
 
 local DEFAULTS = {
   -- Identity
-  id = "loading_spinner",
+  id = 'loading_spinner',
 
   -- Position (nil = use cursor)
   x = nil,
@@ -32,7 +32,7 @@ local DEFAULTS = {
   speed = 3.0,         -- Rotation speed multiplier
 
   -- Cursor control
-  advance = "vertical",
+  advance = 'vertical',
 
   -- Draw list
   draw_list = nil,
@@ -46,7 +46,7 @@ local DEFAULTS = {
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result { width, height }
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Get position and draw list
@@ -96,7 +96,7 @@ end
 --- @param center_x number Center X coordinate
 --- @param center_y number Center Y coordinate
 --- @param opts table Options: size, thickness, color, arc_length, speed
-function M.draw_direct(dl, center_x, center_y, opts)
+function M.DrawDirect(dl, center_x, center_y, opts)
   opts = opts or {}
 
   local size = opts.size or 20
@@ -123,9 +123,9 @@ end
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.LoadingSpinner(ctx, opts) → M.draw(ctx, opts)
+-- Make module callable: Ark.LoadingSpinner(ctx, opts) → M.Draw(ctx, opts)
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

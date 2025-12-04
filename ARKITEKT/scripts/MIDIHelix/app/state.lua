@@ -7,7 +7,7 @@ local M = {}
 function M.new(Ark)
   local self = {
     Ark = Ark,
-    current_view = "euclidean",  -- For future expansion
+    current_view = 'euclidean',  -- For future expansion
   }
 
   return setmetatable(self, { __index = M })

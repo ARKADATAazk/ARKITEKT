@@ -2,12 +2,10 @@
 -- ThemeAdjuster/app/config.lua
 -- Configuration following RegionPlaylist pattern
 
-local Constants = require('ThemeAdjuster.defs.constants')
+local Constants = require('ThemeAdjuster.config.constants')
 local Ark = require('arkitekt')
-local Defaults = require('ThemeAdjuster.defs.defaults')
-local Strings = require('ThemeAdjuster.defs.strings')
-local hexrgb = Ark.Colors.hexrgb
-
+local Defaults = require('ThemeAdjuster.config.defaults')
+local Strings = require('ThemeAdjuster.config.strings')
 local M = {}
 
 -- Re-export constants for backward compatibility
@@ -27,8 +25,8 @@ function M.get_assembler_container_config(callbacks, filters)
       elements = {
         -- Left: Configuration tab_strip
         {
-          id = "config_tabs",
-          type = "tab_strip",
+          id = 'config_tabs',
+          type = 'tab_strip',
           width = 300,
           spacing_before = 0,
           config = {
@@ -45,56 +43,56 @@ function M.get_assembler_container_config(callbacks, filters)
         },
         -- Center: Empty spacer
         {
-          id = "spacer1",
-          type = "separator",
+          id = 'spacer1',
+          type = 'separator',
           flex = 1,
           spacing_before = 0,
           config = { show_line = false },
         },
         -- Right: Search, Filters
         {
-          id = "search",
-          type = "inputtext",
+          id = 'search',
+          type = 'inputtext',
           width = 200,
           spacing_before = 0,
           config = {
-            placeholder = "Search packages...",
+            placeholder = 'Search packages...',
             on_change = callbacks.on_search_changed,
           },
         },
         {
-          id = "filters",
-          type = "combo",
+          id = 'filters',
+          type = 'combo',
           width = 80,
           spacing_before = 0,
           config = {
-            tooltip = "Filter Packages",
+            tooltip = 'Filter Packages',
             current_value = nil,
             options = {
-              { value = nil, label = "Filters" },
+              { value = nil, label = 'Filters' },
               {
-                value = "tcp",
-                label = "TCP",
-                checkbox = true,
-                checked = filters.TCP,
+                value = 'tcp',
+                label = 'TCP',
+                is_checkbox = true,
+                is_checked = filters.TCP,
               },
               {
-                value = "mcp",
-                label = "MCP",
-                checkbox = true,
-                checked = filters.MCP,
+                value = 'mcp',
+                label = 'MCP',
+                is_checkbox = true,
+                is_checked = filters.MCP,
               },
               {
-                value = "transport",
-                label = "Transport",
-                checkbox = true,
-                checked = filters.Transport,
+                value = 'transport',
+                label = 'Transport',
+                is_checkbox = true,
+                is_checked = filters.Transport,
               },
               {
-                value = "global",
-                label = "Global",
-                checkbox = true,
-                checked = filters.Global,
+                value = 'global',
+                label = 'Global',
+                is_checkbox = true,
+                is_checked = filters.Global,
               },
             },
             on_checkbox_change = callbacks.on_filter_changed,

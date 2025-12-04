@@ -1,19 +1,55 @@
 -- @noindex
 -- RegionPlaylist/ui/tiles/pool_grid_factory.lua
--- Opts-based grid factory for pool tiles
+-- Pool Grid Configuration Factory
+--
+-- PURPOSE:
+-- Builds opts table configuration for the pool (region/playlist browser) Grid widget.
+-- This is an adapter between app state (coordinator) and ARKITEKT Grid API.
+--
+-- RESPONSIBILITIES:
+--   - Map filtered/sorted pool data to Grid widget parameters
+--   - Wire interaction callbacks (drag, select, double-click, right-click)
+--   - Configure pool-specific behaviors (no reordering by default, drag to active)
+--   - Set up drag payload (regions or playlist objects)
+--   - Handle both region tiles AND playlist tiles (mixed mode)
+--
+-- PATTERN: Factory Function
+-- Similar to active_grid_factory.lua but for the pool (bottom) grid.
+-- Returns fresh opts table each frame for Ark.Grid(ctx, opts).
+--
+-- WHY FACTORY?
+-- - Pool configuration is complex (300+ lines)
+-- - Handles two tile types (regions and playlists) with unified API
+-- - Separates filtering/sorting logic from rendering
+-- - Keeps coordinator.lua readable
+--
+-- FLOW:
+-- coordinator_render.draw_pool()
+--   → PoolGridFactory.create_opts(self, self.config)
+--   → Returns opts table
+--   → Ark.Grid(ctx, opts)
+--   → Grid renders mixed region/playlist tiles
+--
+-- MIXED MODE:
+-- Pool can contain both regions (rid) and playlists (id + items).
+-- Key function distinguishes: 'pool_123' (region) vs 'pool_playlist_abc' (playlist)
+--
+-- SEE ALSO:
+--   - ui/tiles/coordinator.lua (orchestrator that uses this factory)
+--   - ui/tiles/renderers/pool.lua (tile rendering implementation)
+--   - ui/tiles/active_grid_factory.lua (similar factory for active grid)
+--   - app/pool_queries.lua (filtering and sorting logic)
 
 local Ark = require('arkitekt')
 local PoolTile = require('RegionPlaylist.ui.tiles.renderers.pool')
-local hexrgb = Ark.Colors.hexrgb
-
 local M = {}
 
 -- Key function for pool items
 local function pool_key(item)
   if item.id and item.items then
-    return "pool_playlist_" .. tostring(item.id)
+    return 'pool_playlist_' .. tostring(item.id)
   else
-    return "pool_" .. tostring(item.rid)
+    return 'pool_' .. tostring(item.rid)
   end
 end
 
@@ -42,11 +78,11 @@ local function create_behaviors(rt)
       local playlist_ids = {}
 
       for _, key in ipairs(new_order) do
-        local playlist_id = key:match("pool_playlist_(.+)")
+        local playlist_id = key:match('pool_playlist_(.+)')
         if playlist_id then
           playlist_ids[#playlist_ids + 1] = playlist_id
         else
-          local rid = tonumber(key:match("pool_(%d+)"))
+          local rid = tonumber(key:match('pool_(%d+)'))
           if rid then
             rids[#rids + 1] = rid
           end
@@ -63,6 +99,25 @@ local function create_behaviors(rt)
       end
     end,
 
+    -- Mouse wheel resize (CTRL = vertical, ALT = horizontal)
+    wheel_resize = function(grid, direction, delta)
+      if direction == 'vertical' then
+        -- Adjust tile height (use override to bypass responsive calculation)
+        local step = 12  -- pixels per scroll tick
+        local current = rt._pool_tile_height_override or rt._pool_tile_height or 72
+        local new_height = current + (delta * step)
+        -- Clamp between 32 and 80
+        rt._pool_tile_height_override = math.max(32, math.min(80, new_height))
+      else
+        -- Adjust column width (larger step for width changes)
+        local step = 36  -- pixels per scroll tick
+        local current = rt._pool_col_width or PoolTile.CONFIG.tile_width
+        local new_width = current + (delta * step)
+        -- Clamp between 80 and 400
+        rt._pool_col_width = math.max(80, math.min(400, new_width))
+      end
+    end,
+
     -- Inline editing: Double-click to edit single tile
     start_inline_edit = function(grid, key)
       local GridInput = require('arkitekt.gui.widgets.containers.grid.input')
@@ -73,12 +128,12 @@ local function create_behaviors(rt)
           if item.id and item.items then
             -- It's a playlist
             local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.id)
-            current_name = playlist and playlist.name or "Playlist"
+            current_name = playlist and playlist.name or 'Playlist'
           else
             -- It's a region
-            local State = require("RegionPlaylist.app.state")
+            local State = require('RegionPlaylist.app.state')
             local region = State.get_region_by_rid(item.rid)
-            current_name = region and region.name or "Region"
+            current_name = region and region.name or 'Region'
           end
           GridInput.start_inline_edit(grid, key, current_name)
           break
@@ -104,7 +159,7 @@ local function create_behaviors(rt)
             if playlist and playlist.items and #playlist.items > 0 then
               local first_item = playlist.items[1]
               if first_item.rid then
-                local State = require("RegionPlaylist.app.state")
+                local State = require('RegionPlaylist.app.state')
                 local region = State.get_region_by_rid(first_item.rid)
                 if region and region.start then
                   reaper.SetEditCurPos(region.start, true, true)
@@ -113,7 +168,7 @@ local function create_behaviors(rt)
             end
           else
             -- For regions, seek to region start
-            local State = require("RegionPlaylist.app.state")
+            local State = require('RegionPlaylist.app.state')
             local region = State.get_region_by_rid(item.rid)
             if region and region.start then
               reaper.SetEditCurPos(region.start, true, true)
@@ -139,12 +194,12 @@ local function create_behaviors(rt)
             if item.id and item.items then
               -- It's a playlist
               local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.id)
-              current_name = playlist and playlist.name or "Playlist"
+              current_name = playlist and playlist.name or 'Playlist'
             else
               -- It's a region
-              local State = require("RegionPlaylist.app.state")
+              local State = require('RegionPlaylist.app.state')
               local region = State.get_region_by_rid(item.rid)
-              current_name = region and region.name or "Region"
+              current_name = region and region.name or 'Region'
             end
             GridInput.start_inline_edit(grid, key, current_name)
             break
@@ -158,7 +213,7 @@ local function create_behaviors(rt)
             rt.on_pool_batch_rename(selected_keys, pattern)
           end
         end, {
-          item_type = "playlists",  -- Label for pool items
+          item_type = 'playlists',  -- Label for pool items
           on_rename_and_recolor = function(pattern, color)
             if rt.on_pool_batch_rename_and_recolor then
               rt.on_pool_batch_rename_and_recolor(selected_keys, pattern, color)
@@ -191,7 +246,7 @@ local function create_behaviors(rt)
 
       if selected_keys and #selected_keys > 0 then
         for _, key in ipairs(selected_keys) do
-          if key:match("^pool_playlist_") then
+          if key:match('^pool_playlist_') then
             playlist_count = playlist_count + 1
           else
             region_count = region_count + 1
@@ -205,15 +260,14 @@ local function create_behaviors(rt)
         local active_items = rt.active_grid.get_items()
         local active_selected_keys = rt.active_grid.selection:selected_keys()
 
-        for _, key in ipairs(active_selected_keys) do
-          local item = nil
-          for _, it in ipairs(active_items) do
-            if it.key == key then
-              item = it
-              break
-            end
-          end
+        -- Build lookup map first (O(n) instead of O(n²))
+        local items_by_key = {}
+        for _, it in ipairs(active_items) do
+          items_by_key[it.key] = it
+        end
 
+        for _, key in ipairs(active_selected_keys) do
+          local item = items_by_key[key]
           if item then
             if item.playlist_id then
               active_selection_info.playlist_count = active_selection_info.playlist_count + 1
@@ -270,8 +324,18 @@ end
 local function create_render_tile(rt, tile_config)
   return function(ctx, rect, region, state, grid)
     local tile_height = rect[4] - rect[2]
-    PoolTile.render(ctx, rect, region, state, rt.pool_animator, rt.hover_config,
-                    tile_height, tile_config.border_thickness, grid)
+    PoolTile.render({
+      ctx = ctx,
+      rect = rect,
+      item = region,
+      state = state,
+      animator = rt.pool_animator,
+      hover_config = rt.hover_config,
+      tile_height = tile_height,
+      border_thickness = tile_config.border_thickness,
+      rounding = rt._pool_rounding,
+      grid = grid,
+    })
   end
 end
 
@@ -285,8 +349,8 @@ function M.create_opts(rt, config)
   local base_tile_height = config.base_tile_height_pool or 72
   local tile_config = config.tile_config or { border_thickness = 0.5, rounding = 6 }
   local dim_config = config.dim_config or {
-    fill_color = hexrgb("#00000088"),
-    stroke_color = hexrgb("#FFFFFF33"),
+    fill_color = 0x00000088,
+    stroke_color = 0xFFFFFF33,
     stroke_thickness = 1.5,
     rounding = 6,
   }
@@ -295,9 +359,9 @@ function M.create_opts(rt, config)
   local padding = config.container and config.container.padding or 8
 
   return {
-    id = "pool_grid",
+    id = 'pool_grid',
     gap = rt._pool_gap or PoolTile.CONFIG.gap,
-    min_col_w = function() return PoolTile.CONFIG.tile_width end,
+    min_col_w = function() return rt._pool_col_width or PoolTile.CONFIG.tile_width end,
     fixed_tile_h = rt._pool_tile_height or base_tile_height,
     items = rt._pool_items or {},
 

@@ -2,7 +2,7 @@
 -- ItemPickerWindow/ui/toolbar_view.lua
 -- Top toolbar with search, sort, and layout controls
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local SearchWithMode = require('ItemPicker.ui.components.search_with_mode')
 local M = {}
@@ -26,8 +26,8 @@ function ToolbarView:handle_shortcuts(ctx)
   end
 
   if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-    if self.state.settings.search_string and self.state.settings.search_string ~= "" then
-      self.state.set_search_filter("")
+    if self.state.settings.search_string and self.state.settings.search_string ~= '' then
+      self.state.set_search_filter('')
     end
   end
 end
@@ -45,19 +45,19 @@ function ToolbarView:draw(ctx, shell_state)
   local draw_list = ImGui.GetWindowDrawList(ctx)
 
   -- Draw toolbar background
-  local bg_color = Ark.Colors.hexrgb("#1A1A1AFF")
+  local bg_color = 0x1A1A1AFF
   ImGui.DrawList_AddRectFilled(draw_list, start_x, start_y, start_x + avail_w, start_y + toolbar_height, bg_color, 0)
 
   -- Sort modes
   local sort_modes = {
-    {id = "none", label = "None"},
-    {id = "length", label = "Length"},
-    {id = "color", label = "Color"},
-    {id = "name", label = "Name"},
-    {id = "pool", label = "Pool"},
+    {id = 'none', label = 'None'},
+    {id = 'length', label = 'Length'},
+    {id = 'color', label = 'Color'},
+    {id = 'name', label = 'Name'},
+    {id = 'pool', label = 'Pool'},
   }
 
-  local current_sort = self.state.settings.sort_mode or "none"
+  local current_sort = self.state.settings.sort_mode or 'none'
 
   -- Calculate sort button widths
   local sort_button_widths = {}
@@ -74,8 +74,8 @@ function ToolbarView:draw(ctx, shell_state)
 
   -- Layout toggle button
   local layout_button_width = button_height
-  local layout_mode = self.state.settings.layout_mode or "vertical"
-  local is_vertical = layout_mode == "vertical"
+  local layout_mode = self.state.settings.layout_mode or 'vertical'
+  local is_vertical = layout_mode == 'vertical'
 
   -- Search field dimensions
   local search_width = avail_w * 0.35
@@ -86,7 +86,7 @@ function ToolbarView:draw(ctx, shell_state)
   local layout_x = search_x - layout_button_width - button_gap
 
   -- Draw layout toggle button
-  local icon_color = Ark.Colors.hexrgb("#AAAAAA")
+  local icon_color = 0xAAAAAAFF
   local draw_layout_icon = function(btn_draw_list, icon_x, icon_y)
     local icon_size = 14
     local gap = 2
@@ -109,18 +109,18 @@ function ToolbarView:draw(ctx, shell_state)
     end
   end
 
-  Ark.Button.draw(ctx, {
-    id = "layout_toggle_button",
+  Ark.Button(ctx, {
+    id = 'layout_toggle_button',
     draw_list = draw_list,
     x = layout_x,
     y = search_y,
     width = layout_button_width,
     height = button_height,
-    label = "",
-    preset_name = "BUTTON_TOGGLE_WHITE",
-    tooltip = is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout",
+    label = '',
+    preset_name = 'BUTTON_TOGGLE_WHITE',
+    tooltip = is_vertical and 'Switch to Horizontal Layout' or 'Switch to Vertical Layout',
     on_click = function()
-      local new_mode = layout_mode == "vertical" and "horizontal" or "vertical"
+      local new_mode = layout_mode == 'vertical' and 'horizontal' or 'vertical'
       self.state.set_setting('layout_mode', new_mode)
     end,
   })
@@ -137,15 +137,15 @@ function ToolbarView:draw(ctx, shell_state)
     self.focus_search = false
   end
 
-  SearchWithMode.draw(ctx, draw_list, search_x, search_y, search_width, button_height, self.state, self.config)
+  SearchWithMode.Draw(ctx, draw_list, search_x, search_y, search_width, button_height, self.state, self.config)
 
   -- Position sort buttons to the right of search
   local sort_x = search_x + search_width + button_gap
 
-  -- Draw "Sorting:" label
-  local sort_label = "Sort:"
+  -- Draw 'Sorting:' label
+  local sort_label = 'Sort:'
   local sort_label_width = ImGui.CalcTextSize(ctx, sort_label)
-  local sort_label_color = Ark.Colors.with_alpha(Ark.Colors.hexrgb("#AAAAAA"), 200)
+  local sort_label_color = Ark.Colors.WithAlpha(0xAAAAAAFF, 200)
   ImGui.DrawList_AddText(draw_list, sort_x, search_y + 6, sort_label_color, sort_label)
 
   sort_x = sort_x + sort_label_width + 8
@@ -155,8 +155,8 @@ function ToolbarView:draw(ctx, shell_state)
     local button_w = sort_button_widths[i]
     local is_active = (current_sort == mode.id)
 
-    Ark.Button.draw(ctx, {
-      id = "sort_button_" .. mode.id,
+    Ark.Button(ctx, {
+      id = 'sort_button_' .. mode.id,
       draw_list = draw_list,
       x = sort_x,
       y = search_y,
@@ -164,7 +164,7 @@ function ToolbarView:draw(ctx, shell_state)
       height = button_height,
       label = mode.label,
       is_toggled = is_active,
-      preset_name = "BUTTON_TOGGLE_WHITE",
+      preset_name = 'BUTTON_TOGGLE_WHITE',
       on_click = function()
         if current_sort == mode.id then
           local current_reverse = self.state.settings.sort_reverse or false

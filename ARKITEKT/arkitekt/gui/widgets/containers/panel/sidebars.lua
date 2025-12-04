@@ -7,9 +7,9 @@
 -- The scrollbar draws on top (later in render pipeline), so scrollbar remains fully interactive.
 -- Sidebar buttons remain clickable on the left side of the scrollbar.
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Button = require('arkitekt.gui.widgets.primitives.button')
-local ConfigUtil = require('arkitekt.core.config')
+local ConfigUtil = require('arkitekt.core.merge')
 local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
 
 local M = {}
@@ -22,7 +22,7 @@ M.DEFAULTS = {
   button_size = 28,
   width = 36,
   rounding = 8,
-  valign = "center",  -- top, center, bottom
+  valign = 'center',  -- top, center, bottom
 }
 
 -- ============================================================================
@@ -46,9 +46,9 @@ local function calculate_layout(sidebar_cfg, panel_y, panel_height)
   -- Calculate start Y based on alignment
   local start_y
   local valign = sidebar_cfg.valign or M.DEFAULTS.valign
-  if valign == "top" then
+  if valign == 'top' then
     start_y = panel_y
-  elseif valign == "bottom" then
+  elseif valign == 'bottom' then
     start_y = panel_y + panel_height - total_height
   else -- center
     start_y = panel_y + (panel_height - total_height) / 2
@@ -69,7 +69,7 @@ end
 -- ============================================================================
 
 local function get_corner_rounding(side, is_first, is_last, rounding)
-  if side == "left" then
+  if side == 'left' then
     return {
       round_top_left = false,
       round_top_right = is_first,
@@ -101,9 +101,9 @@ end
 --- @param panel_height number Panel height (content area)
 --- @param sidebar_cfg table Sidebar configuration
 --- @param panel_id string Panel ID
---- @param side string "left" or "right"
+--- @param side string 'left' or 'right'
 --- @return number Sidebar width consumed
-function M.draw(ctx, dl, panel_x, panel_y, panel_width, panel_height, sidebar_cfg, panel_id, side)
+function M.Draw(ctx, dl, panel_x, panel_y, panel_width, panel_height, sidebar_cfg, panel_id, side)
   if not sidebar_cfg or not sidebar_cfg.enabled then
     return 0
   end
@@ -116,7 +116,7 @@ function M.draw(ctx, dl, panel_x, panel_y, panel_width, panel_height, sidebar_cf
 
   -- Calculate base button X position
   local btn_x
-  if side == "left" then
+  if side == 'left' then
     btn_x = panel_x
   else -- right
     btn_x = panel_x + panel_width - layout.button_width
@@ -145,7 +145,7 @@ function M.draw(ctx, dl, panel_x, panel_y, panel_width, panel_height, sidebar_cf
 
     -- Merge element config with defaults
     local btn_config = ConfigUtil.merge_safe(element.config or {}, PanelConfig.ELEMENT_STYLE.button)
-    btn_config.id = panel_id .. "_sidebar_" .. side .. "_" .. (element.id or i)
+    btn_config.id = panel_id .. '_sidebar_' .. side .. '_' .. (element.id or i)
     btn_config.draw_list = dl
     btn_config.x = btn_x
     btn_config.y = btn_y
@@ -154,7 +154,7 @@ function M.draw(ctx, dl, panel_x, panel_y, panel_width, panel_height, sidebar_cf
     btn_config.corner_rounding = corner_rounding
     btn_config.panel_state = { _panel_id = panel_id }
 
-    Button.draw(ctx, btn_config)
+    Button.Draw(ctx, btn_config)
   end
 
   return sidebar_cfg.width or M.DEFAULTS.width

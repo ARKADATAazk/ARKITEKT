@@ -2,7 +2,7 @@
 -- TemplateBrowser/ui/views/convenience_panel/vsts_tab.lua
 -- Mini VSTs tab for convenience panel
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
@@ -11,20 +11,20 @@ local UI = require('TemplateBrowser.ui.config.constants')
 local M = {}
 
 -- Draw mini VSTS content (list of all FX with filtering, no reparse button)
-function M.draw(ctx, state, config, width, height)
+function M.Draw(ctx, state, config, width, height)
   -- Get all FX from templates
   local FXParser = require('TemplateBrowser.domain.fx.parser')
   local all_fx = FXParser.get_all_fx(state.templates)
 
   -- Header with VST count
-  ImGui.Text(ctx, string.format("%d VST%s found", #all_fx, #all_fx == 1 and "" or "s"))
+  ImGui.Text(ctx, string.format('%d VST%s found', #all_fx, #all_fx == 1 and '' or 's'))
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
   -- Calculate remaining height for VST list
   local vsts_list_height = height - 36  -- Account for header + separator
 
-  if Helpers.begin_child_compat(ctx, "ConvenienceVSTsList", width - config.PANEL_PADDING * 2, vsts_list_height, false) then
+  if Helpers.begin_child_compat(ctx, 'ConvenienceVSTsList', width - config.PANEL_PADDING * 2, vsts_list_height, false) then
     for _, fx_name in ipairs(all_fx) do
       ImGui.PushID(ctx, fx_name)
 
@@ -40,20 +40,20 @@ function M.draw(ctx, state, config, width, height)
       -- Use stored color or default dark grey with 80% transparency
       local bg_color
       if vst_color then
-        bg_color = is_selected and vst_color or Ark.Colors.with_opacity(vst_color, 0.8)
+        bg_color = is_selected and vst_color or Ark.Colors.WithOpacity(vst_color, 0.8)
       else
-        bg_color = is_selected and Ark.Colors.hexrgb("#4A4A4ACC") or Ark.Colors.hexrgb("#3A3A3ACC")
+        bg_color = is_selected and 0x4A4A4ACC or 0x3A3A3ACC
       end
 
-      local clicked, chip_w, chip_h = Chip.draw(ctx, {
+      local clicked, chip_w, chip_h = Chip.Draw(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
         bg_color = bg_color,
-        text_color = vst_color and Ark.Colors.auto_text_color(vst_color) or Ark.Colors.hexrgb("#FFFFFF"),
+        text_color = vst_color and Ark.Colors.AutoTextColor(vst_color) or 0xFFFFFFFF,
         height = 22,
         padding_h = 8,
         rounding = 2,
-        interactive = true,
+        is_interactive = true,
       })
 
       if clicked then

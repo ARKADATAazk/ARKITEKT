@@ -34,8 +34,8 @@ function M.create_main_panel(State, callbacks)
       height = 24,
       elements = {
         {
-          id = "tabs",
-          type = "tab_strip",
+          id = 'tabs',
+          type = 'tab_strip',
           flex = 1,
           spacing_before = 0,
           config = tab_config,
@@ -45,7 +45,7 @@ function M.create_main_panel(State, callbacks)
   }
 
   local panel = Ark.Panel.new({
-    id = "main_panel",
+    id = 'main_panel',
     config = panel_config,
   })
 

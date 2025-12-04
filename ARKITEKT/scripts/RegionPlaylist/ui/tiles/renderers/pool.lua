@@ -1,8 +1,8 @@
 -- @noindex
 -- RegionPlaylist/ui/tiles/renderers/pool.lua
--- MODIFIED: Using Ark.Colors.hexrgb() for all color definitions
+-- Pool tile renderer with byte color literals (0xRRGGBBAA)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
@@ -13,38 +13,111 @@ local Background = require('arkitekt.gui.draw.patterns')
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
 local sqrt = math.sqrt
+local time_precise = reaper.time_precise
+
+-- Performance: Localize Ark/ImGui functions
+local Colors_Luminance = Ark.Colors.Luminance
+local Colors_AdjustBrightness = Ark.Colors.AdjustBrightness
+local Colors_Desaturate = Ark.Colors.Desaturate
+local Colors_WithAlpha = Ark.Colors.WithAlpha
+local Colors_WithOpacity = Ark.Colors.WithOpacity
+local Draw_Text = Ark.Draw.Text
+local DrawList_AddRect = ImGui.DrawList_AddRect
 
 local M = {}
 
+-- ============================================================================
+-- PROFILING (set to true to enable, check REAPER console for output)
+-- ============================================================================
+local PROFILE_ENABLED = true
+local _profile = {
+  animator = 0,
+  color = 0,
+  base_tile = 0,
+  text = 0,
+  badge = 0,
+  length = 0,
+  count = 0,
+  last_report = 0,
+}
+
+local function profile_report()
+  if not PROFILE_ENABLED then return end
+  local now = time_precise()
+  if now - _profile.last_report > 1.0 then
+    reaper.ShowConsoleMsg(string.format(
+      '[POOL] %d tiles | anim:%.1fms | color:%.1fms | base:%.1fms | text:%.1fms | badge:%.1fms | len:%.1fms\n',
+      _profile.count,
+      _profile.animator * 1000,
+      _profile.color * 1000,
+      _profile.base_tile * 1000,
+      _profile.text * 1000,
+      _profile.badge * 1000,
+      _profile.length * 1000
+    ))
+    -- Reset
+    _profile.animator = 0
+    _profile.color = 0
+    _profile.base_tile = 0
+    _profile.text = 0
+    _profile.badge = 0
+    _profile.length = 0
+    _profile.count = 0
+    _profile.last_report = now
+  end
+end
+
 M.CONFIG = {
-  bg_base = Ark.Colors.hexrgb("#1A1A1A"),
+  -- Grid layout
+  tile_width = 110,
+  gap = 12,
+  -- Appearance
+  bg_base = 0x1A1A1AFF,
   disabled = { desaturate = 0.9, brightness = 0.5, alpha_multiplier = 0.6, min_lightness = 0.28 },
-  responsive = { hide_length_below = 35, hide_text_below = 15 },
-  playlist_tile = { 
-    base_color = Ark.Colors.hexrgb("#3A3A3A"), 
-    name_color = Ark.Colors.hexrgb("#CCCCCC"), 
-    badge_color = Ark.Colors.hexrgb("#999999") 
+  responsive = { hide_length_below = 50, hide_text_below = 15 },
+  playlist_tile = {
+    base_color = 0x3A3A3AFF,
+    name_color = 0xCCCCCCFF,
+    badge_color = 0x999999FF
   },
   text_margin_right = 6,
   badge_margin = 6,
   badge_padding_x = 6,
   badge_padding_y = 3,
   badge_rounding = 4,
-  badge_bg = Ark.Colors.hexrgb("#14181C"),
+  badge_bg = 0x14181CFF,
   badge_border_alpha = 0x33,
   badge_nudge_x = 0,
   badge_nudge_y = 0,
   badge_text_nudge_x = -1,
   badge_text_nudge_y = -2,
+  -- Spawn animation
+  spawn = { enabled = true, duration = 0.25, scale_start = 0.8 },
+  -- Overlap warning badge (RED - nested regions)
+  overlap = {
+    icon = '⚠',
+    badge_size = 18,
+    badge_bg = 0x4A2020FF,
+    badge_border = 0xFF4444FF,
+    icon_color = 0xFFBB33FF,
+  },
+  -- Beyond project end warning badge (YELLOW/ORANGE)
+  beyond = {
+    icon = '⚠',
+    badge_size = 18,
+    badge_bg = 0x3A3010FF,
+    badge_border = 0xFFAA22FF,
+    icon_color = 0xFFDD44FF,
+  },
   circular = {
-    base_color = Ark.Colors.hexrgb("#240C0Cff"),
-    stripe_color = Ark.Colors.with_opacity(Ark.Colors.hexrgb("#430d0d85"), 0.2),
-    border_color = Ark.Colors.hexrgb("#240f0fff"),
-    text_color = Ark.Colors.hexrgb("#901b1bff"),
-    lock_color = Ark.Colors.hexrgb("#901b1bff"),
-    playlist_chip_color = Ark.Colors.hexrgb("#901b1bff"),
-    badge_bg = Ark.Colors.hexrgb("#240C0Cff"),
-    badge_border_color = Ark.Colors.hexrgb("#652a2aff"),
+    base_color = 0x240C0CFF,
+    stripe_color = Ark.Colors.WithOpacity(0x430D0D85, 0.2),
+    border_color = 0x240F0FFF,
+    text_color = 0x901B1BFF,
+    lock_color = 0x901B1BFF,
+    playlist_chip_color = 0x901B1BFF,
+    badge_bg = 0x240C0CFF,
+    badge_border_color = 0x652A2AFF,
     lock_base_w = 11,
     lock_base_h = 7,
     lock_handle_w = 2,
@@ -57,10 +130,10 @@ M.CONFIG = {
 }
 
 local function clamp_min_lightness(color, min_l)
-  local lum = Ark.Colors.luminance(color)
+  local lum = Colors_Luminance(color)
   if lum < (min_l or 0) then
     local factor = (min_l + 0.001) / max(lum, 0.001)
-    return Ark.Colors.adjust_brightness(color, factor)
+    return Colors_AdjustBrightness(color, factor)
   end
   return color
 end
@@ -102,26 +175,57 @@ local function draw_lock_icon(dl, cx, cy, config, color)
   ImGui.DrawList_AddRectFilled(dl, top_x1, top_y1, top_x2, top_y2, color, 0)
 end
 
-function M.render(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness, grid)
-  if item.id and item.items then
-    M.render_playlist(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness, grid)
+--- Render pool tile (region or playlist)
+--- @param opts table Render options
+--- @param opts.ctx ImGui_Context ImGui context
+--- @param opts.rect table {x1, y1, x2, y2} Tile bounds
+--- @param opts.item table Item data {rid, id?, items?, color?, ...}
+--- @param opts.state table Tile state {hover, pressed, selected}
+--- @param opts.animator table TileAnimator instance
+--- @param opts.hover_config table Animation config {animation_speed_hover}
+--- @param opts.tile_height number Tile height in pixels
+--- @param opts.border_thickness number Border thickness
+--- @param opts.grid table Grid instance
+function M.render(opts)
+  if opts.item.id and opts.item.items then
+    M.render_playlist(opts)
   else
-    M.render_region(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness, grid)
+    M.render_region(opts)
   end
 end
 
-function M.render_region(ctx, rect, region, state, animator, hover_config, tile_height, border_thickness, grid)
+--- Render pool region tile
+--- @param opts table Render options (same as M.render)
+function M.render_region(opts)
+  local t0 = PROFILE_ENABLED and time_precise() or 0
+
+  local ctx = opts.ctx
+  local rect = opts.rect
+  local region = opts.item
+  local state = opts.state
+  local animator = opts.animator
+  local hover_config = opts.hover_config
+  local tile_height = opts.tile_height
+  local border_thickness = opts.border_thickness
+  local grid = opts.grid
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-  local key = "pool_" .. tostring(region.rid)
+  local key = 'pool_' .. tostring(region.rid)
 
   animator:track(key, 'hover', state.hover and 1.0 or 0.0, hover_config and hover_config.animation_speed_hover or 12.0)
   local hover_factor = animator:get(key, 'hover')
+
+  local t1 = PROFILE_ENABLED and time_precise() or 0
+
   local base_color = region.color or M.CONFIG.bg_base
   local fx_config = TileFXConfig.get()
 
+  local t2 = PROFILE_ENABLED and time_precise() or 0
+
   BaseRenderer.draw_base_tile(ctx, dl, rect, base_color, fx_config, state, hover_factor)
   if state.selected and fx_config.ants_enabled then BaseRenderer.draw_marching_ants(dl, rect, base_color, fx_config) end
+
+  local t3 = PROFILE_ENABLED and time_precise() or 0
 
   local actual_height = tile_height or (y2 - y1)
   local show_text = actual_height >= M.CONFIG.responsive.hide_text_below
@@ -135,18 +239,84 @@ function M.render_region(ctx, rect, region, state, animator, hover_config, tile_
     BaseRenderer.draw_region_text(ctx, dl, text_pos, region, base_color, 0xFF, right_bound_x, grid, rect, key)
   end
 
+  local t4 = PROFILE_ENABLED and time_precise() or 0
+
   if show_length then BaseRenderer.draw_length_display(ctx, dl, rect, region, base_color, 0xFF) end
+
+  local t5 = PROFILE_ENABLED and time_precise() or 0
+
+  -- Check for region warnings and show appropriate badge
+  -- Priority: Overlap (red) > Beyond project end (yellow)
+  local State = require('RegionPlaylist.app.state')
+  local has_overlap = State.has_region_overlap and State.has_region_overlap(region.rid)
+  local is_beyond = not has_overlap and State.is_region_beyond_project_end and State.is_region_beyond_project_end(region.rid)
+
+  if has_overlap or is_beyond then
+    local warning_cfg = has_overlap and M.CONFIG.overlap or M.CONFIG.beyond
+    local badge_size = warning_cfg.badge_size
+    local badge_x = x2 - badge_size - M.CONFIG.badge_margin
+    local badge_y = y1 + M.CONFIG.badge_margin
+    local badge_x2 = badge_x + badge_size
+    local badge_y2 = badge_y + badge_size
+
+    -- Draw badge background
+    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, warning_cfg.badge_bg, M.CONFIG.badge_rounding)
+    DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, warning_cfg.badge_border, M.CONFIG.badge_rounding, 0, 1)
+
+    -- Draw warning icon centered
+    local icon_w, icon_h = ImGui.CalcTextSize(ctx, warning_cfg.icon)
+    local icon_x = badge_x + (badge_size - icon_w) * 0.5
+    local icon_y = badge_y + (badge_size - icon_h) * 0.5 - 1
+    Draw_Text(dl, icon_x, icon_y, warning_cfg.icon_color, warning_cfg.icon)
+
+    -- Tooltip
+    ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
+    ImGui.InvisibleButton(ctx, key .. '_warning_tooltip', badge_size, badge_size)
+    if ImGui.IsItemHovered(ctx) then
+      if has_overlap then
+        local nested_rids = State.get_nested_regions(region.rid)
+        local nested_count = nested_rids and #nested_rids or 0
+        ImGui.SetTooltip(ctx, string.format('Contains %d nested region%s', nested_count, nested_count ~= 1 and 's' or ''))
+      else
+        ImGui.SetTooltip(ctx, 'Region starts beyond project end')
+      end
+    end
+  end
+
+  -- Profiling accumulation
+  if PROFILE_ENABLED then
+    local t6 = time_precise()
+    _profile.animator = _profile.animator + (t1 - t0)
+    _profile.color = _profile.color + (t2 - t1)
+    _profile.base_tile = _profile.base_tile + (t3 - t2)
+    _profile.text = _profile.text + (t4 - t3)
+    _profile.length = _profile.length + (t5 - t4)
+    _profile.badge = _profile.badge + (t6 - t5)
+    _profile.count = _profile.count + 1
+    profile_report()
+  end
 end
 
-function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness, grid)
+--- Render pool playlist tile
+--- @param opts table Render options (same as M.render)
+function M.render_playlist(opts)
+  local ctx = opts.ctx
+  local rect = opts.rect
+  local playlist = opts.item
+  local state = opts.state
+  local animator = opts.animator
+  local hover_config = opts.hover_config
+  local tile_height = opts.tile_height
+  local border_thickness = opts.border_thickness
+  local grid = opts.grid
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-  local key = "pool_playlist_" .. tostring(playlist.id)
+  local key = 'pool_playlist_' .. tostring(playlist.id)
   local is_disabled = playlist.is_disabled or false
 
   -- Special rendering for circular reference tiles
   if is_disabled then
-    M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness, grid)
+    M.render_circular_playlist(opts)
     return
   end
   
@@ -157,16 +327,16 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   
   local base_color = M.CONFIG.playlist_tile.base_color
   local playlist_data = {
-    name = playlist.name or "Unnamed Playlist",
-    chip_color = playlist.chip_color or Ark.Colors.hexrgb("#FF5733"),
+    name = playlist.name or 'Unnamed Playlist',
+    chip_color = playlist.chip_color or 0xFF5733FF,
     total_duration = playlist.total_duration or 0
   }
 
   if disabled_factor > 0 then
-    base_color = Ark.Colors.desaturate(base_color, M.CONFIG.disabled.desaturate * disabled_factor)
-    base_color = Ark.Colors.adjust_brightness(base_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
-    playlist_data.chip_color = Ark.Colors.desaturate(playlist_data.chip_color, M.CONFIG.disabled.desaturate * disabled_factor)
-    playlist_data.chip_color = Ark.Colors.adjust_brightness(playlist_data.chip_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+    base_color = Colors_Desaturate(base_color, M.CONFIG.disabled.desaturate * disabled_factor)
+    base_color = Colors_AdjustBrightness(base_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+    playlist_data.chip_color = Colors_Desaturate(playlist_data.chip_color, M.CONFIG.disabled.desaturate * disabled_factor)
+    playlist_data.chip_color = Colors_AdjustBrightness(playlist_data.chip_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     local minL = M.CONFIG.disabled.min_lightness or 0.28
     base_color = clamp_min_lightness(base_color, minL)
     playlist_data.chip_color = clamp_min_lightness(playlist_data.chip_color, minL)
@@ -190,7 +360,7 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   local right_elements = {}
   
   if show_badge then
-    local badge_text = string.format("[%d]", item_count)
+    local badge_text = string.format('[%d]', item_count)
     local badge_w, _ = ImGui.CalcTextSize(ctx, badge_text)
     right_elements[#right_elements + 1] = BaseRenderer.create_element(
       true,
@@ -205,17 +375,17 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
     
     local name_color = M.CONFIG.playlist_tile.name_color
     if disabled_factor > 0 then
-      name_color = Ark.Colors.adjust_brightness(name_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+      name_color = Colors_AdjustBrightness(name_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     end
     if (state.hover or state.selected) and not is_disabled then
-      name_color = Ark.Colors.hexrgb("#FFFFFF")
+      name_color = 0xFFFFFFFF
     end
 
     BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, name_color, actual_height, rect, grid, base_color, key)
   end
   
   if show_badge then
-    local badge_text = string.format("[%d]", item_count)
+    local badge_text = string.format('[%d]', item_count)
     local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
     bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
     -- Calculate badge height with padding for positioning
@@ -229,16 +399,16 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
     
     local badge_border_color = playlist_data.chip_color
     if disabled_factor > 0 then
-      badge_border_color = Ark.Colors.adjust_brightness(badge_border_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+      badge_border_color = Colors_AdjustBrightness(badge_border_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     end
     if (state.hover or state.selected) and not is_disabled then
       badge_border_color = playlist_data.chip_color
     end
-    
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Ark.Colors.with_alpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
-    
+
+    DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors_WithAlpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
+
     -- Use whiter text like active tiles
-    Ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Ark.Colors.with_alpha(Ark.Colors.hexrgb("#FFFFFFDD"), text_alpha), badge_text)
+    Draw_Text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors_WithAlpha(0xFFFFFFDD, text_alpha), badge_text)
   end
   
   -- Draw playlist duration in bottom right (like regions)
@@ -247,29 +417,41 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   end
   
   ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.InvisibleButton(ctx, key .. "_tooltip", x2 - x1, y2 - y1)
+  ImGui.InvisibleButton(ctx, key .. '_tooltip', x2 - x1, y2 - y1)
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, string.format("Playlist • %d items", item_count))
+    ImGui.SetTooltip(ctx, string.format('Playlist • %d items', item_count))
   end
 end
 
-function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness, grid)
+--- Render circular reference playlist tile (disabled with warning pattern)
+--- @param opts table Render options (same as M.render)
+function M.render_circular_playlist(opts)
+  local ctx = opts.ctx
+  local rect = opts.rect
+  local playlist = opts.item
+  local state = opts.state
+  local animator = opts.animator
+  local hover_config = opts.hover_config
+  local tile_height = opts.tile_height
+  local border_thickness = opts.border_thickness
+  local grid = opts.grid
+
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-  local key = "pool_playlist_" .. tostring(playlist.id)
+  local key = 'pool_playlist_' .. tostring(playlist.id)
   
   animator:track(key, 'hover', 0, hover_config and hover_config.animation_speed_hover or 12.0)
   animator:track(key, 'disabled', 1.0, 12.0)
   
   local base_color = M.CONFIG.circular.base_color
   local playlist_data = {
-    name = playlist.name or "Unnamed Playlist",
+    name = playlist.name or 'Unnamed Playlist',
     chip_color = M.CONFIG.circular.playlist_chip_color
   }
   
   local fx_config = TileFXConfig.get()
   local border_color = M.CONFIG.circular.border_color
-  
+
   -- Draw base tile with red border
   BaseRenderer.draw_base_tile(ctx, dl, rect, base_color, fx_config, state, 0, 0, 0, border_color)
   
@@ -306,7 +488,7 @@ function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_
   
   if show_badge then
     -- Draw badge container with lock icon (same size as normal badge)
-    local badge_text = string.format("[%d]", item_count)
+    local badge_text = string.format('[%d]', item_count)
     local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
     bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
     local badge_x = x2 - 25 - M.CONFIG.badge_margin
@@ -317,7 +499,7 @@ function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
     
     local badge_border_color = M.CONFIG.circular.badge_border_color
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Ark.Colors.with_alpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
+    DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors_WithAlpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
     
     -- Draw lock icon centered in badge
     local lock_x = badge_x + (badge_x2 - badge_x) * 0.5
@@ -327,9 +509,9 @@ function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_
   
   -- Tooltip
   ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.InvisibleButton(ctx, key .. "_tooltip", x2 - x1, y2 - y1)
+  ImGui.InvisibleButton(ctx, key .. '_tooltip', x2 - x1, y2 - y1)
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Cannot drag to Active Grid: would create circular reference")
+    ImGui.SetTooltip(ctx, 'Cannot drag to Active Grid: would create circular reference')
   end
 end
 

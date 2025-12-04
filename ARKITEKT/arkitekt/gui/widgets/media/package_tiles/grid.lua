@@ -2,8 +2,9 @@
 -- Arkitekt/gui/widgets/package_tiles/grid.lua
 -- Package grid main logic with 200px height constraint (opts-based API)
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
+local Base = require('arkitekt.gui.widgets.base')
 
 local Colors = require('arkitekt.core.colors')
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
@@ -37,7 +38,7 @@ local function get_tile_base_color(pkg, P)
 end
 
 local function draw_package_tile(ctx, pkg, theme, P, rect, state, settings, custom_state)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local tile_w, tile_h = x2 - x1, y2 - y1
   
@@ -51,8 +52,8 @@ local function draw_package_tile(ctx, pkg, theme, P, rect, state, settings, cust
   local hover_factor = custom_state.animator:get(P.id, 'hover')
   local active_factor = custom_state.animator:get(P.id, 'active')
   
-  local bg_active = Colors.lerp(Renderer.CONFIG.colors.bg.inactive, Renderer.CONFIG.colors.bg.active, active_factor)
-  local bg_final = Colors.lerp(bg_active, Renderer.CONFIG.colors.bg.hover_tint, hover_factor * Renderer.CONFIG.colors.bg.hover_influence)
+  local bg_active = Colors.Lerp(Renderer.CONFIG.colors.bg.inactive, Renderer.CONFIG.colors.bg.active, active_factor)
+  local bg_final = Colors.Lerp(bg_active, Renderer.CONFIG.colors.bg.hover_tint, hover_factor * Renderer.CONFIG.colors.bg.hover_influence)
   
   local base_color = get_tile_base_color(pkg, P)
   
@@ -172,7 +173,7 @@ local function create_opts(pkg, settings, theme, wrapper)
   end
 
   return {
-    id = "pkg_grid",
+    id = 'pkg_grid',
     gap = 12,
     min_col_w = function() return pkg.tile or 220 end,
     fixed_tile_h = wrapper._tile_height or 150,

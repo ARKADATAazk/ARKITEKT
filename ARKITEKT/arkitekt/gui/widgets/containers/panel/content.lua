@@ -2,8 +2,8 @@
 -- Arkitekt/gui/widgets/panel/content.lua
 -- Scrollable content area management
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 
 
 local M = {}
@@ -22,7 +22,7 @@ function M.begin_child(ctx, id, width, height, scroll_config, container)
     child_flags = ImGui.ChildFlags_AlwaysUseWindowPadding or 0
   end
 
-  local success = ImGui.BeginChild(ctx, id .. "_scroll", width, height, child_flags, flags)
+  local success = ImGui.BeginChild(ctx, id .. '_scroll', width, height, child_flags, flags)
   
   if not success then
     -- BeginChild failed - pop immediately and clean up

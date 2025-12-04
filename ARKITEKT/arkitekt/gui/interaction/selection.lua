@@ -61,12 +61,12 @@ end
 -- Apply rectangle selection
 -- aabb: {x1, y1, x2, y2} of selection rectangle
 -- rects_by_key: table of id -> {x1, y1, x2, y2}
--- mode: "replace" (default) or "add"
+-- mode: 'replace' (default) or 'add'
 function Selection:apply_rect(aabb, rects_by_key, mode)
   if not aabb or not rects_by_key then return end
-  mode = mode or "replace"
-  
-  if mode == "replace" then
+  mode = mode or 'replace'
+
+  if mode == 'replace' then
     self.selected = {}
   end
   

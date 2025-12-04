@@ -1,17 +1,15 @@
 -- @noindex
 -- Arkitekt/gui/widgets/overlay/sheet.lua
--- A task-oriented modal "sheet" with visual polish
+-- A task-oriented modal 'sheet' with visual polish
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Draw   = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
-local Theme  = require('arkitekt.core.theme')
+local Theme  = require('arkitekt.theme')
 local OverlayConfig = require('arkitekt.gui.widgets.overlays.overlay.defaults')
 
 local Sheet = {}
-local hexrgb = Colors.hexrgb
-
 function Sheet.render(ctx, alpha, bounds, content_fn, opts)
   opts = opts or {}
   
@@ -27,30 +25,30 @@ function Sheet.render(ctx, alpha, bounds, content_fn, opts)
   local r = opts.rounding or config.sheet.rounding
 
   local bg_base = config.sheet.background.color
-  local bg = Colors.with_alpha(bg_base, Colors.opacity(config.sheet.background.opacity * alpha))
+  local bg = Colors.WithAlpha(bg_base, Colors.Opacity(config.sheet.background.opacity * alpha))
   local dl = bounds.dl
   
   if config.sheet.shadow.enabled then
     for i = config.sheet.shadow.layers, 1, -1 do
       local shadow_offset = math.floor((i / config.sheet.shadow.layers) * config.sheet.shadow.max_offset)
-      local shadow_alpha = Colors.opacity((config.sheet.shadow.base_alpha / i) * alpha / 255)
-      local shadow_color = Colors.with_alpha(hexrgb("#000000"), shadow_alpha)
-      Draw.rect_filled(dl, 
+      local shadow_alpha = Colors.Opacity((config.sheet.shadow.base_alpha / i) * alpha / 255)
+      local shadow_color = Colors.WithAlpha(0x000000FF, shadow_alpha)
+      Draw.RectFilled(dl, 
         x - shadow_offset, y - shadow_offset, 
         x + w + shadow_offset, y + h + shadow_offset, 
         shadow_color, r + shadow_offset)
     end
   end
   
-  Draw.rect_filled(dl, x, y, x+w, y+h, bg, r)
+  Draw.RectFilled(dl, x, y, x+w, y+h, bg, r)
   
   if config.sheet.gradient.top_enabled then
     local gradient_height = config.sheet.gradient.top_height
     local max_alpha = config.sheet.gradient.top_max_alpha
     for i = 0, gradient_height, 2 do
-      local grad_alpha = Colors.opacity((1.0 - (i / gradient_height)) * max_alpha * alpha)
-      local grad_color = Colors.with_alpha(config.sheet.gradient.top_color, grad_alpha)
-      Draw.rect_filled(dl, x, y + i, x + w, y + i + 2, grad_color, 0)
+      local grad_alpha = Colors.Opacity((1.0 - (i / gradient_height)) * max_alpha * alpha)
+      local grad_color = Colors.WithAlpha(config.sheet.gradient.top_color, grad_alpha)
+      Draw.RectFilled(dl, x, y + i, x + w, y + i + 2, grad_color, 0)
     end
   end
   
@@ -59,59 +57,59 @@ function Sheet.render(ctx, alpha, bounds, content_fn, opts)
     local max_alpha = config.sheet.gradient.bottom_max_alpha
     for i = 0, bottom_gradient_height, 2 do
       local progress = i / bottom_gradient_height
-      local grad_alpha = Colors.opacity(progress * max_alpha * alpha)
-      local grad_color = Colors.with_alpha(config.sheet.gradient.bottom_color, grad_alpha)
-      Draw.rect_filled(dl, x, y + h - bottom_gradient_height + i, x + w, y + h - bottom_gradient_height + i + 2, grad_color, 0)
+      local grad_alpha = Colors.Opacity(progress * max_alpha * alpha)
+      local grad_color = Colors.WithAlpha(config.sheet.gradient.bottom_color, grad_alpha)
+      Draw.RectFilled(dl, x, y + h - bottom_gradient_height + i, x + w, y + h - bottom_gradient_height + i + 2, grad_color, 0)
     end
   end
   
-  local border_color = Colors.with_alpha(
+  local border_color = Colors.WithAlpha(
     config.sheet.border.outer_color,
-    Colors.opacity(config.sheet.border.outer_opacity * alpha)
+    Colors.Opacity(config.sheet.border.outer_opacity * alpha)
   )
-  Draw.rect(dl, x, y, x+w, y+h, border_color, r, config.sheet.border.outer_thickness)
+  Draw.Rect(dl, x, y, x+w, y+h, border_color, r, config.sheet.border.outer_thickness)
 
-  local inner_border = Colors.with_alpha(
+  local inner_border = Colors.WithAlpha(
     config.sheet.border.inner_color,
-    Colors.opacity(config.sheet.border.inner_opacity * alpha)
+    Colors.Opacity(config.sheet.border.inner_opacity * alpha)
   )
-  Draw.rect(dl, x + 1, y + 1, x + w - 1, y + h - 1, inner_border, r - 1, config.sheet.border.inner_thickness)
+  Draw.Rect(dl, x + 1, y + 1, x + w - 1, y + h - 1, inner_border, r - 1, config.sheet.border.inner_thickness)
 
   local hh = opts.header_h or config.sheet.header.height
-  local title = tostring(opts.title or "")
+  local title = tostring(opts.title or '')
   if #title > 0 then
-    local title_color = Colors.with_alpha(
+    local title_color = Colors.WithAlpha(
       config.sheet.header.text_color,
-      Colors.opacity(config.sheet.header.text_opacity * alpha)
+      Colors.Opacity(config.sheet.header.text_opacity * alpha)
     )
-    Draw.text(dl, x + 20, y + math.floor((hh - 14) / 2), title_color, title)
+    Draw.Text(dl, x + 20, y + math.floor((hh - 14) / 2), title_color, title)
 
     local divider_y = y + hh
     local divider_gradient_w = config.sheet.header.divider_fade_width
-    local divider_base_alpha = Colors.opacity(config.sheet.header.divider_opacity * alpha)
+    local divider_base_alpha = Colors.Opacity(config.sheet.header.divider_opacity * alpha)
     
     for i = 0, divider_gradient_w do
       local progress = i / divider_gradient_w
       local div_alpha = (progress * divider_base_alpha) // 1
-      local div_color = Colors.with_alpha(config.sheet.header.divider_color, div_alpha)
-      Draw.line(dl, x + i, divider_y, x + i, divider_y, div_color, config.sheet.header.divider_thickness)
+      local div_color = Colors.WithAlpha(config.sheet.header.divider_color, div_alpha)
+      Draw.Line(dl, x + i, divider_y, x + i, divider_y, div_color, config.sheet.header.divider_thickness)
     end
 
-    local main_divider = Colors.with_alpha(config.sheet.header.divider_color, divider_base_alpha)
-    Draw.line(dl, x + divider_gradient_w, divider_y, x + w - divider_gradient_w, divider_y, main_divider, config.sheet.header.divider_thickness)
+    local main_divider = Colors.WithAlpha(config.sheet.header.divider_color, divider_base_alpha)
+    Draw.Line(dl, x + divider_gradient_w, divider_y, x + w - divider_gradient_w, divider_y, main_divider, config.sheet.header.divider_thickness)
 
     for i = 0, divider_gradient_w do
       local progress = 1.0 - (i / divider_gradient_w)
       local div_alpha = (progress * divider_base_alpha) // 1
-      local div_color = Colors.with_alpha(config.sheet.header.divider_color, div_alpha)
-      Draw.line(dl, x + w - divider_gradient_w + i, divider_y, x + w - divider_gradient_w + i, divider_y, div_color, config.sheet.header.divider_thickness)
+      local div_color = Colors.WithAlpha(config.sheet.header.divider_color, div_alpha)
+      Draw.Line(dl, x + w - divider_gradient_w + i, divider_y, x + w - divider_gradient_w + i, divider_y, div_color, config.sheet.header.divider_thickness)
     end
     
-    local highlight = Colors.with_alpha(
+    local highlight = Colors.WithAlpha(
       config.sheet.header.highlight_color,
-      Colors.opacity(config.sheet.header.highlight_opacity * alpha)
+      Colors.Opacity(config.sheet.header.highlight_opacity * alpha)
     )
-    Draw.line(dl, x + divider_gradient_w, divider_y + 1, x + w - divider_gradient_w, divider_y + 1, highlight, config.sheet.header.highlight_thickness)
+    Draw.Line(dl, x + divider_gradient_w, divider_y + 1, x + w - divider_gradient_w, divider_y + 1, highlight, config.sheet.header.highlight_thickness)
   end
 
   -- Apply padding to content area using WindowPadding for automatic padding

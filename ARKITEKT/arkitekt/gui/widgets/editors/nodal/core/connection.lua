@@ -3,8 +3,6 @@
 -- Connection data structure with Manhattan routing
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
-
 local M = {}
 
 function M.new(opts)
@@ -26,22 +24,22 @@ end
 
 function M.new_sequential(source_guid, target_guid, color)
   return M.new({
-    type = "sequential",
+    type = 'sequential',
     source_node = source_guid,
     target_node = target_guid,
-    color = color or hexrgb("#88CEFF"),
+    color = color or 0x88CEFFFF,
     animated = false,
   })
 end
 
 function M.new_trigger(source_guid, target_guid, event_name, jump_mode, color)
   return M.new({
-    type = "trigger",
+    type = 'trigger',
     source_node = source_guid,
     target_node = target_guid,
     event_name = event_name,
-    jump_mode = jump_mode or "INCREMENTAL",
-    color = color or hexrgb("#FF6B9D"),
+    jump_mode = jump_mode or 'INCREMENTAL',
+    color = color or 0xFF6B9DFF,
     animated = false,
   })
 end
@@ -67,7 +65,7 @@ function M.get_manhattan_points(connection, nodes, config)
   
   local x1, y1, x2, y2
   
-  if connection.type == "sequential" then
+  if connection.type == 'sequential' then
     -- Sequential: bottom center to top center (simple vertical line)
     x1 = source.x + source.width / 2
     y1 = source.y + source.height

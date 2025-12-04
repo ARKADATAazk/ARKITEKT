@@ -2,16 +2,13 @@
 -- RegionPlaylist/ui/views/transport/display_widget.lua
 -- Transport display widget showing time, regions, and progress
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local Style = require('arkitekt.gui.style')
 local Duration = require('arkitekt.core.duration')
 
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
 local Chip = require('arkitekt.gui.widgets.data.chip')
-local hexrgb = Ark.Colors.hexrgb
-
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
 local min = math.min
@@ -64,7 +61,7 @@ local function truncate_text(text, max_chars)
   if #text <= max_chars then
     return text
   end
-  return text:sub(1, max_chars - 1) .. "…"
+  return text:sub(1, max_chars - 1) .. '…'
 end
 
 -- Calculate truncation length based on available width
@@ -83,18 +80,18 @@ end
 local function ensure_minimum_brightness(color, min_luminance)
   min_luminance = min_luminance or 0.15
 
-  local lum = Ark.Colors.luminance(color)
+  local lum = Ark.Colors.Luminance(color)
   if lum >= min_luminance then
     return color
   end
 
   local boost_factor = min_luminance / max(lum, 0.01)
-  return Ark.Colors.adjust_brightness(color, boost_factor)
+  return Ark.Colors.AdjustBrightness(color, boost_factor)
 end
 
 local function ensure_progress_bar_brightness(color)
   -- Ensure progress bar is never too dark (min 30% brightness)
-  local r, g, b, a = Ark.Colors.rgba_to_components(color)
+  local r, g, b, a = Ark.Colors.RgbaToComponents(color)
   local lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255.0
 
   if lum < 0.30 then
@@ -104,7 +101,7 @@ local function ensure_progress_bar_brightness(color)
     b = min(255, (b * boost)//1)
   end
 
-  return Ark.Colors.components_to_rgba(r, g, b, a)
+  return Ark.Colors.ComponentsToRgba(r, g, b, a)
 end
 
 function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_region, next_region, playlist_data, region_colors, time_font)
@@ -123,7 +120,7 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   local bar_h = LC.progress_height
   
   -- Dynamic track color from theme
-  local track_color = cfg.track_color or Style.COLORS.BG_PANEL
+  local track_color = cfg.track_color or Ark.Style.COLORS.BG_PANEL
   ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + bar_w, bar_y + bar_h, track_color, 1.5)
   
   if progress > 0 and region_colors and region_colors.current then
@@ -149,9 +146,9 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   local content_bottom = bar_y - LC.spacing_progress
   local content_top = y + (LC.padding_top or 8)
 
-  local time_text = "READY"
-  -- Dynamic time color from theme (falls back to TEXT_NORMAL for "READY")
-  local time_color = cfg.time_color or Style.COLORS.TEXT_NORMAL
+  local time_text = 'READY'
+  -- Dynamic time color from theme (falls back to TEXT_NORMAL for 'READY')
+  local time_color = cfg.time_color or Ark.Style.COLORS.TEXT_NORMAL
 
   if bridge_state.is_playing then
     local time_remaining = bridge_state.time_remaining or 0
@@ -160,7 +157,7 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
     time_text = Duration.format_hms_centiseconds(time_remaining)
 
     -- Dynamic playing color from theme (falls back to TEXT_BRIGHT for active time)
-    time_color = cfg.time_playing_color or Style.COLORS.TEXT_BRIGHT
+    time_color = cfg.time_playing_color or Ark.Style.COLORS.TEXT_BRIGHT
   end
   
   if time_font then
@@ -171,9 +168,9 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
     ImGui.PopFont(ctx)
   end
   
-  local text_line_h = ImGui.CalcTextSize(ctx, "Tg")
+  local text_line_h = ImGui.CalcTextSize(ctx, 'Tg')
   
-  local row_height = math.max(text_line_h, time_h)
+  local row_height = max(text_line_h, time_h)
   
   local row_y = content_top + ((content_bottom - content_top) - row_height) / 2 + LC.content_vertical_offset
 
@@ -182,7 +179,7 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
     local chip_x = x + LC.padding + LC.playlist_chip_offset_x
     local chip_y = row_y + row_height / 2 + LC.playlist_chip_offset_y
 
-    Chip.draw(ctx, {
+    Chip.Draw(ctx, {
       style = Chip.STYLE.INDICATOR,
       color = playlist_data.color,
       draw_list = dl,
@@ -198,7 +195,7 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
     local playlist_name_x = x + LC.padding + LC.playlist_name_offset_x
     local playlist_name_y = row_y + (row_height - text_line_h) / 2 + LC.playlist_name_offset_y
     -- Dynamic playlist name color from theme
-    local playlist_name_color = Style.COLORS.TEXT_NORMAL
+    local playlist_name_color = Ark.Style.COLORS.TEXT_NORMAL
     ImGui.DrawList_AddText(dl, playlist_name_x, playlist_name_y, playlist_name_color, playlist_data.name)
   end
   
@@ -219,8 +216,8 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   
   -- Responsive: Only show current region if width is sufficient
   if bridge_state.is_playing and current_region and width >= LC.hide_region_width then
-    local index_str = string.format("%d", current_region.rid)
-    local name_str = current_region.name or "Unknown"
+    local index_str = string.format('%d', current_region.rid)
+    local name_str = current_region.name or 'Unknown'
 
     -- Apply responsive truncation
     if width < LC.truncate_region_width then
@@ -234,9 +231,9 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
       name_str = truncate_text(name_str, truncate_len)
     end
 
-    local index_color = Ark.Colors.same_hue_variant(current_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
+    local index_color = Ark.Colors.SameHueVariant(current_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
     -- Dynamic region name color from theme
-    local name_color = Style.COLORS.TEXT_BRIGHT
+    local name_color = Ark.Style.COLORS.TEXT_BRIGHT
 
     local index_w = ImGui.CalcTextSize(ctx, index_str)
     local name_w = ImGui.CalcTextSize(ctx, name_str)
@@ -251,8 +248,8 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   
   -- Responsive: Only show next region if width is sufficient
   if bridge_state.is_playing and next_region and width >= LC.hide_region_width then
-    local index_str = string.format("%d", next_region.rid)
-    local name_str = next_region.name or "Unknown"
+    local index_str = string.format('%d', next_region.rid)
+    local name_str = next_region.name or 'Unknown'
 
     -- Apply responsive truncation
     if width < LC.truncate_region_width then
@@ -266,9 +263,9 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
       name_str = truncate_text(name_str, truncate_len)
     end
 
-    local index_color = Ark.Colors.same_hue_variant(next_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
+    local index_color = Ark.Colors.SameHueVariant(next_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
     -- Dynamic region name color from theme
-    local name_color = Style.COLORS.TEXT_BRIGHT
+    local name_color = Ark.Style.COLORS.TEXT_BRIGHT
 
     local index_w = ImGui.CalcTextSize(ctx, index_str)
 

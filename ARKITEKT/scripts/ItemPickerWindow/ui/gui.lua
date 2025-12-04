@@ -2,7 +2,7 @@
 -- ItemPickerWindow/ui/gui.lua
 -- Main GUI orchestrator for window mode
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Coordinator = require('ItemPickerWindow.ui.coordinator')
 local LayoutView = require('ItemPickerWindow.ui.layout_view')
 local ToolbarView = require('ItemPickerWindow.ui.toolbar_view')
@@ -67,7 +67,7 @@ end
 function GUI:start_incremental_loading()
   if self.loading_started then return end
 
-  reaper.ShowConsoleMsg("=== ItemPickerWindow: Starting lazy loading ===\n")
+  reaper.ShowConsoleMsg('=== ItemPickerWindow: Starting lazy loading ===\n')
 
   local current_change_count = reaper.GetProjectStateChangeCount(0)
   self.state.last_change_count = current_change_count
@@ -84,15 +84,15 @@ function GUI:update_state(ctx)
 
     if is_complete then
       local elapsed = (reaper.time_precise() - self.loading_start_time) * 1000
-      reaper.ShowConsoleMsg(string.format("=== ItemPickerWindow: Loading complete! (%.1fms) ===\n", elapsed))
-      reaper.ShowConsoleMsg(string.format("[DEBUG] Loaded: %d audio groups, %d MIDI groups\n",
+      reaper.ShowConsoleMsg(string.format('=== ItemPickerWindow: Loading complete! (%.1fms) ===\n', elapsed))
+      reaper.ShowConsoleMsg(string.format('[DEBUG] Loaded: %d audio groups, %d MIDI groups\n',
         #(self.state.sample_indexes or {}), #(self.state.midi_indexes or {})))
 
       if not self.state.skip_visualizations then
         local disk_cache = require('ItemPicker.data.disk_cache')
         local stats = disk_cache.preload_to_runtime(self.state.runtime_cache)
         if stats and stats.loaded > 0 then
-          reaper.ShowConsoleMsg(string.format("[ItemPickerWindow] Loaded %d cached visualizations from disk\n", stats.loaded))
+          reaper.ShowConsoleMsg(string.format('[ItemPickerWindow] Loaded %d cached visualizations from disk\n', stats.loaded))
         end
       end
 
@@ -104,7 +104,7 @@ function GUI:update_state(ctx)
   if self.state.needs_reorganize and not self.state.is_loading then
     self.state.needs_reorganize = false
     if self.state.incremental_loader then
-      local incremental_loader_module = require("ItemPicker.data.loaders.incremental_loader")
+      local incremental_loader_module = require('ItemPicker.data.loaders.incremental_loader')
       incremental_loader_module.reorganize_items(
         self.state.incremental_loader,
         self.state.settings.group_items_by_name
@@ -138,7 +138,7 @@ function GUI:update_state(ctx)
     if self.state.last_item_count == nil then
       self.state.last_item_count = current_item_count
     elseif current_item_count ~= self.state.last_item_count then
-      reaper.ShowConsoleMsg(string.format("[ItemPickerWindow] Item count changed (%d -> %d), reloading...\n",
+      reaper.ShowConsoleMsg(string.format('[ItemPickerWindow] Item count changed (%d -> %d), reloading...\n',
         self.state.last_item_count, current_item_count))
       self.state.last_item_count = current_item_count
       self.state.needs_recollect = true

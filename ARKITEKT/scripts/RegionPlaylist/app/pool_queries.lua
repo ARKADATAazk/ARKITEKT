@@ -22,8 +22,8 @@ function M.deterministic_color_from_id(id)
   local hue = (hash % 360) / 360
   local saturation = 0.65 + ((hash % 100) / 400)  -- 0.65-0.90
   local lightness = 0.50 + ((hash % 60) / 400)    -- 0.50-0.65
-  local r, g, b = Ark.Colors.hsl_to_rgb(hue, saturation, lightness)
-  return Ark.Colors.components_to_rgba(r, g, b, 0xFF)
+  local r, g, b = Ark.Colors.HslToRgb(hue, saturation, lightness)
+  return Ark.Colors.ComponentsToRgba(r, g, b, 0xFF)
 end
 
 -- =============================================================================
@@ -46,17 +46,17 @@ function M.calculate_playlist_duration(playlist, region_index, get_playlist_by_i
       goto continue
     end
 
-    local item_type = item.type or "region"
+    local item_type = item.type or 'region'
     local rid = item.rid
 
-    if item_type == "region" and rid then
+    if item_type == 'region' and rid then
       local region = region_index[rid]
       if region then
-        local duration_seconds = (region["end"] or 0) - (region.start or 0)
+        local duration_seconds = (region['end'] or 0) - (region.start or 0)
         local repeats = item.reps or 1
         total_duration = total_duration + (duration_seconds * repeats)
       end
-    elseif item_type == "playlist" and item.playlist_id then
+    elseif item_type == 'playlist' and item.playlist_id then
       -- For nested playlists, recursively calculate duration
       local nested_pl = get_playlist_by_id(item.playlist_id)
       if nested_pl then
@@ -81,12 +81,12 @@ end
 -- @return Filtered and sorted list of regions
 function M.get_filtered_pool_regions(params)
   local result = {}
-  local search = (params.search_filter or ""):lower()
+  local search = (params.search_filter or ''):lower()
 
   -- Filter regions
   for _, rid in ipairs(params.pool_order) do
     local region = params.region_index[rid]
-    if region and region.name ~= "__TRANSITION_TRIGGER" and (search == "" or region.name:lower():find(search, 1, true)) then
+    if region and region.name ~= '__TRANSITION_TRIGGER' and (search == '' or region.name:lower():find(search, 1, true)) then
       result[#result + 1] = region
     end
   end
@@ -96,7 +96,7 @@ function M.get_filtered_pool_regions(params)
     mode = params.sort_mode,
     direction = params.sort_dir,
     -- Custom accessor for index (use rid for regions)
-    get_value = params.sort_mode == "index" and function(x) return x.rid or 0 end or nil,
+    get_value = params.sort_mode == 'index' and function(x) return x.rid or 0 end or nil,
   })
 end
 
@@ -121,7 +121,7 @@ function M.get_playlists_for_pool(params)
       local total_duration = M.calculate_playlist_duration(pl, params.region_index, params.get_playlist_by_id)
 
       pool_playlists[#pool_playlists + 1] = {
-        type = "playlist",
+        type = 'playlist',
         id = pl.id,
         name = pl.name,
         items = pl.items,
@@ -134,8 +134,8 @@ function M.get_playlists_for_pool(params)
   end
 
   -- Apply search filter
-  local search = (params.search_filter or ""):lower()
-  if search ~= "" then
+  local search = (params.search_filter or ''):lower()
+  if search ~= '' then
     local filtered = {}
     for _, pl in ipairs(pool_playlists) do
       if pl.name:lower():find(search, 1, true) then
@@ -150,8 +150,8 @@ function M.get_playlists_for_pool(params)
     mode = params.sort_mode,
     direction = params.sort_dir,
     -- Custom accessors for playlist-specific fields
-    get_value = (params.sort_mode == "color" and function(x) return x.chip_color or 0 end)
-             or (params.sort_mode == "length" and function(x) return x.total_duration or 0 end)
+    get_value = (params.sort_mode == 'color' and function(x) return x.chip_color or 0 end)
+             or (params.sort_mode == 'length' and function(x) return x.total_duration or 0 end)
              or nil,
   })
 end
@@ -163,7 +163,7 @@ function M.get_mixed_pool_sorted(params)
   local regions = params.regions
   local playlists = params.playlists
   local sort_mode = params.sort_mode
-  local sort_dir = params.sort_dir or "asc"
+  local sort_dir = params.sort_dir or 'asc'
 
   -- If no sort mode, return regions first, then playlists (natural order)
   if not sort_mode then
@@ -183,28 +183,28 @@ function M.get_mixed_pool_sorted(params)
   -- Add regions (mark type if not present)
   for _, region in ipairs(regions) do
     if not region.type then
-      region.type = "region"
+      region.type = 'region'
     end
     combined[#combined + 1] = region
   end
 
-  -- Add playlists (already marked with type="playlist")
+  -- Add playlists (already marked with type='playlist')
   for _, playlist in ipairs(playlists) do
     combined[#combined + 1] = playlist
   end
 
   -- Build unified accessor that handles both regions and playlists
   local get_value
-  if sort_mode == "color" then
+  if sort_mode == 'color' then
     get_value = function(x) return x.chip_color or x.color or 0 end
-  elseif sort_mode == "index" then
+  elseif sort_mode == 'index' then
     get_value = function(x) return x.index or x.rid or 0 end
-  elseif sort_mode == "length" then
+  elseif sort_mode == 'length' then
     get_value = function(x)
-      if x.type == "playlist" then
+      if x.type == 'playlist' then
         return x.total_duration or 0
       else
-        return (x["end"] or 0) - (x.start or 0)
+        return (x['end'] or 0) - (x.start or 0)
       end
     end
   end

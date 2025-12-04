@@ -2,7 +2,7 @@
 -- TemplateBrowser/ui/init.lua
 -- Main GUI with three-panel layout
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 -- Domain services
@@ -24,7 +24,7 @@ local InfoPanelConfig = require('TemplateBrowser.ui.config.info')
 local Shortcuts = require('TemplateBrowser.ui.shortcuts')
 
 -- Layout constants
-local Layout = require('TemplateBrowser.defs.constants')
+local Layout = require('TemplateBrowser.config.constants')
 
 -- Import view modules
 local LeftPanelView = require('TemplateBrowser.ui.views.left_panel_view')
@@ -72,12 +72,12 @@ function GUI:initialize_once(ctx, is_overlay_mode)
   )
 
   self.template_grid_deps = {
-    id = "template_grid",
+    id = 'template_grid',
     get_templates = function() return self.state.filtered_templates end,
     metadata = self.state.metadata,
     animator = self.template_animator,
     get_tile_width = function()
-      return self.state.template_view_mode == "list"
+      return self.state.template_view_mode == 'list'
         and self.state.list_tile_width
         or self.state.grid_tile_width
     end,
@@ -93,12 +93,12 @@ function GUI:initialize_once(ctx, is_overlay_mode)
   -- Get quick access templates helper
   local function get_quick_access_templates()
     local templates
-    if self.state.quick_access_mode == "favorites" then
+    if self.state.quick_access_mode == 'favorites' then
       -- Get favorites
       if not self.state.metadata or not self.state.metadata.virtual_folders then
         return {}
       end
-      local favorites = self.state.metadata.virtual_folders["__FAVORITES__"]
+      local favorites = self.state.metadata.virtual_folders['__FAVORITES__']
       if not favorites or not favorites.template_refs then
         return {}
       end
@@ -111,15 +111,15 @@ function GUI:initialize_once(ctx, is_overlay_mode)
           end
         end
       end
-    elseif self.state.quick_access_mode == "inbox" then
+    elseif self.state.quick_access_mode == 'inbox' then
       -- Get templates in _Inbox folder
       templates = {}
       for _, tmpl in ipairs(self.state.templates) do
-        if tmpl.relative_path == "_Inbox" then
+        if tmpl.relative_path == '_Inbox' then
           templates[#templates + 1] = tmpl
         end
       end
-    elseif self.state.quick_access_mode == "most_used" then
+    elseif self.state.quick_access_mode == 'most_used' then
       -- Get most used
       local usage_list = {}
       for _, tmpl in ipairs(self.state.templates) do
@@ -151,8 +151,8 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end
 
     -- Apply search filter (fuzzy match)
-    local search_query = self.state.quick_access_search or ""
-    if search_query ~= "" then
+    local search_query = self.state.quick_access_search or ''
+    if search_query ~= '' then
       local filtered = {}
       for _, tmpl in ipairs(templates) do
         local score = FuzzySearch.score(search_query, tmpl.name)
@@ -173,10 +173,10 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       templates = filtered
     else
       -- Apply sort only when not searching
-      local sort_mode = self.state.quick_access_sort or "alphabetical"
-      if sort_mode == "alphabetical" then
+      local sort_mode = self.state.quick_access_sort or 'alphabetical'
+      if sort_mode == 'alphabetical' then
         table.sort(templates, function(a, b) return a.name:lower() < b.name:lower() end)
-      elseif sort_mode == "color" then
+      elseif sort_mode == 'color' then
         table.sort(templates, function(a, b)
           local a_color = (self.state.metadata and self.state.metadata.templates[a.uuid] and self.state.metadata.templates[a.uuid].color) or 0
           local b_color = (self.state.metadata and self.state.metadata.templates[b.uuid] and self.state.metadata.templates[b.uuid].color) or 0
@@ -196,12 +196,12 @@ function GUI:initialize_once(ctx, is_overlay_mode)
   )
 
   self.quick_access_grid_deps = {
-    id = "quick_access_grid",
+    id = 'quick_access_grid',
     get_templates = get_quick_access_templates,
     metadata = self.state.metadata,
     animator = self.template_animator,
     get_tile_width = function()
-      return self.state.quick_access_view_mode == "list"
+      return self.state.quick_access_view_mode == 'list'
         and self.state.list_tile_width
         or self.state.grid_tile_width
     end,
@@ -244,7 +244,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
           local tag_data = self.state.metadata.tags[tag_name]
           if tag_data then
             items[#items + 1] = {
-              id = "tag:" .. tag_name,
+              id = 'tag:' .. tag_name,
               label = tag_name,
               color = tag_data.color,
             }
@@ -255,7 +255,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       -- Add active FX filters
       for fx_name, _ in pairs(self.state.filter_fx) do
         items[#items + 1] = {
-          id = "fx:" .. fx_name,
+          id = 'fx:' .. fx_name,
           label = fx_name,
           color = 0x888888,  -- Gray for FX
         }
@@ -265,12 +265,12 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end,
     on_filter_remove = function(filter_id)
       -- Parse filter ID to determine type
-      local filter_type, filter_name = filter_id:match("^(%w+):(.+)$")
+      local filter_type, filter_name = filter_id:match('^(%w+):(.+)$')
 
-      if filter_type == "tag" then
+      if filter_type == 'tag' then
         -- Remove tag filter
         self.state.filter_tags[filter_name] = nil
-      elseif filter_type == "fx" then
+      elseif filter_type == 'fx' then
         -- Remove FX filter
         self.state.filter_fx[filter_name] = nil
       end
@@ -280,55 +280,55 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       Scanner.filter_templates(self.state)
     end,
     get_view_mode_label = function()
-      return (self.state.template_view_mode == "grid") and "Grid" or "List"
+      return (self.state.template_view_mode == 'grid') and 'Grid' or 'List'
     end,
     on_view_toggle = function()
-      self.state.template_view_mode = (self.state.template_view_mode == "grid") and "list" or "grid"
+      self.state.template_view_mode = (self.state.template_view_mode == 'grid') and 'list' or 'grid'
     end,
   }, self.is_overlay_mode)  -- Pass overlay mode to use transparent backgrounds
 
   self.template_container = Ark.Panel.new({
-    id = "templates_container",
+    id = 'templates_container',
     config = container_config,
   })
 
   -- Create quick access panel container (recent/favorites/most used)
   local recent_config = RecentPanelConfig.create({
     get_quick_access_mode = function()
-      return self.state.quick_access_mode or "recents"
+      return self.state.quick_access_mode or 'recents'
     end,
     on_quick_access_mode_changed = function(new_mode)
       self.state.quick_access_mode = new_mode
     end,
     get_search_query = function()
-      return self.state.quick_access_search or ""
+      return self.state.quick_access_search or ''
     end,
     on_search_changed = function(new_query)
       self.state.quick_access_search = new_query
     end,
     get_sort_mode = function()
-      return self.state.quick_access_sort or "alphabetical"
+      return self.state.quick_access_sort or 'alphabetical'
     end,
     on_sort_changed = function(new_mode)
       self.state.quick_access_sort = new_mode
     end,
     get_view_mode_label = function()
-      return (self.state.quick_access_view_mode == "grid") and "Grid" or "List"
+      return (self.state.quick_access_view_mode == 'grid') and 'Grid' or 'List'
     end,
     on_view_toggle = function()
-      self.state.quick_access_view_mode = (self.state.quick_access_view_mode == "grid") and "list" or "grid"
+      self.state.quick_access_view_mode = (self.state.quick_access_view_mode == 'grid') and 'list' or 'grid'
     end,
   }, self.is_overlay_mode)
 
   self.recent_container = Ark.Panel.new({
-    id = "recent_container",
+    id = 'recent_container',
     config = recent_config,
   })
 
   -- Create left panel container (Directory/VSTs/Tags tabs)
   local left_panel_config = LeftPanelConfig.create({
     get_active_tab = function()
-      return self.state.left_panel_tab or "directory"
+      return self.state.left_panel_tab or 'directory'
     end,
     on_tab_change = function(tab_id)
       self.state.left_panel_tab = tab_id
@@ -336,14 +336,14 @@ function GUI:initialize_once(ctx, is_overlay_mode)
   }, self.is_overlay_mode)
 
   self.left_panel_container = Ark.Panel.new({
-    id = "left_panel_container",
+    id = 'left_panel_container',
     config = left_panel_config,
   })
 
   -- Create convenience panel container (Tags/VSTs mini tabs for quick access)
   local convenience_panel_config = ConveniencePanelConfig.create({
     get_active_tab = function()
-      return self.state.convenience_panel_tab or "tags"
+      return self.state.convenience_panel_tab or 'tags'
     end,
     on_tab_change = function(tab_id)
       self.state.convenience_panel_tab = tab_id
@@ -351,7 +351,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
   }, self.is_overlay_mode)
 
   self.convenience_panel_container = Ark.Panel.new({
-    id = "convenience_panel_container",
+    id = 'convenience_panel_container',
     config = convenience_panel_config,
   })
 
@@ -359,7 +359,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
   local info_panel_config = InfoPanelConfig.create({}, self.is_overlay_mode)
 
   self.info_container = Ark.Panel.new({
-    id = "info_panel_container",
+    id = 'info_panel_container',
     config = info_panel_config,
   })
 
@@ -385,44 +385,24 @@ function GUI:draw(ctx, shell_state)
       window_height = 600  -- Fallback height
     end
 
-    -- Title text
-    local text = self.state.scan_in_progress and "Scanning templates..." or "Initializing..."
+    -- Loading spinner with status text
+    local spinner_size = 24
+    local text = self.state.scan_in_progress and 'Scanning templates...' or 'Initializing...'
     local text_width = ImGui.CalcTextSize(ctx, text)
+
+    -- Spinner centered
+    Ark.LoadingSpinner(ctx, {
+      x = (window_width - spinner_size * 2) * 0.5,
+      y = window_height * 0.5 - spinner_size - 10,
+      size = spinner_size,
+      thickness = 3,
+      advance = 'none',
+    })
+
+    -- Status text below spinner
     ImGui.SetCursorPosX(ctx, (window_width - text_width) * 0.5)
-    ImGui.SetCursorPosY(ctx, window_height * 0.5 - 30)
+    ImGui.SetCursorPosY(ctx, window_height * 0.5 + spinner_size)
     ImGui.Text(ctx, text)
-
-    -- Progress bar and percentage (only during actual scanning)
-    if self.state.scan_in_progress then
-      local progress = self.state.scan_progress or 0
-
-      -- Guard against NaN/inf
-      if progress ~= progress or progress == math.huge or progress == -math.huge then
-        progress = 0
-      end
-
-      -- Clamp to 0-1 range
-      progress = math.max(0, math.min(1, progress))
-
-      local bar_width = 300
-
-      -- Progress bar using new widget
-      Ark.ProgressBar.draw(ctx, {
-        x = (window_width - bar_width) * 0.5,
-        y = window_height * 0.5,
-        width = bar_width,
-        height = 4,
-        progress = progress,
-        advance = "none",
-      })
-
-      -- Percentage text (use math.floor to ensure integer)
-      local percent_text = string.format("%d%%", math.floor(progress * 100))
-      local percent_width = ImGui.CalcTextSize(ctx, percent_text)
-      ImGui.SetCursorPosX(ctx, (window_width - percent_width) * 0.5)
-      ImGui.SetCursorPosY(ctx, window_height * 0.5 + 10)
-      ImGui.Text(ctx, percent_text)
-    end
 
     return  -- Don't render main UI until scan is complete
   end
@@ -435,7 +415,7 @@ function GUI:draw(ctx, shell_state)
     local conflict = self.state.conflict_pending
     local resolution = self.state.conflict_resolution
 
-    if resolution ~= "cancel" and conflict.operation == "move" then
+    if resolution ~= 'cancel' and conflict.operation == 'move' then
       local success_count = 0
       local total_count = #conflict.templates
       local target_node = conflict.target_folder
@@ -445,7 +425,7 @@ function GUI:draw(ctx, shell_state)
         if success then
           success_count = success_count + 1
         else
-          self.state.set_status("Failed to move template: " .. tmpl.name, "error")
+          self.state.set_status('Failed to move template: ' .. tmpl.name, 'error')
         end
       end
 
@@ -456,9 +436,9 @@ function GUI:draw(ctx, shell_state)
 
         -- Success message
         if total_count > 1 then
-          self.state.set_status("Moved " .. success_count .. " of " .. total_count .. " templates to " .. target_node.name, "success")
+          self.state.set_status('Moved ' .. success_count .. ' of ' .. total_count .. ' templates to ' .. target_node.name, 'success')
         else
-          self.state.set_status("Moved " .. conflict.templates[1].name .. " to " .. target_node.name, "success")
+          self.state.set_status('Moved ' .. conflict.templates[1].name .. ' to ' .. target_node.name, 'success')
         end
       end
     end
@@ -471,48 +451,48 @@ function GUI:draw(ctx, shell_state)
   -- Handle keyboard shortcuts (but not while editing markdown)
   local is_editing_markdown = false
   if self.state.selected_template then
-    local notes_field_id = "template_notes_" .. self.state.selected_template.uuid
+    local notes_field_id = 'template_notes_' .. self.state.selected_template.uuid
     is_editing_markdown = Ark.MarkdownField.is_editing(notes_field_id)
   end
 
   local action = Shortcuts.check_shortcuts(ctx)
   if action and not is_editing_markdown then
-    if action == "undo" then
+    if action == 'undo' then
       self.state.undo_manager:undo()
-    elseif action == "redo" then
+    elseif action == 'redo' then
       self.state.undo_manager:redo()
-    elseif action == "rename_template" then
+    elseif action == 'rename_template' then
       if self.state.selected_template then
         self.state.renaming_item = self.state.selected_template
-        self.state.renaming_type = "template"
+        self.state.renaming_type = 'template'
         self.state.rename_buffer = self.state.selected_template.name
       end
-    elseif action == "archive_template" then
+    elseif action == 'archive_template' then
       if self.state.selected_template then
         local success, archive_path = FileOps.delete_template(self.state.selected_template.path)
         if success then
-          self.state.set_status("Archived: " .. self.state.selected_template.name, "success")
+          self.state.set_status('Archived: ' .. self.state.selected_template.name, 'success')
           -- Rescan templates
           
           Scanner.scan_templates(self.state)
           self.state.selected_template = nil
         else
-          self.state.set_status("Failed to archive template", "error")
+          self.state.set_status('Failed to archive template', 'error')
         end
       end
-    elseif action == "apply_template" then
+    elseif action == 'apply_template' then
       if self.state.selected_template then
         TemplateOps.apply_to_selected_track(self.state.selected_template.path, self.state.selected_template.uuid, self.state)
       end
-    elseif action == "insert_template" then
+    elseif action == 'insert_template' then
       if self.state.selected_template then
         TemplateOps.insert_as_new_track(self.state.selected_template.path, self.state.selected_template.uuid, self.state)
       end
-    elseif action == "focus_search" then
+    elseif action == 'focus_search' then
       -- Focus search box (will be handled by container)
       self.state.focus_search = true
-    elseif action == "navigate_left" or action == "navigate_right" or
-           action == "navigate_up" or action == "navigate_down" then
+    elseif action == 'navigate_left' or action == 'navigate_right' or
+           action == 'navigate_up' or action == 'navigate_down' then
       -- Grid navigation (will be handled by grid widget)
       self.state.grid_navigation = action
     end
@@ -543,34 +523,12 @@ function GUI:draw(ctx, shell_state)
   -- Title (moved up for tighter layout)
   local title_y_offset = -15  -- TODO: Move to Layout.TITLE.Y_OFFSET when added
   ImGui.PushFont(ctx, shell_state.fonts.title, shell_state.fonts.title_size)
-  local title = "Template Browser"
+  local title = 'Template Browser'
   local title_w = ImGui.CalcTextSize(ctx, title)
   local title_y = ImGui.GetCursorPosY(ctx) + title_y_offset
   ImGui.SetCursorPos(ctx, (SCREEN_W - title_w) * 0.5, title_y)
   ImGui.Text(ctx, title)
   ImGui.PopFont(ctx)
-
-  -- FX parsing progress indicator
-  if not FXQueue.is_complete(self.state) then
-    local status = FXQueue.get_status(self.state)
-    local progress = FXQueue.get_progress(self.state)
-
-    local status_y = title_y + 25
-    local status_w = ImGui.CalcTextSize(ctx, status)
-
-    ImGui.SetCursorPos(ctx, (SCREEN_W - status_w) * 0.5, status_y)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Ark.Colors.hexrgb("#B3B3B3"))
-    ImGui.Text(ctx, status)
-    ImGui.PopStyleColor(ctx)
-
-    -- Small progress bar
-    local bar_width = 200
-    local bar_height = 3
-    ImGui.SetCursorPos(ctx, (SCREEN_W - bar_width) * 0.5, status_y + 18)
-    ImGui.PushStyleColor(ctx, ImGui.Col_PlotHistogram, self.config.COLORS.selected_bg)
-    ImGui.ProgressBar(ctx, progress, bar_width, bar_height, "")
-    ImGui.PopStyleColor(ctx)
-  end
 
   -- Adjust spacing after title
   ImGui.SetCursorPosY(ctx, title_y + 30)
@@ -606,15 +564,15 @@ function GUI:draw(ctx, shell_state)
   local content_y_screen = window_screen_y + cursor_y
 
   -- Handle separator 1 dragging
-  local sep1_result = Ark.Splitter.draw(ctx, {
-    id = "template_sep1",
+  local sep1_result = Ark.Splitter(ctx, {
+    id = 'template_sep1',
     x = sep1_x_screen,
     y = content_y_screen,
     height = panel_height,
-    orientation = "vertical",
+    orientation = 'vertical',
     thickness = separator_thickness,
   })
-  if sep1_result.action == "drag" then
+  if sep1_result.action == 'drag' then
     -- Convert back to window coordinates
     local sep1_new_x = sep1_result.position - window_screen_x
     -- Clamp to valid range within content area
@@ -624,22 +582,22 @@ function GUI:draw(ctx, shell_state)
     self.state.separator1_ratio = (sep1_new_x - padding_left) / content_width
     sep1_x_local = sep1_new_x
     sep1_x_screen = window_screen_x + sep1_x_local
-  elseif sep1_result.action == "reset" then
+  elseif sep1_result.action == 'reset' then
     self.state.separator1_ratio = self.config.FOLDERS_PANEL_WIDTH_RATIO
     sep1_x_local = padding_left + (content_width * self.state.separator1_ratio)
     sep1_x_screen = window_screen_x + sep1_x_local
   end
 
   -- Handle separator 2 dragging
-  local sep2_result = Ark.Splitter.draw(ctx, {
-    id = "template_sep2",
+  local sep2_result = Ark.Splitter(ctx, {
+    id = 'template_sep2',
     x = sep2_x_screen,
     y = content_y_screen,
     height = panel_height,
-    orientation = "vertical",
+    orientation = 'vertical',
     thickness = separator_thickness,
   })
-  if sep2_result.action == "drag" then
+  if sep2_result.action == 'drag' then
     -- Convert back to window coordinates
     local sep2_new_x = sep2_result.position - window_screen_x
     -- Clamp to valid range
@@ -649,7 +607,7 @@ function GUI:draw(ctx, shell_state)
     self.state.separator2_ratio = (sep2_new_x - padding_left) / content_width
     sep2_x_local = sep2_new_x
     sep2_x_screen = window_screen_x + sep2_x_local
-  elseif sep2_result.action == "reset" then
+  elseif sep2_result.action == 'reset' then
     self.state.separator2_ratio = self.state.separator1_ratio + self.config.TEMPLATES_PANEL_WIDTH_RATIO
     sep2_x_local = padding_left + (content_width * self.state.separator2_ratio)
     sep2_x_screen = window_screen_x + sep2_x_local
@@ -684,7 +642,7 @@ function GUI:draw(ctx, shell_state)
   
   local status_bar_y = SCREEN_H - padding_bottom - status_bar_height
   ImGui.SetCursorPos(ctx, padding_left, status_bar_y)
-  StatusBar.draw(ctx, self.state, content_width, status_bar_height)
+  StatusBar.Draw(ctx, self.state, content_width, status_bar_height)
 
   -- Handle exit
   if self.state.exit or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then

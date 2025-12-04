@@ -2,11 +2,11 @@
 -- ThemeAdjuster/ui/gui_panel_test.lua
 -- Test version using Panel tab_strip instead of Shell menutabs
 
-local ImGui = require('arkitekt.platform.imgui')
-local Config = require("ThemeAdjuster.app.config")
-local PackageManager = require("ThemeAdjuster.data.packages.manager")
-local TabContent = require("ThemeAdjuster.ui.tab_content")
-local MainPanel = require("ThemeAdjuster.ui.main_panel")
+local ImGui = require('arkitekt.core.imgui')
+local Config = require('ThemeAdjuster.app.config')
+local PackageManager = require('ThemeAdjuster.data.packages.manager')
+local TabContent = require('ThemeAdjuster.ui.tab_content')
+local MainPanel = require('ThemeAdjuster.ui.main_panel')
 
 local M = {}
 local GUI = {}

@@ -19,13 +19,13 @@ function M.write_pattern(pattern, opts)
   -- Get active MIDI take
   local take = reaper.MIDIEditor_GetTake(reaper.MIDIEditor_GetActive())
   if not take then
-    return false, "No active MIDI editor or take"
+    return false, 'No active MIDI editor or take'
   end
 
   -- Check for Ghost/Pooled MIDI items (causes hangs in original)
   local item = reaper.GetMediaItemTake_Item(take)
-  if reaper.GetMediaItemInfo_Value(item, "B_LOOPSRC") > 0.5 then
-    return false, "Cannot write to Ghost/Pooled MIDI items (this would hang REAPER)"
+  if reaper.GetMediaItemInfo_Value(item, 'B_LOOPSRC') > 0.5 then
+    return false, 'Cannot write to Ghost/Pooled MIDI items (this would hang REAPER)'
   end
 
   -- Get grid division in QN
@@ -33,7 +33,7 @@ function M.write_pattern(pattern, opts)
 
   -- Start from cursor or item start
   local cursor_pos = reaper.GetCursorPosition()
-  local item_start = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+  local item_start = reaper.GetMediaItemInfo_Value(item, 'D_POSITION')
   local start_qn = reaper.TimeMap2_timeToQN(0, cursor_pos)
 
   -- Write pattern
@@ -64,9 +64,9 @@ function M.write_pattern(pattern, opts)
   end
 
   reaper.MIDI_Sort(take)
-  reaper.Undo_EndBlock("Insert Euclidean Pattern", -1)
+  reaper.Undo_EndBlock('Insert Euclidean Pattern', -1)
 
-  return true, string.format("Inserted %d notes", #pattern)
+  return true, string.format('Inserted %d notes', #pattern)
 end
 
 --- Clear all notes in active MIDI take
@@ -74,7 +74,7 @@ end
 function M.clear_notes()
   local take = reaper.MIDIEditor_GetTake(reaper.MIDIEditor_GetActive())
   if not take then
-    return false, "No active MIDI editor or take"
+    return false, 'No active MIDI editor or take'
   end
 
   reaper.Undo_BeginBlock()
@@ -84,9 +84,9 @@ function M.clear_notes()
     reaper.MIDI_DeleteNote(take, i)
   end
 
-  reaper.Undo_EndBlock("Clear MIDI Notes", -1)
+  reaper.Undo_EndBlock('Clear MIDI Notes', -1)
 
-  return true, "Cleared all notes"
+  return true, 'Cleared all notes'
 end
 
 return M

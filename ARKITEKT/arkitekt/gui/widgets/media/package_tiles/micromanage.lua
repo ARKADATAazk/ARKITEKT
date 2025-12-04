@@ -2,14 +2,14 @@
 -- Arkitekt/gui/widgets/package_tiles/micromanage.lua
 -- Package micromanagement window for fine-grained asset control
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 
 local state = {
   open = false,
   pkg_id = nil,
-  search = "",
+  search = '',
   multi_selection = {},
 }
 
@@ -17,7 +17,7 @@ local state = {
 function M.open(pkg_id)
   state.open = true
   state.pkg_id = pkg_id
-  state.search = ""
+  state.search = ''
   state.multi_selection = {}
 end
 
@@ -54,9 +54,9 @@ function M.draw_window(ctx, pkg, settings)
     return
   end
   
-  local title = string.format("Package • %s — Micro-manage##mmw-%s", P.meta.name or P.id, P.id)
+  local title = string.format('Package • %s — Micro-manage##mmw-%s', P.meta.name or P.id, P.id)
   if ImGui.Begin(ctx, title) then
-    ImGui.Text(ctx, P.path or "(package)")
+    ImGui.Text(ctx, P.path or '(package)')
     ImGui.Separator(ctx)
     
     -- Search and close button
@@ -105,7 +105,7 @@ function M.draw_window(ctx, pkg, settings)
           ImGui.Text(ctx, key)
           
           ImGui.TableSetColumnIndex(ctx, 2)
-          ImGui.TextDisabled(ctx, "Active")
+          ImGui.TextDisabled(ctx, 'Active')
         end
       end
       
@@ -116,10 +116,10 @@ function M.draw_window(ctx, pkg, settings)
 end
 
 -- Reset state (useful for cleanup)
-function M.reset()
+function M.Reset()
   state.open = false
   state.pkg_id = nil
-  state.search = ""
+  state.search = ''
   state.multi_selection = {}
 end
 

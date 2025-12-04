@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/chip_list/list.lua
 -- Chip list container with multiple layout modes
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Colors = require('arkitekt.core.colors')
@@ -13,7 +13,7 @@ local MouseUtil = require('arkitekt.gui.layout.mouse_util')
 local M = {}
 
 local function _filter_items(items, search_text)
-  if search_text == "" then return items end
+  if search_text == '' then return items end
   local filtered = {}
   for _, item in ipairs(items) do
     if item.label:lower():find(search_text:lower(), 1, true) then
@@ -33,22 +33,22 @@ local function _draw_chip(ctx, item, is_selected, opts)
   if opts.style == Chip.STYLE.ACTION and item_color then
     -- Apply unselected_alpha to entire chip (bg + text) if not selected
     if not is_selected and opts.unselected_alpha then
-      bg_color = Colors.with_alpha(item_color, opts.unselected_alpha)
+      bg_color = Colors.WithAlpha(item_color, opts.unselected_alpha)
       -- Also apply alpha to text for consistent opacity
-      local auto_text = Colors.auto_text_color(item_color)
-      text_color = Colors.with_alpha(auto_text, opts.unselected_alpha)
+      local auto_text = Colors.AutoTextColor(item_color)
+      text_color = Colors.WithAlpha(auto_text, opts.unselected_alpha)
     else
       bg_color = item_color
       -- Auto text color for readability
-      text_color = Colors.auto_text_color(item_color)
+      text_color = Colors.AutoTextColor(item_color)
     end
   elseif item_color and not is_selected and opts.unselected_alpha then
     -- For other styles (DOT), apply alpha to the dot color
-    item_color = Colors.with_alpha(item_color, opts.unselected_alpha)
+    item_color = Colors.WithAlpha(item_color, opts.unselected_alpha)
   end
 
-  return Chip.draw(ctx, {
-    id = "##chip_" .. (item.id or item.label),
+  return Chip.Draw(ctx, {
+    id = '##chip_' .. (item.id or item.label),
     style = opts.style,
     label = item.label,
     color = item_color,
@@ -66,9 +66,9 @@ local function _draw_chip(ctx, item, is_selected, opts)
   })
 end
 
-function M.draw(ctx, items, opts)
+function M.Draw(ctx, items, opts)
   opts = opts or {}
-  local filtered = _filter_items(items, opts.search_text or "")
+  local filtered = _filter_items(items, opts.search_text or '')
   if #filtered == 0 then return nil end
 
   local chip_spacing = opts.chip_spacing or 8
@@ -107,7 +107,7 @@ function M.draw(ctx, items, opts)
       return ImGui.IsItemClicked(ctx, 0)
     end
 
-    local item_id = "chip_drag_" .. (item.id or item.label)
+    local item_id = 'chip_drag_' .. (item.id or item.label)
 
     -- Start tracking on mouse down over this item
     if ImGui.IsItemHovered(ctx) and ImGui.IsMouseClicked(ctx, 0) then
@@ -123,7 +123,7 @@ function M.draw(ctx, items, opts)
       if MouseUtil.is_dragging(item_id) then
         if ImGui.BeginDragDropSource(ctx, ImGui.DragDropFlags_SourceAllowNullID) then
           local payload_data = drag_data_fn and drag_data_fn(item) or { id = item.id, label = item.label }
-          local payload_str = type(payload_data) == "table"
+          local payload_str = type(payload_data) == 'table'
             and DragDrop._serialize(payload_data)
             or tostring(payload_data)
           ImGui.SetDragDropPayload(ctx, drag_type, payload_str)
@@ -137,7 +137,7 @@ function M.draw(ctx, items, opts)
 
         -- Clear on mouse release
         if ImGui.IsMouseReleased(ctx, 0) then
-          MouseUtil.clear(item_id)
+          MouseUtil.Clear(item_id)
           DragDrop.clear_active_drag_type()
         end
 
@@ -146,7 +146,7 @@ function M.draw(ctx, items, opts)
 
       -- Not dragging yet - check if mouse was released (this is a click!)
       if ImGui.IsMouseReleased(ctx, 0) then
-        MouseUtil.clear(item_id)
+        MouseUtil.Clear(item_id)
         return true  -- Mouse released without exceeding drag threshold = click
       end
 
@@ -226,7 +226,7 @@ end
 
 function M.draw_vertical(ctx, items, opts)
   opts = opts or {}
-  local filtered = _filter_items(items, opts.search_text or "")
+  local filtered = _filter_items(items, opts.search_text or '')
   if #filtered == 0 then return nil end
   
   local item_height = opts.item_height or 28
@@ -255,7 +255,7 @@ end
 
 function M.draw_columns(ctx, items, opts)
   opts = opts or {}
-  local filtered = _filter_items(items, opts.search_text or "")
+  local filtered = _filter_items(items, opts.search_text or '')
   if #filtered == 0 then return nil end
   
   local selected_ids = opts.selected_ids or {}
@@ -276,7 +276,7 @@ function M.draw_columns(ctx, items, opts)
     rounding = opts.rounding or 4,
     padding_h = opts.padding_h or 12,
     explicit_width = column_width,
-    text_align = "left",
+    text_align = 'left',
     border_thickness = opts.border_thickness,
   }
   
@@ -330,7 +330,7 @@ end
 
 function M.draw_grid(ctx, items, opts)
   opts = opts or {}
-  local filtered = _filter_items(items, opts.search_text or "")
+  local filtered = _filter_items(items, opts.search_text or '')
   if #filtered == 0 then return nil end
   
   local avail_width = opts.width or ImGui.GetContentRegionAvail(ctx)
@@ -406,16 +406,16 @@ end
 
 function M.draw_auto(ctx, items, opts)
   opts = opts or {}
-  local layout_mode = opts.layout_mode or "flow"
+  local layout_mode = opts.layout_mode or 'flow'
   
-  if layout_mode == "columns" then
+  if layout_mode == 'columns' then
     return M.draw_columns(ctx, items, opts)
-  elseif layout_mode == "grid" then
+  elseif layout_mode == 'grid' then
     return M.draw_grid(ctx, items, opts)
-  elseif layout_mode == "vertical" then
+  elseif layout_mode == 'vertical' then
     return M.draw_vertical(ctx, items, opts)
   else
-    return M.draw(ctx, items, opts)
+    return M.Draw(ctx, items, opts)
   end
 end
 

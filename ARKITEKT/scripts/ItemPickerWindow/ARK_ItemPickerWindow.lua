@@ -5,7 +5,7 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local Ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt" .. package.config:sub(1,1) .. "init.lua")
+local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])') .. 'arkitekt' .. package.config:sub(1,1) .. 'init.lua')
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
@@ -14,15 +14,13 @@ local ProfilerInit = require('arkitekt.debug.profiler_init')
 local profiler_enabled = ProfilerInit.init()
 
 if profiler_enabled then
-  reaper.ShowConsoleMsg("[ItemPickerWindow] Profiler enabled and initialized\n")
+  reaper.ShowConsoleMsg('[ItemPickerWindow] Profiler enabled and initialized\n')
 end
 
 -- Load required modules
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 local Colors = require('arkitekt.core.colors')
 local Settings = require('arkitekt.core.settings')
-
-local hexrgb = Ark.Colors.hexrgb
 
 -- Load ItemPicker core modules (reuse data layer)
 local Config = require('scripts.ItemPicker.core.config')
@@ -38,8 +36,8 @@ local reaper_interface = require('scripts.ItemPicker.data.reaper_api')
 local utils = require('scripts.ItemPicker.services.utils')
 
 -- Initialize settings
-local data_dir = Ark._bootstrap.get_data_dir("ItemPickerWindow")
-local settings = Settings.new(data_dir, "settings.json")
+local data_dir = Ark._bootstrap.get_data_dir('ItemPickerWindow')
+local settings = Settings.new(data_dir, 'settings.json')
 
 -- Initialize state
 State.initialize(Config)
@@ -64,21 +62,21 @@ end
 
 -- Run in window mode using Shell (like RegionPlaylist)
 Shell.run({
-  title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),
-  version = "1.0.0",
+  title = 'Item Picker' .. (profiler_enabled and ' [Profiling]' or ''),
+  version = '1.0.0',
   toggle_button = true,
   draw = function(ctx, shell_state) gui:draw(ctx, shell_state) end,
   settings = settings,
   initial_pos = { x = 120, y = 120 },
   initial_size = { w = 1200, h = 800 },
   min_size = { w = 800, h = 600 },
-  icon_color = hexrgb("#4A9EFF"),
+  icon_color = 0x4A9EFFFF,
   icon_size = 18,
   fonts = {
     icons = 20,
   },
   on_close = function()
-    reaper.Main_OnCommand(reaper.NamedCommandLookup("_SWS_STOPPREVIEW"), 0)
-    State.cleanup()
+    reaper.Main_OnCommand(reaper.NamedCommandLookup('_SWS_STOPPREVIEW'), 0)
+    State.Cleanup()
   end,
 })

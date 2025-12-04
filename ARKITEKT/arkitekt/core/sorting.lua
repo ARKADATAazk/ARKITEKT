@@ -14,8 +14,10 @@ local M = {}
 -- Accessor: item.name (override with opts.get_value)
 function M.compare_alpha(a, b, opts)
   opts = opts or {}
-  local get = opts.get_value or function(x) return x.name or "" end
-  return get(a):lower() < get(b):lower()
+  local get = opts.get_value or function(x) return x.name or '' end
+  local val_a = get(a) or ''
+  local val_b = get(b) or ''
+  return val_a:lower() < val_b:lower()
 end
 
 -- Numeric index comparison
@@ -27,13 +29,13 @@ function M.compare_index(a, b, opts)
 end
 
 -- Length/duration comparison
--- Accessor: item.length or (item["end"] - item.start) (override with opts.get_value)
+-- Accessor: item.length or (item['end'] - item.start) (override with opts.get_value)
 function M.compare_length(a, b, opts)
   opts = opts or {}
   local get = opts.get_value or function(x)
     if x.length then return x.length end
     if x.total_duration then return x.total_duration end
-    return (x["end"] or 0) - (x.start or 0)
+    return (x['end'] or 0) - (x.start or 0)
   end
   return get(a) < get(b)
 end
@@ -73,7 +75,7 @@ function M.get_color_sort_key(color)
     return 999, 0, 0  -- No color sorts to end
   end
 
-  local h, s, l = Colors.rgb_to_hsl(color)
+  local h, s, l = Colors.RgbToHsl(color)
 
   -- Grayscale (low saturation) sorts to end
   if s < 0.08 then
@@ -116,13 +118,14 @@ end
 -- @param list table The list to sort
 -- @param opts table Options:
 --   mode: string (comparator name) or function(a, b, opts) -> boolean
---   direction: "asc" (default) or "desc"
+--   direction: 'asc' (default) or 'desc'
 --   get_value: optional accessor function for the comparator
 -- @return table The sorted list (same reference)
 function M.apply(list, opts)
+  if not list then return {} end
   opts = opts or {}
   local mode = opts.mode
-  local direction = opts.direction or "asc"
+  local direction = opts.direction or 'asc'
 
   -- No mode = no sorting
   if not mode then
@@ -131,7 +134,7 @@ function M.apply(list, opts)
 
   -- Resolve comparator (string lookup or direct function)
   local comparator
-  if type(mode) == "function" then
+  if type(mode) == 'function' then
     comparator = mode
   else
     comparator = M.COMPARATORS[mode]
@@ -147,7 +150,7 @@ function M.apply(list, opts)
   end)
 
   -- Reverse if descending
-  if direction == "desc" then
+  if direction == 'desc' then
     M.reverse(list)
   end
 
@@ -158,6 +161,7 @@ end
 -- @param list table The list to reverse
 -- @return table The reversed list (same reference)
 function M.reverse(list)
+  if not list then return {} end
   local n = #list
   for i = 1, n // 2 do
     list[i], list[n - i + 1] = list[n - i + 1], list[i]
@@ -171,22 +175,22 @@ end
 
 -- Sort by alphabetical order
 function M.by_alpha(list, direction)
-  return M.apply(list, { mode = "alpha", direction = direction })
+  return M.apply(list, { mode = 'alpha', direction = direction })
 end
 
 -- Sort by index
 function M.by_index(list, direction)
-  return M.apply(list, { mode = "index", direction = direction })
+  return M.apply(list, { mode = 'index', direction = direction })
 end
 
 -- Sort by length/duration
 function M.by_length(list, direction)
-  return M.apply(list, { mode = "length", direction = direction })
+  return M.apply(list, { mode = 'length', direction = direction })
 end
 
 -- Sort by color (hue order)
 function M.by_color(list, direction)
-  return M.apply(list, { mode = "color", direction = direction })
+  return M.apply(list, { mode = 'color', direction = direction })
 end
 
 return M

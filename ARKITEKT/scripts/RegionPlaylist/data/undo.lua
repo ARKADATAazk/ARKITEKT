@@ -18,7 +18,7 @@ function M.capture_snapshot(playlists, active_playlist_id)
   local region_rids = {}
   for _, pl in ipairs(playlists) do
     for _, item in ipairs(pl.items) do
-      if item.type == "region" and item.rid then
+      if item.type == 'region' and item.rid then
         region_rids[item.rid] = true
       end
     end
@@ -54,7 +54,7 @@ function M.capture_snapshot(playlists, active_playlist_id)
         key = item.key,
       }
       -- Save playlist_id for playlist items
-      if item.type == "playlist" then
+      if item.type == 'playlist' then
         item_copy.playlist_id = item.playlist_id
       end
       pl_copy.items[#pl_copy.items + 1] = item_copy
@@ -113,7 +113,7 @@ function M.restore_snapshot(snapshot, region_index)
     for _, item in ipairs(pl.items) do
       -- For region items, verify the region still exists
       -- For playlist items, always restore them
-      if item.type == "playlist" or region_index[item.rid] then
+      if item.type == 'playlist' or region_index[item.rid] then
         local item_copy = {
           type = item.type,
           rid = item.rid,
@@ -124,7 +124,7 @@ function M.restore_snapshot(snapshot, region_index)
           key = item.key,
         }
         -- Restore playlist_id for playlist items
-        if item.type == "playlist" then
+        if item.type == 'playlist' then
           item_copy.playlist_id = item.playlist_id
         end
         pl_copy.items[#pl_copy.items + 1] = item_copy

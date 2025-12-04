@@ -2,17 +2,17 @@
 -- ThemeAdjuster/ui/tab_content.lua
 -- Tab content handler - routes tabs to appropriate views
 
-local ImGui = require('arkitekt.platform.imgui')
-local AssemblerView = require("ThemeAdjuster.ui.views.assembler_view")
-local GlobalView = require("ThemeAdjuster.ui.views.global_view")
-local TCPView = require("ThemeAdjuster.ui.views.tcp_view")
-local MCPView = require("ThemeAdjuster.ui.views.mcp_view")
-local TransportView = require("ThemeAdjuster.ui.views.transport_view")
-local EnvelopeView = require("ThemeAdjuster.ui.views.envelope_view")
-local ColorsView = require("ThemeAdjuster.ui.views.colors_view")
-local AdditionalView = require("ThemeAdjuster.ui.views.additional_view")
-local DebugView = require("ThemeAdjuster.ui.views.debug_view")
-local Renderer = require("arkitekt.gui.widgets.media.package_tiles.renderer")
+local ImGui = require('arkitekt.core.imgui')
+local AssemblerView = require('ThemeAdjuster.ui.views.assembler_view')
+local GlobalView = require('ThemeAdjuster.ui.views.global_view')
+local TCPView = require('ThemeAdjuster.ui.views.tcp_view')
+local MCPView = require('ThemeAdjuster.ui.views.mcp_view')
+local TransportView = require('ThemeAdjuster.ui.views.transport_view')
+local EnvelopeView = require('ThemeAdjuster.ui.views.envelope_view')
+local ColorsView = require('ThemeAdjuster.ui.views.colors_view')
+local AdditionalView = require('ThemeAdjuster.ui.views.additional_view')
+local DebugView = require('ThemeAdjuster.ui.views.debug_view')
+local Renderer = require('arkitekt.gui.widgets.media.package_tiles.renderer')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 
 local M = {}
@@ -76,7 +76,7 @@ function TabContent:draw(ctx, tab_id, shell_state)
     Renderer.clear_image_cache()
 
     -- Clear debug view cache if leaving debug tab
-    if self.last_tab_id == "DEBUG" and self.views.DEBUG and self.views.DEBUG.image_cache then
+    if self.last_tab_id == 'DEBUG' and self.views.DEBUG and self.views.DEBUG.image_cache then
       self.views.DEBUG.image_cache:clear()
     end
   end
@@ -88,7 +88,7 @@ function TabContent:draw(ctx, tab_id, shell_state)
   if view then
     view:draw(ctx, shell_state)
   else
-    ImGui.Text(ctx, "Unknown tab: " .. tostring(tab_id))
+    ImGui.Text(ctx, 'Unknown tab: ' .. tostring(tab_id))
   end
 end
 

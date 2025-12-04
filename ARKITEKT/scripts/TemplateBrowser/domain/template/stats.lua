@@ -17,7 +17,7 @@ function M.calculate_stats(history)
       total = 0,
       last_7_days = 0,
       last_30_days = 0,
-      trend = "none",  -- "up", "down", "stable", "none"
+      trend = 'none',  -- 'up', 'down', 'stable', 'none'
       avg_per_week = 0,
       streak_days = 0,
     }
@@ -47,13 +47,13 @@ function M.calculate_stats(history)
   end
 
   -- Calculate trend (compare last 7 days vs previous 7 days)
-  local trend = "stable"
+  local trend = 'stable'
   if last_7_days > prev_week * 1.5 then
-    trend = "up"
+    trend = 'up'
   elseif last_7_days < prev_week * 0.5 and prev_week > 0 then
-    trend = "down"
+    trend = 'down'
   elseif last_7_days == 0 and prev_week == 0 then
-    trend = "none"
+    trend = 'none'
   end
 
   -- Calculate average per week (based on history span)
@@ -151,39 +151,39 @@ end
 
 -- Format trend as icon/text
 function M.format_trend(trend)
-  if trend == "up" then
-    return "↑"
-  elseif trend == "down" then
-    return "↓"
-  elseif trend == "stable" then
-    return "→"
+  if trend == 'up' then
+    return '↑'
+  elseif trend == 'down' then
+    return '↓'
+  elseif trend == 'stable' then
+    return '→'
   else
-    return ""
+    return ''
   end
 end
 
 -- Format stats as short summary text
 function M.format_summary(stats)
   if not stats or stats.total == 0 then
-    return "Never used"
+    return 'Never used'
   end
 
   local parts = {}
 
   -- Total usage
-  parts[#parts + 1] = string.format("%d total", stats.total)
+  parts[#parts + 1] = string.format('%d total', stats.total)
 
   -- Recent activity
   if stats.last_7_days > 0 then
-    parts[#parts + 1] = string.format("%d this week", stats.last_7_days)
+    parts[#parts + 1] = string.format('%d this week', stats.last_7_days)
   end
 
   -- Trend indicator
-  if stats.trend ~= "none" then
+  if stats.trend ~= 'none' then
     parts[#parts + 1] = M.format_trend(stats.trend)
   end
 
-  return table.concat(parts, " · ")
+  return table.concat(parts, ' · ')
 end
 
 return M

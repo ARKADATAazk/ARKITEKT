@@ -2,16 +2,14 @@
 -- ThemeAdjuster/ui/views/tcp_view.lua
 -- TCP (Track Control Panel) configuration tab
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 local ThemeMapper = require('ThemeAdjuster.domain.theme.mapper')
 local ParamDiscovery = require('ThemeAdjuster.domain.theme.discovery')
-local Strings = require('ThemeAdjuster.defs.strings')
+local Strings = require('ThemeAdjuster.config.strings')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
-local hexrgb = Ark.Colors.hexrgb
-
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
@@ -139,7 +137,7 @@ function TCPView:get_param_index(param_name)
   -- Get parameter index from theme layout
   -- Returns nil if not found
   local ok, idx = pcall(reaper.ThemeLayout_GetParameter, param_name)
-  if ok and type(idx) == "number" then
+  if ok and type(idx) == 'number' then
     return idx
   end
   return nil
@@ -165,19 +163,19 @@ function TCPView:toggle_bitflag(param_name, bit)
 end
 
 function TCPView:get_default_layout()
-  -- Get the default TCP layout (returns layout name like "A", "B", "C")
-  local ok, layout_name = pcall(reaper.ThemeLayout_GetLayout, "tcp", -1)
-  if ok and layout_name and type(layout_name) == "string" then
-    -- Extract just the layout letter (might be "A", "150%_B", etc.)
-    local layout = string.match(layout_name, "([ABC])") or "A"
+  -- Get the default TCP layout (returns layout name like 'A', 'B', 'C')
+  local ok, layout_name = pcall(reaper.ThemeLayout_GetLayout, 'tcp', -1)
+  if ok and layout_name and type(layout_name) == 'string' then
+    -- Extract just the layout letter (might be 'A', '150%_B', etc.)
+    local layout = string.match(layout_name, '([ABC])') or 'A'
     return layout
   end
-  return "A"
+  return 'A'
 end
 
 function TCPView:set_default_layout(layout)
   -- Set the default TCP layout for new tracks
-  local ok = pcall(reaper.ThemeLayout_SetLayout, "tcp", -1, layout)
+  local ok = pcall(reaper.ThemeLayout_SetLayout, 'tcp', -1, layout)
   return ok
 end
 
@@ -189,7 +187,7 @@ function TCPView:get_additional_params()
 
   -- Cache the result to avoid recalculating every frame
   if not self.cached_additional_params then
-    self.cached_additional_params = self.additional_view:get_assigned_params("TCP")
+    self.cached_additional_params = self.additional_view:get_assigned_params('TCP')
   end
 
   return self.cached_additional_params
@@ -203,24 +201,24 @@ end
 function TCPView:draw_additional_param(ctx, param)
   -- Vertical stacked layout for narrow column
   -- Use custom display name if available, otherwise use param name
-  local display_name = (param.display_name and param.display_name ~= "")
+  local display_name = (param.display_name and param.display_name ~= '')
     and param.display_name or param.name
 
   -- Label
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCCCCCCFF)
   ImGui.Text(ctx, display_name)
   ImGui.PopStyleColor(ctx)
 
   -- Tooltip with custom description or default info
   if ImGui.IsItemHovered(ctx) then
     local tooltip
-    if param.custom_description and param.custom_description ~= "" then
+    if param.custom_description and param.custom_description ~= '' then
       -- Use custom description
       tooltip = param.custom_description
     else
       -- Use default technical info
       tooltip = string.format(
-        "Parameter: %s\nType: %s\nRange: %.1f - %.1f\nDefault: %.1f\nCurrent: %.1f",
+        'Parameter: %s\nType: %s\nRange: %.1f - %.1f\nDefault: %.1f\nCurrent: %.1f',
         param.name,
         param.type,
         param.min,
@@ -240,14 +238,14 @@ function TCPView:draw_additional_param(ctx, param)
   local changed = false
   local new_value = param.value
 
-  if param.type == "toggle" then
+  if param.type == 'toggle' then
     local is_checked = (param.value ~= 0)
-    if Ark.Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "tcp_add_" .. param.index) then
+    if Ark.Checkbox(ctx, {id = 'tcp_add_' .. param.index, label = '', is_checked = is_checked}).clicked then
       changed = true
       new_value = is_checked and 0 or 1
     end
 
-  elseif param.type == "spinner" then
+  elseif param.type == 'spinner' then
     local values = {}
     for i = param.min, param.max do
       table.insert(values, tostring(i))
@@ -256,8 +254,8 @@ function TCPView:draw_additional_param(ctx, param)
     local current_idx = math.floor(param.value - param.min + 1)
     current_idx = math.max(1, math.min(current_idx, #values))
 
-    local spinner_result = Ark.Spinner.draw(ctx, {
-      id = "##tcp_add_spinner_" .. param.index,
+    local spinner_result = Ark.Spinner(ctx, {
+      id = '##tcp_add_spinner_' .. param.index,
       value = current_idx,
       options = values,
       width = control_w,
@@ -270,15 +268,15 @@ function TCPView:draw_additional_param(ctx, param)
       new_value = param.min + (new_idx - 1)
     end
 
-  elseif param.type == "slider" then
+  elseif param.type == 'slider' then
     ImGui.SetNextItemWidth(ctx, control_w)
     local changed_slider, slider_value = ImGui.SliderDouble(
       ctx,
-      "##tcp_add_slider_" .. param.index,
+      '##tcp_add_slider_' .. param.index,
       param.value,
       param.min,
       param.max,
-      "%.1f"
+      '%.1f'
     )
 
     if changed_slider then
@@ -287,8 +285,8 @@ function TCPView:draw_additional_param(ctx, param)
     end
 
   else
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
-    ImGui.Text(ctx, string.format("%.1f", param.value))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
+    ImGui.Text(ctx, string.format('%.1f', param.value))
     ImGui.PopStyleColor(ctx)
   end
 
@@ -309,21 +307,21 @@ function TCPView:draw(ctx, shell_state)
 
   -- Title
   ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
-  ImGui.Text(ctx, "Track Control Panel")
+  ImGui.Text(ctx, 'Track Control Panel')
   ImGui.PopFont(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-  ImGui.Text(ctx, "Configure track appearance and element visibility")
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
+  ImGui.Text(ctx, 'Configure track appearance and element visibility')
   ImGui.PopStyleColor(ctx)
 
   -- Default 6.0 params toggle (right-aligned)
   ImGui.SameLine(ctx, avail_w - 180)
   local show_d60 = self.State.get_show_default_60_params()
-  if Ark.Checkbox.draw_at_cursor(ctx, "Default 6.0 params", show_d60, nil, "tcp_d60_toggle") then
+  if Ark.Checkbox(ctx, {id = 'tcp_d60_toggle', label = 'Default 6.0 params', is_checked = show_d60}).clicked then
     self.State.set_show_default_60_params(not show_d60)
   end
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Show Default 6.0 theme-specific sizing and visibility controls")
+    ImGui.SetTooltip(ctx, 'Show Default 6.0 theme-specific sizing and visibility controls')
   end
 
   ImGui.Dummy(ctx, 0, 8)
@@ -334,8 +332,8 @@ function TCPView:draw(ctx, shell_state)
   local right_width = has_additional and (avail_w * 0.4 - 8) or 0
 
   -- Left column (main controls)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "tcp_left", left_width, 0, 1) then
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
+  if ImGui.BeginChild(ctx, 'tcp_left', left_width, 0, 1) then
     -- Draw background pattern (using panel defaults)
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
@@ -345,7 +343,7 @@ function TCPView:draw(ctx, shell_state)
       primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
       secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
     }
-    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Dummy(ctx, 0, 4)
 
@@ -353,23 +351,24 @@ function TCPView:draw(ctx, shell_state)
 
     -- Layout & Size Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "ACTIVE LAYOUT & SIZE")
+    ImGui.Text(ctx, 'ACTIVE LAYOUT & SIZE')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
     -- Active Layout
     ImGui.AlignTextToFramePadding(ctx)
-    ImGui.Text(ctx, "Active Layout")
+    ImGui.Text(ctx, 'Active Layout')
     ImGui.SameLine(ctx, 120)
 
     for _, layout in ipairs({'A', 'B', 'C'}) do
       local is_active = (self.active_layout == layout)
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = 'tcp_layout_' .. layout,
         label = layout,
         width = 50,
         height = 24,
         is_toggled = is_active,
-        preset_name = "BUTTON_TOGGLE_WHITE",
+        preset_name = 'BUTTON_TOGGLE_WHITE',
         on_click = function()
           -- Update local and global active layout
           self.active_layout = layout
@@ -377,7 +376,7 @@ function TCPView:draw(ctx, shell_state)
           -- Reload all parameters from new layout
           self:load_from_theme()
         end
-      }, "tcp_layout_" .. layout) then
+      }).clicked then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -387,11 +386,12 @@ function TCPView:draw(ctx, shell_state)
 
     -- Apply Size
     ImGui.AlignTextToFramePadding(ctx)
-    ImGui.Text(ctx, "Apply Size")
+    ImGui.Text(ctx, 'Apply Size')
     ImGui.SameLine(ctx, 120)
 
     for _, size in ipairs({'100%', '150%', '200%'}) do
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = 'tcp_size_' .. size,
         label = size,
         width = 70,
         height = 24,
@@ -400,7 +400,7 @@ function TCPView:draw(ctx, shell_state)
           local scale = (size == '100%') and '' or (size .. '_')
           ThemeParams.apply_layout_to_tracks('tcp', self.active_layout, scale)
         end
-      }, "tcp_size_" .. size) then
+      }).clicked then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -414,26 +414,27 @@ function TCPView:draw(ctx, shell_state)
 
     ImGui.AlignTextToFramePadding(ctx)
     if is_default then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#00FF88"))
-      ImGui.Text(ctx, "Default Layout")
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x00FF88FF)
+      ImGui.Text(ctx, 'Default Layout')
       ImGui.PopStyleColor(ctx)
     else
-      ImGui.Text(ctx, "Default Layout")
+      ImGui.Text(ctx, 'Default Layout')
     end
     ImGui.SameLine(ctx, 120)
 
-    if Ark.Button.draw_at_cursor(ctx, {
-      label = is_default and ("✓ " .. self.active_layout .. " is Default") or ("Set " .. self.active_layout .. " as Default"),
+    if Ark.Button(ctx, {
+      id = 'tcp_set_default',
+      label = is_default and ('✓ ' .. self.active_layout .. ' is Default') or ('Set ' .. self.active_layout .. ' as Default'),
       width = 200,
       height = 24,
       is_toggled = is_default,
-      preset_name = is_default and "BUTTON_TOGGLE_WHITE" or nil,
+      preset_name = is_default and 'BUTTON_TOGGLE_WHITE' or nil,
       on_click = function()
         if not is_default then
           self:set_default_layout(self.active_layout)
         end
       end
-    }, "tcp_set_default") then
+    }).clicked then
     end
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetTooltip(ctx, Strings.format(Strings.TCP.set_default_layout, self.active_layout))
@@ -445,7 +446,7 @@ function TCPView:draw(ctx, shell_state)
     -- Sizing Controls Section (Default 6.0 specific)
     if show_d60 then
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "SIZING CONTROLS")
+    ImGui.Text(ctx, 'SIZING CONTROLS')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
@@ -462,13 +463,13 @@ function TCPView:draw(ctx, shell_state)
       local label_text_w = ImGui.CalcTextSize(ctx, label)
       ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + label_w - label_text_w)
       ImGui.AlignTextToFramePadding(ctx)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
       ImGui.Text(ctx, label)
       ImGui.PopStyleColor(ctx)
 
       -- Spinner (fixed position, fixed width)
       ImGui.SameLine(ctx, 0, 8)
-      local spinner_result = Ark.Spinner.draw(ctx, {
+      local spinner_result = Ark.Spinner(ctx, {
         id = id,
         value = idx,
         options = values,
@@ -484,33 +485,33 @@ function TCPView:draw(ctx, shell_state)
 
     -- Column 1: Layout
     ImGui.BeginGroup(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "Layout")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
+    ImGui.Text(ctx, 'Layout')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
 
-    local changed, new_idx = draw_spinner_row("Indent", "tcp_indent", self.tcp_indent_idx, SPINNER_VALUES.tcp_indent)
+    local changed, new_idx = draw_spinner_row('Indent', 'tcp_indent', self.tcp_indent_idx, SPINNER_VALUES.tcp_indent)
     if changed then
       self.tcp_indent_idx = new_idx
       -- Send spinner index directly (REAPER expects 1-based indices)
       ThemeParams.set_param('tcp_indent', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Alignment", "tcp_control_align", self.tcp_control_align_idx, SPINNER_VALUES.tcp_control_align)
+    changed, new_idx = draw_spinner_row('Alignment', 'tcp_control_align', self.tcp_control_align_idx, SPINNER_VALUES.tcp_control_align)
     if changed then
       self.tcp_control_align_idx = new_idx
       -- Send spinner index directly (REAPER expects 1-based indices)
       ThemeParams.set_param('tcp_control_align', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Meter Loc", "tcp_MeterLoc", self.tcp_MeterLoc_idx, SPINNER_VALUES.tcp_MeterLoc)
+    changed, new_idx = draw_spinner_row('Meter Loc', 'tcp_MeterLoc', self.tcp_MeterLoc_idx, SPINNER_VALUES.tcp_MeterLoc)
     if changed then
       self.tcp_MeterLoc_idx = new_idx
       -- Send spinner index directly (REAPER expects 1-based indices)
       ThemeParams.set_param('tcp_MeterLoc', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Send List", "tcp_sepSends", self.tcp_sepSends_idx, SPINNER_VALUES.tcp_sepSends)
+    changed, new_idx = draw_spinner_row('Send List', 'tcp_sepSends', self.tcp_sepSends_idx, SPINNER_VALUES.tcp_sepSends)
     if changed then
       self.tcp_sepSends_idx = new_idx
       ThemeParams.set_param('tcp_sepSends', new_idx, true)
@@ -521,30 +522,30 @@ function TCPView:draw(ctx, shell_state)
     -- Column 2: Element Sizing
     ImGui.SameLine(ctx, col_w + 8)
     ImGui.BeginGroup(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "Element Sizing")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
+    ImGui.Text(ctx, 'Element Sizing')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
 
-    changed, new_idx = draw_spinner_row("Name", "tcp_LabelSize", self.tcp_LabelSize_idx, SPINNER_VALUES.tcp_LabelSize)
+    changed, new_idx = draw_spinner_row('Name', 'tcp_LabelSize', self.tcp_LabelSize_idx, SPINNER_VALUES.tcp_LabelSize)
     if changed then
       self.tcp_LabelSize_idx = new_idx
       ThemeParams.set_param('tcp_LabelSize', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Volume", "tcp_vol_size", self.tcp_vol_size_idx, SPINNER_VALUES.tcp_vol_size)
+    changed, new_idx = draw_spinner_row('Volume', 'tcp_vol_size', self.tcp_vol_size_idx, SPINNER_VALUES.tcp_vol_size)
     if changed then
       self.tcp_vol_size_idx = new_idx
       ThemeParams.set_param('tcp_vol_size', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Meter", "tcp_MeterSize", self.tcp_MeterSize_idx, SPINNER_VALUES.tcp_MeterSize)
+    changed, new_idx = draw_spinner_row('Meter', 'tcp_MeterSize', self.tcp_MeterSize_idx, SPINNER_VALUES.tcp_MeterSize)
     if changed then
       self.tcp_MeterSize_idx = new_idx
       ThemeParams.set_param('tcp_MeterSize', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Input", "tcp_InputSize", self.tcp_InputSize_idx, SPINNER_VALUES.tcp_InputSize)
+    changed, new_idx = draw_spinner_row('Input', 'tcp_InputSize', self.tcp_InputSize_idx, SPINNER_VALUES.tcp_InputSize)
     if changed then
       self.tcp_InputSize_idx = new_idx
       ThemeParams.set_param('tcp_InputSize', new_idx, true)
@@ -555,30 +556,30 @@ function TCPView:draw(ctx, shell_state)
     -- Column 3: Control Sizing
     ImGui.SameLine(ctx, (col_w * 2) + 8)
     ImGui.BeginGroup(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "Control Sizing")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
+    ImGui.Text(ctx, 'Control Sizing')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
 
-    changed, new_idx = draw_spinner_row("FX Parms", "tcp_fxparms_size", self.tcp_fxparms_size_idx, SPINNER_VALUES.tcp_fxparms_size)
+    changed, new_idx = draw_spinner_row('FX Parms', 'tcp_fxparms_size', self.tcp_fxparms_size_idx, SPINNER_VALUES.tcp_fxparms_size)
     if changed then
       self.tcp_fxparms_size_idx = new_idx
       ThemeParams.set_param('tcp_fxparms_size', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Rec Mon", "tcp_recmon_size", self.tcp_recmon_size_idx, SPINNER_VALUES.tcp_recmon_size)
+    changed, new_idx = draw_spinner_row('Rec Mon', 'tcp_recmon_size', self.tcp_recmon_size_idx, SPINNER_VALUES.tcp_recmon_size)
     if changed then
       self.tcp_recmon_size_idx = new_idx
       ThemeParams.set_param('tcp_recmon_size', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Pan", "tcp_pan_size", self.tcp_pan_size_idx, SPINNER_VALUES.tcp_pan_size)
+    changed, new_idx = draw_spinner_row('Pan', 'tcp_pan_size', self.tcp_pan_size_idx, SPINNER_VALUES.tcp_pan_size)
     if changed then
       self.tcp_pan_size_idx = new_idx
       ThemeParams.set_param('tcp_pan_size', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Width", "tcp_width_size", self.tcp_width_size_idx, SPINNER_VALUES.tcp_width_size)
+    changed, new_idx = draw_spinner_row('Width', 'tcp_width_size', self.tcp_width_size_idx, SPINNER_VALUES.tcp_width_size)
     if changed then
       self.tcp_width_size_idx = new_idx
       ThemeParams.set_param('tcp_width_size', new_idx, true)
@@ -592,20 +593,20 @@ function TCPView:draw(ctx, shell_state)
     -- Element Visibility Section (Default 6.0 specific)
     if show_d60 then
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "ELEMENT VISIBILITY")
+    ImGui.Text(ctx, 'ELEMENT VISIBILITY')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-    ImGui.Text(ctx, "Control when track elements are visible")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
+    ImGui.Text(ctx, 'Control when track elements are visible')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 2)
 
     -- Table
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_CellPadding, 6, 4)
-    if ImGui.BeginTable(ctx, "tcp_visibility", 5, ImGui.TableFlags_Borders | ImGui.TableFlags_RowBg | ImGui.TableFlags_ScrollY, avail_w - 16, 300) then
+    if ImGui.BeginTable(ctx, 'tcp_visibility', 5, ImGui.TableFlags_Borders | ImGui.TableFlags_RowBg | ImGui.TableFlags_ScrollY, avail_w - 16, 300) then
       -- Setup columns
-      ImGui.TableSetupColumn(ctx, "Element", ImGui.TableColumnFlags_WidthFixed, 130)
+      ImGui.TableSetupColumn(ctx, 'Element', ImGui.TableColumnFlags_WidthFixed, 130)
       for _, col in ipairs(VISIBILITY_COLUMNS) do
         ImGui.TableSetupColumn(ctx, col.label, ImGui.TableColumnFlags_WidthFixed, 85)
       end
@@ -628,12 +629,12 @@ function TCPView:draw(ctx, shell_state)
           local current_value = self.visibility[elem.id] or 0
           local is_checked = (current_value & col.bit) ~= 0
 
-          ImGui.PushID(ctx, elem.id .. "_" .. col.bit)
-          if ImGui.Checkbox(ctx, "##check", is_checked) then
+          ImGui.PushID(ctx, elem.id .. '_' .. col.bit)
+          if ImGui.Checkbox(ctx, '##check', is_checked) then
             self:toggle_bitflag(elem.id, col.bit)
           end
           if ImGui.IsItemHovered(ctx) then
-            local tooltip = Strings.TCP_VIS_ELEMENTS[elem.id] or ("Toggle " .. elem.label)
+            local tooltip = Strings.TCP_VIS_ELEMENTS[elem.id] or ('Toggle ' .. elem.label)
             ImGui.SetTooltip(ctx, tooltip)
           end
           ImGui.PopID(ctx)
@@ -655,8 +656,8 @@ function TCPView:draw(ctx, shell_state)
   if has_additional then
     ImGui.SameLine(ctx, 0, 8)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-    if ImGui.BeginChild(ctx, "tcp_right", right_width, 0, 1) then
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
+    if ImGui.BeginChild(ctx, 'tcp_right', right_width, 0, 1) then
       -- Draw background pattern
       local child_x, child_y = ImGui.GetWindowPos(ctx)
       local child_w, child_h = ImGui.GetWindowSize(ctx)
@@ -666,20 +667,20 @@ function TCPView:draw(ctx, shell_state)
         primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
         secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
       }
-      Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+      Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
       ImGui.Dummy(ctx, 0, 4)
       ImGui.Indent(ctx, 8)
 
       -- Additional Parameters Section
       ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#4A90E2"))
-      ImGui.Text(ctx, "ADDITIONAL PARAMETERS")
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x4A90E2FF)
+      ImGui.Text(ctx, 'ADDITIONAL PARAMETERS')
       ImGui.PopStyleColor(ctx)
       ImGui.PopFont(ctx)
       ImGui.Dummy(ctx, 0, 4)
 
-      local tab_color = hexrgb("#4A90E2")  -- TCP blue color
+      local tab_color = 0x4A90E2FF  -- TCP blue color
       for _, param in ipairs(additional_params) do
         AdditionalParamTile.render(ctx, param, tab_color, shell_state, self.additional_view)
       end

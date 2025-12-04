@@ -163,19 +163,19 @@ local Ark = { InputText = InputText }  -- Define namespace
 ### 4. **Hard-Coded Colors (No Theming)**
 ```lua
 -- PROBLEM: Colors hard-coded in TREE_CONFIG
-bg_hover = hexrgb("#2E2E2EFF"),
-bg_selected = hexrgb("#393939FF"),
+bg_hover = hex("#2E2E2EFF"),
+bg_selected = hex("#393939FF"),
 
 -- SOLUTION: Theme system
 local Themes = {
   dark = {
-    bg_hover = hexrgb("#2E2E2EFF"),
-    bg_selected = hexrgb("#393939FF"),
+    bg_hover = hex("#2E2E2EFF"),
+    bg_selected = hex("#393939FF"),
     -- ... all colors
   },
   light = {
-    bg_hover = hexrgb("#E0E0E0FF"),
-    bg_selected = hexrgb("#CCE8FFFF"),
+    bg_hover = hex("#E0E0E0FF"),
+    bg_selected = hex("#CCE8FFFF"),
     -- ... all colors
   }
 }

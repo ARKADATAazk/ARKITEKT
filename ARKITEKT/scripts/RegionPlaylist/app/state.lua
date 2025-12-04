@@ -1,28 +1,75 @@
 -- @noindex
 -- RegionPlaylist/app/state.lua
--- Single-source-of-truth app state (playlist expansion handled lazily)
---[[
-The app layer is now the authoritative owner of playlist structure. Engine-side
-modules request a flattened playback sequence through the coordinator bridge
-whenever they advance, so the UI just needs to mark the cache dirty after any
-mutation. This keeps App ↔ Engine state synchronized without a manual
-sync_playlist_to_engine() step and guarantees nested playlists expand exactly
-once per invalidation.
-]]
+-- Single-Source-of-Truth App State Using Domain Composition Pattern
+--
+-- ARCHITECTURE:
+-- State is decomposed into 6 focused domain modules for testability and clarity:
+--   - animation:       Pending UI animations (spawn/select/destroy queues)
+--   - notification:    Status messages + circular dependency errors
+--   - ui_preferences:  Search, sort, layout, pool mode (UI-only state)
+--   - region:          Region cache + pool order
+--   - dependency:      Circular reference detection for nested playlists
+--   - playlist:        Playlist CRUD operations + active playlist tracking
+--
+-- PATTERN: Domain Composition
+-- Instead of a 1170-line monolithic state module, domains encapsulate
+-- related operations and can be unit tested with mocks.
+--
+-- WHY DECOMPOSE?
+-- - Testability: Mock individual domains without full app context
+-- - Clarity: Each domain has focused responsibility
+-- - Maintainability: Smaller files (150-200 lines vs 1170)
+-- - Separation: UI state (preferences) separate from business logic (playlist)
+--
+-- COORDINATION:
+-- State exposes domain methods via accessor functions for backward
+-- compatibility and provides coordination methods that span domains.
+--
+-- EXAMPLE:
+-- ```lua
+-- -- Direct domain access (simple cases)
+-- local playlists = State.playlist:get_all()
+--
+-- -- Accessor method (backward compatibility or coordination)
+-- function State.get_playlists()
+--   return State.playlist:get_all()
+-- end
+-- ```
+--
+-- LAZY EXPANSION:
+-- The app layer is the authoritative owner of playlist structure. Engine-side
+-- modules request a flattened playback sequence through the coordinator bridge
+-- whenever they advance, so the UI just needs to mark the cache dirty after any
+-- mutation. This keeps App ↔ Engine state synchronized without a manual
+-- sync_playlist_to_engine() step and guarantees nested playlists expand exactly
+-- once per invalidation.
+--
+-- REFACTORING HISTORY:
+-- See REFACTORING.md for migration details from monolithic to domain-composed.
+--
+-- SEE ALSO:
+--   - domain/playlist.lua (playlist CRUD domain)
+--   - domain/region.lua (region cache domain)
+--   - domain/dependency.lua (circular reference detection)
+--   - ui/state/animation.lua (UI animation queue)
+--   - ui/state/notification.lua (status messages)
+--   - ui/state/preferences.lua (UI preferences)
+--   - data/bridge.lua (lazy sequence expansion)
 
-local CoordinatorBridge = require("RegionPlaylist.data.bridge")
-local RegionState = require("RegionPlaylist.data.storage")
-local UndoManager = require("arkitekt.core.undo_manager")
-local UndoBridge = require("RegionPlaylist.data.undo")
-local Constants = require("RegionPlaylist.defs.constants")
-local ProjectMonitor = require("arkitekt.reaper.project_monitor")
-local Animation = require("RegionPlaylist.ui.state.animation")
-local Notification = require("RegionPlaylist.ui.state.notification")
-local UIPreferences = require("RegionPlaylist.ui.state.preferences")
-local Region = require("RegionPlaylist.domain.region")
-local Dependency = require("RegionPlaylist.domain.dependency")
-local Playlist = require("RegionPlaylist.domain.playlist")
-local PoolQueries = require("RegionPlaylist.app.pool_queries")
+local CoordinatorBridge = require('RegionPlaylist.data.bridge')
+local RegionState = require('RegionPlaylist.data.storage')
+local UndoManager = require('arkitekt.core.undo_manager')
+local UndoBridge = require('RegionPlaylist.data.undo')
+local Constants = require('RegionPlaylist.config.constants')
+local ProjectMonitor = require('arkitekt.reaper.project_monitor')
+local Animation = require('RegionPlaylist.ui.state.animation')
+local Notification = require('RegionPlaylist.ui.state.notification')
+local UIPreferences = require('RegionPlaylist.ui.state.preferences')
+local Region = require('RegionPlaylist.domain.region')
+local Dependency = require('RegionPlaylist.domain.dependency')
+local Playlist = require('RegionPlaylist.domain.playlist')
+local Overlap = require('RegionPlaylist.domain.overlap')
+local PoolQueries = require('RegionPlaylist.app.pool_queries')
 local Logger = require('arkitekt.debug.logger')
 
 local M = {}
@@ -30,38 +77,38 @@ local M = {}
 -- Set to true for verbose app state logging
 local DEBUG_APP_STATE = false
 
-package.loaded["RegionPlaylist.app.state"] = M
+package.loaded['RegionPlaylist.app.state'] = M
 
 -- Build a human-readable status message from undo/redo changes
 local function _build_changes_message(prefix, changes)
   local parts = {}
 
   if changes.playlists_count > 0 then
-    parts[#parts + 1] = string.format("%d playlist%s",
+    parts[#parts + 1] = string.format('%d playlist%s',
       changes.playlists_count,
-      changes.playlists_count ~= 1 and "s" or "")
+      changes.playlists_count ~= 1 and 's' or '')
   end
 
   if changes.items_count > 0 then
-    parts[#parts + 1] = string.format("%d item%s",
+    parts[#parts + 1] = string.format('%d item%s',
       changes.items_count,
-      changes.items_count ~= 1 and "s" or "")
+      changes.items_count ~= 1 and 's' or '')
   end
 
   if changes.regions_renamed > 0 then
-    parts[#parts + 1] = string.format("%d region%s renamed",
+    parts[#parts + 1] = string.format('%d region%s renamed',
       changes.regions_renamed,
-      changes.regions_renamed ~= 1 and "s" or "")
+      changes.regions_renamed ~= 1 and 's' or '')
   end
 
   if changes.regions_recolored > 0 then
-    parts[#parts + 1] = string.format("%d region%s recolored",
+    parts[#parts + 1] = string.format('%d region%s recolored',
       changes.regions_recolored,
-      changes.regions_recolored ~= 1 and "s" or "")
+      changes.regions_recolored ~= 1 and 's' or '')
   end
 
   if #parts > 0 then
-    return prefix .. ": " .. table.concat(parts, ", ")
+    return prefix .. ': ' .. table.concat(parts, ', ')
   end
   return prefix
 end
@@ -97,6 +144,14 @@ M.undo_manager = nil                          -- UndoManager instance
 -- Project monitoring
 M.project_monitor = nil                       -- ProjectMonitor instance
 
+-- Overlap detection (lazy computed)
+M.overlap_map = nil                           -- Map of outer_rid -> {inner_rid1, ...}
+M.overlap_map_dirty = true                    -- Whether overlap map needs recomputation
+
+-- Beyond project end detection (lazy computed)
+M.beyond_map = nil                            -- Map of rid -> true for regions beyond project end
+M.beyond_map_dirty = true                     -- Whether beyond map needs recomputation
+
 -- Event callbacks (set by GUI)
 M.on_state_restored = nil                     -- Called when undo/redo restores state
 M.on_repeat_cycle = nil                       -- Called when repeat count cycles
@@ -119,7 +174,7 @@ function M.initialize(settings)
   M.ui_preferences:load_from_settings()
 
   if DEBUG_APP_STATE then
-    Logger.info("STATE", "Initialized with all 6 domains: animation, notification, ui_preferences, region, dependency, playlist")
+    Logger.info('STATE', 'Initialized with all 6 domains: animation, notification, ui_preferences, region, dependency, playlist')
   end
 
   -- Initialize project monitor to track changes
@@ -167,11 +222,11 @@ function M.load_project_state()
   local playlists = RegionState.load_playlists(0)
 
   if #playlists == 0 then
-    local UUID = require("arkitekt.core.uuid")
+    local UUID = require('arkitekt.core.uuid')
     playlists = {
       {
         id = UUID.generate(),
-        name = "Playlist 1",
+        name = 'Playlist 1',
         items = {},
         chip_color = RegionState.generate_chip_color(),
       }
@@ -358,6 +413,113 @@ function M.check_override_state_change(current_override_state)
   M.notification:check_override_state_change(current_override_state)
 end
 
+-- >>> OVERLAP DETECTION (BEGIN)
+-- Lazy-computed overlap map for detecting nested regions
+
+function M._ensure_overlap_map()
+  if M.overlap_map_dirty or not M.overlap_map then
+    local region_cache = M.bridge and M.bridge.engine and M.bridge.engine.state.region_cache
+    if region_cache then
+      M.overlap_map = Overlap.find_overlaps(region_cache)
+    else
+      M.overlap_map = {}
+    end
+    M.overlap_map_dirty = false
+  end
+end
+
+function M.get_overlap_map()
+  M._ensure_overlap_map()
+  return M.overlap_map
+end
+
+function M.has_region_overlap(rid)
+  M._ensure_overlap_map()
+  return Overlap.has_nested(rid, M.overlap_map)
+end
+
+function M.get_nested_regions(rid)
+  M._ensure_overlap_map()
+  return Overlap.get_nested(rid, M.overlap_map)
+end
+
+function M.count_overlapping_regions()
+  M._ensure_overlap_map()
+  return Overlap.count_overlapping(M.overlap_map)
+end
+
+--- Get overlap warning for current playlist (for playback warning)
+--- @return string|nil warning Warning message if playlist has overlaps
+function M.get_playlist_overlap_warning()
+  M._ensure_overlap_map()
+  local playlist = M.get_active_playlist()
+  if not playlist then return nil end
+
+  local first_overlap = Overlap.find_playlist_overlap(playlist, M.overlap_map)
+  if first_overlap then
+    local region = M.get_region_by_rid(first_overlap.rid)
+    local region_name = region and region.name or ('Region ' .. first_overlap.rid)
+    return string.format('Nested regions detected (%s)', region_name)
+  end
+
+  return nil
+end
+
+function M.invalidate_overlap_map()
+  M.overlap_map_dirty = true
+end
+
+-- <<< OVERLAP DETECTION (END)
+
+-- >>> BEYOND PROJECT END DETECTION (BEGIN)
+-- Lazy-computed map for regions that start after project length
+
+function M._ensure_beyond_map()
+  if M.beyond_map_dirty or not M.beyond_map then
+    local region_cache = M.bridge and M.bridge.engine and M.bridge.engine.state.region_cache
+    if region_cache then
+      local project_length = reaper.GetProjectLength(0)
+      M.beyond_map = Overlap.find_beyond_project_end(region_cache, project_length)
+    else
+      M.beyond_map = {}
+    end
+    M.beyond_map_dirty = false
+  end
+end
+
+function M.get_beyond_map()
+  M._ensure_beyond_map()
+  return M.beyond_map
+end
+
+function M.is_region_beyond_project_end(rid)
+  M._ensure_beyond_map()
+  return Overlap.is_beyond_project_end(rid, M.beyond_map)
+end
+
+--- Get beyond-end warning for current playlist (for playback warning)
+--- @return string|nil warning Warning message if playlist has beyond-end regions
+function M.get_playlist_beyond_warning()
+  M._ensure_beyond_map()
+  local playlist = M.get_active_playlist()
+  if not playlist then return nil end
+
+  local first_beyond = Overlap.find_playlist_beyond_end(playlist, M.beyond_map)
+  if first_beyond then
+    local region = M.get_region_by_rid(first_beyond.rid)
+    local region_name = region and region.name or ('Region ' .. first_beyond.rid)
+    return string.format('Region beyond project end (%s)', region_name)
+  end
+
+  return nil
+end
+
+function M.invalidate_beyond_map()
+  M.beyond_map_dirty = true
+end
+
+-- <<< BEYOND PROJECT END DETECTION (END)
+
 -- <<< CANONICAL ACCESSORS (END)
 
 function M.get_tabs()
@@ -371,6 +533,8 @@ end
 function M.refresh_regions()
   local regions = M.bridge:get_regions_for_ui()
   M.region:refresh_from_bridge(regions)
+  M.invalidate_overlap_map()
+  M.invalidate_beyond_map()
 end
 
 function M.persist()
@@ -437,7 +601,7 @@ function M.undo()
   local success, changes = M.restore_snapshot(snapshot)
 
   if success and changes then
-    M.set_state_change_notification(_build_changes_message("Undo", changes))
+    M.set_state_change_notification(_build_changes_message('Undo', changes))
   end
 
   return success
@@ -452,7 +616,7 @@ function M.redo()
   local success, changes = M.restore_snapshot(snapshot)
 
   if success and changes then
-    M.set_state_change_notification(_build_changes_message("Redo", changes))
+    M.set_state_change_notification(_build_changes_message('Redo', changes))
   end
 
   return success
@@ -554,11 +718,11 @@ function M.create_playlist_item(playlist_id, reps)
   end
   
   return {
-    type = "playlist",
+    type = 'playlist',
     playlist_id = playlist_id,
     reps = reps or 1,
     enabled = true,
-    key = "playlist_" .. playlist_id .. "_" .. reaper.time_precise(),
+    key = 'playlist_' .. playlist_id .. '_' .. reaper.time_precise(),
   }
 end
 
@@ -571,28 +735,28 @@ function M.cleanup_deleted_regions()
   local playlists = M.playlist:get_all()
 
   if DEBUG_CLEANUP then
-    reaper.ShowConsoleMsg("=== cleanup_deleted_regions() ===\n")
+    reaper.ShowConsoleMsg('=== cleanup_deleted_regions() ===\n')
   end
 
   for _, pl in ipairs(playlists) do
     local i = 1
     while i <= #pl.items do
       local item = pl.items[i]
-      if item.type == "region" then
+      if item.type == 'region' then
         -- Try to resolve region: GUID → Name → RID
         local region = M.region:resolve_region(item.guid, item.rid, item.region_name)
 
         if DEBUG_CLEANUP then
           reaper.ShowConsoleMsg(string.format("  Item: rid=%s guid=%s name='%s' -> resolved=%s\n",
-            tostring(item.rid), tostring(item.guid), tostring(item.region_name or ""),
-            region and tostring(region.rid) or "NIL"))
+            tostring(item.rid), tostring(item.guid), tostring(item.region_name or ''),
+            region and tostring(region.rid) or 'NIL'))
         end
 
         if region then
           -- Region found - update RID if changed (was renumbered)
           if item.rid ~= region.rid then
             if DEBUG_CLEANUP then
-              reaper.ShowConsoleMsg(string.format("    UPDATING rid: %d -> %d\n", item.rid, region.rid))
+              reaper.ShowConsoleMsg(string.format('    UPDATING rid: %d -> %d\n', item.rid, region.rid))
             end
             item.rid = region.rid
             updated_any = true
@@ -600,17 +764,17 @@ function M.cleanup_deleted_regions()
           -- Update GUID if changed or missing (renumbering generates new GUIDs)
           if region.guid and item.guid ~= region.guid then
             if DEBUG_CLEANUP then
-              reaper.ShowConsoleMsg(string.format("    UPDATING guid: %s -> %s\n",
+              reaper.ShowConsoleMsg(string.format('    UPDATING guid: %s -> %s\n',
                 tostring(item.guid), region.guid))
             end
             item.guid = region.guid
             updated_any = true
           end
           -- Update stored name if it changed
-          if region.name and region.name ~= "" and item.region_name ~= region.name then
+          if region.name and region.name ~= '' and item.region_name ~= region.name then
             if DEBUG_CLEANUP then
               reaper.ShowConsoleMsg(string.format("    UPDATING name: '%s' -> '%s'\n",
-                tostring(item.region_name or ""), region.name))
+                tostring(item.region_name or ''), region.name))
             end
             item.region_name = region.name
             updated_any = true
@@ -619,7 +783,7 @@ function M.cleanup_deleted_regions()
         else
           -- Region truly deleted - remove from playlist
           if DEBUG_CLEANUP then
-            reaper.ShowConsoleMsg(string.format("    REMOVING (not found)\n"))
+            reaper.ShowConsoleMsg(string.format('    REMOVING (not found)\n'))
           end
           table.remove(pl.items, i)
           removed_any = true
@@ -638,7 +802,7 @@ function M.cleanup_deleted_regions()
   return removed_any
 end
 
-function M.update()
+function M.Update()
   -- Use project monitor to detect changes
   local project_changed = M.project_monitor:update()
 

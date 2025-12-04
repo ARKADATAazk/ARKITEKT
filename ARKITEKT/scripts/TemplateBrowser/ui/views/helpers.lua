@@ -2,7 +2,7 @@
 -- TemplateBrowser/ui/views/helpers.lua
 -- Common view helper functions to reduce duplication
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

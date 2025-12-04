@@ -42,7 +42,7 @@ function M.new(opts)
   })
   
   self.follow_playhead = (opts.follow_playhead ~= false)
-  self.quantize_mode = opts.quantize_mode or "measure"
+  self.quantize_mode = opts.quantize_mode or 'measure'
   self.on_repeat_cycle = opts.on_repeat_cycle
   
   -- Initialize quantize submodule with the mode
@@ -117,6 +117,43 @@ end
 
 function Engine:jump_to_next_quantized(lookahead)
   return self.quantize:jump_to_next_quantized(lookahead)
+end
+
+--- Seek to a specific item by key (immediate jump)
+--- @param key string Item key to seek to
+--- @return boolean success
+function Engine:seek_to_item(key)
+  local idx = self.transport:find_index_by_key(key)
+  if idx then
+    return self.transport:seek_to_index(idx, true)
+  end
+  return false
+end
+
+--- Schedule a quantized jump to a specific item by key
+--- @param key string Item key to seek to
+--- @param lookahead number|nil Lookahead time in seconds
+--- @return boolean success
+function Engine:schedule_seek_to_item(key, lookahead)
+  local idx = self.transport:find_index_by_key(key)
+  if not idx then return false end
+
+  -- Set next_idx to the target so quantize will jump there
+  self.state.next_idx = idx
+  return self.quantize:jump_to_next_quantized(lookahead or 0.05)
+end
+
+--- Set the next item to play after current region ends (no immediate jump)
+--- Used for "schedule transition" - skip intervening items when current ends
+--- @param key string Item key to set as next
+--- @return boolean success
+function Engine:set_next_item(key)
+  local idx = self.transport:find_index_by_key(key)
+  if not idx then return false end
+
+  -- Just set next_idx - transitions logic will handle the jump when current region ends
+  self.state.next_idx = idx
+  return true
 end
 
 function Engine:update()

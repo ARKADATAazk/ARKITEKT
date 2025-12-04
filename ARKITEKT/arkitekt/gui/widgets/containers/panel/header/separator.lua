@@ -2,11 +2,11 @@
 -- Arkitekt/gui/widgets/panel/header/separator.lua
 -- Separator element for header layout
 
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 local M = {}
 
-function M.draw(ctx, dl, x, y, width, height, config)
+function M.Draw(ctx, dl, x, y, width, height, config)
   -- Separator is just empty space
   -- The layout engine will handle corner rounding of adjacent elements
 
@@ -21,14 +21,14 @@ function M.draw(ctx, dl, x, y, width, height, config)
     local line_y2 = line_y1 + line_height
     
     -- DrawList_AddLine expects: dl, x1, y1, x2, y2, color, thickness
-    local ImGui = require('arkitekt.platform.imgui')
+    local ImGui = require('arkitekt.core.imgui')
     ImGui.DrawList_AddLine(dl, line_x, line_y1, line_x, line_y2, line_color, line_thickness)
   end
   
   return width
 end
 
-function M.measure(ctx, config)
+function M.Measure(ctx, config)
   -- Separators can be fixed width or flex
   return config.width or 0
 end

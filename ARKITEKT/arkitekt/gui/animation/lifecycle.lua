@@ -3,11 +3,9 @@
 -- Spawn and destroy animations for UI elements
 -- Merged from spawn.lua and destroy.lua for better organization
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Easing = require('arkitekt.gui.animation.easing')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
-
 local M = {}
 
 -- =============================================================================
@@ -156,7 +154,7 @@ function DestroyAnim:render(ctx, dl, key, base_rect, base_color, rounding)
   local nx2 = cx + new_w * 0.5
   local ny2 = cy + new_h * 0.5
 
-  local target_red = hexrgb("#AA333388")
+  local target_red = 0xAA333388
 
   local r1 = (base_color >> 24) & 0xFF
   local g1 = (base_color >> 16) & 0xFF
@@ -192,7 +190,7 @@ function DestroyAnim:render(ctx, dl, key, base_rect, base_color, rounding)
   end
 
   local cross_alpha = (255 * (1 - Easing.ease_out_quad(t)))//1
-  local cross_color = (hexrgb("#FF4444") & 0xFFFFFF00) | cross_alpha
+  local cross_color = (0xFF4444FF & 0xFFFFFF00) | cross_alpha
   local cross_thickness = 2.5
 
   local cross_size = 20

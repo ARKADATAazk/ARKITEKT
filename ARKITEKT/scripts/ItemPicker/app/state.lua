@@ -3,16 +3,15 @@
 -- Centralized state management (single source of truth)
 -- @migrated 2024-11-27 from core/app_state.lua
 
-local Persistence = require("ItemPicker.data.storage")
-local Defaults = require("ItemPicker.defs.defaults")
-local PreviewManager = require("ItemPicker.domain.preview.manager")
-local TrackFilterDomain = require("ItemPicker.domain.filters.track")
-local TrackFilterUI = require("ItemPicker.ui.components.track_filter")
-local Palette = require("ItemPicker.defs.palette")
+local Persistence = require('ItemPicker.data.storage')
+local Defaults = require('ItemPicker.config.defaults')
+local PreviewManager = require('ItemPicker.domain.preview.manager')
+local TrackFilterDomain = require('ItemPicker.domain.filters.track')
+local Palette = require('ItemPicker.config.palette')
 
 local M = {}
 
-package.loaded["ItemPicker.app.state"] = M
+package.loaded['ItemPicker.app.state'] = M
 
 -- Settings (persisted) - initialize from defaults
 M.settings = {}
@@ -81,7 +80,7 @@ M.preview_duration = nil
 -- Rename state
 M.rename_active = false
 M.rename_uuid = nil
-M.rename_text = ""
+M.rename_text = ''
 M.rename_is_audio = true
 M.rename_focused = false  -- Track if input is focused
 M.rename_queue = nil  -- For batch rename
@@ -149,8 +148,8 @@ function M.initialize(config)
   end
 
   -- Initialize track tree and whitelist on startup (so filter bar works immediately)
-  -- Use UI wrapper which adds display_color for rendering
-  M.track_tree = TrackFilterUI.build_track_tree()
+  -- Domain layer already captures track color from REAPER's I_CUSTOMCOLOR
+  M.track_tree = TrackFilterDomain.build_track_tree()
   if not M.track_whitelist then
     M.track_whitelist = TrackFilterDomain.init_whitelist(M.track_tree)
   end
@@ -177,11 +176,11 @@ function M.set_setting(key, value)
 end
 
 function M.get_search_filter()
-  return M.settings.search_string or ""
+  return M.settings.search_string or ''
 end
 
 function M.set_search_filter(filter)
-  M.settings.search_string = filter or ""
+  M.settings.search_string = filter or ''
   M.persist_settings()
   -- Invalidate grid cache to refresh with new search filter
   if M.runtime_cache then
@@ -229,14 +228,14 @@ function M.get_view_mode()
   local show_midi = M.settings.show_midi
 
   if show_audio and show_midi then
-    return "MIXED"
+    return 'MIXED'
   elseif show_midi then
-    return "MIDI"
+    return 'MIDI'
   elseif show_audio then
-    return "AUDIO"
+    return 'AUDIO'
   else
     -- If both are off, default to MIXED
-    return "MIXED"
+    return 'MIXED'
   end
 end
 
@@ -464,7 +463,7 @@ function M.persist_all()
 end
 
 -- Cleanup
-function M.cleanup()
+function M.Cleanup()
   M.persist_all()
 
   -- Skip disk cache flush - causes 5 second UI freeze

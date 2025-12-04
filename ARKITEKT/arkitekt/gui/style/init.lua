@@ -7,10 +7,9 @@
 --
 -- For ImGui native widgets, see imgui_defaults.lua instead.
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
-local ConfigUtil = require('arkitekt.core.config')
+local ConfigUtil = require('arkitekt.core.merge')
 
 local M = {}
 
@@ -23,45 +22,45 @@ local M = {}
 
 M.COLORS = {
   -- Backgrounds
-  BG_BASE = hexrgb("#242424FF"),        -- 36,36,36 RGB - main content background
-  BG_HOVER = hexrgb("#2A2A2AFF"),       -- Hovered control background
-  BG_ACTIVE = hexrgb("#303030FF"),      -- Active/pressed control background
-  BG_HEADER = hexrgb("#1E1E1EFF"),      -- 30,30,30 RGB - header/toolbar background
-  BG_PANEL = hexrgb("#1A1A1AFF"),       -- 26,26,26 RGB - panel content background (darker)
-  BG_CHROME = hexrgb("#0F0F0FFF"),      -- 15,15,15 RGB - titlebar/statusbar
-  BG_TRANSPARENT = hexrgb("#00000000"), -- Transparent background
+  BG_BASE = 0x242424FF,        -- 36,36,36 RGB - main content background
+  BG_HOVER = 0x2A2A2AFF,       -- Hovered control background
+  BG_ACTIVE = 0x303030FF,      -- Active/pressed control background
+  BG_HEADER = 0x1E1E1EFF,      -- 30,30,30 RGB - header/toolbar background
+  BG_PANEL = 0x1A1A1AFF,       -- 26,26,26 RGB - panel content background (darker)
+  BG_CHROME = 0x0F0F0FFF,      -- 15,15,15 RGB - titlebar/statusbar
+  BG_TRANSPARENT = 0x00000000, -- Transparent background
 
   -- Borders
-  BORDER_OUTER = hexrgb("#000000DD"),   -- Black outer border (strong contrast)
-  BORDER_INNER = hexrgb("#2f2f2fff"),   -- Gray inner highlight border
-  BORDER_HOVER = hexrgb("#505050FF"),   -- Lighter border on hover
-  BORDER_ACTIVE = hexrgb("#B0B0B077"),  -- Active state border (semi-transparent)
-  BORDER_FOCUS = hexrgb("#7B7B7BFF"),   -- Focus state border
+  BORDER_OUTER = 0x000000DD,   -- Black outer border (strong contrast)
+  BORDER_INNER = 0x2F2F2FFF,   -- Gray inner highlight border
+  BORDER_HOVER = 0x505050FF,   -- Lighter border on hover
+  BORDER_ACTIVE = 0xB0B0B077,  -- Active state border (semi-transparent)
+  BORDER_FOCUS = 0x7B7B7BFF,   -- Focus state border
 
   -- Text
-  TEXT_NORMAL = hexrgb("#CCCCCCFF"),    -- Standard text color
-  TEXT_HOVER = hexrgb("#FFFFFFFF"),     -- Bright text on hover
-  TEXT_ACTIVE = hexrgb("#FFFFFFFF"),    -- Bright text when active
-  TEXT_DIMMED = hexrgb("#AAAAAAFF"),    -- Dimmed/secondary text
-  TEXT_DARK = hexrgb("#707070FF"),      -- Dark text for high-contrast areas
-  TEXT_BRIGHT = hexrgb("#EEEEEEFF"),    -- Extra bright text
+  TEXT_NORMAL = 0xCCCCCCFF,    -- Standard text color
+  TEXT_HOVER = 0xFFFFFFFF,     -- Bright text on hover
+  TEXT_ACTIVE = 0xFFFFFFFF,    -- Bright text when active
+  TEXT_DIMMED = 0xAAAAAAFF,    -- Dimmed/secondary text
+  TEXT_DARK = 0x707070FF,      -- Dark text for high-contrast areas
+  TEXT_BRIGHT = 0xEEEEEEFF,    -- Extra bright text
 
   -- Accents (themed - used for toggle buttons, highlights)
-  ACCENT_PRIMARY = hexrgb("#4A9EFF"),   -- Primary accent (blue)
-  ACCENT_TEAL = hexrgb("#295650FF"),    -- Teal accent (for toggle buttons)
-  ACCENT_TEAL_BRIGHT = hexrgb("#41E0A3FF"), -- Bright teal (for text on teal bg)
-  ACCENT_WHITE = hexrgb("#2f2f2fff"),   -- White/gray accent (desaturated)
-  ACCENT_WHITE_BRIGHT = hexrgb("#585858ff"), -- Bright white accent
-  ACCENT_TRANSPARENT = hexrgb("#43434388"), -- Semi-transparent accent (overlays)
+  ACCENT_PRIMARY = 0x4A9EFFFF,   -- Primary accent (blue)
+  ACCENT_TEAL = 0x295650FF,    -- Teal accent (for toggle buttons)
+  ACCENT_TEAL_BRIGHT = 0x41E0A3FF, -- Bright teal (for text on teal bg)
+  ACCENT_WHITE = 0x2F2F2FFF,   -- White/gray accent (desaturated)
+  ACCENT_WHITE_BRIGHT = 0x585858FF, -- Bright white accent
+  ACCENT_TRANSPARENT = 0x43434388, -- Semi-transparent accent (overlays)
 
   -- Semantic colors (status indicators)
-  ACCENT_SUCCESS = hexrgb("#4CAF50"),   -- Success/confirmation (green)
-  ACCENT_WARNING = hexrgb("#FFA726"),   -- Warning state (orange)
-  ACCENT_DANGER = hexrgb("#EF5350"),    -- Error/danger state (red)
+  ACCENT_SUCCESS = 0x4CAF50FF,   -- Success/confirmation (green)
+  ACCENT_WARNING = 0xFFA726FF,   -- Warning state (orange)
+  ACCENT_DANGER = 0xEF5350FF,    -- Error/danger state (red)
 
   -- Background patterns (decorative grid/dot patterns)
-  PATTERN_PRIMARY = hexrgb("#30303060"),   -- Primary pattern color (semi-transparent)
-  PATTERN_SECONDARY = hexrgb("#30303020"), -- Secondary pattern color (more transparent)
+  PATTERN_PRIMARY = 0x30303060,   -- Primary pattern color (semi-transparent)
+  PATTERN_SECONDARY = 0x30303020, -- Secondary pattern color (more transparent)
 }
 
 -- ============================================================================
@@ -79,12 +78,12 @@ M.COLORS = {
 
 M.PANEL_COLORS = {
   -- Panel container
-  bg_panel = hexrgb("#1A1A1AFF"),       -- Main panel container background (darker than controls)
+  bg_panel = 0x1A1A1AFF,       -- Main panel container background (darker than controls)
   border_panel = M.COLORS.BORDER_OUTER, -- Panel outer border (reuse shared)
 
   -- Header bar
-  bg_header = hexrgb("#1E1E1EFF"),      -- Header bar background
-  border_header = hexrgb("#00000066"),  -- Subtle header border
+  bg_header = 0x1E1E1EFF,      -- Header bar background
+  border_header = 0x00000066,  -- Subtle header border
 
   -- Tab strip
   bg_tab = M.COLORS.BG_BASE,            -- Tab background (inactive)
@@ -98,11 +97,11 @@ M.PANEL_COLORS = {
   border_tab_focus = M.COLORS.BORDER_FOCUS,  -- Tab border when focused
 
   -- Tab track (background behind tabs)
-  bg_tab_track = hexrgb("#1A1A1AFF"),   -- Track background
+  bg_tab_track = 0x1A1A1AFF,   -- Track background
   border_tab_track = M.COLORS.BORDER_OUTER, -- Track border
 
   -- Separator
-  separator_line = hexrgb("#30303080"),  -- Separator line color (semi-transparent)
+  separator_line = 0x30303080,  -- Separator line color (semi-transparent)
 
   -- Scrollbar
   bg_scrollbar = M.COLORS.BG_TRANSPARENT, -- Scrollbar background
@@ -119,9 +118,9 @@ M.PANEL_COLORS = {
 -- ============================================================================
 
 M.TOOLTIP_COLORS = {
-  bg = hexrgb("#2A2A2AFF"),
+  bg = 0x2A2A2AFF,
   border = M.COLORS.BORDER_INNER,
-  text = hexrgb("#EEEEEEFF"),
+  text = 0xEEEEEEFF,
 }
 
 -- ============================================================================
@@ -133,17 +132,17 @@ M.TOOLTIP_COLORS = {
 
 -- Action chip presets - colored rectangles with dark text
 M.ACTION_CHIP_WILDCARD = {
-  bg_color = hexrgb("#5B8FB9"),  -- Muted blue for technical wildcards
-  text_color = hexrgb("#1a1a1a"),  -- Dark text
-  border_color = Colors.with_alpha(hexrgb("#000000"), 100),
+  bg_color = 0x5B8FB9FF,  -- Muted blue for technical wildcards
+  text_color = 0x1A1A1AFF,  -- Dark text
+  border_color = Colors.WithAlpha(0x000000FF, 100),
   rounding = 2,
   padding_h = 8,
 }
 
 M.ACTION_CHIP_TAG = {
-  bg_color = hexrgb("#8B7355"),  -- Warm amber for tags/names
-  text_color = hexrgb("#1a1a1a"),  -- Dark text
-  border_color = Colors.with_alpha(hexrgb("#000000"), 100),
+  bg_color = 0x8B7355FF,  -- Warm amber for tags/names
+  text_color = 0x1A1A1AFF,  -- Dark text
+  border_color = Colors.WithAlpha(0x000000FF, 100),
   rounding = 2,
   padding_h = 8,
 }
@@ -261,14 +260,14 @@ function M.build_button_config()
     bg_color = M.COLORS.BG_BASE,
     bg_hover_color = M.COLORS.BG_HOVER,
     bg_active_color = M.COLORS.BG_ACTIVE,
-    bg_disabled_color = Colors.adjust_lightness(M.COLORS.BG_BASE, -0.05),
+    bg_disabled_color = Colors.AdjustLightness(M.COLORS.BG_BASE, -0.05),
 
     -- Borders
     border_outer_color = M.COLORS.BORDER_OUTER,
     border_inner_color = M.COLORS.BORDER_INNER,
     border_hover_color = M.COLORS.BORDER_HOVER,
     border_active_color = M.COLORS.BORDER_ACTIVE,
-    border_inner_disabled_color = Colors.adjust_lightness(M.COLORS.BORDER_INNER, -0.05),
+    border_inner_disabled_color = Colors.AdjustLightness(M.COLORS.BORDER_INNER, -0.05),
     border_outer_disabled_color = M.COLORS.BORDER_OUTER,
 
     -- Text
@@ -285,14 +284,14 @@ function M.build_button_config()
 end
 
 --- Build colored button config (danger, success, warning, info)
---- @param variant string "danger", "success", "warning", or "info"
+--- @param variant string 'danger', 'success', 'warning', or 'info'
 --- @return table Button configuration with colored theme
 function M.build_colored_button_config(variant)
-  local prefix = "BUTTON_" .. string.upper(variant) .. "_"
-  local bg = M.COLORS[prefix .. "BG"]
-  local hover = M.COLORS[prefix .. "HOVER"]
-  local active = M.COLORS[prefix .. "ACTIVE"]
-  local text = M.COLORS[prefix .. "TEXT"]
+  local prefix = 'BUTTON_' .. string.upper(variant) .. '_'
+  local bg = M.COLORS[prefix .. 'BG']
+  local hover = M.COLORS[prefix .. 'HOVER']
+  local active = M.COLORS[prefix .. 'ACTIVE']
+  local text = M.COLORS[prefix .. 'TEXT']
 
   -- Fallback to default button if variant not found
   if not bg then return M.build_button_config() end
@@ -302,21 +301,21 @@ function M.build_colored_button_config(variant)
     bg_color = bg,
     bg_hover_color = hover,
     bg_active_color = active,
-    bg_disabled_color = Colors.adjust_saturation(Colors.adjust_lightness(bg, -0.1), -0.4),
+    bg_disabled_color = Colors.AdjustSaturation(Colors.AdjustLightness(bg, -0.1), -0.4),
 
     -- Borders (derived from bg)
-    border_outer_color = Colors.adjust_lightness(bg, -0.18),
-    border_inner_color = Colors.adjust_lightness(bg, 0.12),
-    border_hover_color = Colors.adjust_lightness(hover, 0.10),
-    border_active_color = Colors.adjust_lightness(active, -0.10),
-    border_inner_disabled_color = Colors.adjust_lightness(bg, -0.15),
-    border_outer_disabled_color = Colors.adjust_lightness(bg, -0.20),
+    border_outer_color = Colors.AdjustLightness(bg, -0.18),
+    border_inner_color = Colors.AdjustLightness(bg, 0.12),
+    border_hover_color = Colors.AdjustLightness(hover, 0.10),
+    border_active_color = Colors.AdjustLightness(active, -0.10),
+    border_inner_disabled_color = Colors.AdjustLightness(bg, -0.15),
+    border_outer_disabled_color = Colors.AdjustLightness(bg, -0.20),
 
     -- Text
     text_color = text,
     text_hover_color = text,
     text_active_color = text,
-    text_disabled_color = Colors.adjust_lightness(text, -0.3),
+    text_disabled_color = Colors.AdjustLightness(text, -0.3),
 
     -- Geometry
     padding_x = 10,
@@ -355,8 +354,8 @@ function M.build_dropdown_config()
 
     -- Popup menu
     popup = {
-      bg_color = Colors.adjust_lightness(M.COLORS.BG_BASE, -0.02),
-      border_color = Colors.adjust_lightness(M.COLORS.BORDER_OUTER, -0.05),
+      bg_color = Colors.AdjustLightness(M.COLORS.BG_BASE, -0.02),
+      border_color = Colors.AdjustLightness(M.COLORS.BORDER_OUTER, -0.05),
       item_bg_color = M.COLORS.BG_TRANSPARENT,
       item_hover_color = M.COLORS.BG_HOVER,
       item_active_color = M.COLORS.BG_ACTIVE,
@@ -377,7 +376,7 @@ end
 --- @return table Search input configuration
 function M.build_search_input_config()
   return {
-    placeholder = "Search...",
+    placeholder = 'Search...',
     fade_speed = 8.0,
     bg_color = M.COLORS.BG_BASE,
     bg_hover_color = M.COLORS.BG_HOVER,
@@ -422,54 +421,54 @@ M.DYNAMIC_PRESETS = {
   -- Toggle button variants (ON state colors)
   BUTTON_TOGGLE_TEAL = {
     -- ON state (key mappings to M.COLORS)
-    bg_on_color = "ACCENT_TEAL",
-    bg_on_hover_color = "ACCENT_TEAL_BRIGHT",
-    bg_on_active_color = "ACCENT_TEAL",
-    border_inner_on_color = "ACCENT_TEAL_BRIGHT",
-    border_inner_on_hover_color = "ACCENT_TEAL_BRIGHT",
-    border_inner_on_active_color = "ACCENT_TEAL",
-    text_on_color = "ACCENT_TEAL_BRIGHT",
-    text_on_hover_color = "ACCENT_TEAL_BRIGHT",
-    text_on_active_color = "ACCENT_TEAL_BRIGHT",
+    bg_on_color = 'ACCENT_TEAL',
+    bg_on_hover_color = 'ACCENT_TEAL_BRIGHT',
+    bg_on_active_color = 'ACCENT_TEAL',
+    border_inner_on_color = 'ACCENT_TEAL_BRIGHT',
+    border_inner_on_hover_color = 'ACCENT_TEAL_BRIGHT',
+    border_inner_on_active_color = 'ACCENT_TEAL',
+    text_on_color = 'ACCENT_TEAL_BRIGHT',
+    text_on_hover_color = 'ACCENT_TEAL_BRIGHT',
+    text_on_active_color = 'ACCENT_TEAL_BRIGHT',
   },
 
   BUTTON_TOGGLE_WHITE = {
-    bg_on_color = "ACCENT_WHITE",
-    bg_on_hover_color = "ACCENT_WHITE_BRIGHT",
-    bg_on_active_color = "ACCENT_WHITE",
-    border_inner_on_color = "ACCENT_WHITE_BRIGHT",
-    border_inner_on_hover_color = "ACCENT_WHITE_BRIGHT",
-    border_inner_on_active_color = "ACCENT_WHITE",
-    text_on_color = "TEXT_BRIGHT",
-    text_on_hover_color = "TEXT_BRIGHT",
-    text_on_active_color = "TEXT_BRIGHT",
+    bg_on_color = 'ACCENT_WHITE',
+    bg_on_hover_color = 'ACCENT_WHITE_BRIGHT',
+    bg_on_active_color = 'ACCENT_WHITE',
+    border_inner_on_color = 'ACCENT_WHITE_BRIGHT',
+    border_inner_on_hover_color = 'ACCENT_WHITE_BRIGHT',
+    border_inner_on_active_color = 'ACCENT_WHITE',
+    text_on_color = 'TEXT_BRIGHT',
+    text_on_hover_color = 'TEXT_BRIGHT',
+    text_on_active_color = 'TEXT_BRIGHT',
   },
 
   BUTTON_TOGGLE_TRANSPARENT = {
-    bg_on_color = "ACCENT_TRANSPARENT",
-    bg_on_hover_color = "ACCENT_TRANSPARENT",
-    bg_on_active_color = "ACCENT_TRANSPARENT",
-    border_inner_on_color = "ACCENT_WHITE_BRIGHT",
-    border_inner_on_hover_color = "TEXT_BRIGHT",
-    border_inner_on_active_color = "ACCENT_WHITE",
-    text_on_color = "TEXT_BRIGHT",
-    text_on_hover_color = "TEXT_BRIGHT",
-    text_on_active_color = "TEXT_BRIGHT",
+    bg_on_color = 'ACCENT_TRANSPARENT',
+    bg_on_hover_color = 'ACCENT_TRANSPARENT',
+    bg_on_active_color = 'ACCENT_TRANSPARENT',
+    border_inner_on_color = 'ACCENT_WHITE_BRIGHT',
+    border_inner_on_hover_color = 'TEXT_BRIGHT',
+    border_inner_on_active_color = 'ACCENT_WHITE',
+    text_on_color = 'TEXT_BRIGHT',
+    text_on_hover_color = 'TEXT_BRIGHT',
+    text_on_active_color = 'TEXT_BRIGHT',
   },
 
   -- Action chips (colored rectangles with dark text)
   ACTION_CHIP_WILDCARD = {
-    bg_color = hexrgb("#5B8FB9"),  -- Direct value (not theme-dependent)
-    text_color = hexrgb("#1a1a1a"),
-    border_color = Colors.with_alpha(hexrgb("#000000"), 100),
+    bg_color = 0x5B8FB9FF,  -- Direct value (not theme-dependent)
+    text_color = 0x1A1A1AFF,
+    border_color = Colors.WithAlpha(0x000000FF, 100),
     rounding = 2,
     padding_h = 8,
   },
 
   ACTION_CHIP_TAG = {
-    bg_color = hexrgb("#8B7355"),
-    text_color = hexrgb("#1a1a1a"),
-    border_color = Colors.with_alpha(hexrgb("#000000"), 100),
+    bg_color = 0x8B7355FF,
+    text_color = 0x1A1A1AFF,
+    border_color = Colors.WithAlpha(0x000000FF, 100),
     rounding = 2,
     padding_h = 8,
   },
@@ -479,7 +478,7 @@ M.DYNAMIC_PRESETS = {
 M.DYNAMIC_PRESETS.BUTTON_TOGGLE_ACCENT = M.DYNAMIC_PRESETS.BUTTON_TOGGLE_TEAL
 
 --- Apply a dynamic preset to a config
---- Resolves string keys (e.g., "ACCENT_TEAL") to actual colors from M.COLORS
+--- Resolves string keys (e.g., 'ACCENT_TEAL') to actual colors from M.COLORS
 --- @param config table Config to modify
 --- @param preset_name string Preset name from M.DYNAMIC_PRESETS
 function M.apply_dynamic_preset(config, preset_name)
@@ -487,7 +486,7 @@ function M.apply_dynamic_preset(config, preset_name)
   if not preset then return end
 
   for key, value in pairs(preset) do
-    if type(value) == "string" then
+    if type(value) == 'string' then
       -- String value = key into M.COLORS
       config[key] = M.COLORS[value]
     else
@@ -503,8 +502,8 @@ end
 
 -- Get state-based color (normal, hover, active)
 function M.get_state_color(colors, is_hovered, is_active, color_key)
-  local active_key = color_key .. "_active"
-  local hover_key = color_key .. "_hover"
+  local active_key = color_key .. '_active'
+  local hover_key = color_key .. '_hover'
 
   if is_active and colors[active_key] then
     return colors[active_key]

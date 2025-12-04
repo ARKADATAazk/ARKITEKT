@@ -2,9 +2,8 @@
 -- TemplateBrowser/ui/tooltips.lua
 -- Tooltip configuration and utilities
 
-local Strings = require('TemplateBrowser.defs.strings')
-local Defaults = require('TemplateBrowser.defs.defaults')
-local TrackParser = require('TemplateBrowser.domain.template.track_parser')
+local Strings = require('TemplateBrowser.config.strings')
+local Defaults = require('TemplateBrowser.config.defaults')
 local Stats = require('TemplateBrowser.domain.template.stats')
 
 local M = {}
@@ -13,12 +12,29 @@ local M = {}
 M.TOOLTIPS = Strings.TOOLTIPS
 M.CONFIG = Defaults.TOOLTIP
 
--- Track tree cache (in-memory, keyed by template path)
-local track_tree_cache = {}
+-- Tooltip color scheme
+local COLORS = {
+  header = 0xFFFFFFFF,      -- White for section headers (Tracks:, VSTs:)
+  track_default = 0xCCDDFFFF, -- Light blue for tracks without color
+  vst = 0xE0A0FFFF,         -- Purple/magenta for VSTs
+  tag = 0xA0FFD0FF,         -- Mint/teal for tags
+  location = 0xB0B0B0FF,    -- Grey for location
+  stats = 0x909090FF,       -- Dimmed for stats/dates
+  notes = 0xA0A0A0FF,       -- Grey for notes
+}
 
--- Clear track tree cache (call when templates are rescanned)
-function M.clear_track_cache()
-  track_tree_cache = {}
+-- Lighten a color for text (blend toward white)
+local function lighten_color(color, amount)
+  if not color then return nil end
+  amount = amount or 0.4
+  local r = math.floor(color / 0x1000000) % 256
+  local g = math.floor(color / 0x10000) % 256
+  local b = math.floor(color / 0x100) % 256
+  local a = color % 256
+  r = math.floor(r + (255 - r) * amount)
+  g = math.floor(g + (255 - g) * amount)
+  b = math.floor(b + (255 - b) * amount)
+  return r * 0x1000000 + g * 0x10000 + b * 0x100 + a
 end
 
 -- Show a tooltip if mouse is hovering
@@ -43,11 +59,16 @@ function M.show(ctx, ImGui, tooltip_id, custom_text)
   return false
 end
 
+-- Cached indent strings to avoid repeated concatenation
+local INDENT_CACHE = { [0] = '' }
+for i = 1, 10 do INDENT_CACHE[i] = INDENT_CACHE[i-1] .. '  ' end
+
 -- Show tooltip for a template with detailed information
 function M.show_template_info(ctx, ImGui, template, metadata)
   if not template then return false end
 
-  if ImGui.IsItemHovered(ctx, ImGui.HoveredFlags_DelayNormal) then
+  -- Use DelayShort for faster tooltip appearance
+  if ImGui.IsItemHovered(ctx, ImGui.HoveredFlags_DelayShort) then
     local tmpl_meta = metadata and metadata.templates[template.uuid]
 
     ImGui.BeginTooltip(ctx)
@@ -57,59 +78,79 @@ function M.show_template_info(ctx, ImGui, template, metadata)
     ImGui.Text(ctx, template.name)
     ImGui.Separator(ctx)
 
-    -- Track tree (lazy-loaded and cached)
-    local track_count = template.track_count or 1
-    if track_count > 0 then
-      -- Get or parse track tree
-      local track_tree = track_tree_cache[template.path]
-      if track_tree == nil then
-        -- Parse on first hover (nil means not yet parsed)
-        track_tree = TrackParser.parse_track_tree(template.path) or false
-        track_tree_cache[template.path] = track_tree
+    -- Track tree (from cached data - no file I/O on hover)
+    local tracks = template.tracks or (tmpl_meta and tmpl_meta.tracks)
+    local track_count = template.track_count or (tracks and #tracks) or 1
+
+    if tracks and #tracks > 0 then
+      local num_tracks = #tracks
+      ImGui.TextColored(ctx, COLORS.header, 'Tracks: ' .. num_tracks)
+      local max_display = 8
+      local dl = ImGui.GetWindowDrawList(ctx)
+      local text_height = ImGui.GetTextLineHeight(ctx)
+      local swatch_size = text_height - 4
+
+      -- Pre-compute "is_last" flags in single pass
+      local is_last_at_depth = {}
+      for i = num_tracks, 1, -1 do
+        local d = tracks[i].depth
+        if not is_last_at_depth[d] then
+          is_last_at_depth[d] = i
+        end
       end
 
-      if track_tree and #track_tree > 0 then
-        ImGui.Text(ctx, string.format("Tracks: %d", #track_tree))
-        -- Show track tree with indentation (limit to 8 tracks for tooltip)
-        local max_display = 8
-        for i, track in ipairs(track_tree) do
-          if i > max_display then
-            ImGui.TextDisabled(ctx, string.format("  ... +%d more", #track_tree - max_display))
-            break
-          end
-          -- Indent based on depth, add folder icon for folder tracks
-          local indent = string.rep("  ", track.depth)
-          local icon = track.is_folder and "▸ " or "• "
-          ImGui.TextDisabled(ctx, indent .. icon .. track.name)
+      for i, track in ipairs(tracks) do
+        if i > max_display then
+          ImGui.TextColored(ctx, COLORS.stats, '  ... +' .. (num_tracks - max_display) .. ' more')
+          break
         end
-      elseif track_count > 1 then
-        -- Fallback if parsing failed but we know there are multiple tracks
-        ImGui.Text(ctx, string.format("Tracks: %d", track_count))
+
+        local depth = track.depth
+        local indent = INDENT_CACHE[depth] or INDENT_CACHE[10]
+        local tree_char = depth > 0 and (is_last_at_depth[depth] == i and '└ ' or '├ ') or ''
+        local folder_icon = track.is_folder and '▼ ' or ''
+        local text_color = track.color and lighten_color(track.color, 0.3) or COLORS.track_default
+
+        -- Draw color swatch inline if track has color
+        if track.color then
+          local cx, cy = ImGui.GetCursorScreenPos(ctx)
+          ImGui.DrawList_AddRectFilled(dl, cx + 2, cy + 2, cx + 2 + swatch_size, cy + 2 + swatch_size, track.color)
+          ImGui.Dummy(ctx, swatch_size + 6, 1)
+          ImGui.SameLine(ctx)
+          ImGui.TextColored(ctx, text_color, indent .. tree_char .. folder_icon .. track.name)
+        else
+          ImGui.TextColored(ctx, text_color, '  ' .. indent .. tree_char .. folder_icon .. track.name)
+        end
       end
+    elseif track_count > 1 then
+      -- Fallback to just showing count if no track tree cached yet
+      ImGui.TextColored(ctx, COLORS.header, string.format('Tracks: %d', track_count))
     end
 
     -- Location
-    if template.folder and template.folder ~= "Root" and template.folder ~= "" then
-      ImGui.Text(ctx, "Location: " .. template.folder)
+    if template.folder and template.folder ~= 'Root' and template.folder ~= '' then
+      ImGui.TextColored(ctx, COLORS.location, 'Location: ' .. template.folder)
     end
 
     -- VSTs
     if template.fx and #template.fx > 0 then
-      ImGui.Text(ctx, string.format("VSTs: %d", #template.fx))
+      ImGui.TextColored(ctx, COLORS.header, string.format('VSTs: %d', #template.fx))
       if #template.fx <= 5 then
         ImGui.Indent(ctx, 10)
         for _, fx_name in ipairs(template.fx) do
-          ImGui.BulletText(ctx, fx_name)
+          ImGui.TextColored(ctx, COLORS.vst, '• ' .. fx_name)
         end
         ImGui.Unindent(ctx, 10)
       else
-        ImGui.Text(ctx, "  " .. table.concat(template.fx, ", ", 1, 3) .. string.format("... +%d more", #template.fx - 3))
+        ImGui.TextColored(ctx, COLORS.vst, '  ' .. table.concat(template.fx, ', ', 1, 3) .. string.format('... +%d more', #template.fx - 3))
       end
     end
 
     -- Tags
     if tmpl_meta and tmpl_meta.tags and #tmpl_meta.tags > 0 then
-      ImGui.Text(ctx, "Tags: " .. table.concat(tmpl_meta.tags, ", "))
+      ImGui.TextColored(ctx, COLORS.header, 'Tags: ')
+      ImGui.SameLine(ctx)
+      ImGui.TextColored(ctx, COLORS.tag, table.concat(tmpl_meta.tags, ', '))
     end
 
     -- Usage stats (enhanced with time-based analysis)
@@ -119,31 +160,33 @@ function M.show_template_info(ctx, ImGui, template, metadata)
         -- Use stats module for rich summary
         local stats = Stats.calculate_stats(usage_history)
         local summary = Stats.format_summary(stats)
-        ImGui.Text(ctx, "Usage: " .. summary)
+        ImGui.TextColored(ctx, COLORS.stats, 'Usage: ' .. summary)
       elseif tmpl_meta.usage_count and tmpl_meta.usage_count > 0 then
         -- Fallback for old data without history
-        ImGui.Text(ctx, string.format("Used: %d times", tmpl_meta.usage_count))
+        ImGui.TextColored(ctx, COLORS.stats, string.format('Used: %d times', tmpl_meta.usage_count))
       end
 
       if tmpl_meta.last_used then
-        local last_used_date = os.date("%Y-%m-%d %H:%M", tmpl_meta.last_used)
-        ImGui.Text(ctx, "Last used: " .. last_used_date)
+        local last_used_date = os.date('%Y-%m-%d %H:%M', tmpl_meta.last_used)
+        ImGui.TextColored(ctx, COLORS.stats, 'Last used: ' .. last_used_date)
       end
 
       if tmpl_meta.created then
-        local created_date = os.date("%Y-%m-%d", tmpl_meta.created)
-        ImGui.Text(ctx, "Added: " .. created_date)
+        local created_date = os.date('%Y-%m-%d', tmpl_meta.created)
+        ImGui.TextColored(ctx, COLORS.stats, 'Added: ' .. created_date)
       end
     end
 
     -- Notes preview
-    if tmpl_meta and tmpl_meta.notes and tmpl_meta.notes ~= "" then
+    if tmpl_meta and tmpl_meta.notes and tmpl_meta.notes ~= '' then
       ImGui.Separator(ctx)
       local preview = tmpl_meta.notes
       if #preview > 100 then
-        preview = preview:sub(1, 100) .. "..."
+        preview = preview:sub(1, 100) .. '...'
       end
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, COLORS.notes)
       ImGui.TextWrapped(ctx, preview)
+      ImGui.PopStyleColor(ctx)
     end
 
     ImGui.PopTextWrapPos(ctx)
@@ -166,19 +209,19 @@ function M.show_folder_info(ctx, ImGui, folder_node, templates_count)
     ImGui.Separator(ctx)
 
     if folder_node.is_virtual then
-      ImGui.Text(ctx, "Type: Virtual Folder")
+      ImGui.Text(ctx, 'Type: Virtual Folder')
       if folder_node.template_refs then
-        ImGui.Text(ctx, string.format("Templates: %d", #folder_node.template_refs))
+        ImGui.Text(ctx, string.format('Templates: %d', #folder_node.template_refs))
       end
     else
-      ImGui.Text(ctx, "Type: Physical Folder")
+      ImGui.Text(ctx, 'Type: Physical Folder')
       if templates_count then
-        ImGui.Text(ctx, string.format("Templates: %d", templates_count))
+        ImGui.Text(ctx, string.format('Templates: %d', templates_count))
       end
     end
 
-    if folder_node.path and folder_node.path ~= "" then
-      ImGui.Text(ctx, "Path: " .. folder_node.path)
+    if folder_node.path and folder_node.path ~= '' then
+      ImGui.Text(ctx, 'Path: ' .. folder_node.path)
     end
 
     ImGui.PopTextWrapPos(ctx)

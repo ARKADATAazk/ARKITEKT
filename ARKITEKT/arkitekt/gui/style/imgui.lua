@@ -3,18 +3,17 @@
 -- ImGui theme overrides and base styling
 -- Reads colors dynamically from Theme.COLORS for unified theming
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 
 local M = {}
-local hexrgb = Colors.hexrgb
 local style_color_stack = {}
 
 -- Static colors that don't change with theme
 local STATIC = {
-  transparent = hexrgb("#00000000"),
-  black = hexrgb("#000000FF"),
-  white = hexrgb("#FFFFFFFF"),
+  transparent = 0x00000000,
+  black = 0x000000FF,
+  white = 0xFFFFFFFF,
 }
 
 function M.with_alpha(col, a)
@@ -25,7 +24,7 @@ end
 local Theme
 local function get_theme()
   if not Theme then
-    Theme = require('arkitekt.core.theme')
+    Theme = require('arkitekt.theme')
   end
   return Theme
 end
@@ -195,11 +194,11 @@ M.palette = setmetatable({}, {
     -- Map palette names to themed colors
     -- Chrome elements (grey_05-08) use BG_CHROME (significantly darker than content)
     local mapping = {
-      white = hexrgb("#FFFFFFFF"),
-      black = hexrgb("#000000FF"),
+      white = 0xFFFFFFFF,
+      black = 0x000000FF,
       -- Very dark greys map to chrome colors (titlebar/statusbar)
-      grey_05 = Colors.adjust_lightness(T.COLORS.BG_CHROME, -0.02),
-      grey_06 = Colors.adjust_lightness(T.COLORS.BG_CHROME, -0.01),
+      grey_05 = Colors.AdjustLightness(T.COLORS.BG_CHROME, -0.02),
+      grey_06 = Colors.AdjustLightness(T.COLORS.BG_CHROME, -0.01),
       grey_07 = T.COLORS.BG_CHROME,
       grey_08 = T.COLORS.BG_CHROME,  -- statusbar bg
       -- Lighter greys map to content/panel colors

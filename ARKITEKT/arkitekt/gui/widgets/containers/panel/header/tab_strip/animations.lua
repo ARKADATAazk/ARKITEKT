@@ -2,10 +2,8 @@
 -- arkitekt/gui/widgets/containers/panel/header/tab_strip/animations.lua
 -- Tab animation logic: position tracking, slide animations, drag reorder
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
-
 local M = {}
 
 -- Animation constants
@@ -45,7 +43,7 @@ function M.init_tab_positions(state, tabs, start_x, ctx, config, available_width
   for i, tab in ipairs(tabs) do
     local tab_id = key_fn(tab)
     if not state.tab_positions[tab_id] then
-      local tab_width = tab_widths[i] or calculate_tab_width(ctx, tab.label or "Tab", config, tab.chip_color ~= nil)
+      local tab_width = tab_widths[i] or calculate_tab_width(ctx, tab.label or 'Tab', config, tab.chip_color ~= nil)
 
       state.tab_positions[tab_id] = {
         current_x = cursor_x,
@@ -86,7 +84,7 @@ function M.update_tab_positions(ctx, state, config, tabs, start_x, available_wid
 
   for i, tab in ipairs(tabs) do
     local tab_id = key_fn(tab)
-    local tab_width = tab_widths[i] or calculate_tab_width(ctx, tab.label or "Tab", config, tab.chip_color ~= nil)
+    local tab_width = tab_widths[i] or calculate_tab_width(ctx, tab.label or 'Tab', config, tab.chip_color ~= nil)
     local pos = state.tab_positions[tab_id]
 
     if not pos then
@@ -173,7 +171,7 @@ function M.start_inline_edit(state, id, initial_text)
   state.editing_state = {
     active = true,
     id = id,
-    text = initial_text or "",
+    text = initial_text or '',
     focus_next_frame = true,
     frames_active = 0,
   }
@@ -220,10 +218,10 @@ function M.handle_inline_edit_input(ctx, dl, state, id, x, y, width, height, chi
   local bg_color
   if chip_color then
     -- Create darker version of chip color for backdrop
-    bg_color = Colors.adjust_brightness(chip_color, 0.15)
-    bg_color = Colors.with_opacity(bg_color, 0.88)
+    bg_color = Colors.AdjustBrightness(chip_color, 0.15)
+    bg_color = Colors.WithOpacity(bg_color, 0.88)
   else
-    bg_color = hexrgb("#1A1A1AE0")
+    bg_color = 0x1A1A1AE0
   end
 
   -- Draw backdrop with rounded corners
@@ -242,26 +240,26 @@ function M.handle_inline_edit_input(ctx, dl, state, id, x, y, width, height, chi
   -- Calculate text and selection colors
   local text_color, selection_color
   if chip_color then
-    text_color = Colors.adjust_brightness(chip_color, 1.8)
-    selection_color = Colors.adjust_brightness(chip_color, 0.8)
-    selection_color = Colors.with_opacity(selection_color, 0.67)
+    text_color = Colors.AdjustBrightness(chip_color, 1.8)
+    selection_color = Colors.AdjustBrightness(chip_color, 0.8)
+    selection_color = Colors.WithOpacity(selection_color, 0.67)
   else
-    text_color = hexrgb("#FFFFFFDD")
-    selection_color = hexrgb("#4444AAAA")
+    text_color = 0xFFFFFFDD
+    selection_color = 0x4444AAAA
   end
 
   -- Style the input field to be transparent
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x00000000)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
   ImGui.PushStyleColor(ctx, ImGui.Col_TextSelectedBg, selection_color)
 
   -- Draw input field
   local changed, new_text = ImGui.InputText(
     ctx,
-    "##tab_inline_edit_" .. id,
+    '##tab_inline_edit_' .. id,
     edit_state.text,
     ImGui.InputTextFlags_AutoSelectAll
   )
@@ -311,7 +309,7 @@ function M.handle_drag_reorder(ctx, state, tabs, config, tabs_start_x, available
   end
 
   local dragged_tab = tabs[state.dragging_tab.index]
-  local dragged_width = tab_widths[state.dragging_tab.index] or calculate_tab_width(ctx, dragged_tab.label or "Tab", config, dragged_tab.chip_color ~= nil)
+  local dragged_width = tab_widths[state.dragging_tab.index] or calculate_tab_width(ctx, dragged_tab.label or 'Tab', config, dragged_tab.chip_color ~= nil)
   local spacing = config.spacing or 0
 
   -- Clamp drag position to stay within bounds
@@ -329,7 +327,7 @@ function M.handle_drag_reorder(ctx, state, tabs, config, tabs_start_x, available
 
   for i = 1, #tabs do
     local tab = tabs[i]
-    local tab_w = tab_widths[i] or calculate_tab_width(ctx, tab.label or "Tab", config, tab.chip_color ~= nil)
+    local tab_w = tab_widths[i] or calculate_tab_width(ctx, tab.label or 'Tab', config, tab.chip_color ~= nil)
 
     positions[i] = {
       index = i,

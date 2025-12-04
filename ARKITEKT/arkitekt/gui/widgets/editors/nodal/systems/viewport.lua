@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/nodal/systems/viewport.lua
 -- Viewport controller with pan/zoom for node canvas
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 
@@ -189,7 +189,7 @@ function M.is_point_in_viewport(viewport, x, y)
          y <= viewport.bounds_y + viewport.bounds_h
 end
 
-function M.update(viewport, ctx)
+function M.Update(viewport, ctx)
   local mx, my = ImGui.GetMousePos(ctx)
   
   if not mx or not my then
@@ -235,7 +235,7 @@ function M.get_visible_world_bounds(viewport)
   return world_x1, world_y1, world_x2 - world_x1, world_y2 - world_y1
 end
 
-function M.reset(viewport)
+function M.Reset(viewport)
   viewport.offset_x = 0
   viewport.offset_y = 0
   viewport.scale = 1.0

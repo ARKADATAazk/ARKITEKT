@@ -4,12 +4,10 @@
 -- Uses unified opts-based API
 -- Includes search input variant
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
-
-local hexrgb = Colors.hexrgb
 
 local M = {}
 
@@ -19,7 +17,7 @@ local M = {}
 
 local DEFAULTS = {
   -- Identity
-  id = "field",
+  id = 'field',
 
   -- Position (nil = use cursor)
   x = nil,
@@ -30,13 +28,13 @@ local DEFAULTS = {
   height = 24,
 
   -- State
-  text = "",
-  disabled = false,
+  text = '',
+  is_disabled = false,
 
   -- Content
   hint = nil,
   placeholder = nil,  -- Alias for hint (search compatibility)
-  multiline = false,
+  is_multiline = false,
   flags = nil,  -- ImGui.InputTextFlags_*
 
   -- Style
@@ -45,7 +43,7 @@ local DEFAULTS = {
   padding_y = 4,
   fade_speed = 8.0,
   border_thickness = 1,
-  preset = nil,  -- "search" or custom preset table
+  preset = nil,  -- 'search' or custom preset table
 
   -- Colors
   bg_color = nil,
@@ -70,7 +68,7 @@ local DEFAULTS = {
   tooltip = nil,
 
   -- Cursor control
-  advance = "vertical",
+  advance = 'vertical',
 
   -- Draw list
   draw_list = nil,
@@ -86,7 +84,7 @@ local field_state = {}
 local function get_or_create_state(id)
   if not field_state[id] then
     field_state[id] = {
-      text = "",
+      text = '',
       focused = false,
       hover_alpha = 0.0,
     }
@@ -103,9 +101,9 @@ local function resolve_config(opts)
   local config = Theme.build_search_input_config()
 
   -- Apply preset if specified
-  if opts.preset == "search" then
+  if opts.preset == 'search' then
     -- Already using search_input_config as base
-  elseif type(opts.preset) == "table" then
+  elseif type(opts.preset) == 'table' then
     for k, v in pairs(opts.preset) do
       config[k] = v
     end
@@ -167,8 +165,8 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
     text_color = config.text_color
   elseif state.hover_alpha > 0.01 then
     -- Hover with smooth lerp (like combo/dropdown)
-    bg_color = Colors.lerp(config.bg_color, config.bg_hover_color or config.bg_color, state.hover_alpha)
-    border_inner = Colors.lerp(
+    bg_color = Colors.Lerp(config.bg_color, config.bg_hover_color or config.bg_color, state.hover_alpha)
+    border_inner = Colors.Lerp(
       config.border_inner_color or config.border_color,
       config.border_hover_color or config.border_inner_color,
       state.hover_alpha
@@ -212,14 +210,15 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   ImGui.PushItemWidth(ctx, width - padding_x * 2)
 
   -- Make input background transparent
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#00000000"))
+  local C = Theme.COLORS
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, C.BG_TRANSPARENT)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, C.BG_TRANSPARENT)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, C.BG_TRANSPARENT)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, C.BG_TRANSPARENT)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
 
   local changed, new_text
-  local input_id = "##" .. id
+  local input_id = '##' .. id
 
   -- Handle disabled state
   if is_disabled then
@@ -229,7 +228,7 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   -- Get hint text (support both hint and placeholder)
   local hint_text = config.hint or config.placeholder
 
-  if config.multiline then
+  if config.is_multiline then
     local input_height = height - padding_y * 2
     changed, new_text = ImGui.InputTextMultiline(
       ctx,
@@ -284,19 +283,19 @@ end
 --- Draw a text field widget
 --- Supports both positional and opts-based parameters:
 --- - Positional: Ark.InputText(ctx, label, text, width)
---- - Opts table: Ark.InputText(ctx, {label = "...", text = "...", width = 200, ...})
+--- - Opts table: Ark.InputText(ctx, {label = '...', text = '...', width = 200, ...})
 --- @param ctx userdata ImGui context
 --- @param label_or_opts string|table Label string or opts table
 --- @param text string|nil Current text (positional only)
 --- @param width number|nil Field width (positional only)
 --- @return table Result { changed, value, width, height, hovered, active }
-function M.draw(ctx, label_or_opts, text, width)
+function M.Draw(ctx, label_or_opts, text, width)
   -- Hybrid parameter detection
   local opts
-  if type(label_or_opts) == "table" then
+  if type(label_or_opts) == 'table' then
     -- Opts table passed directly
     opts = label_or_opts
-  elseif type(label_or_opts) == "string" then
+  elseif type(label_or_opts) == 'string' then
     -- Positional params - map to opts
     opts = {
       label = label_or_opts,
@@ -312,16 +311,16 @@ function M.draw(ctx, label_or_opts, text, width)
   local config = resolve_config(opts)
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(ctx, opts, "field")
+  local unique_id = Base.resolve_id(ctx, opts, 'field')
 
   -- Get or create state
   local state = get_or_create_state(unique_id)
 
   -- Support get_value callback pattern for panel integration
   -- This allows external state management (e.g., app_state.search_query)
-  if opts.get_value and type(opts.get_value) == "function" then
-    state.text = opts.get_value() or ""
-  elseif opts.text and state.text == "" then
+  if opts.get_value and type(opts.get_value) == 'function' then
+    state.text = opts.get_value() or ''
+  elseif opts.text and state.text == '' then
     -- Set initial text if provided and state is empty
     state.text = opts.text
   end
@@ -334,8 +333,12 @@ function M.draw(ctx, label_or_opts, text, width)
   local width = opts.width or 200
   local height = opts.height or 24
 
+  -- Compute disabled state (opts override or context stack)
+  local actx = Base.get_context(ctx)
+  local is_disabled = opts.is_disabled or actx:is_disabled()
+
   -- Render text field
-  local changed, is_hovered = render_text_field(ctx, dl, x, y, width, height, config, state, unique_id, opts.disabled, opts.corner_rounding)
+  local changed, is_hovered = render_text_field(ctx, dl, x, y, width, height, config, state, unique_id, is_disabled, opts.corner_rounding)
 
   -- Handle tooltip
   if is_hovered and opts.tooltip then
@@ -360,69 +363,52 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result
-function M.search(ctx, opts)
+function M.Search(ctx, opts)
   opts = opts or {}
-  opts.preset = opts.preset or "search"
-  opts.id = opts.id or "search"
-  return M.draw(ctx, opts)
+  opts.preset = opts.preset or 'search'
+  opts.id = opts.id or 'search'
+  return M.Draw(ctx, opts)
 end
 
 --- Get text value for a field
 --- @param id string Field identifier
 --- @return string Current text value
-function M.get_text(id)
+function M.GetText(id)
   if field_state[id] then
-    return field_state[id].text or ""
+    return field_state[id].text or ''
   end
-  return ""
+  return ''
 end
 
 --- Set text value for a field
 --- @param id string Field identifier
 --- @param text string New text value
-function M.set_text(id, text)
+function M.SetText(id, text)
   if not field_state[id] then
     field_state[id] = {
-      text = "",
+      text = '',
       focused = false,
       hover_alpha = 0.0,
     }
   end
-  field_state[id].text = text or ""
+  field_state[id].text = text or ''
 end
 
 --- Clear text for a field
 --- @param id string Field identifier
-function M.clear(id)
+function M.Clear(id)
   if field_state[id] then
-    field_state[id].text = ""
+    field_state[id].text = ''
   end
-end
-
--- ============================================================================
--- DEPRECATED / REMOVED FUNCTIONS
--- ============================================================================
-
---- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
-function M.draw_at_cursor(ctx, opts, id)
-  opts = opts or {}
-  if id then opts.id = id end
-  local result = M.draw(ctx, opts)
-  return result.value, result.changed
-end
-
---- @deprecated Cleanup is automatic via Base, no need to call manually
-function M.cleanup()
-  -- No-op: cleanup happens automatically via Base.cleanup_registry
 end
 
 -- ============================================================================
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.InputText(ctx, ...) → M.draw(ctx, ...)
+-- Make module callable: Ark.InputText(ctx, ...) → M.Draw(ctx, ...)
 return setmetatable(M, {
   __call = function(_, ctx, ...)
-    return M.draw(ctx, ...)
+    return M.Draw(ctx, ...)
   end
 })

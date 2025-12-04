@@ -2,10 +2,10 @@
 -- Arkitekt/gui/widgets/panel/header/init.lua
 -- Header coordinator - supports top and bottom positioning
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Layout = require('arkitekt.gui.widgets.containers.panel.header.layout')
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 local C = Theme.COLORS          -- Shared primitives
 local PC = Theme.build_panel_colors()   -- Panel-specific colors
 
@@ -56,19 +56,19 @@ end
 --- @param state table Panel state
 --- @param toolbar_cfg table Toolbar configuration (not config.header!)
 --- @param rounding number Corner rounding
---- @param position string|nil Position ("top" or "bottom"), defaults to toolbar_cfg.position or "top"
+--- @param position string|nil Position ('top' or 'bottom'), defaults to toolbar_cfg.position or 'top'
 --- @return number Height consumed
-function M.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, position)
+function M.Draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, position)
   if not toolbar_cfg or not toolbar_cfg.enabled then
     return 0
   end
 
-  -- Use explicit position parameter, fallback to config, default to "top"
-  position = position or toolbar_cfg.position or "top"
+  -- Use explicit position parameter, fallback to config, default to 'top'
+  position = position or toolbar_cfg.position or 'top'
 
   -- Determine corner flags based on position
   local corner_flags
-  if position == "bottom" then
+  if position == 'bottom' then
     corner_flags = ImGui.DrawFlags_RoundCornersBottom
   else
     corner_flags = ImGui.DrawFlags_RoundCornersTop
@@ -86,7 +86,7 @@ function M.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, position)
 
   -- Draw border (top or bottom depending on position)
   local border_color = toolbar_cfg.border_color or C.BORDER_OUTER
-  if position == "bottom" then
+  if position == 'bottom' then
     ImGui.DrawList_AddLine(
       dl, x, y, x + w, y,
       border_color,
@@ -119,7 +119,7 @@ end
 --- @param h number Height
 --- @param state table Panel state (MUST have _panel_id field)
 --- @param toolbar_cfg table Toolbar configuration (not config.header!)
---- @param position string|nil Position ("top" or "bottom"), stored in toolbar_cfg for downstream use
+--- @param position string|nil Position ('top' or 'bottom'), stored in toolbar_cfg for downstream use
 function M.draw_elements(ctx, dl, x, y, w, h, state, toolbar_cfg, position)
   if not toolbar_cfg or not toolbar_cfg.enabled then
     return
@@ -133,13 +133,13 @@ function M.draw_elements(ctx, dl, x, y, w, h, state, toolbar_cfg, position)
 
   -- Validate and ensure proper panel context
   -- Extract panel ID from state
-  local panel_id = (state and state.id) or "unknown_panel"
+  local panel_id = (state and state.id) or 'unknown_panel'
   state = ensure_panel_context(state, panel_id)
 
   -- Draw toolbar elements with validated state
   -- The layout engine will pass corner_rounding info to each element
   -- and elements will detect panel context via state._panel_id
-  Layout.draw(ctx, dl, x, y, w, h, state, toolbar_cfg)
+  Layout.Draw(ctx, dl, x, y, w, h, state, toolbar_cfg)
 end
 
 return M

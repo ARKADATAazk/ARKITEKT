@@ -2,9 +2,9 @@
 -- Demo: Theme Manager
 -- Test the new dynamic theme system with algorithmic palette generation
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local ThemeManager = require('arkitekt.core.theme_manager')
+local ThemeManager = require('arkitekt.theme.manager')
 local Style = require('arkitekt.gui.style')
 local Colors = require('arkitekt.core.colors')
 
@@ -13,7 +13,7 @@ local Colors = require('arkitekt.core.colors')
 -- ============================================================================
 
 local state = {
-  current_theme = "dark",
+  current_theme = 'dark',
   live_sync_enabled = false,
   show_color_values = false,
 }
@@ -25,7 +25,7 @@ local live_sync_fn = nil
 -- ============================================================================
 
 local function draw_theme_selector(ctx)
-  ImGui.Text(ctx, "Theme Presets:")
+  ImGui.Text(ctx, 'Theme Presets:')
   ImGui.Spacing(ctx)
 
   local themes = ThemeManager.get_theme_names()
@@ -33,10 +33,10 @@ local function draw_theme_selector(ctx)
   for _, theme_name in ipairs(themes) do
     local is_current = (theme_name == state.current_theme)
 
-    if Ark.Button.draw(ctx, {
+    if Ark.Button(ctx, {
       label = theme_name,
       width = 120,
-      preset_name = is_current and "BUTTON_TOGGLE_WHITE" or nil,
+      preset_name = is_current and 'BUTTON_TOGGLE_WHITE' or nil,
       is_toggled = is_current,
     }).clicked then
       ThemeManager.apply_theme(theme_name)
@@ -52,26 +52,26 @@ end
 local function draw_reaper_sync(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
-  ImGui.Text(ctx, "REAPER Integration:")
+  ImGui.Text(ctx, 'REAPER Integration:')
   ImGui.Spacing(ctx)
 
   -- Manual sync button
-  if Ark.Button.draw(ctx, {
-    label = "Sync with REAPER Theme",
+  if Ark.Button(ctx, {
+    label = 'Sync with REAPER Theme',
     width = 180,
   }).clicked then
     if ThemeManager.sync_with_reaper() then
-      state.current_theme = "REAPER"
+      state.current_theme = 'REAPER'
     end
   end
 
   ImGui.SameLine(ctx)
 
   -- Live sync toggle
-  local live_sync_result = Ark.Button.draw(ctx, {
-    label = "Live Sync",
+  local live_sync_result = Ark.Button(ctx, {
+    label = 'Live Sync',
     width = 100,
-    preset_name = "BUTTON_TOGGLE_TEAL",
+    preset_name = 'BUTTON_TOGGLE_TEAL',
     is_toggled = state.live_sync_enabled,
   })
 
@@ -86,7 +86,7 @@ local function draw_reaper_sync(ctx)
 
   if state.live_sync_enabled then
     ImGui.SameLine(ctx)
-    ImGui.TextColored(ctx, 0x4CAF50FF, "(Active)")
+    ImGui.TextColored(ctx, 0x4CAF50FF, '(Active)')
   end
 end
 
@@ -94,8 +94,8 @@ local function draw_color_preview(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  if Ark.Button.draw(ctx, {
-    label = state.show_color_values and "Hide Color Values" or "Show Color Values",
+  if Ark.Button(ctx, {
+    label = state.show_color_values and 'Hide Color Values' or 'Show Color Values',
     width = 160,
   }).clicked then
     state.show_color_values = not state.show_color_values
@@ -106,19 +106,19 @@ local function draw_color_preview(ctx)
   end
 
   ImGui.Spacing(ctx)
-  ImGui.Text(ctx, "Current Color Palette:")
+  ImGui.Text(ctx, 'Current Color Palette:')
   ImGui.Spacing(ctx)
 
   local colors = {
-    {"BG_BASE", "Background"},
-    {"BG_HOVER", "Background Hover"},
-    {"BG_ACTIVE", "Background Active"},
-    {"BORDER_OUTER", "Border Outer"},
-    {"BORDER_INNER", "Border Inner"},
-    {"TEXT_NORMAL", "Text Normal"},
-    {"TEXT_DIMMED", "Text Dimmed"},
-    {"ACCENT_PRIMARY", "Accent Primary"},
-    {"ACCENT_TEAL_BRIGHT", "Accent Bright"},
+    {'BG_BASE', 'Background'},
+    {'BG_HOVER', 'Background Hover'},
+    {'BG_ACTIVE', 'Background Active'},
+    {'BORDER_OUTER', 'Border Outer'},
+    {'BORDER_INNER', 'Border Inner'},
+    {'TEXT_NORMAL', 'Text Normal'},
+    {'TEXT_DIMMED', 'Text Dimmed'},
+    {'ACCENT_PRIMARY', 'Accent Primary'},
+    {'ACCENT_TEAL_BRIGHT', 'Accent Bright'},
   }
 
   for _, pair in ipairs(colors) do
@@ -135,8 +135,8 @@ local function draw_color_preview(ctx)
 
       -- Draw label and hex value
       ImGui.SameLine(ctx)
-      local r, g, b, a = Colors.rgba_to_components(color)
-      ImGui.Text(ctx, string.format("%s: #%02X%02X%02X%02X", label, r, g, b, a))
+      local r, g, b, a = Colors.RgbaToComponents(color)
+      ImGui.Text(ctx, string.format('%s: #%02X%02X%02X%02X', label, r, g, b, a))
     end
   end
 end
@@ -144,20 +144,20 @@ end
 local function draw_custom_theme(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
-  ImGui.Text(ctx, "Custom Theme Generator:")
+  ImGui.Text(ctx, 'Custom Theme Generator:')
   ImGui.Spacing(ctx)
-  ImGui.Text(ctx, "Pick a color to generate an entire theme from it")
+  ImGui.Text(ctx, 'Pick a color to generate an entire theme from it')
   ImGui.Spacing(ctx)
 
   -- TODO: Add color picker when we implement it
   -- For now, just show some example colors to click
   local example_colors = {
-    {Colors.hexrgb("#FF6B6BFF"), "Coral Red"},
-    {Colors.hexrgb("#4ECDC4FF"), "Turquoise"},
-    {Colors.hexrgb("#95E1D3FF"), "Mint"},
-    {Colors.hexrgb("#F38181FF"), "Pink"},
-    {Colors.hexrgb("#AA96DAFF"), "Purple"},
-    {Colors.hexrgb("#FCBAD3FF"), "Rose"},
+    {0xFF6B6BFF, 'Coral Red'},
+    {0x4ECDC4FF, 'Turquoise'},
+    {0x95E1D3FF, 'Mint'},
+    {0xF38181FF, 'Pink'},
+    {0xAA96DAFF, 'Purple'},
+    {0xFCBAD3FF, 'Rose'},
   }
 
   for _, pair in ipairs(example_colors) do
@@ -168,14 +168,14 @@ local function draw_custom_theme(ctx)
     local x, y = ImGui.GetCursorScreenPos(ctx)
 
     local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + 100, y + 30)
-    local bg_color = is_hovered and Colors.adjust_brightness(color, 1.2) or color
+    local bg_color = is_hovered and Colors.AdjustBrightness(color, 1.2) or color
 
     ImGui.DrawList_AddRectFilled(dl, x, y, x + 100, y + 30, bg_color, 2)
     ImGui.DrawList_AddRect(dl, x, y, x + 100, y + 30, 0x000000FF, 2, 0, 2)
 
     -- Text
     ImGui.SetCursorScreenPos(ctx, x + 5, y + 8)
-    local text_color = Colors.auto_text_color(color)
+    local text_color = Colors.AutoTextColor(color)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
     ImGui.Text(ctx, name)
     ImGui.PopStyleColor(ctx)
@@ -183,7 +183,7 @@ local function draw_custom_theme(ctx)
     -- Handle click
     if is_hovered and ImGui.IsMouseClicked(ctx, 0) then
       ThemeManager.generate_and_apply(color)
-      state.current_theme = "Custom: " .. name
+      state.current_theme = 'Custom: ' .. name
     end
 
     ImGui.Dummy(ctx, 100, 30)
@@ -215,14 +215,14 @@ local function main()
     return window_open
   end
 
-  ImGui.Text(ctx, "Dynamic Theme System with Algorithmic Palette Generation")
-  ImGui.Text(ctx, "Generate entire UI themes from 1-3 base colors!")
+  ImGui.Text(ctx, 'Dynamic Theme System with Algorithmic Palette Generation')
+  ImGui.Text(ctx, 'Generate entire UI themes from 1-3 base colors!')
   ImGui.Spacing(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
   -- Current theme indicator
-  ImGui.Text(ctx, "Current Theme: " .. state.current_theme)
+  ImGui.Text(ctx, 'Current Theme: ' .. state.current_theme)
   ImGui.Spacing(ctx)
 
   -- Theme selector

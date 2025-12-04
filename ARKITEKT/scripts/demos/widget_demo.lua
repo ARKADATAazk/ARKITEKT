@@ -6,62 +6,59 @@
 -- Auto-injected package path setup for relocated script
 
 -- Package path setup for relocated script
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
+local script_path = debug.getinfo(1, 'S').source:match('@?(.*)[\\/]') or ''
 local root_path = script_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
 
 -- Ensure root_path ends with a slash
-if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
+if not root_path:match('[\\/]$') then root_path = root_path .. '/' end
 
 -- Add both module search paths
-local arkitekt_path= root_path .. "ARKITEKT/"
-local scripts_path = root_path .. "ARKITEKT/scripts/"
-package.path = arkitekt_path.. "?.lua;" .. arkitekt_path.. "?/init.lua;" .. 
-               scripts_path .. "?.lua;" .. scripts_path .. "?/init.lua;" .. 
+local arkitekt_path= root_path .. 'ARKITEKT/'
+local scripts_path = root_path .. 'ARKITEKT/scripts/'
+package.path = arkitekt_path.. '?.lua;' .. arkitekt_path.. '?/init.lua;' .. 
+               scripts_path .. '?.lua;' .. scripts_path .. '?/init.lua;' .. 
                package.path
 
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
+local script_path = debug.getinfo(1, 'S').source:match('@?(.*)[\\/]') or ''
 local root_path = script_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
-package.path = root_path .. "?.lua;" .. root_path .. "?/init.lua;" .. package.path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+if not root_path:match('[\\/]$') then root_path = root_path .. '/' end
+package.path = root_path .. '?.lua;' .. root_path .. '?/init.lua;' .. package.path
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 -- ReaImGui presence check (AFTER loading)
 if not ImGui.CreateContext then
-  reaper.ShowMessageBox("ReaImGui missing (install via ReaPack → ReaTeam Extensions → ReaImGui).",
-                        "Arkitekt Demo", 0)
+  reaper.ShowMessageBox('ReaImGui missing (install via ReaPack → ReaTeam Extensions → ReaImGui).',
+                        'Arkitekt Demo', 0)
   return
 end
 
 -- Paths to resolve require('Arkitekt.*') when this file sits inside Arkitekt/
 local Fs = require('arkitekt.core.fs')
-local function dirname(p) return p:match("^(.*)[/\\]") end
+local function dirname(p) return p:match('^(.*)[/\\]') end
 local join = Fs.join
-local SRC   = debug.getinfo(1,"S").source:sub(2)
-local HERE  = dirname(SRC) or "."
-local PARENT= dirname(HERE or ".") or "."
-local function addpath(p) if p and p~="" and not package.path:find(p,1,true) then package.path=p..";"..package.path end end
-addpath(join(PARENT,"?.lua")); addpath(join(PARENT,"?/init.lua"))
-addpath(join(HERE,  "?.lua")); addpath(join(HERE,  "?/init.lua"))
+local SRC   = debug.getinfo(1,'S').source:sub(2)
+local HERE  = dirname(SRC) or '.'
+local PARENT= dirname(HERE or '.') or '.'
+local function addpath(p) if p and p~='' and not package.path:find(p,1,true) then package.path=p..';'..package.path end end
+addpath(join(PARENT,'?.lua')); addpath(join(PARENT,'?/init.lua'))
+addpath(join(HERE,  '?.lua')); addpath(join(HERE,  '?/init.lua'))
 
 -- Your modules
-local Shell        = require("arkitekt.app.shell")
-local Settings     = (function() local ok,m=pcall(require,"arkitekt.core.settings"); return ok and m or nil end)()
-local okStyle,Style= pcall(require,"arkitekt.gui.style.imgui")
-local ColorBlocks  = require("Arkitekt.gui.widgets.colorblocks")
-local Effects      = require("arkitekt.gui.draw.effects")
-local Math         = require("arkitekt.core.math")
-local hexrgb = Ark.Colors.hexrgb
-
-
+local Shell        = require('arkitekt.runtime.shell')
+local Settings     = (function() local ok,m=pcall(require,'arkitekt.core.settings'); return ok and m or nil end)()
+local okStyle,Style= pcall(require,'arkitekt.gui.style.imgui')
+local ColorBlocks  = require('Arkitekt.gui.widgets.colorblocks')
+local Effects      = require('arkitekt.gui.draw.effects')
+local Math         = require('arkitekt.core.math')
 -- Small helpers
-local function log(...) local t={}; for i=1,select("#",...) do t[#t+1]=tostring(select(i,...)) end reaper.ShowConsoleMsg(table.concat(t," ").."\n") end
+local function log(...) local t={}; for i=1,select('#',...) do t[#t+1]=tostring(select(i,...)) end reaper.ShowConsoleMsg(table.concat(t,' ')..'\n') end
 local function hsv_to_rgba(h,s,v,a)
   local i = (h*6) // 1; local f = h*6 - i
   local p = v*(1-s); local q = v*(1-f*s); local t = v*(1-(1-f)*s)
@@ -88,7 +85,7 @@ local model = {
   tile_min_w = 110,      -- numeric (IMPORTANT)
   gap = 12,              -- numeric (IMPORTANT)
   show_labels = true,
-  ants = { color_enabled=hexrgb("#FFFFFF"), color_disabled=hexrgb("#FFFFFF55"), thickness=2, radius=8, dash=10, gap=6, speed=28 },
+  ants = { color_enabled=0xFFFFFFFF, color_disabled=0xFFFFFF55, thickness=2, radius=8, dash=10, gap=6, speed=28 },
 }
 
 local function seed_colors()
@@ -98,7 +95,7 @@ local function seed_colors()
   for i=1,n do
     local h = (i-1)/n
     local col = hsv_to_rgba(h, 0.85, 0.95, 1.0)
-    local key = string.format("C%03d", i)
+    local key = string.format('C%03d', i)
     model.items_by_key[key] = { key=key, name=key, color=col }
     model.order[#model.order+1] = key
   end
@@ -118,15 +115,15 @@ local function render_color_tile(ctx, rect, item, state)
   local x1,y1,x2,y2 = rect[1],rect[2],rect[3],rect[4]
 
   -- swatch
-  Ark.Draw.rect_filled(dl, x1, y1, x2, y2, item.color, 6)
-  Ark.Draw.rect(dl, x1+0.5, y1+0.5, x2-0.5, y2-0.5, hexrgb("#00000055"), 6, 1)
+  Ark.Draw.RectFilled(dl, x1, y1, x2, y2, item.color, 6)
+  Ark.Draw.Rect(dl, x1+0.5, y1+0.5, x2-0.5, y2-0.5, 0x00000055, 6, 1)
 
   -- selection / hover
   if state.selected then
     local a = model.ants
     Effects.marching_ants_rounded(dl, x1, y1, x2, y2, a.color_enabled, a.thickness, a.radius, a.dash, a.gap, a.speed)
   elseif state.hover then
-    Ark.Draw.rect(dl, x1, y1, x2, y2, hexrgb("#FFFFFF40"), 6, 1)
+    Ark.Draw.Rect(dl, x1, y1, x2, y2, 0xFFFFFF40, 6, 1)
   end
 
   if model.show_labels then
@@ -134,14 +131,14 @@ local function render_color_tile(ctx, rect, item, state)
     local pad = 6
     local tx = (x1 + (x2-x1 - tw)*0.5) // 1
     local ty = (y2 - th - pad) // 1
-    ImGui.DrawList_AddText(dl, tx+1, ty+1, hexrgb("#000000CC"), item.name)
-    ImGui.DrawList_AddText(dl, tx,   ty,   hexrgb("#FFFFFF"), item.name)
+    ImGui.DrawList_AddText(dl, tx+1, ty+1, 0x000000CC, item.name)
+    ImGui.DrawList_AddText(dl, tx,   ty,   0xFFFFFFFF, item.name)
   end
 end
 
 -- Grid (NOTE: numbers, not functions)
 local grid = ColorBlocks.new({
-  id = "colorblocks-demo",
+  id = 'colorblocks-demo',
   gap = model.gap,                   -- numeric
   min_col_w = model.tile_min_w,      -- numeric
   get_items = get_items,
@@ -154,7 +151,7 @@ local grid = ColorBlocks.new({
     for _,k in ipairs(new_keys) do if model.items_by_key[k] then filtered[#filtered+1]=k; have[k]=true end end
     for _,k in ipairs(model.order) do if not have[k] then filtered[#filtered+1]=k end end
     model.order = filtered
-    log("[reorder]", #model.order, "items")
+    log('[reorder]', #model.order, 'items')
   end,
 
   on_select = function(keys) model.selection = keys end,
@@ -175,22 +172,22 @@ local grid = ColorBlocks.new({
 
 -- Toolbar
 local function draw_toolbar(ctx)
-  ImGui.Text(ctx, "Min column width")
+  ImGui.Text(ctx, 'Min column width')
   ImGui.SameLine(ctx)
-  local changed, v = ImGui.SliderInt(ctx, "##minw", model.tile_min_w, 60, 220)
+  local changed, v = ImGui.SliderInt(ctx, '##minw', model.tile_min_w, 60, 220)
   if changed then model.tile_min_w = v end
 
   ImGui.SameLine(ctx)
-  ImGui.Text(ctx, "Gap")
+  ImGui.Text(ctx, 'Gap')
   ImGui.SameLine(ctx)
-  changed, v = ImGui.SliderInt(ctx, "##gap", model.gap, 0, 32)
+  changed, v = ImGui.SliderInt(ctx, '##gap', model.gap, 0, 32)
   if changed then model.gap = v end
 
   ImGui.SameLine(ctx)
-  changed, model.show_labels = ImGui.Checkbox(ctx, "Labels", model.show_labels)
+  changed, model.show_labels = ImGui.Checkbox(ctx, 'Labels', model.show_labels)
 
   ImGui.SameLine(ctx)
-  if ImGui.Button(ctx, "Shuffle") then
+  if ImGui.Button(ctx, 'Shuffle') then
     for i = #model.order, 2, -1 do
       local j = math.random(i)
       model.order[i], model.order[j] = model.order[j], model.order[i]
@@ -198,28 +195,28 @@ local function draw_toolbar(ctx)
   end
 
   ImGui.SameLine(ctx)
-  if ImGui.Button(ctx, "Reset Colors") then
+  if ImGui.Button(ctx, 'Reset Colors') then
     seed_colors()
   end
 
-  if ImGui.TreeNode(ctx, "Selection style") then
+  if ImGui.TreeNode(ctx, 'Selection style') then
     local a = model.ants
-    ImGui.Text(ctx, "Thickness"); ImGui.SameLine(ctx)
-    changed, v = ImGui.SliderInt(ctx, "##th", a.thickness, 1, 4);  if changed then a.thickness=v end
-    ImGui.SameLine(ctx); ImGui.Text(ctx, "Radius"); ImGui.SameLine(ctx)
-    changed, v = ImGui.SliderInt(ctx, "##rad", a.radius, 0, 16);    if changed then a.radius=v end
-    ImGui.SameLine(ctx); ImGui.Text(ctx, "Dash"); ImGui.SameLine(ctx)
-    changed, v = ImGui.SliderInt(ctx, "##dash", a.dash, 4, 20);     if changed then a.dash=v end
-    ImGui.SameLine(ctx); ImGui.Text(ctx, "Gap"); ImGui.SameLine(ctx)
-    changed, v = ImGui.SliderInt(ctx, "##gap2", a.gap, 2, 20);      if changed then a.gap=v end
-    ImGui.SameLine(ctx); ImGui.Text(ctx, "Speed"); ImGui.SameLine(ctx)
-    changed, v = ImGui.SliderInt(ctx, "##spd", a.speed, 6, 60);     if changed then a.speed=v end
+    ImGui.Text(ctx, 'Thickness'); ImGui.SameLine(ctx)
+    changed, v = ImGui.SliderInt(ctx, '##th', a.thickness, 1, 4);  if changed then a.thickness=v end
+    ImGui.SameLine(ctx); ImGui.Text(ctx, 'Radius'); ImGui.SameLine(ctx)
+    changed, v = ImGui.SliderInt(ctx, '##rad', a.radius, 0, 16);    if changed then a.radius=v end
+    ImGui.SameLine(ctx); ImGui.Text(ctx, 'Dash'); ImGui.SameLine(ctx)
+    changed, v = ImGui.SliderInt(ctx, '##dash', a.dash, 4, 20);     if changed then a.dash=v end
+    ImGui.SameLine(ctx); ImGui.Text(ctx, 'Gap'); ImGui.SameLine(ctx)
+    changed, v = ImGui.SliderInt(ctx, '##gap2', a.gap, 2, 20);      if changed then a.gap=v end
+    ImGui.SameLine(ctx); ImGui.Text(ctx, 'Speed'); ImGui.SameLine(ctx)
+    changed, v = ImGui.SliderInt(ctx, '##spd', a.speed, 6, 60);     if changed then a.speed=v end
     ImGui.TreePop(ctx)
   end
 
   ImGui.SameLine(ctx)
   local sel = model.selection or {}
-  ImGui.TextDisabled(ctx, string.format("Selected: %d", #sel))
+  ImGui.TextDisabled(ctx, string.format('Selected: %d', #sel))
 end
 
 -- Main draw — update grid config each frame (keeps sliders live)
@@ -235,15 +232,15 @@ end
 
 -- Optional settings
 local settings = nil
-if Settings and type(Settings.new)=="function" then
-  local data_dir = ARK.get_data_dir("demos")
-  local ok,inst = pcall(Settings.new, data_dir, "widget_demo.json")
+if Settings and type(Settings.new)=='function' then
+  local data_dir = ARK.get_data_dir('demos')
+  local ok,inst = pcall(Settings.new, data_dir, 'widget_demo.json')
   if ok then settings = inst end
 end
 
 -- Run via Shell (Window + Style)
 Shell.run({
-  title        = "Arkitekt — ColorBlocks Demo",
+  title        = 'Arkitekt — ColorBlocks Demo',
   draw         = draw,
   settings     = settings,
   style        = okStyle and Style or nil,

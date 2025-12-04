@@ -2,10 +2,9 @@
 -- Arkitekt/gui/widgets/overlay/container.lua
 -- Reusable dark container pattern for non-blocking modals
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
-
 local M = {}
 
 -- Default container styling - simple squares with 1px black border
@@ -13,9 +12,9 @@ local DEFAULTS = {
   width = 0.6,           -- Percentage of bounds width
   height = 0.8,          -- Percentage of bounds height
   rounding = 0,          -- Square corners (no rounding)
-  bg_color = hexrgb("#1e1e1e"),  -- Slightly lighter dark background
+  bg_color = 0x1E1E1EFF,  -- Slightly lighter dark background
   bg_opacity = 1.0,
-  border_color = hexrgb("#000000"),  -- Black border
+  border_color = 0x000000FF,  -- Black border
   border_opacity = 1.0,
   border_thickness = 1,  -- 1 pixel border
   padding = 20,          -- Internal padding for content spacing
@@ -52,7 +51,7 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, r)
 
   -- Dark background color for child
-  local bg_color = Colors.with_alpha(config.bg_color, (255 * config.bg_opacity * alpha) // 1)
+  local bg_color = Colors.WithAlpha(config.bg_color, (255 * config.bg_opacity * alpha) // 1)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, bg_color)
 
   -- CRITICAL: AlwaysUseWindowPadding flag ensures WindowPadding style var is applied
@@ -62,8 +61,8 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
   ImGui.BeginChild(ctx, '##modal_container', w, h, child_flags, window_flags)
 
   -- Draw simple 1px black border
-  local dl = ImGui.GetWindowDrawList(ctx)
-  local border_color = Colors.with_alpha(config.border_color, (255 * config.border_opacity * alpha) // 1)
+  local dl = Base.get_context(ctx):draw_list()
+  local border_color = Colors.WithAlpha(config.border_color, (255 * config.border_opacity * alpha) // 1)
   ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_color, r, 0, config.border_thickness)
 
   ImGui.PopStyleColor(ctx, 1)

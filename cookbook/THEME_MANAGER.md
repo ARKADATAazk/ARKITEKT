@@ -5,7 +5,7 @@
 ## Quick Start
 
 ```lua
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 -- Set theme
 Theme.set_dark()                    -- Dark preset
@@ -153,43 +153,64 @@ Theme.COLORS.BUTTON_DANGER_TEXT    -- Danger text
 ### DSL Wrappers
 
 ```lua
-local snap = Theme.snap      -- Discrete switch at t=0.5
-local lerp = Theme.lerp      -- Smooth interpolation
-local offset = Theme.offset  -- Delta from BG_BASE
-local bg = Theme.bg          -- Use BG_BASE directly
+-- 2-zone variants (transition at t=0.5)
+local snap2 = Theme.snap2      -- Discrete switch at t=0.5
+local lerp2 = Theme.lerp2      -- Smooth interpolation
+local offset2 = Theme.offset2  -- Delta from BG_BASE
+local bg = Theme.bg            -- Use BG_BASE directly
+
+-- 3-zone variants (transitions at t=0.33 and t=0.67)
+local snap3 = Theme.snap3      -- Discrete 3-zone switch
+local lerp3 = Theme.lerp3      -- Piecewise interpolation
+local offset3 = Theme.offset3  -- 3-zone BG delta
 ```
 
-### `snap(dark, light)` - Discrete Switch
+### `snap2(dark, light)` - Discrete Switch (2-zone)
 
 Switches between values at t=0.5 threshold.
 
 ```lua
--- Colors: hex strings
-TEXT_NORMAL = snap("#FFFFFF", "#000000")  -- White on dark, black on light
+-- Colors (use byte format 0xRRGGBBAA)
+TEXT_NORMAL = snap2(0xFFFFFFFF, 0x000000FF)  -- White on dark, black on light
 
 -- Numbers
-OPACITY = snap(0.8, 0.5)  -- 0.8 on dark, 0.5 on light
+OPACITY = snap2(0.8, 0.5)  -- 0.8 on dark, 0.5 on light
 ```
 
-### `lerp(dark, light)` - Smooth Interpolation
+### `lerp2(dark, light)` - Smooth Interpolation (2-zone)
 
 Smoothly interpolates between values.
 
 ```lua
 -- Colors
-ACCENT = lerp("#4CAF50", "#2E7D32")  -- Smooth green gradient
+ACCENT = lerp2(0x4CAF50FF, 0x2E7D32FF)  -- Smooth green gradient
 
 -- Numbers
-BRIGHTNESS = lerp(0.5, 0.7)  -- Smooth 0.5→0.7 across themes
+BRIGHTNESS = lerp2(0.5, 0.7)  -- Smooth 0.5→0.7 across themes
 ```
 
-### `offset(dark_delta, light_delta)` - BG-Derived
+### `offset2(dark_delta, light_delta)` - BG-Derived (2-zone)
 
 Applies lightness delta to BG_BASE. Snaps at t=0.5.
 
 ```lua
-BG_HOVER = offset(0.03, -0.06)  -- +3% dark, -6% light
-BG_PANEL = offset(-0.04)        -- -4% both (light defaults to dark)
+BG_HOVER = offset2(0.03, -0.06)  -- +3% dark, -6% light
+BG_PANEL = offset2(-0.04)        -- -4% both (light defaults to dark)
+```
+
+### 3-Zone Variants
+
+For finer control over mid-range themes (grey, light_grey):
+
+```lua
+-- snap3: discrete zones at t=0.33 and t=0.67
+TEXT_SPECIAL = snap3(0xFFFFFFFF, 0xCCCCCCFF, 0x000000FF)
+
+-- lerp3: piecewise interpolation through mid-point
+ACCENT = lerp3(0x4CAF50FF, 0x66BB6AFF, 0x2E7D32FF)
+
+-- offset3: 3-zone BG-relative deltas
+BG_SPECIAL = offset3(0.05, 0.02, -0.08)
 ```
 
 ---
@@ -199,16 +220,16 @@ BG_PANEL = offset(-0.04)        -- -4% both (light defaults to dark)
 Register app-specific theme colors that react to theme changes.
 
 ```lua
--- In scripts/MyApp/defs/palette.lua
-local Theme = require('arkitekt.core.theme')
-local snap, lerp, offset = Theme.snap, Theme.lerp, Theme.offset
+-- In scripts/MyApp/config/palette.lua
+local Theme = require('arkitekt.theme')
+local snap2, lerp2, offset2 = Theme.snap2, Theme.lerp2, Theme.offset2
 
 -- Register at module load
 Theme.register_script_palette("MyApp", {
-  HIGHLIGHT = snap("#FF6B6B", "#CC4444"),
-  ERROR_BG = snap("#240C0C", "#FFDDDD"),
-  STRIPE_OPACITY = lerp(0.20, 0.30),
-  PANEL_BG = offset(-0.06),
+  HIGHLIGHT = snap2(0xFF6B6BFF, 0xCC4444FF),
+  ERROR_BG = snap2(0x240C0CFF, 0xFFDDDDFF),
+  STRIPE_OPACITY = lerp2(0.20, 0.30),
+  PANEL_BG = offset2(-0.06),
 })
 
 -- Access in another module
@@ -228,7 +249,7 @@ Theme.unregister_script_palette("MyApp")
 
 ```lua
 -- In scripts/MyApp/ARK_MyApp.lua
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 -- Initialize theme
 Theme.init("adapt")  -- Load saved or default to REAPER sync
@@ -251,17 +272,15 @@ main_loop()
 
 ```
 arkitekt/
-├── core/
-│   ├── theme/                 # Main theme module
-│   │   ├── init.lua           # Public API entry point
-│   │   ├── engine.lua         # Palette generation
-│   │   ├── integration.lua    # REAPER sync, persistence
-│   │   ├── registry.lua       # Script palette registration
-│   │   ├── debug.lua          # Live debugging
-│   │   └── presets.lua        # Preset application
-│   └── theme_manager/         # Compatibility wrapper (deprecated)
-│       └── init.lua           # Forwards to core.theme
-└── defs/
+├── theme/                     # Main theme module
+│   ├── init.lua               # Public API entry point
+│   └── manager/
+│       ├── engine.lua         # Palette generation
+│       ├── integration.lua    # REAPER sync, persistence
+│       ├── registry.lua       # Script palette registration
+│       └── presets.lua        # Preset application
+│
+└── config/
     └── colors/
         ├── init.lua           # Entry point
         ├── theme.lua          # DSL definitions & palette
@@ -274,14 +293,14 @@ arkitekt/
 
 ### Add a New Theme Color
 
-Edit `arkitekt/defs/colors/theme.lua`:
+Edit `arkitekt/config/colors/theme.lua`:
 
 ```lua
 M.colors = {
   -- ... existing colors ...
 
-  -- Add new color
-  MY_NEW_COLOR = snap("#AABBCC", "#334455"),
+  -- Add new color (use byte format 0xRRGGBBAA)
+  MY_NEW_COLOR = snap2(0xAABBCCFF, 0x334455FF),
 }
 ```
 
@@ -290,8 +309,7 @@ Access via `Theme.COLORS.MY_NEW_COLOR`.
 ### Create Custom Theme
 
 ```lua
-local Colors = require('arkitekt.core.colors')
-local custom_bg = Colors.hexrgb("#3A3A3AFF")
+local custom_bg = 0x3A3A3AFF  -- Use byte format directly
 Theme.generate_and_apply(custom_bg)
 ```
 
@@ -337,7 +355,7 @@ Theme.toggle_debug()  -- Opens debug window
 
 ```lua
 -- Import
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 -- Set theme
 Theme.set_dark() / Theme.set_light() / Theme.adapt()
@@ -349,10 +367,15 @@ Theme.COLORS.BG_BASE, Theme.COLORS.TEXT_NORMAL, etc.
 Theme.build_button_config()
 Theme.build_colored_button_config("danger")
 
--- DSL for palettes
-snap("#dark", "#light")   -- discrete switch
-lerp("#dark", "#light")   -- smooth interpolation
-offset(0.05, -0.10)       -- BG-derived delta
+-- DSL for palettes (2-zone)
+snap2(0xDARKCOLOR, 0xLIGHTCOLOR)  -- discrete switch at t=0.5
+lerp2(0xDARKCOLOR, 0xLIGHTCOLOR)  -- smooth interpolation
+offset2(0.05, -0.10)              -- BG-derived delta
+
+-- DSL for palettes (3-zone)
+snap3(dark, mid, light)   -- discrete at t=0.33, 0.67
+lerp3(dark, mid, light)   -- piecewise interpolation
+offset3(dark, mid, light) -- 3-zone BG delta
 
 -- Script palettes
 Theme.register_script_palette("Name", { ... })

@@ -13,44 +13,44 @@ local function ensure_dir(path)
   else
     -- SECURITY: Removed unsafe os.execute() fallback to prevent command injection
     -- If REAPER API is not available, fail with clear error message
-    error("REAPER API not available - cannot create directory: " .. tostring(path))
+    error('REAPER API not available - cannot create directory: ' .. tostring(path))
   end
 end
 
 local function read_file(p)
-  local f = io.open(p, "rb"); if not f then return nil end
-  local s = f:read("*a"); f:close(); return s
+  local f = io.open(p, 'rb'); if not f then return nil end
+  local s = f:read('*a'); f:close(); return s
 end
 
 local function write_file_atomic(p, s)
-  local tmp = p .. ".tmp"
-  local f, err = io.open(tmp, "wb")
+  local tmp = p .. '.tmp'
+  local f, err = io.open(tmp, 'wb')
   if not f then
-    return false, "Failed to create temp file: " .. (err or "unknown error")
+    return false, 'Failed to create temp file: ' .. (err or 'unknown error')
   end
-  local ok, write_err = f:write(s or "")
+  local ok, write_err = f:write(s or '')
   f:close()
   if not ok then
     os.remove(tmp)
-    return false, "Failed to write: " .. (write_err or "unknown error")
+    return false, 'Failed to write: ' .. (write_err or 'unknown error')
   end
   os.remove(p) -- Windows-safe replace
   local rename_ok, rename_err = os.rename(tmp, p)
   if not rename_ok then
-    return false, "Failed to rename: " .. (rename_err or "unknown error")
+    return false, 'Failed to rename: ' .. (rename_err or 'unknown error')
   end
   return true
 end
 
 local function split_path(key)
-  local out = {}; for part in tostring(key):gmatch("[^%.]+") do out[#out+1]=part end
+  local out = {}; for part in tostring(key):gmatch('[^%.]+') do out[#out+1]=part end
   return out
 end
 
 local function get_nested(t, key, default)
   local cur = t
   for _,k in ipairs(split_path(key)) do
-    if type(cur) ~= "table" then return default end
+    if type(cur) ~= 'table' then return default end
     cur = cur[k]
     if cur == nil then return default end
   end
@@ -62,7 +62,7 @@ local function set_nested(t, key, val)
   local parts = split_path(key)
   for i=1,#parts-1 do
     local k = parts[i]
-    if type(cur[k]) ~= "table" then cur[k] = {} end
+    if type(cur[k]) ~= 'table' then cur[k] = {} end
     cur = cur[k]
   end
   cur[parts[#parts]] = val
@@ -74,8 +74,8 @@ function Settings:sub(prefix)
   local parent = self
   local view = setmetatable({}, {
     __index = {
-      get = function(_, key, default) return parent:get(prefix .. "." .. key, default) end
-      ,set = function(_, key, val)     parent:set(prefix .. "." .. key, val) end
+      get = function(_, key, default) return parent:get(prefix .. '.' .. key, default) end
+      ,set = function(_, key, val)     parent:set(prefix .. '.' .. key, val) end
       ,maybe_flush = function(_) parent:maybe_flush() end
       ,flush = function(_) parent:flush() end
     }
@@ -100,22 +100,29 @@ function Settings:maybe_flush()
 end
 
 function Settings:flush()
-  if not self._dirty then return end
+  if not self._dirty then return true end
   ensure_dir(self._dir)
   local ok, serialized = pcall(json.encode, self._data)
-  if ok then
-    local write_ok, write_err = write_file_atomic(self._path, serialized)
-    if write_ok then
-      self._dirty = false
-      self._last_write = now()
-    else
-      -- Log error if Logger is available, otherwise silent fail
-      local Logger = package.loaded['arkitekt.debug.logger']
-      if Logger then
-        Logger.error("STORAGE", "Settings flush failed: %s", write_err or "unknown")
-      end
+  if not ok then
+    local Logger = package.loaded['arkitekt.debug.logger']
+    if Logger then
+      Logger.error('STORAGE', 'Settings JSON encode failed: %s', serialized or 'unknown')
     end
+    return false, 'JSON encode failed: ' .. tostring(serialized)
   end
+
+  local write_ok, write_err = write_file_atomic(self._path, serialized)
+  if not write_ok then
+    local Logger = package.loaded['arkitekt.debug.logger']
+    if Logger then
+      Logger.error('STORAGE', 'Settings flush failed: %s', write_err or 'unknown')
+    end
+    return false, write_err
+  end
+
+  self._dirty = false
+  self._last_write = now()
+  return true
 end
 
 -- Factory
@@ -123,12 +130,12 @@ local M = {}
 
 -- Create a new settings instance
 -- @param cache_dir Directory to store settings file
--- @param filename Name of the settings file (default: "settings.json")
+-- @param filename Name of the settings file (default: 'settings.json')
 -- @return Settings instance
 function M.new(cache_dir, filename)
-  cache_dir = cache_dir or "."
-  filename  = filename  or "settings.json"
-  local path = cache_dir .. ((cache_dir:sub(-1)==SEP) and "" or SEP) .. filename
+  cache_dir = cache_dir or '.'
+  filename  = filename  or 'settings.json'
+  local path = cache_dir .. ((cache_dir:sub(-1)==SEP) and '' or SEP) .. filename
 
   -- Load existing data if file exists
   local t = {}

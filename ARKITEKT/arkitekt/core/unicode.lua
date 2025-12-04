@@ -5,16 +5,19 @@
 local M = {}
 
 --- Convert a Unicode code point to UTF-8 encoded string
---- @param codepoint number|string The code point (e.g., 0xF3B4 or "F3B4")
+--- @param codepoint number|string The code point (e.g., 0xF3B4 or 'F3B4')
 --- @return string The UTF-8 encoded string
 function M.utf8(codepoint)
-  -- Handle string input (e.g., "F3B4" or "0xF3B4")
-  if type(codepoint) == "string" then
-    codepoint = codepoint:gsub("^0x", ""):gsub("^U%+", "")
+  -- Handle string input (e.g., 'F3B4' or '0xF3B4')
+  if type(codepoint) == 'string' then
+    codepoint = codepoint:gsub('^0x', ''):gsub('^U%+', '')
     codepoint = tonumber(codepoint, 16)
   end
 
-  if not codepoint then return "" end
+  -- Validate codepoint range (0 to 0x10FFFF max Unicode)
+  if not codepoint or codepoint < 0 or codepoint > 0x10FFFF then
+    return ''
+  end
 
   if codepoint < 0x80 then
     -- 1-byte ASCII

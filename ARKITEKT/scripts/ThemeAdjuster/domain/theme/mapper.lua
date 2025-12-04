@@ -18,7 +18,7 @@ local file_exists = Fs.file_exists
 -- Load JSON file
 local function load_json(path)
   local content = Fs.read_text(path)
-  if not content or content == "" then
+  if not content or content == '' then
     return nil
   end
 
@@ -92,10 +92,10 @@ function M.find_companion_json()
   if not themes_dir then return nil end
 
   local theme_name = ParamDiscovery.get_current_theme_name()
-  if not theme_name or theme_name == "Unknown" then return nil end
+  if not theme_name or theme_name == 'Unknown' then return nil end
 
   -- Look for matching JSON: MyTheme.json
-  local json_path = themes_dir .. "/" .. theme_name .. ".json"
+  local json_path = themes_dir .. '/' .. theme_name .. '.json'
 
   if file_exists(json_path) then
     return json_path
@@ -144,9 +144,9 @@ function M.assign_param(param_name, page_name, metadata)
 
   M.current_mappings[page_name][param_name] = {
     display_name = metadata.display_name or param_name,
-    color = metadata.color or "#FFFFFF",
-    category = metadata.category or "Uncategorized",
-    tooltip = metadata.tooltip or "",
+    color = metadata.color or '#FFFFFF',
+    category = metadata.category or 'Uncategorized',
+    tooltip = metadata.tooltip or '',
     index = metadata.index,
   }
 end
@@ -173,9 +173,9 @@ end
 function M.create_mapping_from_params(params)
   local mapping = {
     theme_name = ParamDiscovery.get_current_theme_name(),
-    version = "1.0.0",
-    created_at = os.date("%Y-%m-%d %H:%M:%S"),
-    description = "Auto-generated parameter mappings for Theme Adjuster",
+    version = '1.0.0',
+    created_at = os.date('%Y-%m-%d %H:%M:%S'),
+    description = 'Auto-generated parameter mappings for Theme Adjuster',
     params = {}
   }
 
@@ -183,12 +183,12 @@ function M.create_mapping_from_params(params)
     mapping.params[param.name] = {
       index = param.index,
       display_name = param.name,
-      category = param.category or "Uncategorized",
+      category = param.category or 'Uncategorized',
       type = param.type,
       min = param.min,
       max = param.max,
       default = param.default,
-      description = param.description or "",
+      description = param.description or '',
     }
   end
 
@@ -199,11 +199,11 @@ end
 function M.export_mappings(params)
   local themes_dir = ParamDiscovery.get_colorthemes_dir()
   if not themes_dir then
-    return false, "Could not find ColorThemes directory"
+    return false, 'Could not find ColorThemes directory'
   end
 
   local theme_name = M.current_theme_name or ParamDiscovery.get_current_theme_name()
-  local json_path = themes_dir .. "/" .. theme_name .. ".json"
+  local json_path = themes_dir .. '/' .. theme_name .. '.json'
 
   -- Create mapping structure
   local mapping_data = M.create_mapping_from_params(params or {})
@@ -219,7 +219,7 @@ function M.export_mappings(params)
   if success then
     return true, json_path
   else
-    return false, "Failed to write JSON file"
+    return false, 'Failed to write JSON file'
   end
 end
 
@@ -241,14 +241,14 @@ function M.save_assignments(assignments, custom_metadata, enabled_groups, param_
   end
 
   local theme_name = M.current_theme_name or ParamDiscovery.get_current_theme_name()
-  local json_path = themes_dir .. "/" .. theme_name .. ".json"
+  local json_path = themes_dir .. '/' .. theme_name .. '.json'
 
   -- Load existing data or create new
   local data = load_json(json_path) or {
     theme_name = theme_name,
-    version = "1.0.0",
-    created_at = os.date("%Y-%m-%d %H:%M:%S"),
-    description = "Auto-generated parameter mappings for Theme Adjuster",
+    version = '1.0.0',
+    created_at = os.date('%Y-%m-%d %H:%M:%S'),
+    description = 'Auto-generated parameter mappings for Theme Adjuster',
     params = {},
   }
 

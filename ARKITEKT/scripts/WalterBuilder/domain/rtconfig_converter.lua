@@ -20,7 +20,7 @@ local Coordinate = require('WalterBuilder.domain.coordinate')
 local RtconfigParser = require('WalterBuilder.domain.rtconfig_parser')
 local ExpressionEval = require('WalterBuilder.domain.expression_eval')
 local Console = require('WalterBuilder.ui.panels.debug_console')
-local TCPElements = require('WalterBuilder.defs.tcp_elements')
+local TCPElements = require('WalterBuilder.config.tcp_elements')
 
 local M = {}
 
@@ -58,8 +58,8 @@ local DEFAULT_CONTEXT = {
 
   -- Default element coordinates (used when element isn't evaluated yet but is referenced)
   -- tcp.mute is referenced by tcp.meter expression: tcp.mute{2} = mute width
-  ["tcp.mute"] = { 60, 7, 21, 20 },  -- [x, y, w, h] - typical mute button
-  ["tcp.solo"] = { 60, 27, 21, 20 }, -- Solo button (below mute when stacked)
+  ['tcp.mute'] = { 60, 7, 21, 20 },  -- [x, y, w, h] - typical mute button
+  ['tcp.solo'] = { 60, 27, 21, 20 }, -- Solo button (below mute when stacked)
 
   -- Meter positioning variables (these control tcp.meter position)
   -- tcp_MeterSize is a user preference (1-7), maps to pixel widths
@@ -140,12 +140,12 @@ local DEFAULT_CONTEXT = {
   tcp_label_len_offs = 0,
 
   -- OVR (override) widths for flow elements (dotted names flattened)
-  ["OVR.tcp_recarm.width"] = 20,
-  ["OVR.tcp_recmon.width"] = 15,
-  ["OVR.tcp_io.width"] = 34,
-  ["OVR.tcp_fx.width"] = 24,
-  ["OVR.tcp_env.width"] = 41,
-  ["OVR.tcp_recmode.width"] = 39,
+  ['OVR.tcp_recarm.width'] = 20,
+  ['OVR.tcp_recmon.width'] = 15,
+  ['OVR.tcp_io.width'] = 34,
+  ['OVR.tcp_fx.width'] = 24,
+  ['OVR.tcp_env.width'] = 41,
+  ['OVR.tcp_recmode.width'] = 39,
 
   -- Flow groups as coordinate arrays [x, y, w, h]
   -- These get updated during flow positioning but need defaults for expressions like fx_group{2}
@@ -166,17 +166,17 @@ local ELEMENT_CONTEXTS = {
 }
 
 -- Check if a SET statement defines a variable (vs an element)
--- Variables: simple names like "meter_sec", "tcp_padding"
+-- Variables: simple names like 'meter_sec', 'tcp_padding'
 --            OR dotted names that don't start with element contexts (OVR.*, etc.)
--- Elements: dotted names like "tcp.mute", "tcp.pan" (context.element format)
+-- Elements: dotted names like 'tcp.mute', 'tcp.pan' (context.element format)
 local function is_variable_definition(element_name)
   -- Simple names without dots are always variables
-  if not element_name:match("%.") then
+  if not element_name:match('%.') then
     return true
   end
 
   -- Dotted names: check if they start with a known element context
-  local prefix = element_name:match("^([^.]+)%.")
+  local prefix = element_name:match('^([^.]+)%.')
   if prefix and ELEMENT_CONTEXTS[prefix:lower()] then
     return false  -- It's an element (tcp.mute, mcp.volume, etc.)
   end
@@ -232,9 +232,9 @@ local CATEGORY_MAP = {
 
 -- Get category from element ID
 local function get_category(element_id)
-  -- Extract the element name (e.g., "mute" from "tcp.mute" or "tcp.mute.color")
+  -- Extract the element name (e.g., 'mute' from 'tcp.mute' or 'tcp.mute.color')
   local parts = {}
-  for part in element_id:gmatch("[^.]+") do
+  for part in element_id:gmatch('[^.]+') do
     parts[#parts + 1] = part
   end
 
@@ -244,13 +244,13 @@ local function get_category(element_id)
   -- Check for sub-element types (.color, .font, .margin, .label)
   if #parts >= 3 then
     local sub_type = parts[3]
-    if sub_type == "color" or sub_type == "font" then
+    if sub_type == 'color' or sub_type == 'font' then
       return Element.CATEGORIES.OTHER
     end
-    if sub_type == "margin" then
+    if sub_type == 'margin' then
       return Element.CATEGORIES.OTHER
     end
-    if sub_type == "label" then
+    if sub_type == 'label' then
       return Element.CATEGORIES.LABEL
     end
   end
@@ -262,7 +262,7 @@ end
 local function get_display_name(element_id)
   -- Remove context prefix and capitalize
   local parts = {}
-  for part in element_id:gmatch("[^.]+") do
+  for part in element_id:gmatch('[^.]+') do
     parts[#parts + 1] = part
   end
 
@@ -273,7 +273,7 @@ local function get_display_name(element_id)
       local p = parts[i]
       name_parts[#name_parts + 1] = p:sub(1, 1):upper() .. p:sub(2)
     end
-    return table.concat(name_parts, " ")
+    return table.concat(name_parts, ' ')
   end
 
   return element_id
@@ -288,13 +288,13 @@ local function get_element_flags(element_id)
     is_margin = false,
   }
 
-  if element_id:match("%.size$") then
+  if element_id:match('%.size$') then
     flags.is_size = true
-  elseif element_id:match("%.color$") then
+  elseif element_id:match('%.color$') then
     flags.is_color = true
-  elseif element_id:match("%.font$") then
+  elseif element_id:match('%.font$') then
     flags.is_font = true
-  elseif element_id:match("%.margin$") then
+  elseif element_id:match('%.margin$') then
     flags.is_margin = true
   end
 
@@ -303,17 +303,17 @@ end
 
 -- Format array for debug
 local function fmt_arr(arr)
-  if not arr then return "nil" end
-  if type(arr) ~= "table" then return tostring(arr) end
+  if not arr then return 'nil' end
+  if type(arr) ~= 'table' then return tostring(arr) end
   local parts = {}
   for i, v in ipairs(arr) do
-    parts[i] = string.format("%.0f", v)
+    parts[i] = string.format('%.0f', v)
   end
-  return "[" .. table.concat(parts, ", ") .. "]"
+  return '[' .. table.concat(parts, ', ') .. ']'
 end
 
 -- Evaluate an expression and return the result array
--- @param expr: The expression string (e.g., "+ [10 20] scale")
+-- @param expr: The expression string (e.g., '+ [10 20] scale')
 -- @param context: The evaluation context with variables
 -- @param element_name: Optional element name for debug logging
 -- @return: Array of values, or nil on failure
@@ -321,10 +321,10 @@ local function evaluate_expression(expr, context, element_name)
   if not expr then return nil end
 
   -- Check if it's a simple bracket expression first
-  local bracket_content = expr:match("^%[([%d%s%-%.]+)%]$")
+  local bracket_content = expr:match('^%[([%d%s%-%.]+)%]$')
   if bracket_content then
     local values = {}
-    for num in bracket_content:gmatch("[%-%.%d]+") do
+    for num in bracket_content:gmatch('[%-%.%d]+') do
       values[#values + 1] = tonumber(num)
     end
     return values
@@ -332,25 +332,25 @@ local function evaluate_expression(expr, context, element_name)
 
   -- Debug: trace specific elements (using Console.info which we know works)
   local trace_this = M.DEBUG_EXPRESSIONS and element_name and (
-    element_name == "tcp.meter" or
-    element_name == "tcp.mute" or
-    element_name == "tcp.solo" or
-    element_name == "meter_sec" or
-    element_name == "is_solo_flipped"
+    element_name == 'tcp.meter' or
+    element_name == 'tcp.mute' or
+    element_name == 'tcp.solo' or
+    element_name == 'meter_sec' or
+    element_name == 'is_solo_flipped'
   )
 
   if trace_this then
-    Console.info(">>> EXPR DEBUG: %s", element_name)
-    Console.info("    expr: %s", expr:sub(1, 100))
-    Console.info("    context.meter_sec = %s", fmt_arr(context.meter_sec))
-    Console.info("    context.is_solo_flipped = %s", tostring(context.is_solo_flipped))
+    Console.info('>>> EXPR DEBUG: %s', element_name)
+    Console.info('    expr: %s', expr:sub(1, 100))
+    Console.info('    context.meter_sec = %s', fmt_arr(context.meter_sec))
+    Console.info('    context.is_solo_flipped = %s', tostring(context.is_solo_flipped))
   end
 
   -- Use the expression evaluator
   local result = ExpressionEval.evaluate(expr, context)
 
   if trace_this then
-    Console.info("    result = %s", fmt_arr(result))
+    Console.info('    result = %s', fmt_arr(result))
   end
 
   return result
@@ -374,8 +374,8 @@ local function process_variable_definition(item, context)
     end
 
     -- Debug: log meter_sec computation
-    if M.DEBUG_EXPRESSIONS and item.element == "meter_sec" then
-      Console.warn("SET meter_sec = %s", fmt_arr(context[item.element]))
+    if M.DEBUG_EXPRESSIONS and item.element == 'meter_sec' then
+      Console.warn('SET meter_sec = %s', fmt_arr(context[item.element]))
     end
 
     return true
@@ -402,7 +402,7 @@ local function convert_set_item(item, context)
 
   -- Special handling for flow items without a value expression
   -- These come from 'then' statements where width is in flow_params[1]
-  if item.is_flow_element and (not item.value or item.value == "") and item.flow_params then
+  if item.is_flow_element and (not item.value or item.value == '') and item.flow_params then
     local width_var = item.flow_params[1]
     local width = 0
     if width_var then
@@ -412,14 +412,14 @@ local function convert_set_item(item, context)
         -- Try to look up as a simple variable
         local val = context[width_var]
         if val then
-          if type(val) == "table" then
+          if type(val) == 'table' then
             width = val[1] or 0
           else
             width = val
           end
         else
-          -- Try to evaluate as an expression (e.g., "* scale 20")
-          local evaluated = evaluate_expression(width_var, context, item.element .. ".width")
+          -- Try to evaluate as an expression (e.g., '* scale 20')
+          local evaluated = evaluate_expression(width_var, context, item.element .. '.width')
           if evaluated and #evaluated > 0 then
             width = evaluated[1] or 0
           end
@@ -436,16 +436,16 @@ local function convert_set_item(item, context)
         master_fx_group = 24,
       }
       width = FLOW_WIDTH_FALLBACKS[item.element] or 20
-      Console.info("  Flow item %s: using fallback width=%d", item.element, width)
+      Console.info('  Flow item %s: using fallback width=%d', item.element, width)
     end
     local element_h = context.element_h or 20
-    if type(element_h) == "table" then element_h = element_h[1] or 20 end
+    if type(element_h) == 'table' then element_h = element_h[1] or 20 end
     coords = Coordinate.new({
       x = 0, y = 0, w = width, h = element_h,
       ls = 0, ts = 0, rs = 0, bs = 0,
     })
     eval_success = true
-    Console.info("  Flow item %s: w=%d from flow_params[1]='%s'", item.element, width, width_var or "?")
+    Console.info("  Flow item %s: w=%d from flow_params[1]='%s'', item.element, width, width_var or '?")
   elseif item.is_simple and item.coords then
     -- Simple coordinates - direct mapping
     coords = Coordinate.new({
@@ -478,12 +478,12 @@ local function convert_set_item(item, context)
       eval_success = true
 
       -- Debug: log elements that evaluate to 0x0 (hidden by conditional)
-      local is_visual_id = item.element:match("^tcp%.[^.]+$") and
-                          not item.element:match("%.color$") and
-                          not item.element:match("%.font$") and
-                          not item.element:match("%.margin$")
+      local is_visual_id = item.element:match('^tcp%.[^.]+$') and
+                          not item.element:match('%.color$') and
+                          not item.element:match('%.font$') and
+                          not item.element:match('%.margin$')
       if is_visual_id and evaluated[3] == 0 and evaluated[4] == 0 then
-        Console.warn("  HIDDEN %s: expr='%s'", item.element, item.value or "?")
+        Console.warn("  HIDDEN %s: expr='%s'', item.element, item.value or '?")
       end
 
       -- Also store element coordinates in context for self-references
@@ -512,7 +512,7 @@ local function convert_set_item(item, context)
     is_font = flags.is_font,
     is_margin = flags.is_margin,
     is_custom = is_custom,
-    description = item.comment or "",
+    description = item.comment or '',
   })
 
   -- Return whether this was computed and whether eval succeeded
@@ -525,8 +525,8 @@ local function convert_clear_item(item)
     return nil
   end
 
-  -- Handle wildcards (e.g., "clear tcp.*") - skip these
-  if item.element:match("%*") then
+  -- Handle wildcards (e.g., 'clear tcp.*') - skip these
+  if item.element:match('%*') then
     return nil
   end
 
@@ -554,11 +554,11 @@ end
 -- Group to child elements mapping
 -- Groups in flow macros contain these tcp.* child elements
 local FLOW_GROUP_CHILDREN = {
-  pan_group = { "tcp.pan", "tcp.width" },
-  fx_group = { "tcp.fx", "tcp.fxbyp", "tcp.fxin" },
-  input_group = { "tcp.recinput" },
-  master_pan_group = { "master.tcp.pan", "master.tcp.width" },
-  master_fx_group = { "master.tcp.fx" },
+  pan_group = { 'tcp.pan', 'tcp.width' },
+  fx_group = { 'tcp.fx', 'tcp.fxbyp', 'tcp.fxin' },
+  input_group = { 'tcp.recinput' },
+  master_pan_group = { 'master.tcp.pan', 'master.tcp.width' },
+  master_fx_group = { 'master.tcp.fx' },
 }
 
 -- Check if a flow element should be hidden based on its hide_cond/hide_val
@@ -574,13 +574,13 @@ local function check_flow_hide_condition(flow_params, eval_context)
   local hide_val = flow_params[5]
 
   -- Skip if no condition (0 means no condition)
-  if hide_cond == "0" then
+  if hide_cond == '0' then
     return false
   end
 
   -- Handle negated conditions (!var means hide when var is truthy)
   local negated = false
-  if hide_cond:sub(1, 1) == "!" then
+  if hide_cond:sub(1, 1) == '!' then
     negated = true
     hide_cond = hide_cond:sub(2)
   end
@@ -593,7 +593,7 @@ local function check_flow_hide_condition(flow_params, eval_context)
   end
 
   -- Get scalar value if it's an array
-  if type(cond_value) == "table" then
+  if type(cond_value) == 'table' then
     cond_value = cond_value[1] or 0
   end
 
@@ -640,14 +640,14 @@ local function calculate_flow_positions(result, eval_context)
   -- Helper to get scalar value (some context vars are arrays)
   local function get_scalar(val, default)
     if val == nil then return default end
-    if type(val) == "table" then return val[1] or default end
+    if type(val) == 'table' then return val[1] or default end
     return val
   end
 
   -- Helper to get value at specific index from array or scalar
   local function get_at_index(val, index, default)
     if val == nil then return default end
-    if type(val) == "table" then return val[index] or default end
+    if type(val) == 'table' then return val[index] or default end
     return val  -- Scalar value
   end
 
@@ -663,9 +663,9 @@ local function calculate_flow_positions(result, eval_context)
   -- Sanity check: if start_x is beyond parent width, meter_sec calculation went wrong
   -- This can happen if meterRight flips meter to right side incorrectly
   if start_x > parent_w - 50 then  -- Need at least 50px for flow elements
-    Console.warn("Flow layout: start_x=%d exceeds parent_w=%d (meter_sec=%s)",
+    Console.warn('Flow layout: start_x=%d exceeds parent_w=%d (meter_sec=%s)',
       start_x, parent_w, fmt_arr(eval_context.meter_sec))
-    Console.warn("  Using safe default: start_x=111 (meter on left)")
+    Console.warn('  Using safe default: start_x=111 (meter on left)')
     start_x = 111  -- Safe default: 20 (folder) + 84 (meter) + 7 (padding)
   end
 
@@ -685,11 +685,11 @@ local function calculate_flow_positions(result, eval_context)
   local positioned_count = 0
   local hidden_count = 0
 
-  Console.info("Flow layout: horizontal flow starting at x=%d, y=%d, max_width=%d, %d elements",
+  Console.info('Flow layout: horizontal flow starting at x=%d, y=%d, max_width=%d, %d elements',
     start_x, current_y, max_flow_width, #flow_elements)
-  Console.info("  meter_sec=%s | parent_w=%d, tcp_padding=%d",
+  Console.info('  meter_sec=%s | parent_w=%d, tcp_padding=%d',
     fmt_arr(eval_context.meter_sec), parent_w, tcp_padding)
-  Console.info("  calc: start_x = meter_sec.x(%d) + meter_sec.w(%d) + tcp_padding(%d) = %d",
+  Console.info('  calc: start_x = meter_sec.x(%d) + meter_sec.w(%d) + tcp_padding(%d) = %d',
     meter_sec_x, meter_sec_w, tcp_padding, start_x)
 
   for _, entry in ipairs(flow_elements) do
@@ -705,7 +705,7 @@ local function calculate_flow_positions(result, eval_context)
       coords.h = 0
       elem.visible = false
       hidden_count = hidden_count + 1
-      Console.info("  Flow HIDDEN: %s (hide_cond=%s)", elem_id, flow_params[4] or "?")
+      Console.info('  Flow HIDDEN: %s (hide_cond=%s)', elem_id, flow_params[4] or '?')
       goto continue
     end
 
@@ -717,7 +717,7 @@ local function calculate_flow_positions(result, eval_context)
     if children then
       -- Group width is already set
       elem_width = coords.w or 0
-    elseif elem_id:match("^tcp%.") or elem_id:match("^master%.tcp%.") then
+    elseif elem_id:match('^tcp%.') or elem_id:match('^master%.tcp%.') then
       -- For direct elements, try to get width from flow params
       if elem_width == 0 and flow_params and flow_params[1] then
         local FLOW_WIDTH_DEFAULTS = {
@@ -725,12 +725,12 @@ local function calculate_flow_positions(result, eval_context)
           tcp_VolSize = 50,
           tcp_PanSize = 40,
           tcp_InSize = 40,
-          ["OVR.tcp_recarm.width"] = 20,
-          ["OVR.tcp_recmon.width"] = 15,
-          ["OVR.tcp_io.width"] = 34,
-          ["OVR.tcp_fx.width"] = 24,
-          ["OVR.tcp_env.width"] = 41,
-          ["OVR.tcp_recmode.width"] = 39,
+          ['OVR.tcp_recarm.width'] = 20,
+          ['OVR.tcp_recmon.width'] = 15,
+          ['OVR.tcp_io.width'] = 34,
+          ['OVR.tcp_fx.width'] = 24,
+          ['OVR.tcp_env.width'] = 41,
+          ['OVR.tcp_recmode.width'] = 39,
         }
 
         local width_var = flow_params[1]
@@ -761,12 +761,12 @@ local function calculate_flow_positions(result, eval_context)
     if children then
       -- Position each child element at current X
       local group_width = coords.w or 0
-      Console.info("  Flow group: %s (w=%d) -> children: %s", elem_id, group_width, table.concat(children, ", "))
+      Console.info('  Flow group: %s (w=%d) -> children: %s', elem_id, group_width, table.concat(children, ', '))
 
       -- Store group coordinates in eval_context so dependent elements can reference them
       -- e.g., tcp.fxbyp uses fx_group{2} (width) to determine its position
       eval_context[elem_id] = { current_x, current_y, group_width, element_h }
-      Console.info("  Stored %s in context: [%d, %d, %d, %d]", elem_id, current_x, current_y, group_width, element_h)
+      Console.info('  Stored %s in context: [%d, %d, %d, %d]', elem_id, current_x, current_y, group_width, element_h)
 
       for _, child_id in ipairs(children) do
         local child_entry = elements_by_id[child_id]
@@ -781,7 +781,7 @@ local function calculate_flow_positions(result, eval_context)
           if (child_coords.h or 0) == 0 then
             child_coords.h = element_h
           end
-          Console.info("    Child positioned: %s at x=%d, y=%d (w=%d)", child_id, child_coords.x, child_coords.y, child_coords.w or 0)
+          Console.info('    Child positioned: %s at x=%d, y=%d (w=%d)', child_id, child_coords.x, child_coords.y, child_coords.w or 0)
           positioned_count = positioned_count + 1
         end
       end
@@ -791,7 +791,7 @@ local function calculate_flow_positions(result, eval_context)
         current_x = current_x + group_width + elem_gap
       end
 
-    elseif elem_id:match("^tcp%.") or elem_id:match("^master%.tcp%.") then
+    elseif elem_id:match('^tcp%.') or elem_id:match('^master%.tcp%.') then
       -- Direct tcp.* element - position it
       coords.x = current_x
       coords.y = current_y
@@ -808,7 +808,7 @@ local function calculate_flow_positions(result, eval_context)
       if elem_width > 0 then
         current_x = current_x + elem_width + elem_gap
         positioned_count = positioned_count + 1
-        Console.info("  Flow positioned: %s at x=%d, y=%d (w=%d)", elem_id, coords.x, coords.y, elem_width)
+        Console.info('  Flow positioned: %s at x=%d, y=%d (w=%d)', elem_id, coords.x, coords.y, elem_width)
 
         -- Store positioned element in eval_context for dependent element lookups
         -- e.g., tcp.fxbyp references [tcp.fx tcp.fx] and tcp.fx{2} for its position
@@ -820,14 +820,14 @@ local function calculate_flow_positions(result, eval_context)
   end
 
   if positioned_count > 0 or hidden_count > 0 then
-    Console.success("Flow layout complete: positioned %d elements, hidden %d (rows: %d)", positioned_count, hidden_count, current_row + 1)
+    Console.success('Flow layout complete: positioned %d elements, hidden %d (rows: %d)', positioned_count, hidden_count, current_row + 1)
   end
 end
 
 -- Convert all elements from a section or layout items list
 -- Returns: { elements = {...}, computed_count = n, simple_count = n, eval_success = n, eval_failed = n }
 local function convert_items(items, context_filter)
-  Console.info("Converting %d items with filter '%s'", #items, context_filter or "none")
+  Console.info("Converting %d items with filter '%s'', #items, context_filter or 'none")
 
   local result = {
     elements = {},
@@ -879,7 +879,7 @@ local function convert_items(items, context_filter)
       -- Filter by context if specified
       local matches_context = true
       if context_filter then
-        matches_context = item.element and item.element:match("^" .. context_filter .. "%.")
+        matches_context = item.element and item.element:match('^' .. context_filter .. '%.')
         -- Also allow flow groups (pan_group, fx_group, input_group) for layout calculation
         if not matches_context and is_flow_group then
           matches_context = true
@@ -917,7 +917,7 @@ local function convert_items(items, context_filter)
                 flow_params = item.flow_params,
               }
               replaced_count = replaced_count + 1
-              Console.info("  REPLACED %s with flow element (w=%d)", item.element, element.coords.w or 0)
+              Console.info('  REPLACED %s with flow element (w=%d)', item.element, element.coords.w or 0)
             end
           -- Non-flow SET can REPLACE flow elements (e.g., drawTcp overrides calcTcpFlow)
           -- BUT only if the SET evaluation succeeds (otherwise keep flow position)
@@ -935,12 +935,12 @@ local function convert_items(items, context_filter)
                 flow_params = nil,
               }
               replaced_count = replaced_count + 1
-              Console.info("  REPLACED flow %s with SET statement", item.element)
+              Console.info('  REPLACED flow %s with SET statement', item.element)
             else
               -- SET evaluation failed, keep flow element
               duplicate_count = duplicate_count + 1
               if is_computed and not eval_success then
-                Console.info("  KEPT flow %s (SET expr failed)", item.element)
+                Console.info('  KEPT flow %s (SET expr failed)', item.element)
               end
             end
           else
@@ -950,21 +950,21 @@ local function convert_items(items, context_filter)
         else
           local element, is_computed, eval_success = convert_set_item(item, eval_context)
           if element then
-            local status = "simple"
+            local status = 'simple'
             if is_computed then
-              status = eval_success and "eval OK" or "eval FAIL"
+              status = eval_success and 'eval OK' or 'eval FAIL'
               -- Log failed expressions for debugging
               if not eval_success then
-                Console.warn("  FAILED EXPR for %s: %s", item.element, item.value or "(nil)")
+                Console.warn('  FAILED EXPR for %s: %s', item.element, item.value or '(nil)')
               end
             end
             -- Only log attachment values if non-zero
-            local attach_str = ""
+            local attach_str = ''
             local c = element.coords
             if c.ls ~= 0 or c.ts ~= 0 or c.rs ~= 0 or c.bs ~= 0 then
-              attach_str = string.format(" attach=[%.0f %.0f %.0f %.0f]", c.ls, c.ts, c.rs, c.bs)
+              attach_str = string.format(' attach=[%.0f %.0f %.0f %.0f]', c.ls, c.ts, c.rs, c.bs)
             end
-            Console.info("  + %s [%s] coords: x=%.0f y=%.0f w=%.0f h=%.0f%s",
+            Console.info('  + %s [%s] coords: x=%.0f y=%.0f w=%.0f h=%.0f%s',
               element.id,
               status,
               c.x, c.y, c.w, c.h, attach_str)
@@ -1004,8 +1004,8 @@ local function convert_items(items, context_filter)
       -- Filter by context if specified
       local matches_context = true
       if context_filter then
-        matches_context = item.element:match("^" .. context_filter .. "%.") or
-                         item.element:match("^" .. context_filter .. ".%*")
+        matches_context = item.element:match('^' .. context_filter .. '%.') or
+                         item.element:match('^' .. context_filter .. '.%*')
       end
 
       if matches_context then
@@ -1024,14 +1024,14 @@ local function convert_items(items, context_filter)
   end
 
   -- Log summary with deduplication info
-  Console.success("Conversion complete: %d SET items, %d variables processed, %d matched context, %d unique elements (%d duplicates skipped, %d replaced by flow)",
+  Console.success('Conversion complete: %d SET items, %d variables processed, %d matched context, %d unique elements (%d duplicates skipped, %d replaced by flow)',
     set_count, result.variable_count, matched_count, #result.elements, duplicate_count, replaced_count)
-  Console.info("  Simple: %d | Computed: %d (eval OK: %d, eval FAIL: %d) | Cleared: %d",
+  Console.info('  Simple: %d | Computed: %d (eval OK: %d, eval FAIL: %d) | Cleared: %d',
     result.simple_count, result.computed_count, result.eval_success_count, result.eval_failed_count, result.cleared_count)
 
   -- Log sample of non-matching elements to help debug
   if #sample_non_matching > 0 then
-    Console.info("  Sample of non-matching SET elements: %s", table.concat(sample_non_matching, ", "))
+    Console.info('  Sample of non-matching SET elements: %s', table.concat(sample_non_matching, ', '))
   end
 
   -- Calculate positions for flow layout elements
@@ -1060,18 +1060,18 @@ local function parse_macro_body_item(body_entry)
   local code = body_entry.code
 
   -- Try to parse as SET statement
-  local element, value = code:match("^%s*set%s+([%w._]+)%s+(.+)$")
+  local element, value = code:match('^%s*set%s+([%w._]+)%s+(.+)$')
   if element and value then
     -- Check if value is a simple coordinate list [x y w h ...]
     local is_simple = false
     local coords = nil
 
     -- Match simple coordinate: just a bracket expression with numbers
-    local bracket_content = value:match("^%[([%d%s%-%.]+)%]$")
+    local bracket_content = value:match('^%[([%d%s%-%.]+)%]$')
     if bracket_content then
       is_simple = true
       coords = {}
-      for num in bracket_content:gmatch("[%-%.%d]+") do
+      for num in bracket_content:gmatch('[%-%.%d]+') do
         coords[#coords + 1] = tonumber(num)
       end
     end
@@ -1090,32 +1090,32 @@ local function parse_macro_body_item(body_entry)
   -- Format: then element_id   width_var   row_flag   row_val   hide_cond   hide_val
   -- Example: then tcp.recarm     OVR.tcp_recarm.width   0   0   0   0
   -- These elements are positioned by the flow layout system, we create placeholder coords
-  local then_elem = code:match("^%s*then%s+([%w._]+)")
+  local then_elem = code:match('^%s*then%s+([%w._]+)')
   if then_elem then
     -- Extract all parameters after element ID
-    local params_str = code:match("^%s*then%s+[%w._]+%s+(.*)$") or ""
+    local params_str = code:match('^%s*then%s+[%w._]+%s+(.*)$') or ''
 
     -- Parse the parameters (space-separated)
     -- Typical format: width_var row_flag row_val hide_condition hide_val
     local params = {}
-    for param in params_str:gmatch("%S+") do
+    for param in params_str:gmatch('%S+') do
       params[#params + 1] = param
     end
 
     -- Build a synthetic expression for the element
     -- The width comes from the first parameter (e.g., OVR.tcp_recarm.width)
     -- For now, create a placeholder that references the width variable
-    local width_var = params[1] or "20"
+    local width_var = params[1] or '20'
     local value_expr
 
     -- Check if width_var looks like a variable reference or a number
-    if width_var:match("^[%d%-%.]+$") then
+    if width_var:match('^[%d%-%.]+$') then
       -- It's a number, create simple coords
-      value_expr = string.format("[0 0 %s 20]", width_var)
+      value_expr = string.format('[0 0 %s 20]', width_var)
     else
       -- It's a variable reference, create expression that uses it
       -- Flow elements typically have height from context and width from variable
-      value_expr = string.format("[0 0 %s element_h]", width_var)
+      value_expr = string.format('[0 0 %s element_h]', width_var)
     end
 
     return {
@@ -1131,7 +1131,7 @@ local function parse_macro_body_item(body_entry)
   end
 
   -- Try to parse as CLEAR statement
-  local clear_elem = code:match("^%s*clear%s+([%w._*]+)%s*$")
+  local clear_elem = code:match('^%s*clear%s+([%w._*]+)%s*$')
   if clear_elem then
     return {
       type = RtconfigParser.TOKEN.CLEAR,
@@ -1153,19 +1153,19 @@ local function collect_macro_items(macros, all_items)
     local i = 1
     while i <= #macro.body do
       local body_entry = macro.body[i]
-      local code = body_entry.code or ""
+      local code = body_entry.code or ''
       local line_num = body_entry.line
 
       -- Handle line continuations: join lines ending with \
-      while code:match("\\%s*$") and i < #macro.body do
+      while code:match('\\%s*$') and i < #macro.body do
         -- Remove the trailing backslash and whitespace
-        code = code:gsub("\\%s*$", " ")
+        code = code:gsub('\\%s*$', ' ')
         -- Get next line
         i = i + 1
         local next_entry = macro.body[i]
         if next_entry then
           -- Append next line's code (trim leading whitespace for cleaner join)
-          local next_code = (next_entry.code or ""):gsub("^%s+", "")
+          local next_code = (next_entry.code or ''):gsub('^%s+', '')
           code = code .. next_code
         end
       end
@@ -1180,7 +1180,7 @@ local function collect_macro_items(macros, all_items)
         if item.is_flow_element then
           flow_items = flow_items + 1
           Console.info("  FLOW: %s from '%s' (width=%s)",
-            item.element, macro.name, item.flow_params and item.flow_params[1] or "?")
+            item.element, macro.name, item.flow_params and item.flow_params[1] or '?')
         end
       end
 
@@ -1189,7 +1189,7 @@ local function collect_macro_items(macros, all_items)
   end
 
   if flow_items > 0 then
-    Console.info("Found %d flow elements (then statements) in macros", flow_items)
+    Console.info('Found %d flow elements (then statements) in macros', flow_items)
   end
 
   return macro_items
@@ -1198,11 +1198,11 @@ end
 -- Convert elements from a specific layout
 -- @param parsed: The parsed rtconfig result
 -- @param layout_name: Name of the layout to convert (nil = all sections + layouts)
--- @param context: Filter by context (e.g., "tcp", "mcp") or nil for all
+-- @param context: Filter by context (e.g., 'tcp', 'mcp') or nil for all
 -- @return table with elements and stats
 function M.convert_layout(parsed, layout_name, context)
   if not parsed then
-    return nil, "No parsed rtconfig provided"
+    return nil, 'No parsed rtconfig provided'
   end
 
   -- If no layout specified, collect from ALL sections, macros, AND layouts
@@ -1217,16 +1217,16 @@ function M.convert_layout(parsed, layout_name, context)
         section_items = section_items + 1
       end
     end
-    Console.info("Collected %d items from %d sections", section_items, #parsed.sections)
+    Console.info('Collected %d items from %d sections', section_items, #parsed.sections)
 
     -- Collect from macro bodies (flow elements will REPLACE section duplicates)
     local macro_items = collect_macro_items(parsed.macros, all_items)
-    Console.info("Collected %d items from %d macros", macro_items, #parsed.macros)
+    Console.info('Collected %d items from %d macros', macro_items, #parsed.macros)
 
     -- Also collect from all layouts
     local before_layouts = #all_items
     collect_layout_items(parsed.layouts, all_items)
-    Console.info("Collected %d items from layouts (total: %d)", #all_items - before_layouts, #all_items)
+    Console.info('Collected %d items from layouts (total: %d)', #all_items - before_layouts, #all_items)
 
     return convert_items(all_items, context)
   end
@@ -1247,21 +1247,21 @@ function M.convert_layout(parsed, layout_name, context)
 
   local layout = find_layout(parsed.layouts, layout_name)
   if not layout then
-    return nil, "Layout '" .. layout_name .. "' not found"
+    return nil, "Layout '' .. layout_name .. '' not found"
   end
 
   return convert_items(layout.items, context)
 end
 
 -- Convert all TCP elements from parsed rtconfig (global + layouts merged)
--- This gives a "flattened" view suitable for visualization
+-- This gives a 'flattened' view suitable for visualization
 function M.convert_tcp_elements(parsed)
-  return M.convert_layout(parsed, nil, "tcp")
+  return M.convert_layout(parsed, nil, 'tcp')
 end
 
 -- Convert all MCP elements from parsed rtconfig
 function M.convert_mcp_elements(parsed)
-  return M.convert_layout(parsed, nil, "mcp")
+  return M.convert_layout(parsed, nil, 'mcp')
 end
 
 -- Get list of available layouts for a context
@@ -1272,7 +1272,7 @@ function M.get_layouts_for_context(parsed, context)
     -- Check if this layout has items for the context
     local has_context_items = false
     for _, item in ipairs(layout.items) do
-      if item.element and item.element:match("^" .. context .. "%.") then
+      if item.element and item.element:match('^' .. context .. '%.') then
         has_context_items = true
         break
       end
@@ -1319,28 +1319,28 @@ end
 -- Check if an element is a visual element (should be rendered on canvas)
 -- Non-visual elements: .color, .font, .margin (these are styling, not layout)
 local function is_visual_element(element, force_visible)
-  local id = element.id or ""
+  local id = element.id or ''
   local coords = element.coords
 
   -- Filter out styling elements (not positioned on canvas) - always filter these
-  if id:match("%.color$") or id:match("%.color%.") then
+  if id:match('%.color$') or id:match('%.color%.') then
     return false
   end
-  if id:match("%.font$") or id:match("%.font%.") then
+  if id:match('%.font$') or id:match('%.font%.') then
     return false
   end
-  if id:match("%.margin$") then
+  if id:match('%.margin$') then
     return false
   end
-  if id:match("%.fadermode$") then
+  if id:match('%.fadermode$') then
     return false  -- Fader mode flags, not visual
   end
-  if id:match("%.visflags$") then
+  if id:match('%.visflags$') then
     return false  -- Visibility flags, not visual
   end
 
   -- Keep .size elements - they define container bounds
-  if id:match("%.size$") then
+  if id:match('%.size$') then
     return true
   end
 
@@ -1407,7 +1407,7 @@ function M.extract_elements(result, opts)
   end
 
   if filtered_count > 0 then
-    Console.info("Filtered %d non-visual elements (color/font/margin/zero-size)", filtered_count)
+    Console.info('Filtered %d non-visual elements (color/font/margin/zero-size)', filtered_count)
   end
 
   return elements
@@ -1445,33 +1445,33 @@ end
 function M.get_controllable_context_vars()
   return {
     -- Dimensions
-    { key = "w", label = "Track Width", type = "int", default = 400, min = 100, max = 800 },
-    { key = "h", label = "Track Height", type = "int", default = 150, min = 40, max = 300 },
-    { key = "scale", label = "DPI Scale", type = "float", default = 1.0, min = 0.5, max = 2.0 },
+    { key = 'w', label = 'Track Width', type = 'int', default = 400, min = 100, max = 800 },
+    { key = 'h', label = 'Track Height', type = 'int', default = 150, min = 40, max = 300 },
+    { key = 'scale', label = 'DPI Scale', type = 'float', default = 1.0, min = 0.5, max = 2.0 },
 
     -- Meter positioning (tcp_MeterSize controls meter width, meterRight flips position)
-    { key = "tcp_MeterSize", label = "Meter Width", type = "int", default = 50, min = 10, max = 150 },
-    { key = "meterRight", label = "Meter on Right", type = "bool", default = 0 },
+    { key = 'tcp_MeterSize', label = 'Meter Width', type = 'int', default = 50, min = 10, max = 150 },
+    { key = 'meterRight', label = 'Meter on Right', type = 'bool', default = 0 },
 
     -- Flow element widths
-    { key = "tcp_LabelSize", label = "Label Width", type = "int", default = 80, min = 0, max = 200 },
-    { key = "tcp_VolSize", label = "Volume Width", type = "int", default = 50, min = 0, max = 100 },
-    { key = "tcp_PanSize", label = "Pan Width", type = "int", default = 40, min = 0, max = 100 },
+    { key = 'tcp_LabelSize', label = 'Label Width', type = 'int', default = 80, min = 0, max = 200 },
+    { key = 'tcp_VolSize', label = 'Volume Width', type = 'int', default = 50, min = 0, max = 100 },
+    { key = 'tcp_PanSize', label = 'Pan Width', type = 'int', default = 40, min = 0, max = 100 },
 
     -- Visibility toggles
-    { key = "hide_mute_group", label = "Hide Mute/Solo", type = "bool", default = 0 },
-    { key = "hide_fx_group", label = "Hide FX", type = "bool", default = 0 },
-    { key = "hide_pan_group", label = "Hide Pan", type = "bool", default = 0 },
-    { key = "hide_volume_group", label = "Hide Volume", type = "bool", default = 0 },
-    { key = "hide_io_group", label = "Hide I/O", type = "bool", default = 0 },
-    { key = "hide_recarm_group", label = "Hide Record Arm", type = "bool", default = 0 },
-    { key = "hide_label_group", label = "Hide Label", type = "bool", default = 0 },
+    { key = 'hide_mute_group', label = 'Hide Mute/Solo', type = 'bool', default = 0 },
+    { key = 'hide_fx_group', label = 'Hide FX', type = 'bool', default = 0 },
+    { key = 'hide_pan_group', label = 'Hide Pan', type = 'bool', default = 0 },
+    { key = 'hide_volume_group', label = 'Hide Volume', type = 'bool', default = 0 },
+    { key = 'hide_io_group', label = 'Hide I/O', type = 'bool', default = 0 },
+    { key = 'hide_recarm_group', label = 'Hide Record Arm', type = 'bool', default = 0 },
+    { key = 'hide_label_group', label = 'Hide Label', type = 'bool', default = 0 },
 
     -- Track state
-    { key = "is_solo_flipped", label = "Solo Flipped", type = "bool", default = 0 },
-    { key = "recarm", label = "Record Armed", type = "bool", default = 1 },
-    { key = "track_selected", label = "Track Selected", type = "bool", default = 1 },
-    { key = "folderstate", label = "Is Folder", type = "bool", default = 0 },
+    { key = 'is_solo_flipped', label = 'Solo Flipped', type = 'bool', default = 0 },
+    { key = 'recarm', label = 'Record Armed', type = 'bool', default = 1 },
+    { key = 'track_selected', label = 'Track Selected', type = 'bool', default = 1 },
+    { key = 'folderstate', label = 'Is Folder', type = 'bool', default = 0 },
   }
 end
 

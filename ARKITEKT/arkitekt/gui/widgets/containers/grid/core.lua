@@ -6,8 +6,9 @@
 -- FIXED: Respects parent panel scrollable bounds
 -- API_MATCHING: Added ImGui-style Ark.Grid(ctx, opts) API with hidden state
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local IdStack = require('arkitekt.core.id_stack')
+local Base = require('arkitekt.gui.widgets.base')
 
 local LayoutGrid = require('arkitekt.gui.widgets.containers.grid.layout')
 local Tracks = require('arkitekt.gui.animation.tracks')
@@ -26,8 +27,6 @@ local DnDState   = require('arkitekt.gui.widgets.containers.grid.dnd_state')
 local DropZones  = require('arkitekt.gui.widgets.containers.grid.drop_zones')
 
 local M = {}
-local hexrgb = Colors.hexrgb
-
 -- ============================================================================
 -- HIDDEN STATE REGISTRY (ImGui-style API)
 -- ============================================================================
@@ -84,16 +83,16 @@ local DEFAULTS = {
   
   marquee = {
     drag_threshold = 3,
-    fill_color = hexrgb("#FFFFFF22"),
-    fill_color_add = hexrgb("#FFFFFF33"),
-    stroke_color = hexrgb("#FFFFFF"),
+    fill_color = 0xFFFFFF22,
+    fill_color_add = 0xFFFFFF33,
+    stroke_color = 0xFFFFFFFF,
     stroke_thickness = 1,
     rounding = 0,
   },
 
   dim = {
-    fill_color = hexrgb("#00000088"),
-    stroke_color = hexrgb("#FFFFFF33"),
+    fill_color = 0x00000088,
+    stroke_color = 0xFFFFFF33,
     stroke_thickness = 1.5,
     rounding = 6,
   },
@@ -101,17 +100,17 @@ local DEFAULTS = {
   drop = {
     line = {
       width = 2,
-      color = hexrgb("#42E896"),
+      color = 0x42E896FF,
       glow_width = 12,
-      glow_color = hexrgb("#42E89633"),
+      glow_color = 0x42E89633,
     },
     caps = {
       width = 8,
       height = 3,
-      color = hexrgb("#42E896"),
+      color = 0x42E896FF,
       rounding = 0,
       glow_size = 3,
-      glow_color = hexrgb("#42E89644"),
+      glow_color = 0x42E89644,
     },
     pulse_speed = 2.5,
   },
@@ -144,15 +143,15 @@ Grid.__index = Grid
 function M.new(opts)
   opts = opts or {}
 
-  local grid_id = opts.id or "grid"
+  local grid_id = opts.id or 'grid'
 
   local grid
   grid = setmetatable({
     id               = grid_id,
     gap              = opts.gap or 12,
-    min_col_w_fn     = type(opts.min_col_w) == "function" and opts.min_col_w or function() return opts.min_col_w or 160 end,
+    min_col_w_fn     = type(opts.min_col_w) == 'function' and opts.min_col_w or function() return opts.min_col_w or 160 end,
     -- fixed_tile_h_fn: If opts provides function, use it. Otherwise create function that reads from grid.fixed_tile_h
-    fixed_tile_h_fn  = type(opts.fixed_tile_h) == "function" and opts.fixed_tile_h or function() return grid.fixed_tile_h end,
+    fixed_tile_h_fn  = type(opts.fixed_tile_h) == 'function' and opts.fixed_tile_h or function() return grid.fixed_tile_h end,
     fixed_tile_h     = opts.fixed_tile_h,  -- Keep for backward compatibility with direct assignment
     get_items        = opts.get_items or function() return {} end,
     key              = opts.key or function(item) return tostring(item) end,
@@ -207,8 +206,8 @@ function M.new(opts)
     panel_clip_bounds = nil,
 
     -- Cache string IDs for performance (avoid string concatenation every frame)
-    _cached_bg_id = "##grid_bg_" .. grid_id,
-    _cached_empty_id = "##grid_empty_" .. grid_id,
+    _cached_bg_id = '##grid_bg_' .. grid_id,
+    _cached_empty_id = '##grid_empty_' .. grid_id,
 
     -- Virtual list mode for large datasets (1000+ items)
     virtual = opts.virtual or false,
@@ -304,15 +303,15 @@ function Grid:_draw_drag_visuals(ctx, dl)
   if (not all_items_dragged) and target_index and coord and alt1 and alt2 and orientation and self.render_drop_zones then
     local is_copy_mode = self.is_copy_mode_check and self.is_copy_mode_check() or false
     if orientation == 'horizontal' then
-      DropIndicator.draw(ctx, dl, cfg.drop or DEFAULTS.drop, is_copy_mode, orientation, alt1, alt2, coord)
+      DropIndicator.Draw(ctx, dl, cfg.drop or DEFAULTS.drop, is_copy_mode, orientation, alt1, alt2, coord)
     else
-      DropIndicator.draw(ctx, dl, cfg.drop or DEFAULTS.drop, is_copy_mode, orientation, coord, alt1, alt2)
+      DropIndicator.Draw(ctx, dl, cfg.drop or DEFAULTS.drop, is_copy_mode, orientation, coord, alt1, alt2)
     end
   end
 
   if num_dragged > 0 then
     local fg_dl = ImGui.GetForegroundDrawList(ctx)
-    DragIndicator.draw(ctx, fg_dl, mx, my, num_dragged, cfg.ghost or DEFAULTS.ghost)
+    DragIndicator.Draw(ctx, fg_dl, mx, my, num_dragged, cfg.ghost or DEFAULTS.ghost)
   end
 end
 
@@ -325,7 +324,7 @@ function Grid:_draw_external_drop_visuals(ctx, dl)
   local is_copy_mode = self.is_copy_mode_check and self.is_copy_mode_check() or false
   
   if self.external_drop_target.orientation == 'horizontal' then
-    DropIndicator.draw(
+    DropIndicator.Draw(
       ctx, dl,
       cfg.drop or DEFAULTS.drop,
       is_copy_mode,
@@ -335,7 +334,7 @@ function Grid:_draw_external_drop_visuals(ctx, dl)
       self.external_drop_target.coord
     )
   else
-    DropIndicator.draw(
+    DropIndicator.Draw(
       ctx, dl,
       cfg.drop or DEFAULTS.drop,
       is_copy_mode,
@@ -356,7 +355,7 @@ function Grid:_draw_marquee(ctx, dl)
   if not self.sel_rect:did_drag() then return end
 
   local cfg = self.config.marquee or DEFAULTS.marquee
-  local fill = (self.sel_rect.mode == "add") and
+  local fill = (self.sel_rect.mode == 'add') and
               (cfg.fill_color_add or DEFAULTS.marquee.fill_color_add) or
               (cfg.fill_color or DEFAULTS.marquee.fill_color)
   local stroke = cfg.stroke_color or DEFAULTS.marquee.stroke_color
@@ -429,6 +428,9 @@ function Grid:_draw_virtual(ctx, items, num_items)
   if not self.block_all_input then
     keyboard_consumed = Input.handle_shortcuts(self, ctx)
     wheel_consumed = Input.handle_wheel_input(self, ctx, items)
+
+    -- Handle scroll-to-selection after keyboard navigation
+    Input.handle_pending_scroll(self, ctx)
   end
 
   if wheel_consumed then
@@ -521,7 +523,7 @@ function Grid:_draw_virtual(ctx, items, num_items)
 
   self.hover_id = nil
   self.current_rects = {}
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   if self.clip_rendering and self.visual_bounds then
     ImGui.PushClipRect(ctx, self.visual_bounds[1], self.visual_bounds[2], self.visual_bounds[3], self.visual_bounds[4], true)
@@ -562,10 +564,10 @@ function Grid:_draw_virtual(ctx, items, num_items)
     self.render_item(ctx, rect, item, state, self)
 
     -- Check for double-click on tile
-    if bg_double_clicked and Draw.point_in_rect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
+    if bg_double_clicked and Draw.PointInRect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
       mouse_over_tile = true
       double_clicked_tile_key = key
-    elseif deferred_marquee_start and Draw.point_in_rect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
+    elseif deferred_marquee_start and Draw.PointInRect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
       mouse_over_tile = true
     end
   end
@@ -584,7 +586,7 @@ function Grid:_draw_virtual(ctx, items, num_items)
     local mx, my = ImGui.GetMousePos(ctx)
     local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
     local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
-    local mode = (ctrl or shift) and "add" or "replace"
+    local mode = (ctrl or shift) and 'add' or 'replace'
 
     self.sel_rect:begin(mx, my, mode, ctx)
     if self.on_click_empty then self.on_click_empty() end
@@ -700,6 +702,9 @@ function Grid:_draw_virtual(ctx, items, num_items)
 end
 
 function Grid:draw(ctx)
+  -- Store ctx for behavior callbacks that need ImGui access
+  self._ctx = ctx
+
   local items = self.get_items()
   -- Cache table length for performance (avoid recalculating #items multiple times)
   local num_items = #items
@@ -739,7 +744,7 @@ function Grid:draw(ctx)
     ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
     -- Render destruction animations even when grid is empty
-    local dl = ImGui.GetWindowDrawList(ctx)
+    local dl = Base.get_context(ctx):draw_list()
     self.animator:render_destroy_effects(ctx, dl)
 
     self:_update_external_drop_target(ctx)
@@ -767,8 +772,11 @@ function Grid:draw(ctx)
   if not self.block_all_input then
     keyboard_consumed = Input.handle_shortcuts(self, ctx)
     wheel_consumed = Input.handle_wheel_input(self, ctx, items)
+
+    -- Handle scroll-to-selection after keyboard navigation
+    Input.handle_pending_scroll(self, ctx)
   end
-  
+
   if wheel_consumed then
     local current_scroll_y = ImGui.GetScrollY(ctx)
     ImGui.SetScrollY(ctx, current_scroll_y)
@@ -963,7 +971,7 @@ function Grid:draw(ctx)
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
   self.hover_id = nil
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   
   if self.clip_rendering and self.visual_bounds then
     ImGui.PushClipRect(ctx, self.visual_bounds[1], self.visual_bounds[2], self.visual_bounds[3], self.visual_bounds[4], true)
@@ -1045,7 +1053,7 @@ function Grid:draw(ctx)
         if is_dragged and key == self.drag.ids[1] then
           if ImGui.BeginDragDropSource(ctx) then
             ImGui.SetDragDropPayload(ctx, self.drag_payload_type, self.drag_payload_data)
-            ImGui.Text(ctx, self.drag_label or ("Dragging " .. #self.drag.ids .. " item(s)"))
+            ImGui.Text(ctx, self.drag_label or ('Dragging ' .. #self.drag.ids .. ' item(s)'))
             ImGui.EndDragDropSource(ctx)
           end
         end
@@ -1068,7 +1076,7 @@ function Grid:draw(ctx)
       local item = items[i]
       local key = self.key(item)
       local r = self.rect_track:get(key)
-      if r and Draw.point_in_rect(mx, my, r[1], r[2], r[3], r[4]) then
+      if r and Draw.PointInRect(mx, my, r[1], r[2], r[3], r[4]) then
         mouse_over_tile = true
         if bg_double_clicked then
           double_clicked_tile_key = key
@@ -1088,7 +1096,7 @@ function Grid:draw(ctx)
     local mx, my = ImGui.GetMousePos(ctx)
     local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
     local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
-    local mode = (ctrl or shift) and "add" or "replace"
+    local mode = (ctrl or shift) and 'add' or 'replace'
 
     self.sel_rect:begin(mx, my, mode, ctx)
     if self.on_click_empty then self.on_click_empty() end
@@ -1317,10 +1325,16 @@ local function _build_result(grid)
     -- Hover
     hovered_key = grid.hover_id,
 
+    -- Focus (for keyboard navigation)
+    focus_key = grid.focus_key,
+
+    -- Selection instance (for advanced operations)
+    selection = grid.selection,
+
     -- Animation state (useful for throttling expensive operations during resize)
     is_animating = grid.rect_track:is_animating(),
 
-    -- Grid instance for advanced operations (selection, behaviors, etc.)
+    -- Grid instance for advanced operations (behaviors, etc.)
     grid = grid,
   }
 end
@@ -1357,16 +1371,42 @@ local function _update_grid_from_opts(grid, opts)
     grid.behaviors = opts.behaviors
   end
 
-  -- Update layout parameters (may change per-frame for resize shortcuts)
+  -- Update layout parameters (may change per-frame for responsive sizing)
+  if opts.gap ~= nil then
+    grid.gap = opts.gap
+  end
   if opts.fixed_tile_h ~= nil then
     grid.fixed_tile_h = opts.fixed_tile_h
     -- Also update the function version if it's not already a function
-    if type(opts.fixed_tile_h) ~= "function" then
+    if type(opts.fixed_tile_h) ~= 'function' then
       grid.fixed_tile_h_fn = function() return grid.fixed_tile_h end
     end
   end
   if opts.min_col_w ~= nil then
     grid.min_col_w = opts.min_col_w
+  end
+  if opts.extend_input_area ~= nil then
+    grid.extend_input_area = opts.extend_input_area
+  end
+
+  -- Update drag/drop configuration
+  if opts.external_drag_check ~= nil then
+    grid.external_drag_check = opts.external_drag_check
+  end
+  if opts.is_copy_mode_check ~= nil then
+    grid.is_copy_mode_check = opts.is_copy_mode_check
+  end
+  if opts.accept_external_drops ~= nil then
+    grid.accept_external_drops = opts.accept_external_drops
+  end
+  if opts.on_external_drop ~= nil then
+    grid.on_external_drop = opts.on_external_drop
+  end
+  if opts.on_click_empty ~= nil then
+    grid.on_click_empty = opts.on_click_empty
+  end
+  if opts.disable_background_clicks ~= nil then
+    grid.disable_background_clicks = opts.disable_background_clicks
   end
 
   -- Update feature flags
@@ -1436,7 +1476,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Options table (id required)
 --- @return table Result object with selection, drag, reorder state
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   -- Reset frame tracking
   reset_frame_tracking(ctx)
 
@@ -1449,14 +1489,14 @@ function M.draw(ctx, opts)
     id = opts.id
   else
     -- Use stack + fallback
-    local base_id = "grid"
+    local base_id = 'grid'
     id = IdStack.resolve(ctx, base_id)
   end
 
   -- Debug: Check for duplicate IDs in same frame
   if DEBUG and _grid_state.frame_ids[id] then
-    local info = debug.getinfo(2, "Sl")
-    local source = info and info.short_src or "unknown"
+    local info = debug.getinfo(2, 'Sl')
+    local source = info and info.short_src or 'unknown'
     local line = info and info.currentline or 0
     reaper.ShowConsoleMsg(string.format(
       "[ARKITEKT] Warning: Ark.Grid duplicate ID '%s' in same frame - state will be shared!\n  at %s:%d\n",
@@ -1514,9 +1554,9 @@ end
 -- MODULE EXPORT
 -- ============================================================================
 
--- Make module callable: Ark.Grid(ctx, opts) → M.draw(ctx, opts)
+-- Make module callable: Ark.Grid(ctx, opts) → M.Draw(ctx, opts)
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

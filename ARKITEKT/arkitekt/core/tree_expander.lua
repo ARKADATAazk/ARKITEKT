@@ -34,17 +34,17 @@ end
 function M.expand(root, config)
   -- Validate config
   if not config.get_children then
-    error("tree_expander requires config.get_children function")
+    error('tree_expander requires config.get_children function')
   end
   if not config.is_leaf then
-    error("tree_expander requires config.is_leaf function")
+    error('tree_expander requires config.is_leaf function')
   end
 
   -- Set defaults
   config.get_repetitions = config.get_repetitions or function() return 1 end
   config.is_enabled = config.is_enabled or function() return true end
   config.get_key = config.get_key or function(node) return tostring(node) end
-  config.get_type = config.get_type or function() return "default" end
+  config.get_type = config.get_type or function() return 'default' end
   config.get_value = config.get_value or function(node) return node end
   config.detect_cycles = config.detect_cycles ~= false
 
@@ -145,7 +145,7 @@ function M.expand(root, config)
           -- Add nested ranges with proper offset
           for nested_key, nested_range in pairs(new_nested_ranges) do
             local offset = rep_start - 1
-            local unique_key = (rep > 1) and (nested_key .. "_rep" .. rep) or nested_key
+            local unique_key = (rep > 1) and (nested_key .. '_rep' .. rep) or nested_key
             range_map[unique_key] = {
               start_idx = nested_range.start_idx + offset,
               end_idx = nested_range.end_idx + offset,
@@ -186,11 +186,14 @@ end
 --- @param get_key? function(item) -> any Get key (default: tostring)
 --- @return any[] sequence Flat array with repetitions
 function M.expand_flat(items, get_repetitions, get_key)
+  if not items then return {} end
+
   get_repetitions = get_repetitions or function() return 1 end
   get_key = get_key or function(item) return tostring(item) end
 
+  local root = {items = items}
   local config = {
-    get_children = function() return {} end,
+    get_children = function() return items end,
     is_leaf = function() return true end,
     get_repetitions = get_repetitions,
     get_key = get_key,
@@ -198,17 +201,7 @@ function M.expand_flat(items, get_repetitions, get_key)
     detect_cycles = false,
   }
 
-  local root = {items = items}
-  local root_config = {
-    get_children = function() return items end,
-    is_leaf = function(item) return true end,
-    get_repetitions = get_repetitions,
-    get_key = get_key,
-    get_value = function(item) return item end,
-    detect_cycles = false,
-  }
-
-  local sequence = M.expand(root, root_config)
+  local sequence = M.expand(root, config)
   return sequence
 end
 

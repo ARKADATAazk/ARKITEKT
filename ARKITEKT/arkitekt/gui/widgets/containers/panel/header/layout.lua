@@ -3,9 +3,9 @@
 -- Layout engine for header elements with corner detection
 -- Enhanced with left/right alignment support
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
-local ConfigUtil = require('arkitekt.core.config')
+local ConfigUtil = require('arkitekt.core.merge')
 
 local M = {}
 
@@ -22,7 +22,7 @@ local COMPONENTS = {
   separator = require('arkitekt.gui.widgets.containers.panel.header.separator'),
   custom = {
     -- Custom element type that accepts a draw callback
-    draw = function(ctx, dl, x, y, width, height, config, state)
+    Draw = function(ctx, dl, x, y, width, height, config, state)
       if config.on_draw then
         config.on_draw(ctx, dl, x, y, width, height, state)
       end
@@ -40,7 +40,7 @@ local Combo = require('arkitekt.gui.widgets.primitives.combo')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
 COMPONENTS.template_header_controls = {
-  draw = function(ctx, dl, x, y, width, height, config, state)
+  Draw = function(ctx, dl, x, y, width, height, config, state)
     local row1_height = 26
     local row_spacing = 4
     local row2_y = y + row1_height + row_spacing
@@ -51,17 +51,17 @@ COMPONENTS.template_header_controls = {
     -- Template count (120px)
     if config.get_template_count then
       local count = config.get_template_count()
-      local label = string.format("%d template%s", count, count == 1 and "" or "s")
+      local label = string.format('%d template%s', count, count == 1 and '' or 's')
 
-      Button.draw(ctx, {
-        id = "template_count",
+      Button.Draw(ctx, {
+        id = 'template_count',
         draw_list = dl,
         x = cursor_x,
         y = y,
         width = 120,
         height = row1_height,
         label = label,
-        interactive = false,
+        is_blocking = true,
         style = {
           bg_color = 0x00000000,  -- Transparent
           text_color = 0xAAAAAAFF,
@@ -77,12 +77,12 @@ COMPONENTS.template_header_controls = {
     local search_x = x + width - sort_width - search_width - 8
 
     if config.get_search_query and config.on_search_changed then
-      InputText.search(ctx, {
+      InputText.Search(ctx, {
         x = search_x,
         y = y,
         width = search_width,
         height = row1_height,
-        placeholder = "Search templates...",
+        placeholder = 'Search templates...',
         get_value = config.get_search_query,
         on_change = config.on_search_changed,
         draw_list = dl,
@@ -93,22 +93,22 @@ COMPONENTS.template_header_controls = {
     -- Sort dropdown (140px, right side)
     if config.get_sort_mode and config.on_sort_changed then
       local sort_x = search_x + search_width + 8
-      Combo.draw(ctx, {
+      Combo.Draw(ctx, {
         x = sort_x,
         y = y,
         width = sort_width,
         height = row1_height,
         draw_list = dl,
         panel_state = state,
-        tooltip = "Sort by",
+        tooltip = 'Sort by',
         tooltip_delay = 0.5,
         enable_sort = false,
         get_value = config.get_sort_mode,
         options = {
-          { value = "alphabetical", label = "Alphabetical" },
-          { value = "usage", label = "Most Used" },
-          { value = "insertion", label = "Recently Added" },
-          { value = "color", label = "Color" },
+          { value = 'alphabetical', label = 'Alphabetical' },
+          { value = 'usage', label = 'Most Used' },
+          { value = 'insertion', label = 'Recently Added' },
+          { value = 'color', label = 'Color' },
         },
         enable_mousewheel = true,
         on_change = config.on_sort_changed,
@@ -120,7 +120,7 @@ COMPONENTS.template_header_controls = {
       local items = config.get_filter_items()
       if #items > 0 then
         ImGui.SetCursorScreenPos(ctx, x, row2_y)
-        local clicked_id = ChipList.draw(ctx, items, {
+        local clicked_id = ChipList.Draw(ctx, items, {
           max_width = width,
           chip_height = 18,
           chip_spacing = 4,
@@ -137,7 +137,7 @@ COMPONENTS.template_header_controls = {
     return width
   end,
 
-  measure = function(ctx, config, state)
+  Measure = function(ctx, config, state)
     return 0  -- Dynamic width
   end,
 }
@@ -158,8 +158,8 @@ local function calculate_element_width(ctx, element, state)
     return nil
   end
   
-  if component.measure then
-    return component.measure(ctx, element.config or {}, state)
+  if component.Measure then
+    return component.Measure(ctx, element.config or {}, state)
   end
   
   return 0
@@ -173,18 +173,18 @@ local function separate_by_alignment(elements)
   local left = {}
   local center = {}
   local right = {}
-  
+
   for _, element in ipairs(elements) do
-    local align = element.align or "left"
-    if align == "right" then
+    local align = element.align or 'left'
+    if align == 'right' then
       right[#right + 1] = element
-    elseif align == "center" then
+    elseif align == 'center' then
       center[#center + 1] = element
     else
       left[#left + 1] = element
     end
   end
-  
+
   return left, center, right
 end
 
@@ -273,17 +273,17 @@ local function find_separator_neighbors(elements, separator_index)
   return left_neighbor, right_neighbor
 end
 
-local function calculate_corner_rounding(layout, header_rounding, is_bottom, side)
+local function calculate_corner_rounding(layout, header_rounding, is_bottom, side, default_rounding_mode)
   local rounding_info = {}
 
   local first_idx = find_first_non_separator(layout)
   local last_idx = find_last_non_separator(layout)
 
   -- Determine which edges get outer rounding based on side
-  -- "full" = both edges, "left" = left edge only, "right" = right edge only
-  side = side or "full"
-  local use_left_edge = (side == "full" or side == "left")
-  local use_right_edge = (side == "full" or side == "right")
+  -- 'full' = both edges, 'left' = left edge only, 'right' = right edge only
+  side = side or 'full'
+  local use_left_edge = (side == 'full' or side == 'left')
+  local use_right_edge = (side == 'full' or side == 'right')
 
   for i, item in ipairs(layout) do
     if is_separator(item.element.type) then
@@ -316,11 +316,11 @@ local function calculate_corner_rounding(layout, header_rounding, is_bottom, sid
         end
       end
 
-      -- Check for rounding_mode override in element config
-      -- "top" = force top corners, "bottom" = force bottom corners, nil = auto
-      local rounding_mode = item.element.config and item.element.config.rounding_mode
+      -- Check for rounding_mode override in element config, or use header default
+      -- 'top' = force top corners, 'bottom' = force bottom corners, nil = auto
+      local rounding_mode = (item.element.config and item.element.config.rounding_mode) or default_rounding_mode
 
-      if rounding_mode == "bottom" then
+      if rounding_mode == 'bottom' then
         -- Force bottom corners (e.g., transport panel buttons)
         rounding_info[i] = {
           round_top_left = false,
@@ -329,7 +329,7 @@ local function calculate_corner_rounding(layout, header_rounding, is_bottom, sid
           round_bottom_right = is_last or sep_on_right,
           rounding = header_rounding,
         }
-      elseif rounding_mode == "top" then
+      elseif rounding_mode == 'top' then
         -- Force top corners
         rounding_info[i] = {
           round_top_left = is_first or sep_on_left,
@@ -368,7 +368,7 @@ end
 -- ============================================================================
 
 local function get_or_create_element_state(state, element)
-  if element.type == "tab_strip" then
+  if element.type == 'tab_strip' then
     local element_state = state[element.id]
     if not element_state then
       element_state = {
@@ -381,9 +381,9 @@ local function get_or_create_element_state(state, element)
       }
       state[element.id] = element_state
     end
-    
+
     if not element_state.dragging_tab then
-      if state.tabs and type(state.tabs) == "table" then
+      if state.tabs and type(state.tabs) == 'table' then
         if element_state.tabs ~= state.tabs then
           element_state.tabs = state.tabs
           element_state._tabs_version = (element_state._tabs_version or 0) + 1
@@ -425,13 +425,13 @@ local STANDARDIZED_WIDGETS = {
   combo = true,
 }
 
-local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom, valign, side)
+local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom, valign, side, default_rounding_mode)
   if not elements or #elements == 0 then
     return 0
   end
 
   local layout = layout_elements(ctx, elements, width, state)
-  local rounding_info = calculate_corner_rounding(layout, header_rounding, is_bottom, side)
+  local rounding_info = calculate_corner_rounding(layout, header_rounding, is_bottom, side, default_rounding_mode)
 
   local border_overlap = 1
   local cursor_x = x
@@ -457,7 +457,11 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
     end
 
     local component = COMPONENTS[element.type]
-    if component and component.draw then
+    -- Check if component exists and is either callable or has Draw method
+    local is_callable = type(component) == 'table' and getmetatable(component) and getmetatable(component).__call
+    local has_draw = type(component) == 'table' and component.Draw
+
+    if component and (is_callable or has_draw) then
       -- Merge panel ELEMENT_STYLE as fallback (won't override preset colors)
       local style_defaults = PanelConfig.ELEMENT_STYLE[element.type] or {}
       local element_config = ConfigUtil.merge_safe(element.config or {}, style_defaults)
@@ -470,32 +474,32 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
       end
 
       -- Update button label from panel current_mode if this is a mode_toggle button
-      if element.type == "button" and element.id == "mode_toggle" and state.current_mode then
-        if state.current_mode == "regions" then
-          element_config.label = "Regions"
-        elseif state.current_mode == "playlists" then
-          element_config.label = "Playlists"
-        elseif state.current_mode == "mixed" then
-          element_config.label = "Mixed"
+      if element.type == 'button' and element.id == 'mode_toggle' and state.current_mode then
+        if state.current_mode == 'regions' then
+          element_config.label = 'Regions'
+        elseif state.current_mode == 'playlists' then
+          element_config.label = 'Playlists'
+        elseif state.current_mode == 'mixed' then
+          element_config.label = 'Mixed'
         end
       end
 
       -- Evaluate function-based labels (for dynamic content)
-      if element_config.label and type(element_config.label) == "function" then
+      if element_config.label and type(element_config.label) == 'function' then
         element_config.label = element_config.label(state)
       end
 
       -- Evaluate get_value for checkboxes (dynamic checked state)
-      if element.type == "checkbox" and element_config.get_value and type(element_config.get_value) == "function" then
-        element_config.checked = element_config.get_value()
+      if element.type == 'checkbox' and element_config.get_value and type(element_config.get_value) == 'function' then
+        element_config.is_checked = element_config.get_value()
       end
 
       local element_state = get_or_create_element_state(state, element)
 
       local used_width
 
-      -- Use new opts-based API for standardized widgets
-      if STANDARDIZED_WIDGETS[element.type] then
+      -- Use callable module API for standardized widgets (preferred)
+      if STANDARDIZED_WIDGETS[element.type] and is_callable then
         -- Build opts table for standardized widget API
         local opts = element_config
         opts.x = cursor_x
@@ -505,11 +509,12 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
         opts.draw_list = dl
         opts.panel_state = element_state
 
-        local result = component.draw(ctx, opts)
+        -- Call module directly via __call metamethod: component(ctx, opts)
+        local result = component(ctx, opts)
         used_width = result and result.width or element_width
       else
-        -- Use old positional API for non-standardized widgets
-        used_width = component.draw(
+        -- Use positional API for non-standardized widgets (tab_strip, separator, custom)
+        used_width = component.Draw(
           ctx, dl,
           cursor_x, y,
           element_width, height,
@@ -574,7 +579,7 @@ end
 -- MAIN DRAW FUNCTION
 -- ============================================================================
 
-function M.draw(ctx, dl, x, y, width, height, state, config)
+function M.Draw(ctx, dl, x, y, width, height, state, config)
   if not config or not config.elements or #config.elements == 0 then
     return 0
   end
@@ -589,7 +594,8 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
   local content_y = y
 
   local header_rounding = config.rounding or 8
-  local is_bottom = config.position == "bottom"
+  local is_bottom = config.position == 'bottom'
+  local default_rounding_mode = config.element_rounding_mode  -- 'top', 'bottom', or nil for auto
 
   -- Apply clipping to prevent header elements from overflowing panel bounds
   ImGui.DrawList_PushClipRect(dl, x, y, x + width, y + height, true)
@@ -605,10 +611,10 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
       center_width = center_width + item.width
     end
 
-    local valign = config.valign or "top"
+    local valign = config.valign or 'top'
     -- Pixel snap center position to prevent blurry borders
     local center_x = (content_x + (content_width - center_width) / 2 + 0.5) // 1
-    render_elements(ctx, dl, center_x, content_y, center_width, content_height, center_elements, state, header_rounding, is_bottom, valign, "full")
+    render_elements(ctx, dl, center_x, content_y, center_width, content_height, center_elements, state, header_rounding, is_bottom, valign, 'full', default_rounding_mode)
 
     -- Draw clip edge borders if content overflows (use actual rendered width, not allocated content_width)
     draw_clip_edge_borders(dl, x, y, width, height, center_x, center_x + center_width)
@@ -634,11 +640,11 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     end
 
     -- Render left-aligned elements (only left edge gets outer rounding)
-    render_elements(ctx, dl, content_x, content_y, left_width, content_height, left_elements, state, header_rounding, is_bottom, nil, "left")
+    render_elements(ctx, dl, content_x, content_y, left_width, content_height, left_elements, state, header_rounding, is_bottom, nil, 'left', default_rounding_mode)
 
     -- Render right-aligned elements (only right edge gets outer rounding)
     local right_x = content_x + content_width - right_width
-    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom, nil, "right")
+    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom, nil, 'right', default_rounding_mode)
 
     -- Draw clip edge borders if content overflows
     draw_clip_edge_borders(dl, x, y, width, height, content_x, content_x + left_width, right_x, right_x + right_width)
@@ -652,7 +658,7 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     end
 
     local right_x = content_x + content_width - right_width
-    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom, nil, "full")
+    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom, nil, 'full', default_rounding_mode)
 
     -- Draw clip edge borders if content overflows (use actual rendered width)
     draw_clip_edge_borders(dl, x, y, width, height, right_x, right_x + right_width)
@@ -666,7 +672,7 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
       left_width = left_width + item.width
     end
 
-    render_elements(ctx, dl, content_x, content_y, content_width, content_height, left_elements, state, header_rounding, is_bottom, nil, "full")
+    render_elements(ctx, dl, content_x, content_y, content_width, content_height, left_elements, state, header_rounding, is_bottom, nil, 'full', default_rounding_mode)
 
     -- Draw clip edge borders if content overflows (use actual rendered width, not allocated content_width)
     draw_clip_edge_borders(dl, x, y, width, height, content_x, content_x + left_width)

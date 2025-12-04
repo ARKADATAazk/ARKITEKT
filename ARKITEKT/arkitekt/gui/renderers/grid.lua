@@ -3,7 +3,7 @@
 -- Centralized grid/tile rendering utilities
 -- Consolidates duplicate code from package_tiles, media_grid, RegionPlaylist renderers
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 
 local M = {}
@@ -16,9 +16,9 @@ local CalcTextSize = ImGui.CalcTextSize
 -- Truncate text to fit within max_width, adding ellipsis if needed
 -- Previously duplicated in: package_tiles/renderer.lua, media_grid/renderers/base.lua, RegionPlaylist/renderers/base.lua
 function M.truncate_text(ctx, text, max_width, ellipsis)
-  ellipsis = ellipsis or "…"
+  ellipsis = ellipsis or '…'
 
-  if not text or text == "" then return "" end
+  if not text or text == '' then return '' end
 
   local text_w = CalcTextSize(ctx, text)
   if text_w <= max_width then
@@ -117,7 +117,7 @@ function M.calculate_text_position(ctx, rect, config)
   config = config or {}
   local left_padding = config.left_padding or 6
   local right_padding = config.right_padding or 6
-  local vertical_align = config.vertical_align or "center"  -- "center", "top", "bottom"
+  local vertical_align = config.vertical_align or 'center'  -- 'center', 'top', 'bottom'
   local top_padding = config.top_padding or 4
   local bottom_padding = config.bottom_padding or 4
 
@@ -130,11 +130,11 @@ function M.calculate_text_position(ctx, rect, config)
   local available_width = tile_width - left_padding - right_padding
   local text_y
 
-  if vertical_align == "center" then
+  if vertical_align == 'center' then
     text_y = y1 + (tile_height - text_height) / 2
-  elseif vertical_align == "top" then
+  elseif vertical_align == 'top' then
     text_y = y1 + top_padding
-  elseif vertical_align == "bottom" then
+  elseif vertical_align == 'bottom' then
     text_y = y2 - bottom_padding - text_height
   end
 
@@ -202,15 +202,15 @@ function M.compute_fill_color(base_color, hover_factor, config)
   local alpha = config.alpha or 0xCC
   local hover_brightness = config.hover_brightness or 0.65
 
-  local base_fill = Colors.derive_fill(base_color, {
+  local base_fill = Colors.DeriveFill(base_color, {
     desaturate = desaturation,
     brightness = brightness,
     alpha = alpha,
   })
 
   if hover_factor and hover_factor > 0 then
-    local hover_fill = Colors.adjust_brightness(base_fill, hover_brightness)
-    return Colors.lerp(base_fill, hover_fill, hover_factor)
+    local hover_fill = Colors.AdjustBrightness(base_fill, hover_brightness)
+    return Colors.Lerp(base_fill, hover_fill, hover_factor)
   end
 
   return base_fill
@@ -222,14 +222,14 @@ function M.compute_border_color(base_color, is_hovered, is_active, hover_factor,
   local hover_lerp = config.hover_lerp or 0.4
   local mode = config.color_mode or 'auto'
 
-  local border_color = Colors.derive_border(base_color, {
+  local border_color = Colors.DeriveBorder(base_color, {
     mode = (mode == 'grayscale') and 'brighten' or 'normalize',
     pullback = (mode == 'bright') and 0.85 or 0.95,
   })
 
   if is_hovered and hover_factor then
-    local selection_color = Colors.derive_selection(base_color)
-    return Colors.lerp(border_color, selection_color, hover_factor * hover_lerp)
+    local selection_color = Colors.DeriveSelection(base_color)
+    return Colors.Lerp(border_color, selection_color, hover_factor * hover_lerp)
   end
 
   return border_color

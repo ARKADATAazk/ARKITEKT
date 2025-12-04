@@ -3,11 +3,8 @@
 -- Waveform and MIDI thumbnail generation and display
 -- @migrated 2024-11-27 from services/visualization.lua
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local hexrgb = Ark.Colors.hexrgb
-
-
 local M = {}
 local utils
 local SCRIPT_DIRECTORY
@@ -20,7 +17,7 @@ local MIDI_CACHE_HEIGHT = 200
 -- Performance: Cache color conversions (5-10% faster)
 -- Uses weak table so unused colors get garbage collected
 local waveform_color_cache = {}
-setmetatable(waveform_color_cache, {__mode = "kv"})
+setmetatable(waveform_color_cache, {__mode = 'kv'})
 
 -- Compute darkened waveform/MIDI color with caching
 -- Applies HSV transformation to create contrast against tile background
@@ -40,7 +37,7 @@ local function get_waveform_color(base_color)
   v = v * bright_mult
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local col_wave = Ark.Colors.components_to_rgba(r*255, g*255, b*255, 255)
+  local col_wave = ImGui.ColorConvertDouble4ToU32(r, g, b, 1.0)
   waveform_color_cache[base_color] = col_wave
   return col_wave
 end
@@ -58,7 +55,7 @@ function M.GetItemWaveform(cache, item, uuid)
   end
 
   -- Validate item and take
-  if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+  if not item or not reaper.ValidatePtr2(0, item, 'MediaItem*') then
     return nil
   end
 
@@ -80,14 +77,14 @@ function M.GetItemWaveform(cache, item, uuid)
 
   -- Try to create PCM source from file, fallback to original source if it fails
   local source = reaper.PCM_Source_CreateFromFile(filename)
-  if not source or not reaper.ValidatePtr2(0, source, "PCM_source*") then
+  if not source or not reaper.ValidatePtr2(0, source, 'PCM_source*') then
     source = sourceraw  -- Use original source if file creation fails
   end
 
   local length = math.min(
-    reaper.GetMediaItemInfo_Value(item, "D_LENGTH"),
-    (reaper.GetMediaSourceLength(source) - reaper.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS")) *
-    (1 / reaper.GetMediaItemTakeInfo_Value(take, "D_PLAYRATE"))
+    reaper.GetMediaItemInfo_Value(item, 'D_LENGTH'),
+    (reaper.GetMediaSourceLength(source) - reaper.GetMediaItemTakeInfo_Value(take, 'D_STARTOFFS')) *
+    (1 / reaper.GetMediaItemTakeInfo_Value(take, 'D_PLAYRATE'))
   )
 
   local channels = reaper.GetMediaSourceNumChannels(source)
@@ -103,7 +100,7 @@ function M.GetItemWaveform(cache, item, uuid)
   reaper.GetMediaItemTake_Peaks(
     take,
     WAVEFORM_RESOLUTION / length,
-    reaper.GetMediaItemInfo_Value(item, "D_POSITION"),
+    reaper.GetMediaItemInfo_Value(item, 'D_POSITION'),
     channels,
     WAVEFORM_RESOLUTION,
     0,
@@ -283,7 +280,7 @@ function M.GenerateMidiThumbnail(cache, item, w, h, uuid)
   end
 
   -- Validate item
-  if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+  if not item or not reaper.ValidatePtr2(0, item, 'MediaItem*') then
     return nil
   end
 
@@ -391,16 +388,14 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
   ImGui.DrawList_PopClipRect(draw_list)
 end
 
-function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_width, uuid, cache, use_filled, show_zero_line)
+function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_width, uuid, cache, use_filled)
   -- Default to filled if not specified (for backwards compatibility)
   if use_filled == nil then use_filled = true end
-  if show_zero_line == nil then show_zero_line = false end
 
   -- Cache ImGui functions for performance
   local GetItemRectMin = ImGui.GetItemRectMin
   local GetItemRectMax = ImGui.GetItemRectMax
   local GetItemRectSize = ImGui.GetItemRectSize
-  local DrawList_AddLine = ImGui.DrawList_AddLine
   local DrawList_AddPolyline = ImGui.DrawList_AddPolyline
 
   local item_x1, item_y1 = GetItemRectMin(ctx)
@@ -414,18 +409,12 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
 
   -- Use the color directly - it's already been transformed by get_dark_waveform_color
   local col_wave = color
-  local col_zero_line = col_wave
 
   local waveform_height = item_h / 2 * 0.95
   local zero_line = item_y1 + item_h / 2
 
-  -- Draw zero line (optional)
-  if show_zero_line then
-    DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
-  end
-
   -- Performance: Cache normalized point coordinates (20x faster)
-  local cache_key = uuid and (uuid .. "_" .. width) or nil
+  local cache_key = uuid and (uuid .. '_' .. width) or nil
   local cached_polylines = cache_key and cache and cache.waveform_polylines and cache.waveform_polylines[cache_key]
 
   if cached_polylines then
@@ -697,7 +686,7 @@ function M.DisplayPreviewLine(ctx, preview_start, preview_end, draw_list)
     local item_x2, item_y2 = ImGui.GetItemRectMax(ctx)
     local item_w, item_h = ImGui.GetItemRectSize(ctx)
     local x = item_x1 + item_w * progress
-    ImGui.DrawList_AddLine(draw_list, x, item_y1, x, item_y2, hexrgb("#FFFFFF"))
+    ImGui.DrawList_AddLine(draw_list, x, item_y1, x, item_y2, 0xFFFFFFFF)
   end
 end
 

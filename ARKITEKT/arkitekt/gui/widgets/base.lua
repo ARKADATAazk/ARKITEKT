@@ -3,10 +3,11 @@
 -- Base widget utilities for standardized widget API
 -- Provides shared functionality: instance management, state handling, opts parsing
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local IdStack = require('arkitekt.core.id_stack')
+local Context = require('arkitekt.core.context')
 local Colors = require('arkitekt.core.colors')
-local Anim = require('arkitekt.core.animation')
+local Anim = require('arkitekt.config.animation')
 local CoreMath = require('arkitekt.core.math')
 
 local M = {}
@@ -15,7 +16,7 @@ local M = {}
 local CalcTextSize = ImGui.CalcTextSize
 
 -- ============================================================================
--- CONSTANTS (deprecated - use arkitekt.core.animation instead)
+-- CONSTANTS (deprecated - use arkitekt.config.animation instead)
 -- ============================================================================
 
 --- Default animation speed for hover/focus transitions
@@ -50,10 +51,10 @@ end
 --- @param ctx userdata ImGui context
 --- @param text string Text to truncate
 --- @param max_width number Maximum width in pixels
---- @param suffix string|nil Suffix to add when truncated (default "...")
+--- @param suffix string|nil Suffix to add when truncated (default '...')
 --- @return string Truncated text
 function M.truncate_text(ctx, text, max_width, suffix)
-  suffix = suffix or "..."
+  suffix = suffix or '...'
   local text_w = CalcTextSize(ctx, text)
 
   if text_w <= max_width then
@@ -98,27 +99,16 @@ end
 -- ============================================================================
 
 -- Global tracking of all registries for periodic cleanup
-local all_registries = setmetatable({}, { __mode = "v" })
+local all_registries = setmetatable({}, { __mode = 'v' })
 local last_cleanup_time = 0
 local CLEANUP_INTERVAL = 60.0  -- Cleanup every 60 seconds
 local STALE_THRESHOLD = 30.0   -- Remove instances not accessed for 30 seconds
 
--- PERFORMANCE: Cache time once per frame instead of calling reaper.time_precise() per widget
-local _cached_frame_time = nil
-local _last_frame_id = nil
-
---- Get current time (cached per frame for performance)
---- PERFORMANCE: Samples reaper.time_precise() once per frame instead of per widget
---- @param ctx userdata ImGui context (used to detect frame changes)
+--- Get current time (cached per frame via ArkContext)
+--- @param ctx userdata ImGui context
 --- @return number Current time in seconds
 local function get_frame_time(ctx)
-  -- Detect frame change using ImGui's frame count
-  local frame_id = ImGui.GetFrameCount(ctx)
-  if frame_id ~= _last_frame_id then
-    _cached_frame_time = reaper.time_precise()
-    _last_frame_id = frame_id
-  end
-  return _cached_frame_time
+  return Context.get(ctx).time
 end
 
 --- Create a new instance registry with access tracking
@@ -214,9 +204,9 @@ end
 --- @return table Merged options (metatable-based view, no allocation)
 function M.parse_opts(opts, defaults)
   -- Type check to catch incorrect API usage
-  if opts ~= nil and type(opts) ~= "table" then
-    error("parse_opts: expected table or nil for opts, got " .. type(opts) ..
-          ". Did you use the old API format instead of opts table?", 2)
+  if opts ~= nil and type(opts) ~= 'table' then
+    error('parse_opts: expected table or nil for opts, got ' .. type(opts) ..
+          '. Did you use the old API format instead of opts table?', 2)
   end
 
   -- Fast path: no opts provided, return defaults directly
@@ -238,34 +228,42 @@ end
 function M.resolve_id(ctx, opts, default_prefix)
   -- Priority 1: Explicit ID (bypasses stack)
   -- Use rawget to check if id was explicitly set (not inherited from defaults via metatable)
-  local explicit_id = rawget(opts, "id")
+  local explicit_id = rawget(opts, 'id')
   if explicit_id then
     local base_id = explicit_id
     -- Panel context: prefix with panel ID
     if opts.panel_state and opts.panel_state._panel_id then
-      return string.format("%s_%s", opts.panel_state._panel_id, base_id)
+      return string.format('%s_%s', opts.panel_state._panel_id, base_id)
     end
     return base_id
   end
 
-  -- Priority 2: Stack + fallback (label or default_prefix or "widget")
-  local base_id = rawget(opts, "label") or default_prefix or "widget"
+  -- Priority 2: Stack + fallback (label or default_prefix or 'widget')
+  local base_id = rawget(opts, 'label') or default_prefix or 'widget'
   local id = IdStack.resolve(ctx, base_id)
 
   -- Panel context: prefix with panel ID
   if opts.panel_state and opts.panel_state._panel_id then
-    return string.format("%s_%s", opts.panel_state._panel_id, id)
+    return string.format('%s_%s', opts.panel_state._panel_id, id)
   end
 
   return id
 end
 
---- Get draw list from options or window
+--- Get ArkContext for frame-cached values
+--- Widgets can use this for draw_list, time, mouse_pos, delta_time, cache, etc.
+--- @param ctx userdata ImGui context
+--- @return table ArkContext instance
+function M.get_context(ctx)
+  return Context.get(ctx)
+end
+
+--- Get draw list from options or window (cached via ArkContext)
 --- @param ctx userdata ImGui context
 --- @param opts table Options potentially containing draw_list
 --- @return userdata Draw list
 function M.get_draw_list(ctx, opts)
-  return opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  return opts.draw_list or Context.get(ctx):draw_list()
 end
 
 --- Get position from options or cursor
@@ -321,7 +319,7 @@ end
 --- @param opts table Widget options
 --- @return boolean True if widget can be interacted with
 function M.is_interactive(opts)
-  return not opts.disabled and not opts.is_blocking
+  return not opts.is_disabled and not opts.is_blocking
 end
 
 --- Get hover and active state for a rectangular region
@@ -361,34 +359,34 @@ function M.get_state_colors(base_colors, opts, is_hovered, is_active, hover_alph
   local text = base_colors.text or base_colors.text_color
 
   -- Disabled state
-  if opts.disabled then
+  if opts.is_disabled then
     return
-      base_colors.bg_disabled or Colors.with_opacity(Colors.desaturate(bg, 0.5), 0.5),
-      base_colors.border_inner_disabled or Colors.with_opacity(Colors.desaturate(border_inner, 0.5), 0.5),
-      base_colors.border_outer_disabled or Colors.with_opacity(Colors.desaturate(border_outer, 0.5), 0.5),
-      base_colors.text_disabled or Colors.with_opacity(Colors.desaturate(text, 0.5), 0.5)
+      base_colors.bg_disabled or Colors.WithOpacity(Colors.Desaturate(bg, 0.5), 0.5),
+      base_colors.border_inner_disabled or Colors.WithOpacity(Colors.Desaturate(border_inner, 0.5), 0.5),
+      base_colors.border_outer_disabled or Colors.WithOpacity(Colors.Desaturate(border_outer, 0.5), 0.5),
+      base_colors.text_disabled or Colors.WithOpacity(Colors.Desaturate(text, 0.5), 0.5)
   end
 
   -- Active state
   if is_active then
     return
-      base_colors.bg_active or Colors.adjust_brightness(bg, 0.85),
-      base_colors.border_inner_active or Colors.adjust_brightness(border_inner, 0.85),
+      base_colors.bg_active or Colors.AdjustBrightness(bg, 0.85),
+      base_colors.border_inner_active or Colors.AdjustBrightness(border_inner, 0.85),
       border_outer,
       base_colors.text_active or text
   end
 
   -- Hover state (with animation)
   if hover_alpha > 0.01 then
-    local hover_bg = base_colors.bg_hover or Colors.adjust_brightness(bg, 1.15)
-    local hover_border = base_colors.border_inner_hover or Colors.adjust_brightness(border_inner, 1.15)
+    local hover_bg = base_colors.bg_hover or Colors.AdjustBrightness(bg, 1.15)
+    local hover_border = base_colors.border_inner_hover or Colors.AdjustBrightness(border_inner, 1.15)
     local hover_text = base_colors.text_hover or text
 
     return
-      Colors.lerp(bg, hover_bg, hover_alpha),
-      Colors.lerp(border_inner, hover_border, hover_alpha),
+      Colors.Lerp(bg, hover_bg, hover_alpha),
+      Colors.Lerp(border_inner, hover_border, hover_alpha),
       border_outer,
-      Colors.lerp(text, hover_text, hover_alpha)
+      Colors.Lerp(text, hover_text, hover_alpha)
   end
 
   return bg, border_inner, border_outer, text
@@ -400,7 +398,7 @@ end
 --- @return number Modified color
 function M.apply_disabled_effect(color, opts)
   if opts.disabled then
-    return Colors.with_opacity(Colors.desaturate(color, 0.5), 0.5)
+    return Colors.WithOpacity(Colors.Desaturate(color, 0.5), 0.5)
   end
   return color
 end
@@ -499,7 +497,7 @@ end
 --- @return boolean, boolean clicked, right_clicked
 function M.create_interaction_area(ctx, id, x, y, width, height, opts)
   ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, "##" .. id, width, height)
+  ImGui.InvisibleButton(ctx, '##' .. id, width, height)
 
   if not M.is_interactive(opts) then
     return false, false
@@ -526,16 +524,16 @@ end
 --- @param y number Original Y position
 --- @param width number Widget width
 --- @param height number Widget height
---- @param advance string|nil Direction: "horizontal", "vertical", or "none"
+--- @param advance string|nil Direction: 'horizontal', 'vertical', or 'none'
 function M.advance_cursor(ctx, x, y, width, height, advance)
-  advance = advance or "vertical"
+  advance = advance or 'vertical'
 
-  if advance == "horizontal" then
+  if advance == 'horizontal' then
     ImGui.SetCursorScreenPos(ctx, x + width, y)
-  elseif advance == "vertical" then
+  elseif advance == 'vertical' then
     ImGui.SetCursorScreenPos(ctx, x, y + height)
   end
-  -- "none" = don't advance
+  -- 'none' = don't advance
 end
 
 -- ============================================================================
@@ -579,7 +577,7 @@ M.DEFAULTS = {
   draw_list = nil,
 
   -- State
-  disabled = false,
+  is_disabled = false,
   is_blocking = false,
 
   -- Style
@@ -595,7 +593,7 @@ M.DEFAULTS = {
   panel_state = nil,
 
   -- Cursor control
-  advance = "vertical",
+  advance = 'vertical',
 }
 
 return M

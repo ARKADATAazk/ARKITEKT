@@ -3,8 +3,8 @@
 -- Input handling for grid widgets - unified shortcut system
 -- FIXED: Tiles outside grid bounds are no longer interactive
 
-local ImGui = require('arkitekt.platform.imgui')
-
+local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Draw = require('arkitekt.gui.draw.primitives')
 
 -- Load overlay manager for modal blocking checks (optional dependency)
@@ -31,15 +31,15 @@ M.DEFAULT_SHORTCUTS = {
   { key = ImGui.Key_Enter, name = 'enter' },
   { key = ImGui.Key_Escape, name = 'escape' },
 
-  -- Navigation (arrow keys)
-  { key = ImGui.Key_LeftArrow, name = 'nav_left' },
-  { key = ImGui.Key_RightArrow, name = 'nav_right' },
-  { key = ImGui.Key_UpArrow, name = 'nav_up' },
-  { key = ImGui.Key_DownArrow, name = 'nav_down' },
-  { key = ImGui.Key_LeftArrow, shift = true, name = 'nav_left:shift' },
-  { key = ImGui.Key_RightArrow, shift = true, name = 'nav_right:shift' },
-  { key = ImGui.Key_UpArrow, shift = true, name = 'nav_up:shift' },
-  { key = ImGui.Key_DownArrow, shift = true, name = 'nav_down:shift' },
+  -- Navigation (arrow keys) - repeating = true for continuous hold
+  { key = ImGui.Key_LeftArrow, name = 'nav_left', repeating = true },
+  { key = ImGui.Key_RightArrow, name = 'nav_right', repeating = true },
+  { key = ImGui.Key_UpArrow, name = 'nav_up', repeating = true },
+  { key = ImGui.Key_DownArrow, name = 'nav_down', repeating = true },
+  { key = ImGui.Key_LeftArrow, shift = true, name = 'nav_left:shift', repeating = true },
+  { key = ImGui.Key_RightArrow, shift = true, name = 'nav_right:shift', repeating = true },
+  { key = ImGui.Key_UpArrow, shift = true, name = 'nav_up:shift', repeating = true },
+  { key = ImGui.Key_DownArrow, shift = true, name = 'nav_down:shift', repeating = true },
   { key = ImGui.Key_Home, name = 'nav_home' },
   { key = ImGui.Key_End, name = 'nav_end' },
 
@@ -121,6 +121,9 @@ local function navigate_to_index(grid, new_index, extend_selection)
 
   -- Track focus for future navigation
   grid.focus_key = new_key
+
+  -- Request scroll-to-selection (will be handled in next frame with ctx available)
+  grid.pending_scroll_to_key = new_key
 
   if grid.behaviors and grid.behaviors.on_select then
     grid.behaviors.on_select(grid, grid.selection:selected_keys())
@@ -285,17 +288,10 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
     return false
   end,
 
-  -- ALT+click: delete
+  -- ALT+click: disabled (Alt is reserved for Alt+double-click actions)
+  -- Delete functionality is available via Delete key
   ['click:alt'] = function(grid, key, selected_keys)
-    local behavior = grid.behaviors and (grid.behaviors['click:alt'] or grid.behaviors.delete)
-    if behavior then
-      if grid.selection:is_selected(key) and #selected_keys > 1 then
-        behavior(grid, selected_keys)
-      else
-        behavior(grid, {key})
-      end
-      return true
-    end
+    -- No-op: Alt+click is intentionally disabled
     return false
   end,
 
@@ -324,6 +320,15 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
       return true
     elseif grid.behaviors and grid.behaviors.double_click then
       grid.behaviors.double_click(grid, key)
+      return true
+    end
+    return false
+  end,
+
+  -- ALT+Double-click: immediate action (e.g., quantized jump)
+  ['double_click:alt'] = function(grid, key)
+    if grid.behaviors and grid.behaviors['double_click:alt'] then
+      grid.behaviors['double_click:alt'](grid, key)
       return true
     end
     return false
@@ -412,7 +417,7 @@ function M.is_mouse_in_exclusion(grid, ctx, item, rect)
 
   local mx, my = ImGui.GetMousePos(ctx)
   for _, z in ipairs(zones) do
-    if Draw.point_in_rect(mx, my, z[1], z[2], z[3], z[4]) then
+    if Draw.PointInRect(mx, my, z[1], z[2], z[3], z[4]) then
       return true
     end
   end
@@ -422,14 +427,14 @@ end
 function M.find_hovered_item(grid, ctx, items)
   local mx, my = ImGui.GetMousePos(ctx)
   if grid.visual_bounds then
-    if not Draw.point_in_rect(mx, my, grid.visual_bounds[1], grid.visual_bounds[2], grid.visual_bounds[3], grid.visual_bounds[4]) then
+    if not Draw.PointInRect(mx, my, grid.visual_bounds[1], grid.visual_bounds[2], grid.visual_bounds[3], grid.visual_bounds[4]) then
       return nil, nil, false
     end
   end
   for _, item in ipairs(items) do
     local key = grid.key(item)
     local rect = grid.rect_track:get(key)
-    if rect and M.is_rect_in_grid_bounds(grid, rect) and Draw.point_in_rect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
+    if rect and M.is_rect_in_grid_bounds(grid, rect) and Draw.PointInRect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
       if not M.is_mouse_in_exclusion(grid, ctx, item, rect) then
         return item, key, grid.selection:is_selected(key)
       end
@@ -439,28 +444,33 @@ function M.find_hovered_item(grid, ctx, items)
 end
 
 function M.is_shortcut_pressed(ctx, shortcut, state)
-  if not ImGui.IsKeyPressed(ctx, shortcut.key) then return false end
-  
+  -- Use repeat flag for navigation keys (continuous hold support)
+  local allow_repeat = shortcut.repeating or false
+  if not ImGui.IsKeyPressed(ctx, shortcut.key, allow_repeat) then return false end
+
   local ctrl_required = shortcut.ctrl or false
   local shift_required = shortcut.shift or false
   local alt_required = shortcut.alt or false
-  
+
   local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
   local shift_down = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
   local alt_down = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
-  
+
   if ctrl_required and not ctrl_down then return false end
   if not ctrl_required and ctrl_down then return false end
-  
+
   if shift_required and not shift_down then return false end
   if not shift_required and shift_down then return false end
-  
+
   if alt_required and not alt_down then return false end
   if not alt_required and alt_down then return false end
-  
+
+  -- Skip frame-based debounce for repeating shortcuts (ImGui handles repeat timing)
+  if allow_repeat then return true end
+
   local state_key = shortcut.name .. '_pressed_last_frame'
   if state[state_key] then return false end
-  
+
   state[state_key] = true
   return true
 end
@@ -479,6 +489,11 @@ end
 function M.handle_shortcuts(grid, ctx)
   -- Block shortcuts when any popup is open
   if ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId) then
+    return false
+  end
+
+  -- Block shortcuts when a text input or other widget has keyboard focus
+  if ImGui.IsAnyItemActive(ctx) then
     return false
   end
 
@@ -518,10 +533,11 @@ function M.handle_wheel_input(grid, ctx, items)
     return false
   end
 
-  -- Block wheel input when mouse is over a DIFFERENT window (e.g., popup on top of this grid)
-  local is_current_window_hovered = ImGui.IsWindowHovered(ctx)
-  local is_any_window_hovered = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow)
-  if is_any_window_hovered and not is_current_window_hovered then
+  -- Check if mouse is within grid bounds (more reliable than window hover for child windows)
+  if not grid.visual_bounds then return false end
+  local mx, my = ImGui.GetMousePos(ctx)
+  local vb = grid.visual_bounds
+  if mx < vb[1] or mx > vb[3] or my < vb[2] or my > vb[4] then
     return false
   end
 
@@ -585,7 +601,7 @@ function M.handle_tile_input(grid, ctx, item, rect)
 
   if grid.visual_bounds then
     local mx, my = ImGui.GetMousePos(ctx)
-    if not Draw.point_in_rect(mx, my, grid.visual_bounds[1], grid.visual_bounds[2], grid.visual_bounds[3], grid.visual_bounds[4]) then
+    if not Draw.PointInRect(mx, my, grid.visual_bounds[1], grid.visual_bounds[2], grid.visual_bounds[3], grid.visual_bounds[4]) then
       return false
     end
   end
@@ -597,7 +613,7 @@ function M.handle_tile_input(grid, ctx, item, rect)
   end
 
   local mx, my = ImGui.GetMousePos(ctx)
-  local is_hovered = Draw.point_in_rect(mx, my, rect[1], rect[2], rect[3], rect[4])
+  local is_hovered = Draw.PointInRect(mx, my, rect[1], rect[2], rect[3], rect[4])
   if is_hovered then grid.hover_id = key end
 
   if is_hovered and not grid.sel_rect:is_active() and not grid.drag.active and not M.is_external_drag_active(grid) then
@@ -668,13 +684,21 @@ function M.handle_tile_input(grid, ctx, item, rect)
       local in_text_zone = false
       if grid.text_zones and grid.text_zones[key] then
         local text_zone = grid.text_zones[key]
-        if Draw.point_in_rect(mx, my, text_zone[1], text_zone[2], text_zone[3], text_zone[4]) then
+        if Draw.PointInRect(mx, my, text_zone[1], text_zone[2], text_zone[3], text_zone[4]) then
           in_text_zone = true
         end
       end
 
+      -- Check for Alt modifier (for immediate actions like quantized jump)
+      local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+
       if in_text_zone then
         local behavior = M.resolve_mouse_behavior(grid, 'double_click:text')
+        if behavior then
+          behavior(grid, key)
+        end
+      elseif alt then
+        local behavior = M.resolve_mouse_behavior(grid, 'double_click:alt')
         if behavior then
           behavior(grid, key)
         end
@@ -706,7 +730,7 @@ function M.start_inline_edit(grid, key, initial_text)
   grid.editing_state = {
     active = true,
     key = key,
-    text = initial_text or "",
+    text = initial_text or '',
     focus_next_frame = true,
     frames_active = 0,  -- Track frames to prevent immediate cancellation
   }
@@ -744,7 +768,7 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
   state.frames_active = (state.frames_active or 0) + 1
 
   local Colors = require('arkitekt.core.colors')
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   -- Calculate text line dimensions
   local text_height = ImGui.GetTextLineHeight(ctx)
@@ -770,21 +794,21 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
   local bg_color, text_color, selection_color
   if tile_color then
     -- Create darker version of tile color for backdrop
-    bg_color = Colors.adjust_brightness(tile_color, 0.15)
-    bg_color = Colors.with_opacity(bg_color, 0.88)
+    bg_color = Colors.AdjustBrightness(tile_color, 0.15)
+    bg_color = Colors.WithOpacity(bg_color, 0.88)
 
     -- Use brighter version for text
-    text_color = Colors.adjust_brightness(tile_color, 1.8)
+    text_color = Colors.AdjustBrightness(tile_color, 1.8)
 
     -- Selection highlight - medium bright variant
-    selection_color = Colors.adjust_brightness(tile_color, 0.8)
-    selection_color = Colors.with_opacity(selection_color, 0.67)
+    selection_color = Colors.AdjustBrightness(tile_color, 0.8)
+    selection_color = Colors.WithOpacity(selection_color, 0.67)
   else
     -- Fallback colors
-    local hexrgb = Colors.hexrgb
-    bg_color = hexrgb("#1A1A1AE0")
-    text_color = hexrgb("#FFFFFFDD")
-    selection_color = hexrgb("#4444AAAA")
+    local hex = Colors.hex
+    bg_color = 0x1A1A1AE0
+    text_color = 0xFFFFFFDD
+    selection_color = 0x4444AAAA
   end
 
   -- Draw backdrop (no borders)
@@ -801,17 +825,17 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
   end
 
   -- Style the input field to be transparent (we drew our own backdrop)
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, Colors.hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x00000000)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
   ImGui.PushStyleColor(ctx, ImGui.Col_TextSelectedBg, selection_color)
 
   -- Draw input field with AutoSelectAll flag for better UX
   local changed, new_text = ImGui.InputText(
     ctx,
-    "##inline_edit_" .. key,
+    '##inline_edit_' .. key,
     state.text,
     ImGui.InputTextFlags_AutoSelectAll
   )
@@ -874,6 +898,53 @@ function M.check_start_drag(grid, ctx)
     if grid.behaviors and grid.behaviors.drag_start then
       grid.behaviors.drag_start(grid, grid.drag.ids)
     end
+  end
+end
+
+-- =============================================================================
+-- SCROLL-TO-SELECTION
+-- =============================================================================
+
+--- Handle pending scroll-to-selection request
+--- Call this from grid core after handle_shortcuts, when ctx is available
+--- @param grid table Grid instance
+--- @param ctx userdata ImGui context
+function M.handle_pending_scroll(grid, ctx)
+  local key = grid.pending_scroll_to_key
+  if not key then return end
+
+  grid.pending_scroll_to_key = nil
+
+  -- Get the rect for the target item
+  local rect = grid.rect_track and grid.rect_track:get(key)
+  if not rect then return end
+
+  -- Get visible bounds
+  local bounds = grid.visual_bounds
+  if not bounds then return end
+
+  local scroll_y = ImGui.GetScrollY(ctx)
+  local scroll_max_y = ImGui.GetScrollMaxY(ctx)
+  local visible_top = bounds[2]
+  local visible_bottom = bounds[4]
+  local visible_height = visible_bottom - visible_top
+
+  -- Item position relative to scroll area
+  local item_top = rect[2]
+  local item_bottom = rect[4]
+  local item_height = item_bottom - item_top
+
+  -- Padding to keep item away from edges
+  local padding = 10
+
+  -- Check if item is above visible area
+  if item_top < visible_top + padding then
+    local delta = visible_top - item_top + padding
+    ImGui.SetScrollY(ctx, math.max(0, scroll_y - delta))
+  -- Check if item is below visible area
+  elseif item_bottom > visible_bottom - padding then
+    local delta = item_bottom - visible_bottom + padding
+    ImGui.SetScrollY(ctx, math.min(scroll_max_y, scroll_y + delta))
   end
 end
 

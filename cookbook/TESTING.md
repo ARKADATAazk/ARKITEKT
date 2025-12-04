@@ -275,11 +275,11 @@ Results are logged to the REAPER console via Logger:
 
 ```
 tests/
-├── domain/                    # Pure domain tests
+├── domain/                    # Domain tests
 │   ├── playlist_tests.lua
 │   ├── region_tests.lua
 │   └── dependency_tests.lua
-├── platform/                  # Platform wrapper tests
+├── core/                      # Core utility tests
 │   └── theme_params_tests.lua
 └── integration/               # Full integration tests
     ├── storage_tests.lua
@@ -376,12 +376,12 @@ end
 
 ---
 
-## Platform Tests
+## Core/Integration Tests
 
-Testing `platform/` modules requires REAPER to be running:
+Testing core modules that interact with REAPER requires REAPER to be running:
 
 ```lua
--- tests/platform/theme_params_tests.lua
+-- tests/core/theme_params_tests.lua
 local TestRunner = require('arkitekt.debug.test_runner')
 local assert = TestRunner.assert
 

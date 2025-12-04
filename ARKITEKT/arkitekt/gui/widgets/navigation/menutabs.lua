@@ -2,15 +2,14 @@
 -- Arkitekt/gui/widgets/menutabs.lua
 -- Equal-width menu tabs for ReaImGui 0.9+
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Colors = require('arkitekt.core.colors')
-local Config = require('arkitekt.core.config')
-local Theme = require('arkitekt.core.theme')
+local Config = require('arkitekt.core.merge')
+local Theme = require('arkitekt.theme')
 
 local M = {}
 M.__index = M
-local hexrgb = Colors.hexrgb
-
 local DEFAULTS = {
   style = {
     height  = 30,
@@ -151,7 +150,7 @@ function M:draw(ctx)
   local x = snap(content_x1)
   local y = snap(cury)
   local w = snap(content_x2 - content_x1)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   local edges = {}
   for i = 0, n do
@@ -163,7 +162,7 @@ function M:draw(ctx)
 
   for i = 1, n do
     local it = items[i]
-    local label = (it.label or it.id or ("Tab "..i))
+    local label = (it.label or it.id or ('Tab '..i))
     local disabled = (it.disabled == true)
 
     local x1 = edges[i-1]
@@ -173,7 +172,7 @@ function M:draw(ctx)
     local tab_w = (x2 - x1)
 
     ImGui.SetCursorScreenPos(ctx, x1, y1)
-    local _pressed = ImGui.InvisibleButton(ctx, "##tab"..i, tab_w, y2 - y1, ImGui.ButtonFlags_None or 0)
+    local _pressed = ImGui.InvisibleButton(ctx, '##tab'..i, tab_w, y2 - y1, ImGui.ButtonFlags_None or 0)
 
     local hovered = ImGui.IsItemHovered(ctx)
     local held    = ImGui.IsItemActive(ctx)
@@ -254,7 +253,8 @@ function M:draw(ctx)
     ImGui.Dummy(ctx, 1, self.style.spacing_after)
   end
 
-  if ImGui.IsWindowFocused(ctx, ImGui.FocusedFlags_ChildWindows or 0) then
+  -- Keyboard navigation (only when no text input is active)
+  if ImGui.IsWindowFocused(ctx, ImGui.FocusedFlags_ChildWindows or 0) and not ImGui.IsAnyItemActive(ctx) then
     local left  = ImGui.IsKeyPressed(ctx, ImGui.Key_LeftArrow  or 0, false)
     local right = ImGui.IsKeyPressed(ctx, ImGui.Key_RightArrow or 0, false)
     local home  = ImGui.IsKeyPressed(ctx, ImGui.Key_Home       or 0, false)

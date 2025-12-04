@@ -2,16 +2,14 @@
 -- ThemeAdjuster/ui/views/mcp_view.lua
 -- MCP (Mixer Control Panel) configuration tab
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 local ThemeMapper = require('ThemeAdjuster.domain.theme.mapper')
 local ParamDiscovery = require('ThemeAdjuster.domain.theme.discovery')
-local Strings = require('ThemeAdjuster.defs.strings')
+local Strings = require('ThemeAdjuster.config.strings')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
-local hexrgb = Ark.Colors.hexrgb
-
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
@@ -135,7 +133,7 @@ function MCPView:get_param_index(param_name)
   -- Get parameter index from theme layout
   -- Returns nil if not found
   local ok, idx = pcall(reaper.ThemeLayout_GetParameter, param_name)
-  if ok and type(idx) == "number" then
+  if ok and type(idx) == 'number' then
     return idx
   end
   return nil
@@ -161,19 +159,19 @@ function MCPView:toggle_bitflag(param_name, bit)
 end
 
 function MCPView:get_default_layout()
-  -- Get the default MCP layout (returns layout name like "A", "B", "C")
-  local ok, layout_name = pcall(reaper.ThemeLayout_GetLayout, "mcp", -1)
-  if ok and layout_name and type(layout_name) == "string" then
-    -- Extract just the layout letter (might be "A", "150%_B", etc.)
-    local layout = string.match(layout_name, "([ABC])") or "A"
+  -- Get the default MCP layout (returns layout name like 'A', 'B', 'C')
+  local ok, layout_name = pcall(reaper.ThemeLayout_GetLayout, 'mcp', -1)
+  if ok and layout_name and type(layout_name) == 'string' then
+    -- Extract just the layout letter (might be 'A', '150%_B', etc.)
+    local layout = string.match(layout_name, '([ABC])') or 'A'
     return layout
   end
-  return "A"
+  return 'A'
 end
 
 function MCPView:set_default_layout(layout)
   -- Set the default MCP layout for new tracks
-  local ok = pcall(reaper.ThemeLayout_SetLayout, "mcp", -1, layout)
+  local ok = pcall(reaper.ThemeLayout_SetLayout, 'mcp', -1, layout)
   return ok
 end
 
@@ -185,7 +183,7 @@ function MCPView:get_additional_params()
 
   -- Cache the result to avoid recalculating every frame
   if not self.cached_additional_params then
-    self.cached_additional_params = self.additional_view:get_assigned_params("MCP")
+    self.cached_additional_params = self.additional_view:get_assigned_params('MCP')
   end
 
   return self.cached_additional_params
@@ -199,24 +197,24 @@ end
 function MCPView:draw_additional_param(ctx, param)
   -- Vertical stacked layout for narrow column
   -- Use custom display name if available, otherwise use param name
-  local display_name = (param.display_name and param.display_name ~= "")
+  local display_name = (param.display_name and param.display_name ~= '')
     and param.display_name or param.name
 
   -- Label
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCCCCCCFF)
   ImGui.Text(ctx, display_name)
   ImGui.PopStyleColor(ctx)
 
   -- Tooltip with custom description or default info
   if ImGui.IsItemHovered(ctx) then
     local tooltip
-    if param.custom_description and param.custom_description ~= "" then
+    if param.custom_description and param.custom_description ~= '' then
       -- Use custom description
       tooltip = param.custom_description
     else
       -- Use default technical info
       tooltip = string.format(
-        "Parameter: %s\nType: %s\nRange: %.1f - %.1f\nDefault: %.1f\nCurrent: %.1f",
+        'Parameter: %s\nType: %s\nRange: %.1f - %.1f\nDefault: %.1f\nCurrent: %.1f',
         param.name,
         param.type,
         param.min,
@@ -236,14 +234,14 @@ function MCPView:draw_additional_param(ctx, param)
   local changed = false
   local new_value = param.value
 
-  if param.type == "toggle" then
+  if param.type == 'toggle' then
     local is_checked = (param.value ~= 0)
-    if Ark.Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "mcp_add_" .. param.index) then
+    if Ark.Checkbox(ctx, {id = 'mcp_add_' .. param.index, label = '', is_checked = is_checked}).clicked then
       changed = true
       new_value = is_checked and 0 or 1
     end
 
-  elseif param.type == "spinner" then
+  elseif param.type == 'spinner' then
     local values = {}
     for i = param.min, param.max do
       table.insert(values, tostring(i))
@@ -252,8 +250,8 @@ function MCPView:draw_additional_param(ctx, param)
     local current_idx = math.floor(param.value - param.min + 1)
     current_idx = math.max(1, math.min(current_idx, #values))
 
-    local spinner_result = Ark.Spinner.draw(ctx, {
-      id = "##mcp_add_spinner_" .. param.index,
+    local spinner_result = Ark.Spinner(ctx, {
+      id = '##mcp_add_spinner_' .. param.index,
       value = current_idx,
       options = values,
       width = control_w,
@@ -266,15 +264,15 @@ function MCPView:draw_additional_param(ctx, param)
       new_value = param.min + (new_idx - 1)
     end
 
-  elseif param.type == "slider" then
+  elseif param.type == 'slider' then
     ImGui.SetNextItemWidth(ctx, control_w)
     local changed_slider, slider_value = ImGui.SliderDouble(
       ctx,
-      "##mcp_add_slider_" .. param.index,
+      '##mcp_add_slider_' .. param.index,
       param.value,
       param.min,
       param.max,
-      "%.1f"
+      '%.1f'
     )
 
     if changed_slider then
@@ -283,8 +281,8 @@ function MCPView:draw_additional_param(ctx, param)
     end
 
   else
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
-    ImGui.Text(ctx, string.format("%.1f", param.value))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
+    ImGui.Text(ctx, string.format('%.1f', param.value))
     ImGui.PopStyleColor(ctx)
   end
 
@@ -305,21 +303,21 @@ function MCPView:draw(ctx, shell_state)
 
   -- Title
   ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
-  ImGui.Text(ctx, "Mixer Control Panel")
+  ImGui.Text(ctx, 'Mixer Control Panel')
   ImGui.PopFont(ctx)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-  ImGui.Text(ctx, "Configure mixer appearance and element visibility")
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
+  ImGui.Text(ctx, 'Configure mixer appearance and element visibility')
   ImGui.PopStyleColor(ctx)
 
   -- Default 6.0 params toggle (right-aligned)
   ImGui.SameLine(ctx, avail_w - 180)
   local show_d60 = self.State.get_show_default_60_params()
-  if Ark.Checkbox.draw_at_cursor(ctx, "Default 6.0 params", show_d60, nil, "mcp_d60_toggle") then
+  if Ark.Checkbox(ctx, {label = 'Default 6.0 params', is_checked = show_d60}).clicked then
     self.State.set_show_default_60_params(not show_d60)
   end
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Show Default 6.0 theme-specific sizing and visibility controls")
+    ImGui.SetTooltip(ctx, 'Show Default 6.0 theme-specific sizing and visibility controls')
   end
 
   ImGui.Dummy(ctx, 0, 8)
@@ -330,8 +328,8 @@ function MCPView:draw(ctx, shell_state)
   local right_width = has_additional and (avail_w * 0.4 - 8) or 0
 
   -- Left column (main controls)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "mcp_left", left_width, 0, 1) then
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
+  if ImGui.BeginChild(ctx, 'mcp_left', left_width, 0, 1) then
     -- Draw background pattern (using panel defaults)
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
@@ -341,7 +339,7 @@ function MCPView:draw(ctx, shell_state)
       primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
       secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
     }
-    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Dummy(ctx, 0, 4)
 
@@ -349,29 +347,30 @@ function MCPView:draw(ctx, shell_state)
 
     -- Layout & Size Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "ACTIVE LAYOUT & SIZE")
+    ImGui.Text(ctx, 'ACTIVE LAYOUT & SIZE')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
     -- Active Layout
     ImGui.AlignTextToFramePadding(ctx)
-    ImGui.Text(ctx, "Active Layout")
+    ImGui.Text(ctx, 'Active Layout')
     ImGui.SameLine(ctx, 120)
 
     for _, layout in ipairs({'A', 'B', 'C'}) do
       local is_active = (self.active_layout == layout)
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = 'mcp_layout_' .. layout,
         label = layout,
         width = 50,
         height = 24,
         is_toggled = is_active,
-        preset_name = "BUTTON_TOGGLE_WHITE",
+        preset_name = 'BUTTON_TOGGLE_WHITE',
         on_click = function()
           self.active_layout = layout
           ThemeParams.set_active_layout('mcp', layout)
           self:load_from_theme()
         end
-      }, "mcp_layout_" .. layout) then
+      }).clicked then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -381,11 +380,12 @@ function MCPView:draw(ctx, shell_state)
 
     -- Apply Size
     ImGui.AlignTextToFramePadding(ctx)
-    ImGui.Text(ctx, "Apply Size")
+    ImGui.Text(ctx, 'Apply Size')
     ImGui.SameLine(ctx, 120)
 
     for _, size in ipairs({'100%', '150%', '200%'}) do
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = 'mcp_size_' .. size,
         label = size,
         width = 70,
         height = 24,
@@ -393,7 +393,7 @@ function MCPView:draw(ctx, shell_state)
           local scale = (size == '100%') and '' or (size .. '_')
           ThemeParams.apply_layout_to_tracks('mcp', self.active_layout, scale)
         end
-      }, "mcp_size_" .. size) then
+      }).clicked then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -407,26 +407,27 @@ function MCPView:draw(ctx, shell_state)
 
     ImGui.AlignTextToFramePadding(ctx)
     if is_default then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#00FF88"))
-      ImGui.Text(ctx, "Default Layout")
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x00FF88FF)
+      ImGui.Text(ctx, 'Default Layout')
       ImGui.PopStyleColor(ctx)
     else
-      ImGui.Text(ctx, "Default Layout")
+      ImGui.Text(ctx, 'Default Layout')
     end
     ImGui.SameLine(ctx, 120)
 
-    if Ark.Button.draw_at_cursor(ctx, {
-      label = is_default and ("✓ " .. self.active_layout .. " is Default") or ("Set " .. self.active_layout .. " as Default"),
+    if Ark.Button(ctx, {
+      id = 'mcp_set_default',
+      label = is_default and ('✓ ' .. self.active_layout .. ' is Default') or ('Set ' .. self.active_layout .. ' as Default'),
       width = 200,
       height = 24,
       is_toggled = is_default,
-      preset_name = is_default and "BUTTON_TOGGLE_WHITE" or nil,
+      preset_name = is_default and 'BUTTON_TOGGLE_WHITE' or nil,
       on_click = function()
         if not is_default then
           self:set_default_layout(self.active_layout)
         end
       end
-    }, "mcp_set_default") then
+    }).clicked then
     end
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetTooltip(ctx, Strings.format(Strings.MCP.set_default_layout, self.active_layout))
@@ -438,7 +439,7 @@ function MCPView:draw(ctx, shell_state)
     -- Sizing Controls Section (Default 6.0 specific)
     if show_d60 then
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "SIZING CONTROLS")
+    ImGui.Text(ctx, 'SIZING CONTROLS')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
@@ -455,13 +456,13 @@ function MCPView:draw(ctx, shell_state)
       local label_text_w = ImGui.CalcTextSize(ctx, label)
       ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + label_w - label_text_w)
       ImGui.AlignTextToFramePadding(ctx)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
       ImGui.Text(ctx, label)
       ImGui.PopStyleColor(ctx)
 
       -- Spinner (fixed position, fixed width)
       ImGui.SameLine(ctx, 0, 8)
-      local spinner_result = Ark.Spinner.draw(ctx, {
+      local spinner_result = Ark.Spinner(ctx, {
         id = id,
         value = idx,
         options = values,
@@ -477,30 +478,30 @@ function MCPView:draw(ctx, shell_state)
 
     -- Column 1: Layout
     ImGui.BeginGroup(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "Layout")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
+    ImGui.Text(ctx, 'Layout')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
 
-    local changed, new_idx = draw_spinner_row("Indent", "mcp_indent", self.mcp_indent_idx, SPINNER_VALUES.mcp_indent)
+    local changed, new_idx = draw_spinner_row('Indent', 'mcp_indent', self.mcp_indent_idx, SPINNER_VALUES.mcp_indent)
     if changed then
       self.mcp_indent_idx = new_idx
       ThemeParams.set_param('mcp_indent', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Alignment", "mcp_align", self.mcp_align_idx, SPINNER_VALUES.mcp_align)
+    changed, new_idx = draw_spinner_row('Alignment', 'mcp_align', self.mcp_align_idx, SPINNER_VALUES.mcp_align)
     if changed then
       self.mcp_align_idx = new_idx
       ThemeParams.set_param('mcp_align', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Border", "mcp_border", self.mcp_border_idx, SPINNER_VALUES.mcp_border)
+    changed, new_idx = draw_spinner_row('Border', 'mcp_border', self.mcp_border_idx, SPINNER_VALUES.mcp_border)
     if changed then
       self.mcp_border_idx = new_idx
       ThemeParams.set_param('mcp_border', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Ext Mixer", "mcp_extmixer_mode", self.mcp_extmixer_mode_idx, SPINNER_VALUES.mcp_extmixer_mode)
+    changed, new_idx = draw_spinner_row('Ext Mixer', 'mcp_extmixer_mode', self.mcp_extmixer_mode_idx, SPINNER_VALUES.mcp_extmixer_mode)
     if changed then
       self.mcp_extmixer_mode_idx = new_idx
       ThemeParams.set_param('mcp_extmixer_mode', new_idx, true)
@@ -511,30 +512,30 @@ function MCPView:draw(ctx, shell_state)
     -- Column 2: Element Sizing
     ImGui.SameLine(ctx, col_w + 8)
     ImGui.BeginGroup(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "Element Sizing")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
+    ImGui.Text(ctx, 'Element Sizing')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
 
-    changed, new_idx = draw_spinner_row("Label", "mcp_labelSize", self.mcp_labelSize_idx, SPINNER_VALUES.mcp_labelSize)
+    changed, new_idx = draw_spinner_row('Label', 'mcp_labelSize', self.mcp_labelSize_idx, SPINNER_VALUES.mcp_labelSize)
     if changed then
       self.mcp_labelSize_idx = new_idx
       ThemeParams.set_param('mcp_labelSize', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Volume", "mcp_volSize", self.mcp_volSize_idx, SPINNER_VALUES.mcp_volSize)
+    changed, new_idx = draw_spinner_row('Volume', 'mcp_volSize', self.mcp_volSize_idx, SPINNER_VALUES.mcp_volSize)
     if changed then
       self.mcp_volSize_idx = new_idx
       ThemeParams.set_param('mcp_volSize', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Meter Exp", "mcp_meterExpSize", self.mcp_meterExpSize_idx, SPINNER_VALUES.mcp_meterExpSize)
+    changed, new_idx = draw_spinner_row('Meter Exp', 'mcp_meterExpSize', self.mcp_meterExpSize_idx, SPINNER_VALUES.mcp_meterExpSize)
     if changed then
       self.mcp_meterExpSize_idx = new_idx
       ThemeParams.set_param('mcp_meterExpSize', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("I/O", "mcp_io_size", self.mcp_io_size_idx, SPINNER_VALUES.mcp_io_size)
+    changed, new_idx = draw_spinner_row('I/O', 'mcp_io_size', self.mcp_io_size_idx, SPINNER_VALUES.mcp_io_size)
     if changed then
       self.mcp_io_size_idx = new_idx
       ThemeParams.set_param('mcp_io_size', new_idx, true)
@@ -545,30 +546,30 @@ function MCPView:draw(ctx, shell_state)
     -- Column 3: List Sizing
     ImGui.SameLine(ctx, (col_w * 2) + 8)
     ImGui.BeginGroup(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "List Sizing")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
+    ImGui.Text(ctx, 'List Sizing')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
 
-    changed, new_idx = draw_spinner_row("FX List", "mcp_fxlist_size", self.mcp_fxlist_size_idx, SPINNER_VALUES.mcp_fxlist_size)
+    changed, new_idx = draw_spinner_row('FX List', 'mcp_fxlist_size', self.mcp_fxlist_size_idx, SPINNER_VALUES.mcp_fxlist_size)
     if changed then
       self.mcp_fxlist_size_idx = new_idx
       ThemeParams.set_param('mcp_fxlist_size', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Send List", "mcp_sendlist_size", self.mcp_sendlist_size_idx, SPINNER_VALUES.mcp_sendlist_size)
+    changed, new_idx = draw_spinner_row('Send List', 'mcp_sendlist_size', self.mcp_sendlist_size_idx, SPINNER_VALUES.mcp_sendlist_size)
     if changed then
       self.mcp_sendlist_size_idx = new_idx
       ThemeParams.set_param('mcp_sendlist_size', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Vol Text", "mcp_volText_pos", self.mcp_volText_pos_idx, SPINNER_VALUES.mcp_volText_pos)
+    changed, new_idx = draw_spinner_row('Vol Text', 'mcp_volText_pos', self.mcp_volText_pos_idx, SPINNER_VALUES.mcp_volText_pos)
     if changed then
       self.mcp_volText_pos_idx = new_idx
       ThemeParams.set_param('mcp_volText_pos', new_idx, true)
     end
 
-    changed, new_idx = draw_spinner_row("Pan Text", "mcp_panText_pos", self.mcp_panText_pos_idx, SPINNER_VALUES.mcp_panText_pos)
+    changed, new_idx = draw_spinner_row('Pan Text', 'mcp_panText_pos', self.mcp_panText_pos_idx, SPINNER_VALUES.mcp_panText_pos)
     if changed then
       self.mcp_panText_pos_idx = new_idx
       ThemeParams.set_param('mcp_panText_pos', new_idx, true)
@@ -581,11 +582,11 @@ function MCPView:draw(ctx, shell_state)
 
     -- Options Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "OPTIONS")
+    ImGui.Text(ctx, 'OPTIONS')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    if Ark.Checkbox.draw_at_cursor(ctx, "Hide MCP of master track", self.hide_mcp_master, nil, "mcp_hide_master") then
+    if Ark.Checkbox(ctx, {label = 'Hide MCP of master track', is_checked = self.hide_mcp_master}).clicked then
       self.hide_mcp_master = not self.hide_mcp_master
       reaper.Main_OnCommand(41588, 0)  -- Toggle hide master track in mixer
     end
@@ -593,7 +594,7 @@ function MCPView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 3)
 
-    if Ark.Checkbox.draw_at_cursor(ctx, "Indicate tracks that are folder parents", self.folder_parent_indicator, nil, "mcp_folder_indicator") then
+    if Ark.Checkbox(ctx, {label = 'Indicate tracks that are folder parents', is_checked = self.folder_parent_indicator}).clicked then
       self.folder_parent_indicator = not self.folder_parent_indicator
       reaper.Main_OnCommand(40864, 0)  -- Toggle folder parent indicator in mixer
     end
@@ -603,12 +604,12 @@ function MCPView:draw(ctx, shell_state)
 
     -- Extended Mixer Controls Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "EXTENDED MIXER CONTROLS")
+    ImGui.Text(ctx, 'EXTENDED MIXER CONTROLS')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-    ImGui.Text(ctx, "Toggle mixer display options")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
+    ImGui.Text(ctx, 'Toggle mixer display options')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 6)
 
@@ -617,29 +618,30 @@ function MCPView:draw(ctx, shell_state)
       local state = reaper.GetToggleCommandState(command_id)
       local is_on = (state == 1)
 
-      if Ark.Button.draw_at_cursor(ctx, {
+      if Ark.Button(ctx, {
+        id = button_id,
         label = label,
         width = 220,
         height = 28,
         is_toggled = is_on,
-        preset_name = "BUTTON_TOGGLE_WHITE",
+        preset_name = 'BUTTON_TOGGLE_WHITE',
         on_click = function()
           reaper.Main_OnCommand(command_id, 0)
         end
-      }, button_id) then
+      }).clicked then
       end
       return is_on
     end
 
     -- Row 1: Show FX & Show Params
-    draw_action_toggle("Show FX Inserts", 40549, "mcp_show_fx")
+    draw_action_toggle('Show FX Inserts', 40549, 'mcp_show_fx')
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetTooltip(ctx, Strings.MCP.show_fx)
     end
 
     ImGui.SameLine(ctx, 0, 8)
 
-    draw_action_toggle("Show FX Parameters", 40910, "mcp_show_params")
+    draw_action_toggle('Show FX Parameters', 40910, 'mcp_show_params')
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetTooltip(ctx, Strings.MCP.show_params)
     end
@@ -647,14 +649,14 @@ function MCPView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 4)
 
     -- Row 2: Show Sends & Multi-row
-    draw_action_toggle("Show Sends", 40557, "mcp_show_sends")
+    draw_action_toggle('Show Sends', 40557, 'mcp_show_sends')
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetTooltip(ctx, Strings.MCP.show_sends)
     end
 
     ImGui.SameLine(ctx, 0, 8)
 
-    draw_action_toggle("Multi-row Mixer", 40371, "mcp_multi_row")
+    draw_action_toggle('Multi-row Mixer', 40371, 'mcp_multi_row')
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetTooltip(ctx, Strings.MCP.multi_row)
     end
@@ -662,14 +664,14 @@ function MCPView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 4)
 
     -- Row 3: Scroll to Selected & Show Icons
-    draw_action_toggle("Scroll to Selected", 40221, "mcp_scroll_selected")
+    draw_action_toggle('Scroll to Selected', 40221, 'mcp_scroll_selected')
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetTooltip(ctx, Strings.MCP.scroll_to_selected)
     end
 
     ImGui.SameLine(ctx, 0, 8)
 
-    draw_action_toggle("Show Icons", 40903, "mcp_show_icons")
+    draw_action_toggle('Show Icons', 40903, 'mcp_show_icons')
     if ImGui.IsItemHovered(ctx) then
       ImGui.SetTooltip(ctx, Strings.MCP.show_icons)
     end
@@ -680,20 +682,20 @@ function MCPView:draw(ctx, shell_state)
     -- Element Visibility Section (Default 6.0 specific)
     if show_d60 then
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "ELEMENT VISIBILITY")
+    ImGui.Text(ctx, 'ELEMENT VISIBILITY')
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-    ImGui.Text(ctx, "Control when mixer elements are visible")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
+    ImGui.Text(ctx, 'Control when mixer elements are visible')
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 2)
 
     -- Table
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_CellPadding, 6, 4)
-    if ImGui.BeginTable(ctx, "mcp_visibility", 5, ImGui.TableFlags_Borders | ImGui.TableFlags_RowBg | ImGui.TableFlags_ScrollY, avail_w - 16, 300) then
+    if ImGui.BeginTable(ctx, 'mcp_visibility', 5, ImGui.TableFlags_Borders | ImGui.TableFlags_RowBg | ImGui.TableFlags_ScrollY, avail_w - 16, 300) then
       -- Setup columns
-      ImGui.TableSetupColumn(ctx, "Element", ImGui.TableColumnFlags_WidthFixed, 130)
+      ImGui.TableSetupColumn(ctx, 'Element', ImGui.TableColumnFlags_WidthFixed, 130)
       for _, col in ipairs(VISIBILITY_COLUMNS) do
         ImGui.TableSetupColumn(ctx, col.label, ImGui.TableColumnFlags_WidthFixed, 85)
       end
@@ -716,12 +718,12 @@ function MCPView:draw(ctx, shell_state)
           local current_value = self.visibility[elem.id] or 0
           local is_checked = (current_value & col.bit) ~= 0
 
-          ImGui.PushID(ctx, elem.id .. "_" .. col.bit)
-          if ImGui.Checkbox(ctx, "##check", is_checked) then
+          ImGui.PushID(ctx, elem.id .. '_' .. col.bit)
+          if ImGui.Checkbox(ctx, '##check', is_checked) then
             self:toggle_bitflag(elem.id, col.bit)
           end
           if ImGui.IsItemHovered(ctx) then
-            local tooltip = Strings.MCP_VIS_ELEMENTS[elem.id] or ("Toggle " .. elem.label)
+            local tooltip = Strings.MCP_VIS_ELEMENTS[elem.id] or ('Toggle ' .. elem.label)
             ImGui.SetTooltip(ctx, tooltip)
           end
           ImGui.PopID(ctx)
@@ -743,8 +745,8 @@ function MCPView:draw(ctx, shell_state)
   if has_additional then
     ImGui.SameLine(ctx, 0, 8)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-    if ImGui.BeginChild(ctx, "mcp_right", right_width, 0, 1) then
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
+    if ImGui.BeginChild(ctx, 'mcp_right', right_width, 0, 1) then
       -- Draw background pattern
       local child_x, child_y = ImGui.GetWindowPos(ctx)
       local child_w, child_h = ImGui.GetWindowSize(ctx)
@@ -754,20 +756,20 @@ function MCPView:draw(ctx, shell_state)
         primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
         secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
       }
-      Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+      Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
       ImGui.Dummy(ctx, 0, 4)
       ImGui.Indent(ctx, 8)
 
       -- Additional Parameters Section
       ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#E24A90"))
-      ImGui.Text(ctx, "ADDITIONAL PARAMETERS")
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xE24A90FF)
+      ImGui.Text(ctx, 'ADDITIONAL PARAMETERS')
       ImGui.PopStyleColor(ctx)
       ImGui.PopFont(ctx)
       ImGui.Dummy(ctx, 0, 4)
 
-      local tab_color = hexrgb("#E8C547")  -- MCP yellow color
+      local tab_color = 0xE8C547FF  -- MCP yellow color
       for _, param in ipairs(additional_params) do
         AdditionalParamTile.render(ctx, param, tab_color, shell_state, self.additional_view)
       end

@@ -19,12 +19,12 @@ M.enabled = false
 
 function M.init()
   if M.enabled then
-    reaper.ShowConsoleMsg("[Profiler] Already initialized\n")
+    reaper.ShowConsoleMsg('[Profiler] Already initialized\n')
     return true
   end
 
   -- Check feature flag OR launch_args.profiler from DevKit
-  local ok, Features = pcall(require, 'arkitekt.defs.features')
+  local ok, Features = pcall(require, 'arkitekt.config.features')
   local feature_enabled = ok and Features and Features.PROFILER_ENABLED
 
   -- Also check if launched with profiler flag from DevKit
@@ -40,10 +40,10 @@ function M.init()
   
   -- Try to load profiler
   local profiler_path = reaper.GetResourcePath() .. '/Scripts/ReaTeam Scripts/Development/cfillion_Lua profiler.lua'
-  local profiler_file = io.open(profiler_path, "r")
+  local profiler_file = io.open(profiler_path, 'r')
   
   if not profiler_file then
-    reaper.ShowConsoleMsg("[Profiler] Not found at: " .. profiler_path .. "\n")
+    reaper.ShowConsoleMsg('[Profiler] Not found at: ' .. profiler_path .. '\n')
     reaper.ShowConsoleMsg("[Profiler] Install via: Extensions > ReaPack > Browse Packages > Search 'Lua profiler'\n")
     return false
   end
@@ -55,7 +55,7 @@ function M.init()
   reaper.defer = M.profiler.defer
   
   M.enabled = true
-  reaper.ShowConsoleMsg("[Profiler] Loaded successfully\n")
+  reaper.ShowConsoleMsg('[Profiler] Loaded successfully\n')
   
   return true
 end
@@ -65,14 +65,14 @@ function M.attach_locals(opts)
   
   opts = opts or { recursive = true }
   M.profiler.attachToLocals(opts)
-  reaper.ShowConsoleMsg("[Profiler] Attached to local scope\n")
+  reaper.ShowConsoleMsg('[Profiler] Attached to local scope\n')
 end
 
 function M.attach_world()
   if not M.enabled or not M.profiler then return end
   
   M.profiler.attachToWorld()
-  reaper.ShowConsoleMsg("[Profiler] Attached to world scope (all globals)\n")
+  reaper.ShowConsoleMsg('[Profiler] Attached to world scope (all globals)\n')
 end
 
 function M.attach_to(target, opts)
@@ -80,7 +80,7 @@ function M.attach_to(target, opts)
   
   opts = opts or { recursive = true }
   M.profiler.attachTo(target, opts)
-  reaper.ShowConsoleMsg("[Profiler] Attached to: " .. target .. "\n")
+  reaper.ShowConsoleMsg('[Profiler] Attached to: ' .. target .. '\n')
 end
 
 function M.launch_window()
@@ -91,8 +91,8 @@ function M.launch_window()
     M.profiler.run()
   end)
   
-  reaper.ShowConsoleMsg("[Profiler] Window launched\n")
-  reaper.ShowConsoleMsg("[Profiler] IMPORTANT: Go to Acquisition menu > Select slot > Click START\n")
+  reaper.ShowConsoleMsg('[Profiler] Window launched\n')
+  reaper.ShowConsoleMsg('[Profiler] IMPORTANT: Go to Acquisition menu > Select slot > Click START\n')
 end
 
 function M.get_profiler()

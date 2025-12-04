@@ -15,7 +15,7 @@ local DEBUG_DOMAIN = false
 --- @return table domain The UI preferences domain instance
 function M.new(constants, settings)
   local domain = {
-    search_filter = "",
+    search_filter = '',
     sort_mode = nil,
     sort_direction = constants.SORT_DIRECTIONS.ASC,
     layout_mode = constants.LAYOUT_MODES.HORIZONTAL,
@@ -27,26 +27,26 @@ function M.new(constants, settings)
   }
 
   if DEBUG_DOMAIN then
-    Logger.debug("UI_PREFERENCES", "Domain initialized")
+    Logger.debug('UI_PREFERENCES', 'Domain initialized')
   end
 
   --- Load preferences from settings
   function domain:load_from_settings()
     if not self.settings then
       if DEBUG_DOMAIN then
-        Logger.debug("UI_PREFERENCES", "No settings instance, using defaults")
+        Logger.debug('UI_PREFERENCES', 'No settings instance, using defaults')
       end
       return
     end
 
-    self.search_filter = self.settings:get('pool_search') or ""
+    self.search_filter = self.settings:get('pool_search') or ''
     self.sort_mode = self.settings:get('pool_sort')
-    self.sort_direction = self.settings:get('pool_sort_direction') or "asc"
+    self.sort_direction = self.settings:get('pool_sort_direction') or 'asc'
     self.layout_mode = self.settings:get('layout_mode') or 'horizontal'
     self.pool_mode = self.settings:get('pool_mode') or 'regions'
 
     if DEBUG_DOMAIN then
-      Logger.debug("UI_PREFERENCES", "Loaded: search='%s', sort=%s:%s, layout=%s, pool=%s",
+      Logger.debug('UI_PREFERENCES', "Loaded: search='%s', sort=%s:%s, layout=%s, pool=%s",
         self.search_filter,
         tostring(self.sort_mode),
         self.sort_direction,
@@ -67,7 +67,7 @@ function M.new(constants, settings)
     self.settings:set('pool_mode', self.pool_mode)
 
     if DEBUG_DOMAIN then
-      Logger.debug("UI_PREFERENCES", "Saved: search='%s', sort=%s:%s, layout=%s, pool=%s",
+      Logger.debug('UI_PREFERENCES', "Saved: search='%s', sort=%s:%s, layout=%s, pool=%s",
         self.search_filter,
         tostring(self.sort_mode),
         self.sort_direction,
@@ -85,7 +85,7 @@ function M.new(constants, settings)
   function domain:set_search_filter(text)
     self.search_filter = text
     if DEBUG_DOMAIN then
-      Logger.debug("UI_PREFERENCES", "Search filter: '%s'", text)
+      Logger.debug('UI_PREFERENCES', "Search filter: '%s'", text)
     end
   end
 
@@ -97,7 +97,7 @@ function M.new(constants, settings)
   function domain:set_sort_mode(mode)
     self.sort_mode = mode
     if DEBUG_DOMAIN then
-      Logger.debug("UI_PREFERENCES", "Sort mode: %s", tostring(mode))
+      Logger.debug('UI_PREFERENCES', 'Sort mode: %s', tostring(mode))
     end
   end
 
@@ -114,7 +114,7 @@ function M.new(constants, settings)
     end
     self.sort_direction = direction
     if DEBUG_DOMAIN then
-      Logger.debug("UI_PREFERENCES", "Sort direction: %s", direction)
+      Logger.debug('UI_PREFERENCES', 'Sort direction: %s', direction)
     end
   end
 
@@ -131,7 +131,7 @@ function M.new(constants, settings)
     end
     self.layout_mode = mode
     if DEBUG_DOMAIN then
-      Logger.debug("UI_PREFERENCES", "Layout mode: %s", mode)
+      Logger.debug('UI_PREFERENCES', 'Layout mode: %s', mode)
     end
   end
 
@@ -149,7 +149,7 @@ function M.new(constants, settings)
     end
     self.pool_mode = mode
     if DEBUG_DOMAIN then
-      Logger.debug("UI_PREFERENCES", "Pool mode: %s", mode)
+      Logger.debug('UI_PREFERENCES', 'Pool mode: %s', mode)
     end
   end
 

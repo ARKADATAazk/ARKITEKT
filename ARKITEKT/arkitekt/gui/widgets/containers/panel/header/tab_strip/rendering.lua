@@ -2,15 +2,13 @@
 -- arkitekt/gui/widgets/containers/panel/header/tab_strip/rendering.lua
 -- Tab rendering logic: drawing tabs, buttons, track background
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local InteractionBlocking = require('arkitekt.gui.interaction.blocking')
 local Colors = require('arkitekt.core.colors')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ColorPickerMenu = require('arkitekt.gui.widgets.menus.color_picker_menu')
-
-local hexrgb = Colors.hexrgb
 
 local M = {}
 
@@ -82,7 +80,7 @@ function M.calculate_responsive_tab_widths(ctx, tabs, config, available_width, s
 
   for i, tab in ipairs(tabs) do
     local has_chip = tab.chip_color ~= nil
-    local text_w = ImGui.CalcTextSize(ctx, tab.label or "Tab")
+    local text_w = ImGui.CalcTextSize(ctx, tab.label or 'Tab')
 
     -- Calculate width based on actual rendering
     local left_margin = math.max(0, padding_x - 3)
@@ -165,7 +163,7 @@ function M.calculate_visible_tabs(ctx, tabs, config, available_width)
 
   for i, tab in ipairs(tabs) do
     local has_chip = tab.chip_color ~= nil
-    local tab_width = M.calculate_tab_width(ctx, tab.label or "Tab", config, has_chip)
+    local tab_width = M.calculate_tab_width(ctx, tab.label or 'Tab', config, has_chip)
     local effective_spacing = (i > 1) and spacing or 0
     if i > 1 and i <= #tabs and spacing == 0 then
       effective_spacing = -1
@@ -234,7 +232,7 @@ function M.draw_plus_button(ctx, dl, x, y, width, height, config, unique_id, cor
     icon_color)
 
   ImGui.SetCursorScreenPos(ctx, x, y)
-  local clicked = ImGui.InvisibleButton(ctx, "##plus_" .. unique_id, width, height)
+  local clicked = ImGui.InvisibleButton(ctx, '##plus_' .. unique_id, width, height)
 
   return clicked, width
 end
@@ -247,7 +245,7 @@ function M.draw_overflow_button(ctx, dl, x, y, width, height, config, hidden_cou
     if btn_cfg[k] == nil then btn_cfg[k] = v end
   end
 
-  local display_text = (hidden_count > 0) and tostring(hidden_count) or "⋮"
+  local display_text = (hidden_count > 0) and tostring(hidden_count) or '⋮'
 
   local is_hovered = InteractionBlocking.is_mouse_hovering_rect_unblocked(ctx, x, y, x + width, y + height)
   local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
@@ -280,7 +278,7 @@ function M.draw_overflow_button(ctx, dl, x, y, width, height, config, hidden_cou
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, display_text)
 
   ImGui.SetCursorScreenPos(ctx, x, y)
-  local clicked = ImGui.InvisibleButton(ctx, "##overflow_" .. unique_id, width, height)
+  local clicked = ImGui.InvisibleButton(ctx, '##overflow_' .. unique_id, width, height)
 
   return clicked
 end
@@ -325,7 +323,7 @@ function M.draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, height
     if config[k] == nil then config[k] = v end
   end
 
-  local label = tab_data.label or "Tab"
+  local label = tab_data.label or 'Tab'
   local id = tab_data.id
   local chip_color = tab_data.chip_color
   local has_chip = chip_color ~= nil
@@ -422,7 +420,7 @@ function M.draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, height
       local chip_x = content_x + 2
       local chip_y = render_y + render_h * 0.5
 
-      Chip.draw(ctx, {
+      Chip.Draw(ctx, {
         style = Chip.STYLE.INDICATOR,
         color = chip_color,
         draw_list = dl,
@@ -455,7 +453,7 @@ function M.draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, height
   end
 
   ImGui.SetCursorScreenPos(ctx, render_x, render_y)
-  ImGui.InvisibleButton(ctx, "##tab_" .. id .. "_" .. unique_id, render_w, render_h)
+  ImGui.InvisibleButton(ctx, '##tab_' .. id .. '_' .. unique_id, render_w, render_h)
 
   local clicked = ImGui.IsItemClicked(ctx, 0)
   local double_clicked = ImGui.IsItemClicked(ctx, 0) and ImGui.IsMouseDoubleClicked(ctx, 0)
@@ -496,11 +494,11 @@ function M.draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, height
   end
 
   if right_clicked then
-    ImGui.OpenPopup(ctx, "##tab_context_" .. id .. "_" .. unique_id)
+    ImGui.OpenPopup(ctx, '##tab_context_' .. id .. '_' .. unique_id)
   end
 
-  if ContextMenu.begin(ctx, "##tab_context_" .. id .. "_" .. unique_id, config.context_menu) then
-    if ContextMenu.item(ctx, "Duplicate Playlist", config.context_menu) then
+  if ContextMenu.begin(ctx, '##tab_context_' .. id .. '_' .. unique_id, config.context_menu) then
+    if ContextMenu.item(ctx, 'Duplicate Playlist', config.context_menu) then
       if config.on_tab_duplicate then
         config.on_tab_duplicate(id)
       end
@@ -509,7 +507,7 @@ function M.draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, height
 
     ImGui.Separator(ctx)
 
-    if ContextMenu.item(ctx, "Delete Playlist", config.context_menu) then
+    if ContextMenu.item(ctx, 'Delete Playlist', config.context_menu) then
       delete_requested = true
     end
 

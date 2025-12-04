@@ -4,13 +4,11 @@
 -- Opens as a draggable, always-on-top window with hue wheel picker
 -- Changes apply instantly to selected items as you adjust the color
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
 local M = {}
-local hexrgb = Colors.hexrgb
-
 -- State for each picker instance (strong tables with access tracking for cleanup)
 local instances = Base.create_instance_registry()
 
@@ -120,7 +118,7 @@ local function render_picker_contents(ctx, id, on_change)
   local changed = false
 
   -- Style the color picker with dark borders
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#000000FF"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x000000FF)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameBorderSize, 1)
 
   -- Color picker configuration
@@ -132,7 +130,7 @@ local function render_picker_contents(ctx, id, on_change)
                        ImGui.ColorEditFlags_NoLabel
 
   -- Convert our RGBA to ImGui's ARGB format
-  local argb_color = Colors.rgba_to_argb(inst.current_color)
+  local argb_color = Colors.RgbaToArgb(inst.current_color)
 
   -- Draw the color picker (hue wheel + triangle)
   local rv, new_argb_color = ImGui.ColorPicker4(ctx, '##picker_' .. id, argb_color, picker_flags)
@@ -143,7 +141,7 @@ local function render_picker_contents(ctx, id, on_change)
   -- Track color changes during dragging, but only apply on mouse release
   if rv then
     -- Convert ImGui's ARGB back to our RGBA format
-    local new_rgba = Colors.argb_to_rgba(new_argb_color)
+    local new_rgba = Colors.ArgbToRgba(new_argb_color)
     inst.current_color = new_rgba
     changed = true
 
@@ -165,8 +163,8 @@ local function render_picker_contents(ctx, id, on_change)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  local hex_str = string.format("#%06X", (inst.current_color >> 8) & 0xFFFFFF)
-  ImGui.Text(ctx, "Color: " .. hex_str)
+  local hex_str = string.format('#%06X', (inst.current_color >> 8) & 0xFFFFFF)
+  ImGui.Text(ctx, 'Color: ' .. hex_str)
 
   return changed
 end
@@ -184,7 +182,7 @@ function M.render(ctx, id, config)
     return false
   end
 
-  local title = config.title or "Color Picker"
+  local title = config.title or 'Color Picker'
   local on_change = config.on_change
 
   -- Window flags: always on top, auto-resize, with close button
@@ -204,7 +202,7 @@ function M.render(ctx, id, config)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 12, 12)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, 4)
 
-  local visible, open = ImGui.Begin(ctx, title .. "##" .. id, true, window_flags)
+  local visible, open = ImGui.Begin(ctx, title .. '##' .. id, true, window_flags)
 
   ImGui.PopStyleVar(ctx, 2)
 
@@ -226,7 +224,7 @@ function M.render(ctx, id, config)
   -- Close button at bottom
   ImGui.Spacing(ctx)
   local button_w = ImGui.GetContentRegionAvail(ctx)
-  if ImGui.Button(ctx, "Close", button_w, 0) then
+  if ImGui.Button(ctx, 'Close', button_w, 0) then
     inst.is_open = false
   end
 
@@ -287,13 +285,13 @@ function M.render_inline(ctx, id, config)
   end
 
   -- Convert RGBA to ARGB for ImGui
-  local argb_color = Colors.rgba_to_argb(inst.current_color)
+  local argb_color = Colors.RgbaToArgb(inst.current_color)
 
   local rv, new_argb_color = ImGui.ColorPicker3(ctx, '##picker_inline_' .. id, argb_color, picker_flags)
 
 
   if rv then
-    inst.current_color = Colors.argb_to_rgba(new_argb_color)
+    inst.current_color = Colors.ArgbToRgba(new_argb_color)
     inst.pending_change = true
   end
 

@@ -4,56 +4,53 @@
 -- Auto-injected package path setup for relocated script
 
 -- Package path setup for relocated script
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
+local script_path = debug.getinfo(1, 'S').source:match('@?(.*)[\\/]') or ''
 local root_path = script_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
 
 -- Ensure root_path ends with a slash
-if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
+if not root_path:match('[\\/]$') then root_path = root_path .. '/' end
 
 -- Add both module search paths
-local arkitekt_path= root_path .. "ARKITEKT/"
-local scripts_path = root_path .. "ARKITEKT/scripts/"
-package.path = arkitekt_path.. "?.lua;" .. arkitekt_path.. "?/init.lua;" .. 
-               scripts_path .. "?.lua;" .. scripts_path .. "?/init.lua;" .. 
+local arkitekt_path= root_path .. 'ARKITEKT/'
+local scripts_path = root_path .. 'ARKITEKT/scripts/'
+package.path = arkitekt_path.. '?.lua;' .. arkitekt_path.. '?/init.lua;' .. 
+               scripts_path .. '?.lua;' .. scripts_path .. '?/init.lua;' .. 
                package.path
 
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
+local script_path = debug.getinfo(1, 'S').source:match('@?(.*)[\\/]') or ''
 local root_path = script_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
-package.path = root_path .. "?.lua;" .. root_path .. "?/init.lua;" .. package.path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+root_path = root_path:match('(.*)[\\/][^\\/]+[\\/]?$') or root_path
+if not root_path:match('[\\/]$') then root_path = root_path .. '/' end
+package.path = root_path .. '?.lua;' .. root_path .. '?/init.lua;' .. package.path
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Fs = require('arkitekt.core.fs')
 
 -- Path helpers
-local function dirname(p) return p:match("^(.*)[/\\]") end
+local function dirname(p) return p:match('^(.*)[/\\]') end
 local join = Fs.join
-local SRC   = debug.getinfo(1,"S").source:sub(2)
-local HERE  = dirname(SRC) or "."
-local PARENT= dirname(HERE or ".") or "."
-local function addpath(p) if p and p~="" and not package.path:find(p,1,true) then package.path = p .. ";" .. package.path end end
-addpath(join(PARENT,"?.lua")); addpath(join(PARENT,"?/init.lua"))
-addpath(join(HERE,  "?.lua")); addpath(join(HERE,  "?/init.lua"))
-addpath(join(HERE,  "Arkitekt/?.lua"))
-addpath(join(HERE,  "Arkitekt/?/init.lua"))
-addpath(join(HERE,  "Arkitekt/?/?.lua"))
+local SRC   = debug.getinfo(1,'S').source:sub(2)
+local HERE  = dirname(SRC) or '.'
+local PARENT= dirname(HERE or '.') or '.'
+local function addpath(p) if p and p~='' and not package.path:find(p,1,true) then package.path = p .. ';' .. package.path end end
+addpath(join(PARENT,'?.lua')); addpath(join(PARENT,'?/init.lua'))
+addpath(join(HERE,  '?.lua')); addpath(join(HERE,  '?/init.lua'))
+addpath(join(HERE,  'Arkitekt/?.lua'))
+addpath(join(HERE,  'Arkitekt/?/init.lua'))
+addpath(join(HERE,  'Arkitekt/?/?.lua'))
 
 -- Libs
-local Shell         = require("arkitekt.app.shell")
-local ColorSliders  = require("arkitekt.gui.widgets.primitives.hue_slider")
-local TilesContainer = require("arkitekt.gui.widgets.containers.panel")
+local Shell         = require('arkitekt.runtime.shell')
+local ColorSliders  = require('arkitekt.gui.widgets.primitives.hue_slider')
+local TilesContainer = require('arkitekt.gui.widgets.containers.panel')
 
 -- Fallback style
-local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui")
-local hexrgb = Ark.Colors.hexrgb
-
-
+local style_ok, Style = pcall(require, 'arkitekt.gui.style.imgui')
 -- State variables - ALL AT THE TOP
 local hue = 210.0
 local saturation = 80.0
@@ -62,8 +59,8 @@ local brightness = 85.0
 -- This is now just a callback function, not part of a component instance.
 local function get_status()
   return {
-    color = hexrgb("#41E0A3"),
-    text  = string.format("H:%.0f° S:%.0f%% B:%.0f%% | Color Sliders Demo", hue, saturation, brightness),
+    color = 0x41E0A3FF,
+    text  = string.format('H:%.0f° S:%.0f%% B:%.0f%% | Color Sliders Demo', hue, saturation, brightness),
     buttons = nil,
     right_buttons = nil
   }
@@ -98,24 +95,24 @@ end
 -- Dummy tile renderer
 local function draw_dummy_tile(ctx, dl, x, y, w, h, label, color)
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, color, 4)
-  ImGui.DrawList_AddRect(dl, x + 0.5, y + 0.5, x + w - 0.5, y + h - 0.5, hexrgb("#00000088"), 4, 0, 1)
+  ImGui.DrawList_AddRect(dl, x + 0.5, y + 0.5, x + w - 0.5, y + h - 0.5, 0x00000088, 4, 0, 1)
   
   local tw, th = ImGui.CalcTextSize(ctx, label)
   local tx = x + (w - tw) / 2
   local ty = y + (h - th) / 2
-  ImGui.DrawList_AddText(dl, tx, ty, hexrgb("#FFFFFF"), label)
+  ImGui.DrawList_AddText(dl, tx, ty, 0xFFFFFFFF, label)
 end
 
 -- UI
 local function draw(ctx)
-  ImGui.Text(ctx, "Color Sliders & Tiles Container Demo")
+  ImGui.Text(ctx, 'Color Sliders & Tiles Container Demo')
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 1, 8)
 
   -- HUE SLIDER (no longer affected by saturation/brightness changes)
-  ImGui.Text(ctx, "Hue (0-360°):")
+  ImGui.Text(ctx, 'Hue (0-360°):')
   local changed_h
-  changed_h, hue = Ark.HueSlider.draw_hue(ctx, "##hue_slider", hue, {
+  changed_h, hue = Ark.HueSlider.DrawHue(ctx, '##hue_slider', hue, {
     w = 320,
     h = 20,
   })
@@ -123,9 +120,9 @@ local function draw(ctx)
   ImGui.Dummy(ctx, 1, 12)
 
   -- SATURATION SLIDER (updates when hue changes)
-  ImGui.Text(ctx, "Saturation (0-100%):")
+  ImGui.Text(ctx, 'Saturation (0-100%):')
   local changed_s
-  changed_s, saturation = Ark.HueSlider.draw_saturation(ctx, "##sat_slider", saturation, hue, {
+  changed_s, saturation = Ark.HueSlider.DrawSaturation(ctx, '##sat_slider', saturation, hue, {
     w = 320,
     h = 20,
     brightness = brightness,
@@ -134,9 +131,9 @@ local function draw(ctx)
   ImGui.Dummy(ctx, 1, 12)
 
   -- BRIGHTNESS/GAMMA SLIDER (independent)
-  ImGui.Text(ctx, "Brightness (0-100%):")
+  ImGui.Text(ctx, 'Brightness (0-100%):')
   local changed_b
-  changed_b, brightness = Ark.HueSlider.draw_gamma(ctx, "##gamma_slider", brightness, {
+  changed_b, brightness = Ark.HueSlider.DrawGamma(ctx, '##gamma_slider', brightness, {
     w = 320,
     h = 20,
   })
@@ -144,12 +141,12 @@ local function draw(ctx)
   ImGui.Dummy(ctx, 1, 12)
 
   -- Color Preview
-  ImGui.Text(ctx, "Current Color:")
+  ImGui.Text(ctx, 'Current Color:')
   local preview_color = hsv_to_rgba_u32(hue, saturation, brightness, 1.0)
   local dl = ImGui.GetWindowDrawList(ctx)
   local px, py = ImGui.GetCursorScreenPos(ctx)
   ImGui.DrawList_AddRectFilled(dl, px, py, px + 320, py + 40, preview_color, 4)
-  ImGui.DrawList_AddRect(dl, px + 0.5, py + 0.5, px + 319.5, py + 39.5, hexrgb("#000000DD"), 4, 0, 1)
+  ImGui.DrawList_AddRect(dl, px + 0.5, py + 0.5, px + 319.5, py + 39.5, 0x000000DD, 4, 0, 1)
   ImGui.Dummy(ctx, 320, 40)
 
   ImGui.Dummy(ctx, 1, 12)
@@ -157,11 +154,11 @@ local function draw(ctx)
   ImGui.Dummy(ctx, 1, 8)
 
   -- Tiles Container with dummy content
-  ImGui.Text(ctx, "Scrollable Tiles Container:")
+  ImGui.Text(ctx, 'Scrollable Tiles Container:')
   ImGui.Dummy(ctx, 1, 4)
 
   local container = Ark.Panel.new({
-    id = "demo_container",
+    id = 'demo_container',
     width = nil,
     height = 200,
   })
@@ -185,7 +182,7 @@ local function draw(ctx)
       local tile_hue = (hue + i * 20) % 360
       local tile_color = hsv_to_rgba_u32(tile_hue, saturation, brightness, 1.0)
       
-      draw_dummy_tile(ctx, dl, x, y, tile_w, tile_h, "Tile " .. (i + 1), tile_color)
+      draw_dummy_tile(ctx, dl, x, y, tile_w, tile_h, 'Tile ' .. (i + 1), tile_color)
     end
     
     local total_rows = math.ceil(15 / cols)
@@ -194,20 +191,20 @@ local function draw(ctx)
   container:end_draw(ctx)
 
   ImGui.Dummy(ctx, 1, 8)
-  ImGui.TextDisabled(ctx, "Double-click sliders to reset • Scroll container to see more tiles")
+  ImGui.TextDisabled(ctx, 'Double-click sliders to reset • Scroll container to see more tiles')
 end
 
 -- Run
 Shell.run({
-  title        = "Arkitekt – Color Sliders Demo",
+  title        = 'Arkitekt – Color Sliders Demo',
   draw         = draw,
   style        = style_ok and Style or nil,
   initial_pos  = { x = 140, y = 140 },
   initial_size = { w = 520, h = 720 },
   min_size     = { w = 420, h = 500 },
-  
-  -- Pass status bar config directly to the shell/window.
-  show_status_bar   = true,
+
+  -- Status bar config
+  chrome = 'window',  -- Full chrome with titlebar and statusbar
   get_status_func   = get_status,
-  status_bar_height = 28,  -- FIXED at 28px
+  status_bar_height = 28,
 })

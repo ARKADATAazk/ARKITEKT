@@ -31,19 +31,19 @@ end
 -- Get current project GUID
 local function get_project_guid()
   local proj = 0 -- Current project
-  local retval, guid = reaper.GetSetProjectInfo_String(proj, "PROJECT_ID", "", false)
+  local retval, guid = reaper.GetSetProjectInfo_String(proj, 'PROJECT_ID', '', false)
 
   -- If project has no GUID yet (unsaved), use project file path
-  if not retval or guid == "" then
-    local proj_path = reaper.GetProjectPath("")
-    local proj_name = reaper.GetProjectName(0, "")
+  if not retval or guid == '' then
+    local proj_path = reaper.GetProjectPath('')
+    local proj_name = reaper.GetProjectName(0, '')
 
-    if proj_path and proj_path ~= "" and proj_name and proj_name ~= "" then
+    if proj_path and proj_path ~= '' and proj_name and proj_name ~= '' then
       -- Use full path + name as stable identifier
-      local full_path = proj_path .. "/" .. proj_name
-      guid = "path_" .. tostring(full_path):gsub("[^%w]", "_")
+      local full_path = proj_path .. '/' .. proj_name
+      guid = 'path_' .. tostring(full_path):gsub('[^%w]', '_')
     else
-      guid = "unsaved_project"
+      guid = 'unsaved_project'
     end
   end
 
@@ -52,30 +52,30 @@ end
 
 -- Get item hash (to detect if item changed)
 local function get_item_hash(item)
-  if not item or not reaper.ValidatePtr(item, "MediaItem*") then
+  if not item or not reaper.ValidatePtr(item, 'MediaItem*') then
     return nil
   end
 
-  local length = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+  local length = reaper.GetMediaItemInfo_Value(item, 'D_LENGTH')
   local take = reaper.GetActiveTake(item)
   if not take then return nil end
 
-  local start_offset = reaper.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS")
-  local playrate = reaper.GetMediaItemTakeInfo_Value(take, "D_PLAYRATE")
+  local start_offset = reaper.GetMediaItemTakeInfo_Value(take, 'D_STARTOFFS')
+  local playrate = reaper.GetMediaItemTakeInfo_Value(take, 'D_PLAYRATE')
 
-  return string.format("%.6f_%.6f_%.6f", length, start_offset, playrate)
+  return string.format('%.6f_%.6f_%.6f', length, start_offset, playrate)
 end
 
 -- Load cache index (tracks last 5 projects)
 local function load_cache_index()
-  local index_path = cache_dir .. "/cache_index.lua"
-  local file = io.open(index_path, "r")
+  local index_path = cache_dir .. '/cache_index.lua'
+  local file = io.open(index_path, 'r')
 
   if not file then
-    return { projects = {} } -- { projects = { {guid="...", timestamp=123}, ... } }
+    return { projects = {} } -- { projects = { {guid='...', timestamp=123}, ... } }
   end
 
-  local content = file:read("*all")
+  local content = file:read('*all')
   file:close()
 
   local index = deserialize(content)
@@ -84,8 +84,8 @@ end
 
 -- Save cache index
 local function save_cache_index(index)
-  local index_path = cache_dir .. "/cache_index.lua"
-  local file = io.open(index_path, "w")
+  local index_path = cache_dir .. '/cache_index.lua'
+  local file = io.open(index_path, 'w')
 
   if not file then return false end
 
@@ -122,7 +122,7 @@ local function update_project_access(project_guid)
     local oldest = table.remove(index.projects, 1) -- Remove first (oldest)
 
     -- Delete the old project's cache file
-    local old_cache_path = cache_dir .. "/" .. oldest.guid .. ".lua"
+    local old_cache_path = cache_dir .. '/' .. oldest.guid .. '.lua'
     os.remove(old_cache_path)
   end
 
@@ -131,14 +131,14 @@ end
 
 -- Load project cache from disk
 local function load_project_cache(project_guid)
-  local cache_path = cache_dir .. "/" .. project_guid .. ".lua"
-  local file = io.open(cache_path, "r")
+  local cache_path = cache_dir .. '/' .. project_guid .. '.lua'
+  local file = io.open(cache_path, 'r')
 
   if not file then
     return {} -- Empty cache
   end
 
-  local content = file:read("*all")
+  local content = file:read('*all')
   file:close()
 
   local cache = deserialize(content)
@@ -151,8 +151,8 @@ end
 
 -- Save project cache to disk
 local function save_project_cache(project_guid, cache)
-  local cache_path = cache_dir .. "/" .. project_guid .. ".lua"
-  local file = io.open(cache_path, "w")
+  local cache_path = cache_dir .. '/' .. project_guid .. '.lua'
+  local file = io.open(cache_path, 'w')
 
   if not file then
     return false
@@ -167,7 +167,7 @@ end
 -- Initialize cache system
 function M.init()
   local resource_path = reaper.GetResourcePath()
-  cache_dir = resource_path .. "/Data/ARKITEKT/ItemPicker"
+  cache_dir = resource_path .. '/Data/ARKITEKT/ItemPicker'
 
   -- Create cache directory
   reaper.RecursiveCreateDirectory(cache_dir, 0)
@@ -255,7 +255,7 @@ function M.save_waveform(item, uuid, waveform)
   current_cache[uuid].waveform = waveform
 
   -- Don't save to disk on every waveform - too slow! Will flush on exit
-  -- reaper.ShowConsoleMsg(string.format("[Cache] Saved waveform %s\n", uuid:sub(1,8)))
+  -- reaper.ShowConsoleMsg(string.format('[Cache] Saved waveform %s\n', uuid:sub(1,8)))
   return true
 end
 
@@ -314,7 +314,7 @@ end
 function M.clear_current_project()
   if current_project_guid then
     current_cache = {}
-    local cache_path = cache_dir .. "/" .. current_project_guid .. ".lua"
+    local cache_path = cache_dir .. '/' .. current_project_guid .. '.lua'
     os.remove(cache_path)
   end
 end

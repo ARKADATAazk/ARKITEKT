@@ -43,7 +43,7 @@ ARKITEKT is a well-engineered Lua/ReaImGui framework with ~430 Lua files and ~35
 
 **3. Lazy-Loading Namespace** - The `Ark.*` system via metatable is elegant:
 ```lua
-Ark.Button.draw(ctx, opts)  -- Loads on first access
+Ark.Button(ctx, 'Click')  -- Loads on first access
 ```
 
 **4. Error Handling** - Good defensive programming with 69 pcall/xpcall usages across the framework.

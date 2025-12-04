@@ -3,7 +3,7 @@
 -- VSTs tab: List of all FX with filtering
 
 local Logger = require('arkitekt.debug.logger')
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
@@ -12,70 +12,42 @@ local UI = require('TemplateBrowser.ui.config.constants')
 local M = {}
 
 -- Draw VSTS content (list of all FX with filtering)
-function M.draw(ctx, state, config, width, height)
+function M.Draw(ctx, state, config, width, height)
   -- Get all FX from templates
   local FXParser = require('TemplateBrowser.domain.fx.parser')
   local all_fx = FXParser.get_all_fx(state.templates)
 
   -- Header with VST count and Force Reparse button
-  ImGui.Text(ctx, string.format("%d VST%s found", #all_fx, #all_fx == 1 and "" or "s"))
+  ImGui.Text(ctx, string.format('%d VST%s found', #all_fx, #all_fx == 1 and '' or 's'))
 
   ImGui.SameLine(ctx, width - UI.BUTTON.WIDTH_MEDIUM - config.PANEL_PADDING * 2)
 
-  -- Force Reparse button (two-click confirmation)
-  local button_label = "Force Reparse All"
-  local button_config = {
-    label = button_label,
-    width = UI.BUTTON.WIDTH_MEDIUM,
-    height = UI.BUTTON.HEIGHT_DEFAULT
-  }
+  -- Force Reparse button
+  if Ark.Button(ctx, { label = 'Force Reparse All', width = UI.BUTTON.WIDTH_MEDIUM, height = UI.BUTTON.HEIGHT_DEFAULT }).clicked then
+    Logger.info('VSTSTAB', 'Force reparsing all templates...')
 
-  if state.reparse_armed then
-    button_label = "CONFIRM REPARSE?"
-    button_config = {
-      label = button_label,
-      width = UI.BUTTON.WIDTH_MEDIUM,
-      height = UI.BUTTON.HEIGHT_DEFAULT,
-      bg_color = Ark.Colors.hexrgb("#CC3333")
-    }
-  end
-
-  if Ark.Button.draw_at_cursor(ctx, button_config, "force_reparse") then
-    if state.reparse_armed then
-      -- Second click - execute reparse
-      Logger.info("VSTSTAB", "Force reparsing all templates...")
-
-      -- Clear file_size from all templates in metadata to force re-parse
-      if state.metadata and state.metadata.templates then
-        for uuid, tmpl in pairs(state.metadata.templates) do
-          tmpl.file_size = nil
-        end
+    -- Clear file_size and tracks from all templates in metadata to force re-parse
+    if state.metadata and state.metadata.templates then
+      for uuid, tmpl in pairs(state.metadata.templates) do
+        tmpl.file_size = nil
+        tmpl.fx = nil
+        tmpl.tracks = nil
       end
-
-      -- Save metadata and trigger rescan
-      local Persistence = require('TemplateBrowser.data.storage')
-      Persistence.save_metadata(state.metadata)
-
-      -- Trigger rescan which will re-parse everything
-      local Scanner = require('TemplateBrowser.domain.template.scanner')
-      Scanner.scan_templates(state)
-
-      state.reparse_armed = false
-    else
-      -- First click - arm the button
-      state.reparse_armed = true
     end
-  end
 
-  -- Auto-disarm after hovering away
-  if state.reparse_armed and not ImGui.IsItemHovered(ctx) then
-    state.reparse_armed = false
+    -- Save metadata and trigger rescan
+    local Persistence = require('TemplateBrowser.data.storage')
+    Persistence.save_metadata(state.metadata)
+
+    -- Trigger rescan which will re-parse everything
+    local Scanner = require('TemplateBrowser.domain.template.scanner')
+    Scanner.scan_templates(state)
   end
 
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  if Helpers.begin_child_compat(ctx, "VSTsList", width - config.PANEL_PADDING * 2, height - 60, false) then
+  if Helpers.begin_child_compat(ctx, 'VSTsList', width - config.PANEL_PADDING * 2, height - 60, false) then
     for _, fx_name in ipairs(all_fx) do
       ImGui.PushID(ctx, fx_name)
 
@@ -91,20 +63,20 @@ function M.draw(ctx, state, config, width, height)
       -- Use stored color or default dark grey with 80% transparency
       local bg_color
       if vst_color then
-        bg_color = is_selected and vst_color or Ark.Colors.with_opacity(vst_color, 0.8)
+        bg_color = is_selected and vst_color or Ark.Colors.WithOpacity(vst_color, 0.8)
       else
-        bg_color = is_selected and Ark.Colors.hexrgb("#4A4A4ACC") or Ark.Colors.hexrgb("#3A3A3ACC")
+        bg_color = is_selected and 0x4A4A4ACC or 0x3A3A3ACC
       end
 
-      local clicked, chip_w, chip_h = Chip.draw(ctx, {
+      local clicked, chip_w, chip_h = Chip.Draw(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
         bg_color = bg_color,
-        text_color = vst_color and Ark.Colors.auto_text_color(vst_color) or Ark.Colors.hexrgb("#FFFFFF"),
+        text_color = vst_color and Ark.Colors.AutoTextColor(vst_color) or 0xFFFFFFFF,
         height = 22,
         padding_h = 8,
         rounding = 2,
-        interactive = true,
+        is_interactive = true,
       })
 
       if clicked then

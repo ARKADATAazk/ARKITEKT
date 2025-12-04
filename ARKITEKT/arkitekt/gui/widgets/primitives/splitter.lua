@@ -3,7 +3,7 @@
 -- Draggable splitter for resizing panels
 -- Uses unified opts-based API
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Base = require('arkitekt.gui.widgets.base')
 
 local M = {}
@@ -14,7 +14,7 @@ local M = {}
 
 local DEFAULTS = {
   -- Identity
-  id = "splitter",
+  id = 'splitter',
 
   -- Position (nil = use cursor)
   x = nil,
@@ -25,11 +25,11 @@ local DEFAULTS = {
   height = nil,  -- Required for horizontal, ignored for vertical (uses provided height)
 
   -- Orientation
-  orientation = "horizontal",  -- "horizontal" or "vertical"
+  orientation = 'horizontal',  -- 'horizontal' or 'vertical'
 
   -- Interaction
   thickness = 8,  -- Hit area thickness for dragging
-  disabled = false,
+  is_disabled = false,
 
   -- Callbacks
   on_drag = nil,       -- Called while dragging: function(new_pos)
@@ -37,7 +37,7 @@ local DEFAULTS = {
   tooltip = nil,
 
   -- Cursor control
-  advance = "none",  -- Usually managed by parent layout
+  advance = 'none',  -- Usually managed by parent layout
 
   -- Draw list
   draw_list = nil,
@@ -76,12 +76,12 @@ local function render_horizontal(ctx, instance, x, y, width, thickness, disabled
 
   -- Create invisible button for interaction
   ImGui.SetCursorScreenPos(ctx, x, y - thickness/2)
-  ImGui.InvisibleButton(ctx, "##hsplit_" .. instance.id, width, thickness)
+  ImGui.InvisibleButton(ctx, '##hsplit_' .. instance.id, width, thickness)
 
   -- Check for reset (double-click)
   if not disabled and ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
     instance.is_dragging = false
-    return "reset", 0
+    return 'reset', 0
   end
 
   -- Check for drag
@@ -92,12 +92,12 @@ local function render_horizontal(ctx, instance, x, y, width, thickness, disabled
     end
 
     local new_pos = my - instance.drag_offset
-    return "drag", new_pos
+    return 'drag', new_pos
   elseif instance.is_dragging and not ImGui.IsMouseDown(ctx, 0) then
     instance.is_dragging = false
   end
 
-  return "none", y
+  return 'none', y
 end
 
 local function render_vertical(ctx, instance, x, y, height, thickness, disabled)
@@ -112,12 +112,12 @@ local function render_vertical(ctx, instance, x, y, height, thickness, disabled)
 
   -- Create invisible button for interaction
   ImGui.SetCursorScreenPos(ctx, x - thickness/2, y)
-  ImGui.InvisibleButton(ctx, "##vsplit_" .. instance.id, thickness, height)
+  ImGui.InvisibleButton(ctx, '##vsplit_' .. instance.id, thickness, height)
 
   -- Check for reset (double-click)
   if not disabled and ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
     instance.is_dragging = false
-    return "reset", 0
+    return 'reset', 0
   end
 
   -- Check for drag
@@ -128,12 +128,12 @@ local function render_vertical(ctx, instance, x, y, height, thickness, disabled)
     end
 
     local new_pos = mx - instance.drag_offset
-    return "drag", new_pos
+    return 'drag', new_pos
   elseif instance.is_dragging and not ImGui.IsMouseDown(ctx, 0) then
     instance.is_dragging = false
   end
 
-  return "none", x
+  return 'none', x
 end
 
 -- ============================================================================
@@ -144,11 +144,11 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result { action, position, dragging, width, height }
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(ctx, opts, "splitter")
+  local unique_id = Base.resolve_id(ctx, opts, 'splitter')
 
   -- Get or create instance
   local instance = Base.get_or_create_instance(instances, unique_id, Splitter.new, ctx)
@@ -156,27 +156,31 @@ function M.draw(ctx, opts)
   -- Get position
   local x, y = Base.get_position(ctx, opts)
 
+  -- Compute disabled state (opts override or context stack)
+  local actx = Base.get_context(ctx)
+  local is_disabled = opts.is_disabled or actx:is_disabled()
+
   -- Render based on orientation
   local action, position
-  if opts.orientation == "vertical" then
+  if opts.orientation == 'vertical' then
     local height = opts.height
     if not height then
-      error("splitter: height required for vertical orientation")
+      error('splitter: height required for vertical orientation')
     end
-    action, position = render_vertical(ctx, instance, x, y, height, opts.thickness, opts.disabled)
+    action, position = render_vertical(ctx, instance, x, y, height, opts.thickness, is_disabled)
   else
     -- Horizontal (default)
     local width = opts.width
     if not width then
-      error("splitter: width required for horizontal orientation")
+      error('splitter: width required for horizontal orientation')
     end
-    action, position = render_horizontal(ctx, instance, x, y, width, opts.thickness, opts.disabled)
+    action, position = render_horizontal(ctx, instance, x, y, width, opts.thickness, is_disabled)
   end
 
   -- Handle callbacks
-  if action == "drag" and opts.on_drag then
+  if action == 'drag' and opts.on_drag then
     opts.on_drag(position)
-  elseif action == "reset" and opts.on_reset then
+  elseif action == 'reset' and opts.on_reset then
     opts.on_reset()
   end
 
@@ -184,15 +188,15 @@ function M.draw(ctx, opts)
   Base.handle_tooltip(ctx, opts)
 
   -- Calculate result dimensions
-  local result_width = opts.orientation == "vertical" and opts.thickness or opts.width
-  local result_height = opts.orientation == "horizontal" and opts.thickness or opts.height
+  local result_width = opts.orientation == 'vertical' and opts.thickness or opts.width
+  local result_height = opts.orientation == 'horizontal' and opts.thickness or opts.height
 
   -- Advance cursor
   Base.advance_cursor(ctx, x, y, result_width, result_height, opts.advance)
 
   -- Return standardized result
   return Base.create_result({
-    action = action,        -- "none", "drag", or "reset"
+    action = action,        -- 'none', 'drag', or 'reset'
     position = position,    -- New position (or current if not dragging)
     dragging = instance.is_dragging,
     width = result_width,
@@ -204,26 +208,20 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options (must have same id as draw call)
 --- @return boolean True if dragging
-function M.is_dragging(ctx, opts)
+function M.IsDragging(ctx, opts)
   opts = opts or {}
-  local unique_id = Base.resolve_id(ctx, opts, "splitter")
+  local unique_id = Base.resolve_id(ctx, opts, 'splitter')
   local instance = instances[unique_id]
   return instance and instance.is_dragging or false
 end
 
 -- ============================================================================
--- DEPRECATED / REMOVED FUNCTIONS
--- ============================================================================
-
--- M.cleanup() - REMOVED (automatic via Base.cleanup_registry, no manual call needed)
-
--- ============================================================================
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.Splitter(ctx, opts) → M.draw(ctx, opts)
+-- Make module callable: Ark.Splitter(ctx, opts) → M.Draw(ctx, opts)
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

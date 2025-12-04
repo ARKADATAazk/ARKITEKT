@@ -2,7 +2,7 @@
 -- WalterBuilder/core/controller.lua
 -- Business logic controller - separates UI from state mutations
 
-local Constants = require('WalterBuilder.defs.constants')
+local Constants = require('WalterBuilder.config.constants')
 local UndoManager = require('arkitekt.core.undo_manager')
 local Logger = require('arkitekt.debug.logger')
 
@@ -29,7 +29,7 @@ function M.new(State, settings)
   }, Controller)
 
   if DEBUG_CONTROLLER then
-    Logger.info("CONTROLLER", "Initialized with undo manager")
+    Logger.info('CONTROLLER', 'Initialized with undo manager')
   end
 
   return self
@@ -52,7 +52,7 @@ function Controller:capture_snapshot(action_type)
   self.undo_manager:push(snapshot)
 
   if DEBUG_CONTROLLER then
-    Logger.debug("CONTROLLER", "Captured snapshot: %s", action_type)
+    Logger.debug('CONTROLLER', 'Captured snapshot: %s', action_type)
   end
 end
 
@@ -135,9 +135,9 @@ function Controller:_restore_snapshot(snapshot)
   end
 
   -- Notify UI
-  self:_notify_change("elements")
-  self:_notify_change("tracks")
-  self:_notify_change("selection")
+  self:_notify_change('elements')
+  self:_notify_change('tracks')
+  self:_notify_change('selection')
 
   return true
 end
@@ -145,7 +145,7 @@ end
 -- Undo last action
 function Controller:undo()
   if not self.undo_manager:can_undo() then
-    self:_notify_status("Nothing to undo", Constants.STATUS.INFO)
+    self:_notify_status('Nothing to undo', Constants.STATUS.INFO)
     return false
   end
 
@@ -153,7 +153,7 @@ function Controller:undo()
   local success = self:_restore_snapshot(snapshot)
 
   if success then
-    self:_notify_status("Undo: " .. (snapshot.action or "action"), Constants.STATUS.INFO)
+    self:_notify_status('Undo: ' .. (snapshot.action or 'action'), Constants.STATUS.INFO)
   end
 
   return success
@@ -162,7 +162,7 @@ end
 -- Redo last undone action
 function Controller:redo()
   if not self.undo_manager:can_redo() then
-    self:_notify_status("Nothing to redo", Constants.STATUS.INFO)
+    self:_notify_status('Nothing to redo', Constants.STATUS.INFO)
     return false
   end
 
@@ -170,7 +170,7 @@ function Controller:redo()
   local success = self:_restore_snapshot(snapshot)
 
   if success then
-    self:_notify_status("Redo: " .. (snapshot.action or "action"), Constants.STATUS.INFO)
+    self:_notify_status('Redo: ' .. (snapshot.action or 'action'), Constants.STATUS.INFO)
   end
 
   return success
@@ -195,12 +195,12 @@ function Controller:add_element(def)
   local elem = self.State.add_element(def)
   if elem then
     self.State.set_selected(elem)
-    self:_notify_change("elements")
-    self:_notify_change("selection")
-    self:_notify_status("Added: " .. (elem.name or elem.id), Constants.STATUS.SUCCESS)
+    self:_notify_change('elements')
+    self:_notify_change('selection')
+    self:_notify_status('Added: ' .. (elem.name or elem.id), Constants.STATUS.SUCCESS)
 
     if DEBUG_CONTROLLER then
-      Logger.debug("CONTROLLER", "Added element: %s", elem.id)
+      Logger.debug('CONTROLLER', 'Added element: %s', elem.id)
     end
   end
 
@@ -212,7 +212,7 @@ end
 function Controller:add_element_direct(element)
   local elem = self.State.add_element_direct(element)
   if elem and DEBUG_CONTROLLER then
-    Logger.debug("CONTROLLER", "Added element directly: %s", elem.id)
+    Logger.debug('CONTROLLER', 'Added element directly: %s', elem.id)
   end
   return elem
 end
@@ -228,9 +228,9 @@ function Controller:remove_element(element)
 
   if success then
     self.State.clear_selection()
-    self:_notify_change("elements")
-    self:_notify_change("selection")
-    self:_notify_status("Removed: " .. name, Constants.STATUS.INFO)
+    self:_notify_change('elements')
+    self:_notify_change('selection')
+    self:_notify_status('Removed: ' .. name, Constants.STATUS.INFO)
   end
 
   return success
@@ -244,7 +244,7 @@ function Controller:update_element(element, changes)
 
   -- Apply changes
   for key, value in pairs(changes) do
-    if key == "coords" then
+    if key == 'coords' then
       for coord_key, coord_val in pairs(value) do
         element.coords[coord_key] = coord_val
       end
@@ -254,7 +254,7 @@ function Controller:update_element(element, changes)
   end
 
   self.State.element_changed(element)
-  self:_notify_change("elements")
+  self:_notify_change('elements')
 
   return true
 end
@@ -265,9 +265,9 @@ function Controller:clear_elements()
 
   self.State.clear_elements()
   self.State.clear_selection()
-  self:_notify_change("elements")
-  self:_notify_change("selection")
-  self:_notify_status("Cleared all elements", Constants.STATUS.INFO)
+  self:_notify_change('elements')
+  self:_notify_change('selection')
+  self:_notify_status('Cleared all elements', Constants.STATUS.INFO)
 end
 
 -- Load default TCP layout
@@ -276,9 +276,9 @@ function Controller:load_tcp_defaults()
 
   self.State.load_tcp_defaults()
   self.State.clear_selection()
-  self:_notify_change("elements")
-  self:_notify_change("selection")
-  self:_notify_status("Loaded default TCP layout", Constants.STATUS.SUCCESS)
+  self:_notify_change('elements')
+  self:_notify_change('selection')
+  self:_notify_status('Loaded default TCP layout', Constants.STATUS.SUCCESS)
 end
 
 -- ============================================================================
@@ -292,9 +292,9 @@ function Controller:add_track(opts)
   local track = self.State.add_track(opts)
   if track then
     self.State.set_selected_track(track)
-    self:_notify_change("tracks")
-    self:_notify_change("selection")
-    self:_notify_status("Added track: " .. track.name, Constants.STATUS.SUCCESS)
+    self:_notify_change('tracks')
+    self:_notify_change('selection')
+    self:_notify_status('Added track: ' .. track.name, Constants.STATUS.SUCCESS)
   end
 
   return track
@@ -311,9 +311,9 @@ function Controller:remove_track(track)
 
   if success then
     self.State.set_selected_track(nil)
-    self:_notify_change("tracks")
-    self:_notify_change("selection")
-    self:_notify_status("Removed track: " .. name, Constants.STATUS.INFO)
+    self:_notify_change('tracks')
+    self:_notify_change('selection')
+    self:_notify_status('Removed track: ' .. name, Constants.STATUS.INFO)
   end
 
   return success
@@ -330,7 +330,7 @@ function Controller:update_track(track, changes)
     track[key] = value
   end
 
-  self:_notify_change("tracks")
+  self:_notify_change('tracks')
 
   return true
 end
@@ -341,9 +341,9 @@ function Controller:load_default_tracks()
 
   self.State.load_default_tracks()
   self.State.set_selected_track(nil)
-  self:_notify_change("tracks")
-  self:_notify_change("selection")
-  self:_notify_status("Reset to default tracks", Constants.STATUS.SUCCESS)
+  self:_notify_change('tracks')
+  self:_notify_change('selection')
+  self:_notify_status('Reset to default tracks', Constants.STATUS.SUCCESS)
 end
 
 -- ============================================================================
@@ -353,20 +353,20 @@ end
 -- Select element
 function Controller:select_element(element)
   self.State.set_selected(element)
-  self:_notify_change("selection")
+  self:_notify_change('selection')
 end
 
 -- Select track
 function Controller:select_track(track)
   self.State.set_selected_track(track)
-  self:_notify_change("selection")
+  self:_notify_change('selection')
 end
 
 -- Clear all selection
 function Controller:clear_selection()
   self.State.clear_selection()
   self.State.set_selected_track(nil)
-  self:_notify_change("selection")
+  self:_notify_change('selection')
 end
 
 -- ============================================================================
@@ -375,11 +375,11 @@ end
 
 -- Notify UI of state changes
 function Controller:_notify_change(change_type)
-  if change_type == "elements" and self.on_elements_changed then
+  if change_type == 'elements' and self.on_elements_changed then
     self.on_elements_changed()
-  elseif change_type == "tracks" and self.on_tracks_changed then
+  elseif change_type == 'tracks' and self.on_tracks_changed then
     self.on_tracks_changed()
-  elseif change_type == "selection" and self.on_selection_changed then
+  elseif change_type == 'selection' and self.on_selection_changed then
     self.on_selection_changed()
   end
 end
@@ -391,7 +391,7 @@ function Controller:_notify_status(message, status_type)
   end
 
   if DEBUG_CONTROLLER then
-    Logger.info("CONTROLLER", "[%s] %s", status_type or "info", message)
+    Logger.info('CONTROLLER', '[%s] %s', status_type or 'info', message)
   end
 end
 

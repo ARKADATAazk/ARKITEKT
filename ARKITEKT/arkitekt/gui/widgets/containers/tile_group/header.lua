@@ -2,11 +2,10 @@
 -- arkitekt/gui/widgets/containers/tile_group/header.lua
 -- Renders collapsible group headers for tile groups
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Colors = require('arkitekt.core.colors')
 local Defaults = require('arkitekt.gui.widgets.containers.tile_group.defaults')
-local hexrgb = Colors.hexrgb
-
 local M = {}
 
 --- Renders a group header with collapse/expand functionality
@@ -26,7 +25,7 @@ function M.render(ctx, rect, group, state, config)
   end
 
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   -- Determine background color based on state
   local bg_color = cfg.bg_color
@@ -55,7 +54,7 @@ function M.render(ctx, rect, group, state, config)
     local badge_size = cfg.color_badge_size
 
     -- Parse color if it's a hex string
-    local badge_color = type(group.color) == "string" and hexrgb(group.color) or group.color
+    local badge_color = type(group.color) == 'string' and hex(group.color) or group.color
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_size, badge_y + badge_size, badge_color, 1)
 
     cursor_x = cursor_x + cfg.color_badge_size + cfg.color_badge_spacing
@@ -72,14 +71,14 @@ function M.render(ctx, rect, group, state, config)
 
   -- Draw group name (with better vertical alignment)
   -- Calculate text height for vertical centering
-  local text_size_x, text_size_y = ImGui.CalcTextSize(ctx, group.name or "Unnamed Group")
+  local text_size_x, text_size_y = ImGui.CalcTextSize(ctx, group.name or 'Unnamed Group')
   local text_y = cursor_y + (content_height / 2) - (text_size_y / 2)
 
-  ImGui.DrawList_AddText(dl, cursor_x, text_y, cfg.text_color, group.name or "Unnamed Group")
+  ImGui.DrawList_AddText(dl, cursor_x, text_y, cfg.text_color, group.name or 'Unnamed Group')
 
   -- Draw item count (if available)
   if group.count and group.count > 0 then
-    local count_text = string.format("(%d)", group.count)
+    local count_text = string.format('(%d)', group.count)
     local count_w, count_h = ImGui.CalcTextSize(ctx, count_text)
     local count_x = x2 - cfg.padding_x - count_w
     local count_y = cursor_y + (content_height / 2) - (count_h / 2)

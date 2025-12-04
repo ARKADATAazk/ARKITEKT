@@ -54,7 +54,7 @@ local color = ImGuiStyle.palette.grey_10
 ```lua
 M.COLORS = {
   -- Add your color here
-  MY_NEW_COLOR = hexrgb("#RRGGBBAA"),
+  MY_NEW_COLOR = hex("#RRGGBBAA"),
 }
 ```
 

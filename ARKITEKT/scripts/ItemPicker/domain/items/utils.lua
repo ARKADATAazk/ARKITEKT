@@ -5,6 +5,10 @@
 
 local Ark = require('arkitekt')
 
+-- PERF: Localize math functions (SampleLimit called in tight waveform loops)
+local max = math.max
+local min = math.min
+
 local M = {}
 
 function M.getn(tab)
@@ -26,16 +30,16 @@ function M.RGBvalues(RGB)
 end
 
 function M.Color(ImGui, r, g, b, a)
-  return Ark.Colors.components_to_rgba(r*255, g*255, b*255, (a or 1)*255)
+  return Ark.Colors.ComponentsToRgba((r*255)//1, (g*255)//1, (b*255)//1, ((a or 1)*255)//1)
 end
 
 function M.SampleLimit(spl)
-  return math.max(-1, math.min(spl, 1))
+  return max(-1, min(spl, 1))
 end
 
 function M.RemoveKeyFromChunk(chunk_string, key)
-  local pattern = key .. "[^\n]*\n?"
-  local modified_chunk = string.gsub(chunk_string, pattern, "")
+  local pattern = key .. '[^\n]*\n?'
+  local modified_chunk = string.gsub(chunk_string, pattern, '')
   return modified_chunk
 end
 

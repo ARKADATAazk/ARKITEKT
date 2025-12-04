@@ -1,13 +1,76 @@
 -- @noindex
 -- RegionPlaylist/data/bridge.lua
--- Sequence-driven coordinator bridge that lazily expands playlists on demand
+-- App ↔ Engine Coordination Bridge
+--
+-- PURPOSE:
+-- Decouples the UI layer (app/state, ui/) from the playback engine (domain/playback).
+-- When playlists are edited in the UI, the Bridge invalidates its cached sequence
+-- and lazily rebuilds on next playback request.
+--
+-- RESPONSIBILITIES:
+--   1. Lazy Sequence Expansion - Flattens nested playlists into linear sequence
+--   2. Cache Invalidation - Rebuilds when playlists change
+--   3. Engine Wrapping - Provides simplified API to UI (play, stop, seek)
+--   4. State Coordination - Keeps UI and engine synchronized
+--
+-- PATTERN: Facade + Lazy Evaluation
+-- - Facade: Hides engine complexity from UI
+-- - Lazy: Only expands playlists when needed (on play, on get_sequence)
+--
+-- WHY IT EXISTS:
+-- - UI mutates playlists frequently (add, remove, reorder, change loops)
+-- - Engine needs flat array: [{rid, key, loops}, {rid, key, loops}, ...]
+-- - Rebuilding sequence on every UI change is expensive
+-- - Solution: Invalidate cache, rebuild lazily when engine needs it
+--
+-- SEQUENCE EXPANSION:
+-- Nested playlists are recursively flattened into array of {rid, key, loops}.
+-- Example:
+--   Active Playlist:
+--     Region 1 (2 reps)
+--     Nested Playlist A (3 reps)
+--       Region 2 (1 rep)
+--       Region 3 (2 reps)
+--
+--   Expanded Sequence:
+--     [Region 1, Region 1,
+--      Region 2, Region 3, Region 3,
+--      Region 2, Region 3, Region 3,
+--      Region 2, Region 3, Region 3]
+--
+-- CACHE INVALIDATION:
+-- When controller.commit() is called after playlist edit:
+--   1. controller:_commit()
+--   2. bridge:invalidate_sequence()
+--   3. Sets sequence_stale = true
+--   4. [User clicks play]
+--   5. bridge:play() checks sequence_stale
+--   6. If stale: rebuild via expander.expand(playlists)
+--   7. Cache sequence for subsequent frames
+--
+-- FLOW DIAGRAM:
+-- UI edits playlist
+--   → controller.add_item(rid, index)
+--   → controller:_commit()
+--   → bridge:invalidate_sequence()
+--   → [User clicks play]
+--   → bridge:play()
+--   → if sequence_stale then rebuild_sequence()
+--   → engine.play(sequence)
+--   → Per frame: engine.update()
+--   → UI polls bridge:get_current_key()
+--
+-- SEE ALSO:
+--   - domain/playback/expander.lua (sequence expansion algorithm)
+--   - domain/playback/controller.lua (playback engine)
+--   - app/controller.lua (calls invalidate_sequence on commits)
 
-local Engine = require("RegionPlaylist.domain.playback.controller")
-local Playback = require("RegionPlaylist.domain.playback.loop")
-local RegionState = require("RegionPlaylist.data.storage")
-local SequenceExpander = require("RegionPlaylist.domain.playback.expander")
-local Logger = require("arkitekt.debug.logger")
-local Callbacks = require("arkitekt.core.callbacks")
+local Engine = require('RegionPlaylist.domain.playback.controller')
+local Playback = require('RegionPlaylist.domain.playback.loop')
+local RegionState = require('RegionPlaylist.data.storage')
+local SequenceExpander = require('RegionPlaylist.domain.playback.expander')
+local Logger = require('arkitekt.debug.logger')
+local Callbacks = require('arkitekt.core.callbacks')
 
 -- Set to true for verbose sequence building debug logs
 local DEBUG_BRIDGE = false
@@ -21,7 +84,7 @@ local Transport = require('arkitekt.reaper.transport')
 
 local M = {}
 
-package.loaded["RegionPlaylist.data.bridge"] = M
+package.loaded['RegionPlaylist.data.bridge'] = M
 
 -- Use framework callback wrapper instead of local implementation
 local safe_call = Callbacks.safe_call
@@ -38,10 +101,10 @@ function M.create(opts)
     get_active_playlist = opts.get_active_playlist,
     get_active_playlist_id = opts.get_active_playlist_id,
     on_repeat_cycle = opts.on_repeat_cycle,
-    sequence_cache = {},
-    sequence_cache_dirty = true,
+    sequence_dirty = true,
     sequence_lookup = {},
-    playlist_ranges = {},
+    ancestry_entries = {},   -- key -> {idx1, idx2, ...} for O(1) progress lookup
+    ancestry_durations = {}, -- key -> total_duration (pre-computed)
     _last_known_item_key = nil,
     _last_reported_loop_key = nil,
     _last_reported_loop = nil,
@@ -50,13 +113,13 @@ function M.create(opts)
 
   bridge.engine = Engine.new({
     proj = bridge.proj,
-    quantize_mode = saved_settings.quantize_mode or "measure",
+    quantize_mode = saved_settings.quantize_mode or 'measure',
     follow_playhead = saved_settings.follow_playhead or false,
     transport_override = saved_settings.transport_override or false,
     loop_playlist = saved_settings.loop_playlist or false,
     follow_viewport = saved_settings.follow_viewport or false,
     shuffle_enabled = saved_settings.shuffle_enabled or false,
-    shuffle_mode = saved_settings.shuffle_mode or "true_shuffle",
+    shuffle_mode = saved_settings.shuffle_mode or 'true_shuffle',
     on_repeat_cycle = nil,
     playlist_lookup = opts.get_playlist_by_id,
   })
@@ -65,7 +128,7 @@ function M.create(opts)
   local needs_save = false
 
   if saved_settings.quantize_mode == nil then
-    saved_settings.quantize_mode = "measure"
+    saved_settings.quantize_mode = 'measure'
     needs_save = true
   end
 
@@ -75,7 +138,7 @@ function M.create(opts)
   end
 
   if saved_settings.shuffle_mode == nil then
-    saved_settings.shuffle_mode = "true_shuffle"
+    saved_settings.shuffle_mode = 'true_shuffle'
     needs_save = true
   end
 
@@ -132,46 +195,68 @@ function M.create(opts)
     -- This prevents the transport from switching playlists when user changes tabs during playback
     if is_playing and bridge._playing_playlist_id then
       if DEBUG_BRIDGE then
-        Logger.debug("BRIDGE", "Skipping sequence rebuild - currently playing playlist %s (active: %s)",
+        Logger.debug('BRIDGE', 'Skipping sequence rebuild - currently playing playlist %s (active: %s)',
           tostring(bridge._playing_playlist_id), tostring(active_playlist_id))
       end
-      bridge.sequence_cache_dirty = false
+      bridge.sequence_dirty = false
       return
     end
 
     local sequence = {}
-    local playlist_map = {}
 
     if playlist then
-      sequence, playlist_map = SequenceExpander.expand_playlist(playlist, bridge.get_playlist_by_id)
+      sequence = SequenceExpander.expand_playlist(playlist, bridge.get_playlist_by_id)
     end
 
-    bridge.sequence_cache = sequence
     bridge.sequence_lookup = {}
-    bridge.playlist_ranges = {}
 
+    -- Build lookup before set_sequence (shuffle may reorder)
     for idx, entry in ipairs(sequence) do
       if entry.item_key and not bridge.sequence_lookup[entry.item_key] then
         bridge.sequence_lookup[entry.item_key] = idx
-        if DEBUG_BRIDGE then Logger.debug("BRIDGE", "Mapping key '%s' -> idx %d", entry.item_key, idx) end
+        if DEBUG_BRIDGE then Logger.debug('BRIDGE', "Mapping key '%s' -> idx %d", entry.item_key, idx) end
       end
     end
 
     if DEBUG_BRIDGE then
-      Logger.debug("BRIDGE", "Final sequence_lookup built with %d entries",
+      Logger.debug('BRIDGE', 'Final sequence_lookup built with %d entries',
         (function() local count = 0; for _ in pairs(bridge.sequence_lookup) do count = count + 1 end; return count end)())
-    end
-
-    for playlist_key, range_info in pairs(playlist_map) do
-      bridge.playlist_ranges[playlist_key] = range_info
-      if not bridge.sequence_lookup[playlist_key] then
-        bridge.sequence_lookup[playlist_key] = range_info.start_idx
-      end
     end
 
     local previous_key = bridge._last_known_item_key or bridge.engine.state:get_current_item_key()
 
     bridge.engine:set_sequence(sequence)
+
+    -- Rebuild lookups from engine's sequence (may be shuffled)
+    bridge.sequence_lookup = {}
+    bridge.ancestry_entries = {}
+    bridge.ancestry_durations = {}
+    local state_sequence = bridge.engine.state.sequence
+    local region_cache = bridge.engine.state.region_cache
+
+    for idx, entry in ipairs(state_sequence) do
+      -- Key -> first index lookup
+      if entry.item_key and not bridge.sequence_lookup[entry.item_key] then
+        bridge.sequence_lookup[entry.item_key] = idx
+      end
+      -- Ancestry -> indices lookup (for O(1) progress calculation)
+      -- Also accumulate duration per ancestry key
+      if entry.ancestry then
+        local region = region_cache[entry.rid]
+        local duration = region and (region['end'] - region.start) or 0
+        for _, ancestor in ipairs(entry.ancestry) do
+          if ancestor.key then
+            if not bridge.ancestry_entries[ancestor.key] then
+              bridge.ancestry_entries[ancestor.key] = {}
+              bridge.ancestry_durations[ancestor.key] = 0
+            end
+            local entries = bridge.ancestry_entries[ancestor.key]
+            entries[#entries + 1] = idx
+            bridge.ancestry_durations[ancestor.key] = bridge.ancestry_durations[ancestor.key] + duration
+          end
+        end
+      end
+    end
 
     if previous_key then
       local restored = bridge.engine.state:find_index_by_key(previous_key)
@@ -186,7 +271,7 @@ function M.create(opts)
     bridge._last_known_item_key = bridge.engine.state:get_current_item_key()
     bridge._last_reported_loop_key = nil
     bridge._last_reported_loop = nil
-    bridge.sequence_cache_dirty = false
+    bridge.sequence_dirty = false
 
     -- Remember which playlist we're playing
     if not is_playing then
@@ -196,21 +281,21 @@ function M.create(opts)
 
   function bridge:invalidate_sequence()
     self._last_known_item_key = self:get_current_item_key()
-    self.sequence_cache_dirty = true
-    self.sequence_cache = {}
+    self.sequence_dirty = true
     self.sequence_lookup = {}
-    self.playlist_ranges = {}
+    self.ancestry_entries = {}
+    self.ancestry_durations = {}
   end
 
   function bridge:_ensure_sequence()
-    if self.sequence_cache_dirty then
+    if self.sequence_dirty then
       rebuild_sequence()
     end
   end
 
   function bridge:get_sequence()
     self:_ensure_sequence()
-    return self.sequence_cache
+    return self.engine.state.sequence
   end
 
   function bridge:get_regions_for_ui()
@@ -220,7 +305,7 @@ function M.create(opts)
         rid = rid,
         name = rgn.name,
         start = rgn.start,
-        ["end"] = rgn["end"],
+        ['end'] = rgn['end'],
         color = rgn.color,
       }
     end
@@ -269,7 +354,7 @@ function M.create(opts)
     self:_ensure_sequence()
     -- Remember which playlist we're playing when playback starts
     self._playing_playlist_id = safe_call(self.get_active_playlist_id)
-    Logger.info("BRIDGE", "PLAY playlist '%s' (%d items)", tostring(self._playing_playlist_id), #self.sequence_cache)
+    Logger.info('BRIDGE', "PLAY playlist '%s' (%d items)", tostring(self._playing_playlist_id), #self.engine.state.sequence)
 
     -- If we're starting after a stop (not resuming from pause), force reset to beginning
     -- This must happen AFTER _ensure_sequence() so it overrides sequence restoration
@@ -283,7 +368,7 @@ function M.create(opts)
   end
 
   function bridge:stop()
-    Logger.info("BRIDGE", "STOP - clearing playlist '%s'", tostring(self._playing_playlist_id))
+    Logger.info('BRIDGE', "STOP - clearing playlist '%s'", tostring(self._playing_playlist_id))
     -- Clear the playing playlist ID when stopping
     -- This allows the sequence to be rebuilt for a different playlist on next play
     self._playing_playlist_id = nil
@@ -308,6 +393,103 @@ function M.create(opts)
     return self.engine:jump_to_next_quantized(lookahead)
   end
 
+  --- Seek directly to a specific item by key (immediate jump)
+  --- @param key string Item key to seek to
+  --- @return boolean success
+  function bridge:seek_to_item(key)
+    return self.engine:seek_to_item(key)
+  end
+
+  --- Schedule a quantized jump to a specific item by key
+  --- @param key string Item key to seek to
+  --- @param lookahead number|nil Lookahead time in seconds (uses saved setting if nil)
+  --- @return boolean success
+  function bridge:schedule_seek_to_item(key, lookahead)
+    if not key then return false end
+    self:_ensure_sequence()
+
+    -- Use bridge's sequence_lookup (reliable)
+    local idx = self.sequence_lookup[key]
+    if not idx then return false end
+
+    -- Use saved lookahead setting if not provided (same as Jump button)
+    if not lookahead then
+      local settings = RegionState.load_settings(self.proj)
+      lookahead = settings.quantize_lookahead or 0.30
+    end
+
+    -- Set next_idx to target and trigger quantized jump
+    self.engine.state.next_idx = idx
+    return self.engine:jump_to_next_quantized(lookahead)
+  end
+
+  --- Set the next item to play after current region ends (no immediate jump)
+  --- Used for "schedule transition" - skip intervening items when current ends
+  --- @param key string Item key to set as next
+  --- @return boolean success
+  function bridge:set_next_item(key)
+    if not key then return false end
+    self:_ensure_sequence()
+
+    -- Use bridge's sequence_lookup (reliable)
+    local idx = self.sequence_lookup[key]
+    if not idx then return false end
+
+    -- Just set next_idx - transitions logic will handle the jump when current region ends
+    self.engine.state.next_idx = idx
+    return true
+  end
+
+  --- Get keys of items that will be skipped due to scheduled transition
+  --- Returns a set (table with key -> true) of item keys being skipped
+  --- @return table|nil skipped_keys Set of skipped keys, or nil if not skipping
+  function bridge:get_skipped_keys()
+    if not self.engine:get_is_playing() then return nil end
+
+    local state = self.engine.state
+    local current_idx = state.current_idx or -1
+    local next_idx = state.next_idx or -1
+    local sequence = state.sequence or {}
+
+    -- No skip if next is immediately after current
+    if next_idx <= current_idx + 1 then return nil end
+    if next_idx <= 0 or current_idx < 0 then return nil end
+
+    -- Build set of skipped keys (from current_idx + 1 to next_idx - 1)
+    local skipped = {}
+    for i = current_idx + 1, next_idx - 1 do
+      local entry = sequence[i]
+      if entry and entry.item_key then
+        skipped[entry.item_key] = true
+      end
+    end
+
+    -- Return nil if nothing actually skipped
+    local count = 0
+    for _ in pairs(skipped) do count = count + 1 end
+    if count == 0 then return nil end
+
+    return skipped
+  end
+
+  --- Get the key of the scheduled next item (if different from natural next)
+  --- @return string|nil scheduled_key Key of scheduled next item, or nil
+  function bridge:get_scheduled_next_key()
+    if not self.engine:get_is_playing() then return nil end
+
+    local state = self.engine.state
+    local current_idx = state.current_idx or -1
+    local next_idx = state.next_idx or -1
+    local sequence = state.sequence or {}
+
+    -- No scheduled transition if next is natural (current + 1)
+    if next_idx <= current_idx + 1 then return nil end
+    if next_idx <= 0 then return nil end
+
+    local entry = sequence[next_idx]
+    return entry and entry.item_key or nil
+  end
+
   function bridge:set_quantize_mode(mode)
     self.engine:set_quantize_mode(mode)
     local settings = RegionState.load_settings(self.proj)
@@ -328,6 +510,7 @@ function M.create(opts)
 
   function bridge:set_shuffle_enabled(enabled)
     self.engine:set_shuffle_enabled(enabled)
+    self:invalidate_sequence()  -- Sequence order changes with shuffle
     local settings = RegionState.load_settings(self.proj)
     settings.shuffle_enabled = enabled
     RegionState.save_settings(settings, self.proj)
@@ -339,6 +522,7 @@ function M.create(opts)
 
   function bridge:set_shuffle_mode(mode)
     self.engine:set_shuffle_mode(mode)
+    self:invalidate_sequence()  -- Sequence order changes with shuffle mode
     local settings = RegionState.load_settings(self.proj)
     settings.shuffle_mode = mode
     RegionState.save_settings(settings, self.proj)
@@ -434,120 +618,126 @@ function M.create(opts)
 
   function bridge:get_current_playlist_key()
     if not self.engine:get_is_playing() then return nil end
-    
-    self:_ensure_sequence()
-    local current_idx = self.engine.state and self.engine.state.current_idx or -1
-    if current_idx < 1 then return nil end
 
-    -- Find the most specific (smallest range) playlist containing current_idx
-    -- This handles nested playlists by returning the innermost one
-    local best_key = nil
-    local best_range_size = math.huge
-    
-    for playlist_key, range_info in pairs(self.playlist_ranges) do
-      if current_idx >= range_info.start_idx and current_idx <= range_info.end_idx then
-        local range_size = range_info.end_idx - range_info.start_idx + 1
-        if range_size < best_range_size then
-          best_key = playlist_key
-          best_range_size = range_size
-        end
-      end
+    self:_ensure_sequence()
+    local current_pointer = self.engine.state and self.engine.state.playlist_pointer or -1
+    if current_pointer < 1 or current_pointer > #self.engine.state.sequence then return nil end
+
+    local current_entry = self.engine.state.sequence[current_pointer]
+    if not current_entry or not current_entry.ancestry then return nil end
+
+    -- Return the innermost (deepest) playlist key from ancestry
+    local ancestry = current_entry.ancestry
+    if #ancestry > 0 then
+      return ancestry[#ancestry].key
     end
-    
-    return best_key
+
+    return nil
   end
-  
-  -- Check if a playlist contains the current playback position
-  -- For nested playlists, multiple playlists can be active (parent and children)
+
+  -- Check if a playlist item contains the current playback position
+  -- Uses ancestry tracking: playlist_key is active if it appears in current entry's ancestry
   function bridge:is_playlist_active(playlist_key)
     if not self.engine:get_is_playing() then return false end
     if not playlist_key then return false end
-    
+
     self:_ensure_sequence()
-    local current_idx = self.engine.state and self.engine.state.current_idx or -1
-    if current_idx < 1 then return false end
-    
-    local range_info = self.playlist_ranges[playlist_key]
-    if not range_info then return false end
-    
-    return current_idx >= range_info.start_idx and current_idx <= range_info.end_idx
+    local current_pointer = self.engine.state and self.engine.state.playlist_pointer or -1
+    if current_pointer < 1 or current_pointer > #self.engine.state.sequence then return false end
+
+    local current_entry = self.engine.state.sequence[current_pointer]
+    if not current_entry then return false end
+
+    -- Use SequenceExpander helper to check ancestry
+    return SequenceExpander.ancestry_contains(current_entry.ancestry, playlist_key)
   end
 
+  -- Get progress through a playlist item (0.0 to 1.0)
+  -- Uses pre-computed ancestry_entries and ancestry_durations for efficiency
   function bridge:get_playlist_progress(playlist_key)
     if not self.engine:get_is_playing() then return nil end
     if not playlist_key then return nil end
-    
+
     self:_ensure_sequence()
-    local range_info = self.playlist_ranges[playlist_key]
-    if not range_info then return nil end
+    local entry_indices = self.ancestry_entries[playlist_key]
+    if not entry_indices or #entry_indices == 0 then return nil end
+
+    local total_duration = self.ancestry_durations[playlist_key] or 0
+    if total_duration <= 0 then return 0 end
+
+    local current_pointer = self.engine.state and self.engine.state.playlist_pointer or -1
+    if current_pointer < 1 then return nil end
 
     local playpos = Transport.get_play_position(self.proj)
-    
-    local total_duration = 0
+    local sequence = self.engine.state.sequence
+    local region_cache = self.engine.state.region_cache
+
     local elapsed_duration = 0
-    local current_pointer = self.engine.state.playlist_pointer
-    local found_current = false
-    
-    for idx = range_info.start_idx, range_info.end_idx do
-      local entry = self.sequence_cache[idx]
+
+    -- Iterate only entries belonging to this playlist (pre-computed)
+    for _, idx in ipairs(entry_indices) do
+      if idx > current_pointer then
+        break  -- Indices are sorted, no need to check further
+      end
+      local entry = sequence[idx]
       if entry then
-        local region = self.engine.state.region_cache[entry.rid]
+        local region = region_cache[entry.rid]
         if region then
-          local region_duration = region["end"] - region.start
-          total_duration = total_duration + region_duration
-          
-          if not found_current then
+          if idx == current_pointer then
+            -- Currently playing this entry
+            local clamped_pos = max(region.start, min(playpos, region['end']))
+            elapsed_duration = elapsed_duration + (clamped_pos - region.start)
+            break  -- Found current, done
+          else
+            -- This entry has already played (idx < current_pointer)
+            elapsed_duration = elapsed_duration + (region['end'] - region.start)
+          end
+        end
+      end
+    end
+
+    return max(0, min(1, elapsed_duration / total_duration))
+  end
+
+  -- Get time remaining in a playlist item (in seconds)
+  -- Uses pre-computed ancestry_entries lookup and early termination
+  function bridge:get_playlist_time_remaining(playlist_key)
+    if not self.engine:get_is_playing() then return nil end
+    if not playlist_key then return nil end
+
+    self:_ensure_sequence()
+    local entry_indices = self.ancestry_entries[playlist_key]
+    if not entry_indices or #entry_indices == 0 then return nil end
+
+    local current_pointer = self.engine.state and self.engine.state.playlist_pointer or -1
+    if current_pointer < 1 then return nil end
+
+    local playpos = Transport.get_play_position(self.proj)
+    local sequence = self.engine.state.sequence
+    local region_cache = self.engine.state.region_cache
+
+    local remaining = 0
+
+    -- Iterate only entries belonging to this playlist (pre-computed)
+    -- Indices are sorted, so skip entries before current_pointer
+    for _, idx in ipairs(entry_indices) do
+      if idx >= current_pointer then
+        local entry = sequence[idx]
+        if entry then
+          local region = region_cache[entry.rid]
+          if region then
             if idx == current_pointer then
-              -- We're currently playing this exact sequence entry
-              -- Clamp playpos to handle transition jitter when looping same region
-              local clamped_pos = max(region.start, min(playpos, region["end"]))
-              local region_elapsed = clamped_pos - region.start
-              elapsed_duration = elapsed_duration + min(region_elapsed, region_duration)
-              found_current = true
-            elseif idx < current_pointer then
-              -- This entry has already played
-              elapsed_duration = elapsed_duration + region_duration
+              -- Currently playing this entry
+              remaining = remaining + max(0, region['end'] - playpos)
+            else
+              -- This entry hasn't played yet (idx > current_pointer)
+              remaining = remaining + (region['end'] - region.start)
             end
           end
         end
       end
     end
-    
-    if total_duration <= 0 then return 0 end
-    return max(0, min(1, elapsed_duration / total_duration))
-  end
 
-  function bridge:get_playlist_time_remaining(playlist_key)
-    if not self.engine:get_is_playing() then return nil end
-    if not playlist_key then return nil end
-    
-    self:_ensure_sequence()
-    local range_info = self.playlist_ranges[playlist_key]
-    if not range_info then return nil end
-
-    local playpos = Transport.get_play_position(self.proj)
-    
-    local remaining = 0
-    local current_pointer = self.engine.state.playlist_pointer
-    local found_current = false
-    
-    for idx = range_info.start_idx, range_info.end_idx do
-      local entry = self.sequence_cache[idx]
-      if entry then
-        local region = self.engine.state.region_cache[entry.rid]
-        if region then
-          if idx == current_pointer then
-            -- We're currently playing this exact sequence entry
-            remaining = remaining + max(0, region["end"] - playpos)
-            found_current = true
-          elseif idx > current_pointer then
-            -- This entry hasn't played yet
-            remaining = remaining + (region["end"] - region.start)
-          end
-        end
-      end
-    end
-    
     return remaining
   end
 

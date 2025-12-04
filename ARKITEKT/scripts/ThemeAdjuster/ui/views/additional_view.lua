@@ -2,11 +2,10 @@
 -- ThemeAdjuster/ui/views/additional_view.lua
 -- Additional parameters tab - Grid-based tile manager
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
-local hexrgb = Ark.Colors.hexrgb
-local Constants = require('ThemeAdjuster.defs.constants')
+local Constants = require('ThemeAdjuster.config.constants')
 local ParamDiscovery = require('ThemeAdjuster.domain.theme.discovery')
 local ThemeMapper = require('ThemeAdjuster.domain.theme.mapper')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
@@ -18,7 +17,7 @@ local AssignmentGridFactory = require('ThemeAdjuster.ui.grids.assignment_grid_fa
 local ParamLinkModal = require('ThemeAdjuster.ui.views.param_link_modal')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
 local Logger = require('arkitekt.debug.logger')
-local log = Logger.new("AdditionalView")
+local log = Logger.new('AdditionalView')
 
 local PC = Ark.Style.PANEL_COLORS
 
@@ -29,11 +28,11 @@ AdditionalView.__index = AdditionalView
 -- Tab configurations (using shared THEME_CATEGORY_COLORS palette)
 local TC = Constants.THEME_CATEGORY_COLORS
 local TAB_CONFIGS = {
-  {id = "TCP", label = "TCP", color = TC.tcp_blue},
-  {id = "MCP", label = "MCP", color = TC.mcp_green},
-  {id = "ENVCP", label = "ENVCP", color = TC.envcp_purple},
-  {id = "TRANS", label = "TRANSPORT", color = TC.transport_gold},
-  {id = "GLOBAL", label = "GLOBAL", color = TC.global_gray},
+  {id = 'TCP', label = 'TCP', color = TC.tcp_blue},
+  {id = 'MCP', label = 'MCP', color = TC.mcp_green},
+  {id = 'ENVCP', label = 'ENVCP', color = TC.envcp_purple},
+  {id = 'TRANS', label = 'TRANSPORT', color = TC.transport_gold},
+  {id = 'GLOBAL', label = 'GLOBAL', color = TC.global_gray},
 }
 
 function M.new(State, Config, settings)
@@ -55,10 +54,10 @@ function M.new(State, Config, settings)
     -- UI state
     dev_mode = false,
     show_group_filter = false,  -- Show group filter dialog
-    active_assignment_tab = "TCP",  -- Currently selected tab in assignment grid
+    active_assignment_tab = 'TCP',  -- Currently selected tab in assignment grid
 
     -- Tab assignments with ordering
-    -- Structure: { TCP = { {param_name = "...", order = 1}, ... }, MCP = {...}, ... }
+    -- Structure: { TCP = { {param_name = '...', order = 1}, ... }, MCP = {...}, ... }
     assignments = {
       TCP = {},
       MCP = {},
@@ -67,7 +66,7 @@ function M.new(State, Config, settings)
       GLOBAL = {}
     },
 
-    -- Custom metadata: param_name -> {display_name = "", description = ""}
+    -- Custom metadata: param_name -> {display_name = '', description = ''}
     custom_metadata = {},
 
     -- Templates: id -> {id, name, type, params[], config{}}
@@ -155,7 +154,7 @@ function AdditionalView:create_grids()
         return true
       end
       -- Assignment → Assignment: copy if Ctrl held
-      if source:match("^assign_") and target:match("^assign_") then
+      if source:match('^assign_') and target:match('^assign_') then
         if self._imgui_ctx then
           local ctrl = ImGui.IsKeyDown(self._imgui_ctx, ImGui.Key_LeftCtrl) or
                       ImGui.IsKeyDown(self._imgui_ctx, ImGui.Key_RightCtrl)
@@ -167,7 +166,7 @@ function AdditionalView:create_grids()
 
     delete_mode_detector = function(ctx, source, target, payload)
       -- Remove from assignment if dragged outside
-      if source:match("^assign_") and not target:match("^assign_") then
+      if source:match('^assign_') and not target:match('^assign_') then
         return not self.bridge:is_mouse_over_grid(ctx, source)
       end
       return false
@@ -186,13 +185,13 @@ function AdditionalView:create_grids()
       end
 
       -- Templates → Assignment: assign template or group
-      if source_id == 'templates' and target_id:match("^assign_(.+)") then
-        local tab_id = target_id:match("^assign_(.+)")
+      if source_id == 'templates' and target_id:match('^assign_(.+)') then
+        local tab_id = target_id:match('^assign_(.+)')
         for i, item in ipairs(payload) do
-          if item.type == "group" then
+          if item.type == 'group' then
             -- Assign group
             self:assign_template_group_to_tab(item.id, tab_id, insert_index + i - 1)
-          elseif item.type == "template" then
+          elseif item.type == 'template' then
             -- Assign individual template
             self:assign_template_to_tab(item.id, tab_id, insert_index + i - 1)
           end
@@ -201,8 +200,8 @@ function AdditionalView:create_grids()
       end
 
       -- Library → Assignment: assign parameters directly (backwards compat)
-      if source_id == 'library' and target_id:match("^assign_(.+)") then
-        local tab_id = target_id:match("^assign_(.+)")
+      if source_id == 'library' and target_id:match('^assign_(.+)') then
+        local tab_id = target_id:match('^assign_(.+)')
         for i, param_name in ipairs(payload) do
           self:assign_param_to_tab_at_index(param_name, tab_id, insert_index + i - 1)
         end
@@ -210,9 +209,9 @@ function AdditionalView:create_grids()
       end
 
       -- Assignment → Assignment: move or copy
-      if source_id:match("^assign_(.+)") and target_id:match("^assign_(.+)") then
-        local source_tab = source_id:match("^assign_(.+)")
-        local target_tab = target_id:match("^assign_(.+)")
+      if source_id:match('^assign_(.+)') and target_id:match('^assign_(.+)') then
+        local source_tab = source_id:match('^assign_(.+)')
+        local target_tab = target_id:match('^assign_(.+)')
         local is_copy = drop_info.is_copy_mode
 
         if is_copy then
@@ -237,8 +236,8 @@ function AdditionalView:create_grids()
 
     on_drag_canceled = function(cancel_info)
       -- Handle delete if dragged outside
-      if cancel_info.source_grid:match("^assign_(.+)") then
-        local tab_id = cancel_info.source_grid:match("^assign_(.+)")
+      if cancel_info.source_grid:match('^assign_(.+)') then
+        local tab_id = cancel_info.source_grid:match('^assign_(.+)')
         local payload = cancel_info.payload or {}
         for _, param_name in ipairs(payload) do
           self:unassign_param_from_tab(param_name, tab_id)
@@ -258,10 +257,10 @@ function AdditionalView:create_grids()
       local params_by_key = {}
       local key_fn = function(item)
         if Ark.TileGroup.is_group_header(item) then
-          return "group_header_" .. item.__group_id
+          return 'group_header_' .. item.__group_id
         end
         local param = Ark.TileGroup.get_original_item(item)
-        return "lib_" .. tostring(param.index)
+        return 'lib_' .. tostring(param.index)
       end
       for _, param in ipairs(params) do
         params_by_key[key_fn(param)] = param
@@ -269,7 +268,7 @@ function AdditionalView:create_grids()
 
       for _, key in ipairs(item_keys) do
         -- Skip group headers
-        if not key:match("^group_header_") then
+        if not key:match('^group_header_') then
           local param = params_by_key[key]
           if param then
             param_names[#param_names + 1] = param.name
@@ -290,17 +289,17 @@ function AdditionalView:create_grids()
       -- Extract template IDs and group IDs from keys
       local payload = {}
       for _, key in ipairs(item_keys) do
-        if key:match("^template_group_header_") then
+        if key:match('^template_group_header_') then
           -- This is a group
-          local group_id = key:match("^template_group_header_(.+)")
+          local group_id = key:match('^template_group_header_(.+)')
           if group_id then
-            payload[#payload + 1] = {type = "group", id = group_id}
+            payload[#payload + 1] = {type = 'group', id = group_id}
           end
         else
           -- This is a template
-          local template_id = key:match("^template_(.+)")
+          local template_id = key:match('^template_(.+)')
           if template_id then
-            payload[#payload + 1] = {type = "template", id = template_id}
+            payload[#payload + 1] = {type = 'template', id = template_id}
           end
         end
       end
@@ -312,14 +311,14 @@ function AdditionalView:create_grids()
   -- Store assignment bridge configs
   self._assignment_bridge_configs = {}
   for _, tab_config in ipairs(TAB_CONFIGS) do
-    local grid_id = "assign_" .. tab_config.id
+    local grid_id = 'assign_' .. tab_config.id
     self._assignment_bridge_configs[tab_config.id] = {
       accepts_drops_from = {'library', 'templates', 'assign_TCP', 'assign_MCP', 'assign_ENVCP', 'assign_TRANS', 'assign_GLOBAL'},
       on_drag_start = function(item_keys)
         -- Extract parameter names from keys
         local param_names = {}
         for _, key in ipairs(item_keys) do
-          local param_name = key:match("^assign_(.+)")
+          local param_name = key:match('^assign_(.+)')
           if param_name then
             param_names[#param_names + 1] = param_name
           end
@@ -434,17 +433,17 @@ function AdditionalView:get_assignment_items(tab_id)
   -- Convert assignments to items with metadata
   local items = {}
   for _, assignment in ipairs(self.assignments[tab_id]) do
-    if assignment.type == "group" then
+    if assignment.type == 'group' then
       -- This is a group assignment
       items[#items + 1] = {
-        type = "group",
+        type = 'group',
         group_id = assignment.group_id,
         order = assignment.order,
       }
     elseif assignment.param_name and param_lookup[assignment.param_name] then
       -- This is a parameter assignment
       items[#items + 1] = {
-        type = "param",
+        type = 'param',
         param_name = assignment.param_name,
         order = assignment.order,
       }
@@ -463,20 +462,21 @@ function AdditionalView:draw(ctx, shell_state)
 
   -- Title and buttons
   ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
-  ImGui.Text(ctx, "Parameter Manager")
+  ImGui.Text(ctx, 'Parameter Manager')
   ImGui.PopFont(ctx)
 
   ImGui.SameLine(ctx, 0, 20)
 
   -- Filter Groups button
-  if Ark.Button.draw_at_cursor(ctx, {
-    label = "Filter Groups",
+  if Ark.Button(ctx, {
+    id = 'filter_groups',
+    label = 'Filter Groups',
     width = 120,
     height = 24,
     on_click = function()
       self.show_group_filter = not self.show_group_filter
     end
-  }, "filter_groups") then
+  }).clicked then
   end
 
   if ImGui.IsItemHovered(ctx) then
@@ -484,20 +484,21 @@ function AdditionalView:draw(ctx, shell_state)
     for _, enabled in pairs(self.enabled_groups) do
       if enabled then enabled_count = enabled_count + 1 end
     end
-    ImGui.SetTooltip(ctx, string.format("Show/hide parameter groups (%d/%d enabled)", enabled_count, #self.param_groups))
+    ImGui.SetTooltip(ctx, string.format('Show/hide parameter groups (%d/%d enabled)', enabled_count, #self.param_groups))
   end
 
   ImGui.SameLine(ctx, 0, 8)
 
   -- Export button
-  if Ark.Button.draw_at_cursor(ctx, {
-    label = "Export to JSON",
+  if Ark.Button(ctx, {
+    id = 'export_json',
+    label = 'Export to JSON',
     width = 120,
     height = 24,
     on_click = function()
       self:export_parameters()
     end
-  }, "export_json") then
+  }).clicked then
   end
 
   ImGui.Dummy(ctx, 0, 8)
@@ -509,12 +510,12 @@ function AdditionalView:draw(ctx, shell_state)
   local right_width = avail_w * 0.40
 
   -- LEFT PANEL: Parameter Library
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
   -- Use modern 5-parameter API: BeginChild(ctx, id, w, h, child_flags, window_flags)
   -- WindowFlags_NoMove prevents window dragging, but allows scrolling
   local child_flags = ImGui.ChildFlags_None or 0
   local window_flags = ImGui.WindowFlags_NoMove or 0  -- ONLY NoMove, allow scrolling!
-  if ImGui.BeginChild(ctx, "param_library", left_width, 0, child_flags, window_flags) then
+  if ImGui.BeginChild(ctx, 'param_library', left_width, 0, child_flags, window_flags) then
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
@@ -525,27 +526,27 @@ function AdditionalView:draw(ctx, shell_state)
       primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
       secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
     }
-    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Indent(ctx, 8)
     ImGui.Dummy(ctx, 0, 4)
 
     -- Header
     ImGui.PushFont(ctx, shell_state.fonts.bold, 14)
-    ImGui.Text(ctx, "PARAMETER LIBRARY")
+    ImGui.Text(ctx, 'PARAMETER LIBRARY')
     ImGui.PopFont(ctx)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
     local param_count = #self.unknown_params
-    ImGui.Text(ctx, string.format("%d parameters • Drag to assign", param_count))
+    ImGui.Text(ctx, string.format('%d parameters • Drag to assign', param_count))
     ImGui.PopStyleColor(ctx)
 
     ImGui.Dummy(ctx, 0, 8)
 
     -- Draw library grid
     if param_count == 0 then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
-      ImGui.Text(ctx, "No additional parameters found")
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
+      ImGui.Text(ctx, 'No additional parameters found')
       ImGui.PopStyleColor(ctx)
     else
       -- Set per-frame items for opts
@@ -566,7 +567,7 @@ function AdditionalView:draw(ctx, shell_state)
 
       -- Handle right-click drag selection for library grid
       if self.library_grid then
-        self:handle_right_click_selection(ctx, self.library_grid, "library")
+        self:handle_right_click_selection(ctx, self.library_grid, 'library')
       end
     end
 
@@ -579,8 +580,8 @@ function AdditionalView:draw(ctx, shell_state)
   -- MIDDLE PANEL: Templates
   ImGui.SameLine(ctx, 0, panel_gap)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1E1E28"))
-  if ImGui.BeginChild(ctx, "templates_grid", middle_width, 0, child_flags, window_flags) then
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1E1E28FF)
+  if ImGui.BeginChild(ctx, 'templates_grid', middle_width, 0, child_flags, window_flags) then
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
@@ -591,20 +592,20 @@ function AdditionalView:draw(ctx, shell_state)
       primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
       secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
     }
-    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Indent(ctx, 8)
     ImGui.Dummy(ctx, 0, 4)
 
     -- Header
     ImGui.PushFont(ctx, shell_state.fonts.bold, 14)
-    ImGui.Text(ctx, "TEMPLATES")
+    ImGui.Text(ctx, 'TEMPLATES')
     ImGui.PopFont(ctx)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
     local template_count = 0
     for _ in pairs(self.templates) do template_count = template_count + 1 end
-    ImGui.Text(ctx, string.format("%d templates • Drag to use", template_count))
+    ImGui.Text(ctx, string.format('%d templates • Drag to use', template_count))
     ImGui.PopStyleColor(ctx)
 
     ImGui.Dummy(ctx, 0, 8)
@@ -632,8 +633,8 @@ function AdditionalView:draw(ctx, shell_state)
   -- RIGHT PANEL: Assignment Grid
   ImGui.SameLine(ctx, 0, panel_gap)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "assignment_grid", right_width, 0, child_flags, window_flags) then
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
+  if ImGui.BeginChild(ctx, 'assignment_grid', right_width, 0, child_flags, window_flags) then
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
@@ -644,14 +645,14 @@ function AdditionalView:draw(ctx, shell_state)
       primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
       secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
     }
-    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.Draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Indent(ctx, 8)
     ImGui.Dummy(ctx, 0, 4)
 
     -- Header
     ImGui.PushFont(ctx, shell_state.fonts.bold, 14)
-    ImGui.Text(ctx, "ACTIVE ASSIGNMENTS")
+    ImGui.Text(ctx, 'ACTIVE ASSIGNMENTS')
     ImGui.PopFont(ctx)
 
     ImGui.Dummy(ctx, 0, 8)
@@ -665,7 +666,7 @@ function AdditionalView:draw(ctx, shell_state)
     local tab_id = self.active_assignment_tab
 
     -- Set per-frame items for opts
-    local items_key = "_assignment_items_" .. tab_id
+    local items_key = '_assignment_items_' .. tab_id
     self[items_key] = self:get_assignment_items(tab_id)
 
     -- Draw grid using opts-based API
@@ -676,7 +677,7 @@ function AdditionalView:draw(ctx, shell_state)
     if result and result.grid then
       self.assignment_grids[tab_id] = result.grid
       if not self._assignment_grids_registered[tab_id] and self.bridge then
-        local grid_id = "assign_" .. tab_id
+        local grid_id = 'assign_' .. tab_id
         self.bridge:register_grid(grid_id, result.grid, self._assignment_bridge_configs[tab_id])
         self._assignment_grids_registered[tab_id] = true
       end
@@ -685,7 +686,7 @@ function AdditionalView:draw(ctx, shell_state)
     -- Handle right-click drag selection for assignment grid
     local active_grid = self.assignment_grids[tab_id]
     if active_grid then
-      self:handle_right_click_selection(ctx, active_grid, "assign_" .. tab_id)
+      self:handle_right_click_selection(ctx, active_grid, 'assign_' .. tab_id)
     end
 
     ImGui.Unindent(ctx, 8)
@@ -734,9 +735,9 @@ function AdditionalView:draw_assignment_tab_bar(ctx, shell_state)
     local assigned_count = #self.assignments[tab_config.id]
 
     -- Tab button
-    local bg_color = is_active and tab_config.color or hexrgb("#2A2A2A")
+    local bg_color = is_active and tab_config.color or 0x2A2A2AFF
     local hover_color = tab_config.color
-    local text_color = is_active and hexrgb("#FFFFFF") or hexrgb("#888888")
+    local text_color = is_active and 0xFFFFFFFF or 0x888888FF
 
     ImGui.PushStyleColor(ctx, ImGui.Col_Button, bg_color)
     ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hover_color)
@@ -746,10 +747,10 @@ function AdditionalView:draw_assignment_tab_bar(ctx, shell_state)
 
     local label = tab_config.label
     if assigned_count > 0 then
-      label = label .. " (" .. assigned_count .. ")"
+      label = label .. ' (' .. assigned_count .. ')'
     end
 
-    if ImGui.Button(ctx, label .. "##tab_" .. tab_config.id, tab_w + (assigned_count > 0 and 20 or 0), tab_h) then
+    if ImGui.Button(ctx, label .. '##tab_' .. tab_config.id, tab_w + (assigned_count > 0 and 20 or 0), tab_h) then
       self.active_assignment_tab = tab_config.id
     end
 
@@ -758,7 +759,7 @@ function AdditionalView:draw_assignment_tab_bar(ctx, shell_state)
 
     -- Drop target for drag-and-drop
     if ImGui.BeginDragDropTarget(ctx) then
-      local rv, payload = ImGui.AcceptDragDropPayload(ctx, "PARAM")
+      local rv, payload = ImGui.AcceptDragDropPayload(ctx, 'PARAM')
       if rv then
         self:assign_param_to_tab(payload, tab_config.id)
       end
@@ -767,7 +768,7 @@ function AdditionalView:draw_assignment_tab_bar(ctx, shell_state)
 
     -- Tooltip
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, string.format("%s Tab (%d params)", tab_config.label, assigned_count))
+      ImGui.SetTooltip(ctx, string.format('%s Tab (%d params)', tab_config.label, assigned_count))
     end
   end
 end
@@ -778,20 +779,21 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
   ImGui.SetNextWindowSize(ctx, 500, 600, ImGui.Cond_FirstUseEver)
   ImGui.SetNextWindowPos(ctx, 100, 100, ImGui.Cond_FirstUseEver)
 
-  if ImGui.Begin(ctx, "Group Filter", true, ImGui.WindowFlags_NoCollapse) then
+  if ImGui.Begin(ctx, 'Group Filter', true, ImGui.WindowFlags_NoCollapse) then
     ImGui.PushFont(ctx, shell_state.fonts.bold, 14)
-    ImGui.Text(ctx, "Parameter Groups")
+    ImGui.Text(ctx, 'Parameter Groups')
     ImGui.PopFont(ctx)
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
-    ImGui.Text(ctx, "Show/hide groups of parameters")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
+    ImGui.Text(ctx, 'Show/hide groups of parameters')
     ImGui.PopStyleColor(ctx)
 
     ImGui.Dummy(ctx, 0, 8)
 
     -- Action buttons
-    if Ark.Button.draw_at_cursor(ctx, {
-      label = "Enable All",
+    if Ark.Button(ctx, {
+      id = 'enable_all_groups',
+      label = 'Enable All',
       width = 100,
       height = 24,
       on_click = function()
@@ -801,13 +803,14 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
         self:apply_group_filter()
         self:save_group_filter()
       end
-    }, "enable_all_groups") then
+    }).clicked then
     end
 
     ImGui.SameLine(ctx, 0, 8)
 
-    if Ark.Button.draw_at_cursor(ctx, {
-      label = "Disable All",
+    if Ark.Button(ctx, {
+      id = 'disable_all_groups',
+      label = 'Disable All',
       width = 100,
       height = 24,
       on_click = function()
@@ -817,13 +820,14 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
         self:apply_group_filter()
         self:save_group_filter()
       end
-    }, "disable_all_groups") then
+    }).clicked then
     end
 
     ImGui.SameLine(ctx, 0, 8)
 
-    if Ark.Button.draw_at_cursor(ctx, {
-      label = "Reset to Defaults",
+    if Ark.Button(ctx, {
+      id = 'reset_groups',
+      label = 'Reset to Defaults',
       width = 130,
       height = 24,
       on_click = function()
@@ -834,14 +838,14 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
         self:apply_group_filter()
         self:save_group_filter()
       end
-    }, "reset_groups") then
+    }).clicked then
     end
 
     ImGui.Dummy(ctx, 0, 8)
 
     -- Group list
-    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-    if ImGui.BeginChild(ctx, "group_list", 0, -32, 1) then
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
+    if ImGui.BeginChild(ctx, 'group_list', 0, -32, 1) then
       ImGui.Indent(ctx, 8)
       ImGui.Dummy(ctx, 0, 4)
 
@@ -850,7 +854,7 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
         local param_count = #group.params
 
         -- Checkbox
-        if Ark.Checkbox.draw_at_cursor(ctx, "", is_enabled, nil, "group_check_" .. i) then
+        if Ark.Checkbox(ctx, {id = 'group_check_' .. i, label = '', is_checked = is_enabled}).clicked then
           self.enabled_groups[group.name] = not is_enabled
           self:apply_group_filter()
           self:save_group_filter()
@@ -860,11 +864,11 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
         ImGui.SameLine(ctx, 0, 8)
         ImGui.AlignTextToFramePadding(ctx)
 
-        local display_text = string.format("%s (%d params)", group.display_name, param_count)
+        local display_text = string.format('%s (%d params)', group.display_name, param_count)
         if is_enabled then
           ImGui.Text(ctx, display_text)
         else
-          ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
           ImGui.Text(ctx, display_text)
           ImGui.PopStyleColor(ctx)
         end
@@ -889,9 +893,9 @@ end
 function AdditionalView:export_parameters()
   local success, path = ThemeMapper.export_mappings(self.unknown_params)
   if success then
-    log:info("Exported to: %s", path)
+    log:info('Exported to: %s', path)
   else
-    log:error("Export failed: %s", path)
+    log:error('Export failed: %s', path)
   end
 end
 
@@ -1001,7 +1005,7 @@ function AdditionalView:unassign_group_from_tab(group_id, tab_id)
   if not self.assignments[tab_id] then return false end
 
   for i, assignment in ipairs(self.assignments[tab_id]) do
-    if assignment.type == "group" and assignment.group_id == group_id then
+    if assignment.type == 'group' and assignment.group_id == group_id then
       table.remove(self.assignments[tab_id], i)
       -- Reorder remaining assignments
       for j, a in ipairs(self.assignments[tab_id]) do
@@ -1021,7 +1025,7 @@ function AdditionalView:reorder_assignments(tab_id, new_order_keys)
   -- Build lookup table
   local assignments_by_key = {}
   for _, assignment in ipairs(self.assignments[tab_id]) do
-    local key = "assign_" .. assignment.param_name
+    local key = 'assign_' .. assignment.param_name
     assignments_by_key[key] = assignment
   end
 
@@ -1060,7 +1064,7 @@ function AdditionalView:get_assigned_params(tab_id)
   -- Get assigned params in order
   for _, assignment in ipairs(self.assignments[tab_id]) do
     -- Check if this is a group assignment
-    if assignment.type == "group" and assignment.group_id then
+    if assignment.type == 'group' and assignment.group_id then
       -- Find the group
       local group = nil
       for _, g in ipairs(self.template_groups) do
@@ -1070,14 +1074,14 @@ function AdditionalView:get_assigned_params(tab_id)
         end
       end
 
-      -- Create a single "group control" pseudo-parameter (macro)
+      -- Create a single 'group control' pseudo-parameter (macro)
       if group then
         assigned[#assigned + 1] = {
-          type = "group",
+          type = 'group',
           group_id = group.id,
-          name = group.name or "Unnamed Group",
-          display_name = group.name or "Unnamed Group",
-          description = "Group macro controlling " .. #(group.template_ids or {}) .. " templates",
+          name = group.name or 'Unnamed Group',
+          display_name = group.name or 'Unnamed Group',
+          description = 'Group macro controlling ' .. #(group.template_ids or {}) .. ' templates',
           is_group = true,  -- Flag for special rendering
         }
       end
@@ -1101,10 +1105,10 @@ function AdditionalView:get_assigned_params(tab_id)
         local metadata = self.custom_metadata[param.name]
         if metadata then
           param_copy.display_name = metadata.display_name or param.name
-          param_copy.description = metadata.description or ""
+          param_copy.description = metadata.description or ''
         else
           param_copy.display_name = param.name
-          param_copy.description = ""
+          param_copy.description = ''
         end
 
         assigned[#assigned + 1] = param_copy
@@ -1165,7 +1169,7 @@ function AdditionalView:get_template_items()
 
     tile_groups[#tile_groups + 1] = TileGroup.create_group({
       id = group.id,
-      name = group.name or ("Group " .. group.id),
+      name = group.name or ('Group ' .. group.id),
       color = group.color,
       collapsed = collapsed,
       items = group_items
@@ -1207,7 +1211,7 @@ function AdditionalView:create_template_from_params(param_names, insert_index)
     local template = {
       id = template_id,
       name = param_names[1],
-      type = "preset_spinner",  -- Default type
+      type = 'preset_spinner',  -- Default type
       params = param_names,
       config = {},
       order = insert_index or (#self.templates + 1)
@@ -1233,7 +1237,7 @@ function AdditionalView:create_template_from_params(param_names, insert_index)
     local template = {
       id = template_id,
       name = param_name,
-      type = "preset_spinner",
+      type = 'preset_spinner',
       params = {param_name},
       config = {},
       order = self.next_template_id
@@ -1246,8 +1250,8 @@ function AdditionalView:create_template_from_params(param_names, insert_index)
   -- Create the template group
   local group = {
     id = group_id,
-    name = "Group " .. group_id,  -- User can rename later
-    color = string.format("#%06X", math.random(0x333333, 0xCCCCCC)),  -- Random color
+    name = 'Group ' .. group_id,  -- User can rename later
+    color = string.format('#%06X', math.random(0x333333, 0xCCCCCC)),  -- Random color
     collapsed = false,
     template_ids = template_ids
   }
@@ -1278,14 +1282,14 @@ function AdditionalView:reorder_templates(new_order_keys)
 
   -- Analyze the new order to determine group memberships
   for pos, key in ipairs(new_order_keys) do
-    if key:match("^template_group_header_") then
+    if key:match('^template_group_header_') then
       -- This is a group header
-      local group_id = key:match("^template_group_header_(.+)")
+      local group_id = key:match('^template_group_header_(.+)')
       current_group_id = group_id
       position_to_group[pos] = nil  -- Headers don't belong to groups
     else
       -- This is a template
-      local template_id = key:match("^template_(.+)")
+      local template_id = key:match('^template_(.+)')
       if template_id then
         if current_group_id then
           -- Template is inside a group
@@ -1356,7 +1360,7 @@ function AdditionalView:assign_template_group_to_tab(group_id, tab_id, index)
 
   -- Create a group assignment (different from individual param assignment)
   table.insert(self.assignments[tab_id], safe_index, {
-    type = "group",
+    type = 'group',
     group_id = group_id,
     order = safe_index
   })
@@ -1404,10 +1408,10 @@ function AdditionalView:load_assignments()
     -- Check format
     local is_old_format = false
     for key, value in pairs(mappings.assignments) do
-      if type(value) == "table" and value.TCP ~= nil then
+      if type(value) == 'table' and value.TCP ~= nil then
         is_old_format = true
         break
-      elseif type(value) == "table" and type(value[1]) == "table" then
+      elseif type(value) == 'table' and type(value[1]) == 'table' then
         is_old_format = false
         break
       end
@@ -1439,7 +1443,7 @@ function AdditionalView:load_assignments()
       -- Already new format
       self.assignments = mappings.assignments
       -- Ensure all tabs exist
-      for _, tab_id in ipairs({"TCP", "MCP", "ENVCP", "TRANS", "GLOBAL"}) do
+      for _, tab_id in ipairs({'TCP', 'MCP', 'ENVCP', 'TRANS', 'GLOBAL'}) do
         if not self.assignments[tab_id] then
           self.assignments[tab_id] = {}
         end
@@ -1612,8 +1616,8 @@ function AdditionalView:handle_right_click_selection(ctx, grid, grid_id)
 
       -- Draw selection rectangle
       local dl = ImGui.GetWindowDrawList(ctx)
-      ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, hexrgb("#5588FF22"), 3)
-      ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, hexrgb("#5588FFAA"), 3, 0, 1.5)
+      ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, 0x5588FF22, 3)
+      ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, 0x5588FFAA, 3, 0, 1.5)
     end
 
     -- End right-click drag
@@ -1638,7 +1642,7 @@ function AdditionalView:handle_link_handle_interactions(ctx)
 
       if mx >= x1 and mx <= x2 and my >= y1 and my <= y2 then
         -- Extract param name from handle key
-        local param_name = handle_key:gsub("^handle_", "")
+        local param_name = handle_key:gsub('^handle_', '')
 
         -- Find the parameter to get its type
         for _, param in ipairs(self.all_params) do

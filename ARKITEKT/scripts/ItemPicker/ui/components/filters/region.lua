@@ -2,21 +2,21 @@
 -- ItemPicker/ui/components/filters/region.lua
 -- Region filter bar - clickable chips to filter items by region
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local M = {}
 
 -- Ensure color has minimum lightness for readability
 local function ensure_min_lightness(color, min_lightness)
-  local h, s, l = Ark.Colors.rgb_to_hsl(color)
+  local h, s, l = Ark.Colors.RgbToHsl(color)
   if l < min_lightness then
     l = min_lightness
   end
-  local r, g, b = Ark.Colors.hsl_to_rgb(h, s, l)
-  return Ark.Colors.components_to_rgba(r, g, b, 0xFF)
+  local r, g, b = Ark.Colors.HslToRgb(h, s, l)
+  return Ark.Colors.ComponentsToRgba(r, g, b, 0xFF)
 end
 
-function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
+function M.Draw(ctx, draw_list, x, y, width, state, config, alpha)
   alpha = alpha or 1.0  -- Default to fully visible if not specified
   local chip_cfg = config.REGION_TAGS.chip
 
@@ -113,7 +113,7 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
       -- Chip background (dark grey, dimmed by default, bright when selected)
       local bg_alpha = is_selected and 0xFF or 0x66  -- 40% opacity when unselected
       if is_hovered and not is_selected then
-        bg_alpha = Ark.Colors.opacity(0.6)  -- 60% opacity when hovered
+        bg_alpha = Ark.Colors.Opacity(0.6)  -- 60% opacity when hovered
       end
       bg_alpha = (bg_alpha * alpha) // 1  -- Apply hover fade
       local bg_color = (chip_cfg.bg_color & 0xFFFFFF00) | bg_alpha
@@ -133,7 +133,7 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
       -- Handle left click: toggle mode (back-and-forth painting)
       if is_hovered and left_clicked then
         state.region_filter_painting = true
-        state.region_filter_paint_mode = "toggle"
+        state.region_filter_paint_mode = 'toggle'
         state.region_filter_last_painted = region_name
         -- Toggle selection
         if is_selected then
@@ -149,7 +149,7 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
       -- Handle right click: fixed paint mode (bulk enable/disable)
       if is_hovered and right_clicked then
         state.region_filter_painting = true
-        state.region_filter_paint_mode = "fixed"
+        state.region_filter_paint_mode = 'fixed'
         state.region_filter_paint_value = not is_selected
         state.region_filter_last_painted = region_name
         if state.region_filter_paint_value then
@@ -164,11 +164,11 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
 
       -- Paint mode while dragging
       if state.region_filter_painting and is_hovered then
-        local is_dragging = (state.region_filter_paint_mode == "toggle" and left_down) or
-                            (state.region_filter_paint_mode == "fixed" and right_down)
+        local is_dragging = (state.region_filter_paint_mode == 'toggle' and left_down) or
+                            (state.region_filter_paint_mode == 'fixed' and right_down)
 
         if is_dragging and state.region_filter_last_painted ~= region_name then
-          if state.region_filter_paint_mode == "toggle" then
+          if state.region_filter_paint_mode == 'toggle' then
             -- Toggle mode: flip the region's current state
             if is_selected then
               state.selected_regions[region_name] = nil

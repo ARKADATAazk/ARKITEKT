@@ -2,7 +2,8 @@
 -- panel/coordinator.lua
 -- Main panel rendering coordinator - orchestrates all panel subsystems
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 
 -- Module dependencies
 local Toolbar = require('arkitekt.gui.widgets.containers.panel.toolbar')
@@ -14,8 +15,8 @@ local CornerButtons = require('arkitekt.gui.widgets.containers.panel.corner_butt
 local Scrolling = require('arkitekt.gui.widgets.containers.panel.scrolling')
 local State = require('arkitekt.gui.widgets.containers.panel.state')
 local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
-local ConfigUtil = require('arkitekt.core.config')
-local Theme = require('arkitekt.core.theme')
+local ConfigUtil = require('arkitekt.core.merge')
+local Theme = require('arkitekt.theme')
 
 local M = {}
 local DEFAULTS = PanelConfig.DEFAULTS
@@ -28,7 +29,7 @@ local panel_id_counter = 0
 
 local function generate_unique_id(prefix)
   panel_id_counter = panel_id_counter + 1
-  return string.format("%s_%d", prefix or "panel", panel_id_counter)
+  return string.format('%s_%d', prefix or 'panel', panel_id_counter)
 end
 
 local Panel = {}
@@ -40,7 +41,7 @@ Panel.__index = Panel
 function M.new(opts)
   opts = opts or {}
 
-  local id = opts.id or generate_unique_id("panel")
+  local id = opts.id or generate_unique_id('panel')
 
   local panel = setmetatable({
     id = id,
@@ -121,7 +122,7 @@ function Panel:begin_draw(ctx)
   local h = self.height or avail_h
 
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
   local x1, y1 = cursor_x, cursor_y
   local x2, y2 = x1 + w, y1 + h
@@ -142,26 +143,26 @@ function Panel:begin_draw(ctx)
   local content_y2 = y2
 
   -- Top toolbar
-  local top_cfg = Toolbar.get_toolbar_config(self.config, "top")
+  local top_cfg = Toolbar.get_toolbar_config(self.config, 'top')
   if top_cfg then
     toolbar_sizes.top = top_cfg.height or 30
     content_y1 = y1 + toolbar_sizes.top
   end
 
   -- Bottom toolbar
-  local bottom_cfg = Toolbar.get_toolbar_config(self.config, "bottom")
+  local bottom_cfg = Toolbar.get_toolbar_config(self.config, 'bottom')
   if bottom_cfg then
     toolbar_sizes.bottom = bottom_cfg.height or 30
     content_y2 = y2 - toolbar_sizes.bottom
   end
 
   -- Left/right toolbars (vertical - calculated but don't affect content_y bounds)
-  local left_cfg = Toolbar.get_toolbar_config(self.config, "left")
+  local left_cfg = Toolbar.get_toolbar_config(self.config, 'left')
   if left_cfg then
     toolbar_sizes.left = left_cfg.width or 36
   end
 
-  local right_cfg = Toolbar.get_toolbar_config(self.config, "right")
+  local right_cfg = Toolbar.get_toolbar_config(self.config, 'right')
   if right_cfg then
     toolbar_sizes.right = right_cfg.width or 36
   end
@@ -176,12 +177,12 @@ function Panel:begin_draw(ctx)
 
   -- Top toolbar background
   if top_cfg then
-    Toolbar.draw_background(ctx, dl, x1, y1, w, toolbar_sizes.top, self, top_cfg, self.config.rounding, "top")
+    Toolbar.draw_background(ctx, dl, x1, y1, w, toolbar_sizes.top, self, top_cfg, self.config.rounding, 'top')
   end
 
   -- Bottom toolbar background
   if bottom_cfg then
-    Toolbar.draw_background(ctx, dl, x1, y2 - toolbar_sizes.bottom, w, toolbar_sizes.bottom, self, bottom_cfg, self.config.rounding, "bottom")
+    Toolbar.draw_background(ctx, dl, x1, y2 - toolbar_sizes.bottom, w, toolbar_sizes.bottom, self, bottom_cfg, self.config.rounding, 'bottom')
   end
 
   -- ============================================================================
@@ -235,7 +236,7 @@ function Panel:begin_draw(ctx)
 
     local clip_rounding = math.max(0, self.config.rounding - border_inset)
     ImGui.DrawList_PushClipRect(dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, true)
-    Pattern.draw(ctx, dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, pattern_cfg)
+    Pattern.Draw(ctx, dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, pattern_cfg)
     ImGui.DrawList_PopClipRect(dl)
   end
 
@@ -252,12 +253,12 @@ function Panel:begin_draw(ctx)
 
   -- Top toolbar elements
   if top_cfg then
-    Toolbar.draw_elements(ctx, dl, x1, y1, w, toolbar_sizes.top, self, top_cfg, self.id, "top")
+    Toolbar.draw_elements(ctx, dl, x1, y1, w, toolbar_sizes.top, self, top_cfg, self.id, 'top')
   end
 
   -- Bottom toolbar elements
   if bottom_cfg then
-    Toolbar.draw_elements(ctx, dl, x1, y2 - toolbar_sizes.bottom, w, toolbar_sizes.bottom, self, bottom_cfg, self.id, "bottom")
+    Toolbar.draw_elements(ctx, dl, x1, y2 - toolbar_sizes.bottom, w, toolbar_sizes.bottom, self, bottom_cfg, self.id, 'bottom')
   end
 
   -- ============================================================================
@@ -268,13 +269,13 @@ function Panel:begin_draw(ctx)
 
   -- Left toolbar
   if left_cfg then
-    Toolbar.draw_elements(ctx, dl, x1, content_y1, w, sidebar_height, self, left_cfg, self.id, "left")
+    Toolbar.draw_elements(ctx, dl, x1, content_y1, w, sidebar_height, self, left_cfg, self.id, 'left')
   end
 
   -- Right toolbar
   if right_cfg then
     local right_x = x2 - toolbar_sizes.right
-    Toolbar.draw_elements(ctx, dl, right_x, content_y1, w, sidebar_height, self, right_cfg, self.id, "right")
+    Toolbar.draw_elements(ctx, dl, right_x, content_y1, w, sidebar_height, self, right_cfg, self.id, 'right')
   end
 
   -- Store bounds for corner buttons (drawn in end_draw for z-order)
@@ -349,7 +350,7 @@ local function calculate_regular_toolbar_bounds(x1, y1, w, h, config)
   local bounds = {}
 
   -- Top toolbar
-  local top_cfg = Toolbar.get_toolbar_config(config, "top")
+  local top_cfg = Toolbar.get_toolbar_config(config, 'top')
   if top_cfg then
     local top_h = top_cfg.height or 30
     bounds.top = {
@@ -363,7 +364,7 @@ local function calculate_regular_toolbar_bounds(x1, y1, w, h, config)
   end
 
   -- Bottom toolbar
-  local bottom_cfg = Toolbar.get_toolbar_config(config, "bottom")
+  local bottom_cfg = Toolbar.get_toolbar_config(config, 'bottom')
   if bottom_cfg then
     local bottom_h = bottom_cfg.height or 30
     bounds.bottom = {
@@ -381,7 +382,7 @@ local function calculate_regular_toolbar_bounds(x1, y1, w, h, config)
   local content_y2 = bounds.bottom and bounds.bottom.content_y2 or (y1 + h)
 
   -- Left toolbar
-  local left_cfg = Toolbar.get_toolbar_config(config, "left")
+  local left_cfg = Toolbar.get_toolbar_config(config, 'left')
   if left_cfg then
     bounds.left = {
       x1 = x1,
@@ -394,7 +395,7 @@ local function calculate_regular_toolbar_bounds(x1, y1, w, h, config)
   end
 
   -- Right toolbar
-  local right_cfg = Toolbar.get_toolbar_config(config, "right")
+  local right_cfg = Toolbar.get_toolbar_config(config, 'right')
   if right_cfg then
     local right_w = right_cfg.width or 36
     bounds.right = {
@@ -421,7 +422,7 @@ function Panel:end_draw(ctx)
     -- ============================================================================
 
     if self.config.overlay_toolbars and self._corner_button_bounds then
-      local dl = ImGui.GetWindowDrawList(ctx)
+      local dl = Base.get_context(ctx):draw_list()
       local x1, y1, w, h = table.unpack(self._corner_button_bounds)
       local panel_bounds = {x1, y1, x1 + w, y1 + h}
 
@@ -433,7 +434,7 @@ function Panel:end_draw(ctx)
         if overlay_cfg and overlay_cfg.enabled then
           local anim_state = self.overlay_toolbar_animations[position]
           if anim_state then
-            OverlayToolbar.draw(
+            OverlayToolbar.Draw(
               ctx, dl, panel_bounds, regular_toolbar_bounds[position],
               overlay_cfg, anim_state, self, self.id, position, self.config.rounding
             )
@@ -448,10 +449,10 @@ function Panel:end_draw(ctx)
 
   -- Draw corner buttons (z-order: above content, below popups)
   if self._corner_button_bounds then
-    local top_toolbar = Toolbar.get_toolbar_config(self.config, "top")
+    local top_toolbar = Toolbar.get_toolbar_config(self.config, 'top')
     if not top_toolbar or self.config.corner_buttons_always_visible then
       local x1, y1, w, h = table.unpack(self._corner_button_bounds)
-      CornerButtons.draw(ctx, x1, y1, w, h, self.config, self.id)
+      CornerButtons.Draw(ctx, x1, y1, w, h, self.config, self.id)
     end
   end
 
@@ -527,7 +528,7 @@ Panel.close_overflow_modal = function(self) State.close_overflow_modal(self) end
 --- @param content_fn function Content render function
 --- @param config table Panel config
 --- @return table Panel instance
-function M.draw(ctx, id, width, height, content_fn, config)
+function M.Draw(ctx, id, width, height, content_fn, config)
   local panel = M.new({
     id = id,
     width = width,

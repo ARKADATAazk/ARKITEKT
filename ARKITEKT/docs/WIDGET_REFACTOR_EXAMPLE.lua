@@ -47,7 +47,7 @@ local function resolve_config_NEW(opts)
   -- User overrides (color values or direct hex)
   for key, value in pairs(opts) do
     -- Skip metadata keys
-    if key ~= "preset_name" and key ~= "preset" and key ~= "id" then
+    if key ~= 'preset_name' and key ~= 'preset' and key ~= 'id' then
       if value ~= nil and config[key] ~= nil then
         config[key] = value
       end
@@ -72,14 +72,14 @@ Module Load Time:
   Style.BUTTON.bg_color = Style.BUTTON_COLORS.bg -- Copies 0x252525FF
 
 Frame 1:
-  config = resolve_config({label = "Click"})
+  config = resolve_config({label = 'Click'})
   config.bg_color = 0x252525FF  -- From Style.BUTTON
 
 Runtime Theme Change:
   Style.COLORS.BG_BASE = 0xE5E5E5FF  -- Light background
 
 Frame 2:
-  config = resolve_config({label = "Click"})
+  config = resolve_config({label = 'Click'})
   config.bg_color = 0x252525FF  -- STILL OLD VALUE!
   ❌ Button doesn't update
 
@@ -129,16 +129,16 @@ Problem: These hex values never change, even if theme changes
 --[[ NEW PRESET (Key Mappings):
 
 Style.DYNAMIC_PRESETS.BUTTON_TOGGLE_TEAL = {
-  bg_on_color = "ACCENT_TEAL",              -- Key into M.COLORS
-  bg_on_hover_color = "ACCENT_TEAL_BRIGHT", -- Resolved at apply time
-  text_on_color = "ACCENT_TEAL_BRIGHT",
+  bg_on_color = 'ACCENT_TEAL',              -- Key into M.COLORS
+  bg_on_hover_color = 'ACCENT_TEAL_BRIGHT', -- Resolved at apply time
+  text_on_color = 'ACCENT_TEAL_BRIGHT',
   -- ...
 }
 
 -- When applied:
-function Style.apply_dynamic_preset(config, "BUTTON_TOGGLE_TEAL")
-  config.bg_on_color = M.COLORS["ACCENT_TEAL"]  -- Reads CURRENT value
-  config.text_on_color = M.COLORS["ACCENT_TEAL_BRIGHT"]
+function Style.apply_dynamic_preset(config, 'BUTTON_TOGGLE_TEAL')
+  config.bg_on_color = M.COLORS['ACCENT_TEAL']  -- Reads CURRENT value
+  config.text_on_color = M.COLORS['ACCENT_TEAL_BRIGHT']
 end
 
 Benefit: Presets adapt to theme changes automatically
@@ -193,7 +193,7 @@ local function resolve_config(opts)
 
   -- Step 4: User overrides (highest priority)
   for key, value in pairs(opts) do
-    local is_metadata = (key == "preset_name" or key == "id" or key == "label")
+    local is_metadata = (key == 'preset_name' or key == 'id' or key == 'label')
     if not is_metadata and value ~= nil and config[key] ~= nil then
       config[key] = value
     end
@@ -202,14 +202,14 @@ local function resolve_config(opts)
   -- Step 5: Derive disabled colors if not explicitly set
   if opts.disabled then
     config.bg_disabled_color = config.bg_disabled_color or
-      Colors.adjust_lightness(config.bg_color, -0.05)
+      Colors.AdjustLightness(config.bg_color, -0.05)
   end
 
   return config
 end
 
 -- Usage example:
-function Button.draw(ctx, opts)
+function Button.Draw(ctx, opts)
   local config = resolve_config(opts)
   -- config now has CURRENT theme colors!
 

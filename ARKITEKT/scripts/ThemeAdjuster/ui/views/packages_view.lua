@@ -2,12 +2,10 @@
 -- ThemeAdjuster/ui/views/packages_view.lua
 -- Packages grid view with Panel header and ARKITEKT package_tiles
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local PackageTilesGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
 local PackageManager = require('ThemeAdjuster.data.packages.manager')
-local hexrgb = Ark.Colors.hexrgb
-
 local M = {}
 local PackagesView = {}
 PackagesView.__index = PackagesView
@@ -31,7 +29,7 @@ function M.new(State, Config, settings)
 
   -- Create panel with header
   self.panel = Ark.Panel.new({
-    id = "packages_panel",
+    id = 'packages_panel',
     config = {
       header = {
         height = Config.PANEL.header_height,
@@ -179,7 +177,7 @@ function PackagesView:draw_header_content(ctx)
     self.package_model.tile = new_size
   end
   ImGui.SameLine(ctx)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xFFFFFFFF)
   ImGui.Text(ctx, string.format('%dpx', tile_size))
   ImGui.PopStyleColor(ctx)
 
@@ -214,10 +212,10 @@ function PackagesView:draw_header_content(ctx)
   -- Rebuild cache button
   if ImGui.Button(ctx, 'Rebuild Cache') then
     -- TODO: Trigger cache rebuild
-    self.State.set_cache_status("rebuilding")
+    self.State.set_cache_status('rebuilding')
     self.package_model:scan()
     -- After rebuild completes:
-    -- self.State.set_cache_status("ready")
+    -- self.State.set_cache_status('ready')
   end
 end
 
@@ -240,7 +238,7 @@ function PackagesView:draw(ctx, shell_state)
   if #visible_packages == 0 then
     ImGui.Text(ctx, 'No packages found.')
     if not self.State.get_demo_mode() then
-      ImGui.BulletText(ctx, 'Enable "Demo Mode" to preview the interface.')
+      ImGui.BulletText(ctx, 'Enable 'Demo Mode' to preview the interface.')
     end
     return
   end

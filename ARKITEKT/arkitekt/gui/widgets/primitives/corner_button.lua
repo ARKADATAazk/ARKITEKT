@@ -3,8 +3,8 @@
 -- Standardized corner-shaped button with asymmetric rounding
 -- Uses unified opts-based API
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -16,7 +16,7 @@ local M = {}
 
 local DEFAULTS = {
   -- Identity
-  id = "corner_button",
+  id = 'corner_button',
 
   -- Position (nil = use cursor)
   x = nil,
@@ -26,16 +26,16 @@ local DEFAULTS = {
   size = 24,
 
   -- Corner position and rounding
-  position = "tl",        -- Corner position: "tl", "tr", "bl", "br"
+  position = 'tl',        -- Corner position: 'tl', 'tr', 'bl', 'br'
   outer_rounding = 0,     -- Rounding for outer corner
   inner_rounding = 0,     -- Rounding for inner corner
 
   -- Content
-  label = "",
-  icon = "",
+  label = '',
+  icon = '',
 
   -- State
-  disabled = false,
+  is_disabled = false,
   is_blocking = false,
 
   -- Colors (nil = use Theme.BUTTON defaults)
@@ -60,7 +60,7 @@ local DEFAULTS = {
   custom_draw = nil,
 
   -- Cursor control
-  advance = "vertical",
+  advance = 'vertical',
 
   -- Draw list
   draw_list = nil,
@@ -177,7 +177,7 @@ end
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
 --- @return table Result { clicked, width, height, hovered, active }
-function M.draw(ctx, opts)
+function M.Draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
   -- Build config dynamically from Theme.COLORS (enables dynamic theming)
   local config = Theme.build_button_config()
@@ -193,7 +193,7 @@ function M.draw(ctx, opts)
   end
 
   -- Resolve unique ID
-  local unique_id = Base.resolve_id(ctx, opts, "corner_button")
+  local unique_id = Base.resolve_id(ctx, opts, 'corner_button')
 
   -- Get instance for animation
   local inst = get_instance(unique_id)
@@ -206,7 +206,8 @@ function M.draw(ctx, opts)
   local size = opts.size or 24
 
   -- Get state
-  local disabled = opts.disabled or false
+  local actx = Base.get_context(ctx)
+  local disabled = opts.is_disabled or actx:is_disabled()
   local is_blocking = opts.is_blocking or false
 
   local hovered = false
@@ -233,17 +234,17 @@ function M.draw(ctx, opts)
   local bg, border_inner, text
 
   if disabled then
-    bg = config.bg_disabled_color or Colors.with_opacity(Colors.desaturate(config.bg_color, 0.5), 0.5)
-    border_inner = Colors.with_opacity(Colors.desaturate(config.border_inner_color, 0.5), 0.5)
-    text = config.text_disabled_color or Colors.with_opacity(Colors.desaturate(config.text_color, 0.5), 0.5)
+    bg = config.bg_disabled_color or Colors.WithOpacity(Colors.Desaturate(config.bg_color, 0.5), 0.5)
+    border_inner = Colors.WithOpacity(Colors.Desaturate(config.border_inner_color, 0.5), 0.5)
+    text = config.text_disabled_color or Colors.WithOpacity(Colors.Desaturate(config.text_color, 0.5), 0.5)
   elseif active then
     bg = config.bg_active_color or config.bg_color
     border_inner = config.border_active_color or config.border_inner_color
     text = config.text_active_color or config.text_color
   elseif inst.hover_alpha > 0.01 then
-    bg = Colors.lerp(config.bg_color, config.bg_hover_color or config.bg_color, inst.hover_alpha)
-    border_inner = Colors.lerp(config.border_inner_color, config.border_hover_color or config.border_inner_color, inst.hover_alpha)
-    text = Colors.lerp(config.text_color, config.text_hover_color or config.text_color, inst.hover_alpha)
+    bg = Colors.Lerp(config.bg_color, config.bg_hover_color or config.bg_color, inst.hover_alpha)
+    border_inner = Colors.Lerp(config.border_inner_color, config.border_hover_color or config.border_inner_color, inst.hover_alpha)
+    text = Colors.Lerp(config.text_color, config.text_hover_color or config.text_color, inst.hover_alpha)
   else
     bg = config.bg_color
     border_inner = config.border_inner_color
@@ -298,18 +299,12 @@ function M.draw(ctx, opts)
 end
 
 -- ============================================================================
--- DEPRECATED / REMOVED FUNCTIONS
--- ============================================================================
-
--- M.cleanup() - REMOVED (automatic via Base.cleanup_registry, no manual call needed)
-
--- ============================================================================
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.CornerButton(ctx, opts) → M.draw(ctx, opts)
+-- Make module callable: Ark.CornerButton(ctx, opts) → M.Draw(ctx, opts)
 return setmetatable(M, {
   __call = function(_, ctx, opts)
-    return M.draw(ctx, opts)
+    return M.Draw(ctx, opts)
   end
 })

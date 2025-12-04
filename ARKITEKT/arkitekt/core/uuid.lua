@@ -18,7 +18,7 @@ local function ensure_init()
 end
 
 -- Generate a random UUID v4
--- Returns: string in format "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+-- Returns: string in format 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
 -- where x is any hexadecimal digit and y is one of 8, 9, A, or B
 function M.generate()
   ensure_init()
@@ -31,15 +31,16 @@ function M.generate()
   end)
 end
 
--- Validate UUID format
--- Returns: true if valid UUID format, false otherwise
+-- Validate UUID v4 format
+-- Returns: true if valid UUID v4 format, false otherwise
 function M.is_valid(uuid)
-  if type(uuid) ~= "string" then
+  if type(uuid) ~= 'string' then
     return false
   end
 
   -- UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
-  local pattern = "^%x%x%x%x%x%x%x%x%-%x%x%x%x%-4%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x$"
+  -- where y must be 8, 9, a, or b (variant 1)
+  local pattern = '^%x%x%x%x%x%x%x%x%-%x%x%x%x%-4%x%x%x%-[89aAbB]%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x$'
   return uuid:match(pattern) ~= nil
 end
 

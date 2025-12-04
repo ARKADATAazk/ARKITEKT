@@ -2,10 +2,10 @@
 -- panel/corner_buttons.lua
 -- Corner button rendering with asymmetric rounding
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Base = require('arkitekt.gui.widgets.base')
 local CornerButton = require('arkitekt.gui.widgets.primitives.corner_button')
-local ConfigUtil = require('arkitekt.core.config')
+local ConfigUtil = require('arkitekt.core.merge')
 local Rendering = require('arkitekt.gui.widgets.containers.panel.rendering')
 
 local M = {}
@@ -66,7 +66,7 @@ end
 --- @param h number Panel height
 --- @param config table Panel config
 --- @param panel_id string Panel ID
-function M.draw(ctx, x, y, w, h, config, panel_id)
+function M.Draw(ctx, x, y, w, h, config, panel_id)
   local cb_config = config.corner_buttons
   if not cb_config then return end
 
@@ -86,7 +86,7 @@ function M.draw(ctx, x, y, w, h, config, panel_id)
   })
 
   -- Setup clipping to panel bounds
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   ImGui.DrawList_PushClipRect(dl, x, y, x + w, y + h, true)
 
   -- Track drawn buttons for edge border rendering
@@ -108,7 +108,7 @@ function M.draw(ctx, x, y, w, h, config, panel_id)
                        ImGui.WindowFlags_NoScrollWithMouse |
                        ImGui.WindowFlags_NoBackground
 
-    local child_id = panel_id .. "_corner_" .. position_key
+    local child_id = panel_id .. '_corner_' .. position_key
     if ImGui.BeginChild(ctx, child_id, size, size, ImGui.ChildFlags_None, child_flags) then
       local child_dl = ImGui.GetWindowDrawList(ctx)
 
@@ -123,7 +123,7 @@ function M.draw(ctx, x, y, w, h, config, panel_id)
       opts.inner_rounding = inner_rounding
       opts.position = position_key
 
-      CornerButton.draw(ctx, opts)
+      CornerButton.Draw(ctx, opts)
 
       -- Inform ImGui of bounds
       ImGui.Dummy(ctx, size, size)
@@ -132,10 +132,10 @@ function M.draw(ctx, x, y, w, h, config, panel_id)
   end
 
   -- Draw all corner buttons
-  if cb_config.top_left then create_button_child(cb_config.top_left, "tl") end
-  if cb_config.top_right then create_button_child(cb_config.top_right, "tr") end
-  if cb_config.bottom_left then create_button_child(cb_config.bottom_left, "bl") end
-  if cb_config.bottom_right then create_button_child(cb_config.bottom_right, "br") end
+  if cb_config.top_left then create_button_child(cb_config.top_left, 'tl') end
+  if cb_config.top_right then create_button_child(cb_config.top_right, 'tr') end
+  if cb_config.bottom_left then create_button_child(cb_config.bottom_left, 'bl') end
+  if cb_config.bottom_right then create_button_child(cb_config.bottom_right, 'br') end
 
   -- Draw edge borders for buttons extending beyond panel
   local border_color = 0x000000FF
@@ -155,11 +155,6 @@ function M.draw(ctx, x, y, w, h, config, panel_id)
   end
 
   ImGui.DrawList_PopClipRect(dl)
-end
-
---- Cleanup corner button instances
-function M.cleanup()
-  Base.cleanup_registry(instances)
 end
 
 return M

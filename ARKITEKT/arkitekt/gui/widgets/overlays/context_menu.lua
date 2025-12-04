@@ -11,36 +11,35 @@
 -- - checkbox_item/radiobutton_item variants
 --
 -- Usage (ImGui-compatible API):
---   if ContextMenu.BeginPopup(ctx, "my_menu") then
---     if ContextMenu.MenuItem(ctx, "Copy", "Ctrl+C") then
+--   if ContextMenu.BeginPopup(ctx, 'my_menu') then
+--     if ContextMenu.MenuItem(ctx, 'Copy', 'Ctrl+C') then
 --       -- Handle copy
 --     end
---     if ContextMenu.MenuItem(ctx, "Paste", "Ctrl+V", false, can_paste) then
+--     if ContextMenu.MenuItem(ctx, 'Paste', 'Ctrl+V', false, can_paste) then
 --       -- Handle paste (disabled if can_paste is false)
 --     end
---     ContextMenu.Separator(ctx, "Recent Files")  -- Labeled separator
---     if ContextMenu.BeginMenu(ctx, "More Options") then
---       if ContextMenu.MenuItem(ctx, "Option 1") then end
+--     ContextMenu.Separator(ctx, 'Recent Files')  -- Labeled separator
+--     if ContextMenu.BeginMenu(ctx, 'More Options') then
+--       if ContextMenu.MenuItem(ctx, 'Option 1') then end
 --       ContextMenu.EndMenu(ctx)
 --     end
 --     ContextMenu.EndPopup(ctx)
 --   end
 --
 -- With icons:
---   if ContextMenu.MenuItem(ctx, "Save", "Ctrl+S", false, true, {
---     icon = "\u{e0c7}",  -- Font Awesome icon
+--   if ContextMenu.MenuItem(ctx, 'Save', 'Ctrl+S', false, true, {
+--     icon = '\u{e0c7}',  -- Font Awesome icon
 --     icon_font = my_icon_font
 --   }) then
 --     -- Handle save
 --   end
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 local Colors = require('arkitekt.core.colors')
-local Theme = require('arkitekt.core.theme')
+local Theme = require('arkitekt.theme')
 
 local M = {}
-local hexrgb = Colors.hexrgb
-
 -- Get dynamic defaults from Theme.COLORS
 local function get_defaults()
   local C = Theme.COLORS
@@ -105,7 +104,7 @@ end
 --- Enhanced menu item with icons, shortcuts, and disabled state
 --- @param ctx userdata ImGui context
 --- @param label string Item label
---- @param shortcut string|nil Keyboard shortcut text (e.g., "Ctrl+C")
+--- @param shortcut string|nil Keyboard shortcut text (e.g., 'Ctrl+C')
 --- @param selected boolean|nil If true, shows a checkmark
 --- @param enabled boolean|nil If false, item is grayed out (default: true)
 --- @param config table|nil Optional config: icon, icon_font, tooltip
@@ -115,7 +114,7 @@ function M.MenuItem(ctx, label, shortcut, selected, enabled, config)
   local defaults = get_defaults()
 
   -- Handle optional parameters (match ImGui signature)
-  if type(shortcut) == "table" then
+  if type(shortcut) == 'table' then
     config = shortcut
     shortcut = config.shortcut
     selected = config.selected
@@ -136,7 +135,7 @@ function M.MenuItem(ctx, label, shortcut, selected, enabled, config)
   local icon_font = config.icon_font
   local tooltip = config.tooltip
 
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
@@ -167,7 +166,7 @@ function M.MenuItem(ctx, label, shortcut, selected, enabled, config)
   -- Calculate shortcut width
   local shortcut_w = 0
   local shortcut_spacing = 0
-  if shortcut and shortcut ~= "" then
+  if shortcut and shortcut ~= '' then
     shortcut_w = ImGui.CalcTextSize(ctx, shortcut)
     shortcut_spacing = 24  -- Spacing between label and shortcut
   end
@@ -221,14 +220,14 @@ function M.MenuItem(ctx, label, shortcut, selected, enabled, config)
   ImGui.DrawList_AddText(dl, current_x, text_y, text_color, label)
 
   -- Draw shortcut (right-aligned, dimmed)
-  if shortcut and shortcut ~= "" then
-    local shortcut_color = Colors.with_opacity(text_color, enabled and 0.6 or 0.4)
+  if shortcut and shortcut ~= '' then
+    local shortcut_color = Colors.WithOpacity(text_color, enabled and 0.6 or 0.4)
     local shortcut_x = item_x + item_w - shortcut_w - item_padding_x
     ImGui.DrawList_AddText(dl, shortcut_x, text_y, shortcut_color, shortcut)
   end
 
   -- Invisible button for interaction
-  ImGui.InvisibleButton(ctx, label .. "_menuitem", item_w, item_height)
+  ImGui.InvisibleButton(ctx, label .. '_menuitem', item_w, item_height)
 
   -- Show tooltip on hover if disabled
   if tooltip and item_hovered and not enabled then
@@ -254,7 +253,7 @@ function M.checkbox_item(ctx, label, checked, config)
   local item_text_color = config.item_text_color or defaults.item_text_color
   local item_text_hover_color = config.item_text_hover_color or defaults.item_text_hover_color
 
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
@@ -314,7 +313,7 @@ function M.checkbox_item(ctx, label, checked, config)
 
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
 
-  ImGui.InvisibleButton(ctx, label .. "_checkbox_item", item_w, item_height)
+  ImGui.InvisibleButton(ctx, label .. '_checkbox_item', item_w, item_height)
 
   return ImGui.IsItemClicked(ctx, 0)
 end
@@ -329,7 +328,7 @@ function M.radiobutton_item(ctx, label, selected, config)
   local item_text_color = config.item_text_color or defaults.item_text_color
   local item_text_hover_color = config.item_text_hover_color or defaults.item_text_hover_color
 
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
@@ -383,12 +382,12 @@ function M.radiobutton_item(ctx, label, selected, config)
 
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
 
-  ImGui.InvisibleButton(ctx, label .. "_radiobutton_item", item_w, item_height)
+  ImGui.InvisibleButton(ctx, label .. '_radiobutton_item', item_w, item_height)
 
   return ImGui.IsItemClicked(ctx, 0)
 end
 
---- Separator with optional label (like "--- Recent Files ---")
+--- Separator with optional label (like '--- Recent Files ---')
 --- @param ctx userdata ImGui context
 --- @param label string|nil Optional label text
 --- @param config table|nil Optional config
@@ -396,7 +395,7 @@ function M.Separator(ctx, label, config)
   config = config or {}
 
   -- Handle label passed as config
-  if type(label) == "table" then
+  if type(label) == 'table' then
     config = label
     label = config.label
   end
@@ -409,9 +408,9 @@ function M.Separator(ctx, label, config)
   local x, y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
 
-  if label and label ~= "" then
+  if label and label ~= '' then
     -- Separator with label (like VSCode section headers)
     local label_w, label_h = ImGui.CalcTextSize(ctx, label)
     local inset = 8
@@ -450,7 +449,7 @@ function M.BeginMenu(ctx, label, enabled, config)
   config = config or {}
 
   -- Handle enabled passed as config
-  if type(enabled) == "table" then
+  if type(enabled) == 'table' then
     config = enabled
     enabled = config.enabled
   end
@@ -465,7 +464,7 @@ function M.BeginMenu(ctx, label, enabled, config)
   local item_text_color = enabled and (config.item_text_color or defaults.item_text_color) or defaults.item_disabled_color
   local item_text_hover_color = enabled and (config.item_text_hover_color or defaults.item_text_hover_color) or defaults.item_disabled_color
 
-  local dl = ImGui.GetWindowDrawList(ctx)
+  local dl = Base.get_context(ctx):draw_list()
   local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
@@ -495,7 +494,7 @@ function M.BeginMenu(ctx, label, enabled, config)
     arrow_x + arrow_size, arrow_y,                 -- Right vertex (pointing right)
     text_color)
 
-  ImGui.InvisibleButton(ctx, label .. "_submenu", item_w, item_height)
+  ImGui.InvisibleButton(ctx, label .. '_submenu', item_w, item_height)
 
   -- Only open submenu if enabled
   if not enabled then
@@ -511,7 +510,7 @@ function M.BeginMenu(ctx, label, enabled, config)
     local submenu_y = item_y - defaults.padding  -- Align with item, accounting for padding
 
     ImGui.SetNextWindowPos(ctx, submenu_x, submenu_y, ImGui.Cond_Always)
-    ImGui.OpenPopup(ctx, label .. "_submenu_popup")
+    ImGui.OpenPopup(ctx, label .. '_submenu_popup')
   end
 
   -- Style for submenu popup
@@ -526,7 +525,7 @@ function M.BeginMenu(ctx, label, enabled, config)
   ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, bg_color)
   ImGui.PushStyleColor(ctx, ImGui.Col_Border, border_color)
 
-  local submenu_open = ImGui.BeginPopup(ctx, label .. "_submenu_popup")
+  local submenu_open = ImGui.BeginPopup(ctx, label .. '_submenu_popup')
 
   if not submenu_open then
     ImGui.PopStyleColor(ctx, 2)

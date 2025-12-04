@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/views/layout_view.lua
 -- Layout view handling horizontal and vertical split layouts
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Logger = require('arkitekt.debug.logger')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
@@ -24,9 +24,9 @@ function M.new(config, state_module)
 end
 
 function LayoutView:get_filtered_active_items(playlist)
-  local filter = self.state.active_search_filter or ""
+  local filter = self.state.active_search_filter or ''
   
-  if filter == "" then
+  if filter == '' then
     return playlist.items
   end
   
@@ -34,9 +34,9 @@ function LayoutView:get_filtered_active_items(playlist)
   local filter_lower = filter:lower()
   
   for _, item in ipairs(playlist.items) do
-    if item.type == "playlist" then
+    if item.type == 'playlist' then
       local playlist_data = self.state.get_playlist_by_id(item.playlist_id)
-      local name_lower = playlist_data and playlist_data.name:lower() or ""
+      local name_lower = playlist_data and playlist_data.name:lower() or ''
       if name_lower:find(filter_lower, 1, true) then
         filtered[#filtered + 1] = item
       end
@@ -68,15 +68,21 @@ function LayoutView:draw(ctx, region_tiles, shell_state)
 
   local pool_data
   local pool_mode = self.state.get_pool_mode()
-  if pool_mode == "playlists" then
+  if pool_mode == 'playlists' then
     pool_data = self.state.get_playlists_for_pool()
-  elseif pool_mode == "mixed" then
+  elseif pool_mode == 'mixed' then
     pool_data = self.state.get_mixed_pool_sorted()
   else
     pool_data = self.state.get_filtered_pool_regions()
   end
 
-  if self.state.get_layout_mode() == 'horizontal' then
+  -- Sync layout_mode from State to region_tiles if changed (handles mid-frame updates)
+  local current_layout_mode = self.state.get_layout_mode()
+  if current_layout_mode ~= region_tiles.layout_mode then
+    region_tiles:set_layout_mode(current_layout_mode)
+  end
+
+  if current_layout_mode == 'horizontal' then
     self:draw_horizontal(ctx, region_tiles, display_playlist, pool_data, shell_state)
   else
     self:draw_vertical(ctx, region_tiles, display_playlist, pool_data, shell_state)
@@ -118,22 +124,22 @@ function LayoutView:draw_horizontal(ctx, region_tiles, display_playlist, pool_da
   region_tiles:draw_active(ctx, display_playlist, active_height, shell_state)
 
   local separator_y = start_y + active_height + separator_gap/2
-  local sep_result = Ark.Splitter.draw(ctx, {
-    id = "active_pool_separator_h",
+  local sep_result = Ark.Splitter(ctx, {
+    id = 'active_pool_separator_h',
     x = start_x,
     y = separator_y,
     width = content_w,
-    orientation = "horizontal",
+    orientation = 'horizontal',
     thickness = separator_config.thickness,
   })
 
   if region_tiles.active_grid then region_tiles.active_grid.block_all_input = sep_result.dragging end
   if region_tiles.pool_grid then region_tiles.pool_grid.block_all_input = sep_result.dragging end
 
-  if sep_result.action == "reset" then
+  if sep_result.action == 'reset' then
     self.state.set_separator_position_horizontal(separator_config.default_position)
     self.state.persist_ui_prefs()
-  elseif sep_result.action == "drag" and content_h >= min_total_height then
+  elseif sep_result.action == 'drag' and content_h >= min_total_height then
     local new_active_height = sep_result.position - start_y - separator_gap/2
     new_active_height = max(min_active_height, min(new_active_height, content_h - min_pool_height - separator_gap))
     self.state.set_separator_position_horizontal(new_active_height)
@@ -178,13 +184,13 @@ function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data
   local start_cursor_x, start_cursor_y = ImGui.GetCursorScreenPos(ctx)
 
   -- Ensure content_h is valid to prevent BeginChild/EndChild errors
-  local safe_content_h = math.max(1, content_h or 1)
+  local safe_content_h = max(1, content_h or 1)
 
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
   -- Wrap in pcall to ensure PopStyleVar is always called
   local success, error_msg = pcall(function()
-    if ImGui.BeginChild(ctx, "##left_column", active_width, safe_content_h, ImGui.ChildFlags_None, 0) then
+    if ImGui.BeginChild(ctx, '##left_column', active_width, safe_content_h, ImGui.ChildFlags_None, 0) then
       region_tiles:draw_active(ctx, display_playlist, safe_content_h, shell_state)
     end
     ImGui.EndChild(ctx)
@@ -193,26 +199,26 @@ function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data
   ImGui.PopStyleVar(ctx)
 
   if not success and error_msg then
-    Logger.error("GUI", "Layout error (left column): %s", tostring(error_msg))
+    Logger.error('GUI', 'Layout error (left column): %s', tostring(error_msg))
   end
 
   local separator_x = start_cursor_x + active_width + separator_gap/2
-  local sep_result = Ark.Splitter.draw(ctx, {
-    id = "active_pool_separator_v",
+  local sep_result = Ark.Splitter(ctx, {
+    id = 'active_pool_separator_v',
     x = separator_x,
     y = start_cursor_y,
     height = content_h,
-    orientation = "vertical",
+    orientation = 'vertical',
     thickness = separator_config.thickness,
   })
 
   if region_tiles.active_grid then region_tiles.active_grid.block_all_input = sep_result.dragging end
   if region_tiles.pool_grid then region_tiles.pool_grid.block_all_input = sep_result.dragging end
 
-  if sep_result.action == "reset" then
+  if sep_result.action == 'reset' then
     self.state.set_separator_position_vertical(separator_config.default_position)
     self.state.persist_ui_prefs()
-  elseif sep_result.action == "drag" and content_w >= min_total_width then
+  elseif sep_result.action == 'drag' and content_w >= min_total_width then
     local new_active_width = sep_result.position - start_cursor_x - separator_gap/2
     new_active_width = max(min_active_width, min(new_active_width, content_w - min_pool_width - separator_gap))
     self.state.set_separator_position_vertical(new_active_width)
@@ -222,13 +228,13 @@ function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data
   ImGui.SetCursorScreenPos(ctx, start_cursor_x + active_width + separator_gap, start_cursor_y)
 
   -- Ensure content_h is valid to prevent BeginChild/EndChild errors
-  local safe_content_h = math.max(1, content_h or 1)
+  local safe_content_h = max(1, content_h or 1)
 
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
   -- Wrap in pcall to ensure PopStyleVar is always called
   local success, error_msg = pcall(function()
-    if ImGui.BeginChild(ctx, "##right_column", pool_width, safe_content_h, ImGui.ChildFlags_None, 0) then
+    if ImGui.BeginChild(ctx, '##right_column', pool_width, safe_content_h, ImGui.ChildFlags_None, 0) then
       region_tiles:draw_pool(ctx, pool_data, safe_content_h, shell_state)
     end
     ImGui.EndChild(ctx)
@@ -237,7 +243,7 @@ function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data
   ImGui.PopStyleVar(ctx)
 
   if not success and error_msg then
-    Logger.error("GUI", "Layout error (right column): %s", tostring(error_msg))
+    Logger.error('GUI', 'Layout error (right column): %s', tostring(error_msg))
   end
 end
 

@@ -8,17 +8,15 @@
 -- Responsibilities:
 -- - Drawing animated drag indicators (glow effects, pulsing)
 -- - Drawing drop zone highlights with mode-specific colors
--- - Rendering operation badges (copy "+", move arrow, etc.)
+-- - Rendering operation badges (copy '+', move arrow, etc.)
 -- - Theme-reactive color configuration
 --
 -- Original source: Merged from dnd/config.lua, dnd/drag_indicator.lua, dnd/drop_indicator.lua
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
-local Theme = require('arkitekt.core.theme')
-local hexrgb = Colors.hexrgb
-
+local Theme = require('arkitekt.theme')
 -- ============================================================================
 -- PERFORMANCE OPTIMIZATIONS
 -- ============================================================================
@@ -60,7 +58,7 @@ end
 
 -- Get glow version of a color (33% alpha)
 local function get_glow_color(color)
-  return Colors.with_alpha(color, 0x33)
+  return Colors.WithAlpha(color, 0x33)
 end
 
 -- ============================================================================
@@ -69,9 +67,9 @@ end
 -- Build mode configs once at module load time
 -- Theme.COLORS are read once here, then reused for all draw calls
 local function build_mode_configs()
-  local move_color = get_op_color("OP_MOVE")
-  local copy_color = get_op_color("OP_COPY")
-  local delete_color = get_op_color("OP_DELETE")
+  local move_color = get_op_color('OP_MOVE')
+  local copy_color = get_op_color('OP_COPY')
+  local delete_color = get_op_color('OP_DELETE')
 
   return {
     move = {
@@ -83,14 +81,14 @@ local function build_mode_configs()
       stroke_color = copy_color,
       glow_color = get_glow_color(copy_color),
       badge_accent = copy_color,
-      indicator_text = "+",
+      indicator_text = '+',
       indicator_color = copy_color,
     },
     delete = {
       stroke_color = delete_color,
       glow_color = get_glow_color(delete_color),
       badge_accent = delete_color,
-      indicator_text = "-",
+      indicator_text = '-',
       indicator_color = delete_color,
     },
   }
@@ -102,7 +100,7 @@ M.MODES = build_mode_configs()
 M.TILE_DEFAULTS = {
   width = 60,
   height = 40,
-  base_fill = hexrgb("#1A1A1A"),
+  base_fill = 0x1A1A1AFF,
   stroke_thickness = 1.5,
   rounding = 4,
   global_opacity = 0.70,
@@ -117,8 +115,8 @@ M.STACK_DEFAULTS = {
 }
 
 M.BADGE_DEFAULTS = {
-  bg = hexrgb("#1A1A1AEE"),
-  border_color = hexrgb("#00000099"),
+  bg = 0x1A1A1AEE,
+  border_color = 0x00000099,
   border_thickness = 1,
   rounding = 6,
   padding_x = 6,
@@ -144,7 +142,7 @@ M.DROP_DEFAULTS = {
 M.SHADOW_DEFAULTS = {
   enabled = false,
   layers = 2,
-  base_color = hexrgb("#00000044"),
+  base_color = 0x00000044,
   offset = 2,
   blur_spread = 1.0,
 }
@@ -157,7 +155,7 @@ M.INNER_GLOW_DEFAULTS = {
 
 -- Get inner glow color (lazy evaluation)
 function M.get_inner_glow_color()
-  return Colors.with_alpha(get_op_color("OP_MOVE"), 0x22)
+  return Colors.WithAlpha(get_op_color('OP_MOVE'), 0x22)
 end
 
 function M.get_mode_config(config, is_copy, is_delete)
@@ -176,7 +174,7 @@ local DragIndicator = {}
 local function apply_alpha_factor(color, factor)
   local current_alpha = color & 0xFF
   local new_alpha = (current_alpha * factor)//1
-  return Colors.with_alpha(color, min(255, max(0, new_alpha)))
+  return Colors.WithAlpha(color, min(255, max(0, new_alpha)))
 end
 
 local function draw_shadow(dl, x1, y1, x2, y2, rounding, config)
@@ -230,11 +228,11 @@ local function draw_copy_indicator(ctx, dl, mx, my, config)
   local ix = mx - size - 20
   local iy = my - size / 2
 
-  AddCircleFilled(dl, ix + size/2, iy + size/2, size/2, hexrgb("#1A1A1AEE"))
+  AddCircleFilled(dl, ix + size/2, iy + size/2, size/2, 0x1A1A1AEE)
   AddCircle(dl, ix + size/2, iy + size/2, size/2, indicator_color, 0, 2)
 
   local tw, th = CalcTextSize(ctx, indicator_text)
-  Draw.text(dl, ix + (size - tw)/2, iy + (size - th)/2, indicator_color, indicator_text)
+  Draw.Text(dl, ix + (size - tw)/2, iy + (size - th)/2, indicator_color, indicator_text)
 end
 
 local function draw_delete_indicator(ctx, dl, mx, my, config)
@@ -246,11 +244,11 @@ local function draw_delete_indicator(ctx, dl, mx, my, config)
   local ix = mx - size - 20
   local iy = my - size / 2
 
-  AddCircleFilled(dl, ix + size/2, iy + size/2, size/2, hexrgb("#1A1A1AEE"))
+  AddCircleFilled(dl, ix + size/2, iy + size/2, size/2, 0x1A1A1AEE)
   AddCircle(dl, ix + size/2, iy + size/2, size/2, indicator_color, 0, 2)
 
   local tw, th = CalcTextSize(ctx, indicator_text)
-  Draw.text(dl, ix + (size - tw)/2, iy + (size - th)/2, indicator_color, indicator_text)
+  Draw.Text(dl, ix + (size - tw)/2, iy + (size - th)/2, indicator_color, indicator_text)
 end
 
 function DragIndicator.draw_badge(ctx, dl, mx, my, count, config, is_copy_mode, is_delete_mode)
@@ -279,7 +277,7 @@ function DragIndicator.draw_badge(ctx, dl, mx, my, count, config, is_copy_mode, 
 
   if cfg.shadow and cfg.shadow.enabled then
     local shadow_offset = cfg.shadow.offset or 2
-    local shadow_color = cfg.shadow.color or hexrgb("#00000099")
+    local shadow_color = cfg.shadow.color or 0x00000099
     AddRectFilled(dl,
       bx + shadow_offset, by + shadow_offset,
       bx + badge_w + shadow_offset, by + badge_h + shadow_offset,
@@ -304,7 +302,7 @@ function DragIndicator.draw_badge(ctx, dl, mx, my, count, config, is_copy_mode, 
   AddText(dl, text_x, text_y, accent_color, label)
 end
 
-function DragIndicator.draw(ctx, dl, mx, my, count, config, colors, is_copy_mode, is_delete_mode)
+function DragIndicator.Draw(ctx, dl, mx, my, count, config, colors, is_copy_mode, is_delete_mode)
   local tile_cfg = (config and config.tile) or M.TILE_DEFAULTS
   local stack_cfg = (config and config.stack) or M.STACK_DEFAULTS
   local shadow_cfg = (config and config.shadow) or M.SHADOW_DEFAULTS
@@ -478,7 +476,7 @@ function DropIndicator.draw_horizontal(ctx, dl, x1, x2, y, config, is_copy_mode)
                                 pulsed_line, cap_rounding)
 end
 
-function DropIndicator.draw(ctx, dl, config, is_copy_mode, orientation, ...)
+function DropIndicator.Draw(ctx, dl, config, is_copy_mode, orientation, ...)
   if orientation == 'horizontal' then
     local x1, x2, y = ...
     DropIndicator.draw_horizontal(ctx, dl, x1, x2, y, config, is_copy_mode)

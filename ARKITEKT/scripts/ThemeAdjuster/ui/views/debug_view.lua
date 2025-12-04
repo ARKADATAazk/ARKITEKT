@@ -2,12 +2,10 @@
 -- ThemeAdjuster/ui/views/debug_view.lua
 -- Debug tab with theme info and image browser
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Theme = require('ThemeAdjuster.domain.theme.reader')
-local ImageCache = require('arkitekt.platform.images')  -- Use ARKITEKT's central image system
-local hexrgb = Ark.Colors.hexrgb
-
+local ImageCache = require('arkitekt.core.images')  -- Use ARKITEKT's central image system
 local M = {}
 local DebugView = {}
 DebugView.__index = DebugView
@@ -27,7 +25,7 @@ function M.new(State, AppConfig, settings)
     page_size = settings and settings:get('debug_page_size', 120) or 120,
     page_index = settings and settings:get('debug_page_index', 1) or 1,
     recursive = settings and settings:get('debug_recursive', true) or true,
-    filter_text = settings and settings:get('debug_filter', "") or "",
+    filter_text = settings and settings:get('debug_filter', '') or '',
 
     -- Image cache
     image_cache = nil,
@@ -41,7 +39,7 @@ function M.new(State, AppConfig, settings)
   -- Create container (Panel) with header
   local container_config = self:create_container_config()
   self.container = Ark.Panel.new({
-    id = "debug_container",
+    id = 'debug_container',
     config = container_config,
   })
 
@@ -55,12 +53,12 @@ function DebugView:create_container_config()
       height = 32,
       elements = {
         {
-          id = "rescan_images",
-          type = "button",
+          id = 'rescan_images',
+          type = 'button',
           width = 120,
           spacing_before = 0,
           config = {
-            label = "Rescan Images",
+            label = 'Rescan Images',
             on_click = function()
               self.img_dir = Theme.prepare_images(true)
               if self.img_dir then
@@ -70,12 +68,12 @@ function DebugView:create_container_config()
           },
         },
         {
-          id = "reload_theme",
-          type = "button",
+          id = 'reload_theme',
+          type = 'button',
           width = 150,
           spacing_before = 0,
           config = {
-            label = "Reload in REAPER",
+            label = 'Reload in REAPER',
             on_click = function()
               Theme.reload_theme_in_reaper()
               self.image_list = {}
@@ -88,13 +86,13 @@ function DebugView:create_container_config()
           },
         },
         {
-          id = "filter",
-          type = "inputtext",
+          id = 'filter',
+          type = 'inputtext',
           width = 200,
           spacing_before = 0,
           config = {
-            preset = "search",
-            placeholder = "Filter images...",
+            preset = 'search',
+            placeholder = 'Filter images...',
             on_change = function(text)
               self.filter_text = text
               if self.settings then self.settings:set('debug_filter', text) end
@@ -104,12 +102,12 @@ function DebugView:create_container_config()
           },
         },
         {
-          id = "recursive",
-          type = "checkbox",
+          id = 'recursive',
+          type = 'checkbox',
           width = 85,
           spacing_before = 0,
           config = {
-            label = "Recursive",
+            label = 'Recursive',
             checked = self.recursive,
             on_change = function(value)
               self.recursive = value
@@ -120,19 +118,19 @@ function DebugView:create_container_config()
           },
         },
         {
-          id = "spacer1",
-          type = "separator",
+          id = 'spacer1',
+          type = 'separator',
           flex = 1,
           spacing_before = 0,
           config = { show_line = false },
         },
         {
-          id = "prev_page",
-          type = "button",
+          id = 'prev_page',
+          type = 'button',
           width = 70,
           spacing_before = 0,
           config = {
-            label = "<< Prev",
+            label = '<< Prev',
             on_click = function()
               -- Only navigate if not already at first page
               if self.page_index > 1 then
@@ -145,12 +143,12 @@ function DebugView:create_container_config()
           },
         },
         {
-          id = "next_page",
-          type = "button",
+          id = 'next_page',
+          type = 'button',
           width = 70,
           spacing_before = 0,
           config = {
-            label = "Next >>",
+            label = 'Next >>',
             on_click = function()
               local total_pages = self:get_total_pages()
               -- Only navigate if not already at last page
@@ -214,7 +212,7 @@ function DebugView:draw_theme_info(ctx)
 
   ImGui.Text(ctx, 'Theme:')
   ImGui.SameLine(ctx)
-  ImGui.TextColored(ctx, hexrgb("#FFFFFF"), info.theme_name or 'Unknown')
+  ImGui.TextColored(ctx, 0xFFFFFFFF, info.theme_name or 'Unknown')
 
   ImGui.BulletText(ctx, ('Path: %s'):format(info.theme_path or '—'))
   ImGui.BulletText(ctx, ('Type: %s'):format(info.theme_ext or '—'))
@@ -227,17 +225,17 @@ function DebugView:draw_theme_info(ctx)
   ImGui.SameLine(ctx)
 
   if status == 'direct' and dir then
-    ImGui.TextColored(ctx, hexrgb("#41E0A3"), ('READY - Direct: %s'):format(dir))
+    ImGui.TextColored(ctx, 0x41E0A3FF, ('READY - Direct: %s'):format(dir))
   elseif (status == 'linked-ready' or status == 'zip-ready') and dir then
     local msg = zip_name and ('READY - ZIP Cache: %s'):format(zip_name) or ('READY - ZIP Cache: %s'):format(dir)
-    ImGui.TextColored(ctx, hexrgb("#E0B341"), msg)
+    ImGui.TextColored(ctx, 0xE0B341FF, msg)
   elseif status == 'linked-needs-build' then
     local msg = zip_name and ('LINKED - Build needed: %s'):format(zip_name) or 'LINKED - Build cache to continue'
-    ImGui.TextColored(ctx, hexrgb("#E0B341"), msg)
+    ImGui.TextColored(ctx, 0xE0B341FF, msg)
   elseif status == 'needs-link' then
-    ImGui.TextColored(ctx, hexrgb("#E04141"), 'NOT LINKED - Pick a .ReaperThemeZip to continue')
+    ImGui.TextColored(ctx, 0xE04141FF, 'NOT LINKED - Pick a .ReaperThemeZip to continue')
   else
-    ImGui.TextColored(ctx, hexrgb("#E04141"), 'ERROR - Check theme status')
+    ImGui.TextColored(ctx, 0xE04141FF, 'ERROR - Check theme status')
   end
 
   ImGui.Separator(ctx)
@@ -286,15 +284,15 @@ function DebugView:draw_image_grid(ctx)
 
       -- Tooltip
       if ImGui.IsItemHovered(ctx) then
-        local name = path:match("[^\\/]+$") or path
+        local name = path:match('[^\\/]+$') or path
         ImGui.SetTooltip(ctx, name)
       end
 
       -- Filename label
-      local name = path:match("[^\\/]+$") or path
+      local name = path:match('[^\\/]+$') or path
       -- Truncate if too long
       if #name > 30 then
-        name = name:sub(1, 27) .. "..."
+        name = name:sub(1, 27) .. '...'
       end
       ImGui.Text(ctx, name)
 

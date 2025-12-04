@@ -3,8 +3,8 @@
 -- Standalone combo widget (ImGui.Combo equivalent) with Arkitekt styling
 -- Can be used anywhere, with optional panel integration
 
-local ImGui = require('arkitekt.platform.imgui')
-local Theme = require('arkitekt.core.theme')
+local ImGui = require('arkitekt.core.imgui')
+local Theme = require('arkitekt.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')
@@ -43,13 +43,13 @@ local function resolve_context(config, state_or_id)
   }
   
   -- Check if we're in a panel context
-  if type(state_or_id) == "table" and state_or_id._panel_id then
+  if type(state_or_id) == 'table' and state_or_id._panel_id then
     context.is_panel_context = true
-    context.unique_id = string.format("%s_%s", state_or_id._panel_id, config.id or "dropdown")
+    context.unique_id = string.format('%s_%s', state_or_id._panel_id, config.id or 'dropdown')
     context.corner_rounding = config.corner_rounding
   else
     -- Standalone context
-    context.unique_id = type(state_or_id) == "string" and state_or_id or (config.id or "dropdown")
+    context.unique_id = type(state_or_id) == 'string' and state_or_id or (config.id or 'dropdown')
     context.corner_rounding = nil
   end
   
@@ -60,30 +60,63 @@ end
 -- INSTANCE MANAGEMENT
 -- ============================================================================
 
+-- Deep copy config to prevent state pollution between instances
+-- Special handling for options array (array of tables)
+local function copy_config(config)
+  local copy = {}
+  for k, v in pairs(config) do
+    if k == 'options' and type(v) == 'table' then
+      -- Deep copy options array (array of {value, label} tables)
+      copy[k] = {}
+      for i, opt in ipairs(v) do
+        if type(opt) == 'table' then
+          copy[k][i] = {}
+          for ok, ov in pairs(opt) do
+            copy[k][i][ok] = ov
+          end
+        else
+          copy[k][i] = opt
+        end
+      end
+    elseif type(v) == 'table' and k ~= 'popup' then
+      -- Shallow copy other tables (popup has its own defaults)
+      local nested = {}
+      for nk, nv in pairs(v) do
+        nested[nk] = nv
+      end
+      copy[k] = nested
+    else
+      -- Copy primitives and functions by reference
+      copy[k] = v
+    end
+  end
+  return copy
+end
+
 local Dropdown = {}
 Dropdown.__index = Dropdown
 
 function Dropdown.new(id, config, initial_value, initial_direction)
   local instance = setmetatable({
     id = id,
-    config = config,
+    config = copy_config(config),  -- Copy config to prevent sharing
     current_value = initial_value,
-    sort_direction = initial_direction or "asc",
+    sort_direction = initial_direction or 'asc',
     hover_alpha = 0,
     is_open = false,
     popup_hover_index = -1,
     footer_interacting = false,  -- Track if user is interacting with footer
   }, Dropdown)
-  
+
   return instance
 end
 
 function Dropdown:get_current_index()
   if not self.current_value then return 1 end
-  
+
   local options = self.config.options or {}
   for i, opt in ipairs(options) do
-    local value = type(opt) == "table" and opt.value or opt
+    local value = type(opt) == 'table' and opt.value or opt
     if value == self.current_value then
       return i
     end
@@ -101,18 +134,18 @@ function Dropdown:get_display_text()
     if self.config.button_label then
       return self.config.button_label
     end
-    return options[1] and (type(options[1]) == "table" and options[1].label or tostring(options[1])) or ""
+    return options[1] and (type(options[1]) == 'table' and options[1].label or tostring(options[1])) or ''
   end
 
   for _, opt in ipairs(options) do
-    local value = type(opt) == "table" and opt.value or opt
-    local label = type(opt) == "table" and opt.label or tostring(opt)
+    local value = type(opt) == 'table' and opt.value or opt
+    local label = type(opt) == 'table' and opt.label or tostring(opt)
     if value == self.current_value then
       return label
     end
   end
 
-  return ""
+  return ''
 end
 
 function Dropdown:handle_mousewheel(ctx, is_hovered)
@@ -133,7 +166,7 @@ function Dropdown:handle_mousewheel(ctx, is_hovered)
   
   if new_idx ~= current_idx then
     local new_opt = options[new_idx]
-    local new_value = type(new_opt) == "table" and new_opt.value or new_opt
+    local new_value = type(new_opt) == 'table' and new_opt.value or new_opt
     self.current_value = new_value
     
     if self.config.on_change then
@@ -146,14 +179,14 @@ function Dropdown:handle_mousewheel(ctx, is_hovered)
   return false
 end
 
-function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
+function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding, is_disabled)
   local cfg = self.config
-  
+
   local x1, y1 = x, y
   local x2, y2 = x + width, y + height
-  
+
   local mx, my = ImGui.GetMousePos(ctx)
-  local is_hovered = mx >= x1 and mx < x2 and my >= y1 and my < y2
+  local is_hovered = not is_disabled and mx >= x1 and mx < x2 and my >= y1 and my < y2
   
   -- Animate hover alpha
   local target_alpha = (is_hovered or self.is_open) and 1.0 or 0.0
@@ -167,17 +200,23 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
   local text_color = cfg.text_color
   local border_inner = cfg.border_inner_color
   local arrow_color = cfg.arrow_color
-  
-  if self.is_open then
+
+  if is_disabled then
+    -- Disabled state: dimmed colors
+    bg_color = Colors.Darken(cfg.bg_color, 0.2)
+    text_color = Colors.WithOpacity(cfg.text_color, 0.5)
+    border_inner = Colors.WithOpacity(cfg.border_inner_color, 0.5)
+    arrow_color = Colors.WithOpacity(cfg.arrow_color, 0.4)
+  elseif self.is_open then
     bg_color = cfg.bg_active_color
     text_color = cfg.text_active_color
     border_inner = cfg.border_active_color
     arrow_color = cfg.arrow_hover_color
   elseif self.hover_alpha > 0.01 then
-    bg_color = Colors.lerp(cfg.bg_color, cfg.bg_hover_color, self.hover_alpha)
-    text_color = Colors.lerp(cfg.text_color, cfg.text_hover_color, self.hover_alpha)
-    border_inner = Colors.lerp(cfg.border_inner_color, cfg.border_hover_color, self.hover_alpha)
-    arrow_color = Colors.lerp(cfg.arrow_color, cfg.arrow_hover_color, self.hover_alpha)
+    bg_color = Colors.Lerp(cfg.bg_color, cfg.bg_hover_color, self.hover_alpha)
+    text_color = Colors.Lerp(cfg.text_color, cfg.text_hover_color, self.hover_alpha)
+    border_inner = Colors.Lerp(cfg.border_inner_color, cfg.border_hover_color, self.hover_alpha)
+    arrow_color = Colors.Lerp(cfg.arrow_color, cfg.arrow_hover_color, self.hover_alpha)
   end
   
   -- Calculate rounding
@@ -189,9 +228,9 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
   
   -- Draw text
   local display_text = self:get_display_text()
-  local dir_indicator = ""
+  local dir_indicator = ''
   if cfg.enable_sort and self.current_value ~= nil then
-    dir_indicator = (self.sort_direction == "asc") and "↑ " or "↓ "
+    dir_indicator = (self.sort_direction == 'asc') and '↑ ' or '↓ '
   end
   
   local full_text = dir_indicator .. display_text
@@ -214,15 +253,15 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
   
   -- Interaction
   ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.InvisibleButton(ctx, self.id .. "_btn", width, height)
-  
-  local clicked = ImGui.IsItemClicked(ctx, 0)
-  local right_clicked = ImGui.IsItemClicked(ctx, 1)
-  local wheel_changed = self:handle_mousewheel(ctx, is_hovered)
-  
-  -- Right-click to toggle sort direction (only when enabled)
-  if cfg.enable_sort and right_clicked and self.current_value then
-    self.sort_direction = (self.sort_direction == "asc") and "desc" or "asc"
+  ImGui.InvisibleButton(ctx, self.id .. '_btn', width, height)
+
+  local clicked = not is_disabled and ImGui.IsItemClicked(ctx, 0)
+  local right_clicked = not is_disabled and ImGui.IsItemClicked(ctx, 1)
+  local wheel_changed = not is_disabled and self:handle_mousewheel(ctx, is_hovered)
+
+  -- Right-click to toggle sort direction (only when enabled and not disabled)
+  if cfg.enable_sort and right_clicked and self.current_value and not is_disabled then
+    self.sort_direction = (self.sort_direction == 'asc') and 'desc' or 'asc'
     if cfg.on_direction_change then
       cfg.on_direction_change(self.sort_direction)
     end
@@ -235,52 +274,60 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
     })
   else
     if not is_hovered then
-      Tooltip.reset()
+      Tooltip.Reset()
     end
   end
   
   -- Open popup
   if clicked then
-    ImGui.OpenPopup(ctx, self.id .. "_popup")
+    ImGui.OpenPopup(ctx, self.id .. '_popup')
     self.is_open = true
   end
-  
+
   -- Draw popup (using context_menu for consistent shadow/styling)
   local popup_changed = false
   local popup_cfg = cfg.popup
+  local options = cfg.options or {}
+
+  -- Calculate content-based popup width BEFORE opening popup
+  local max_text_width = 0
+  for _, opt in ipairs(options) do
+    local label = type(opt) == 'table' and opt.label or tostring(opt)
+    local text_w, _ = ImGui.CalcTextSize(ctx, label)
+    max_text_width = math.max(max_text_width, text_w)
+  end
+
+  -- Content-based width with configurable bounds
+  local popup_min_width = cfg.popup_min_width or 120
+  local popup_max_width = cfg.popup_max_width or 400
+  local content_padding = popup_cfg.item_padding_x * 2 + 16  -- padding + arrow space
+  local content_width = max_text_width + content_padding
+
+  -- Clamp to min/max bounds
+  local popup_width = math.max(popup_min_width, math.min(popup_max_width, content_width))
+
+  -- Calculate max label width for truncation (account for padding)
+  local max_label_width = popup_width - content_padding
 
   -- Use ContextMenu.begin for popup with shadow effect
-  if ContextMenu.begin(ctx, self.id .. "_popup", {
+  if ContextMenu.begin(ctx, self.id .. '_popup', {
     bg_color = popup_cfg.bg_color,
     border_color = popup_cfg.border_color,
     rounding = popup_cfg.rounding,
     padding = popup_cfg.padding,
     border_thickness = popup_cfg.border_thickness,
-    min_width = math.max(width * 1.5, 180),
+    min_width = popup_width,
   }) then
-    local popup_dl = ImGui.GetWindowDrawList(ctx)
+    local popup_dl = Base.get_context(ctx):draw_list()
     self.popup_hover_index = -1
     self.footer_interacting = false
 
-    -- Calculate popup width (increased for better appearance)
-    local max_text_width = 0
-    local options = cfg.options or {}
-    for _, opt in ipairs(options) do
-      local label = type(opt) == "table" and opt.label or tostring(opt)
-      local text_w, _ = ImGui.CalcTextSize(ctx, label)
-      max_text_width = math.max(max_text_width, text_w)
-    end
-
-    -- Use larger popup width: 1.5x button width or text-based, whichever is larger
-    local min_popup_width = math.max(width * 1.5, 180)
-    local popup_width = math.max(min_popup_width, max_text_width + popup_cfg.item_padding_x * 2 + 40)
-    
     -- Draw items
     for i, opt in ipairs(options) do
-      local value = type(opt) == "table" and opt.value or opt
-      local label = type(opt) == "table" and opt.label or tostring(opt)
-      local is_checkbox = type(opt) == "table" and opt.checkbox or false
-      local is_checked = type(opt) == "table" and opt.checked or false
+      local value = type(opt) == 'table' and opt.value or opt
+      local label = type(opt) == 'table' and opt.label or tostring(opt)
+      local is_checkbox = type(opt) == 'table' and opt.is_checkbox or false
+      local is_checked = type(opt) == 'table' and opt.is_checked or false
 
       local is_selected = value == self.current_value
 
@@ -338,12 +385,48 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
         text_x = text_x + checkbox_size + 8
       end
 
-      local text_w, text_h = ImGui.CalcTextSize(ctx, label)
+      -- Truncate label if it exceeds max width
+      local display_label = label
+      local available_width = max_label_width
+      if is_checkbox then
+        available_width = available_width - 22  -- checkbox + spacing
+      end
+
+      local text_w, text_h = ImGui.CalcTextSize(ctx, display_label)
+      if text_w > available_width then
+        -- Truncate with ellipsis
+        local ellipsis = '..'
+        local ellipsis_w = ImGui.CalcTextSize(ctx, ellipsis)
+        local target_w = available_width - ellipsis_w
+
+        -- Binary search for truncation point
+        local lo, hi = 1, #display_label
+        while lo < hi do
+          local mid = math.ceil((lo + hi) / 2)
+          local test_w = ImGui.CalcTextSize(ctx, display_label:sub(1, mid))
+          if test_w <= target_w then
+            lo = mid
+          else
+            hi = mid - 1
+          end
+        end
+        display_label = display_label:sub(1, lo) .. ellipsis
+        text_w = ImGui.CalcTextSize(ctx, display_label)
+      end
+
       local text_y = item_y + (item_h - text_h) * 0.5
 
-      ImGui.DrawList_AddText(popup_dl, text_x, text_y, item_text, label)
+      ImGui.DrawList_AddText(popup_dl, text_x, text_y, item_text, display_label)
 
-      ImGui.InvisibleButton(ctx, self.id .. "_item_" .. i, item_w, item_h)
+      -- Show full label tooltip if truncated
+      local was_truncated = display_label ~= label
+
+      ImGui.InvisibleButton(ctx, self.id .. '_item_' .. i, item_w, item_h)
+
+      -- Tooltip for truncated items
+      if was_truncated and item_hovered then
+        ImGui.SetTooltip(ctx, label)
+      end
 
       if ImGui.IsItemClicked(ctx, 0) then
         if is_checkbox then
@@ -361,7 +444,7 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
           end
           -- If sorting is enabled but the selected option is 'No Sort', reset direction to asc
           if cfg.enable_sort and value == nil then
-            self.sort_direction = "asc"
+            self.sort_direction = 'asc'
             if cfg.on_direction_change then
               cfg.on_direction_change(self.sort_direction)
             end
@@ -426,11 +509,11 @@ local function get_or_create_instance(context, config, state_or_id)
   if not instance then
     -- Get initial values from state (if panel context)
     local initial_value = nil
-    local initial_direction = "asc"
+    local initial_direction = 'asc'
 
     if context.is_panel_context then
       initial_value = state_or_id.dropdown_value
-      initial_direction = state_or_id.dropdown_direction or "asc"
+      initial_direction = state_or_id.dropdown_direction or 'asc'
     end
 
     -- Prefer config.current_value over panel state (allows explicit control)
@@ -438,11 +521,15 @@ local function get_or_create_instance(context, config, state_or_id)
       initial_value = config.current_value
     end
 
+    -- Create instance with config (will be copied in Dropdown.new)
     instance = Dropdown.new(context.unique_id, config, initial_value, initial_direction)
     set_inst(context.unique_id, instance)
   else
-    -- Update config
-    instance.config = config
+    -- PERFORMANCE: Only update config if reference changed (not every frame)
+    -- Assumes config objects are reused per widget (standard pattern)
+    if instance.config ~= config then
+      instance.config = copy_config(config)
+    end
 
     -- If config provides a current_value, update the instance
     -- This allows external state to control the dropdown value
@@ -456,17 +543,17 @@ local function get_or_create_instance(context, config, state_or_id)
   end
   
   -- Defensive: if current_value is accidentally a table, extract the actual value
-  if type(instance.current_value) == "table" then
+  if type(instance.current_value) == 'table' then
     instance.current_value = instance.current_value.value
   end
-  
-  -- Defensive: if current_value is nil ("No Sort"), always force direction to asc
+
+  -- Defensive: if current_value is nil ('No Sort'), always force direction to asc
   if instance.current_value == nil then
-    if instance.sort_direction ~= "asc" then
-      instance.sort_direction = "asc"
+    if instance.sort_direction ~= 'asc' then
+      instance.sort_direction = 'asc'
       -- Trigger callback to update app state
       if config.on_direction_change then
-        config.on_direction_change("asc")
+        config.on_direction_change('asc')
       end
     end
   end
@@ -488,19 +575,19 @@ end
 --- Draw a combo widget
 --- Supports both positional and opts-based parameters:
 --- - Positional: Ark.Combo(ctx, label, selected, items)
---- - Opts table: Ark.Combo(ctx, {label = "...", selected = 1, options = {...}, ...})
+--- - Opts table: Ark.Combo(ctx, {label = '...', selected = 1, options = {...}, ...})
 --- @param ctx userdata ImGui context
 --- @param label_or_opts string|table Label string or opts table
 --- @param selected number|nil Selected index (positional only)
 --- @param items table|nil Items array (positional only)
 --- @return table Result { changed, value, item, width, height, hovered, active, open }
-function M.draw(ctx, label_or_opts, selected, items)
+function M.Draw(ctx, label_or_opts, selected, items)
   -- Hybrid parameter detection
   local opts
-  if type(label_or_opts) == "table" then
+  if type(label_or_opts) == 'table' then
     -- Opts table passed directly
     opts = label_or_opts
-  elseif type(label_or_opts) == "string" then
+  elseif type(label_or_opts) == 'string' then
     -- Positional params - map to opts
     opts = {
       label = label_or_opts,
@@ -520,13 +607,13 @@ function M.draw(ctx, label_or_opts, selected, items)
   end
   local width = opts.width
   local height = opts.height
-  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
-  local state_or_id = opts.panel_state or opts.id or "combo"
+  local dl = Base.get_draw_list(ctx, opts)
+  local state_or_id = opts.panel_state or opts.id or 'combo'
 
   -- Build user_config from remaining opts (excluding the extracted fields)
   local user_config = {}
   for k, v in pairs(opts) do
-    if k ~= "x" and k ~= "y" and k ~= "width" and k ~= "height" and k ~= "draw_list" and k ~= "panel_state" then
+    if k ~= 'x' and k ~= 'y' and k ~= 'width' and k ~= 'height' and k ~= 'draw_list' and k ~= 'panel_state' then
       user_config[k] = v
     end
   end
@@ -543,8 +630,12 @@ function M.draw(ctx, label_or_opts, selected, items)
   -- Get or create instance
   local instance = get_or_create_instance(context, config, state_or_id)
 
+  -- Compute disabled state
+  local actx = Base.get_context(ctx)
+  local is_disabled = opts.is_disabled or actx:is_disabled()
+
   -- Draw dropdown
-  local changed = instance:draw(ctx, dl, x, y, width, height, context.corner_rounding)
+  local changed = instance:draw(ctx, dl, x, y, width, height, context.corner_rounding, is_disabled)
 
   -- Sync state back
   sync_to_state(instance, state_or_id, context)
@@ -572,7 +663,7 @@ function M.draw(ctx, label_or_opts, selected, items)
   }
 end
 
-function M.measure(ctx, user_config)
+function M.Measure(ctx, user_config)
   local config = Theme.build_dropdown_config()
   for k, v in pairs(user_config or {}) do
     if v ~= nil then config[k] = v end
@@ -584,24 +675,24 @@ end
 -- STATE ACCESSORS (for standalone use)
 -- ============================================================================
 
-function M.get_value(id)
+function M.GetValue(id)
   local instance = get_inst(id)
   return instance and instance.current_value or nil
 end
 
-function M.set_value(id, value)
+function M.SetValue(id, value)
   local instance = get_inst(id)
   if instance then
     instance.current_value = value
   end
 end
 
-function M.get_direction(id)
+function M.GetDirection(id)
   local instance = get_inst(id)
-  return instance and instance.sort_direction or "asc"
+  return instance and instance.sort_direction or 'asc'
 end
 
-function M.set_direction(id, direction)
+function M.SetDirection(id, direction)
   local instance = get_inst(id)
   if instance then
     instance.sort_direction = direction
@@ -609,29 +700,22 @@ function M.set_direction(id, direction)
 end
 
 -- ============================================================================
--- DEPRECATED / REMOVED FUNCTIONS
--- ============================================================================
-
---- @deprecated Use M.draw() instead (uses cursor by default when x/y not provided)
-function M.draw_at_cursor(ctx, opts, id)
-  opts = opts or {}
-  if id then opts.id = id end
-  local result = M.draw(ctx, opts)
-  return result.value, result.changed
-end
-
---- @deprecated Cleanup is automatic via Base, no need to call manually
-function M.cleanup()
-  -- No-op: cleanup happens automatically via Base.cleanup_registry
-end
-
--- ============================================================================
 -- MODULE EXPORT (Callable)
 -- ============================================================================
 
--- Make module callable: Ark.Combo(ctx, ...) → M.draw(ctx, ...)
+-- Make module callable: Ark.Combo(ctx, ...) → M.Draw(ctx, ...)
 return setmetatable(M, {
   __call = function(_, ctx, ...)
-    return M.draw(ctx, ...)
+    local result = M.Draw(ctx, ...)
+
+    -- Detect mode: positional (string label) vs opts (table)
+    local first_arg = select(1, ...)
+    if type(first_arg) == 'string' then
+      -- Positional mode: Return ImGui-compatible tuple (changed, value)
+      return result.changed, result.value
+    else
+      -- Opts mode: Return full result table
+      return result
+    end
   end
 })

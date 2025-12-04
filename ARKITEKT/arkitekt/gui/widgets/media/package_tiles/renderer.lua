@@ -3,18 +3,18 @@
 -- Package tile rendering module with text truncation support
 -- Theme-aware: uses ThemeAdjuster/defs/colors.lua for script-specific colors
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local Draw = require('arkitekt.gui.draw.primitives')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local Colors = require('arkitekt.core.colors')
-local ImageCache = require('arkitekt.platform.images')
+local ImageCache = require('arkitekt.core.images')
 
 -- Lazy-load script colors (ThemeAdjuster-specific)
 local ScriptColors = nil
 local function get_script_colors()
   if not ScriptColors then
-    local ok, mod = pcall(require, 'ThemeAdjuster.defs.colors')
+    local ok, mod = pcall(require, 'ThemeAdjuster.config.colors')
     if ok then
       ScriptColors = mod
     end
@@ -23,8 +23,6 @@ local function get_script_colors()
 end
 
 local M = {}
-local hexrgb = Colors.hexrgb
-
 -- Performance: Cache frequently-called ImGui functions (15-25% improvement in hot paths)
 local CalcTextSize = ImGui.CalcTextSize
 
@@ -33,12 +31,12 @@ local Metadata = nil
 local function get_metadata()
   if not Metadata then
     -- Get script directory from debug info
-    local info = debug.getinfo(1, "S")
-    local script_dir = info.source:match("@(.+[\\/])") or ""
+    local info = debug.getinfo(1, 'S')
+    local script_dir = info.source:match('@(.+[\\/])') or ''
 
     -- Navigate from arkitekt/gui/widgets/media/package_tiles/ to scripts/ThemeAdjuster/packages/
     -- Go up 5 levels (package_tiles -> media -> widgets -> gui -> arkitekt) then into scripts/ThemeAdjuster/packages
-    local metadata_path = script_dir .. "../../../../../scripts/ThemeAdjuster/packages/metadata.lua"
+    local metadata_path = script_dir .. '../../../../../scripts/ThemeAdjuster/packages/metadata.lua'
 
     -- Try loading directly
     local chunk, err = loadfile(metadata_path)
@@ -79,11 +77,11 @@ M.CONFIG = {
 
   -- Static fallback colors (used when ScriptColors not available)
   colors_static = {
-    bg = { inactive = hexrgb("#1A1A1A"), active = hexrgb("#2D4A37"), hover_tint = hexrgb("#2A2A2A"), hover_influence = 0.4 },
-    border = { inactive = hexrgb("#303030"), active = nil, hover = nil, thickness = 0.5 },
-    text = { active = hexrgb("#FFFFFF"), inactive = hexrgb("#999999"), secondary = hexrgb("#888888"), conflict = hexrgb("#FFA500") },
-    badge = { bg_active = hexrgb("#00000099"), bg_inactive = hexrgb("#00000066"), text = hexrgb("#AAAAAA") },
-    footer = { gradient = hexrgb("#00000044") },
+    bg = { inactive = 0x1A1A1AFF, active = 0x2D4A37FF, hover_tint = 0x2A2A2AFF, hover_influence = 0.4 },
+    border = { inactive = 0x303030FF, active = nil, hover = nil, thickness = 0.5 },
+    text = { active = 0xFFFFFFFF, inactive = 0x999999FF, secondary = 0x888888FF, conflict = 0xFFA500FF },
+    badge = { bg_active = 0x00000099, bg_inactive = 0x00000066, text = 0xAAAAAAFF },
+    footer = { gradient = 0x00000044 },
   },
   
   selection = {
@@ -109,42 +107,42 @@ M.CONFIG = {
     max_tags = 10,           -- Maximum tags to show
     -- Full display names
     display = {
-      TCP = "TCP",
-      MCP = "MCP",
-      Transport = "TRANSPORT",
-      Toolbar = "TOOLBARS",
-      Meter = "GLOBAL",      -- Meter consolidated into Global
-      EnvCP = "ENVCP",
-      Items = "ITEMS",
-      MIDI = "MIDI",
-      Track = "TCP",         -- Track consolidated into TCP
-      Global = "GLOBAL",
-      RTCONFIG = "RTCONFIG",
+      TCP = 'TCP',
+      MCP = 'MCP',
+      Transport = 'TRANSPORT',
+      Toolbar = 'TOOLBARS',
+      Meter = 'GLOBAL',      -- Meter consolidated into Global
+      EnvCP = 'ENVCP',
+      Items = 'ITEMS',
+      MIDI = 'MIDI',
+      Track = 'TCP',         -- Track consolidated into TCP
+      Global = 'GLOBAL',
+      RTCONFIG = 'RTCONFIG',
     },
     -- Color palette matching active assignment tagging system
     colors = {
-      TCP = hexrgb("#5A7A9A"),      -- Blue
-      MCP = hexrgb("#9A9A5A"),      -- Yellow
-      ENVCP = hexrgb("#5A9A8A"),    -- Teal
-      TRANSPORT = hexrgb("#9A5A5A"),-- Red
-      GLOBAL = hexrgb("#6A6A6A"),   -- Grey
-      TOOLBARS = hexrgb("#8A6A5A"), -- Brown/orange
-      ITEMS = hexrgb("#7A8A5A"),    -- Olive
-      MIDI = hexrgb("#6A5A8A"),     -- Purple
-      RTCONFIG = hexrgb("#5AAA5A"), -- Green (important!)
+      TCP = 0x5A7A9AFF,      -- Blue
+      MCP = 0x9A9A5AFF,      -- Yellow
+      ENVCP = 0x5A9A8AFF,    -- Teal
+      TRANSPORT = 0x9A5A5AFF,-- Red
+      GLOBAL = 0x6A6A6AFF,   -- Grey
+      TOOLBARS = 0x8A6A5AFF, -- Brown/orange
+      ITEMS = 0x7A8A5AFF,    -- Olive
+      MIDI = 0x6A5A8AFF,     -- Purple
+      RTCONFIG = 0x5AAA5AFF, -- Green (important!)
     },
-    text_color = hexrgb("#000000"),  -- Black text
+    text_color = 0x000000FF,  -- Black text
   },
   
   mosaic = {
     padding = 15, max_size = 50, gap = 6, count = 3,
-    rounding = 3, border_color = hexrgb("#00000088"), border_thickness = 1, y_offset = 45,
+    rounding = 3, border_color = 0x00000088, border_thickness = 1, y_offset = 45,
   },
   
   animation = { speed_hover = 12.0, speed_active = 8.0 },
   
   truncation = {
-    ellipsis = "...",
+    ellipsis = '...',
     min_chars = 3,
   },
 }
@@ -191,7 +189,7 @@ end
 -- (Some external code may reference M.CONFIG.colors directly)
 setmetatable(M.CONFIG, {
   __index = function(t, k)
-    if k == "colors" then
+    if k == 'colors' then
       return M.get_colors()
     end
     return rawget(t, k)
@@ -199,7 +197,7 @@ setmetatable(M.CONFIG, {
 })
 
 local function truncate_text(ctx, text, max_width)
-  if not text or text == "" then return "" end
+  if not text or text == '' then return '' end
   
   local full_w, _ = CalcTextSize(ctx, text)
   if full_w <= max_width then return text end
@@ -230,11 +228,11 @@ function M.TileRenderer.background(dl, rect, bg_color, hover_factor)
     local shadow_alpha = (hover_factor * M.CONFIG.tile.hover_shadow.max_alpha) // 1
     local shadow_col = (0x000000 << 8) | shadow_alpha
     for i = M.CONFIG.tile.hover_shadow.max_offset, 1, -1 do
-      Draw.rect_filled(dl, x1 - i, y1 - i + 2, x2 + i, y2 + i + 2, shadow_col, M.CONFIG.tile.rounding)
+      Draw.RectFilled(dl, x1 - i, y1 - i + 2, x2 + i, y2 + i + 2, shadow_col, M.CONFIG.tile.rounding)
     end
   end
   
-  Draw.rect_filled(dl, x1, y1, x2, y2, bg_color, M.CONFIG.tile.rounding)
+  Draw.RectFilled(dl, x1, y1, x2, y2, bg_color, M.CONFIG.tile.rounding)
 end
 
 function M.TileRenderer.border(dl, rect, base_color, is_selected, is_active, is_hovered)
@@ -245,14 +243,13 @@ function M.TileRenderer.border(dl, rect, base_color, is_selected, is_active, is_
     if M.CONFIG.selection.ant_color then
       ant_color = M.CONFIG.selection.ant_color
     else
-      ant_color = Colors.generate_marching_ants_color(
-        base_color,
-        M.CONFIG.selection.brightness_factor,
-        M.CONFIG.selection.saturation_factor
-      )
+      ant_color = Colors.DeriveMarchingAnts(base_color, {
+        brightness = M.CONFIG.selection.brightness_factor,
+        saturation = M.CONFIG.selection.saturation_factor,
+      })
     end
     
-    MarchingAnts.draw(
+    MarchingAnts.Draw(
       dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5,
       ant_color, M.CONFIG.colors.border.thickness, M.CONFIG.tile.rounding,
       M.CONFIG.selection.ant_dash, M.CONFIG.selection.ant_gap, M.CONFIG.selection.ant_speed
@@ -264,23 +261,23 @@ function M.TileRenderer.border(dl, rect, base_color, is_selected, is_active, is_
       if M.CONFIG.colors.border.hover then
         border_color = M.CONFIG.colors.border.hover
       else
-        border_color = Colors.generate_active_border(base_color, 0.6, 1.8)
+        border_color = Colors.DeriveBorder(base_color, { mode = 'intensify', saturation = 0.6, brightness = 1.8 })
       end
     elseif is_active then
       if M.CONFIG.colors.border.active then
         border_color = M.CONFIG.colors.border.active
       else
-        border_color = Colors.generate_active_border(base_color, 0.7, 1.6)
+        border_color = Colors.DeriveBorder(base_color, { mode = 'intensify', saturation = 0.7, brightness = 1.6 })
       end
     else
       if M.CONFIG.colors.border.inactive then
         border_color = M.CONFIG.colors.border.inactive
       else
-        border_color = Colors.generate_border(base_color, 0.2, 0.8)
+        border_color = Colors.DeriveBorder(base_color, { mode = 'muted', desaturate = 0.2, brightness = 0.8 })
       end
     end
     
-    Draw.rect(dl, x1, y1, x2, y2, border_color, M.CONFIG.tile.rounding, M.CONFIG.colors.border.thickness)
+    Draw.Rect(dl, x1, y1, x2, y2, border_color, M.CONFIG.tile.rounding, M.CONFIG.colors.border.thickness)
   end
 end
 
@@ -304,13 +301,13 @@ function M.TileRenderer.order_badge(ctx, dl, pkg, P, tile_x, tile_y)
   local is_active = pkg.active[P.id] == true
   local bg = is_active and M.CONFIG.colors.badge.bg_active or M.CONFIG.colors.badge.bg_inactive
   
-  Draw.rect_filled(dl, x1, y1, x2, y2, bg, M.CONFIG.badge.rounding)
-  Draw.centered_text(ctx, badge, x1, y1, x2, y2, M.CONFIG.colors.badge.text)
+  Draw.RectFilled(dl, x1, y1, x2, y2, bg, M.CONFIG.badge.rounding)
+  Draw.CenteredText(ctx, badge, x1, y1, x2, y2, M.CONFIG.colors.badge.text)
   
   ImGui.SetCursorScreenPos(ctx, x1, y1)
   ImGui.InvisibleButton(ctx, '##ordtip-' .. P.id, x2 - x1, y2 - y1)
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Overwrite priority")
+    ImGui.SetTooltip(ctx, 'Overwrite priority')
   end
 end
 
@@ -324,12 +321,12 @@ function M.TileRenderer.conflicts(ctx, dl, pkg, P, tile_x, tile_y, tile_w)
   local x = tile_x + (tile_w - tw) // 2
   local y = tile_y + M.CONFIG.badge.margin
 
-  Draw.text(dl, x, y, M.CONFIG.colors.text.conflict, text)
+  Draw.Text(dl, x, y, M.CONFIG.colors.text.conflict, text)
 
   ImGui.SetCursorScreenPos(ctx, x, y)
   ImGui.InvisibleButton(ctx, '##conftip-' .. P.id, tw, th)
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Conflicting Assets in Packages\n(autosolved through Overwrite Priority)")
+    ImGui.SetTooltip(ctx, 'Conflicting Assets in Packages\n(autosolved through Overwrite Priority)')
   end
 end
 
@@ -409,10 +406,10 @@ function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w, tile_h)
     end
 
     -- Draw chip background
-    Draw.rect_filled(dl, x, y, x + chip.width, y + chip_h, bg_color, M.CONFIG.tags.rounding)
+    Draw.RectFilled(dl, x, y, x + chip.width, y + chip_h, bg_color, M.CONFIG.tags.rounding)
 
     -- Draw text centered in chip
-    Draw.centered_text(ctx, chip.text, x, y, x + chip.width, y + chip_h, M.CONFIG.tags.text_color)
+    Draw.CenteredText(ctx, chip.text, x, y, x + chip.width, y + chip_h, M.CONFIG.tags.text_color)
 
     -- Move to next chip position
     x = x + chip.width + M.CONFIG.tags.gap
@@ -451,7 +448,7 @@ function M.TileRenderer.checkbox(ctx, pkg, P, cb_rects, tile_x, tile_y, tile_w, 
   ImGui.PopID(ctx)
 
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, pkg.active[P.id] and "Disable package" or "Enable package")
+    ImGui.SetTooltip(ctx, pkg.active[P.id] and 'Disable package' or 'Enable package')
   end
 end
 
@@ -508,7 +505,7 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
       if ok then
         preview_drawn = true
         -- Draw border around clipped area
-        Draw.rect(dl, clip_x1, clip_y1, clip_x2, clip_y2,
+        Draw.Rect(dl, clip_x1, clip_y1, clip_x2, clip_y2,
                   M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
       end
     end
@@ -552,7 +549,7 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
       local img_path = asset and asset.path
       local img_drawn = false
 
-      if img_path and not img_path:match("^%(mock%)") then
+      if img_path and not img_path:match('^%(mock%)') then
         -- Use public API for validated access (auto-validates and recreates if needed)
         local rec = M._package_image_cache:get_validated(img_path)
 
@@ -585,7 +582,7 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
           if ok then
             img_drawn = true
             -- Draw border around cell (not image)
-            Draw.rect(dl, cx, cy, cx + cell_size, cy + cell_size,
+            Draw.Rect(dl, cx, cy, cx + cell_size, cy + cell_size,
                       M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
           end
         end
@@ -593,13 +590,13 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
 
       -- Fallback to colored square if image didn't load
       if not img_drawn then
-        local col = theme.color_from_key(key:gsub("%.%w+$", ""))
-        Draw.rect_filled(dl, cx, cy, cx + cell_size, cy + cell_size, col, M.CONFIG.mosaic.rounding)
-        Draw.rect(dl, cx, cy, cx + cell_size, cy + cell_size,
+        local col = theme.color_from_key(key:gsub('%.%w+$', ''))
+        Draw.RectFilled(dl, cx, cy, cx + cell_size, cy + cell_size, col, M.CONFIG.mosaic.rounding)
+        Draw.Rect(dl, cx, cy, cx + cell_size, cy + cell_size,
                   M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
 
         local label = key:sub(1, 3):upper()
-        Draw.centered_text(ctx, label, cx, cy, cx + cell_size, cy + cell_size, hexrgb("#FFFFFF"))
+        Draw.CenteredText(ctx, label, cx, cy, cx + cell_size, cy + cell_size, 0xFFFFFFFF)
       end
     end
   end
@@ -607,7 +604,7 @@ end
 
 function M.TileRenderer.footer(ctx, dl, pkg, P, tile_x, tile_y, tile_w, tile_h)
   local footer_y = tile_y + tile_h - M.CONFIG.footer.height
-  Draw.rect_filled(dl, tile_x, footer_y, tile_x + tile_w, tile_y + tile_h, M.CONFIG.colors.footer.gradient, 0)
+  Draw.RectFilled(dl, tile_x, footer_y, tile_x + tile_w, tile_y + tile_h, M.CONFIG.colors.footer.gradient, 0)
   
   local name = P.meta and P.meta.name or P.id
   local is_active = pkg.active[P.id] == true
@@ -621,8 +618,8 @@ function M.TileRenderer.footer(ctx, dl, pkg, P, tile_x, tile_y, tile_w, tile_h)
   local name_max_width = tile_w - (M.CONFIG.footer.padding_x * 3) - count_w
   local truncated_name = truncate_text(ctx, name, name_max_width)
   
-  Draw.text(dl, tile_x + M.CONFIG.footer.padding_x, footer_y + 6, name_color, truncated_name)
-  Draw.text_right(ctx, tile_x + tile_w - M.CONFIG.footer.padding_x, footer_y + 6, M.CONFIG.colors.text.secondary, count_text)
+  Draw.Text(dl, tile_x + M.CONFIG.footer.padding_x, footer_y + 6, name_color, truncated_name)
+  Draw.TextRight(ctx, tile_x + tile_w - M.CONFIG.footer.padding_x, footer_y + 6, M.CONFIG.colors.text.secondary, count_text)
 end
 
 -- Clear image cache to avoid invalid image handle errors

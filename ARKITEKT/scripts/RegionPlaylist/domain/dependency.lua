@@ -18,14 +18,14 @@ function M.new()
   }
 
   if DEBUG_DOMAIN then
-    Logger.debug("DEPENDENCY", "Domain initialized")
+    Logger.debug('DEPENDENCY', 'Domain initialized')
   end
 
   --- Mark graph as dirty (needs rebuild)
   function domain:mark_dirty()
     self.dirty = true
     if DEBUG_DOMAIN then
-      Logger.debug("DEPENDENCY", "Graph marked dirty")
+      Logger.debug('DEPENDENCY', 'Graph marked dirty')
     end
   end
 
@@ -43,7 +43,7 @@ function M.new()
       }
 
       for _, item in ipairs(pl.items) do
-        if item.type == "playlist" and item.playlist_id then
+        if item.type == 'playlist' and item.playlist_id then
           self.graph[pl.id].direct_deps[#self.graph[pl.id].direct_deps + 1] = item.playlist_id
         end
       end
@@ -84,7 +84,7 @@ function M.new()
 
     self.dirty = false
     if DEBUG_DOMAIN then
-      Logger.debug("DEPENDENCY", "Graph rebuilt: %d playlists", #playlists)
+      Logger.debug('DEPENDENCY', 'Graph rebuilt: %d playlists', #playlists)
     end
   end
 
@@ -181,7 +181,7 @@ function M.new()
         return true, path_array
       end
 
-      return true, {playlist_id_to_add, "...", target_playlist_id}
+      return true, {playlist_id_to_add, '...', target_playlist_id}
     end
 
     return false

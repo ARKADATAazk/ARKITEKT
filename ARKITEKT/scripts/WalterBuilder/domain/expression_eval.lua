@@ -18,19 +18,19 @@ local M = {}
 -- Map @position names to array indices
 -- @x or @0 = 1, @y or @1 = 2, @w or @2 = 3, etc. (1-indexed for Lua)
 local POSITION_MAP = {
-  x = 1, ["0"] = 1,
-  y = 2, ["1"] = 2,
-  w = 3, ["2"] = 3,
-  h = 4, ["3"] = 4,
-  ls = 5, ["4"] = 5,
-  ts = 6, ["5"] = 6,
-  rs = 7, ["6"] = 7,
-  bs = 8, ["7"] = 8,
+  x = 1, ['0'] = 1,
+  y = 2, ['1'] = 2,
+  w = 3, ['2'] = 3,
+  h = 4, ['3'] = 4,
+  ls = 5, ['4'] = 5,
+  ts = 6, ['5'] = 6,
+  rs = 7, ['6'] = 7,
+  bs = 8, ['7'] = 8,
 }
 
 -- Create a sparse coordinate array with value at the given position
--- e.g., make_at_position(40, "y") -> {0, 40}
--- e.g., make_at_position(1, "w") -> {0, 0, 1}
+-- e.g., make_at_position(40, 'y') -> {0, 40}
+-- e.g., make_at_position(1, 'w') -> {0, 0, 1}
 local function make_at_position(value, pos_name)
   local pos = POSITION_MAP[pos_name]
   if not pos then return { value } end
@@ -48,7 +48,7 @@ M.DEBUG = false
 
 local function debug_log(...)
   if M.DEBUG then
-    print(string.format("[EXPR] " .. select(1, ...), select(2, ...)))
+    print(string.format('[EXPR] ' .. select(1, ...), select(2, ...)))
   end
 end
 
@@ -141,98 +141,98 @@ local function tokenize(expr)
     local c = expr:sub(i, i)
 
     -- Skip whitespace
-    if c:match("%s") then
+    if c:match('%s') then
       i = i + 1
 
     -- Bracket expression [...]
-    elseif c == "[" then
+    elseif c == '[' then
       local j = i + 1
       local depth = 1
       while j <= len and depth > 0 do
         local ch = expr:sub(j, j)
-        if ch == "[" then depth = depth + 1
-        elseif ch == "]" then depth = depth - 1
+        if ch == '[' then depth = depth + 1
+        elseif ch == ']' then depth = depth - 1
         end
         j = j + 1
       end
-      tokens[#tokens + 1] = { type = "bracket", value = expr:sub(i, j - 1) }
+      tokens[#tokens + 1] = { type = 'bracket', value = expr:sub(i, j - 1) }
       i = j
 
     -- Operators
-    elseif c == "+" then
-      tokens[#tokens + 1] = { type = "op", value = "+" }
+    elseif c == '+' then
+      tokens[#tokens + 1] = { type = 'op', value = '+' }
       i = i + 1
-    elseif c == "-" and not expr:sub(i + 1, i + 1):match("%d") then
-      tokens[#tokens + 1] = { type = "op", value = "-" }
+    elseif c == '-' and not expr:sub(i + 1, i + 1):match('%d') then
+      tokens[#tokens + 1] = { type = 'op', value = '-' }
       i = i + 1
-    elseif c == "*" then
-      tokens[#tokens + 1] = { type = "op", value = "*" }
+    elseif c == '*' then
+      tokens[#tokens + 1] = { type = 'op', value = '*' }
       i = i + 1
-    elseif c == "/" then
-      tokens[#tokens + 1] = { type = "op", value = "/" }
+    elseif c == '/' then
+      tokens[#tokens + 1] = { type = 'op', value = '/' }
       i = i + 1
-    elseif c == "?" then
-      tokens[#tokens + 1] = { type = "cond", value = "?" }
+    elseif c == '?' then
+      tokens[#tokens + 1] = { type = 'cond', value = '?' }
       i = i + 1
-    elseif c == "!" then
-      tokens[#tokens + 1] = { type = "not", value = "!" }
+    elseif c == '!' then
+      tokens[#tokens + 1] = { type = 'not', value = '!' }
       i = i + 1
 
     -- Comparison operators
-    elseif c == "<" and expr:sub(i + 1, i + 1) == "=" then
-      tokens[#tokens + 1] = { type = "cmp", value = "<=" }
+    elseif c == '<' and expr:sub(i + 1, i + 1) == '=' then
+      tokens[#tokens + 1] = { type = 'cmp', value = '<=' }
       i = i + 2
-    elseif c == ">" and expr:sub(i + 1, i + 1) == "=" then
-      tokens[#tokens + 1] = { type = "cmp", value = ">=" }
+    elseif c == '>' and expr:sub(i + 1, i + 1) == '=' then
+      tokens[#tokens + 1] = { type = 'cmp', value = '>=' }
       i = i + 2
-    elseif c == "=" and expr:sub(i + 1, i + 1) == "=" then
-      tokens[#tokens + 1] = { type = "cmp", value = "==" }
+    elseif c == '=' and expr:sub(i + 1, i + 1) == '=' then
+      tokens[#tokens + 1] = { type = 'cmp', value = '==' }
       i = i + 2
-    elseif c == "!" and expr:sub(i + 1, i + 1) == "=" then
-      tokens[#tokens + 1] = { type = "cmp", value = "!=" }
+    elseif c == '!' and expr:sub(i + 1, i + 1) == '=' then
+      tokens[#tokens + 1] = { type = 'cmp', value = '!=' }
       i = i + 2
-    elseif c == "<" then
-      tokens[#tokens + 1] = { type = "cmp", value = "<" }
+    elseif c == '<' then
+      tokens[#tokens + 1] = { type = 'cmp', value = '<' }
       i = i + 1
-    elseif c == ">" then
-      tokens[#tokens + 1] = { type = "cmp", value = ">" }
+    elseif c == '>' then
+      tokens[#tokens + 1] = { type = 'cmp', value = '>' }
       i = i + 1
 
     -- Number (including negative), possibly with @position suffix
-    elseif c:match("[%d%-]") then
+    elseif c:match('[%d%-]') then
       local j = i
-      while j <= len and expr:sub(j, j):match("[%d%.%-]") do
+      while j <= len and expr:sub(j, j):match('[%d%.%-]') do
         j = j + 1
       end
       local num_val = tonumber(expr:sub(i, j - 1))
 
       -- Check for @position suffix (e.g., 40@y, 1@w)
       local at_pos = nil
-      if expr:sub(j, j) == "@" then
+      if expr:sub(j, j) == '@' then
         local k = j + 1
-        while k <= len and expr:sub(k, k):match("[%w]") do
+        while k <= len and expr:sub(k, k):match('[%w]') do
           k = k + 1
         end
         at_pos = expr:sub(j + 1, k - 1)
         j = k
       end
 
-      tokens[#tokens + 1] = { type = "number", value = num_val, at_pos = at_pos }
+      tokens[#tokens + 1] = { type = 'number', value = num_val, at_pos = at_pos }
       i = j
 
     -- Identifier (variable name, possibly with {index} and/or @position)
-    elseif c:match("[%a_]") then
+    elseif c:match('[%a_]') then
       local j = i
-      while j <= len and expr:sub(j, j):match("[%w_.]") do
+      while j <= len and expr:sub(j, j):match('[%w_.]') do
         j = j + 1
       end
       local name = expr:sub(i, j - 1)
 
       -- Check for array index {n}
       local index = nil
-      if expr:sub(j, j) == "{" then
+      if expr:sub(j, j) == '{' then
         local k = j + 1
-        while k <= len and expr:sub(k, k) ~= "}" do
+        while k <= len and expr:sub(k, k) ~= '}' do
           k = k + 1
         end
         index = tonumber(expr:sub(j + 1, k - 1))
@@ -241,25 +241,25 @@ local function tokenize(expr)
 
       -- Check for @position suffix (e.g., recarm@w)
       local at_pos = nil
-      if expr:sub(j, j) == "@" then
+      if expr:sub(j, j) == '@' then
         local k = j + 1
-        while k <= len and expr:sub(k, k):match("[%w]") do
+        while k <= len and expr:sub(k, k):match('[%w]') do
           k = k + 1
         end
         at_pos = expr:sub(j + 1, k - 1)
         j = k
       end
 
-      tokens[#tokens + 1] = { type = "ident", value = name, index = index, at_pos = at_pos }
+      tokens[#tokens + 1] = { type = 'ident', value = name, index = index, at_pos = at_pos }
       i = j
 
     -- Dot (standalone, used in some contexts)
-    elseif c == "." then
-      tokens[#tokens + 1] = { type = "dot", value = "." }
+    elseif c == '.' then
+      tokens[#tokens + 1] = { type = 'dot', value = '.' }
       i = i + 1
 
     -- Backslash (line continuation - skip)
-    elseif c == "\\" then
+    elseif c == '\\' then
       i = i + 1
 
     else
@@ -273,15 +273,15 @@ end
 
 -- Parse a bracket expression into a coordinate array
 -- Handles both simple numbers and variable references
--- @param str: The bracket expression string "[x y w h ...]"
+-- @param str: The bracket expression string '[x y w h ...]'
 -- @param context: The evaluation context for resolving variables
 local function parse_bracket(str, context)
-  local content = str:match("^%[(.*)%]$")
+  local content = str:match('^%[(.*)%]$')
   if not content then return nil end
 
   -- Collect all tokens first
   local tokens = {}
-  for token in content:gmatch("%S+") do
+  for token in content:gmatch('%S+') do
     tokens[#tokens + 1] = token
   end
 
@@ -294,17 +294,17 @@ local function parse_bracket(str, context)
     local num = tonumber(token)
     if not num then
       -- Not a number, check if it's a variable
-      local var_name = token:match("^([%w_.]+)$")
+      local var_name = token:match('^([%w_.]+)$')
       if var_name then
         local var_val = context and context[var_name]
         debug_log("  single-token lookup: '%s' in context = %s", var_name, tostring(var_val))
         if var_val == nil then
           var_val = M.DEFAULT_SCALARS[var_name]
-          debug_log("  fallback to DEFAULT_SCALARS: %s", tostring(var_val))
+          debug_log('  fallback to DEFAULT_SCALARS: %s', tostring(var_val))
         end
-        if type(var_val) == "table" then
+        if type(var_val) == 'table' then
           -- Return the table directly for single-token array variables
-          debug_log("  returning table: [%s]", table.concat(var_val, ", "))
+          debug_log('  returning table: [%s]', table.concat(var_val, ', '))
           return var_val
         elseif var_val then
           return { var_val }
@@ -321,7 +321,7 @@ local function parse_bracket(str, context)
   -- Parse each space-separated token in the bracket
   for _, token in ipairs(tokens) do
     -- Check for @position notation: value@pos (e.g., -4@x, 21@w)
-    local num_part, at_pos = token:match("^([%-%.%d]+)@([%w]+)$")
+    local num_part, at_pos = token:match('^([%-%.%d]+)@([%w]+)$')
     if num_part and at_pos then
       local num_val = tonumber(num_part)
       if num_val then
@@ -346,12 +346,12 @@ local function parse_bracket(str, context)
         values[#values + 1] = num
       else
         -- It's a variable reference, possibly with {index}
-        local var_name, index_str = token:match("^([%w_.]+){(%d+)}$")
+        local var_name, index_str = token:match('^([%w_.]+){(%d+)}$')
         if var_name then
           -- Variable with index: foo{0}
           local index = tonumber(index_str)
           local var_val = context and context[var_name]
-          if type(var_val) == "table" then
+          if type(var_val) == 'table' then
             values[#values + 1] = var_val[index + 1] or 0  -- 0-indexed to 1-indexed
           elseif var_val then
             values[#values + 1] = var_val
@@ -360,10 +360,10 @@ local function parse_bracket(str, context)
           end
         else
           -- Simple variable reference
-          var_name = token:match("^([%w_.]+)$")
+          var_name = token:match('^([%w_.]+)$')
           if var_name then
             local var_val = context and context[var_name]
-            if type(var_val) == "table" then
+            if type(var_val) == 'table' then
               -- WALTER rule: When {} index is omitted inside brackets, use current position
               -- e.g., [0 0 meter_sec meter_sec] -> [0 0 meter_sec{2} meter_sec{3}]
               local current_pos = #values + 1  -- 1-indexed Lua = 0-indexed WALTER position
@@ -397,7 +397,7 @@ local function get_scalar(name, context, index)
   end
 
   -- If it's an array and we have an index, get that element
-  if type(value) == "table" and index then
+  if type(value) == 'table' and index then
     return value[index + 1] or 0  -- Lua 1-indexed, WALTER 0-indexed
   end
 
@@ -411,13 +411,13 @@ end
 
 -- Format array for debug output
 local function fmt_arr(arr)
-  if not arr then return "nil" end
-  if type(arr) ~= "table" then return tostring(arr) end
+  if not arr then return 'nil' end
+  if type(arr) ~= 'table' then return tostring(arr) end
   local parts = {}
   for i, v in ipairs(arr) do
-    parts[i] = string.format("%.1f", v)
+    parts[i] = string.format('%.1f', v)
   end
-  return "[" .. table.concat(parts, ", ") .. "]"
+  return '[' .. table.concat(parts, ', ') .. ']'
 end
 
 -- Evaluate a binary operation on two coordinate arrays
@@ -432,7 +432,7 @@ local function eval_op(op, a, b)
     local av = a[i] or 0
     local bv = b[i] or 0
 
-    if op == "+" then
+    if op == '+' then
       if i <= 2 then
         -- x, y (positions 1,2): always add
         result[i] = av + bv
@@ -443,16 +443,16 @@ local function eval_op(op, a, b)
         -- b doesn't have this position, preserve a's value
         result[i] = av
       end
-    elseif op == "-" then
+    elseif op == '-' then
       result[i] = av - bv
-    elseif op == "*" then
+    elseif op == '*' then
       result[i] = av * bv
-    elseif op == "/" then
+    elseif op == '/' then
       result[i] = bv ~= 0 and av / bv or 0
     end
   end
 
-  debug_log("eval_op: %s %s %s = %s", fmt_arr(a), op, fmt_arr(b), fmt_arr(result))
+  debug_log('eval_op: %s %s %s = %s', fmt_arr(a), op, fmt_arr(b), fmt_arr(result))
   return result
 end
 
@@ -467,12 +467,12 @@ end
 
 -- Evaluate comparison
 local function eval_cmp(op, a, b)
-  if op == "<" then return a < b
-  elseif op == ">" then return a > b
-  elseif op == "<=" then return a <= b
-  elseif op == ">=" then return a >= b
-  elseif op == "==" then return a == b
-  elseif op == "!=" then return a ~= b
+  if op == '<' then return a < b
+  elseif op == '>' then return a > b
+  elseif op == '<=' then return a <= b
+  elseif op == '>=' then return a >= b
+  elseif op == '==' then return a == b
+  elseif op == '!=' then return a ~= b
   end
   return false
 end
@@ -487,13 +487,13 @@ local function eval_tokens(tokens, pos, context)
   local token = tokens[pos]
 
   -- Bracket expression - direct coordinate (may contain variable references)
-  if token.type == "bracket" then
+  if token.type == 'bracket' then
     local values = parse_bracket(token.value, context)
     return values, pos + 1
   end
 
   -- Number - scalar value, possibly with @position
-  if token.type == "number" then
+  if token.type == 'number' then
     if token.at_pos then
       -- e.g., 40@y -> {0, 40}
       return make_at_position(token.value, token.at_pos), pos + 1
@@ -503,24 +503,24 @@ local function eval_tokens(tokens, pos, context)
 
   -- Identifier - variable reference, possibly with @position
   -- FIRST check if this is a comparison conditional (e.g., scale==1 [true] [false])
-  if token.type == "ident" then
+  if token.type == 'ident' then
     local next_token = tokens[pos + 1]
-    if next_token and next_token.type == "cmp" then
+    if next_token and next_token.type == 'cmp' then
       -- This is a comparison conditional: ident<value [true] [false]
       local cmp_op = next_token.value
       local lhs = get_scalar(token.value, context, token.index)
-      if type(lhs) == "table" then lhs = lhs[1] or 0 end
+      if type(lhs) == 'table' then lhs = lhs[1] or 0 end
 
       local rhs_token = tokens[pos + 2]
       local rhs = 0
       local cmp_end = pos + 3
 
       if rhs_token then
-        if rhs_token.type == "number" then
+        if rhs_token.type == 'number' then
           rhs = rhs_token.value
-        elseif rhs_token.type == "ident" then
+        elseif rhs_token.type == 'ident' then
           rhs = get_scalar(rhs_token.value, context, rhs_token.index)
-          if type(rhs) == "table" then rhs = rhs[1] or 0 end
+          if type(rhs) == 'table' then rhs = rhs[1] or 0 end
         end
       end
 
@@ -543,7 +543,7 @@ local function eval_tokens(tokens, pos, context)
     -- Simple identifier - just a variable reference
     local value = get_scalar(token.value, context, token.index)
     local result
-    if type(value) == "table" then
+    if type(value) == 'table' then
       result = value
     else
       result = { value }
@@ -559,7 +559,7 @@ local function eval_tokens(tokens, pos, context)
   end
 
   -- Binary operator (prefix notation)
-  if token.type == "op" then
+  if token.type == 'op' then
     local op = token.value
 
     -- Get first operand
@@ -572,8 +572,8 @@ local function eval_tokens(tokens, pos, context)
     if not b then return nil, next_pos end
 
     -- For multiplication only: if one is a single scalar, scale the other
-    -- This handles "* scale [coords]" where scale is a number
-    if op == "*" then
+    -- This handles '* scale [coords]' where scale is a number
+    if op == '*' then
       if #a == 1 and #b > 1 then
         return scale_array(b, a[1]), next_pos
       elseif #b == 1 and #a > 1 then
@@ -585,8 +585,8 @@ local function eval_tokens(tokens, pos, context)
   end
 
   -- Conditional: ?var [true] [false] or comparison: a<b [true] [false]
-  if token.type == "cond" or token.type == "not" then
-    local is_negated = token.type == "not"
+  if token.type == 'cond' or token.type == 'not' then
+    local is_negated = token.type == 'not'
     local start_pos = pos + 1
 
     -- Get the condition variable/expression
@@ -596,11 +596,11 @@ local function eval_tokens(tokens, pos, context)
     local condition = false
     local next_pos = start_pos + 1
 
-    if cond_token.type == "ident" then
+    if cond_token.type == 'ident' then
       local val = get_scalar(cond_token.value, context, cond_token.index)
-      if type(val) == "table" then val = val[1] or 0 end
+      if type(val) == 'table' then val = val[1] or 0 end
       condition = val ~= 0
-    elseif cond_token.type == "number" then
+    elseif cond_token.type == 'number' then
       condition = cond_token.value ~= 0
     end
 
@@ -626,8 +626,8 @@ local function eval_tokens(tokens, pos, context)
     return condition and true_val or false_val, pos_after_false
   end
 
-  -- Dot means "keep current value" - return nil to indicate no change
-  if token.type == "dot" then
+  -- Dot means 'keep current value' - return nil to indicate no change
+  if token.type == 'dot' then
     return nil, pos + 1
   end
 
@@ -640,7 +640,7 @@ end
 -- @param context: Table of variable values (w, h, scale, etc.)
 -- @return: Coordinate array or nil
 function M.evaluate(expr, context)
-  if not expr or expr == "" then
+  if not expr or expr == '' then
     return nil
   end
 
@@ -652,14 +652,14 @@ function M.evaluate(expr, context)
 
   -- Debug: trace specific expressions
   local trace_this = M.DEBUG and (
-    expr:match("meter_sec") or
-    expr:match("tcp%.mute") or
-    expr:match("tcp%.solo")
+    expr:match('meter_sec') or
+    expr:match('tcp%.mute') or
+    expr:match('tcp%.solo')
   )
 
   if trace_this then
-    debug_log("=== EVALUATING: %s", expr:sub(1, 80))
-    debug_log("  context.meter_sec = %s", fmt_arr(context.meter_sec))
+    debug_log('=== EVALUATING: %s', expr:sub(1, 80))
+    debug_log('  context.meter_sec = %s', fmt_arr(context.meter_sec))
   end
 
   local tokens = tokenize(expr)
@@ -670,7 +670,7 @@ function M.evaluate(expr, context)
   local result, _ = eval_tokens(tokens, 1, context)
 
   if trace_this then
-    debug_log("  RESULT: %s", fmt_arr(result))
+    debug_log('  RESULT: %s', fmt_arr(result))
   end
 
   return result

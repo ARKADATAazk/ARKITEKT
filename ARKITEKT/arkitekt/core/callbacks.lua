@@ -33,7 +33,7 @@ end
 --- @return any result The result or error message
 function M.try_call(fn, ...)
   if not fn then
-    return false, "Function is nil"
+    return false, 'Function is nil'
   end
 
   local ok, result = pcall(fn, ...)
@@ -42,16 +42,18 @@ end
 
 --- Call a function and log errors (requires Logger)
 --- @param fn? function The function to call
---- @param context? string Context for error logging (e.g., "OnClick")
+--- @param context? string Context for error logging (e.g., 'OnClick')
 --- @param ... any Arguments to pass to the function
 --- @return any|nil The result or nil on error
 function M.safe_call_with_log(fn, context, ...)
   if not fn then return nil end
 
-  local ok, result = pcall(fn, ...)
+  local ok, result = xpcall(fn, debug.traceback, ...)
   if not ok then
-    local Logger = require('arkitekt.debug.logger')
-    Logger.error("CALLBACK", "%s failed: %s", context or "Function", tostring(result))
+    local Logger = package.loaded['arkitekt.debug.logger']
+    if Logger then
+      Logger.error('CALLBACK', '%s failed:\n%s', context or 'Function', result)
+    end
     return nil
   end
 
@@ -69,9 +71,9 @@ function M.chain(callbacks, continue_on_error)
 
   for i, callback in ipairs(callbacks) do
     if callback then
-      local ok, err = pcall(callback)
+      local ok, err = xpcall(callback, debug.traceback)
       if not ok then
-        errors[#errors + 1] = string.format("Callback #%d failed: %s", i, tostring(err))
+        errors[#errors + 1] = string.format('Callback #%d failed:\n%s', i, err)
         if not continue_on_error then
           return false, errors
         end
@@ -88,38 +90,38 @@ end
 --- @return function debounced_fn The debounced function
 function M.debounce(fn, delay_ms)
   local delay_seconds = delay_ms / 1000.0
-  local pending_call = nil  -- { time, args }
+  local pending_args = nil   -- Args from most recent call
+  local pending_time = 0     -- Time of most recent call
+  local timer_running = false
+
+  local function timer_loop()
+    if not pending_args then
+      timer_running = false
+      return
+    end
+
+    local elapsed = reaper.time_precise() - pending_time
+    if elapsed >= delay_seconds then
+      -- Enough time has passed, fire the callback
+      local args = pending_args
+      pending_args = nil
+      timer_running = false
+      fn(table.unpack(args))
+    else
+      -- Keep waiting
+      reaper.defer(timer_loop)
+    end
+  end
 
   return function(...)
-    local args = {...}
-    local call_time = reaper.time_precise()
+    pending_args = {...}
+    pending_time = reaper.time_precise()
 
-    -- Update pending call (overwrites any previous)
-    pending_call = { time = call_time, args = args }
-
-    -- Schedule check after delay
-    local function check_and_fire()
-      if not pending_call then return end
-      local elapsed = reaper.time_precise() - pending_call.time
-      if elapsed >= delay_seconds then
-        -- Enough time has passed since last call, fire it
-        local call_args = pending_call.args
-        pending_call = nil
-        fn(table.unpack(call_args))
-      end
-      -- If elapsed < delay, another defer was scheduled by a newer call
+    -- Only start a new timer if one isn't already running
+    if not timer_running then
+      timer_running = true
+      reaper.defer(timer_loop)
     end
-
-    -- Wait for delay then check
-    local start_time = reaper.time_precise()
-    local function wait_then_check()
-      if reaper.time_precise() - start_time >= delay_seconds then
-        check_and_fire()
-      else
-        reaper.defer(wait_then_check)
-      end
-    end
-    reaper.defer(wait_then_check)
   end
 end
 
@@ -172,7 +174,7 @@ function M.retry(fn, max_attempts, delay_ms, on_success, on_failure)
     local attempt = 1
 
     local function try_once()
-      local ok, result = pcall(fn, table.unpack(args))
+      local ok, result = xpcall(fn, debug.traceback, table.unpack(args))
       if ok then
         if on_success then on_success(result) end
         return
@@ -211,7 +213,7 @@ function M.combine(...)
     local call_args = {...}
     for i, fn in ipairs(fns) do
       if fn then
-        local ok, result = pcall(fn, table.unpack(call_args))
+        local ok, result = xpcall(fn, debug.traceback, table.unpack(call_args))
         results[i] = ok and result or nil
       end
     end

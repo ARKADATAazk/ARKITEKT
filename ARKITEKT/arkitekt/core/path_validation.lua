@@ -21,20 +21,20 @@ local M = {}
 --- @return boolean success True if path is safe
 --- @return string|nil error Error message if validation failed
 function M.is_safe_path(path)
-  if not path or path == "" then
-    return false, "Path cannot be empty"
+  if not path or path == '' then
+    return false, 'Path cannot be empty'
   end
 
   -- Only allow alphanumeric, spaces, dots, dashes, underscores, parentheses, and path separators
   -- This blocks shell metacharacters: quotes, semicolons, pipes, backticks, $, etc.
-  local safe_pattern = "^[%w%s%.%-%_/\\:()]+$"
+  local safe_pattern = '^[%w%s%.%-%_/\\:()]+$'
   if not path:match(safe_pattern) then
-    return false, "Path contains unsafe characters (only alphanumeric, spaces, .-_/\\:() allowed)"
+    return false, 'Path contains unsafe characters (only alphanumeric, spaces, .-_/\\:() allowed)'
   end
 
   -- Block directory traversal attempts
-  if path:find("%.%.") then
-    return false, "Path cannot contain '..'"
+  if path:find('%.%.') then
+    return false, 'Path cannot contain \'..\''
   end
 
   return true
@@ -45,29 +45,29 @@ end
 --- @return boolean success True if filename is safe
 --- @return string|nil error Error message if validation failed
 function M.is_safe_filename(filename)
-  if not filename or filename == "" then
-    return false, "Filename cannot be empty"
+  if not filename or filename == '' then
+    return false, 'Filename cannot be empty'
   end
 
   -- Filenames should not contain path separators
-  if filename:find("[/\\]") then
-    return false, "Filename cannot contain path separators"
+  if filename:find('[/\\]') then
+    return false, 'Filename cannot contain path separators'
   end
 
   -- Apply same character restrictions as paths
-  local safe_pattern = "^[%w%s%.%-%_()]+$"
+  local safe_pattern = '^[%w%s%.%-%_()]+$'
   if not filename:match(safe_pattern) then
-    return false, "Filename contains unsafe characters (only alphanumeric, spaces, .-_() allowed)"
+    return false, 'Filename contains unsafe characters (only alphanumeric, spaces, .-_() allowed)'
   end
 
   -- Block directory traversal
-  if filename:find("%.%.") then
-    return false, "Filename cannot contain '..'"
+  if filename:find('%.%.') then
+    return false, 'Filename cannot contain \'..\''
   end
 
   -- Block hidden files that start with dot (optional - can be adjusted)
-  if filename:match("^%.") then
-    return false, "Filename cannot start with '.'"
+  if filename:match('^%.') then
+    return false, 'Filename cannot start with \'.\''
   end
 
   return true
@@ -77,24 +77,24 @@ end
 --- @param filename string Filename to sanitize
 --- @return string sanitized Sanitized filename
 function M.sanitize_filename(filename)
-  if not filename then return "unnamed" end
+  if not filename then return 'unnamed' end
 
   -- Remove path separators
-  filename = filename:gsub("[/\\]", "_")
+  filename = filename:gsub('[/\\]', '_')
 
   -- Remove or replace shell metacharacters
-  filename = filename:gsub("[;|&$`'\"<>]", "")
+  filename = filename:gsub('[;|&$`\'\"<>]', '')
 
   -- Replace directory traversal attempts
-  filename = filename:gsub("%.%.", "__")
+  filename = filename:gsub('%.%.', '__')
 
   -- Remove leading/trailing dots and spaces
-  filename = filename:gsub("^[%s%.]+", "")
-  filename = filename:gsub("[%s%.]+$", "")
+  filename = filename:gsub('^[%s%.]+', '')
+  filename = filename:gsub('[%s%.]+$', '')
 
   -- Ensure we have something left
-  if filename == "" then
-    filename = "unnamed"
+  if filename == '' then
+    filename = 'unnamed'
   end
 
   return filename
@@ -134,8 +134,8 @@ function M.assert_safe_path(path, context)
   local ok, err = M.is_safe_path(path)
   if not ok then
     local msg = context and
-      string.format("Invalid path in %s: %s", context, err) or
-      string.format("Invalid path: %s", err)
+      string.format('Invalid path in %s: %s', context, err) or
+      string.format('Invalid path: %s', err)
     error(msg, 2)
   end
   return path
@@ -149,8 +149,8 @@ function M.assert_safe_filename(filename, context)
   local ok, err = M.is_safe_filename(filename)
   if not ok then
     local msg = context and
-      string.format("Invalid filename in %s: %s", context, err) or
-      string.format("Invalid filename: %s", err)
+      string.format('Invalid filename in %s: %s', context, err) or
+      string.format('Invalid filename: %s', err)
     error(msg, 2)
   end
   return filename
@@ -164,15 +164,15 @@ end
 --- @param path string Path to normalize
 --- @return string normalized Normalized path
 function M.normalize_separators(path)
-  if not path then return "" end
+  if not path then return '' end
 
   local sep = package.config:sub(1,1)
 
   -- Convert all separators to platform separator
-  if sep == "/" then
-    path = path:gsub("\\", "/")
+  if sep == '/' then
+    path = path:gsub('\\', '/')
   else
-    path = path:gsub("/", "\\")
+    path = path:gsub('/', '\\')
   end
 
   return path
@@ -185,7 +185,7 @@ function M.remove_trailing_separator(path)
   if not path then return path end
 
   -- Remove trailing separators
-  while path:match("[/\\]$") do
+  while path:match('[/\\]$') do
     path = path:sub(1, -2)
   end
 
@@ -205,23 +205,23 @@ function M.check_suspicious_patterns(path)
   if not path then return false end
 
   -- Check for null bytes (common in path traversal attacks)
-  if path:find("\0") then
-    return true, "Path contains null byte"
+  if path:find('\0') then
+    return true, 'Path contains null byte'
   end
 
   -- Check for excessive path separators (e.g., ////)
-  if path:find("[/\\][/\\][/\\]") then
-    return true, "Path contains excessive separators"
+  if path:find('[/\\][/\\][/\\]') then
+    return true, 'Path contains excessive separators'
   end
 
   -- Check for hidden encoding attempts (URL encoding, etc.)
-  if path:find("%%") then
-    return true, "Path contains percent encoding"
+  if path:find('%%') then
+    return true, 'Path contains percent encoding'
   end
 
   -- Check for unicode control characters (U+0000 to U+001F)
-  if path:find("[\001-\031]") then
-    return true, "Path contains control characters"
+  if path:find('[\001-\031]') then
+    return true, 'Path contains control characters'
   end
 
   return false
@@ -235,11 +235,11 @@ end
 function M.validate_and_normalize(path, opts)
   opts = opts or {}
 
-  if not path or path == "" then
+  if not path or path == '' then
     if opts.allow_empty then
-      return true, ""
+      return true, ''
     else
-      return false, "Path cannot be empty"
+      return false, 'Path cannot be empty'
     end
   end
 
@@ -257,7 +257,7 @@ function M.validate_and_normalize(path, opts)
   -- Check for suspicious patterns
   local suspicious, reason = M.check_suspicious_patterns(path)
   if suspicious then
-    return false, "Suspicious path: " .. (reason or "unknown")
+    return false, 'Suspicious path: ' .. (reason or 'unknown')
   end
 
   -- Normalize

@@ -14,7 +14,7 @@ local M = {}
 --- @param config table Panel config
 --- @return function Iterator function
 local function iter_toolbar_elements(config)
-  local positions = {"top", "bottom", "left", "right"}
+  local positions = {'top', 'bottom', 'left', 'right'}
   local pos_idx = 1
   local elem_idx = 0
   local current_toolbar = nil
@@ -50,14 +50,14 @@ end
 --- @return string Search text or empty string
 function M.get_search_text(panel)
   for element in iter_toolbar_elements(panel.config) do
-    if element.type == "inputtext" then
+    if element.type == 'inputtext' then
       local element_state = panel[element.id]
       if element_state and element_state.search_text then
         return element_state.search_text
       end
     end
   end
-  return ""
+  return ''
 end
 
 --- Set search text in panel state
@@ -65,11 +65,11 @@ end
 --- @param text string Search text
 function M.set_search_text(panel, text)
   for element in iter_toolbar_elements(panel.config) do
-    if element.type == "inputtext" then
+    if element.type == 'inputtext' then
       if not panel[element.id] then
         panel[element.id] = {}
       end
-      panel[element.id].search_text = text or ""
+      panel[element.id].search_text = text or ''
       return
     end
   end
@@ -84,7 +84,7 @@ end
 --- @return string|nil Sort mode or nil
 function M.get_sort_mode(panel)
   for element in iter_toolbar_elements(panel.config) do
-    if element.type == "combo" and element.id == "sort" then
+    if element.type == 'combo' and element.id == 'sort' then
       local element_state = panel[element.id]
       if element_state and element_state.dropdown_value ~= nil then
         return element_state.dropdown_value
@@ -99,7 +99,7 @@ end
 --- @param mode string Sort mode
 function M.set_sort_mode(panel, mode)
   for element in iter_toolbar_elements(panel.config) do
-    if element.type == "combo" and element.id == "sort" then
+    if element.type == 'combo' and element.id == 'sort' then
       if not panel[element.id] then
         panel[element.id] = {}
       end
@@ -115,29 +115,29 @@ end
 
 --- Get sort direction from panel state
 --- @param panel table Panel instance
---- @return string Sort direction ("asc" or "desc")
+--- @return string Sort direction ('asc' or 'desc')
 function M.get_sort_direction(panel)
   for element in iter_toolbar_elements(panel.config) do
-    if element.type == "combo" and element.id == "sort" then
+    if element.type == 'combo' and element.id == 'sort' then
       local element_state = panel[element.id]
       if element_state and element_state.dropdown_direction then
         return element_state.dropdown_direction
       end
     end
   end
-  return "asc"
+  return 'asc'
 end
 
 --- Set sort direction in panel state
 --- @param panel table Panel instance
---- @param direction string Sort direction ("asc" or "desc")
+--- @param direction string Sort direction ('asc' or 'desc')
 function M.set_sort_direction(panel, direction)
   for element in iter_toolbar_elements(panel.config) do
-    if element.type == "combo" and element.id == "sort" then
+    if element.type == 'combo' and element.id == 'sort' then
       if not panel[element.id] then
         panel[element.id] = {}
       end
-      panel[element.id].dropdown_direction = direction or "asc"
+      panel[element.id].dropdown_direction = direction or 'asc'
       return
     end
   end

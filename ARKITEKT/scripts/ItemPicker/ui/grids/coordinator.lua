@@ -2,7 +2,7 @@
 -- ItemPicker/ui/grids/coordinator.lua
 -- Coordinator for managing audio and MIDI grids
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
 local Lifecycle = require('arkitekt.gui.animation.lifecycle')
@@ -121,7 +121,7 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
   if not self.audio_grid_opts then return end
   header_offset = header_offset or 0
 
-  if ImGui.BeginChild(ctx, "audio_grid", avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
+  if ImGui.BeginChild(ctx, 'audio_grid', avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
     -- Check for CTRL/ALT+wheel BEFORE grid draws (prevents scroll)
     local saved_scroll = nil
     local wheel_y = ImGui.GetMouseWheel(ctx)
@@ -154,8 +154,8 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
       self.audio_grid_opts.clip_rendering = false
     end
 
-    -- PERF: Cache renderer config values once per frame before rendering tiles
-    AudioRenderer.begin_frame(ctx, self.config)
+    -- PERF: Cache renderer config and settings values once per frame before rendering tiles
+    AudioRenderer.begin_frame(ctx, self.config, self.state)
 
     -- Call Grid with options and store result
     local result = Ark.Grid(ctx, self.audio_grid_opts)
@@ -187,7 +187,7 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
   if not self.midi_grid_opts then return end
   header_offset = header_offset or 0
 
-  if ImGui.BeginChild(ctx, "midi_grid", avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
+  if ImGui.BeginChild(ctx, 'midi_grid', avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
     -- Check for CTRL/ALT+wheel BEFORE grid draws (prevents scroll)
     local saved_scroll = nil
     local wheel_y = ImGui.GetMouseWheel(ctx)
@@ -220,8 +220,8 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
       self.midi_grid_opts.clip_rendering = false
     end
 
-    -- PERF: Cache renderer config values once per frame before rendering tiles
-    MidiRenderer.begin_frame(ctx, self.config)
+    -- PERF: Cache renderer config and settings values once per frame before rendering tiles
+    MidiRenderer.begin_frame(ctx, self.config, self.state)
 
     -- Call Grid with options and store result
     local result = Ark.Grid(ctx, self.midi_grid_opts)

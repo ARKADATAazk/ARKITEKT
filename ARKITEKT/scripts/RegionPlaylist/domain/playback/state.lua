@@ -20,7 +20,7 @@ local M = {}
 local State = {}
 State.__index = State
 
-package.loaded["RegionPlaylist.domain.playback.state"] = M
+package.loaded['RegionPlaylist.domain.playback.state'] = M
 
 function M.new(opts)
   opts = opts or {}
@@ -51,7 +51,7 @@ function M.new(opts)
   self.goto_region_target = nil
 
   self._shuffle_enabled = false
-  self._shuffle_mode = "true_shuffle"  -- "true_shuffle" or "random"
+  self._shuffle_mode = 'true_shuffle'  -- 'true_shuffle' or 'random'
   self._shuffle_seed = nil
   self._last_random_index = nil  -- For random mode to avoid consecutive repeats
 
@@ -78,6 +78,7 @@ function State:rescan()
         item_key = entry.item_key,
         loop = entry.loop,
         total_loops = entry.total_loops,
+        ancestry = entry.ancestry,  -- Preserve ancestry for nested playlist tracking
       }
     end
     self:set_sequence(sequence_copy)
@@ -96,11 +97,11 @@ end
 function State:set_order(new_order)
   local sequence = {}
   for _, entry in ipairs(new_order or {}) do
-    if type(entry) == "table" then
+    if type(entry) == 'table' then
       local rid = entry.rid
       if rid then
         local reps = tonumber(entry.reps) or 1
-        reps = math.max(1, reps // 1)
+        reps = max(1, reps // 1)
         local key = entry.key
         for loop_index = 1, reps do
           sequence[#sequence + 1] = {
@@ -148,22 +149,23 @@ function State:set_sequence(sequence)
   self.playlist_metadata = {}
   self.sequence_lookup_by_key = {}
 
-  if DEBUG_SEQUENCE then Logger.debug("STATE", "Building sequence from %d entries...", #sequence) end
+  if DEBUG_SEQUENCE then Logger.debug('STATE', 'Building sequence from %d entries...', #sequence) end
   for _, entry in ipairs(sequence) do
     local rid = entry.rid
     if rid and self.region_cache[rid] then
       local normalized = {
         rid = rid,
         item_key = entry.item_key,
-        loop = math.max(1, (entry.loop or 1) // 1),
-        total_loops = math.max(1, (entry.total_loops or 1) // 1),
+        loop = max(1, (entry.loop or 1) // 1),
+        total_loops = max(1, (entry.total_loops or 1) // 1),
+        ancestry = entry.ancestry,  -- Preserve ancestry for nested playlist tracking
       }
       if normalized.loop > normalized.total_loops then
         normalized.loop = normalized.total_loops
       end
 
       if DEBUG_SEQUENCE then
-        Logger.debug("STATE", "✓ Entry #%d: rid=%d key=%s loop=%d/%d",
+        Logger.debug('STATE', '✓ Entry #%d: rid=%d key=%s loop=%d/%d',
           #self.sequence + 1, rid, tostring(entry.item_key), normalized.loop, normalized.total_loops)
       end
 
@@ -180,24 +182,24 @@ function State:set_sequence(sequence)
 
       if normalized.item_key and not self.sequence_lookup_by_key[normalized.item_key] then
         self.sequence_lookup_by_key[normalized.item_key] = #self.sequence
-        if DEBUG_SEQUENCE then Logger.debug("STATE", "Lookup: '%s' -> idx %d", normalized.item_key, #self.sequence) end
+        if DEBUG_SEQUENCE then Logger.debug('STATE', "Lookup: '%s' -> idx %d", normalized.item_key, #self.sequence) end
       end
     else
-      Logger.warn("STATE", "✗ DROPPED: rid=%s (not in region_cache) key=%s", tostring(rid), tostring(entry.item_key))
+      Logger.warn('STATE', '✗ DROPPED: rid=%s (not in region_cache) key=%s', tostring(rid), tostring(entry.item_key))
     end
   end
-  Logger.info("STATE", "Sequence built: %d items", #self.sequence)
+  Logger.info('STATE', 'Sequence built: %d items', #self.sequence)
 
   -- Apply shuffle if enabled (before resolving pointers)
   if self._shuffle_enabled and #self.sequence > 1 then
     self:_apply_shuffle()
-    Logger.info("STATE", "Shuffle applied to sequence")
+    Logger.info('STATE', 'Shuffle applied to sequence')
   end
 
   if DEBUG_SEQUENCE then
-    Logger.debug("STATE", "playlist_order:")
+    Logger.debug('STATE', 'playlist_order:')
     for i, rid in ipairs(self.playlist_order) do
-      Logger.debug("STATE", "  [%d] rid=%d", i, rid)
+      Logger.debug('STATE', '  [%d] rid=%d', i, rid)
     end
   end
 
@@ -275,7 +277,7 @@ function State:update_bounds()
     local region = self:get_region_by_rid(rid)
     if region then
       self.current_bounds.start_pos = region.start
-      self.current_bounds.end_pos = region["end"]
+      self.current_bounds.end_pos = region['end']
     end
   else
     self.current_bounds.start_pos = 0
@@ -287,7 +289,7 @@ function State:update_bounds()
     local region = self:get_region_by_rid(rid)
     if region then
       self.next_bounds.start_pos = region.start
-      self.next_bounds.end_pos = region["end"]
+      self.next_bounds.end_pos = region['end']
     end
   else
     self.next_bounds.start_pos = 0
@@ -296,7 +298,7 @@ function State:update_bounds()
 end
 
 function State:find_index_at_position(pos, preferred_key)
-  if DEBUG_SEQUENCE then Logger.debug("STATE", "find_index_at_position(%.3f, key=%s) scanning %d entries...", pos, tostring(preferred_key), #self.playlist_order) end
+  if DEBUG_SEQUENCE then Logger.debug('STATE', 'find_index_at_position(%.3f, key=%s) scanning %d entries...', pos, tostring(preferred_key), #self.playlist_order) end
 
   -- First: try preferred_key if provided (resolves multi-loop ambiguity)
   if preferred_key then
@@ -305,9 +307,9 @@ function State:find_index_at_position(pos, preferred_key)
       local rid = self.playlist_order[idx]
       local region = self:get_region_by_rid(rid)
       if region then
-        local in_bounds = pos >= region.start and pos < region["end"] - 1e-9
+        local in_bounds = pos >= region.start and pos < region['end'] - 1e-9
         if in_bounds then
-          if DEBUG_SEQUENCE then Logger.debug("STATE", "Preferred key match at idx %d", idx) end
+          if DEBUG_SEQUENCE then Logger.debug('STATE', 'Preferred key match at idx %d', idx) end
           return idx
         end
       end
@@ -319,18 +321,18 @@ function State:find_index_at_position(pos, preferred_key)
     local rid = self.playlist_order[i]
     local region = self:get_region_by_rid(rid)
     if region then
-      local in_bounds = pos >= region.start and pos < region["end"] - 1e-9
+      local in_bounds = pos >= region.start and pos < region['end'] - 1e-9
       if DEBUG_SEQUENCE then
-        Logger.debug("STATE", "  [%d] rid=%d bounds=[%.3f-%.3f] in_bounds=%s",
-          i, rid, region.start, region["end"], tostring(in_bounds))
+        Logger.debug('STATE', '  [%d] rid=%d bounds=[%.3f-%.3f] in_bounds=%s',
+          i, rid, region.start, region['end'], tostring(in_bounds))
       end
       if in_bounds then
-        if DEBUG_SEQUENCE then Logger.debug("STATE", "Returning idx %d", i) end
+        if DEBUG_SEQUENCE then Logger.debug('STATE', 'Returning idx %d', i) end
         return i
       end
     end
   end
-  if DEBUG_SEQUENCE then Logger.debug("STATE", "No index found, returning -1") end
+  if DEBUG_SEQUENCE then Logger.debug('STATE', 'No index found, returning -1') end
   return -1
 end
 
@@ -390,15 +392,15 @@ function State:_apply_shuffle()
   self._shuffle_seed = (reaper.time_precise() * 1000000) // 1 % 2147483647
   math.randomseed(self._shuffle_seed)
 
-  if self._shuffle_mode == "true_shuffle" then
+  if self._shuffle_mode == 'true_shuffle' then
     -- Fisher-Yates shuffle - play each item once before reshuffling
     for i = #self.sequence, 2, -1 do
       local j = random(1, i)
       self.sequence[i], self.sequence[j] = self.sequence[j], self.sequence[i]
     end
-  elseif self._shuffle_mode == "random" then
+  elseif self._shuffle_mode == 'random' then
     -- For random mode, we still shuffle but will reshuffle more frequently
-    -- This creates a "pure random" feel where items can play close together
+    -- This creates a 'pure random' feel where items can play close together
     for i = #self.sequence, 2, -1 do
       local j = random(1, i)
       self.sequence[i], self.sequence[j] = self.sequence[j], self.sequence[i]
@@ -443,6 +445,7 @@ function State:on_shuffle_changed(enabled)
         item_key = entry.item_key,
         loop = entry.loop,
         total_loops = entry.total_loops,
+        ancestry = entry.ancestry,
       }
     end
     self:set_sequence(current_sequence)
@@ -455,8 +458,8 @@ function State:get_shuffle_mode()
 end
 
 function State:set_shuffle_mode(mode)
-  if mode ~= "true_shuffle" and mode ~= "random" then
-    Logger.warn("STATE", "Invalid shuffle mode: " .. tostring(mode))
+  if mode ~= 'true_shuffle' and mode ~= 'random' then
+    Logger.warn('STATE', 'Invalid shuffle mode: ' .. tostring(mode))
     return
   end
 
@@ -471,6 +474,7 @@ function State:set_shuffle_mode(mode)
         item_key = entry.item_key,
         loop = entry.loop,
         total_loops = entry.total_loops,
+        ancestry = entry.ancestry,
       }
     end
     self:set_sequence(current_sequence)

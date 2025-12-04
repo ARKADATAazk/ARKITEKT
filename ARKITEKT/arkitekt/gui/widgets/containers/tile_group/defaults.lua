@@ -3,8 +3,6 @@
 -- Default styling for tile group headers and containers
 
 local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
-
 local M = {}
 
 -- Default group header styling
@@ -19,18 +17,18 @@ M.HEADER = {
   icon_spacing = 10,
 
   -- Colors
-  bg_color = hexrgb("#2A2A2AEE"),
-  bg_color_hover = hexrgb("#353535EE"),
-  bg_color_collapsed = hexrgb("#242424EE"),
+  bg_color = 0x2A2A2AEE,
+  bg_color_hover = 0x353535EE,
+  bg_color_collapsed = 0x242424EE,
 
-  border_color = hexrgb("#444444"),
+  border_color = 0x444444FF,
   border_thickness = 1,
 
-  text_color = hexrgb("#EEEEEE"),
-  text_color_secondary = hexrgb("#999999"),
+  text_color = 0xEEEEEEFF,
+  text_color_secondary = 0x999999FF,
 
-  collapse_icon_color = hexrgb("#CCCCCC"),
-  collapse_icon_color_hover = hexrgb("#FFFFFF"),
+  collapse_icon_color = 0xCCCCCCFF,
+  collapse_icon_color_hover = 0xFFFFFFFF,
 
   -- Rounding
   rounding = 4,
@@ -47,8 +45,8 @@ M.CONTENT = {
 
 -- Default collapse/expand icon glyphs
 M.ICONS = {
-  collapsed = "▸",  -- Right-pointing triangle
-  expanded = "▾",   -- Down-pointing triangle
+  collapsed = '▸',  -- Right-pointing triangle
+  expanded = '▾',   -- Down-pointing triangle
 }
 
 return M

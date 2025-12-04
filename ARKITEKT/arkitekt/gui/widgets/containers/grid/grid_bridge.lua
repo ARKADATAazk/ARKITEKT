@@ -4,7 +4,7 @@
 -- FIXED: Proper payload preparation in registration flow
 -- FIXED: Clear selection in other grids when clicking a different grid
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 
@@ -142,7 +142,7 @@ function GridBridge:start_drag(source_id, payload)
   self.drag_payload = {
     source = source_id,
     data = payload,
-    type = self.grids[source_id] and self.grids[source_id].instance.id or "unknown",
+    type = self.grids[source_id] and self.grids[source_id].instance.id or 'unknown',
   }
 end
 
@@ -168,16 +168,16 @@ function GridBridge:can_accept_drop(source_id, target_id)
   if not target then return false end
   
   local accepts_from = target.accepts_drops_from
-  if type(accepts_from) == "table" then
+  if type(accepts_from) == 'table' then
     for _, allowed_source in ipairs(accepts_from) do
-      if allowed_source == source_id or allowed_source == "*" then
+      if allowed_source == source_id or allowed_source == '*' then
         return true
       end
     end
     return false
   end
   
-  return accepts_from == true or accepts_from == "*"
+  return accepts_from == true or accepts_from == '*'
 end
 
 function GridBridge:get_hovered_grid(mx, my)

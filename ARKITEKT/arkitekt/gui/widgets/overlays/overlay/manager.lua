@@ -4,18 +4,18 @@
 -- Now supports both parent-window and viewport-level overlays
 -- Enhanced with easing curves and close button support
 
-local ImGui = require('arkitekt.platform.imgui')
+local ImGui = require('arkitekt.core.imgui')
+local Base = require('arkitekt.gui.widgets.base')
 
 local Draw   = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
 local CoreMath = require('arkitekt.core.math')
-local Theme  = require('arkitekt.core.theme')
+local Theme  = require('arkitekt.theme')
 local OverlayConfig = require('arkitekt.gui.widgets.overlays.overlay.defaults')
-local Constants = require('arkitekt.defs.app')
+local Constants = require('arkitekt.config.app')
 
 local M = {}
 M.__index = M
-local hexrgb = Colors.hexrgb
 local clamp = CoreMath.clamp
 
 -- Global state to track if ANY overlay manager has active overlays
@@ -136,7 +136,7 @@ function M:set_ui_bounds(titlebar_h, statusbar_h, docked)
 end
 
 function M:push(opts)
-  assert(opts and opts.id and opts.render, "overlay requires id + render()")
+  assert(opts and opts.id and opts.render, 'overlay requires id + render()')
 
   -- Create alpha tracker with specified animation mode
   local alpha_opts = {}
@@ -180,7 +180,21 @@ function M:push(opts)
     content_padding = opts.content_padding or 0,
 
     alpha = create_alpha_tracker(alpha_opts),
+
+    -- Passthrough support (for drag-to-REAPER, radial menus, etc.)
+    should_passthrough = opts.should_passthrough,
+    passthrough_fade_duration = opts.passthrough_fade_duration or 0.25,
+    passthrough_alpha = create_alpha_tracker({
+      mode = 'curve',
+      duration = opts.passthrough_fade_duration or 0.25,
+      curve_type = 'smootherstep',
+    }),
+    was_passthrough = false,
   }
+
+  -- Initialize passthrough_alpha to 1.0 (scrim fully visible)
+  overlay.passthrough_alpha.current = 1.0
+  overlay.passthrough_alpha.target = 1.0
 
   self.stack[#self.stack + 1] = overlay
 
@@ -245,11 +259,27 @@ function M:render(ctx, dt)
   local alpha_val = top.alpha:value()
 
   -- ============================================================================
-  -- PASSTHROUGH MODE: Skip overlay chrome, render directly
+  -- PASSTHROUGH MODE: Handle scrim fade transitions for drag/passthrough states
   -- ============================================================================
   -- Used for special cases like drag-to-REAPER, radial menus, screen pickers
   -- where the app needs to render outside overlay bounds without scrim/modal
-  if top.should_passthrough and top.should_passthrough() then
+  local is_passthrough = top.should_passthrough and top.should_passthrough()
+
+  -- Update passthrough fade alpha based on state changes
+  if is_passthrough and not top.was_passthrough then
+    -- Entering passthrough: fade out scrim
+    top.passthrough_alpha:set_target(0.0)
+  elseif not is_passthrough and top.was_passthrough then
+    -- Exiting passthrough: fade in scrim
+    top.passthrough_alpha:set_target(1.0)
+  end
+  top.passthrough_alpha:update(dt)
+  top.was_passthrough = is_passthrough
+
+  local passthrough_alpha_val = top.passthrough_alpha:value()
+
+  -- FULL PASSTHROUGH: Skip ALL overlay chrome when passthrough active AND fade complete
+  if is_passthrough and passthrough_alpha_val < 0.01 then
     -- Get full viewport bounds
     local x, y, w, h
     if JS_API_available then
@@ -270,7 +300,7 @@ function M:render(ctx, dt)
     end
 
     -- Call render directly with full viewport, no modal/scrim
-    local dl = ImGui.GetWindowDrawList(ctx)
+    local dl = Base.get_context(ctx):draw_list()
     top.render(ctx, 1.0, {x=x, y=y, w=w, h=h, dl=dl})
 
     -- Check for escape key even in passthrough mode
@@ -282,8 +312,9 @@ function M:render(ctx, dt)
   end
 
   -- ============================================================================
-  -- NORMAL OVERLAY MODE: Modal with scrim/chrome
+  -- NORMAL/TRANSITIONING OVERLAY MODE: Modal with scrim/chrome
   -- ============================================================================
+  -- During passthrough fade transition, we still render the modal but with faded scrim
   local x, y, w, h
 
   if top.use_viewport then
@@ -338,10 +369,11 @@ function M:render(ctx, dt)
                      | ImGui.WindowFlags_NoBackground
 
   -- Calculate scrim color with alpha (like old overlay.lua)
+  -- Include passthrough_alpha_val for smooth fade during passthrough transitions
   local config = OverlayConfig.get()
   local base_scrim_color = top.scrim_color or config.scrim.color
   local base_scrim_opacity = top.scrim_opacity or config.scrim.opacity
-  local scrim_alpha = base_scrim_opacity * alpha_val
+  local scrim_alpha = base_scrim_opacity * alpha_val * passthrough_alpha_val
   local scrim_color = (base_scrim_color & 0xFFFFFF00) | (255 * scrim_alpha + 0.5) // 1
 
   -- HYBRID APPROACH: Use BeginPopupModal for input blocking, custom rendering for visuals
@@ -350,12 +382,16 @@ function M:render(ctx, dt)
 
   -- Set window background to scrim color for custom appearance
   ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, scrim_color)
+
+  -- Hide nav cursor (default blue is distracting)
+  ImGui.PushStyleColor(ctx, ImGui.Col_NavCursor, 0x00000000)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, alpha_val)
+  -- Combine alpha_val (overlay fade-in) with passthrough_alpha_val (passthrough fade)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, alpha_val * passthrough_alpha_val)
 
   -- Open popup modal if not already open
-  local popup_id = "##modal_overlay_" .. top.id
+  local popup_id = '##modal_overlay_' .. top.id
   if not ImGui.IsPopupOpen(ctx, popup_id, ImGui.PopupFlags_None) then
     ImGui.OpenPopup(ctx, popup_id)
   end
@@ -363,11 +399,11 @@ function M:render(ctx, dt)
   local visible = ImGui.BeginPopupModal(ctx, popup_id, nil, window_flags)
 
   if visible then
-    local dl = ImGui.GetWindowDrawList(ctx)
+    local dl = Base.get_context(ctx):draw_list()
 
     -- Draw the scrim explicitly so debug colors remain even if later style pushes
     -- override WindowBg/ModalWindowDimBg (e.g. TemplateBrowser style stack)
-    Draw.rect_filled(dl, x, y, x + w, y + h, scrim_color, 0)
+    Draw.RectFilled(dl, x, y, x + w, y + h, scrim_color, 0)
 
     -- Check for escape key
     if top.esc_to_close and ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
@@ -436,7 +472,7 @@ function M:render(ctx, dt)
 
   -- Pop in reverse order (matching old overlay.lua)
   ImGui.PopStyleVar(ctx, 3)    -- Alpha, WindowBorderSize, WindowPadding
-  ImGui.PopStyleColor(ctx, 2)  -- WindowBg, ModalWindowDimBg
+  ImGui.PopStyleColor(ctx, 3)  -- NavCursor, WindowBg, ModalWindowDimBg
 end
 
 -- ============================================================================
@@ -458,7 +494,7 @@ function M:draw_close_button(ctx, overlay, vp_x, vp_y, vp_w, vp_h, dt)
                                (1.0 - math.exp(-10.0 * dt))
 
   ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
-  ImGui.InvisibleButton(ctx, "##overlay_close_btn_" .. overlay.id,
+  ImGui.InvisibleButton(ctx, '##overlay_close_btn_' .. overlay.id,
                         overlay.close_button_size, overlay.close_button_size)
   overlay.close_button_hovered = ImGui.IsItemHovered(ctx)
 
