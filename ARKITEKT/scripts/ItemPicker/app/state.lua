@@ -7,7 +7,6 @@ local Persistence = require('ItemPicker.data.storage')
 local Defaults = require('ItemPicker.config.defaults')
 local PreviewManager = require('ItemPicker.domain.preview.manager')
 local TrackFilterDomain = require('ItemPicker.domain.filters.track')
-local TrackFilterUI = require('ItemPicker.ui.components.track_filter')
 local Palette = require('ItemPicker.config.palette')
 
 local M = {}
@@ -149,8 +148,8 @@ function M.initialize(config)
   end
 
   -- Initialize track tree and whitelist on startup (so filter bar works immediately)
-  -- Use UI wrapper which adds display_color for rendering
-  M.track_tree = TrackFilterUI.build_track_tree()
+  -- Domain layer already captures track color from REAPER's I_CUSTOMCOLOR
+  M.track_tree = TrackFilterDomain.build_track_tree()
   if not M.track_whitelist then
     M.track_whitelist = TrackFilterDomain.init_whitelist(M.track_tree)
   end

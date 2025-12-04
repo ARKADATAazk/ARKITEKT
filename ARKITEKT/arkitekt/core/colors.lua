@@ -52,14 +52,17 @@ function M.RgbaToArgb(rgba_color)
 end
 
 function M.WithAlpha(color, alpha)
+  color = color or 0
+  alpha = alpha or 0xFF
   return (color & 0xFFFFFF00) | (alpha & 0xFF)
 end
 
 --- Convert float opacity (0.0-1.0) to byte (0-255)
---- @param opacity number Float opacity value
---- @return number Byte alpha value
+--- @param opacity number Float opacity value (clamped to 0.0-1.0)
+--- @return number Byte alpha value (0-255)
 function M.Opacity(opacity)
-  return ((opacity or 1.0) * 255 + 0.5) // 1
+  opacity = max(0, min(1, opacity or 1.0))
+  return (opacity * 255 + 0.5) // 1
 end
 
 --- Set alpha channel using float opacity (0.0-1.0) instead of byte value
@@ -72,8 +75,9 @@ end
 
 --- Get alpha component of a color as float opacity (0.0-1.0)
 --- @param color number RGBA color
---- @return number Float opacity value
+--- @return number Float opacity value (returns 1.0 for nil/0 color)
 function M.GetOpacity(color)
+  if not color then return 1.0 end
   return (color & 0xFF) / 255
 end
 
@@ -88,9 +92,9 @@ end
 function M.Desaturate(color, amount)
   local r, g, b, a = M.RgbaToComponents(color)
   local gray = r * 0.299 + g * 0.587 + b * 0.114
-  r = (r + (gray - r) * amount)//1
-  g = (g + (gray - g) * amount)//1
-  b = (b + (gray - b) * amount)//1
+  r = min(255, max(0, (r + (gray - r) * amount)//1))
+  g = min(255, max(0, (g + (gray - g) * amount)//1))
+  b = min(255, max(0, (b + (gray - b) * amount)//1))
   return M.ComponentsToRgba(r, g, b, a)
 end
 
@@ -110,6 +114,9 @@ end
 --- @param t number Interpolation factor (0.0 = color_a, 1.0 = color_b)
 --- @return number Interpolated color (RGBA)
 function M.Lerp(color_a, color_b, t)
+  -- Clamp t to [0, 1]
+  t = max(0, min(1, t or 0))
+
   -- OPTIMIZATION: Inline all operations to eliminate 10+ function calls
   -- Extract components (inline RgbaToComponents)
   local r1 = (color_a >> 24) & 0xFF

@@ -85,6 +85,7 @@ end
 
 -- ===== DECODE =====
 -- Lightweight recursive descent parser (good enough for settings)
+local DEFAULT_MAX_DEPTH = 100
 local function parse_err(msg, s, i) error(('json decode error @%d: %s'):format(i, msg)) end
 
 -- Skip whitespace starting at position i, return new position
@@ -117,7 +118,11 @@ local function codepoint_to_utf8(cp)
   end
 end
 
-local function parse_val(s, i)
+local function parse_val(s, i, depth, max_depth)
+  if depth > max_depth then
+    parse_err('max depth exceeded', s, i)
+  end
+
   i = skip_ws(s, i)
   local c = s:sub(i,i)
   if c == '"' then -- string
@@ -159,12 +164,12 @@ local function parse_val(s, i)
     i = skip_ws(s, i)
     if s:sub(i,i) == '}' then return obj, i+1 end
     while true do
-      local key; key, i = parse_val(s, i)
+      local key; key, i = parse_val(s, i, depth + 1, max_depth)
       if type(key) ~= 'string' then parse_err('object key must be string', s, i) end
       i = skip_ws(s, i)
       if s:sub(i,i) ~= ':' then parse_err('colon expected', s, i) end
       i = i + 1
-      local val; val, i = parse_val(s, i)
+      local val; val, i = parse_val(s, i, depth + 1, max_depth)
       obj[key] = val
       i = skip_ws(s, i)
       local sep = s:sub(i,i)
@@ -178,7 +183,7 @@ local function parse_val(s, i)
     if s:sub(i,i) == ']' then return arr, i+1 end
     local k = 1
     while true do
-      local val; val, i = parse_val(s, i)
+      local val; val, i = parse_val(s, i, depth + 1, max_depth)
       arr[k] = val; k = k + 1
       i = skip_ws(s, i)
       local sep = s:sub(i,i)
@@ -217,10 +222,15 @@ local function parse_val(s, i)
   end
 end
 
-function M.decode(str)
+--- Decode a JSON string
+--- @param str string JSON string to decode
+--- @param max_depth number|nil Maximum nesting depth (default: 100)
+--- @return any|nil Decoded value, or nil on error
+function M.decode(str, max_depth)
   if type(str) ~= 'string' or str == '' then return nil end
+  max_depth = max_depth or DEFAULT_MAX_DEPTH
   local ok, val = pcall(function()
-    local v, i = parse_val(str, 1)
+    local v, _ = parse_val(str, 1, 1, max_depth)
     return v
   end)
   return ok and val or nil

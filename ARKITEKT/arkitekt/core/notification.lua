@@ -3,7 +3,6 @@
 -- Manages timed status messages with automatic timeouts
 -- Integrates with arkitekt/runtime/chrome/status_bar.lua via get_status() callback
 
-local Colors = require('arkitekt.core.colors')
 local M = {}
 
 -- ============================================================================

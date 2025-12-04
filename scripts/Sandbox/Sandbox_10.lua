@@ -24,7 +24,7 @@ end
 
 local Ark = dofile(ark_path)
 local ImGui = Ark.ImGui
-local Shell = require('arkitekt.app.shell')
+local Shell = require('arkitekt.runtime.shell')
 
 local WIDGET_COUNT = 1000
 local results = {

@@ -50,8 +50,10 @@ function M.safe_call_with_log(fn, context, ...)
 
   local ok, result = xpcall(fn, debug.traceback, ...)
   if not ok then
-    local Logger = require('arkitekt.debug.logger')
-    Logger.error('CALLBACK', '%s failed:\n%s', context or 'Function', result)
+    local Logger = package.loaded['arkitekt.debug.logger']
+    if Logger then
+      Logger.error('CALLBACK', '%s failed:\n%s', context or 'Function', result)
+    end
     return nil
   end
 
@@ -88,38 +90,38 @@ end
 --- @return function debounced_fn The debounced function
 function M.debounce(fn, delay_ms)
   local delay_seconds = delay_ms / 1000.0
-  local pending_call = nil  -- { time, args }
+  local pending_args = nil   -- Args from most recent call
+  local pending_time = 0     -- Time of most recent call
+  local timer_running = false
+
+  local function timer_loop()
+    if not pending_args then
+      timer_running = false
+      return
+    end
+
+    local elapsed = reaper.time_precise() - pending_time
+    if elapsed >= delay_seconds then
+      -- Enough time has passed, fire the callback
+      local args = pending_args
+      pending_args = nil
+      timer_running = false
+      fn(table.unpack(args))
+    else
+      -- Keep waiting
+      reaper.defer(timer_loop)
+    end
+  end
 
   return function(...)
-    local args = {...}
-    local call_time = reaper.time_precise()
+    pending_args = {...}
+    pending_time = reaper.time_precise()
 
-    -- Update pending call (overwrites any previous)
-    pending_call = { time = call_time, args = args }
-
-    -- Schedule check after delay
-    local function check_and_fire()
-      if not pending_call then return end
-      local elapsed = reaper.time_precise() - pending_call.time
-      if elapsed >= delay_seconds then
-        -- Enough time has passed since last call, fire it
-        local call_args = pending_call.args
-        pending_call = nil
-        fn(table.unpack(call_args))
-      end
-      -- If elapsed < delay, another defer was scheduled by a newer call
+    -- Only start a new timer if one isn't already running
+    if not timer_running then
+      timer_running = true
+      reaper.defer(timer_loop)
     end
-
-    -- Wait for delay then check
-    local start_time = reaper.time_precise()
-    local function wait_then_check()
-      if reaper.time_precise() - start_time >= delay_seconds then
-        check_and_fire()
-      else
-        reaper.defer(wait_then_check)
-      end
-    end
-    reaper.defer(wait_then_check)
   end
 end
 

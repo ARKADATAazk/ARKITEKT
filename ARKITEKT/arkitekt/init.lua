@@ -287,14 +287,9 @@ local MODULES = {
   Waveform = 'arkitekt.gui.widgets.experimental.audio.waveform',
   XYPad = 'arkitekt.gui.widgets.experimental.xy_pad',
 
-  -- Utilities (commonly used modules)
-  Anim = 'arkitekt.core.animation',
-  Colors = 'arkitekt.core.colors',
-  Cursor = 'arkitekt.core.cursor',
-  Style = 'arkitekt.gui.style',
-  Draw = 'arkitekt.gui.draw.primitives',
-  Easing = 'arkitekt.gui.animation.easing',
+  -- Animation
   Anim = 'arkitekt.config.animation',
+  Easing = 'arkitekt.gui.animation.easing',
 
   -- Drawing
   Draw = 'arkitekt.gui.draw.primitives',

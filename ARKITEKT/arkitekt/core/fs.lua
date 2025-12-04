@@ -146,9 +146,17 @@ end
 --- @param path string Path to check
 --- @return boolean exists True if directory exists
 function M.dir_exists(path)
-  if not path then return false end
-  return (reaper.EnumerateFiles(path, 0) or
-          reaper.EnumerateSubdirectories(path, 0)) ~= nil
+  if not path or path == '' then return false end
+  -- reaper.file_exists returns true for both files and directories
+  -- We check it exists AND is not a file (can't be opened for reading)
+  if not reaper.file_exists(path) then return false end
+  -- If it exists but can't be opened as a file, it's a directory
+  local f = io.open(path, 'rb')
+  if f then
+    f:close()
+    return false -- It's a file, not a directory
+  end
+  return true
 end
 
 --- Create directory (and parents if needed)
@@ -211,18 +219,27 @@ end
 --- List files recursively
 --- @param dir string Directory path
 --- @param ext string|nil Optional extension filter
+--- @param max_depth number|nil Maximum recursion depth (default: 20)
 --- @return table files Array of full file paths
-function M.list_files_recursive(dir, ext)
-  local out = M.list_files(dir, ext)
+function M.list_files_recursive(dir, ext, max_depth)
+  max_depth = max_depth or 20
 
-  for _, subdir in ipairs(M.list_subdirs(dir)) do
-    local sub_files = M.list_files_recursive(subdir, ext)
-    for _, f in ipairs(sub_files) do
-      out[#out + 1] = f
+  local function recurse(current_dir, depth)
+    local out = M.list_files(current_dir, ext)
+
+    if depth < max_depth then
+      for _, subdir in ipairs(M.list_subdirs(current_dir)) do
+        local sub_files = recurse(subdir, depth + 1)
+        for _, f in ipairs(sub_files) do
+          out[#out + 1] = f
+        end
+      end
     end
+
+    return out
   end
 
-  return out
+  return recurse(dir, 1)
 end
 
 --- Copy a file (ensures parent directory exists)

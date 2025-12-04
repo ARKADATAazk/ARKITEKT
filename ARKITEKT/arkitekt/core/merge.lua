@@ -12,33 +12,47 @@ local M = {}
 -- DEEP MERGE
 -- ============================================================================
 
+local DEFAULT_MAX_DEPTH = 50
+
 --- Deep merge two tables recursively (right wins)
 --- Use for nested configs (multiple levels)
 --- @param base table Base configuration
 --- @param override table Override configuration
+--- @param max_depth number|nil Maximum recursion depth (default: 50)
 --- @return table New table with deeply merged values
-function M.deepMerge(base, override)
-  -- Handle non-table cases
-  if type(base) ~= 'table' then return override end
-  if type(override) ~= 'table' then return base end
+function M.deepMerge(base, override, max_depth)
+  max_depth = max_depth or DEFAULT_MAX_DEPTH
 
-  local result = {}
+  local function merge_impl(b, o, depth)
+    if depth > max_depth then
+      -- Exceeded max depth, return override as-is to prevent stack overflow
+      return o
+    end
 
-  -- Copy base
-  for k, v in pairs(base) do
-    result[k] = v
-  end
+    -- Handle non-table cases
+    if type(b) ~= 'table' then return o end
+    if type(o) ~= 'table' then return b end
 
-  -- Recursively merge override
-  for k, v in pairs(override) do
-    if type(v) == 'table' and type(result[k]) == 'table' then
-      result[k] = M.deepMerge(result[k], v)
-    else
+    local result = {}
+
+    -- Copy base
+    for k, v in pairs(b) do
       result[k] = v
     end
+
+    -- Recursively merge override
+    for k, v in pairs(o) do
+      if type(v) == 'table' and type(result[k]) == 'table' then
+        result[k] = merge_impl(result[k], v, depth + 1)
+      else
+        result[k] = v
+      end
+    end
+
+    return result
   end
 
-  return result
+  return merge_impl(base, override, 1)
 end
 
 -- ============================================================================

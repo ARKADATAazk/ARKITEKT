@@ -186,11 +186,14 @@ end
 --- @param get_key? function(item) -> any Get key (default: tostring)
 --- @return any[] sequence Flat array with repetitions
 function M.expand_flat(items, get_repetitions, get_key)
+  if not items then return {} end
+
   get_repetitions = get_repetitions or function() return 1 end
   get_key = get_key or function(item) return tostring(item) end
 
+  local root = {items = items}
   local config = {
-    get_children = function() return {} end,
+    get_children = function() return items end,
     is_leaf = function() return true end,
     get_repetitions = get_repetitions,
     get_key = get_key,
@@ -198,17 +201,7 @@ function M.expand_flat(items, get_repetitions, get_key)
     detect_cycles = false,
   }
 
-  local root = {items = items}
-  local root_config = {
-    get_children = function() return items end,
-    is_leaf = function(item) return true end,
-    get_repetitions = get_repetitions,
-    get_key = get_key,
-    get_value = function(item) return item end,
-    detect_cycles = false,
-  }
-
-  local sequence = M.expand(root, root_config)
+  local sequence = M.expand(root, config)
   return sequence
 end
 
