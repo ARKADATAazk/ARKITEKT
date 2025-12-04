@@ -369,6 +369,17 @@ local function _hsv_to_rgb(h, s, v)
   return (r * 255 + 0.5)//1, (g * 255 + 0.5)//1, (b * 255 + 0.5)//1
 end
 
+--- Convert HSV to RGBA color
+--- @param h number Hue in degrees (0-360)
+--- @param s number Saturation (0-1)
+--- @param v number Value/brightness (0-1)
+--- @param a number|nil Alpha byte (0-255, default 255)
+--- @return number RGBA color
+function M.FromHSV(h, s, v, a)
+  local r, g, b = _hsv_to_rgb((h % 360) / 360, s, v)
+  return (r << 24) | (g << 16) | (b << 8) | (a or 0xFF)
+end
+
 -- ============================================================================
 -- SECTION 1.8: Color Sorting Utilities
 -- ============================================================================

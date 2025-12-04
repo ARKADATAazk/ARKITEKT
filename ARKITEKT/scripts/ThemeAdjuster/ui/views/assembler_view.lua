@@ -49,8 +49,15 @@ function M.new(State, AppConfig, settings)
   -- Create package modal
   self.package_modal = PackageModal.new(State, settings)
 
-  -- Create result modal
-  self.result_modal = ResultModal.new(State, settings)
+  -- Create result modal with pin change callback
+  self.result_modal = ResultModal.new(State, settings, {
+    on_pin_changed = function(key, package_id)
+      -- Re-resolve packages with updated pins
+      State.update_resolution()
+      -- Refresh the modal's cache
+      self.result_modal:refresh()
+    end,
+  })
 
   -- Create package model (adapter for the grid)
   self.package_model = self:create_package_model()

@@ -6,14 +6,16 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local ImageMap = require('ThemeAdjuster.domain.packages.image_map')
 local Constants = require('ThemeAdjuster.config.constants')
+local ImageTooltip = require('ThemeAdjuster.ui.image_tooltip')
+local ResultTile = require('ThemeAdjuster.ui.grids.renderers.result_tile')
 
 local M = {}
 local ResultModal = {}
 ResultModal.__index = ResultModal
 
--- Tile constants
-local TILE_WIDTH = 220
-local TILE_HEIGHT = 28
+-- Tile constants (from renderer)
+local TILE_WIDTH = ResultTile.TILE_WIDTH
+local TILE_HEIGHT = ResultTile.TILE_HEIGHT
 local TILE_SPACING = 4
 
 -- Use shared theme category colors palette
@@ -54,10 +56,14 @@ local function get_area_from_key(key)
   end
 end
 
-function M.new(State, settings)
+function M.new(State, settings, opts)
+  opts = opts or {}
   local self = setmetatable({
     State = State,
     settings = settings,
+
+    -- Callbacks
+    on_pin_changed = opts.on_pin_changed,  -- function(key, package_id) called when pin changes
 
     -- Modal state
     open = false,
@@ -71,9 +77,55 @@ function M.new(State, settings)
     -- Cache
     _grouped_cache = nil,
     _stats_cache = nil,
+    _providers_cache = nil,  -- key -> { pkg_id1, pkg_id2, ... }
   }, ResultModal)
 
   return self
+end
+
+-- Get all packages that provide a given key
+function ResultModal:_get_providers_for_key(key)
+  if self._providers_cache and self._providers_cache[key] then
+    return self._providers_cache[key]
+  end
+
+  local providers = {}
+  local packages = self.State.get_packages()
+
+  for _, pkg in ipairs(packages) do
+    if pkg.assets and pkg.assets[key] then
+      providers[#providers + 1] = {
+        id = pkg.id,
+        name = pkg.meta and pkg.meta.name or pkg.id,
+        path = pkg.assets[key].path,
+      }
+    end
+  end
+
+  -- Sort by name
+  table.sort(providers, function(a, b) return a.name < b.name end)
+
+  -- Cache it
+  self._providers_cache = self._providers_cache or {}
+  self._providers_cache[key] = providers
+
+  return providers
+end
+
+-- Set a pin for a key
+function ResultModal:_set_pin(key, package_id)
+  local pins = self.State.get_package_pins()
+  if package_id then
+    pins[key] = package_id
+  else
+    pins[key] = nil  -- Unpin
+  end
+  self.State.set_package_pins(pins)
+
+  -- Notify callback
+  if self.on_pin_changed then
+    self.on_pin_changed(key, package_id)
+  end
 end
 
 function ResultModal:show()
@@ -81,6 +133,7 @@ function ResultModal:show()
   self.overlay_pushed = false
   self.search_text = ''
   self.collapsed_groups = {}
+  self._providers_cache = nil  -- Clear providers cache
   self:_compute_cache()
 end
 
@@ -89,6 +142,14 @@ function ResultModal:hide()
   self.overlay_pushed = false
   self._grouped_cache = nil
   self._stats_cache = nil
+  self._providers_cache = nil
+end
+
+-- Refresh after pin change (re-compute from updated ImageMap)
+function ResultModal:refresh()
+  self._grouped_cache = nil
+  self._stats_cache = nil
+  self:_compute_cache()
 end
 
 function ResultModal:_compute_cache()
@@ -217,39 +278,9 @@ function ResultModal:draw_provider_bar(ctx, dl, x, y, width)
   ImGui.DrawList_AddRect(dl, x, y, x + width, y + bar_height, 0x444444FF, 2)
 end
 
-function ResultModal:draw_key_tile(ctx, dl, item, x, y)
-  local key = item.key
-  local entry = item.entry
-  local provider = entry.provider or item.provider or '(unknown)'
-  local is_pinned = entry.pinned or false
-
-  -- Background
-  local bg_color = 0x1E1E1EFF
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + TILE_WIDTH, y + TILE_HEIGHT, bg_color, 3)
-
-  -- Border (green if pinned)
-  local border_color = is_pinned and 0x4AE290FF or 0x333333FF
-  ImGui.DrawList_AddRect(dl, x, y, x + TILE_WIDTH, y + TILE_HEIGHT, border_color, 3, 0, is_pinned and 2 or 1)
-
-  -- Key name (truncated)
-  local display_name = key
-  if #display_name > 26 then
-    display_name = display_name:sub(1, 24) .. '..'
-  end
-  ImGui.DrawList_AddText(dl, x + 6, y + 6, 0xDDDDDDFF, display_name)
-
-  -- Provider badge (right side)
-  local provider_short = provider
-  if #provider_short > 12 then
-    provider_short = provider_short:sub(1, 10) .. '..'
-  end
-  local text_w = ImGui.CalcTextSize(ctx, provider_short)
-  ImGui.DrawList_AddText(dl, x + TILE_WIDTH - text_w - 8, y + 6, 0x888888FF, provider_short)
-
-  -- Pin indicator
-  if is_pinned then
-    ImGui.DrawList_AddCircleFilled(dl, x + TILE_WIDTH - 8, y + TILE_HEIGHT / 2, 4, 0x4AE290FF)
-  end
+-- Public method for renderer to access providers
+function ResultModal:get_providers_for_key(key)
+  return self:_get_providers_for_key(key)
 end
 
 function ResultModal:draw_group(ctx, group_name, group_data, color)
@@ -259,7 +290,8 @@ function ResultModal:draw_group(ctx, group_name, group_data, color)
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, Ark.Colors.WithOpacity(color or 0x444444FF, 0.3))
   ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, Ark.Colors.WithOpacity(color or 0x444444FF, 0.5))
 
-  local header_label = string.format('%s  (%d keys, %d pinned)', group_name, group_data.count, group_data.pinned)
+  -- Use ## to separate display text from stable ID (so counts can change without resetting state)
+  local header_label = string.format('%s  (%d keys, %d pinned)###group_%s', group_name, group_data.count, group_data.pinned, group_name)
   local header_open = ImGui.CollapsingHeader(ctx, header_label, not is_collapsed and ImGui.TreeNodeFlags_DefaultOpen or 0)
 
   ImGui.PopStyleColor(ctx, 2)
@@ -271,34 +303,46 @@ function ResultModal:draw_group(ctx, group_name, group_data, color)
     if #filtered == 0 then
       ImGui.TextColored(ctx, 0x666666FF, '  (no matches)')
     else
-      local dl = ImGui.GetWindowDrawList(ctx)
-      local avail_w = ImGui.GetContentRegionAvail(ctx)
-      local cols = math.max(1, math.floor(avail_w / (TILE_WIDTH + TILE_SPACING)))
+      -- Create view object for renderer (captured by closure)
+      local modal_self = self
+      local view = {
+        get_providers_for_key = function(_, key)
+          return modal_self:get_providers_for_key(key)
+        end,
+        on_provider_selected = function(key, package_id)
+          modal_self:_set_pin(key, package_id)
+        end,
+      }
 
-      for i, item in ipairs(filtered) do
-        local col = (i - 1) % cols
-        local row = math.floor((i - 1) / cols)
+      -- Build grid opts
+      local grid_opts = {
+        id = 'result_grid_' .. group_name,
+        gap = TILE_SPACING,
+        min_col_w = function() return TILE_WIDTH end,
+        fixed_tile_h = TILE_HEIGHT,
+        items = filtered,
 
-        if col == 0 then
-          local cx, cy = ImGui.GetCursorScreenPos(ctx)
-          -- Dummy for row height
-          ImGui.Dummy(ctx, avail_w, TILE_HEIGHT + TILE_SPACING)
-          ImGui.SetCursorScreenPos(ctx, cx, cy)
-        end
+        key = function(item)
+          return 'result_' .. item.key
+        end,
 
-        local x = ImGui.GetCursorScreenPos(ctx) + col * (TILE_WIDTH + TILE_SPACING)
-        local y = select(2, ImGui.GetCursorScreenPos(ctx))
+        render_item = function(render_ctx, rect, item, state)
+          ResultTile.render(render_ctx, rect, item, state, view)
+        end,
+      }
 
-        self:draw_key_tile(ctx, dl, item, x, y)
-      end
+      Ark.Grid(ctx, grid_opts)
 
-      -- Extra spacing after group
+      -- Extra spacing after grid
       ImGui.Dummy(ctx, 0, 8)
     end
   end
 end
 
 function ResultModal:draw_content(ctx)
+  -- Initialize image cache for this frame
+  ImageTooltip.begin_frame()
+
   if not self._grouped_cache then
     self:_compute_cache()
   end
@@ -316,17 +360,34 @@ function ResultModal:draw_content(ctx)
 
   ImGui.Separator(ctx)
 
-  -- Search and group-by toggle
-  ImGui.SetNextItemWidth(ctx, 200)
-  local changed, new_text = ImGui.InputTextWithHint(ctx, '##result_search', 'Filter keys...', self.search_text)
-  if changed then self.search_text = new_text end
+  -- Search input
+  local search_result = Ark.InputText(ctx, {
+    id = 'result_search',
+    text = self.search_text,
+    hint = 'Filter keys...',
+    width = 200,
+    height = 24,
+  })
+  if search_result.changed then
+    self.search_text = search_result.text
+  end
 
+  -- Group-by toggle
   ImGui.SameLine(ctx, 0, 20)
-  if ImGui.RadioButton(ctx, 'By Provider', self.group_by == 'provider') then
+  local provider_result = Ark.RadioButton(ctx, {
+    label = 'By Provider',
+    is_selected = self.group_by == 'provider',
+  })
+  if provider_result.clicked then
     self.group_by = 'provider'
   end
-  ImGui.SameLine(ctx)
-  if ImGui.RadioButton(ctx, 'By Area', self.group_by == 'area') then
+
+  ImGui.SameLine(ctx, 0, 8)
+  local area_result = Ark.RadioButton(ctx, {
+    label = 'By Area',
+    is_selected = self.group_by == 'area',
+  })
+  if area_result.clicked then
     self.group_by = 'area'
   end
 

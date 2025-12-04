@@ -287,6 +287,27 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding, is_disable
   -- Draw popup (using context_menu for consistent shadow/styling)
   local popup_changed = false
   local popup_cfg = cfg.popup
+  local options = cfg.options or {}
+
+  -- Calculate content-based popup width BEFORE opening popup
+  local max_text_width = 0
+  for _, opt in ipairs(options) do
+    local label = type(opt) == 'table' and opt.label or tostring(opt)
+    local text_w, _ = ImGui.CalcTextSize(ctx, label)
+    max_text_width = math.max(max_text_width, text_w)
+  end
+
+  -- Content-based width with configurable bounds
+  local popup_min_width = cfg.popup_min_width or 120
+  local popup_max_width = cfg.popup_max_width or 400
+  local content_padding = popup_cfg.item_padding_x * 2 + 16  -- padding + arrow space
+  local content_width = max_text_width + content_padding
+
+  -- Clamp to min/max bounds
+  local popup_width = math.max(popup_min_width, math.min(popup_max_width, content_width))
+
+  -- Calculate max label width for truncation (account for padding)
+  local max_label_width = popup_width - content_padding
 
   -- Use ContextMenu.begin for popup with shadow effect
   if ContextMenu.begin(ctx, self.id .. '_popup', {
@@ -295,24 +316,11 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding, is_disable
     rounding = popup_cfg.rounding,
     padding = popup_cfg.padding,
     border_thickness = popup_cfg.border_thickness,
-    min_width = math.max(width * 1.5, 180),
+    min_width = popup_width,
   }) then
     local popup_dl = Base.get_context(ctx):draw_list()
     self.popup_hover_index = -1
     self.footer_interacting = false
-
-    -- Calculate popup width (increased for better appearance)
-    local max_text_width = 0
-    local options = cfg.options or {}
-    for _, opt in ipairs(options) do
-      local label = type(opt) == 'table' and opt.label or tostring(opt)
-      local text_w, _ = ImGui.CalcTextSize(ctx, label)
-      max_text_width = math.max(max_text_width, text_w)
-    end
-
-    -- Use larger popup width: 1.5x button width or text-based, whichever is larger
-    local min_popup_width = math.max(width * 1.5, 180)
-    local popup_width = math.max(min_popup_width, max_text_width + popup_cfg.item_padding_x * 2 + 40)
 
     -- Draw items
     for i, opt in ipairs(options) do
@@ -377,12 +385,48 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding, is_disable
         text_x = text_x + checkbox_size + 8
       end
 
-      local text_w, text_h = ImGui.CalcTextSize(ctx, label)
+      -- Truncate label if it exceeds max width
+      local display_label = label
+      local available_width = max_label_width
+      if is_checkbox then
+        available_width = available_width - 22  -- checkbox + spacing
+      end
+
+      local text_w, text_h = ImGui.CalcTextSize(ctx, display_label)
+      if text_w > available_width then
+        -- Truncate with ellipsis
+        local ellipsis = '..'
+        local ellipsis_w = ImGui.CalcTextSize(ctx, ellipsis)
+        local target_w = available_width - ellipsis_w
+
+        -- Binary search for truncation point
+        local lo, hi = 1, #display_label
+        while lo < hi do
+          local mid = math.ceil((lo + hi) / 2)
+          local test_w = ImGui.CalcTextSize(ctx, display_label:sub(1, mid))
+          if test_w <= target_w then
+            lo = mid
+          else
+            hi = mid - 1
+          end
+        end
+        display_label = display_label:sub(1, lo) .. ellipsis
+        text_w = ImGui.CalcTextSize(ctx, display_label)
+      end
+
       local text_y = item_y + (item_h - text_h) * 0.5
 
-      ImGui.DrawList_AddText(popup_dl, text_x, text_y, item_text, label)
+      ImGui.DrawList_AddText(popup_dl, text_x, text_y, item_text, display_label)
+
+      -- Show full label tooltip if truncated
+      local was_truncated = display_label ~= label
 
       ImGui.InvisibleButton(ctx, self.id .. '_item_' .. i, item_w, item_h)
+
+      -- Tooltip for truncated items
+      if was_truncated and item_hovered then
+        ImGui.SetTooltip(ctx, label)
+      end
 
       if ImGui.IsItemClicked(ctx, 0) then
         if is_checkbox then
