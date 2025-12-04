@@ -78,6 +78,7 @@ function State:rescan()
         item_key = entry.item_key,
         loop = entry.loop,
         total_loops = entry.total_loops,
+        ancestry = entry.ancestry,  -- Preserve ancestry for nested playlist tracking
       }
     end
     self:set_sequence(sequence_copy)
@@ -157,6 +158,7 @@ function State:set_sequence(sequence)
         item_key = entry.item_key,
         loop = max(1, (entry.loop or 1) // 1),
         total_loops = max(1, (entry.total_loops or 1) // 1),
+        ancestry = entry.ancestry,  -- Preserve ancestry for nested playlist tracking
       }
       if normalized.loop > normalized.total_loops then
         normalized.loop = normalized.total_loops
@@ -443,6 +445,7 @@ function State:on_shuffle_changed(enabled)
         item_key = entry.item_key,
         loop = entry.loop,
         total_loops = entry.total_loops,
+        ancestry = entry.ancestry,
       }
     end
     self:set_sequence(current_sequence)
@@ -471,6 +474,7 @@ function State:set_shuffle_mode(mode)
         item_key = entry.item_key,
         loop = entry.loop,
         total_loops = entry.total_loops,
+        ancestry = entry.ancestry,
       }
     end
     self:set_sequence(current_sequence)

@@ -95,7 +95,7 @@ local function get_app_status(State)
           -- Add playlist name
           local active_playlist = State.get_active_playlist and State.get_active_playlist()
           if active_playlist then
-            play_parts[#play_parts + 1] = string.format("Playing '%s'', active_playlist.name or 'Untitled")
+            play_parts[#play_parts + 1] = string.format("Playing '%s'", active_playlist.name or 'Untitled')
           end
 
           play_parts[#play_parts + 1] = string.format('▶ %s', region.name)

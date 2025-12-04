@@ -154,7 +154,7 @@ function Transport:play()
   local is_resuming = self.is_paused
 
   if _is_playing(self.proj) then
-    Logger.info('TRANSPORT', "SEEK to region '%s' (RID %d) at %.2fs', region.name or '?", region.rid, region.start)
+    Logger.info('TRANSPORT', "SEEK to region '%s' (RID %d) at %.2fs", region.name or '?', region.rid, region.start)
     local region_num = region.rid
     self:_seek_to_region(region_num)
   else
@@ -165,7 +165,7 @@ function Transport:play()
       self.is_paused = false  -- Clear pause flag
     else
       -- Starting fresh - seek to region start and reset indices
-      Logger.info('TRANSPORT', "PLAY '%s' (RID %d) from %.2fs', region.name or '?", region.rid, region.start)
+      Logger.info('TRANSPORT', "PLAY '%s' (RID %d) from %.2fs", region.name or '?', region.rid, region.start)
       reaper.SetEditCurPos2(self.proj, region.start, false, false)
       reaper.OnPlayButton()
       self.state.current_idx = -1
