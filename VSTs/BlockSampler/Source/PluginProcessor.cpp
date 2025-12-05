@@ -37,7 +37,9 @@ Processor::Processor()
 {
     formatManager.registerBasicFormats();
 
-    // Cache parameter pointers and register listeners
+    // Cache parameter pointers for audio-thread access
+    // Note: We don't use parameter listeners to avoid race conditions.
+    // Parameters are read directly from atomic pointers in processBlock.
     for (int pad = 0; pad < NUM_PADS; ++pad)
     {
         padParams[pad].volume = parameters.getRawParameterValue(PadParam::id(pad, PadParam::Volume));
@@ -58,25 +60,12 @@ Processor::Processor()
         padParams[pad].sampleStart = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SampleStart));
         padParams[pad].sampleEnd = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SampleEnd));
         padParams[pad].roundRobinMode = parameters.getRawParameterValue(PadParam::id(pad, PadParam::RoundRobinMode));
-
-        for (int p = 0; p < PadParam::COUNT; ++p)
-        {
-            parameters.addParameterListener(PadParam::id(pad, static_cast<PadParam::ID>(p)), this);
-        }
     }
 }
 
 Processor::~Processor()
 {
     loadPool.removeAllJobs(true, 1000);  // Wait up to 1s for jobs to finish
-
-    for (int pad = 0; pad < NUM_PADS; ++pad)
-    {
-        for (int p = 0; p < PadParam::COUNT; ++p)
-        {
-            parameters.removeParameterListener(PadParam::id(pad, static_cast<PadParam::ID>(p)), this);
-        }
-    }
 }
 
 // =============================================================================
@@ -252,21 +241,6 @@ void Processor::updatePadParameters(int padIndex)
     pad.sampleStart = params.sampleStart->load();
     pad.sampleEnd = params.sampleEnd->load();
     pad.roundRobinMode = static_cast<int>(params.roundRobinMode->load());
-}
-
-void Processor::parameterChanged(const juce::String& parameterID, float /*newValue*/)
-{
-    // Parse pad index from ID: "p{pad}_{param}"
-    if (parameterID.startsWith("p") && parameterID.contains("_"))
-    {
-        int underscorePos = parameterID.indexOf("_");
-        int padIndex = parameterID.substring(1, underscorePos).getIntValue();
-
-        if (padIndex >= 0 && padIndex < NUM_PADS)
-        {
-            updatePadParameters(padIndex);
-        }
-    }
 }
 
 // =============================================================================

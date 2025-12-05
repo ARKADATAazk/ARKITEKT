@@ -38,7 +38,6 @@ constexpr int LOAD_QUEUE_SIZE = 64;
 // =============================================================================
 
 class Processor : public juce::AudioProcessor,
-                  public juce::AudioProcessorValueTreeState::Listener,
                   public juce::VST3ClientExtensions
 {
 public:
@@ -103,12 +102,6 @@ public:
 
     // Asynchronous (returns immediately, loads in background)
     void loadSampleToPadAsync(int padIndex, int layerIndex, const juce::String& filePath, bool roundRobin = false);
-
-    // -------------------------------------------------------------------------
-    // PARAMETER LISTENER
-    // -------------------------------------------------------------------------
-
-    void parameterChanged(const juce::String& parameterID, float newValue) override;
 
     // -------------------------------------------------------------------------
     // VST3 CLIENT EXTENSIONS (REAPER integration)
