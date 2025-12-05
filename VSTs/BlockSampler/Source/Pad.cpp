@@ -157,10 +157,16 @@ void Pad::trigger(int velocity)
     currentVelocity = velocity / 127.0f;
     isPlaying = true;
 
-    // Reset and trigger envelope
+    // Reset envelope and trigger
     updateEnvelopeParams();
     envelope.reset();
     envelope.noteOn();
+
+    // Reset filter DSP state to prevent artifacts from previous note
+    filter.reset();
+    lastFilterCutoff = -1.0f;
+    lastFilterReso = -1.0f;
+    lastFilterType = -1;
 }
 
 void Pad::noteOff()

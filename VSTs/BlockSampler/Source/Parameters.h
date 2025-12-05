@@ -35,9 +35,6 @@ constexpr int VELOCITY_LAYER_1_MIN = 32;   // Layer 1 starts at velocity 32
 constexpr int VELOCITY_LAYER_2_MIN = 64;   // Layer 2 starts at velocity 64
 constexpr int VELOCITY_LAYER_3_MIN = 96;   // Layer 3 starts at velocity 96
 
-// Async loading
-constexpr int ASYNC_LOAD_CHECK_INTERVAL_MS = 50;  // Timer interval for completed loads
-
 // =============================================================================
 // PARAMETER DEFINITIONS
 // =============================================================================
