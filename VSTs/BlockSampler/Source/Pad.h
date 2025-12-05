@@ -42,7 +42,7 @@ struct VelocityLayer
     int getCurrentNumSamples() const;
     double getCurrentSampleRate() const;
     float getCurrentNormGain() const;
-    void advanceRoundRobin();
+    void advanceRoundRobin(bool randomMode = false);
 
     // Management
     void clear();
@@ -134,6 +134,7 @@ public:
     bool normalize = false;      // Apply peak normalization
     float sampleStart = 0.0f;    // 0-1 normalized
     float sampleEnd = 1.0f;      // 0-1 normalized
+    int roundRobinMode = 0;      // 0=sequential, 1=random
 
     // -------------------------------------------------------------------------
     // PUBLIC STATE (read by PluginProcessor)

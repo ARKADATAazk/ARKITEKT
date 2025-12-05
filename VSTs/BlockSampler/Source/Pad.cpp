@@ -50,10 +50,29 @@ float VelocityLayer::getCurrentNormGain() const
     return roundRobinNormGains[roundRobinIndex % roundRobinNormGains.size()];
 }
 
-void VelocityLayer::advanceRoundRobin()
+void VelocityLayer::advanceRoundRobin(bool randomMode)
 {
     if (!roundRobinBuffers.empty())
-        roundRobinIndex = (roundRobinIndex + 1) % static_cast<int>(roundRobinBuffers.size());
+    {
+        if (randomMode)
+        {
+            // Random selection (avoid repeating same sample if possible)
+            int count = static_cast<int>(roundRobinBuffers.size());
+            if (count > 1)
+            {
+                int newIndex;
+                do {
+                    newIndex = juce::Random::getSystemRandom().nextInt(count);
+                } while (newIndex == roundRobinIndex);
+                roundRobinIndex = newIndex;
+            }
+        }
+        else
+        {
+            // Sequential cycling
+            roundRobinIndex = (roundRobinIndex + 1) % static_cast<int>(roundRobinBuffers.size());
+        }
+    }
 }
 
 void VelocityLayer::clear()
@@ -122,7 +141,7 @@ void Pad::trigger(int velocity)
     auto& layer = layers[currentLayer];
 
     // Advance round-robin before getting sample info
-    layer.advanceRoundRobin();
+    layer.advanceRoundRobin(roundRobinMode == 1);
 
     // Get current sample length (accounting for round-robin)
     int currentNumSamples = layer.getCurrentNumSamples();

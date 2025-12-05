@@ -156,6 +156,7 @@ private:
         std::atomic<float>* normalize = nullptr;
         std::atomic<float>* sampleStart = nullptr;
         std::atomic<float>* sampleEnd = nullptr;
+        std::atomic<float>* roundRobinMode = nullptr;
     };
     std::array<PadParams, NUM_PADS> padParams;
 

@@ -18,7 +18,7 @@ Headless 128-pad drum sampler VST3 for REAPER, controlled by DrumBlocks (ARKITEK
 - **Reverse playback**
 - **Multi-out** (main + 16 group stereo outputs)
 - **Headless** - DrumBlocks provides the UI
-- **2176 automatable parameters** (17 per pad × 128)
+- **2304 automatable parameters** (18 per pad × 128)
 
 ## Build
 
@@ -70,7 +70,7 @@ Source/
 
 Full MIDI range: 128 notes = 128 pads.
 
-## Parameters (17 per pad)
+## Parameters (18 per pad)
 
 | Index | Name | Range | Default |
 |-------|------|-------|---------|
@@ -91,8 +91,9 @@ Full MIDI range: 128 notes = 128 pads.
 | 14 | Normalize | bool | false |
 | 15 | Sample Start | 0-1 | 0 |
 | 16 | Sample End | 0-1 | 1 |
+| 17 | RR Mode | 0=seq, 1=rand | 0 |
 
-**Parameter index formula**: `pad_index * 17 + param_index`
+**Parameter index formula**: `pad_index * 18 + param_index`
 
 ## Output Routing
 
@@ -121,6 +122,10 @@ Bridge.loadSampleAsync(track, fx, 0, 0, "/path/to/kick.wav")
 -- Add round-robin sample (async)
 Bridge.addRoundRobin(track, fx, 0, 0, "/path/to/kick_rr1.wav")
 Bridge.addRoundRobin(track, fx, 0, 0, "/path/to/kick_rr2.wav")
+
+-- Set round-robin mode (0=sequential, 1=random)
+Bridge.setRoundRobinRandom(track, fx, 0)    -- Random selection
+Bridge.setRoundRobinSequential(track, fx, 0) -- Back to sequential
 
 -- Clear sample from pad 5, layer 1
 Bridge.clearSample(track, fx, 5, 1)
@@ -175,7 +180,7 @@ Sample paths are stored in the project state XML and reloaded on project open:
 
 - [x] 128 pads, 4 velocity layers
 - [x] Sample start/end points
-- [x] Round-robin playback
+- [x] Round-robin playback (sequential + random modes)
 - [x] Kill groups (8)
 - [x] Output groups (16)
 - [x] ADSR per pad
@@ -183,10 +188,12 @@ Sample paths are stored in the project state XML and reloaded on project open:
 - [x] Peak normalization per pad
 - [x] State save/load with sample paths
 - [x] Runtime sample loading via chunk commands
-- [x] 2176 automatable parameters
+- [x] 2304 automatable parameters
 - [x] Multi-out rendering to group buses
 
 ## TODO
 
 - [x] Async sample loading (don't block audio thread)
-- [ ] Random mode for round-robin
+- [x] Random mode for round-robin
+
+All planned features complete!

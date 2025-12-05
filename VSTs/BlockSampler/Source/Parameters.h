@@ -1,6 +1,6 @@
 // =============================================================================
 // BlockSampler/Source/Parameters.h
-// Parameter definitions and layout for 128 pads × 17 params = 2176 total
+// Parameter definitions and layout for 128 pads × 18 params = 2304 total
 // =============================================================================
 
 #pragma once
@@ -26,7 +26,7 @@ constexpr int MIDI_NOTE_OFFSET = 0;  // Note 0 = Pad 0 (full MIDI range)
 
 namespace PadParam
 {
-    // Parameter IDs per pad (17 total)
+    // Parameter IDs per pad (18 total)
     enum ID
     {
         Volume = 0,       // 0-1
@@ -46,10 +46,11 @@ namespace PadParam
         Normalize,        // bool - apply peak normalization
         SampleStart,      // 0-1 normalized
         SampleEnd,        // 0-1 normalized
-        COUNT             // = 17
+        RoundRobinMode,   // 0=sequential, 1=random
+        COUNT             // = 18
     };
 
-    // Total parameters: 17 × 128 = 2176
+    // Total parameters: 18 × 128 = 2304
     constexpr int TOTAL_PARAMS = COUNT * NUM_PADS;
 
     // Get flat index for parameter
@@ -64,7 +65,7 @@ namespace PadParam
         static const char* names[] = {
             "volume", "pan", "tune", "attack", "decay", "sustain",
             "release", "cutoff", "reso", "filtertype", "killgroup", "outgroup",
-            "oneshot", "reverse", "normalize", "start", "end"
+            "oneshot", "reverse", "normalize", "start", "end", "rrmode"
         };
         return "p" + juce::String(pad) + "_" + names[param];
     }
@@ -188,6 +189,12 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             juce::ParameterID { PadParam::id(pad, PadParam::SampleEnd), 1 },
             prefix + "End",
             0.0f, 1.0f, 1.0f));
+
+        // Round-Robin Mode (0=sequential, 1=random)
+        params.push_back(std::make_unique<juce::AudioParameterInt>(
+            juce::ParameterID { PadParam::id(pad, PadParam::RoundRobinMode), 1 },
+            prefix + "RR Mode",
+            0, 1, 0));
     }
 
     return { params.begin(), params.end() };

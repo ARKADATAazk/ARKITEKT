@@ -8,7 +8,7 @@ local M = {}
 M.NUM_PADS = 128
 M.NUM_VELOCITY_LAYERS = 4
 M.NUM_OUTPUT_GROUPS = 16
-M.PARAMS_PER_PAD = 17
+M.PARAMS_PER_PAD = 18
 
 -- Parameter indices (must match BlockSampler/Source/Parameters.h)
 M.Param = {
@@ -29,6 +29,7 @@ M.Param = {
   Normalize = 14,    -- Peak normalization
   SampleStart = 15,
   SampleEnd = 16,
+  RoundRobinMode = 17, -- 0=sequential, 1=random
 }
 
 -- ============================================================================
@@ -175,6 +176,19 @@ end
 function M.setSampleRange(track, fx, pad, start_pos, end_pos)
   M.setSampleStart(track, fx, pad, start_pos)
   M.setSampleEnd(track, fx, pad, end_pos)
+end
+
+function M.setRoundRobinMode(track, fx, pad, mode)
+  -- 0 = sequential, 1 = random
+  return M.setParam(track, fx, pad, M.Param.RoundRobinMode, mode)
+end
+
+function M.setRoundRobinSequential(track, fx, pad)
+  return M.setRoundRobinMode(track, fx, pad, 0)
+end
+
+function M.setRoundRobinRandom(track, fx, pad)
+  return M.setRoundRobinMode(track, fx, pad, 1)
 end
 
 -- ============================================================================

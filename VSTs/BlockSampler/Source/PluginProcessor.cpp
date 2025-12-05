@@ -57,6 +57,7 @@ Processor::Processor()
         padParams[pad].normalize = parameters.getRawParameterValue(PadParam::id(pad, PadParam::Normalize));
         padParams[pad].sampleStart = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SampleStart));
         padParams[pad].sampleEnd = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SampleEnd));
+        padParams[pad].roundRobinMode = parameters.getRawParameterValue(PadParam::id(pad, PadParam::RoundRobinMode));
 
         for (int p = 0; p < PadParam::COUNT; ++p)
         {
@@ -240,6 +241,7 @@ void Processor::updatePadParameters(int padIndex)
     pad.normalize = params.normalize->load() > 0.5f;
     pad.sampleStart = params.sampleStart->load();
     pad.sampleEnd = params.sampleEnd->load();
+    pad.roundRobinMode = static_cast<int>(params.roundRobinMode->load());
 }
 
 void Processor::parameterChanged(const juce::String& parameterID, float /*newValue*/)
