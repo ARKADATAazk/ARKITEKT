@@ -5,9 +5,10 @@
 namespace BlockSampler
 {
 
-constexpr int NUM_PADS = 16;
+constexpr int NUM_PADS = 128;
 constexpr int NUM_VELOCITY_LAYERS = 4;
-constexpr int MIDI_NOTE_OFFSET = 36;  // C1 = Pad 0
+constexpr int NUM_OUTPUT_GROUPS = 16;  // 16 stereo group buses
+constexpr int MIDI_NOTE_OFFSET = 0;    // Note 0 = Pad 0 (full MIDI range)
 
 // Parameter indices per pad
 namespace PadParam
@@ -24,9 +25,10 @@ namespace PadParam
         FilterCutoff,
         FilterReso,
         KillGroup,
+        OutputGroup,  // 0 = main only, 1-16 = group bus
         OneShot,      // 0 = obey note-off, 1 = one-shot
         Reverse,      // 0 = forward, 1 = reverse
-        COUNT
+        COUNT         // 13 params per pad × 128 pads = 1664 total
     };
 
     inline int index(int pad, ID param)
@@ -38,7 +40,7 @@ namespace PadParam
     {
         static const char* names[] = {
             "volume", "pan", "tune", "attack", "decay", "sustain",
-            "release", "cutoff", "reso", "killgroup", "oneshot", "reverse"
+            "release", "cutoff", "reso", "killgroup", "outgroup", "oneshot", "reverse"
         };
         return "p" + juce::String(pad) + "_" + names[param];
     }
@@ -116,6 +118,12 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             juce::ParameterID { PadParam::id(pad, PadParam::KillGroup), 1 },
             prefix + "Kill Group",
             0, 8, 0));
+
+        // Output Group (0 = main only, 1-16 = group bus)
+        params.push_back(std::make_unique<juce::AudioParameterInt>(
+            juce::ParameterID { PadParam::id(pad, PadParam::OutputGroup), 1 },
+            prefix + "Output Group",
+            0, NUM_OUTPUT_GROUPS, 0));
 
         // One-Shot mode
         params.push_back(std::make_unique<juce::AudioParameterBool>(

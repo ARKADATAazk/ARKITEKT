@@ -238,6 +238,7 @@ public:
     float filterCutoff = 20000.0f;
     float filterReso = 0.0f;
     int killGroup = 0;
+    int outputGroup = 0;  // 0 = main only, 1-16 = route to group bus
     bool oneShot = true;
     bool reverse = false;
 

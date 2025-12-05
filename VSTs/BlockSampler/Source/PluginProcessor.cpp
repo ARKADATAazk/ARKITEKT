@@ -5,25 +5,25 @@ namespace BlockSampler
 
 Processor::Processor()
     : AudioProcessor(BusesProperties()
-          // Main stereo output
+          // Main stereo output (always enabled)
           .withOutput("Main", juce::AudioChannelSet::stereo(), true)
-          // Per-pad stereo outputs (optional multi-out)
-          .withOutput("Pad 1", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 2", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 3", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 4", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 5", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 6", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 7", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 8", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 9", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 10", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 11", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 12", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 13", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 14", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 15", juce::AudioChannelSet::stereo(), false)
-          .withOutput("Pad 16", juce::AudioChannelSet::stereo(), false)),
+          // 16 group buses for routing (disabled by default, user enables as needed)
+          .withOutput("Group 1 - Kicks", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 2 - Snares", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 3 - HiHats", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 4 - Percussion", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 5", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 6", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 7", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 8", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 9", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 10", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 11", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 12", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 13", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 14", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 15", juce::AudioChannelSet::stereo(), false)
+          .withOutput("Group 16", juce::AudioChannelSet::stereo(), false)),
       parameters(*this, nullptr, "BlockSamplerParams", createParameterLayout())
 {
     // Register audio formats
@@ -42,6 +42,7 @@ Processor::Processor()
         padParams[pad].filterCutoff = parameters.getRawParameterValue(PadParam::id(pad, PadParam::FilterCutoff));
         padParams[pad].filterReso = parameters.getRawParameterValue(PadParam::id(pad, PadParam::FilterReso));
         padParams[pad].killGroup = parameters.getRawParameterValue(PadParam::id(pad, PadParam::KillGroup));
+        padParams[pad].outputGroup = parameters.getRawParameterValue(PadParam::id(pad, PadParam::OutputGroup));
         padParams[pad].oneShot = parameters.getRawParameterValue(PadParam::id(pad, PadParam::OneShot));
         padParams[pad].reverse = parameters.getRawParameterValue(PadParam::id(pad, PadParam::Reverse));
 
@@ -179,6 +180,7 @@ void Processor::updatePadParameters(int padIndex)
     pad.filterCutoff = params.filterCutoff->load();
     pad.filterReso = params.filterReso->load();
     pad.killGroup = static_cast<int>(params.killGroup->load());
+    pad.outputGroup = static_cast<int>(params.outputGroup->load());
     pad.oneShot = params.oneShot->load() > 0.5f;
     pad.reverse = params.reverse->load() > 0.5f;
 }
