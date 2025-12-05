@@ -379,7 +379,8 @@ bool Processor::isBusesLayoutSupported(const BusesLayout& layouts) const
         return false;
 
     // Group buses must be stereo or disabled
-    for (int i = 1; i < layouts.outputBuses.size(); ++i)
+    const int numBuses = static_cast<int>(layouts.outputBuses.size());
+    for (int i = 1; i < numBuses; ++i)
     {
         const auto& bus = layouts.outputBuses[i];
         if (!bus.isDisabled() && bus != juce::AudioChannelSet::stereo())
