@@ -205,8 +205,8 @@ int Pad::renderNextBlock(int numSamples)
     const float normGain = normalize ? layer.getCurrentNormGain() : 1.0f;
 
     const int numChannels = juce::jmin(2, sampleBuffer.getNumChannels());
-    if (numChannels == 0)
-        return 0;  // Corrupted sample - no audio channels
+    if (numChannels == 0 || sampleNumSamples <= 0)
+        return 0;  // Corrupted sample - no audio channels or no frames
 
     const bool isMono = (numChannels == 1);
 
