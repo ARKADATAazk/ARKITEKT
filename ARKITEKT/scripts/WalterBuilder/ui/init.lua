@@ -404,7 +404,7 @@ function GUI:handle_load_from_rtconfig(action)
   self.notification:show(msg, 'success')
 end
 
--- Draw toolbar using Button widget
+-- Draw toolbar using Ark.Button
 function GUI:draw_toolbar(ctx)
   local x, y = ImGui.GetCursorScreenPos(ctx)
   local btn_x = x
@@ -414,7 +414,7 @@ function GUI:draw_toolbar(ctx)
     local can_undo = self.controller:can_undo()
     local can_redo = self.controller:can_redo()
 
-    local undo_result = Button.Draw(ctx, {
+    local undo_result = Ark.Button(ctx, {
       id = 'toolbar_undo',
       x = btn_x,
       y = y,
@@ -430,7 +430,7 @@ function GUI:draw_toolbar(ctx)
     end
     btn_x = btn_x + 54
 
-    local redo_result = Button.Draw(ctx, {
+    local redo_result = Ark.Button(ctx, {
       id = 'toolbar_redo',
       x = btn_x,
       y = y,
@@ -459,7 +459,7 @@ function GUI:draw_toolbar(ctx)
   for _, ctx_name in ipairs(contexts) do
     local is_active = ctx_name == current
 
-    local ctx_result = Button.Draw(ctx, {
+    local ctx_result = Ark.Button(ctx, {
       id = 'ctx_' .. ctx_name,
       x = btn_x,
       y = y,
@@ -480,7 +480,7 @@ function GUI:draw_toolbar(ctx)
   btn_x = btn_x + 16
 
   -- Load Defaults button
-  local load_result = Button.Draw(ctx, {
+  local load_result = Ark.Button(ctx, {
     id = 'toolbar_load_defaults',
     x = btn_x,
     y = y,
@@ -502,7 +502,7 @@ function GUI:draw_toolbar(ctx)
   btn_x = btn_x + 108
 
   -- Clear All button
-  local clear_result = Button.Draw(ctx, {
+  local clear_result = Ark.Button(ctx, {
     id = 'toolbar_clear_all',
     x = btn_x,
     y = y,
@@ -525,7 +525,7 @@ function GUI:draw_toolbar(ctx)
   btn_x = btn_x + 88
 
   -- Reset Tracks button
-  local reset_result = Button.Draw(ctx, {
+  local reset_result = Ark.Button(ctx, {
     id = 'toolbar_reset_tracks',
     x = btn_x,
     y = y,
