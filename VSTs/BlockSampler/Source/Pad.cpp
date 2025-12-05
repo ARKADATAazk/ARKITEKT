@@ -139,6 +139,8 @@ void Pad::trigger(int velocity)
 
     // Get current sample length (accounting for round-robin)
     int currentNumSamples = layer.getCurrentNumSamples();
+    if (currentNumSamples <= 0)
+        return;  // Empty or corrupted sample
 
     // Calculate actual start/end sample positions
     int startSample = static_cast<int>(sampleStart * currentNumSamples);
