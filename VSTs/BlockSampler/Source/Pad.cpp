@@ -203,51 +203,53 @@ int Pad::renderNextBlock(int numSamples)
     const float normGain = normalize ? layer.getCurrentNormGain() : 1.0f;
 
     const int numChannels = juce::jmin(2, sampleBuffer.getNumChannels());
+    const bool isMono = (numChannels == 1);
+
+    // Cache sample read pointers outside loop (optimization)
+    const float* srcL = sampleBuffer.getReadPointer(0);
+    const float* srcR = isMono ? srcL : sampleBuffer.getReadPointer(1);
+
+    // Get write pointers for temp buffer
+    float* destL = tempBuffer.getWritePointer(0);
+    float* destR = tempBuffer.getWritePointer(1);
 
     // Calculate pitch ratio for tuning
     const double pitchRatio = std::pow(2.0, tune / 12.0) *
                               (sampleRate / currentSampleRate);
 
-    // Pre-calculate pan gains (constant power panning) - OPTIMIZATION: moved outside loop
+    // Pre-calculate pan gains (constant power panning)
     const float panAngle = (pan + 1.0f) * 0.25f * juce::MathConstants<float>::pi;
     const float panGainL = std::cos(panAngle);
     const float panGainR = std::sin(panAngle);
+
+    // Pre-calculate base gain (volume * velocity * normalization)
+    const float baseGain = volume * currentVelocity * normGain;
 
     // Clear temp buffer for this render
     tempBuffer.clear(0, numSamples);
 
     int samplesRendered = 0;
 
+    // Hoist direction-specific logic outside main loop
+    const double positionDelta = reverse ? -pitchRatio : pitchRatio;
+    const int boundaryCheck = reverse ? playStartSample : playEndSample;
+
     for (int sample = 0; sample < numSamples; ++sample)
     {
-        // Check playback boundaries
-        if (reverse)
+        // Check playback boundaries (direction-agnostic comparison)
+        bool pastBoundary = reverse ? (playPosition < boundaryCheck) : (playPosition >= boundaryCheck);
+        if (pastBoundary)
         {
-            if (playPosition < playStartSample)
+            if (oneShot)
             {
-                if (oneShot)
-                {
-                    isPlaying = false;
-                    break;
-                }
-                playPosition = playEndSample - 1;  // Loop back to end
+                isPlaying = false;
+                break;
             }
-        }
-        else
-        {
-            if (playPosition >= playEndSample)
-            {
-                if (oneShot)
-                {
-                    isPlaying = false;
-                    break;
-                }
-                playPosition = playStartSample;  // Loop back to start
-            }
+            playPosition = reverse ? (playEndSample - 1) : playStartSample;
         }
 
         // Get envelope value
-        float envValue = envelope.getNextSample();
+        const float envValue = envelope.getNextSample();
         if (!envelope.isActive())
         {
             isPlaying = false;
@@ -255,7 +257,7 @@ int Pad::renderNextBlock(int numSamples)
         }
 
         // Linear interpolation for pitch shifting
-        int pos0 = static_cast<int>(playPosition);
+        const int pos0 = static_cast<int>(playPosition);
 
         // Bounds check pos0 to prevent buffer overrun
         if (pos0 < 0 || pos0 >= sampleNumSamples)
@@ -264,61 +266,59 @@ int Pad::renderNextBlock(int numSamples)
             break;
         }
 
-        int pos1 = reverse ? (pos0 - 1) : (pos0 + 1);
-        pos1 = juce::jlimit(0, sampleNumSamples - 1, pos1);
-        float frac = std::abs(static_cast<float>(playPosition - pos0));  // abs for reverse mode
+        const int pos1 = juce::jlimit(0, sampleNumSamples - 1, reverse ? (pos0 - 1) : (pos0 + 1));
+        const float frac = static_cast<float>(std::fabs(playPosition - pos0));
 
-        // Apply volume, velocity, envelope, normalization
-        float gain = volume * currentVelocity * envValue * normGain;
+        // Combined gain with envelope
+        const float gain = baseGain * envValue;
 
-        // Handle mono and stereo samples
-        if (numChannels == 1)
+        // Interpolate and write samples (mono path optimized)
+        if (isMono)
         {
-            // Mono sample: apply pan to both channels
-            const float* src = sampleBuffer.getReadPointer(0);
-            float s0 = src[pos0];
-            float s1 = src[pos1];
-            float interpolated = s0 + frac * (s1 - s0);
-            float monoSample = interpolated * gain;
-
-            tempBuffer.addSample(0, sample, monoSample * panGainL);
-            tempBuffer.addSample(1, sample, monoSample * panGainR);
+            const float s0 = srcL[pos0];
+            const float s1 = srcL[pos1];
+            const float monoSample = (s0 + frac * (s1 - s0)) * gain;
+            destL[sample] = monoSample * panGainL;
+            destR[sample] = monoSample * panGainR;
         }
         else
         {
-            // Stereo sample
-            for (int ch = 0; ch < 2; ++ch)
-            {
-                const float* src = sampleBuffer.getReadPointer(ch);
-                float s0 = src[pos0];
-                float s1 = src[pos1];
-                float interpolated = s0 + frac * (s1 - s0);
-                float panGain = (ch == 0) ? panGainL : panGainR;
-
-                tempBuffer.addSample(ch, sample, interpolated * gain * panGain);
-            }
+            // Stereo: process both channels inline (avoid loop overhead)
+            const float sL0 = srcL[pos0], sL1 = srcL[pos1];
+            const float sR0 = srcR[pos0], sR1 = srcR[pos1];
+            destL[sample] = (sL0 + frac * (sL1 - sL0)) * gain * panGainL;
+            destR[sample] = (sR0 + frac * (sR1 - sR0)) * gain * panGainR;
         }
 
         // Advance position
-        if (reverse)
-            playPosition -= pitchRatio;
-        else
-            playPosition += pitchRatio;
-
+        playPosition += positionDelta;
         ++samplesRendered;
     }
 
     // Apply filter (LP if cutoff < 20kHz, HP if cutoff > 20Hz)
-    bool applyFilter = (filterType == 0 && filterCutoff < FILTER_LP_BYPASS_THRESHOLD) ||
-                       (filterType == 1 && filterCutoff > FILTER_HP_BYPASS_THRESHOLD);
+    const bool applyFilter = (filterType == 0 && filterCutoff < FILTER_LP_BYPASS_THRESHOLD) ||
+                             (filterType == 1 && filterCutoff > FILTER_HP_BYPASS_THRESHOLD);
 
     if (samplesRendered > 0 && applyFilter)
     {
-        filter.setType(filterType == 0
-            ? juce::dsp::StateVariableTPTFilterType::lowpass
-            : juce::dsp::StateVariableTPTFilterType::highpass);
-        filter.setCutoffFrequency(filterCutoff);
-        filter.setResonance(filterReso);
+        // Only update filter params when changed (optimization)
+        if (filterType != lastFilterType)
+        {
+            filter.setType(filterType == 0
+                ? juce::dsp::StateVariableTPTFilterType::lowpass
+                : juce::dsp::StateVariableTPTFilterType::highpass);
+            lastFilterType = filterType;
+        }
+        if (filterCutoff != lastFilterCutoff)
+        {
+            filter.setCutoffFrequency(filterCutoff);
+            lastFilterCutoff = filterCutoff;
+        }
+        if (filterReso != lastFilterReso)
+        {
+            filter.setResonance(filterReso);
+            lastFilterReso = filterReso;
+        }
 
         juce::dsp::AudioBlock<float> block(tempBuffer);
         auto subBlock = block.getSubBlock(0, static_cast<size_t>(samplesRendered));
@@ -506,9 +506,16 @@ double Pad::getSampleDuration(int layerIndex) const
 
 int Pad::selectVelocityLayer(int velocity)
 {
-    // Velocity thresholds: 0-31, 32-63, 64-95, 96-127
-    // First try to find the ideal layer for this velocity
-    int idealLayer = (velocity >= 96) ? 3 : (velocity >= 64) ? 2 : (velocity >= 32) ? 1 : 0;
+    // Select ideal layer based on velocity thresholds from Parameters.h
+    int idealLayer;
+    if (velocity >= VELOCITY_LAYER_3_MIN)
+        idealLayer = 3;
+    else if (velocity >= VELOCITY_LAYER_2_MIN)
+        idealLayer = 2;
+    else if (velocity >= VELOCITY_LAYER_1_MIN)
+        idealLayer = 1;
+    else
+        idealLayer = 0;
 
     // Try ideal layer first
     if (layers[idealLayer].isLoaded())

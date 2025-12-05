@@ -167,6 +167,11 @@ private:
     int playStartSample = 0;
     int playEndSample = 0;
 
+    // Cached filter state to avoid redundant updates
+    float lastFilterCutoff = -1.0f;
+    float lastFilterReso = -1.0f;
+    int lastFilterType = -1;
+
     // Temp buffer for per-pad filtering (avoids filtering other pads' audio)
     juce::AudioBuffer<float> tempBuffer;
 };
