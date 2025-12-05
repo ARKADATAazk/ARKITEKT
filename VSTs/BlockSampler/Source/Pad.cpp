@@ -14,64 +14,61 @@ namespace BlockSampler
 
 bool VelocityLayer::isLoaded() const
 {
-    return numSamples > 0 || !roundRobinBuffers.empty();
+    return numSamples > 0 || !roundRobinSamples.empty();
 }
 
 int VelocityLayer::getRoundRobinCount() const
 {
-    return static_cast<int>(roundRobinBuffers.size());
+    return static_cast<int>(roundRobinSamples.size());
 }
 
 const juce::AudioBuffer<float>& VelocityLayer::getCurrentBuffer() const
 {
-    if (roundRobinBuffers.empty())
+    if (roundRobinSamples.empty())
         return buffer;
-    return roundRobinBuffers[roundRobinIndex % roundRobinBuffers.size()];
+    return roundRobinSamples[roundRobinIndex % roundRobinSamples.size()].buffer;
 }
 
 int VelocityLayer::getCurrentNumSamples() const
 {
-    if (roundRobinBuffers.empty())
+    if (roundRobinSamples.empty())
         return numSamples;
-    return static_cast<int>(getCurrentBuffer().getNumSamples());
+    return getCurrentBuffer().getNumSamples();
 }
 
 double VelocityLayer::getCurrentSampleRate() const
 {
-    if (roundRobinBuffers.empty() || roundRobinSampleRates.empty())
+    if (roundRobinSamples.empty())
         return sourceSampleRate;
-    return roundRobinSampleRates[roundRobinIndex % roundRobinSampleRates.size()];
+    return roundRobinSamples[roundRobinIndex % roundRobinSamples.size()].sampleRate;
 }
 
 float VelocityLayer::getCurrentNormGain() const
 {
-    if (roundRobinBuffers.empty() || roundRobinNormGains.empty())
+    if (roundRobinSamples.empty())
         return normGain;
-    return roundRobinNormGains[roundRobinIndex % roundRobinNormGains.size()];
+    return roundRobinSamples[roundRobinIndex % roundRobinSamples.size()].normGain;
 }
 
 void VelocityLayer::advanceRoundRobin(bool randomMode)
 {
-    if (!roundRobinBuffers.empty())
+    const int count = static_cast<int>(roundRobinSamples.size());
+    if (count == 0)
+        return;
+
+    if (randomMode && count > 1)
     {
-        if (randomMode)
-        {
-            // Random selection (avoid repeating same sample if possible)
-            int count = static_cast<int>(roundRobinBuffers.size());
-            if (count > 1)
-            {
-                int newIndex;
-                do {
-                    newIndex = juce::Random::getSystemRandom().nextInt(count);
-                } while (newIndex == roundRobinIndex);
-                roundRobinIndex = newIndex;
-            }
-        }
-        else
-        {
-            // Sequential cycling
-            roundRobinIndex = (roundRobinIndex + 1) % static_cast<int>(roundRobinBuffers.size());
-        }
+        // Random selection (avoid repeating same sample)
+        int newIndex;
+        do {
+            newIndex = juce::Random::getSystemRandom().nextInt(count);
+        } while (newIndex == roundRobinIndex);
+        roundRobinIndex = newIndex;
+    }
+    else
+    {
+        // Sequential cycling
+        roundRobinIndex = (roundRobinIndex + 1) % count;
     }
 }
 
@@ -81,10 +78,7 @@ void VelocityLayer::clear()
     numSamples = 0;
     filePath.clear();
     normGain = 1.0f;
-    roundRobinBuffers.clear();
-    roundRobinSampleRates.clear();
-    roundRobinPaths.clear();
-    roundRobinNormGains.clear();
+    roundRobinSamples.clear();
     roundRobinIndex = 0;
 }
 
@@ -382,18 +376,15 @@ bool Pad::addRoundRobinSample(int layerIndex,
 
     auto& layer = layers[layerIndex];
 
-    juce::AudioBuffer<float> newBuffer;
-    newBuffer.setSize(static_cast<int>(reader->numChannels),
-                      static_cast<int>(reader->lengthInSamples));
-    reader->read(&newBuffer, 0, static_cast<int>(reader->lengthInSamples), 0, true, true);
+    RoundRobinSample sample;
+    sample.buffer.setSize(static_cast<int>(reader->numChannels),
+                          static_cast<int>(reader->lengthInSamples));
+    reader->read(&sample.buffer, 0, static_cast<int>(reader->lengthInSamples), 0, true, true);
+    sample.sampleRate = reader->sampleRate;
+    sample.path = file.getFullPathName();
+    sample.normGain = computeNormGain(sample.buffer);
 
-    float gain = computeNormGain(newBuffer);
-
-    layer.roundRobinBuffers.push_back(std::move(newBuffer));
-    layer.roundRobinSampleRates.push_back(reader->sampleRate);
-    layer.roundRobinPaths.push_back(file.getFullPathName());
-    layer.roundRobinNormGains.push_back(gain);
-
+    layer.roundRobinSamples.push_back(std::move(sample));
     return true;
 }
 
@@ -430,11 +421,13 @@ void Pad::addRoundRobinBuffer(int layerIndex,
     // Stop playback unconditionally to prevent race conditions
     stop();
 
-    auto& layer = layers[layerIndex];
-    layer.roundRobinBuffers.push_back(std::move(buffer));
-    layer.roundRobinSampleRates.push_back(sampleRate);
-    layer.roundRobinPaths.push_back(path);
-    layer.roundRobinNormGains.push_back(inNormGain);
+    RoundRobinSample sample;
+    sample.buffer = std::move(buffer);
+    sample.sampleRate = sampleRate;
+    sample.path = path;
+    sample.normGain = inNormGain;
+
+    layers[layerIndex].roundRobinSamples.push_back(std::move(sample));
 }
 
 void Pad::clearSample(int layerIndex)
@@ -454,10 +447,7 @@ void Pad::clearRoundRobin(int layerIndex)
         // Stop playback unconditionally to prevent race conditions
         stop();
 
-        layers[layerIndex].roundRobinBuffers.clear();
-        layers[layerIndex].roundRobinSampleRates.clear();
-        layers[layerIndex].roundRobinPaths.clear();
-        layers[layerIndex].roundRobinNormGains.clear();
+        layers[layerIndex].roundRobinSamples.clear();
         layers[layerIndex].roundRobinIndex = 0;
     }
 }

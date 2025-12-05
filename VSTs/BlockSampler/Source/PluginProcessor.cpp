@@ -357,67 +357,39 @@ void Processor::applyCompletedLoads()
     int start1, size1, start2, size2;
     loadFifo.prepareToRead(loadFifo.getNumReady(), start1, size1, start2, size2);
 
-    // Process first contiguous block
+    // Helper lambda to apply a single loaded sample
+    auto applyLoad = [this](LoadedSample& loaded)
+    {
+        if (loaded.padIndex >= 0 && loaded.padIndex < NUM_PADS)
+        {
+            if (loaded.isRoundRobin)
+            {
+                pads[loaded.padIndex].addRoundRobinBuffer(
+                    loaded.layerIndex,
+                    std::move(loaded.buffer),
+                    loaded.sampleRate,
+                    loaded.path,
+                    loaded.normGain);
+            }
+            else
+            {
+                pads[loaded.padIndex].setSampleBuffer(
+                    loaded.layerIndex,
+                    std::move(loaded.buffer),
+                    loaded.sampleRate,
+                    loaded.path,
+                    loaded.normGain);
+            }
+        }
+        loaded = LoadedSample{};  // Clear slot for reuse
+    };
+
+    // Process both contiguous blocks
     for (int i = 0; i < size1; ++i)
-    {
-        auto& loaded = loadQueue[start1 + i];
+        applyLoad(loadQueue[start1 + i]);
 
-        if (loaded.padIndex >= 0 && loaded.padIndex < NUM_PADS)
-        {
-            if (loaded.isRoundRobin)
-            {
-                pads[loaded.padIndex].addRoundRobinBuffer(
-                    loaded.layerIndex,
-                    std::move(loaded.buffer),
-                    loaded.sampleRate,
-                    loaded.path,
-                    loaded.normGain);
-            }
-            else
-            {
-                pads[loaded.padIndex].setSampleBuffer(
-                    loaded.layerIndex,
-                    std::move(loaded.buffer),
-                    loaded.sampleRate,
-                    loaded.path,
-                    loaded.normGain);
-            }
-        }
-
-        // Clear the slot for reuse
-        loaded = LoadedSample{};
-    }
-
-    // Process second contiguous block (wrap-around)
     for (int i = 0; i < size2; ++i)
-    {
-        auto& loaded = loadQueue[start2 + i];
-
-        if (loaded.padIndex >= 0 && loaded.padIndex < NUM_PADS)
-        {
-            if (loaded.isRoundRobin)
-            {
-                pads[loaded.padIndex].addRoundRobinBuffer(
-                    loaded.layerIndex,
-                    std::move(loaded.buffer),
-                    loaded.sampleRate,
-                    loaded.path,
-                    loaded.normGain);
-            }
-            else
-            {
-                pads[loaded.padIndex].setSampleBuffer(
-                    loaded.layerIndex,
-                    std::move(loaded.buffer),
-                    loaded.sampleRate,
-                    loaded.path,
-                    loaded.normGain);
-            }
-        }
-
-        // Clear the slot for reuse
-        loaded = LoadedSample{};
-    }
+        applyLoad(loadQueue[start2 + i]);
 
     loadFifo.finishedRead(size1 + size2);
 }

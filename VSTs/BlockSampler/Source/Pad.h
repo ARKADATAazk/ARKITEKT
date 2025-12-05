@@ -14,6 +14,18 @@ namespace BlockSampler
 {
 
 // =============================================================================
+// ROUND-ROBIN SAMPLE (consolidated for cache locality)
+// =============================================================================
+
+struct RoundRobinSample
+{
+    juce::AudioBuffer<float> buffer;
+    double sampleRate = 44100.0;
+    juce::String path;
+    float normGain = 1.0f;
+};
+
+// =============================================================================
 // VELOCITY LAYER
 // =============================================================================
 
@@ -26,11 +38,8 @@ struct VelocityLayer
     juce::String filePath;
     float normGain = 1.0f;  // Peak normalization gain (computed on load)
 
-    // Round-robin: multiple samples that cycle on each trigger
-    std::vector<juce::AudioBuffer<float>> roundRobinBuffers;
-    std::vector<double> roundRobinSampleRates;
-    std::vector<juce::String> roundRobinPaths;
-    std::vector<float> roundRobinNormGains;
+    // Round-robin samples (consolidated struct for better cache locality)
+    std::vector<RoundRobinSample> roundRobinSamples;
     int roundRobinIndex = 0;
 
     // Queries
