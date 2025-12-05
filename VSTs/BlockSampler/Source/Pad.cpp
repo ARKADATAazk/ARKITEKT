@@ -309,8 +309,8 @@ int Pad::renderNextBlock(int numSamples)
     }
 
     // Apply filter (LP if cutoff < 20kHz, HP if cutoff > 20Hz)
-    bool applyFilter = (filterType == 0 && filterCutoff < 19999.0f) ||
-                       (filterType == 1 && filterCutoff > 21.0f);
+    bool applyFilter = (filterType == 0 && filterCutoff < FILTER_LP_BYPASS_THRESHOLD) ||
+                       (filterType == 1 && filterCutoff > FILTER_HP_BYPASS_THRESHOLD);
 
     if (samplesRendered > 0 && applyFilter)
     {
@@ -340,7 +340,7 @@ static float computeNormGain(const juce::AudioBuffer<float>& buffer)
     for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
         peak = juce::jmax(peak, buffer.getMagnitude(ch, 0, buffer.getNumSamples()));
 
-    if (peak > 0.0001f)
+    if (peak > NORM_PEAK_THRESHOLD)
         return 1.0f / peak;
     return 1.0f;
 }

@@ -14,11 +14,21 @@ namespace BlockSampler
 // CONSTANTS
 // =============================================================================
 
+// Pad configuration
 constexpr int NUM_PADS = 128;
 constexpr int NUM_VELOCITY_LAYERS = 4;
 constexpr int NUM_OUTPUT_GROUPS = 16;
 constexpr int NUM_KILL_GROUPS = 8;
+
+// MIDI mapping
 constexpr int MIDI_NOTE_OFFSET = 0;  // Note 0 = Pad 0 (full MIDI range)
+
+// Audio processing thresholds
+constexpr float FILTER_CUTOFF_MAX = 20000.0f;  // Hz
+constexpr float FILTER_CUTOFF_MIN = 20.0f;     // Hz
+constexpr float FILTER_LP_BYPASS_THRESHOLD = 19999.0f;  // Skip LP filter above this
+constexpr float FILTER_HP_BYPASS_THRESHOLD = 21.0f;     // Skip HP filter below this
+constexpr float NORM_PEAK_THRESHOLD = 0.0001f;          // Min peak for normalization
 
 // =============================================================================
 // PARAMETER DEFINITIONS
