@@ -194,6 +194,13 @@ int Pad::renderNextBlock(int numSamples)
     if (!isPlaying || currentLayer < 0)
         return 0;
 
+    // Safety check: ensure tempBuffer is prepared and clamp to its capacity
+    // (some hosts may exceed the samplesPerBlock hint from prepareToPlay)
+    const int bufferCapacity = tempBuffer.getNumSamples();
+    if (bufferCapacity == 0)
+        return 0;  // prepare() not called yet
+    numSamples = juce::jmin(numSamples, bufferCapacity);
+
     auto& layer = layers[currentLayer];
     if (!layer.isLoaded())
         return 0;
