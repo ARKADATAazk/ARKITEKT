@@ -123,21 +123,22 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
             groupBuffer->clear();
     }
 
-    // Process MIDI events
+    // Process MIDI events (update parameters for triggered pads)
     for (const auto metadata : midiMessages)
     {
         handleMidiEvent(metadata.getMessage());
     }
 
-    // Update parameters from automation
-    for (int i = 0; i < NUM_PADS; ++i)
-    {
-        updatePadParameters(i);
-    }
-
     // Render each pad and route to appropriate buses
+    // Note: Parameter update moved inside loop to only update playing pads (optimization)
     for (int i = 0; i < NUM_PADS; ++i)
     {
+        if (!pads[i].isPlaying)
+            continue;
+
+        // Only update parameters for pads that are playing
+        updatePadParameters(i);
+
         int rendered = pads[i].renderNextBlock(numSamples);
         if (rendered == 0)
             continue;
@@ -175,6 +176,8 @@ void Processor::handleMidiEvent(const juce::MidiMessage& msg)
 
         if (padIndex >= 0 && padIndex < NUM_PADS)
         {
+            // Update parameters before triggering (needed since we optimized to only update playing pads)
+            updatePadParameters(padIndex);
             processKillGroups(padIndex);
             pads[padIndex].trigger(msg.getVelocity());
         }

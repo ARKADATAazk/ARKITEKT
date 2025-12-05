@@ -208,6 +208,11 @@ int Pad::renderNextBlock(int numSamples)
     const double pitchRatio = std::pow(2.0, tune / 12.0) *
                               (sampleRate / currentSampleRate);
 
+    // Pre-calculate pan gains (constant power panning) - OPTIMIZATION: moved outside loop
+    const float panAngle = (pan + 1.0f) * 0.25f * juce::MathConstants<float>::pi;
+    const float panGainL = std::cos(panAngle);
+    const float panGainR = std::sin(panAngle);
+
     // Clear temp buffer for this render
     tempBuffer.clear(0, numSamples);
 
@@ -251,6 +256,14 @@ int Pad::renderNextBlock(int numSamples)
 
         // Linear interpolation for pitch shifting
         int pos0 = static_cast<int>(playPosition);
+
+        // Bounds check pos0 to prevent buffer overrun
+        if (pos0 < 0 || pos0 >= sampleNumSamples)
+        {
+            isPlaying = false;
+            break;
+        }
+
         int pos1 = reverse ? (pos0 - 1) : (pos0 + 1);
         pos1 = juce::jlimit(0, sampleNumSamples - 1, pos1);
         float frac = static_cast<float>(playPosition - pos0);
@@ -258,21 +271,32 @@ int Pad::renderNextBlock(int numSamples)
         // Apply volume, velocity, envelope, normalization
         float gain = volume * currentVelocity * envValue * normGain;
 
-        for (int ch = 0; ch < numChannels; ++ch)
+        // Handle mono and stereo samples
+        if (numChannels == 1)
         {
-            const float* src = sampleBuffer.getReadPointer(ch);
+            // Mono sample: apply pan to both channels
+            const float* src = sampleBuffer.getReadPointer(0);
             float s0 = src[pos0];
             float s1 = src[pos1];
             float interpolated = s0 + frac * (s1 - s0);
+            float monoSample = interpolated * gain;
 
-            // Apply pan (constant power)
-            float panGain = 1.0f;
-            if (ch == 0)  // Left
-                panGain = std::cos((pan + 1.0f) * 0.25f * juce::MathConstants<float>::pi);
-            else  // Right
-                panGain = std::sin((pan + 1.0f) * 0.25f * juce::MathConstants<float>::pi);
+            tempBuffer.addSample(0, sample, monoSample * panGainL);
+            tempBuffer.addSample(1, sample, monoSample * panGainR);
+        }
+        else
+        {
+            // Stereo sample
+            for (int ch = 0; ch < 2; ++ch)
+            {
+                const float* src = sampleBuffer.getReadPointer(ch);
+                float s0 = src[pos0];
+                float s1 = src[pos1];
+                float interpolated = s0 + frac * (s1 - s0);
+                float panGain = (ch == 0) ? panGainL : panGainR;
 
-            tempBuffer.addSample(ch, sample, interpolated * gain * panGain);
+                tempBuffer.addSample(ch, sample, interpolated * gain * panGain);
+            }
         }
 
         // Advance position
@@ -377,48 +401,67 @@ void Pad::setSampleBuffer(int layerIndex,
                           juce::AudioBuffer<float>&& buffer,
                           double sampleRate,
                           const juce::String& path,
-                          float normGain)
+                          float inNormGain)
 {
     if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
         return;
+
+    // Stop playback to prevent reading during modification (thread safety)
+    if (currentLayer == layerIndex)
+        stop();
 
     auto& layer = layers[layerIndex];
     layer.buffer = std::move(buffer);
     layer.numSamples = layer.buffer.getNumSamples();
     layer.sourceSampleRate = sampleRate;
     layer.filePath = path;
-    layer.normGain = normGain;
+    layer.normGain = inNormGain;
 }
 
 void Pad::addRoundRobinBuffer(int layerIndex,
                               juce::AudioBuffer<float>&& buffer,
                               double sampleRate,
                               const juce::String& path,
-                              float normGain)
+                              float inNormGain)
 {
     if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
         return;
+
+    // Stop playback to prevent reading during modification (thread safety)
+    if (currentLayer == layerIndex)
+        stop();
 
     auto& layer = layers[layerIndex];
     layer.roundRobinBuffers.push_back(std::move(buffer));
     layer.roundRobinSampleRates.push_back(sampleRate);
     layer.roundRobinPaths.push_back(path);
-    layer.roundRobinNormGains.push_back(normGain);
+    layer.roundRobinNormGains.push_back(inNormGain);
 }
 
 void Pad::clearSample(int layerIndex)
 {
     if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+    {
+        // Stop playback to prevent reading during modification (thread safety)
+        if (currentLayer == layerIndex)
+            stop();
+
         layers[layerIndex].clear();
+    }
 }
 
 void Pad::clearRoundRobin(int layerIndex)
 {
     if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
     {
+        // Stop playback to prevent reading during modification (thread safety)
+        if (currentLayer == layerIndex)
+            stop();
+
         layers[layerIndex].roundRobinBuffers.clear();
         layers[layerIndex].roundRobinSampleRates.clear();
         layers[layerIndex].roundRobinPaths.clear();
+        layers[layerIndex].roundRobinNormGains.clear();
         layers[layerIndex].roundRobinIndex = 0;
     }
 }

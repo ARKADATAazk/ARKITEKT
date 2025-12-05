@@ -90,17 +90,18 @@ public:
                              juce::AudioFormatManager& formatManager);
 
     // Direct buffer assignment (for async loading - buffer already loaded)
+    // Note: Stops playback if modifying the currently-playing layer (thread safety)
     void setSampleBuffer(int layerIndex,
                          juce::AudioBuffer<float>&& buffer,
                          double sampleRate,
                          const juce::String& path,
-                         float normGain);
+                         float inNormGain);
 
     void addRoundRobinBuffer(int layerIndex,
                              juce::AudioBuffer<float>&& buffer,
                              double sampleRate,
                              const juce::String& path,
-                             float normGain);
+                             float inNormGain);
 
     void clearSample(int layerIndex);
     void clearRoundRobin(int layerIndex);
