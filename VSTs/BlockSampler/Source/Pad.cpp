@@ -491,6 +491,19 @@ int Pad::getRoundRobinCount(int layerIndex) const
     return 0;
 }
 
+double Pad::getSampleDuration(int layerIndex) const
+{
+    if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+    {
+        const auto& layer = layers[layerIndex];
+        if (layer.isLoaded() && layer.sourceSampleRate > 0)
+        {
+            return static_cast<double>(layer.numSamples) / layer.sourceSampleRate;
+        }
+    }
+    return 0.0;
+}
+
 // =============================================================================
 // PRIVATE HELPERS
 // =============================================================================

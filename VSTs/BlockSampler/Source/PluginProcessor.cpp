@@ -730,6 +730,29 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
         }
     }
 
+    // Pattern: P{pad}_L{layer}_DURATION (get sample duration in seconds)
+    if (name.startsWith("P") && name.contains("_L") && name.endsWith("_DURATION"))
+    {
+        int underscorePos = name.indexOf("_");
+        if (underscorePos > 1)
+        {
+            int padIndex = name.substring(1, underscorePos).getIntValue();
+
+            int lPos = name.indexOf("_L") + 2;
+            int secondUnderscorePos = name.indexOf(lPos, "_");
+            if (secondUnderscorePos > lPos)
+            {
+                int layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
+
+                if (padIndex >= 0 && padIndex < NUM_PADS &&
+                    layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+                {
+                    return juce::String(pads[padIndex].getSampleDuration(layerIndex), 3);
+                }
+            }
+        }
+    }
+
     return {};
 }
 

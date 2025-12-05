@@ -113,6 +113,7 @@ public:
     juce::String getSamplePath(int layerIndex) const;
     bool hasSample(int layerIndex) const;
     int getRoundRobinCount(int layerIndex) const;
+    double getSampleDuration(int layerIndex) const;  // Duration in seconds
 
     // -------------------------------------------------------------------------
     // PUBLIC PARAMETERS (set from PluginProcessor)

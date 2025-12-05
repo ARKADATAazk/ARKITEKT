@@ -299,6 +299,19 @@ function M.getRoundRobinCount(track, fx, pad, layer)
   return 0
 end
 
+-- Get sample duration in seconds
+function M.getSampleDuration(track, fx, pad, layer)
+  if not track or not fx or fx < 0 then return 0 end
+  layer = layer or 0
+
+  local param_name = string.format('P%d_L%d_DURATION', pad, layer)
+  local retval, value = reaper.TrackFX_GetNamedConfigParm(track, fx, param_name)
+  if retval then
+    return tonumber(value) or 0
+  end
+  return 0
+end
+
 -- Clear all samples from a pad
 function M.clearPad(track, fx, pad)
   if not track or not fx or fx < 0 then return false end
