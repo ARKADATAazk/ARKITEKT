@@ -72,7 +72,6 @@ function M.new(State, settings, opts)
     -- UI state
     search_text = '',
     group_by = 'provider',  -- 'provider' or 'area'
-    collapsed_groups = {},
 
     -- Cache
     _grouped_cache = nil,
@@ -132,7 +131,6 @@ function ResultModal:show()
   self.open = true
   self.overlay_pushed = false
   self.search_text = ''
-  self.collapsed_groups = {}
   self._providers_cache = nil  -- Clear providers cache
   self:_compute_cache()
 end
@@ -283,60 +281,42 @@ function ResultModal:get_providers_for_key(key)
   return self:_get_providers_for_key(key)
 end
 
-function ResultModal:draw_group(ctx, group_name, group_data, color)
-  local is_collapsed = self.collapsed_groups[group_name]
-
-  -- Group header
-  ImGui.PushStyleColor(ctx, ImGui.Col_Header, Ark.Colors.WithOpacity(color or 0x444444FF, 0.3))
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, Ark.Colors.WithOpacity(color or 0x444444FF, 0.5))
-
-  -- Use ## to separate display text from stable ID (so counts can change without resetting state)
-  local header_label = string.format('%s  (%d keys, %d pinned)###group_%s', group_name, group_data.count, group_data.pinned, group_name)
-  local header_open = ImGui.CollapsingHeader(ctx, header_label, not is_collapsed and ImGui.TreeNodeFlags_DefaultOpen or 0)
-
-  ImGui.PopStyleColor(ctx, 2)
-
-  self.collapsed_groups[group_name] = not header_open
-
-  if header_open then
-    local filtered = self:_filter_keys(group_data.keys)
-    if #filtered == 0 then
-      ImGui.TextColored(ctx, 0x666666FF, '  (no matches)')
-    else
-      -- Create view object for renderer (captured by closure)
-      local modal_self = self
-      local view = {
-        get_providers_for_key = function(_, key)
-          return modal_self:get_providers_for_key(key)
-        end,
-        on_provider_selected = function(key, package_id)
-          modal_self:_set_pin(key, package_id)
-        end,
-      }
-
-      -- Build grid opts
-      local grid_opts = {
-        id = 'result_grid_' .. group_name,
-        gap = TILE_SPACING,
-        min_col_w = function() return TILE_WIDTH end,
-        fixed_tile_h = TILE_HEIGHT,
-        items = filtered,
-
-        key = function(item)
-          return 'result_' .. item.key
-        end,
-
-        render_item = function(render_ctx, rect, item, state)
-          ResultTile.render(render_ctx, rect, item, state, view)
-        end,
-      }
-
-      Ark.Grid(ctx, grid_opts)
-
-      -- Extra spacing after grid
-      ImGui.Dummy(ctx, 0, 8)
-    end
+function ResultModal:draw_group_grid(ctx, group_name, group_data)
+  local filtered = self:_filter_keys(group_data.keys)
+  if #filtered == 0 then
+    ImGui.TextColored(ctx, 0x666666FF, '(no matches)')
+    return
   end
+
+  -- Create view object for renderer (captured by closure)
+  local modal_self = self
+  local view = {
+    get_providers_for_key = function(_, key)
+      return modal_self:get_providers_for_key(key)
+    end,
+    on_provider_selected = function(key, package_id)
+      modal_self:_set_pin(key, package_id)
+    end,
+  }
+
+  -- Build grid opts
+  local grid_opts = {
+    id = 'result_grid_' .. group_name,
+    gap = TILE_SPACING,
+    min_col_w = function() return TILE_WIDTH end,
+    fixed_tile_h = TILE_HEIGHT,
+    items = filtered,
+
+    key = function(item)
+      return 'result_' .. item.key
+    end,
+
+    render_item = function(render_ctx, rect, item, state)
+      ResultTile.render(render_ctx, rect, item, state, view)
+    end,
+  }
+
+  Ark.Grid(ctx, grid_opts)
 end
 
 function ResultModal:draw_content(ctx)
@@ -393,37 +373,69 @@ function ResultModal:draw_content(ctx)
 
   ImGui.Separator(ctx)
 
-  -- Scrollable content
-  if ImGui.BeginChild(ctx, 'result_list', 0, 0, ImGui.ChildFlags_None, ImGui.WindowFlags_AlwaysVerticalScrollbar) then
-    local grouped = self._grouped_cache
-    if self.group_by == 'provider' then
-      -- Sort providers by count
-      local sorted = {}
-      for name, data in pairs(grouped.by_provider) do
-        sorted[#sorted + 1] = { name = name, data = data }
-      end
-      table.sort(sorted, function(a, b) return a.data.count > b.data.count end)
+  -- Tabbed content area
+  local grouped = self._grouped_cache
 
-      for _, item in ipairs(sorted) do
-        -- Generate color from name
-        local hash = 0
-        for j = 1, #item.name do hash = hash + string.byte(item.name, j) end
-        local hue = (hash * 37) % 360
-        local color = Ark.Colors.FromHSV(hue, 0.6, 0.7)
-        self:draw_group(ctx, item.name, item.data, color)
+  -- Build sorted tab list based on group_by mode
+  local tabs = {}
+  if self.group_by == 'provider' then
+    -- Sort providers by count (descending)
+    for name, data in pairs(grouped.by_provider) do
+      tabs[#tabs + 1] = { name = name, data = data }
+    end
+    table.sort(tabs, function(a, b) return a.data.count > b.data.count end)
+  else
+    -- By area - fixed order
+    local area_order = { 'TCP', 'MCP', 'Transport', 'Toolbar', 'ENVCP', 'Meter', 'Global', 'Items', 'MIDI', 'Docker', 'FX', 'Menu', 'Other' }
+    for _, area in ipairs(area_order) do
+      local data = grouped.by_area[area]
+      if data then
+        tabs[#tabs + 1] = { name = area, data = data }
       end
-    else
-      -- By area - use AREA_COLORS
-      local area_order = { 'TCP', 'MCP', 'Transport', 'Toolbar', 'ENVCP', 'Meter', 'Global', 'Items', 'MIDI', 'Docker', 'FX', 'Menu', 'Other' }
-      for _, area in ipairs(area_order) do
-        local data = grouped.by_area[area]
-        if data then
-          self:draw_group(ctx, area, data, AREA_COLORS[area])
+    end
+  end
+
+  -- Tab bar with scrolling for many tabs
+  local tab_flags = ImGui.TabBarFlags_FittingPolicyScroll | ImGui.TabBarFlags_TabListPopupButton
+  if ImGui.BeginTabBar(ctx, 'result_tabs', tab_flags) then
+    for _, tab in ipairs(tabs) do
+      -- Generate tab color based on name
+      local color
+      if self.group_by == 'area' then
+        color = AREA_COLORS[tab.name] or 0x666666FF
+      else
+        local hash = 0
+        for j = 1, #tab.name do hash = hash + string.byte(tab.name, j) end
+        local hue = (hash * 37) % 360
+        color = Ark.Colors.FromHSV(hue, 0.6, 0.7)
+      end
+
+      -- Style the tab with group color
+      ImGui.PushStyleColor(ctx, ImGui.Col_Tab, Ark.Colors.WithOpacity(color, 0.3))
+      ImGui.PushStyleColor(ctx, ImGui.Col_TabHovered, Ark.Colors.WithOpacity(color, 0.5))
+      ImGui.PushStyleColor(ctx, ImGui.Col_TabSelected, Ark.Colors.WithOpacity(color, 0.6))
+      ImGui.PushStyleColor(ctx, ImGui.Col_TabSelectedOverline, color)
+
+      -- Tab label with count info
+      local tab_label = string.format('%s (%d)###tab_%s', tab.name, tab.data.count, tab.name)
+      if ImGui.BeginTabItem(ctx, tab_label) then
+        ImGui.PopStyleColor(ctx, 4)
+
+        -- Scrollable grid area within tab
+        if ImGui.BeginChild(ctx, 'tab_content_' .. tab.name, 0, 0, ImGui.ChildFlags_None, ImGui.WindowFlags_AlwaysVerticalScrollbar) then
+          ImGui.Dummy(ctx, 0, 4)
+          self:draw_group_grid(ctx, tab.name, tab.data)
+          ImGui.Dummy(ctx, 0, 8)
+          ImGui.EndChild(ctx)
         end
+
+        ImGui.EndTabItem(ctx)
+      else
+        ImGui.PopStyleColor(ctx, 4)
       end
     end
 
-    ImGui.EndChild(ctx)
+    ImGui.EndTabBar(ctx)
   end
 end
 

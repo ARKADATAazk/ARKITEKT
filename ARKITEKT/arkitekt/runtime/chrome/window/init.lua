@@ -54,6 +54,12 @@ function M.new(opts)
     base_flags = Constants.build_imgui_flags(ImGui, config.imgui_flags)
   end
 
+  -- Disable ImGui's .ini persistence - we use our own settings.json
+  -- This prevents ReaImGui from overriding our window geometry
+  if ImGui.WindowFlags_NoSavedSettings then
+    base_flags = base_flags | ImGui.WindowFlags_NoSavedSettings
+  end
+
   -- Chrome configuration
   local chrome = {}
   if config.chrome and Constants.CHROME[config.chrome] then
@@ -378,8 +384,8 @@ function M.new(opts)
       window_flags = window_flags | ImGui.WindowFlags_TopMost
     end
 
-    -- Begin window
-    local visible, open = ImGui.Begin(ctx, self.title .. '##main', true, window_flags)
+    -- Begin window (use ### for stable window ID - title can change without affecting ImGui's window identity)
+    local visible, open = ImGui.Begin(ctx, self.title .. '###main', true, window_flags)
     self._begun = true
 
     if visible then
