@@ -103,7 +103,16 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
 {
     juce::ScopedNoDenormals noDenormals;
 
+    const int numSamples = buffer.getNumSamples();
+
+    // Clear all output buses
     buffer.clear();
+    for (int bus = 1; bus <= NUM_OUTPUT_GROUPS; ++bus)
+    {
+        auto* groupBuffer = getBusBuffer(buffer, false, bus);
+        if (groupBuffer)
+            groupBuffer->clear();
+    }
 
     // Process MIDI events
     for (const auto metadata : midiMessages)
@@ -117,11 +126,30 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
         updatePadParameters(i);
     }
 
-    // Render all pads to main output
-    // TODO: Route to group buses based on outputGroup param
+    // Render each pad and route to appropriate buses
     for (int i = 0; i < NUM_PADS; ++i)
     {
-        pads[i].renderNextBlock(buffer, 0, buffer.getNumSamples());
+        int rendered = pads[i].renderNextBlock(numSamples);
+        if (rendered == 0)
+            continue;
+
+        const auto& padOutput = pads[i].getOutputBuffer();
+
+        // Always add to main output (bus 0)
+        for (int ch = 0; ch < 2; ++ch)
+            buffer.addFrom(ch, 0, padOutput, ch, 0, rendered);
+
+        // Route to group bus if assigned (outputGroup 1-16 → bus 1-16)
+        int group = pads[i].outputGroup;
+        if (group > 0 && group <= NUM_OUTPUT_GROUPS)
+        {
+            auto* groupBuffer = getBusBuffer(buffer, false, group);
+            if (groupBuffer && groupBuffer->getNumChannels() >= 2)
+            {
+                for (int ch = 0; ch < 2; ++ch)
+                    groupBuffer->addFrom(ch, 0, padOutput, ch, 0, rendered);
+            }
+        }
     }
 }
 

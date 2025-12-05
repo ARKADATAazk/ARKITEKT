@@ -67,9 +67,11 @@ public:
     // AUDIO PROCESSING
     // -------------------------------------------------------------------------
 
-    void renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
-                         int startSample,
-                         int numSamples);
+    // Renders to internal buffer, returns samples rendered (0 if not playing)
+    int renderNextBlock(int numSamples);
+
+    // Get rendered audio (valid after renderNextBlock)
+    const juce::AudioBuffer<float>& getOutputBuffer() const { return tempBuffer; }
 
     // -------------------------------------------------------------------------
     // SAMPLE MANAGEMENT

@@ -159,42 +159,30 @@ void Pad::stop()
 // AUDIO PROCESSING
 // =============================================================================
 
-void Pad::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
-                          int startSample,
-                          int numSamples)
+int Pad::renderNextBlock(int numSamples)
 {
     if (!isPlaying || currentLayer < 0)
-        return;
+        return 0;
 
     auto& layer = layers[currentLayer];
     if (!layer.isLoaded())
-        return;
+        return 0;
 
     // Get current buffer (accounting for round-robin)
     const auto& sampleBuffer = layer.getCurrentBuffer();
     const int sampleNumSamples = layer.getCurrentNumSamples();
     const double sampleRate = layer.getCurrentSampleRate();
 
-    const int numChannels = juce::jmin(outputBuffer.getNumChannels(),
-                                        sampleBuffer.getNumChannels());
+    const int numChannels = juce::jmin(2, sampleBuffer.getNumChannels());
 
     // Calculate pitch ratio for tuning
     const double pitchRatio = std::pow(2.0, tune / 12.0) *
                               (sampleRate / currentSampleRate);
 
-    // Determine if we need per-pad filtering
-    const bool needsFilter = filterCutoff < 19999.0f;
+    // Clear temp buffer for this render
+    tempBuffer.clear(0, numSamples);
 
-    // If filtering, render to temp buffer first; otherwise render directly to output
-    juce::AudioBuffer<float>& renderTarget = needsFilter ? tempBuffer : outputBuffer;
-    const int renderOffset = needsFilter ? 0 : startSample;
-
-    if (needsFilter)
-    {
-        // Clear only the portion we'll use
-        for (int ch = 0; ch < numChannels; ++ch)
-            renderTarget.clear(ch, 0, numSamples);
-    }
+    int samplesRendered = 0;
 
     for (int sample = 0; sample < numSamples; ++sample)
     {
@@ -206,20 +194,7 @@ void Pad::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
                 if (oneShot)
                 {
                     isPlaying = false;
-                    // If we rendered to temp, add what we have so far
-                    if (needsFilter && sample > 0)
-                    {
-                        filter.setCutoffFrequency(filterCutoff);
-                        filter.setResonance(filterReso);
-                        juce::dsp::AudioBlock<float> block(tempBuffer);
-                        auto subBlock = block.getSubBlock(0, static_cast<size_t>(sample));
-                        juce::dsp::ProcessContextReplacing<float> context(subBlock);
-                        filter.process(context);
-
-                        for (int ch = 0; ch < numChannels; ++ch)
-                            outputBuffer.addFrom(ch, startSample, tempBuffer, ch, 0, sample);
-                    }
-                    return;
+                    break;
                 }
                 playPosition = playEndSample - 1;  // Loop back to end
             }
@@ -231,20 +206,7 @@ void Pad::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
                 if (oneShot)
                 {
                     isPlaying = false;
-                    // If we rendered to temp, add what we have so far
-                    if (needsFilter && sample > 0)
-                    {
-                        filter.setCutoffFrequency(filterCutoff);
-                        filter.setResonance(filterReso);
-                        juce::dsp::AudioBlock<float> block(tempBuffer);
-                        auto subBlock = block.getSubBlock(0, static_cast<size_t>(sample));
-                        juce::dsp::ProcessContextReplacing<float> context(subBlock);
-                        filter.process(context);
-
-                        for (int ch = 0; ch < numChannels; ++ch)
-                            outputBuffer.addFrom(ch, startSample, tempBuffer, ch, 0, sample);
-                    }
-                    return;
+                    break;
                 }
                 playPosition = playStartSample;  // Loop back to start
             }
@@ -255,20 +217,7 @@ void Pad::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
         if (!envelope.isActive())
         {
             isPlaying = false;
-            // If we rendered to temp, add what we have so far
-            if (needsFilter && sample > 0)
-            {
-                filter.setCutoffFrequency(filterCutoff);
-                filter.setResonance(filterReso);
-                juce::dsp::AudioBlock<float> block(tempBuffer);
-                auto subBlock = block.getSubBlock(0, static_cast<size_t>(sample));
-                juce::dsp::ProcessContextReplacing<float> context(subBlock);
-                filter.process(context);
-
-                for (int ch = 0; ch < numChannels; ++ch)
-                    outputBuffer.addFrom(ch, startSample, tempBuffer, ch, 0, sample);
-            }
-            return;
+            break;
         }
 
         // Linear interpolation for pitch shifting
@@ -294,7 +243,7 @@ void Pad::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
             else  // Right
                 panGain = std::sin((pan + 1.0f) * 0.25f * juce::MathConstants<float>::pi);
 
-            renderTarget.addSample(ch, renderOffset + sample, interpolated * gain * panGain);
+            tempBuffer.addSample(ch, sample, interpolated * gain * panGain);
         }
 
         // Advance position
@@ -302,23 +251,23 @@ void Pad::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
             playPosition -= pitchRatio;
         else
             playPosition += pitchRatio;
+
+        ++samplesRendered;
     }
 
-    // Apply filter to temp buffer and add to output
-    if (needsFilter)
+    // Apply lowpass filter if not wide open
+    if (samplesRendered > 0 && filterCutoff < 19999.0f)
     {
         filter.setCutoffFrequency(filterCutoff);
         filter.setResonance(filterReso);
 
         juce::dsp::AudioBlock<float> block(tempBuffer);
-        auto subBlock = block.getSubBlock(0, static_cast<size_t>(numSamples));
+        auto subBlock = block.getSubBlock(0, static_cast<size_t>(samplesRendered));
         juce::dsp::ProcessContextReplacing<float> context(subBlock);
         filter.process(context);
-
-        // Add filtered result to output
-        for (int ch = 0; ch < numChannels; ++ch)
-            outputBuffer.addFrom(ch, startSample, tempBuffer, ch, 0, numSamples);
     }
+
+    return samplesRendered;
 }
 
 // =============================================================================
