@@ -15,11 +15,44 @@ struct VelocityLayer
     double sourceSampleRate = 44100.0;
     juce::String filePath;
 
-    // Round-robin support
+    // Round-robin support: multiple samples that cycle on each trigger
     std::vector<juce::AudioBuffer<float>> roundRobinBuffers;
+    std::vector<double> roundRobinSampleRates;
+    std::vector<juce::String> roundRobinPaths;
     int roundRobinIndex = 0;
 
-    bool isLoaded() const { return numSamples > 0; }
+    bool isLoaded() const { return numSamples > 0 || !roundRobinBuffers.empty(); }
+
+    int getRoundRobinCount() const { return static_cast<int>(roundRobinBuffers.size()); }
+
+    // Get current buffer (main or round-robin)
+    const juce::AudioBuffer<float>& getCurrentBuffer() const
+    {
+        if (roundRobinBuffers.empty())
+            return buffer;
+        return roundRobinBuffers[roundRobinIndex % roundRobinBuffers.size()];
+    }
+
+    int getCurrentNumSamples() const
+    {
+        if (roundRobinBuffers.empty())
+            return numSamples;
+        return static_cast<int>(getCurrentBuffer().getNumSamples());
+    }
+
+    double getCurrentSampleRate() const
+    {
+        if (roundRobinBuffers.empty() || roundRobinSampleRates.empty())
+            return sourceSampleRate;
+        return roundRobinSampleRates[roundRobinIndex % roundRobinSampleRates.size()];
+    }
+
+    // Advance to next round-robin sample (call on trigger)
+    void advanceRoundRobin()
+    {
+        if (!roundRobinBuffers.empty())
+            roundRobinIndex = (roundRobinIndex + 1) % static_cast<int>(roundRobinBuffers.size());
+    }
 
     void clear()
     {
@@ -27,6 +60,8 @@ struct VelocityLayer
         numSamples = 0;
         filePath.clear();
         roundRobinBuffers.clear();
+        roundRobinSampleRates.clear();
+        roundRobinPaths.clear();
         roundRobinIndex = 0;
     }
 };
@@ -79,8 +114,28 @@ public:
         if (currentLayer < 0)
             return;  // No samples loaded
 
+        auto& layer = layers[currentLayer];
+
+        // Advance round-robin before getting sample info
+        layer.advanceRoundRobin();
+
+        // Get current sample length (accounting for round-robin)
+        int currentNumSamples = layer.getCurrentNumSamples();
+
+        // Calculate actual start/end sample positions
+        int startSample = static_cast<int>(sampleStart * currentNumSamples);
+        int endSample = static_cast<int>(sampleEnd * currentNumSamples);
+
+        // Clamp to valid range
+        startSample = juce::jlimit(0, currentNumSamples - 1, startSample);
+        endSample = juce::jlimit(startSample + 1, currentNumSamples, endSample);
+
+        // Store for playback
+        playStartSample = startSample;
+        playEndSample = endSample;
+
         // Reset playback position
-        playPosition = reverse ? (layers[currentLayer].numSamples - 1) : 0;
+        playPosition = reverse ? (endSample - 1) : startSample;
         currentVelocity = velocity / 127.0f;
         isPlaying = true;
 
@@ -113,36 +168,41 @@ public:
         if (!layer.isLoaded())
             return;
 
-        const int numChannels = juce::jmin(outputBuffer.getNumChannels(), layer.buffer.getNumChannels());
+        // Get current buffer (accounting for round-robin)
+        const auto& sampleBuffer = layer.getCurrentBuffer();
+        const int sampleNumSamples = layer.getCurrentNumSamples();
+        const double sampleRate = layer.getCurrentSampleRate();
+
+        const int numChannels = juce::jmin(outputBuffer.getNumChannels(), sampleBuffer.getNumChannels());
 
         // Calculate pitch ratio
-        const double pitchRatio = std::pow(2.0, tune / 12.0) * (layer.sourceSampleRate / currentSampleRate);
+        const double pitchRatio = std::pow(2.0, tune / 12.0) * (sampleRate / currentSampleRate);
 
         for (int sample = 0; sample < numSamples; ++sample)
         {
-            // Check if we've reached the end
+            // Check if we've reached the boundary (using start/end points)
             if (reverse)
             {
-                if (playPosition < 0)
+                if (playPosition < playStartSample)
                 {
                     if (oneShot)
                     {
                         isPlaying = false;
                         return;
                     }
-                    playPosition = layer.numSamples - 1;
+                    playPosition = playEndSample - 1;  // Loop back to end
                 }
             }
             else
             {
-                if (playPosition >= layer.numSamples)
+                if (playPosition >= playEndSample)
                 {
                     if (oneShot)
                     {
                         isPlaying = false;
                         return;
                     }
-                    playPosition = 0;
+                    playPosition = playStartSample;  // Loop back to start
                 }
             }
 
@@ -157,7 +217,7 @@ public:
             // Linear interpolation for pitch shifting
             int pos0 = static_cast<int>(playPosition);
             int pos1 = reverse ? (pos0 - 1) : (pos0 + 1);
-            pos1 = juce::jlimit(0, layer.numSamples - 1, pos1);
+            pos1 = juce::jlimit(0, sampleNumSamples - 1, pos1);
             float frac = static_cast<float>(playPosition - pos0);
 
             // Apply volume, velocity, envelope
@@ -165,7 +225,7 @@ public:
 
             for (int ch = 0; ch < numChannels; ++ch)
             {
-                const float* src = layer.buffer.getReadPointer(ch);
+                const float* src = sampleBuffer.getReadPointer(ch);
                 float s0 = src[pos0];
                 float s1 = src[pos1];
                 float interpolated = s0 + frac * (s1 - s0);
@@ -221,6 +281,50 @@ public:
         return true;
     }
 
+    // Add a round-robin sample to a layer (cycles through on each trigger)
+    bool addRoundRobinSample(int layerIndex, const juce::File& file, juce::AudioFormatManager& formatManager)
+    {
+        if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
+            return false;
+
+        std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(file));
+        if (!reader)
+            return false;
+
+        auto& layer = layers[layerIndex];
+
+        // Add to round-robin buffers
+        juce::AudioBuffer<float> newBuffer;
+        newBuffer.setSize(static_cast<int>(reader->numChannels),
+                          static_cast<int>(reader->lengthInSamples));
+        reader->read(&newBuffer, 0, static_cast<int>(reader->lengthInSamples), 0, true, true);
+
+        layer.roundRobinBuffers.push_back(std::move(newBuffer));
+        layer.roundRobinSampleRates.push_back(reader->sampleRate);
+        layer.roundRobinPaths.push_back(file.getFullPathName());
+
+        return true;
+    }
+
+    // Clear round-robin samples from a layer (keeps main sample)
+    void clearRoundRobin(int layerIndex)
+    {
+        if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+        {
+            layers[layerIndex].roundRobinBuffers.clear();
+            layers[layerIndex].roundRobinSampleRates.clear();
+            layers[layerIndex].roundRobinPaths.clear();
+            layers[layerIndex].roundRobinIndex = 0;
+        }
+    }
+
+    int getRoundRobinCount(int layerIndex) const
+    {
+        if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+            return layers[layerIndex].getRoundRobinCount();
+        return 0;
+    }
+
     void clearSample(int layerIndex)
     {
         if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
@@ -255,12 +359,16 @@ public:
     int outputGroup = 0;  // 0 = main only, 1-16 = route to group bus
     bool oneShot = true;
     bool reverse = false;
+    float sampleStart = 0.0f;  // 0-1 normalized
+    float sampleEnd = 1.0f;    // 0-1 normalized
 
     // State
     bool isPlaying = false;
     int currentLayer = -1;
 
 private:
+    int playStartSample = 0;
+    int playEndSample = 0;
     int selectVelocityLayer(int velocity)
     {
         // Default thresholds: 0-31, 32-63, 64-95, 96-127

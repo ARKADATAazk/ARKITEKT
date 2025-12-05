@@ -51,12 +51,18 @@
 - [x] 16 group stereo buses
 - [x] Output group param per pad
 
-### 1.4 TODO: Sample Loading
-- [ ] Named config param handler (`P{pad}_L{layer}_SAMPLE`)
-- [ ] State save/restore (sample paths in XML)
+### 1.4 Sample Loading ✅ DONE
+- [x] Named config param handler (`P{pad}_L{layer}_SAMPLE`)
+- [x] State save/restore (sample paths in XML)
+- [x] Chunk-based runtime sample loading via Commands node
 - [ ] Async sample loading (don't block audio thread)
 
-### 1.5 TODO: Build & Test
+### 1.5 Sample Playback ✅ DONE
+- [x] Sample start/end points (automatable, 0-1 normalized)
+- [x] Round-robin playback (multiple samples per layer, cycles on trigger)
+- [x] 15 params × 128 pads = 1920 automatable parameters
+
+### 1.6 TODO: Build & Test
 - [ ] Build on Windows (VST3)
 - [ ] Build on macOS (VST3 + AU)
 - [ ] Test in REAPER
@@ -198,9 +204,9 @@ DrumBlocks auto-creates:
 - [ ] Adjust velocity thresholds
 - [ ] Visual velocity range editor
 
-### 3.3 Round-Robin
-- [ ] Multiple samples per layer
-- [ ] Cycle through on each trigger
+### 3.3 Round-Robin ✅ DONE
+- [x] Multiple samples per layer
+- [x] Cycle through on each trigger
 - [ ] Random mode option
 
 ### 3.4 Sample Analysis

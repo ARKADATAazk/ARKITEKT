@@ -8,7 +8,7 @@ local M = {}
 M.NUM_PADS = 128
 M.NUM_VELOCITY_LAYERS = 4
 M.NUM_OUTPUT_GROUPS = 16
-M.PARAMS_PER_PAD = 13
+M.PARAMS_PER_PAD = 15
 
 -- Parameter indices (must match BlockSampler/Source/Parameters.h)
 M.Param = {
@@ -25,6 +25,8 @@ M.Param = {
   OutputGroup = 10,
   OneShot = 11,
   Reverse = 12,
+  SampleStart = 13,
+  SampleEnd = 14,
 }
 
 -- ============================================================================
@@ -138,6 +140,21 @@ end
 
 function M.setReverse(track, fx, pad, enabled)
   return M.setParam(track, fx, pad, M.Param.Reverse, enabled and 1 or 0)
+end
+
+function M.setSampleStart(track, fx, pad, normalized)
+  -- Start is 0-1 normalized position
+  return M.setParam(track, fx, pad, M.Param.SampleStart, math.min(1, math.max(0, normalized)))
+end
+
+function M.setSampleEnd(track, fx, pad, normalized)
+  -- End is 0-1 normalized position
+  return M.setParam(track, fx, pad, M.Param.SampleEnd, math.min(1, math.max(0, normalized)))
+end
+
+function M.setSampleRange(track, fx, pad, start_pos, end_pos)
+  M.setSampleStart(track, fx, pad, start_pos)
+  M.setSampleEnd(track, fx, pad, end_pos)
 end
 
 -- ============================================================================

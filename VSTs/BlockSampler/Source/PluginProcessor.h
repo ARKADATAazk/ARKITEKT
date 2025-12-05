@@ -86,6 +86,8 @@ private:
         std::atomic<float>* outputGroup = nullptr;
         std::atomic<float>* oneShot = nullptr;
         std::atomic<float>* reverse = nullptr;
+        std::atomic<float>* sampleStart = nullptr;
+        std::atomic<float>* sampleEnd = nullptr;
     };
     std::array<PadParams, NUM_PADS> padParams;
 

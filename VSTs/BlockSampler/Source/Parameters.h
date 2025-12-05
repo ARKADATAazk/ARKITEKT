@@ -28,7 +28,9 @@ namespace PadParam
         OutputGroup,  // 0 = main only, 1-16 = group bus
         OneShot,      // 0 = obey note-off, 1 = one-shot
         Reverse,      // 0 = forward, 1 = reverse
-        COUNT         // 13 params per pad × 128 pads = 1664 total
+        SampleStart,  // 0-1 normalized position
+        SampleEnd,    // 0-1 normalized position
+        COUNT         // 15 params per pad × 128 pads = 1920 total
     };
 
     inline int index(int pad, ID param)
@@ -40,7 +42,8 @@ namespace PadParam
     {
         static const char* names[] = {
             "volume", "pan", "tune", "attack", "decay", "sustain",
-            "release", "cutoff", "reso", "killgroup", "outgroup", "oneshot", "reverse"
+            "release", "cutoff", "reso", "killgroup", "outgroup", "oneshot", "reverse",
+            "start", "end"
         };
         return "p" + juce::String(pad) + "_" + names[param];
     }
@@ -136,6 +139,18 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             juce::ParameterID { PadParam::id(pad, PadParam::Reverse), 1 },
             prefix + "Reverse",
             false));
+
+        // Sample Start (0-1 normalized)
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID { PadParam::id(pad, PadParam::SampleStart), 1 },
+            prefix + "Start",
+            0.0f, 1.0f, 0.0f));
+
+        // Sample End (0-1 normalized)
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID { PadParam::id(pad, PadParam::SampleEnd), 1 },
+            prefix + "End",
+            0.0f, 1.0f, 1.0f));
     }
 
     return { params.begin(), params.end() };

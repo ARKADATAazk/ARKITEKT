@@ -45,6 +45,8 @@ Processor::Processor()
         padParams[pad].outputGroup = parameters.getRawParameterValue(PadParam::id(pad, PadParam::OutputGroup));
         padParams[pad].oneShot = parameters.getRawParameterValue(PadParam::id(pad, PadParam::OneShot));
         padParams[pad].reverse = parameters.getRawParameterValue(PadParam::id(pad, PadParam::Reverse));
+        padParams[pad].sampleStart = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SampleStart));
+        padParams[pad].sampleEnd = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SampleEnd));
 
         // Add listener for all params
         for (int p = 0; p < PadParam::COUNT; ++p)
@@ -183,6 +185,8 @@ void Processor::updatePadParameters(int padIndex)
     pad.outputGroup = static_cast<int>(params.outputGroup->load());
     pad.oneShot = params.oneShot->load() > 0.5f;
     pad.reverse = params.reverse->load() > 0.5f;
+    pad.sampleStart = params.sampleStart->load();
+    pad.sampleEnd = params.sampleEnd->load();
 }
 
 void Processor::parameterChanged(const juce::String& parameterID, float /*newValue*/)
