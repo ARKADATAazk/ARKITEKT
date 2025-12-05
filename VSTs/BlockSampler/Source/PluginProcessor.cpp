@@ -1,13 +1,22 @@
+// =============================================================================
+// BlockSampler/Source/PluginProcessor.cpp
+// Main VST3 processor implementation
+// =============================================================================
+
 #include "PluginProcessor.h"
 
 namespace BlockSampler
 {
 
+// =============================================================================
+// CONSTRUCTOR / DESTRUCTOR
+// =============================================================================
+
 Processor::Processor()
     : AudioProcessor(BusesProperties()
           // Main stereo output (always enabled)
           .withOutput("Main", juce::AudioChannelSet::stereo(), true)
-          // 16 group buses for routing (disabled by default, user enables as needed)
+          // 16 group buses for routing (disabled by default)
           .withOutput("Group 1 - Kicks", juce::AudioChannelSet::stereo(), false)
           .withOutput("Group 2 - Snares", juce::AudioChannelSet::stereo(), false)
           .withOutput("Group 3 - HiHats", juce::AudioChannelSet::stereo(), false)
@@ -26,10 +35,9 @@ Processor::Processor()
           .withOutput("Group 16", juce::AudioChannelSet::stereo(), false)),
       parameters(*this, nullptr, "BlockSamplerParams", createParameterLayout())
 {
-    // Register audio formats
     formatManager.registerBasicFormats();
 
-    // Cache parameter pointers and add listeners
+    // Cache parameter pointers and register listeners
     for (int pad = 0; pad < NUM_PADS; ++pad)
     {
         padParams[pad].volume = parameters.getRawParameterValue(PadParam::id(pad, PadParam::Volume));
@@ -48,7 +56,6 @@ Processor::Processor()
         padParams[pad].sampleStart = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SampleStart));
         padParams[pad].sampleEnd = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SampleEnd));
 
-        // Add listener for all params
         for (int p = 0; p < PadParam::COUNT; ++p)
         {
             parameters.addParameterListener(PadParam::id(pad, static_cast<PadParam::ID>(p)), this);
@@ -58,7 +65,6 @@ Processor::Processor()
 
 Processor::~Processor()
 {
-    // Remove parameter listeners
     for (int pad = 0; pad < NUM_PADS; ++pad)
     {
         for (int p = 0; p < PadParam::COUNT; ++p)
@@ -68,6 +74,10 @@ Processor::~Processor()
     }
 }
 
+// =============================================================================
+// AUDIO PROCESSING
+// =============================================================================
+
 void Processor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     for (auto& pad : pads)
@@ -75,7 +85,6 @@ void Processor::prepareToPlay(double sampleRate, int samplesPerBlock)
         pad.prepare(sampleRate, samplesPerBlock);
     }
 
-    // Initial parameter sync
     for (int i = 0; i < NUM_PADS; ++i)
     {
         updatePadParameters(i);
@@ -94,10 +103,9 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
 {
     juce::ScopedNoDenormals noDenormals;
 
-    // Clear output buffer
     buffer.clear();
 
-    // Process MIDI
+    // Process MIDI events
     for (const auto metadata : midiMessages)
     {
         handleMidiEvent(metadata.getMessage());
@@ -109,13 +117,17 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
         updatePadParameters(i);
     }
 
-    // Render each pad to main output
-    // TODO: Add multi-out support (render to separate buses)
+    // Render all pads to main output
+    // TODO: Route to group buses based on outputGroup param
     for (int i = 0; i < NUM_PADS; ++i)
     {
         pads[i].renderNextBlock(buffer, 0, buffer.getNumSamples());
     }
 }
+
+// =============================================================================
+// MIDI HANDLING
+// =============================================================================
 
 void Processor::handleMidiEvent(const juce::MidiMessage& msg)
 {
@@ -126,10 +138,7 @@ void Processor::handleMidiEvent(const juce::MidiMessage& msg)
 
         if (padIndex >= 0 && padIndex < NUM_PADS)
         {
-            // Process kill groups first
             processKillGroups(padIndex);
-
-            // Trigger the pad
             pads[padIndex].trigger(msg.getVelocity());
         }
     }
@@ -156,16 +165,22 @@ void Processor::processKillGroups(int triggeredPad)
 {
     int killGroup = pads[triggeredPad].killGroup;
     if (killGroup == 0)
-        return;  // No kill group
+        return;
 
     for (int i = 0; i < NUM_PADS; ++i)
     {
-        if (i != triggeredPad && pads[i].killGroup == killGroup && pads[i].isPlaying)
+        if (i != triggeredPad &&
+            pads[i].killGroup == killGroup &&
+            pads[i].isPlaying)
         {
             pads[i].stop();
         }
     }
 }
+
+// =============================================================================
+// PARAMETER HANDLING
+// =============================================================================
 
 void Processor::updatePadParameters(int padIndex)
 {
@@ -191,7 +206,7 @@ void Processor::updatePadParameters(int padIndex)
 
 void Processor::parameterChanged(const juce::String& parameterID, float /*newValue*/)
 {
-    // Extract pad index from parameter ID (e.g., "p5_volume" -> 5)
+    // Parse pad index from ID: "p{pad}_{param}"
     if (parameterID.startsWith("p") && parameterID.contains("_"))
     {
         int underscorePos = parameterID.indexOf("_");
@@ -203,6 +218,10 @@ void Processor::parameterChanged(const juce::String& parameterID, float /*newVal
         }
     }
 }
+
+// =============================================================================
+// SAMPLE MANAGEMENT
+// =============================================================================
 
 bool Processor::loadSampleToPad(int padIndex, int layerIndex, const juce::String& filePath)
 {
@@ -224,13 +243,17 @@ void Processor::clearPadSample(int padIndex, int layerIndex)
     }
 }
 
+// =============================================================================
+// BUS LAYOUT
+// =============================================================================
+
 bool Processor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
     // Main output must be stereo
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
-    // All other buses (per-pad outputs) must be stereo or disabled
+    // Group buses must be stereo or disabled
     for (int i = 1; i < layouts.outputBuses.size(); ++i)
     {
         const auto& bus = layouts.outputBuses[i];
@@ -241,9 +264,12 @@ bool Processor::isBusesLayoutSupported(const BusesLayout& layouts) const
     return true;
 }
 
+// =============================================================================
+// STATE PERSISTENCE
+// =============================================================================
+
 void Processor::getStateInformation(juce::MemoryBlock& destData)
 {
-    // Save parameters
     auto state = parameters.copyState();
 
     // Add sample paths as child nodes
@@ -276,8 +302,7 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
     {
         auto state = juce::ValueTree::fromXml(*xml);
 
-        // Process runtime commands BEFORE replacing state
-        // These are transient and should not persist
+        // Process runtime commands (transient, don't persist)
         auto commandsNode = state.getChildWithName("Commands");
         if (commandsNode.isValid())
         {
@@ -317,13 +342,12 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
                 }
             }
 
-            // Remove commands from state (they're transient)
             state.removeChild(commandsNode, nullptr);
         }
 
         parameters.replaceState(state);
 
-        // Reload samples from paths stored in state
+        // Reload samples from stored paths
         auto samplesNode = state.getChildWithName("Samples");
         if (samplesNode.isValid())
         {
@@ -343,22 +367,20 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
     }
 }
 
-// ============================================================================
-// NAMED CONFIG PARAMS (for REAPER/Lua integration)
-// ============================================================================
+// =============================================================================
+// NAMED CONFIG PARAMS (REAPER/Lua integration)
+// =============================================================================
 
 bool Processor::handleNamedConfigParam(const juce::String& name, const juce::String& value)
 {
-    // Parse sample loading: P{pad}_L{layer}_SAMPLE
+    // Pattern: P{pad}_L{layer}_SAMPLE
     if (name.startsWith("P") && name.contains("_L") && name.endsWith("_SAMPLE"))
     {
-        // Extract pad index: P{pad}_L...
         int underscorePos = name.indexOf("_");
         if (underscorePos > 1)
         {
             int padIndex = name.substring(1, underscorePos).getIntValue();
 
-            // Extract layer index: ..._L{layer}_SAMPLE
             int lPos = name.indexOf("_L") + 2;
             int secondUnderscorePos = name.indexOf(lPos, "_");
             if (secondUnderscorePos > lPos)
@@ -378,7 +400,7 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
         }
     }
 
-    // Parse clear sample: P{pad}_CLEAR
+    // Pattern: P{pad}_CLEAR
     if (name.startsWith("P") && name.endsWith("_CLEAR"))
     {
         int padIndex = name.substring(1, name.length() - 6).getIntValue();
@@ -395,7 +417,7 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
 
 juce::String Processor::getNamedConfigParam(const juce::String& name) const
 {
-    // Get sample path: P{pad}_L{layer}_SAMPLE
+    // Pattern: P{pad}_L{layer}_SAMPLE
     if (name.startsWith("P") && name.contains("_L") && name.endsWith("_SAMPLE"))
     {
         int underscorePos = name.indexOf("_");
@@ -418,7 +440,7 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
         }
     }
 
-    // Check if pad has any sample: P{pad}_HAS_SAMPLE
+    // Pattern: P{pad}_HAS_SAMPLE
     if (name.startsWith("P") && name.endsWith("_HAS_SAMPLE"))
     {
         int padIndex = name.substring(1, name.length() - 11).getIntValue();
@@ -438,7 +460,10 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
 
 }  // namespace BlockSampler
 
-// Plugin entry point
+// =============================================================================
+// PLUGIN ENTRY POINT
+// =============================================================================
+
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new BlockSampler::Processor();

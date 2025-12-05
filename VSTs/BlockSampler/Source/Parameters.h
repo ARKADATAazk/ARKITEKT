@@ -1,3 +1,8 @@
+// =============================================================================
+// BlockSampler/Source/Parameters.h
+// Parameter definitions and layout for 128 pads × 15 params = 1920 total
+// =============================================================================
+
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -5,66 +10,84 @@
 namespace BlockSampler
 {
 
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
 constexpr int NUM_PADS = 128;
 constexpr int NUM_VELOCITY_LAYERS = 4;
-constexpr int NUM_OUTPUT_GROUPS = 16;  // 16 stereo group buses
-constexpr int MIDI_NOTE_OFFSET = 0;    // Note 0 = Pad 0 (full MIDI range)
+constexpr int NUM_OUTPUT_GROUPS = 16;
+constexpr int NUM_KILL_GROUPS = 8;
+constexpr int MIDI_NOTE_OFFSET = 0;  // Note 0 = Pad 0 (full MIDI range)
 
-// Parameter indices per pad
+// =============================================================================
+// PARAMETER DEFINITIONS
+// =============================================================================
+
 namespace PadParam
 {
+    // Parameter IDs per pad (15 total)
     enum ID
     {
-        Volume = 0,
-        Pan,
-        Tune,
-        Attack,
-        Decay,
-        Sustain,
-        Release,
-        FilterCutoff,
-        FilterReso,
-        KillGroup,
-        OutputGroup,  // 0 = main only, 1-16 = group bus
-        OneShot,      // 0 = obey note-off, 1 = one-shot
-        Reverse,      // 0 = forward, 1 = reverse
-        SampleStart,  // 0-1 normalized position
-        SampleEnd,    // 0-1 normalized position
-        COUNT         // 15 params per pad × 128 pads = 1920 total
+        Volume = 0,       // 0-1
+        Pan,              // -1 to +1
+        Tune,             // -24 to +24 semitones
+        Attack,           // 0-2000 ms
+        Decay,            // 0-2000 ms
+        Sustain,          // 0-1
+        Release,          // 0-5000 ms
+        FilterCutoff,     // 20-20000 Hz
+        FilterReso,       // 0-1
+        KillGroup,        // 0-8 (0 = none)
+        OutputGroup,      // 0-16 (0 = main only)
+        OneShot,          // bool
+        Reverse,          // bool
+        SampleStart,      // 0-1 normalized
+        SampleEnd,        // 0-1 normalized
+        COUNT             // = 15
     };
 
+    // Total parameters: 15 × 128 = 1920
+    constexpr int TOTAL_PARAMS = COUNT * NUM_PADS;
+
+    // Get flat index for parameter
     inline int index(int pad, ID param)
     {
         return pad * COUNT + static_cast<int>(param);
     }
 
+    // Get parameter ID string (e.g., "p0_volume", "p127_end")
     inline juce::String id(int pad, ID param)
     {
         static const char* names[] = {
             "volume", "pan", "tune", "attack", "decay", "sustain",
-            "release", "cutoff", "reso", "killgroup", "outgroup", "oneshot", "reverse",
-            "start", "end"
+            "release", "cutoff", "reso", "killgroup", "outgroup",
+            "oneshot", "reverse", "start", "end"
         };
         return "p" + juce::String(pad) + "_" + names[param];
     }
 }
 
-// Create all parameters for AudioProcessorValueTreeState
+// =============================================================================
+// PARAMETER LAYOUT FACTORY
+// =============================================================================
+
 inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
+    params.reserve(PadParam::TOTAL_PARAMS);
 
     for (int pad = 0; pad < NUM_PADS; ++pad)
     {
         auto prefix = "Pad " + juce::String(pad + 1) + " ";
 
-        // Volume (0-1)
+        // Volume (0-1, default 0.8)
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             juce::ParameterID { PadParam::id(pad, PadParam::Volume), 1 },
             prefix + "Volume",
             0.0f, 1.0f, 0.8f));
 
-        // Pan (-1 to +1)
+        // Pan (-1 to +1, default center)
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             juce::ParameterID { PadParam::id(pad, PadParam::Pan), 1 },
             prefix + "Pan",
@@ -76,7 +99,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             prefix + "Tune",
             -24.0f, 24.0f, 0.0f));
 
-        // Attack (0-2000ms)
+        // Attack (0-2000ms, skewed for fine control at low values)
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             juce::ParameterID { PadParam::id(pad, PadParam::Attack), 1 },
             prefix + "Attack",
@@ -120,7 +143,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
         params.push_back(std::make_unique<juce::AudioParameterInt>(
             juce::ParameterID { PadParam::id(pad, PadParam::KillGroup), 1 },
             prefix + "Kill Group",
-            0, 8, 0));
+            0, NUM_KILL_GROUPS, 0));
 
         // Output Group (0 = main only, 1-16 = group bus)
         params.push_back(std::make_unique<juce::AudioParameterInt>(
@@ -128,13 +151,13 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             prefix + "Output Group",
             0, NUM_OUTPUT_GROUPS, 0));
 
-        // One-Shot mode
+        // One-Shot mode (default true for drums)
         params.push_back(std::make_unique<juce::AudioParameterBool>(
             juce::ParameterID { PadParam::id(pad, PadParam::OneShot), 1 },
             prefix + "One-Shot",
-            true));  // Default: one-shot for drums
+            true));
 
-        // Reverse
+        // Reverse playback
         params.push_back(std::make_unique<juce::AudioParameterBool>(
             juce::ParameterID { PadParam::id(pad, PadParam::Reverse), 1 },
             prefix + "Reverse",

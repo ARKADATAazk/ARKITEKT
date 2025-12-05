@@ -1,4 +1,384 @@
+// =============================================================================
+// BlockSampler/Source/Pad.cpp
+// Pad implementation - audio playback, sample loading, ADSR, filtering
+// =============================================================================
+
 #include "Pad.h"
 
-// Pad implementation is mostly in header for inlining
-// Add any non-inline methods here if needed
+namespace BlockSampler
+{
+
+// =============================================================================
+// VELOCITY LAYER IMPLEMENTATION
+// =============================================================================
+
+bool VelocityLayer::isLoaded() const
+{
+    return numSamples > 0 || !roundRobinBuffers.empty();
+}
+
+int VelocityLayer::getRoundRobinCount() const
+{
+    return static_cast<int>(roundRobinBuffers.size());
+}
+
+const juce::AudioBuffer<float>& VelocityLayer::getCurrentBuffer() const
+{
+    if (roundRobinBuffers.empty())
+        return buffer;
+    return roundRobinBuffers[roundRobinIndex % roundRobinBuffers.size()];
+}
+
+int VelocityLayer::getCurrentNumSamples() const
+{
+    if (roundRobinBuffers.empty())
+        return numSamples;
+    return static_cast<int>(getCurrentBuffer().getNumSamples());
+}
+
+double VelocityLayer::getCurrentSampleRate() const
+{
+    if (roundRobinBuffers.empty() || roundRobinSampleRates.empty())
+        return sourceSampleRate;
+    return roundRobinSampleRates[roundRobinIndex % roundRobinSampleRates.size()];
+}
+
+void VelocityLayer::advanceRoundRobin()
+{
+    if (!roundRobinBuffers.empty())
+        roundRobinIndex = (roundRobinIndex + 1) % static_cast<int>(roundRobinBuffers.size());
+}
+
+void VelocityLayer::clear()
+{
+    buffer.setSize(0, 0);
+    numSamples = 0;
+    filePath.clear();
+    roundRobinBuffers.clear();
+    roundRobinSampleRates.clear();
+    roundRobinPaths.clear();
+    roundRobinIndex = 0;
+}
+
+// =============================================================================
+// PAD LIFECYCLE
+// =============================================================================
+
+void Pad::prepare(double sampleRate, int samplesPerBlock)
+{
+    currentSampleRate = sampleRate;
+
+    envelope.setSampleRate(sampleRate);
+    updateEnvelopeParams();
+
+    // Prepare filter
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
+    spec.numChannels = 2;
+    filter.prepare(spec);
+    filter.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
+}
+
+void Pad::trigger(int velocity)
+{
+    if (velocity == 0)
+    {
+        noteOff();
+        return;
+    }
+
+    // Select velocity layer
+    currentLayer = selectVelocityLayer(velocity);
+    if (currentLayer < 0 || !layers[currentLayer].isLoaded())
+    {
+        // Fallback to any loaded layer
+        currentLayer = -1;
+        for (int i = 0; i < NUM_VELOCITY_LAYERS; ++i)
+        {
+            if (layers[i].isLoaded())
+            {
+                currentLayer = i;
+                break;
+            }
+        }
+    }
+
+    if (currentLayer < 0)
+        return;  // No samples loaded
+
+    auto& layer = layers[currentLayer];
+
+    // Advance round-robin before getting sample info
+    layer.advanceRoundRobin();
+
+    // Get current sample length (accounting for round-robin)
+    int currentNumSamples = layer.getCurrentNumSamples();
+
+    // Calculate actual start/end sample positions
+    int startSample = static_cast<int>(sampleStart * currentNumSamples);
+    int endSample = static_cast<int>(sampleEnd * currentNumSamples);
+
+    // Clamp to valid range
+    startSample = juce::jlimit(0, currentNumSamples - 1, startSample);
+    endSample = juce::jlimit(startSample + 1, currentNumSamples, endSample);
+
+    // Store for playback
+    playStartSample = startSample;
+    playEndSample = endSample;
+
+    // Reset playback position
+    playPosition = reverse ? (endSample - 1) : startSample;
+    currentVelocity = velocity / 127.0f;
+    isPlaying = true;
+
+    // Reset and trigger envelope
+    updateEnvelopeParams();
+    envelope.reset();
+    envelope.noteOn();
+}
+
+void Pad::noteOff()
+{
+    if (!oneShot)
+    {
+        envelope.noteOff();
+    }
+}
+
+void Pad::stop()
+{
+    isPlaying = false;
+    envelope.reset();
+}
+
+// =============================================================================
+// AUDIO PROCESSING
+// =============================================================================
+
+void Pad::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
+                          int startSample,
+                          int numSamples)
+{
+    if (!isPlaying || currentLayer < 0)
+        return;
+
+    auto& layer = layers[currentLayer];
+    if (!layer.isLoaded())
+        return;
+
+    // Get current buffer (accounting for round-robin)
+    const auto& sampleBuffer = layer.getCurrentBuffer();
+    const int sampleNumSamples = layer.getCurrentNumSamples();
+    const double sampleRate = layer.getCurrentSampleRate();
+
+    const int numChannels = juce::jmin(outputBuffer.getNumChannels(),
+                                        sampleBuffer.getNumChannels());
+
+    // Calculate pitch ratio for tuning
+    const double pitchRatio = std::pow(2.0, tune / 12.0) *
+                              (sampleRate / currentSampleRate);
+
+    for (int sample = 0; sample < numSamples; ++sample)
+    {
+        // Check playback boundaries
+        if (reverse)
+        {
+            if (playPosition < playStartSample)
+            {
+                if (oneShot)
+                {
+                    isPlaying = false;
+                    return;
+                }
+                playPosition = playEndSample - 1;  // Loop back to end
+            }
+        }
+        else
+        {
+            if (playPosition >= playEndSample)
+            {
+                if (oneShot)
+                {
+                    isPlaying = false;
+                    return;
+                }
+                playPosition = playStartSample;  // Loop back to start
+            }
+        }
+
+        // Get envelope value
+        float envValue = envelope.getNextSample();
+        if (!envelope.isActive())
+        {
+            isPlaying = false;
+            return;
+        }
+
+        // Linear interpolation for pitch shifting
+        int pos0 = static_cast<int>(playPosition);
+        int pos1 = reverse ? (pos0 - 1) : (pos0 + 1);
+        pos1 = juce::jlimit(0, sampleNumSamples - 1, pos1);
+        float frac = static_cast<float>(playPosition - pos0);
+
+        // Apply volume, velocity, envelope
+        float gain = volume * currentVelocity * envValue;
+
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            const float* src = sampleBuffer.getReadPointer(ch);
+            float s0 = src[pos0];
+            float s1 = src[pos1];
+            float interpolated = s0 + frac * (s1 - s0);
+
+            // Apply pan (constant power)
+            float panGain = 1.0f;
+            if (ch == 0)  // Left
+                panGain = std::cos((pan + 1.0f) * 0.25f * juce::MathConstants<float>::pi);
+            else  // Right
+                panGain = std::sin((pan + 1.0f) * 0.25f * juce::MathConstants<float>::pi);
+
+            outputBuffer.addSample(ch, startSample + sample, interpolated * gain * panGain);
+        }
+
+        // Advance position
+        if (reverse)
+            playPosition -= pitchRatio;
+        else
+            playPosition += pitchRatio;
+    }
+
+    // Apply lowpass filter (skip if wide open)
+    if (filterCutoff < 19999.0f)
+    {
+        filter.setCutoffFrequency(filterCutoff);
+        filter.setResonance(filterReso);
+
+        juce::dsp::AudioBlock<float> block(outputBuffer);
+        auto subBlock = block.getSubBlock(static_cast<size_t>(startSample),
+                                          static_cast<size_t>(numSamples));
+        juce::dsp::ProcessContextReplacing<float> context(subBlock);
+        filter.process(context);
+    }
+}
+
+// =============================================================================
+// SAMPLE MANAGEMENT
+// =============================================================================
+
+bool Pad::loadSample(int layerIndex,
+                     const juce::File& file,
+                     juce::AudioFormatManager& formatManager)
+{
+    if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
+        return false;
+
+    std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(file));
+    if (!reader)
+        return false;
+
+    auto& layer = layers[layerIndex];
+    layer.buffer.setSize(static_cast<int>(reader->numChannels),
+                         static_cast<int>(reader->lengthInSamples));
+    reader->read(&layer.buffer, 0, static_cast<int>(reader->lengthInSamples), 0, true, true);
+
+    layer.numSamples = static_cast<int>(reader->lengthInSamples);
+    layer.sourceSampleRate = reader->sampleRate;
+    layer.filePath = file.getFullPathName();
+
+    return true;
+}
+
+bool Pad::addRoundRobinSample(int layerIndex,
+                              const juce::File& file,
+                              juce::AudioFormatManager& formatManager)
+{
+    if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
+        return false;
+
+    std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(file));
+    if (!reader)
+        return false;
+
+    auto& layer = layers[layerIndex];
+
+    juce::AudioBuffer<float> newBuffer;
+    newBuffer.setSize(static_cast<int>(reader->numChannels),
+                      static_cast<int>(reader->lengthInSamples));
+    reader->read(&newBuffer, 0, static_cast<int>(reader->lengthInSamples), 0, true, true);
+
+    layer.roundRobinBuffers.push_back(std::move(newBuffer));
+    layer.roundRobinSampleRates.push_back(reader->sampleRate);
+    layer.roundRobinPaths.push_back(file.getFullPathName());
+
+    return true;
+}
+
+void Pad::clearSample(int layerIndex)
+{
+    if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+        layers[layerIndex].clear();
+}
+
+void Pad::clearRoundRobin(int layerIndex)
+{
+    if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+    {
+        layers[layerIndex].roundRobinBuffers.clear();
+        layers[layerIndex].roundRobinSampleRates.clear();
+        layers[layerIndex].roundRobinPaths.clear();
+        layers[layerIndex].roundRobinIndex = 0;
+    }
+}
+
+// =============================================================================
+// QUERIES
+// =============================================================================
+
+juce::String Pad::getSamplePath(int layerIndex) const
+{
+    if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+        return layers[layerIndex].filePath;
+    return {};
+}
+
+bool Pad::hasSample(int layerIndex) const
+{
+    if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+        return layers[layerIndex].isLoaded();
+    return false;
+}
+
+int Pad::getRoundRobinCount(int layerIndex) const
+{
+    if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+        return layers[layerIndex].getRoundRobinCount();
+    return 0;
+}
+
+// =============================================================================
+// PRIVATE HELPERS
+// =============================================================================
+
+int Pad::selectVelocityLayer(int velocity)
+{
+    // Velocity thresholds: 0-31, 32-63, 64-95, 96-127
+    // Returns highest loaded layer that matches velocity
+    if (velocity >= 96 && layers[3].isLoaded()) return 3;
+    if (velocity >= 64 && layers[2].isLoaded()) return 2;
+    if (velocity >= 32 && layers[1].isLoaded()) return 1;
+    if (layers[0].isLoaded()) return 0;
+    return -1;
+}
+
+void Pad::updateEnvelopeParams()
+{
+    juce::ADSR::Parameters params;
+    params.attack = attack / 1000.0f;   // ms to seconds
+    params.decay = decay / 1000.0f;
+    params.sustain = sustain;
+    params.release = release / 1000.0f;
+    envelope.setParameters(params);
+}
+
+}  // namespace BlockSampler

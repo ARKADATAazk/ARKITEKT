@@ -1,3 +1,8 @@
+// =============================================================================
+// BlockSampler/Source/PluginProcessor.h
+// Main VST3 processor - headless drum sampler with 128 pads
+// =============================================================================
+
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -8,6 +13,10 @@
 namespace BlockSampler
 {
 
+// =============================================================================
+// PROCESSOR CLASS
+// =============================================================================
+
 class Processor : public juce::AudioProcessor,
                   public juce::AudioProcessorValueTreeState::Listener,
                   public juce::VST3ClientExtensions
@@ -16,21 +25,34 @@ public:
     Processor();
     ~Processor() override;
 
-    // AudioProcessor overrides
+    // -------------------------------------------------------------------------
+    // AUDIO PROCESSOR OVERRIDES
+    // -------------------------------------------------------------------------
+
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
-    // Editor (we're headless, so minimal)
+    // -------------------------------------------------------------------------
+    // EDITOR (headless - no GUI)
+    // -------------------------------------------------------------------------
+
     juce::AudioProcessorEditor* createEditor() override { return nullptr; }
     bool hasEditor() const override { return false; }
 
-    // Program/preset
+    // -------------------------------------------------------------------------
+    // PLUGIN INFO
+    // -------------------------------------------------------------------------
+
     const juce::String getName() const override { return "BlockSampler"; }
     bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
     double getTailLengthSeconds() const override { return 0.5; }
+
+    // -------------------------------------------------------------------------
+    // PRESETS
+    // -------------------------------------------------------------------------
 
     int getNumPrograms() override { return 1; }
     int getCurrentProgram() override { return 0; }
@@ -38,39 +60,61 @@ public:
     const juce::String getProgramName(int) override { return {}; }
     void changeProgramName(int, const juce::String&) override {}
 
-    // State save/restore
+    // -------------------------------------------------------------------------
+    // STATE PERSISTENCE
+    // -------------------------------------------------------------------------
+
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
-    // Multi-out bus configuration
+    // -------------------------------------------------------------------------
+    // BUS LAYOUT
+    // -------------------------------------------------------------------------
+
     bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
 
-    // Sample loading (called from Lua via TrackFX_SetNamedConfigParm)
+    // -------------------------------------------------------------------------
+    // SAMPLE MANAGEMENT (called from Lua via chunk commands)
+    // -------------------------------------------------------------------------
+
     bool loadSampleToPad(int padIndex, int layerIndex, const juce::String& filePath);
     void clearPadSample(int padIndex, int layerIndex);
 
-    // Parameter listener
+    // -------------------------------------------------------------------------
+    // PARAMETER LISTENER
+    // -------------------------------------------------------------------------
+
     void parameterChanged(const juce::String& parameterID, float newValue) override;
 
-    // VST3ClientExtensions - enables REAPER integration
+    // -------------------------------------------------------------------------
+    // VST3 CLIENT EXTENSIONS (REAPER integration)
+    // -------------------------------------------------------------------------
+
     VST3ClientExtensions* getVST3ClientExtensions() override { return this; }
 
-    // Named config param support for REAPER
-    // Pattern: P{pad}_L{layer}_SAMPLE = file_path
+    // Named config param support: P{pad}_L{layer}_SAMPLE = file_path
     bool handleNamedConfigParam(const juce::String& name, const juce::String& value);
     juce::String getNamedConfigParam(const juce::String& name) const;
 
 private:
+    // -------------------------------------------------------------------------
+    // PRIVATE METHODS
+    // -------------------------------------------------------------------------
+
     void handleMidiEvent(const juce::MidiMessage& msg);
     void updatePadParameters(int padIndex);
     void processKillGroups(int triggeredPad);
+
+    // -------------------------------------------------------------------------
+    // PRIVATE STATE
+    // -------------------------------------------------------------------------
 
     juce::AudioProcessorValueTreeState parameters;
     juce::AudioFormatManager formatManager;
 
     std::array<Pad, NUM_PADS> pads;
 
-    // Cached parameter pointers for fast access
+    // Cached parameter pointers for fast audio-thread access
     struct PadParams
     {
         std::atomic<float>* volume = nullptr;
