@@ -1,9 +1,9 @@
 -- @noindex
--- MediaContainer/storage/persistence.lua
+-- MediaContainer/data/persistence.lua
 -- Container state persistence via Project ExtState
 
 local JSON = require('arkitekt.core.json')
-local Ark = require('arkitekt')
+
 local M = {}
 
 local EXT_STATE_SECTION = 'ARK_MEDIACONTAINER'

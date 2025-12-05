@@ -1,10 +1,20 @@
 -- @noindex
--- MediaContainer/core/container.lua
+-- MediaContainer/domain/container.lua
 -- Container operations: create, copy, paste, sync
+--
+-- RESPONSIBILITY:
+-- Business logic for container CRUD, change detection, and sync operations.
+-- Uses State for data access and persistence.
 
-local State = require('MediaContainer.core.app_state')
-local Ark = require('arkitekt')
+local State = require('MediaContainer.app.state')
+local UUID = require('arkitekt.core.uuid')
+local Logger = require('arkitekt.debug.logger')
+
 local M = {}
+
+-- =============================================================================
+-- CREATE
+-- =============================================================================
 
 -- Create a new container from currently selected items
 function M.create_from_selection()
@@ -72,7 +82,7 @@ function M.create_from_selection()
 
   -- Create container
   local container = {
-    id = Ark.UUID.generate(),
+    id = UUID.generate(),
     name = 'Container ' .. (#State.containers + 1),
     color = State.generate_container_color(),
     start_time = min_pos,
@@ -100,6 +110,10 @@ function M.create_from_selection()
 
   return container
 end
+
+-- =============================================================================
+-- COPY / PASTE
+-- =============================================================================
 
 -- Copy container to clipboard (finds container at edit cursor or containing selection)
 function M.copy_container()
@@ -143,7 +157,7 @@ function M.copy_container()
   local master_id = found_container.master_id or found_container.id
   State.set_clipboard(master_id)
 
-  reaper.ShowConsoleMsg(string.format("[MediaContainer] Copied container '%s' to clipboard\n", found_container.name))
+  Logger.info('CONTAINER', "Copied '%s' to clipboard", found_container.name)
   return true
 end
 
@@ -243,7 +257,7 @@ function M.paste_container()
 
   -- Create linked container
   local linked_container = {
-    id = Ark.UUID.generate(),
+    id = UUID.generate(),
     name = master.name .. ' (linked)',
     color = master.color,
     start_time = cursor_pos,
@@ -271,11 +285,14 @@ function M.paste_container()
   reaper.UpdateArrange()
   reaper.Undo_EndBlock('Media Container Paste', -1)
 
-  reaper.ShowConsoleMsg(string.format("[MediaContainer] Pasted linked container '%s' at %.2f\n",
-    linked_container.name, cursor_pos))
+  Logger.info('CONTAINER', "Pasted linked container '%s' at %.2f", linked_container.name, cursor_pos)
 
   return linked_container
 end
+
+-- =============================================================================
+-- CHANGE DETECTION & SYNC
+-- =============================================================================
 
 -- Detect changes in container items
 function M.detect_changes()
@@ -299,7 +316,7 @@ function M.detect_changes()
           old_hash = cached_hash,
           new_hash = current_hash,
         }
-        reaper.ShowConsoleMsg(string.format('[MediaContainer] Change detected in %s\n', container.name))
+        Logger.debug('CONTAINER', 'Change detected in %s', container.name)
       end
 
       ::continue::
@@ -338,7 +355,7 @@ function M.sync_changes(changes)
     end
     processed_masters[master_id] = true
 
-    reaper.ShowConsoleMsg(string.format('[MediaContainer] Processing sync for master group %s\n', master_id:sub(1,8)))
+    Logger.debug('CONTAINER', 'Processing sync for master group %s', master_id:sub(1,8))
 
     -- Find the item reference in source container
     local source_item_ref = nil
@@ -386,7 +403,7 @@ function M.sync_changes(changes)
       M.apply_item_properties(source_item, target_item,
         source_container.start_time, linked_container.start_time)
 
-      reaper.ShowConsoleMsg(string.format('[MediaContainer] Synced to %s\n', linked_container.name))
+      Logger.debug('CONTAINER', 'Synced to %s', linked_container.name)
 
       -- Update cache (using relative position to linked container)
       local new_hash = State.get_item_state_hash(target_item, linked_container)
@@ -463,6 +480,10 @@ function M.apply_item_properties(source_item, target_item, source_container_star
   end
 end
 
+-- =============================================================================
+-- CONTAINER BOUNDS
+-- =============================================================================
+
 -- Update container bounds when items move
 function M.update_container_bounds(container)
   if #container.items == 0 then
@@ -490,12 +511,20 @@ function M.update_container_bounds(container)
   end
 end
 
+-- =============================================================================
+-- DELETE
+-- =============================================================================
+
 -- Delete container
 function M.delete_container(container_id)
   reaper.Undo_BeginBlock()
   State.remove_container(container_id)
   reaper.Undo_EndBlock('Delete Media Container', -1)
 end
+
+-- =============================================================================
+-- QUERIES
+-- =============================================================================
 
 -- Get container at position
 function M.get_container_at_position(pos)
