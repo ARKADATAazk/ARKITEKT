@@ -30,18 +30,18 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 -- DEPENDENCIES
 local Shell = require('arkitekt.runtime.shell')
 local State = require('scripts.MIDIHelix.app.state')
-local EuclideanView = require('scripts.MIDIHelix.ui.euclidean_view')
+local UI = require('scripts.MIDIHelix.ui.init')
 local Defaults = require('scripts.MIDIHelix.config.defaults')
 
 -- APP STATE
 local app_state = State.new(Ark)
 
--- Initialize view with Ark namespace
-EuclideanView.init(Ark)
+-- Initialize UI with Ark namespace
+UI.init(Ark)
 
 -- Main draw function
 local function draw(ctx)
-  EuclideanView.Draw(ctx)
+  UI.Draw(ctx)
 end
 
 -- Run application
