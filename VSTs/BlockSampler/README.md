@@ -173,9 +173,9 @@ Sample paths are stored in the project state XML and reloaded on project open:
 - [x] State save/load with sample paths
 - [x] Runtime sample loading via chunk commands
 - [x] 1920 automatable parameters
+- [x] Multi-out rendering to group buses
 
 ## TODO
 
-- [ ] Multi-out rendering to group buses
 - [ ] Async sample loading (don't block audio thread)
 - [ ] Random mode for round-robin
