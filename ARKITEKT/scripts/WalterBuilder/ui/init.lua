@@ -1,10 +1,14 @@
 -- @noindex
--- WalterBuilder/ui/gui.lua
+-- WalterBuilder/ui/init.lua
 -- Main GUI orchestrator - combines all panels
+--
+-- @usage
+--   local gui = M.create(state, config, settings)
+--   gui:draw(ctx, window, shell_state)
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local State = require('WalterBuilder.app.state')
+local Splitter = require('arkitekt.gui.widgets.primitives.splitter')
 local PreviewCanvas = require('WalterBuilder.ui.canvas.preview_canvas')
 local ElementRenderer = require('WalterBuilder.ui.canvas.element_renderer')
 local ElementsPanel = require('WalterBuilder.ui.panels.elements_panel')
@@ -16,13 +20,22 @@ local RtconfigConverter = require('WalterBuilder.domain.rtconfig_converter')
 local DebugConsole = require('WalterBuilder.ui.panels.debug_console')
 local TCPElements = require('WalterBuilder.config.tcp_elements')
 local Constants = require('WalterBuilder.config.constants')
--- Notification migrated to framework (was: WalterBuilder.domain.notification)
-local Button = require('arkitekt.gui.widgets.primitives.button')
-local WalterSettings = require('WalterBuilder.infra.settings')
+local WalterSettings = require('WalterBuilder.data.settings')
 
 local M = {}
 local GUI = {}
 GUI.__index = GUI
+
+--- Create a new GUI instance
+--- @param state table State module
+--- @param config table Config (unused, for API compatibility)
+--- @param settings table Settings instance
+--- @return table gui GUI instance
+function M.create(state, config, settings)
+  local Controller = require('WalterBuilder.app.controller')
+  local controller = Controller.new(state, settings)
+  return M.new(state, settings, controller)
+end
 
 function M.new(state_module, settings, controller)
   local self = setmetatable({
@@ -46,9 +59,16 @@ function M.new(state_module, settings, controller)
     left_panel_width = Constants.PANEL.LEFT_WIDTH,
     right_panel_width = Constants.PANEL.RIGHT_WIDTH,
 
-    -- Splitter drag state
-    left_splitter_drag_start = 0,
-    right_splitter_drag_start = 0,
+    -- Splitter config
+    splitter_thickness = 6,
+    left_panel_min = 150,
+    left_panel_max = 350,
+    right_panel_min = 200,
+    right_panel_max = 450,
+
+    -- Splitter state tracking (for persistence on drag end)
+    left_splitter_was_dragging = false,
+    right_splitter_was_dragging = false,
 
     -- Tab state
     select_default_tab = true,  -- Select default tab on first frame
@@ -564,6 +584,9 @@ function GUI:draw(ctx, window, shell_state)
   -- Recalculate available height after toolbar
   local _, remaining_h = ImGui.GetContentRegionAvail(ctx)
 
+  -- Capture content start position for splitter calculations
+  local content_start_x, _ = ImGui.GetCursorScreenPos(ctx)
+
   -- Three-panel layout
   -- [Elements Panel] | [Canvas] | [Properties/Code]
 
@@ -602,39 +625,45 @@ function GUI:draw(ctx, window, shell_state)
 
   ImGui.SameLine(ctx, 0, 0)
 
-  -- Left splitter
-  local splitter_w = 6
+  -- Left splitter (using Ark.Splitter)
   local lsplit_x, lsplit_y = ImGui.GetCursorScreenPos(ctx)
-  ImGui.Button(ctx, '##left_splitter', splitter_w, remaining_h)
-  local ls_hovered = ImGui.IsItemHovered(ctx)
-  local ls_active = ImGui.IsItemActive(ctx)
+  local left_result = Splitter.Draw(ctx, {
+    id = 'left_splitter',
+    x = lsplit_x,
+    y = lsplit_y,
+    orientation = 'vertical',
+    height = remaining_h,
+    thickness = self.splitter_thickness,
+    tooltip = 'Drag to resize panels',
+  })
 
-  if ImGui.IsItemClicked(ctx, 0) then
-    self.left_splitter_drag_start = self.left_panel_width
-  end
-  if ls_active then
-    local delta_x, _ = ImGui.GetMouseDragDelta(ctx, 0)
-    local new_w = self.left_splitter_drag_start + delta_x
-    new_w = math.max(150, math.min(350, new_w))
-    self.left_panel_width = new_w
-  end
-  -- Save position when drag ends
-  if ImGui.IsMouseReleased(ctx, 0) and self.left_splitter_drag_start ~= 0 then
-    if self.left_panel_width ~= self.left_splitter_drag_start then
-      WalterSettings.SetValue('left_panel_width', self.left_panel_width)
-      WalterSettings.maybe_flush()
-    end
-    self.left_splitter_drag_start = 0
+  -- Handle left splitter drag
+  if left_result.action == 'drag' then
+    local new_width = left_result.position - content_start_x
+    new_width = math.max(self.left_panel_min, math.min(self.left_panel_max, new_width))
+    self.left_panel_width = new_width
+  elseif left_result.action == 'reset' then
+    self.left_panel_width = Constants.PANEL.LEFT_WIDTH
+    WalterSettings.SetValue('left_panel_width', self.left_panel_width)
+    WalterSettings.maybe_flush()
   end
 
+  -- Persist on drag end
+  if self.left_splitter_was_dragging and not left_result.dragging then
+    WalterSettings.SetValue('left_panel_width', self.left_panel_width)
+    WalterSettings.maybe_flush()
+  end
+  self.left_splitter_was_dragging = left_result.dragging
+
+  -- Draw splitter bar visual
   local dl = ImGui.GetWindowDrawList(ctx)
-  local ls_color = (ls_hovered or ls_active) and 0x888888FF or 0x555555FF
-  ImGui.DrawList_AddRectFilled(dl, lsplit_x, lsplit_y, lsplit_x + splitter_w, lsplit_y + remaining_h, ls_color)
+  local ls_color = left_result.dragging and 0x888888FF or 0x555555FF
+  ImGui.DrawList_AddRectFilled(dl, lsplit_x, lsplit_y, lsplit_x + self.splitter_thickness, lsplit_y + remaining_h, ls_color)
 
   ImGui.SameLine(ctx, 0, 0)
 
   -- Center: Canvas
-  local canvas_w = avail_w - self.left_panel_width - self.right_panel_width - splitter_w * 2
+  local canvas_w = avail_w - self.left_panel_width - self.right_panel_width - self.splitter_thickness * 2
 
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x1A1A1AFF)
 
@@ -709,33 +738,40 @@ function GUI:draw(ctx, window, shell_state)
 
   ImGui.SameLine(ctx, 0, 0)
 
-  -- Right splitter
+  -- Right splitter (using Ark.Splitter)
   local rsplit_x, rsplit_y = ImGui.GetCursorScreenPos(ctx)
-  ImGui.Button(ctx, '##right_splitter', splitter_w, remaining_h)
-  local rs_hovered = ImGui.IsItemHovered(ctx)
-  local rs_active = ImGui.IsItemActive(ctx)
+  local content_end_x = content_start_x + avail_w
+  local right_result = Splitter.Draw(ctx, {
+    id = 'right_splitter',
+    x = rsplit_x,
+    y = rsplit_y,
+    orientation = 'vertical',
+    height = remaining_h,
+    thickness = self.splitter_thickness,
+    tooltip = 'Drag to resize panels',
+  })
 
-  if ImGui.IsItemClicked(ctx, 0) then
-    self.right_splitter_drag_start = self.right_panel_width
-  end
-  if rs_active then
-    local delta_x, _ = ImGui.GetMouseDragDelta(ctx, 0)
-    -- Right panel grows when dragging left (negative delta)
-    local new_w = self.right_splitter_drag_start - delta_x
-    new_w = math.max(200, math.min(450, new_w))
-    self.right_panel_width = new_w
-  end
-  -- Save position when drag ends
-  if ImGui.IsMouseReleased(ctx, 0) and self.right_splitter_drag_start ~= 0 then
-    if self.right_panel_width ~= self.right_splitter_drag_start then
-      WalterSettings.SetValue('right_panel_width', self.right_panel_width)
-      WalterSettings.maybe_flush()
-    end
-    self.right_splitter_drag_start = 0
+  -- Handle right splitter drag (inverted: dragging left increases right panel)
+  if right_result.action == 'drag' then
+    local new_width = content_end_x - right_result.position - self.splitter_thickness
+    new_width = math.max(self.right_panel_min, math.min(self.right_panel_max, new_width))
+    self.right_panel_width = new_width
+  elseif right_result.action == 'reset' then
+    self.right_panel_width = Constants.PANEL.RIGHT_WIDTH
+    WalterSettings.SetValue('right_panel_width', self.right_panel_width)
+    WalterSettings.maybe_flush()
   end
 
-  local rs_color = (rs_hovered or rs_active) and 0x888888FF or 0x555555FF
-  ImGui.DrawList_AddRectFilled(dl, rsplit_x, rsplit_y, rsplit_x + splitter_w, rsplit_y + remaining_h, rs_color)
+  -- Persist on drag end
+  if self.right_splitter_was_dragging and not right_result.dragging then
+    WalterSettings.SetValue('right_panel_width', self.right_panel_width)
+    WalterSettings.maybe_flush()
+  end
+  self.right_splitter_was_dragging = right_result.dragging
+
+  -- Draw splitter bar visual
+  local rs_color = right_result.dragging and 0x888888FF or 0x555555FF
+  ImGui.DrawList_AddRectFilled(dl, rsplit_x, rsplit_y, rsplit_x + self.splitter_thickness, rsplit_y + remaining_h, rs_color)
 
   ImGui.SameLine(ctx, 0, 0)
 

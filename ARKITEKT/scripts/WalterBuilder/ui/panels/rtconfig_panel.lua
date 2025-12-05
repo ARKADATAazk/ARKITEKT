@@ -8,7 +8,7 @@ local RtconfigParser = require('WalterBuilder.domain.rtconfig_parser')
 local RtconfigConverter = require('WalterBuilder.domain.rtconfig_converter')
 local ThemeConnector = require('WalterBuilder.domain.theme_connector')
 local Colors = require('WalterBuilder.config.colors')
-local WalterSettings = require('WalterBuilder.infra.settings')
+local WalterSettings = require('WalterBuilder.data.settings')
 
 local M = {}
 local Panel = {}

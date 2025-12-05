@@ -1,5 +1,5 @@
 -- @noindex
--- WalterBuilder/core/controller.lua
+-- WalterBuilder/app/controller.lua
 -- Business logic controller - separates UI from state mutations
 
 local Constants = require('WalterBuilder.config.constants')
