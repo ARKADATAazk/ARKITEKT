@@ -266,7 +266,7 @@ int Pad::renderNextBlock(int numSamples)
 
         int pos1 = reverse ? (pos0 - 1) : (pos0 + 1);
         pos1 = juce::jlimit(0, sampleNumSamples - 1, pos1);
-        float frac = static_cast<float>(playPosition - pos0);
+        float frac = std::abs(static_cast<float>(playPosition - pos0));  // abs for reverse mode
 
         // Apply volume, velocity, envelope, normalization
         float gain = volume * currentVelocity * envValue * normGain;
@@ -406,9 +406,9 @@ void Pad::setSampleBuffer(int layerIndex,
     if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
         return;
 
-    // Stop playback to prevent reading during modification (thread safety)
-    if (currentLayer == layerIndex)
-        stop();
+    // Stop playback unconditionally to prevent race conditions
+    // (audio thread could switch layers mid-render)
+    stop();
 
     auto& layer = layers[layerIndex];
     layer.buffer = std::move(buffer);
@@ -427,9 +427,8 @@ void Pad::addRoundRobinBuffer(int layerIndex,
     if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
         return;
 
-    // Stop playback to prevent reading during modification (thread safety)
-    if (currentLayer == layerIndex)
-        stop();
+    // Stop playback unconditionally to prevent race conditions
+    stop();
 
     auto& layer = layers[layerIndex];
     layer.roundRobinBuffers.push_back(std::move(buffer));
@@ -442,10 +441,8 @@ void Pad::clearSample(int layerIndex)
 {
     if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
     {
-        // Stop playback to prevent reading during modification (thread safety)
-        if (currentLayer == layerIndex)
-            stop();
-
+        // Stop playback unconditionally to prevent race conditions
+        stop();
         layers[layerIndex].clear();
     }
 }
@@ -454,9 +451,8 @@ void Pad::clearRoundRobin(int layerIndex)
 {
     if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
     {
-        // Stop playback to prevent reading during modification (thread safety)
-        if (currentLayer == layerIndex)
-            stop();
+        // Stop playback unconditionally to prevent race conditions
+        stop();
 
         layers[layerIndex].roundRobinBuffers.clear();
         layers[layerIndex].roundRobinSampleRates.clear();
@@ -511,12 +507,28 @@ double Pad::getSampleDuration(int layerIndex) const
 int Pad::selectVelocityLayer(int velocity)
 {
     // Velocity thresholds: 0-31, 32-63, 64-95, 96-127
-    // Returns highest loaded layer that matches velocity
-    if (velocity >= 96 && layers[3].isLoaded()) return 3;
-    if (velocity >= 64 && layers[2].isLoaded()) return 2;
-    if (velocity >= 32 && layers[1].isLoaded()) return 1;
-    if (layers[0].isLoaded()) return 0;
-    return -1;
+    // First try to find the ideal layer for this velocity
+    int idealLayer = (velocity >= 96) ? 3 : (velocity >= 64) ? 2 : (velocity >= 32) ? 1 : 0;
+
+    // Try ideal layer first
+    if (layers[idealLayer].isLoaded())
+        return idealLayer;
+
+    // Fallback: find closest loaded layer (prefer lower layers for softer sound)
+    for (int i = idealLayer - 1; i >= 0; --i)
+    {
+        if (layers[i].isLoaded())
+            return i;
+    }
+
+    // Try higher layers if no lower ones available
+    for (int i = idealLayer + 1; i < NUM_VELOCITY_LAYERS; ++i)
+    {
+        if (layers[i].isLoaded())
+            return i;
+    }
+
+    return -1;  // No layers loaded
 }
 
 void Pad::updateEnvelopeParams()

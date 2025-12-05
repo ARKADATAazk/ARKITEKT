@@ -65,8 +65,8 @@ Processor::Processor()
         }
     }
 
-    // Start timer for async load completion (check every 50ms)
-    startTimer(50);
+    // Start timer for async load completion
+    startTimer(ASYNC_LOAD_CHECK_INTERVAL_MS);
 }
 
 Processor::~Processor()
@@ -114,14 +114,8 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
 
     const int numSamples = buffer.getNumSamples();
 
-    // Clear all output buses
+    // Clear all output channels (buffer.clear() handles all buses)
     buffer.clear();
-    for (int bus = 1; bus <= NUM_OUTPUT_GROUPS; ++bus)
-    {
-        auto* groupBuffer = getBusBuffer(buffer, false, bus);
-        if (groupBuffer)
-            groupBuffer->clear();
-    }
 
     // Process MIDI events (update parameters for triggered pads)
     for (const auto metadata : midiMessages)

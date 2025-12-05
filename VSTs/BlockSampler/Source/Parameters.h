@@ -26,9 +26,12 @@ constexpr int MIDI_NOTE_OFFSET = 0;  // Note 0 = Pad 0 (full MIDI range)
 // Audio processing thresholds
 constexpr float FILTER_CUTOFF_MAX = 20000.0f;  // Hz
 constexpr float FILTER_CUTOFF_MIN = 20.0f;     // Hz
-constexpr float FILTER_LP_BYPASS_THRESHOLD = 19999.0f;  // Skip LP filter above this
-constexpr float FILTER_HP_BYPASS_THRESHOLD = 21.0f;     // Skip HP filter below this
+constexpr float FILTER_LP_BYPASS_THRESHOLD = 20000.0f;  // Skip LP filter at max cutoff
+constexpr float FILTER_HP_BYPASS_THRESHOLD = 20.0f;     // Skip HP filter at min cutoff
 constexpr float NORM_PEAK_THRESHOLD = 0.0001f;          // Min peak for normalization
+
+// Async loading
+constexpr int ASYNC_LOAD_CHECK_INTERVAL_MS = 50;  // Timer interval for completed loads
 
 // =============================================================================
 // PARAMETER DEFINITIONS
