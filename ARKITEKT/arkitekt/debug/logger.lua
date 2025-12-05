@@ -12,6 +12,8 @@ local count = 0
 
 -- Live slots for high-frequency updating logs
 local live_slots = {}
+local live_slot_count = 0  -- Cached count for O(1) lookup
+local live_slot_version = 0  -- Increments on any change (for cache invalidation)
 local LIVE_HISTORY_MAX = 50
 local LIVE_STALE_TIMEOUT = 10.0  -- Seconds before slot is considered stale
 
@@ -128,6 +130,8 @@ function M.live(category, key, message, ...)
       expanded = false,
     }
     live_slots[slot_key] = slot
+    live_slot_count = live_slot_count + 1
+    live_slot_version = live_slot_version + 1
   else
     -- Add current message to history before updating
     table.insert(slot.history, 1, {
@@ -135,15 +139,19 @@ function M.live(category, key, message, ...)
       message = slot.message,
     })
 
-    -- Trim history to max size
-    while #slot.history > LIVE_HISTORY_MAX do
-      table.remove(slot.history)
+    -- Trim history to max size (bulk removal)
+    local excess = #slot.history - LIVE_HISTORY_MAX
+    if excess > 0 then
+      for i = LIVE_HISTORY_MAX + 1, #slot.history do
+        slot.history[i] = nil
+      end
     end
 
     -- Update slot
     slot.message = formatted
     slot.last_update = now
     slot.update_count = slot.update_count + 1
+    live_slot_version = live_slot_version + 1
   end
 end
 
@@ -165,20 +173,31 @@ end
 --- @param category string Category name
 --- @param key string Slot key
 function M.clear_live_slot(category, key)
-  live_slots[category .. ':' .. key] = nil
+  local slot_key = category .. ':' .. key
+  if live_slots[slot_key] then
+    live_slots[slot_key] = nil
+    live_slot_count = live_slot_count - 1
+    live_slot_version = live_slot_version + 1
+  end
 end
 
 --- Clear all live slots
 function M.clear_all_live()
   live_slots = {}
+  live_slot_count = 0
+  live_slot_version = live_slot_version + 1
 end
 
 --- Get count of active live slots
 --- @return number count Number of live slots
 function M.get_live_count()
-  local n = 0
-  for _ in pairs(live_slots) do n = n + 1 end
-  return n
+  return live_slot_count
+end
+
+--- Get live slot version (for cache invalidation)
+--- @return number version Increments on any live slot change
+function M.get_live_version()
+  return live_slot_version
 end
 
 --- Check if a slot is stale (no updates for LIVE_STALE_TIMEOUT)
@@ -206,7 +225,11 @@ function M.prune_stale_live()
 
   for _, slot_key in ipairs(to_remove) do
     live_slots[slot_key] = nil
-    removed = removed + 1
+  end
+  removed = #to_remove
+  if removed > 0 then
+    live_slot_count = live_slot_count - removed
+    live_slot_version = live_slot_version + 1
   end
 
   return removed

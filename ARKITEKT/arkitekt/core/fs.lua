@@ -187,11 +187,15 @@ function M.list_files(dir, ext)
   local out = {}
   if not dir then return out end
 
+  -- Optimized: Cache extension comparison values outside loop
+  local ext_lower = ext and ext:lower()
+  local ext_len = ext_lower and #ext_lower
+
   local i = 0
   while true do
     local f = reaper.EnumerateFiles(dir, i)
     if not f then break end
-    if not ext or f:lower():sub(-#ext) == ext:lower() then
+    if not ext_lower or f:lower():sub(-ext_len) == ext_lower then
       out[#out + 1] = M.join(dir, f)
     end
     i = i + 1

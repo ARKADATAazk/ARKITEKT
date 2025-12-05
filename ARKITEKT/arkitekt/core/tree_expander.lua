@@ -98,9 +98,13 @@ function M.expand(root, config)
         local start_idx = #sequence + 1
 
         -- Save current range map state to identify nested ranges
-        local map_snapshot = {}
-        for k, v in pairs(range_map) do
-          map_snapshot[k] = {start_idx = v.start_idx, end_idx = v.end_idx}
+        -- Optimized: Only snapshot if range_map has entries (lazy allocation)
+        local map_snapshot
+        if next(range_map) then
+          map_snapshot = {}
+          for k, v in pairs(range_map) do
+            map_snapshot[k] = {start_idx = v.start_idx, end_idx = v.end_idx}
+          end
         end
 
         -- Expand children once
@@ -117,7 +121,7 @@ function M.expand(root, config)
         -- Identify new nested ranges
         local new_nested_ranges = {}
         for nested_key, nested_range in pairs(range_map) do
-          if not map_snapshot[nested_key] then
+          if not map_snapshot or not map_snapshot[nested_key] then
             new_nested_ranges[nested_key] = {
               start_idx = nested_range.start_idx,
               end_idx = nested_range.end_idx,

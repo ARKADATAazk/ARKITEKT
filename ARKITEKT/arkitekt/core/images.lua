@@ -178,15 +178,27 @@ function Cache:begin_frame()
 end
 
 -- Evict oldest cached images if over limit
+-- Optimized: O(n) batch eviction instead of O(n²) repeated table.remove(1)
 function Cache:evict_if_needed()
-  while #self._cache_order > self._max_cache do
-    local oldest_path = table.remove(self._cache_order, 1)
+  local excess = #self._cache_order - self._max_cache
+  if excess <= 0 then return end
+
+  -- Destroy oldest images (indices 1..excess)
+  for i = 1, excess do
+    local oldest_path = self._cache_order[i]
     local rec = self._cache[oldest_path]
     if rec and rec.img then
       destroy_image(rec.img)
     end
     self._cache[oldest_path] = nil
   end
+
+  -- Shift remaining items in single pass (O(n) instead of O(n²))
+  local new_order = {}
+  for i = excess + 1, #self._cache_order do
+    new_order[#new_order + 1] = self._cache_order[i]
+  end
+  self._cache_order = new_order
 end
 
 function Cache:clear()

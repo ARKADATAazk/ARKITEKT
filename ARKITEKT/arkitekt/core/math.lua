@@ -2,10 +2,15 @@
 -- Arkitekt/core/math.lua
 -- Math utility functions
 
+-- Performance: Localize math functions
+local max = math.max
+local min = math.min
+local abs = math.abs
+
 local M = {}
 
 function M.lerp(a, b, t)
-  t = math.max(0, math.min(1, t))
+  t = max(0, min(1, t))
   return a + (b - a) * t
 end
 
@@ -13,7 +18,7 @@ function M.clamp(value, min_val, max_val)
   if not value then return min_val or 0 end
   min_val = min_val or value
   max_val = max_val or value
-  return math.max(min_val, math.min(max_val, value))
+  return max(min_val, min(max_val, value))
 end
 
 function M.remap(value, in_min, in_max, out_min, out_max)
@@ -34,7 +39,7 @@ function M.smoothdamp(current, target, velocity, smoothtime, maxspeed, dt)
     return current, velocity or 0
   end
 
-  smoothtime = math.max(0.0001, smoothtime or 0.1)
+  smoothtime = max(0.0001, smoothtime or 0.1)
   maxspeed = maxspeed or math.huge
   velocity = velocity or 0
 
@@ -62,7 +67,7 @@ end
 
 function M.approximately(a, b, epsilon)
   epsilon = epsilon or 0.0001
-  return math.abs(a - b) < epsilon
+  return abs(a - b) < epsilon
 end
 
 return M

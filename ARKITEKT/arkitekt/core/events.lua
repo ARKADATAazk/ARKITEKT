@@ -59,12 +59,17 @@ function M.new(options)
     }
     self._next_id = self._next_id + 1
 
-    self.listeners[event_name][#self.listeners[event_name] + 1] = listener
-
-    -- Sort by priority (higher first)
-    table.sort(self.listeners[event_name], function(a, b)
-      return a.priority > b.priority
-    end)
+    -- Insert in sorted position by priority (higher first)
+    -- Optimized: O(n) insertion sort instead of O(n log n) full sort
+    local listeners = self.listeners[event_name]
+    local insert_pos = #listeners + 1
+    for i = 1, #listeners do
+      if listener.priority > listeners[i].priority then
+        insert_pos = i
+        break
+      end
+    end
+    table.insert(listeners, insert_pos, listener)
 
     if self.debug then
       local Logger = get_logger()

@@ -14,6 +14,7 @@
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
 local min = math.min
+local abs = abs
 
 local M = {}
 
@@ -406,12 +407,12 @@ function M.CompareColors(color_a, color_b)
 
   -- Primary: sort by hue (ascending = RED → ORANGE → YELLOW → GREEN → CYAN → BLUE → PURPLE)
   -- Use 0.5 degree threshold for hue binning
-  if math.abs(h_a - h_b) > 0.5 then
+  if abs(h_a - h_b) > 0.5 then
     return h_a < h_b
   end
 
   -- Secondary: higher saturation first (more vibrant colors)
-  if math.abs(s_a - s_b) > 0.01 then
+  if abs(s_a - s_b) > 0.01 then
     return s_a > s_b
   end
 

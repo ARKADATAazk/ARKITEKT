@@ -155,6 +155,10 @@ function M.new(config)
     -- Focused slot view state
     focused_slot_key = nil,  -- key of the slot being viewed in detail (nil = show all)
     hovered_slot_key = nil,  -- for tracking hover effects
+
+    -- Live slot cache (avoid sorting every frame)
+    _sorted_slots_cache = {},
+    _last_live_version = -1,
   }
   
   local panel_config = {
@@ -203,16 +207,16 @@ function M.new(config)
             width = 55,
             on_click = function()
               local entries = Logger.get_entries()
-              local export_text = ''
-              for _, entry in ipairs(entries) do
+              local lines = {}
+              for i, entry in ipairs(entries) do
                 local h = (entry.time / 3600) // 1 % 24
                 local m = (entry.time / 60) // 1 % 60
                 local s = entry.time % 60
                 local time_str = string.format('%02d:%02d:%06.3f', h, m, s)
-                export_text = export_text .. string.format('[%s] [%s] %s: %s\n',
+                lines[i] = string.format('[%s] [%s] %s: %s',
                   time_str, entry.level, entry.category, entry.message)
               end
-              reaper.CF_SetClipboard(export_text)
+              reaper.CF_SetClipboard(table.concat(lines, '\n'))
               Logger.info('CONSOLE', 'Exported to clipboard')
             end,
           },
@@ -356,13 +360,21 @@ function M.new(config)
 
     -- Calculate height needed for expanded slots
     local total_height = header_height + padding
-    local sorted_slots = {}
-    for key, slot in pairs(live_slots) do
-      sorted_slots[#sorted_slots + 1] = { key = key, slot = slot }
+
+    -- Update sorted cache only when slots changed
+    local live_version = Logger.get_live_version()
+    if live_version ~= self._last_live_version then
+      local sorted_slots = {}
+      for key, slot in pairs(live_slots) do
+        sorted_slots[#sorted_slots + 1] = { key = key, slot = slot }
+      end
+      table.sort(sorted_slots, function(a, b)
+        return a.slot.last_update > b.slot.last_update
+      end)
+      self._sorted_slots_cache = sorted_slots
+      self._last_live_version = live_version
     end
-    table.sort(sorted_slots, function(a, b)
-      return a.slot.last_update > b.slot.last_update
-    end)
+    local sorted_slots = self._sorted_slots_cache
 
     for _, entry in ipairs(sorted_slots) do
       total_height = total_height + row_height
@@ -663,15 +675,18 @@ function M.new(config)
   function console:update_text_view()
     local entries = Logger.get_entries()
     local lines = {}
-    
+
+    -- Pre-compute filter values
+    local filter_cat = self.filter_category
+    local search_lower = self.search_text ~= '' and self.search_text:lower() or nil
+
     for _, entry in ipairs(entries) do
       -- Apply filters
       local show = true
-      if self.filter_category ~= 'All' and entry.level ~= self.filter_category then
+      if filter_cat ~= 'All' and entry.level ~= filter_cat then
         show = false
       end
-      if self.search_text ~= '' then
-        local search_lower = self.search_text:lower()
+      if search_lower then
         local text = (entry.message .. entry.category):lower()
         if not text:find(search_lower, 1, true) then
           show = false

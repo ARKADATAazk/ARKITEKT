@@ -36,6 +36,15 @@ M.overrides = {}
 
 -- Track which keys have been modified
 M.modified_keys = {}
+M._mod_count = 0  -- Cached count of modified keys
+
+-- Validation cache
+M._validation_cache = nil  -- { valid = bool, err = string|nil }
+M._validation_dirty = true
+
+-- Filtered palette cache
+M._filtered_cache = nil  -- { categories = {}, total_keys = number }
+M._filter_cache_key = ''  -- filter_text .. show_only_modified
 
 -- Category order (matches theme.lua structure)
 local CATEGORY_ORDER = {
@@ -88,7 +97,13 @@ function M.set_override(key, field, value)
   end
 
   M.overrides[key][field] = value
-  M.modified_keys[key] = true
+  if not M.modified_keys[key] then
+    M.modified_keys[key] = true
+    M._mod_count = M._mod_count + 1
+  end
+
+  -- Invalidate caches
+  M._filtered_cache = nil
 
   -- Regenerate palette with overrides
   M.apply_overrides()
@@ -115,7 +130,12 @@ end
 --- Clear override for a key (revert to original)
 function M.clear_override(key)
   M.overrides[key] = nil
-  M.modified_keys[key] = nil
+  if M.modified_keys[key] then
+    M.modified_keys[key] = nil
+    M._mod_count = M._mod_count - 1
+  end
+  -- Invalidate caches
+  M._filtered_cache = nil
   -- Restore the original value for this key
   restore_original(key)
   Registry.clear_cache()
@@ -131,6 +151,10 @@ function M.clear_all_overrides()
 
   M.overrides = {}
   M.modified_keys = {}
+  M._mod_count = 0
+
+  -- Invalidate caches
+  M._filtered_cache = nil
 
   -- Restore all original values
   for _, key in ipairs(keys_to_restore) do
@@ -171,8 +195,13 @@ end
 -- VALIDATION
 -- =============================================================================
 
---- Validate colors structure
+--- Validate colors structure (cached)
 function M.validate()
+  -- Return cached result if available
+  if M._validation_cache and not M._validation_dirty then
+    return M._validation_cache.valid, M._validation_cache.err
+  end
+
   local errors = {}
   local valid_modes = { bg = true, lerp = true, offset = true, snap = true }
 
@@ -200,10 +229,18 @@ function M.validate()
     end
   end
 
+  local valid, err
   if #errors > 0 then
-    return false, table.concat(errors, '\n')
+    valid, err = false, table.concat(errors, '\n')
+  else
+    valid, err = true, nil
   end
-  return true, nil
+
+  -- Cache the result
+  M._validation_cache = { valid = valid, err = err }
+  M._validation_dirty = false
+
+  return valid, err
 end
 
 --- Get validation summary
@@ -551,9 +588,8 @@ function M.render_debug_window(ctx, ImGui, state)
     end
   end
 
-  -- Modified count
-  local mod_count = 0
-  for _ in pairs(M.modified_keys) do mod_count = mod_count + 1 end
+  -- Modified count (cached)
+  local mod_count = M._mod_count
   if mod_count > 0 then
     ImGui.SameLine(ctx)
     ImGui.TextColored(ctx, 0xFFAA00FF, string.format('[%d modified]', mod_count))
@@ -645,38 +681,52 @@ function M.render_debug_window(ctx, ImGui, state)
       -- Global palette section
       local global_open = ImGui.CollapsingHeader(ctx, 'Global Theme Colors', ImGui.TreeNodeFlags_DefaultOpen)
       if global_open then
-        -- Collect keys by category (matching theme.lua order)
-        local categories = {}
-        for key in pairs(Palette.colors) do
-          local include = true
+        -- Build cache key from filter state
+        local cache_key = M.filter_text .. (M.show_only_modified and '1' or '0')
 
-          -- Filter check
-          if M.filter_text ~= '' then
-            include = key:lower():find(M.filter_text:lower(), 1, true) ~= nil
-          end
+        -- Rebuild categories only when filter changes or cache invalidated
+        local categories
+        if M._filtered_cache and M._filter_cache_key == cache_key then
+          categories = M._filtered_cache
+        else
+          categories = {}
+          local filter_lower = M.filter_text ~= '' and M.filter_text:lower() or nil
 
-          -- Modified-only check
-          if M.show_only_modified and not M.modified_keys[key] then
-            include = false
-          end
+          for key in pairs(Palette.colors) do
+            local include = true
 
-          if include then
-            -- Find category
-            local cat = 'OTHER'
-            for _, prefix in ipairs(CATEGORY_ORDER) do
-              if key:sub(1, #prefix) == prefix then
-                cat = prefix
-                break
-              end
+            -- Filter check (pre-computed filter_lower)
+            if filter_lower then
+              include = key:lower():find(filter_lower, 1, true) ~= nil
             end
-            categories[cat] = categories[cat] or {}
-            categories[cat][#categories[cat] + 1] = key
-          end
-        end
 
-        -- Sort keys within each category
-        for _, keys in pairs(categories) do
-          table.sort(keys)
+            -- Modified-only check
+            if M.show_only_modified and not M.modified_keys[key] then
+              include = false
+            end
+
+            if include then
+              -- Find category
+              local cat = 'OTHER'
+              for _, prefix in ipairs(CATEGORY_ORDER) do
+                if key:sub(1, #prefix) == prefix then
+                  cat = prefix
+                  break
+                end
+              end
+              categories[cat] = categories[cat] or {}
+              categories[cat][#categories[cat] + 1] = key
+            end
+          end
+
+          -- Sort keys within each category
+          for _, keys in pairs(categories) do
+            table.sort(keys)
+          end
+
+          -- Cache the result
+          M._filtered_cache = categories
+          M._filter_cache_key = cache_key
         end
 
         -- Get selected script palette for comparison
@@ -747,14 +797,15 @@ function M.render_debug_window(ctx, ImGui, state)
       ImGui.Spacing(ctx)
 
       -- Script palettes
+      local script_filter_lower = M.filter_text ~= '' and M.filter_text:lower() or nil
       for script_name, palette_def in pairs(Registry.script_palettes) do
         local header = string.format('Script: %s', script_name)
         if ImGui.CollapsingHeader(ctx, header) then
           local keys = {}
           for key in pairs(palette_def) do
             local include = true
-            if M.filter_text ~= '' then
-              include = key:lower():find(M.filter_text:lower(), 1, true) ~= nil
+            if script_filter_lower then
+              include = key:lower():find(script_filter_lower, 1, true) ~= nil
             end
             if include then
               keys[#keys + 1] = key
