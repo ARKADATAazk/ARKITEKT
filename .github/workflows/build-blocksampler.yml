@@ -1,0 +1,150 @@
+# Build and validate BlockSampler VST on all platforms
+name: Build BlockSampler
+
+on:
+  push:
+    paths:
+      - 'VSTs/BlockSampler/**'
+      - '.github/workflows/build-blocksampler.yml'
+  pull_request:
+    paths:
+      - 'VSTs/BlockSampler/**'
+      - '.github/workflows/build-blocksampler.yml'
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            cmake_flags: ""
+            artifact_path: VST3/BlockSampler.vst3
+            clap_path: CLAP/BlockSampler.clap
+          - os: macos-latest
+            cmake_flags: ""
+            artifact_path: VST3/BlockSampler.vst3
+            clap_path: CLAP/BlockSampler.clap
+            au_path: AU/BlockSampler.component
+          - os: ubuntu-latest
+            cmake_flags: ""
+            artifact_path: VST3/BlockSampler.vst3
+            clap_path: CLAP/BlockSampler.clap
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Linux dependencies
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev \
+            libjack-jackd2-dev \
+            libx11-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxinerama-dev \
+            libfreetype6-dev \
+            libwebkit2gtk-4.0-dev \
+            libcurl4-openssl-dev
+
+      # Configure
+      - name: Configure CMake
+        run: cmake -B build -S VSTs/BlockSampler -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_flags }}
+
+      # Build
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      # List outputs
+      - name: List build artifacts
+        shell: bash
+        run: |
+          echo "=== Build outputs ==="
+          find build/BlockSampler_artefacts -type f -name "*.vst3" -o -name "*.clap" -o -name "*.component" 2>/dev/null || true
+          ls -laR build/BlockSampler_artefacts/Release/ 2>/dev/null || ls -laR build/BlockSampler_artefacts/ || true
+
+      # Download and run pluginval
+      - name: Download pluginval
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            curl -L https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip -o pluginval.zip
+            unzip pluginval.zip
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            curl -L https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip -o pluginval.zip
+            unzip pluginval.zip
+          else
+            curl -L https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Linux.zip -o pluginval.zip
+            unzip pluginval.zip
+          fi
+
+      - name: Validate VST3
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            ./pluginval.exe --validate "build/BlockSampler_artefacts/Release/${{ matrix.artifact_path }}" --strictness-level 5
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            ./pluginval.app/Contents/MacOS/pluginval --validate "build/BlockSampler_artefacts/Release/${{ matrix.artifact_path }}" --strictness-level 5
+          else
+            ./pluginval --validate "build/BlockSampler_artefacts/Release/${{ matrix.artifact_path }}" --strictness-level 5
+          fi
+
+      - name: Validate CLAP
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            ./pluginval.exe --validate "build/BlockSampler_artefacts/Release/${{ matrix.clap_path }}" --strictness-level 5
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            ./pluginval.app/Contents/MacOS/pluginval --validate "build/BlockSampler_artefacts/Release/${{ matrix.clap_path }}" --strictness-level 5
+          else
+            ./pluginval --validate "build/BlockSampler_artefacts/Release/${{ matrix.clap_path }}" --strictness-level 5
+          fi
+
+      - name: Validate AU (macOS only)
+        if: runner.os == 'macOS'
+        run: |
+          ./pluginval.app/Contents/MacOS/pluginval --validate "build/BlockSampler_artefacts/Release/${{ matrix.au_path }}" --strictness-level 5
+
+      # Upload artifacts
+      - name: Upload VST3
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlockSampler-VST3-${{ runner.os }}
+          path: build/BlockSampler_artefacts/Release/${{ matrix.artifact_path }}
+
+      - name: Upload CLAP
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlockSampler-CLAP-${{ runner.os }}
+          path: build/BlockSampler_artefacts/Release/${{ matrix.clap_path }}
+
+      - name: Upload AU (macOS only)
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlockSampler-AU-macOS
+          path: build/BlockSampler_artefacts/Release/${{ matrix.au_path }}
+
+  # Summary job
+  summary:
+    name: Build Summary
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check build status
+        run: |
+          echo "## BlockSampler Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Windows | ${{ needs.build.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| macOS | ${{ needs.build.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux | ${{ needs.build.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
