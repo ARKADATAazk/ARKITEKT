@@ -118,6 +118,12 @@ function M.new(opts)
     base_flags = Constants.build_imgui_flags(ImGui, config.imgui_flags)
   end
 
+  -- Disable ImGui's .ini persistence - we use our own settings.json
+  -- This prevents ReaImGui from overriding our window geometry
+  if ImGui.WindowFlags_NoSavedSettings then
+    base_flags = base_flags | ImGui.WindowFlags_NoSavedSettings
+  end
+
   -- ============================================================================
   -- CHROME CONFIGURATION: Determine component visibility
   -- ============================================================================
@@ -621,7 +627,6 @@ function M.new(opts)
     elseif not self._pos_size_set then
       local pos  = self._saved_pos  or self.initial_pos
       local size = self._saved_size or self.initial_size
-      -- Use Once (per session) to override ImGui's .ini persistence with our Settings
       if pos  and pos.x  and pos.y  then ImGui.SetNextWindowPos(ctx,  pos.x,  pos.y, ImGui.Cond_Once) end
       if size and size.w and size.h then ImGui.SetNextWindowSize(ctx, size.w, size.h, ImGui.Cond_Once) end
       self._pos_size_set = true
@@ -721,7 +726,8 @@ function M.new(opts)
       window_flags = window_flags | ImGui.WindowFlags_TopMost
     end
 
-    local visible, open = ImGui.Begin(ctx, self.title .. '##main', true, window_flags)
+    -- Use ### for stable window ID - title can change without affecting ImGui's window identity
+    local visible, open = ImGui.Begin(ctx, self.title .. '###main', true, window_flags)
     self._begun = true
 
     if visible then

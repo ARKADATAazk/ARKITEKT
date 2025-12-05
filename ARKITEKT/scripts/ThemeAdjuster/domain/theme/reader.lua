@@ -174,18 +174,32 @@ function M.clear_link(theme_name)
 end
 
 -- -------------- ui_img parse --------------
+-- Helper: check if directory exists using multiple methods
+local function safe_dir_exists(path)
+  if reaper.file_exists(path) then return true end
+  -- Fallback: if we can enumerate inside it, it exists
+  if reaper.EnumerateFiles(path, 0) ~= nil then return true end
+  if reaper.EnumerateSubdirectories(path, 0) ~= nil then return true end
+  return false
+end
+
 local function parse_ui_img(theme_file, themes_dir)
-  local txt = read_text(theme_file); if not txt then return nil end
+  local txt = read_text(theme_file)
+  if not txt then return nil end
+
   txt = txt:gsub("\r\n","\n"):gsub("\r","\n")
   for line in txt:gmatch("([^\n]+)") do
     line = line:gsub("%s*;.*$",""):gsub("%s*//.*$","")
     local k,v = line:match("^%s*([%w_%-]+)%s*=%s*(.-)%s*$")
     if k and v and k:lower()=="ui_img" and v~="" then
       v = v:gsub('^"(.*)"$', "%1"):gsub("^'(.*)'$", "%1")
+      v = v:gsub("^%s+", ""):gsub("%s+$", "")  -- trim whitespace
       if v:match("^%a:[\\/\\]") or v:match("^/") then return v end
       local base = dirname(theme_file)
-      local p1 = join(base, v); if dir_exists(p1) then return p1 end
-      local p2 = join(themes_dir, v); if dir_exists(p2) then return p2 end
+      local p1 = join(base, v)
+      if safe_dir_exists(p1) then return p1 end
+      local p2 = join(themes_dir, v)
+      if safe_dir_exists(p2) then return p2 end
       return nil
     end
   end
@@ -267,8 +281,18 @@ function M.get_status()
 
   if ext == "reapertheme" then
     local ui = parse_ui_img(info.theme_path, info.themes_dir)
-    if ui and dir_exists(ui) then 
-      return "direct", ui, nil 
+
+    -- Fallback: if no ui_img line, check for folder with same name as theme
+    if not ui then
+      local theme_dir = dirname(info.theme_path)
+      local fallback = join(theme_dir, info.theme_name)
+      if safe_dir_exists(fallback) then
+        ui = fallback
+      end
+    end
+
+    if ui and safe_dir_exists(ui) then
+      return "direct", ui, nil
     end
     
     local linked_zip = M.get_linked_zip(info.theme_name)

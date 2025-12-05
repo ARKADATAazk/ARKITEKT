@@ -19,6 +19,57 @@ local dir_exists = Fs.dir_exists
 local copy_file = Fs.copy_file
 
 -- ============================================================================
+-- DPI VARIANT HANDLING
+-- ============================================================================
+
+-- Copy DPI variants for a given asset key
+-- src_dir: directory containing the source asset
+-- dst_dir: directory to copy variants to
+-- key: asset key (without .png extension)
+-- Returns: number of variants copied
+local function copy_dpi_variants(src_dir, dst_dir, key)
+  local copied = 0
+
+  -- 1. Check for _hidpi suffix variant (same directory)
+  local hidpi_src = src_dir .. SEP .. key .. '_hidpi.png'
+  local hidpi_dst = dst_dir .. SEP .. key .. '_hidpi.png'
+  if file_exists(hidpi_src) then
+    if copy_file(hidpi_src, hidpi_dst) then
+      copied = copied + 1
+    end
+  end
+
+  -- 2. Check for 150/ folder variant
+  local src_150 = src_dir .. SEP .. '150' .. SEP .. key .. '.png'
+  local dst_150_dir = dst_dir .. SEP .. '150'
+  local dst_150 = dst_150_dir .. SEP .. key .. '.png'
+  if file_exists(src_150) then
+    reaper.RecursiveCreateDirectory(dst_150_dir, 0)
+    if copy_file(src_150, dst_150) then
+      copied = copied + 1
+    end
+  end
+
+  -- 3. Check for 200/ folder variant
+  local src_200 = src_dir .. SEP .. '200' .. SEP .. key .. '.png'
+  local dst_200_dir = dst_dir .. SEP .. '200'
+  local dst_200 = dst_200_dir .. SEP .. key .. '.png'
+  if file_exists(src_200) then
+    reaper.RecursiveCreateDirectory(dst_200_dir, 0)
+    if copy_file(src_200, dst_200) then
+      copied = copied + 1
+    end
+  end
+
+  return copied
+end
+
+-- Get source directory from asset path
+local function get_asset_dir(asset_path)
+  return asset_path:match('^(.*)' .. SEP) or '.'
+end
+
+-- ============================================================================
 -- PACKAGE SCANNING
 -- ============================================================================
 
@@ -342,6 +393,11 @@ function M.apply_to_theme(theme_root, resolved_map, opts)
     local ok, err = copy_file(src_path, dst_path)
     if ok then
       result.files_copied = result.files_copied + 1
+
+      -- Also copy DPI variants if they exist
+      local src_dir = get_asset_dir(src_path)
+      local dpi_copied = copy_dpi_variants(src_dir, theme_root, key)
+      result.files_copied = result.files_copied + dpi_copied
     else
       result.ok = false
       table.insert(result.errors, 'Copy failed for ' .. key .. ': ' .. (err or 'unknown'))
@@ -645,6 +701,11 @@ function M.apply_to_zip_theme(cache_dir, themes_dir, theme_name, resolved_map, o
     local ok, err = copy_file(src_path, dst_path)
     if ok then
       result.files_copied = result.files_copied + 1
+
+      -- Also copy DPI variants if they exist
+      local src_dir = get_asset_dir(src_path)
+      local dpi_copied = copy_dpi_variants(src_dir, ui_work, key)
+      result.files_copied = result.files_copied + dpi_copied
     else
       table.insert(result.errors, 'Copy failed for ' .. key .. ': ' .. (err or 'unknown'))
     end
@@ -923,6 +984,11 @@ function M.apply_to_reassembled_folder(source_dir, output_dir, resolved_map, opt
       local ok, err = copy_file(src_path, dst_path)
       if ok then
         result.files_copied = result.files_copied + 1
+
+        -- Also copy DPI variants if they exist
+        local src_dir = get_asset_dir(src_path)
+        local dpi_copied = copy_dpi_variants(src_dir, output_ui_img, key)
+        result.files_copied = result.files_copied + dpi_copied
       else
         table.insert(result.errors, 'Copy failed for ' .. key .. ': ' .. (err or 'unknown'))
       end

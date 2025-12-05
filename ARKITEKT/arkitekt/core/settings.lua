@@ -72,14 +72,12 @@ local function now() return reaper and reaper.time_precise and reaper.time_preci
 
 function Settings:sub(prefix)
   local parent = self
-  local view = setmetatable({}, {
-    __index = {
-      get = function(_, key, default) return parent:get(prefix .. '.' .. key, default) end
-      ,set = function(_, key, val)     parent:set(prefix .. '.' .. key, val) end
-      ,maybe_flush = function(_) parent:maybe_flush() end
-      ,flush = function(_) parent:flush() end
-    }
-  })
+  -- Create view with direct method assignments (more robust than __index table)
+  local view = {}
+  function view:get(key, default) return parent:get(prefix .. '.' .. key, default) end
+  function view:set(key, val) parent:set(prefix .. '.' .. key, val) end
+  function view:maybe_flush() parent:maybe_flush() end
+  function view:flush() parent:flush() end
   return view
 end
 

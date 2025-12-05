@@ -3,6 +3,7 @@
 -- Status bar configuration
 
 local Constants = require('ThemeAdjuster.config.constants')
+local Theme = require('ThemeAdjuster.domain.theme.reader')
 
 local M = {}
 
@@ -16,7 +17,8 @@ local function get_app_status(State)
 
       -- Determine status based on cache and theme state
       local cache_status = State.get_cache_status()
-      local theme_status = State.get_theme_status()
+      -- Use actual theme detection instead of stale State value
+      local theme_status = Theme.get_status()
 
       if cache_status == 'needs_rebuild' then
         status_message = 'Cache needs rebuild'
