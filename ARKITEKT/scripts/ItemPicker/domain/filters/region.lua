@@ -32,7 +32,9 @@ function M.passes_region_filter(selected_regions, item_regions, mode)
   local item_region_set = {}
   for _, region in ipairs(item_regions) do
     local region_name = type(region) == 'table' and region.name or region
-    item_region_set[region_name] = true
+    if selected_regions[region_name] then
+      return true
+    end
   end
 
   if mode == 'and' then

@@ -19,16 +19,26 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 -- ============================================================================
 
 local Shell = require('arkitekt.runtime.shell')
-local App = require('WalterBuilder.app.init')
-
--- Initialize settings
 local Settings = require('arkitekt.core.settings')
+local State = require('WalterBuilder.app.state')
+local Controller = require('WalterBuilder.core.controller')
+local GUI = require('WalterBuilder.ui.gui')
+
+-- ============================================================================
+-- INITIALIZE SETTINGS AND STATE
+-- ============================================================================
+
 local data_dir = Ark._bootstrap.get_data_dir('WalterBuilder')
 local settings = Settings.new(data_dir, 'settings.json')
 
--- Initialize state and create GUI
-App.state.initialize(settings)
-local gui = App.ui.create(App.state, App.defs, settings)
+-- Initialize state with settings
+State.initialize(settings)
+
+-- Create controller for business logic
+local controller = Controller.new(State, settings)
+
+-- Create GUI instance with controller
+local gui = GUI.new(State, settings, controller)
 
 -- ============================================================================
 -- RUN APPLICATION
@@ -37,7 +47,6 @@ local gui = App.ui.create(App.state, App.defs, settings)
 Shell.run({
   title        = 'WALTER Builder',
   version      = '(0.1.0)',
-  app_name     = 'WalterBuilder',
   draw         = function(ctx, shell_state)
     gui:draw(ctx, shell_state.window, shell_state)
   end,

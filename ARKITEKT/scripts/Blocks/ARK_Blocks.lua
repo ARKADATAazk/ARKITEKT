@@ -28,15 +28,15 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 -- ============================================================================
 local Shell = require('arkitekt.runtime.shell')
 local Settings = require('arkitekt.core.settings')
-local State = require('scripts.Blocks.app.state')
-local GUI = require('scripts.Blocks.ui.init')
-local Defaults = require('scripts.Blocks.config.defaults')
+local State = require('scripts.ProductionPanel.app.state')
+local GUI = require('scripts.ProductionPanel.ui.init')
+local Defaults = require('scripts.ProductionPanel.config.defaults')
 local Colors = require('arkitekt.core.colors')
 
 -- ============================================================================
 -- SETTINGS & STATE INITIALIZATION
 -- ============================================================================
-local data_dir = Ark._bootstrap.get_data_dir('Blocks')
+local data_dir = Ark._bootstrap.get_data_dir('ProductionPanel')
 local settings = Settings.new(data_dir, 'settings.json')
 
 State.initialize(settings)

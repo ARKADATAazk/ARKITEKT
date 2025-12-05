@@ -133,20 +133,8 @@ function M.passes_track_filter(state, track_guid)
 end
 
 -- Sort filtered items by various criteria
-function M.apply_sorting(filtered, sort_mode, sort_reverse, item_usage)
-  if sort_mode == 'recent' then
-    -- Sort by last used time (most recent first)
-    item_usage = item_usage or {}
-    table.sort(filtered, function(a, b)
-      local a_time = item_usage[a.uuid] or 0
-      local b_time = item_usage[b.uuid] or 0
-      if sort_reverse then
-        return a_time < b_time  -- Oldest first
-      else
-        return a_time > b_time  -- Most recent first
-      end
-    end)
-  elseif sort_mode == 'length' then
+function M.apply_sorting(filtered, sort_mode, sort_reverse)
+  if sort_mode == 'length' then
     table.sort(filtered, function(a, b)
       local a_len = a.length or 0
       local b_len = b.length or 0

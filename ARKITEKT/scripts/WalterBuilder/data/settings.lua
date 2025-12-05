@@ -36,7 +36,7 @@ function M.get()
     local script_path = info.source:match('@?(.*)')
     local sep = package.config:sub(1, 1)
 
-    -- Go up from data/ to WalterBuilder/ then to cache/
+    -- Go up from infra/ to WalterBuilder/ then to cache/
     local walter_dir = script_path:match('(.*' .. sep .. ')') or ''
     walter_dir = walter_dir:match('(.*' .. sep .. ')') or ''  -- Up one more level
 

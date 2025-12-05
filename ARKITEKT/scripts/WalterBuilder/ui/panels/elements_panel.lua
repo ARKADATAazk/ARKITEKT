@@ -237,16 +237,10 @@ function Panel:draw(ctx)
   local result = nil
 
   -- Search bar
-  local avail_w = ImGui.GetContentRegionAvail(ctx)
-  local search_result = Ark.InputText(ctx, {
-    id = 'elements_search',
-    text = self.search_text,
-    hint = 'Search elements...',
-    width = avail_w,
-    preset = 'search',
-  })
-  if search_result.changed then
-    self.search_text = search_result.value
+  ImGui.PushItemWidth(ctx, -1)
+  local changed, text = ImGui.InputTextWithHint(ctx, '##search', 'Search elements...', self.search_text)
+  if changed then
+    self.search_text = text
   end
 
   ImGui.Dummy(ctx, 0, 4)

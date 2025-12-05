@@ -4,7 +4,7 @@
 
 return {
   WINDOW = {
-    TITLE = 'Blocks',
+    TITLE = 'Production Panel',
     WIDTH = 1200,
     HEIGHT = 700,
     MIN_WIDTH = 800,

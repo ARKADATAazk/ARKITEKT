@@ -73,12 +73,7 @@ function M.resolve(ctx, base_id)
   end
 
   -- Prepend stack path: 'parent/child/base_id'
-  -- Optimized: Single table.concat instead of concat + '..' + base_id
-  local n = #stack
-  stack[n + 1] = base_id
-  local result = table.concat(stack, '/')
-  stack[n + 1] = nil  -- Restore stack (don't permanently add base_id)
-  return result
+  return table.concat(stack, '/') .. '/' .. base_id
 end
 
 --- Clear the stack for this context (for cleanup/testing)

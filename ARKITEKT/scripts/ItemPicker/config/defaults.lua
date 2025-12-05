@@ -29,6 +29,7 @@ M.SETTINGS = {
   sort_mode = 'none',
   sort_reverse = false,
   waveform_quality = 0.2,
+  waveform_filled = true,
   show_duration = true,
   enable_tile_fx = true,
   layout_mode = 'vertical',
@@ -45,7 +46,6 @@ M.SETTINGS = {
 -- Sort modes
 M.SORT_MODES = {
   'none',
-  'recent',
   'color',
   'name',
   'pool',

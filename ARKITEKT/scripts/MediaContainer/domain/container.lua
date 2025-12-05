@@ -10,6 +10,8 @@ local State = require('MediaContainer.app.state')
 local UUID = require('arkitekt.core.uuid')
 local Logger = require('arkitekt.debug.logger')
 
+local State = require('MediaContainer.core.app_state')
+local Ark = require('arkitekt')
 local M = {}
 
 -- =============================================================================
@@ -82,7 +84,7 @@ function M.create_from_selection()
 
   -- Create container
   local container = {
-    id = UUID.generate(),
+    id = Ark.UUID.generate(),
     name = 'Container ' .. (#State.containers + 1),
     color = State.generate_container_color(),
     start_time = min_pos,
@@ -257,7 +259,7 @@ function M.paste_container()
 
   -- Create linked container
   local linked_container = {
-    id = UUID.generate(),
+    id = Ark.UUID.generate(),
     name = master.name .. ' (linked)',
     color = master.color,
     start_time = cursor_pos,
@@ -316,7 +318,7 @@ function M.detect_changes()
           old_hash = cached_hash,
           new_hash = current_hash,
         }
-        Logger.debug('CONTAINER', 'Change detected in %s', container.name)
+        reaper.ShowConsoleMsg(string.format('[MediaContainer] Change detected in %s\n', container.name))
       end
 
       ::continue::
@@ -355,7 +357,7 @@ function M.sync_changes(changes)
     end
     processed_masters[master_id] = true
 
-    Logger.debug('CONTAINER', 'Processing sync for master group %s', master_id:sub(1,8))
+    reaper.ShowConsoleMsg(string.format('[MediaContainer] Processing sync for master group %s\n', master_id:sub(1,8)))
 
     -- Find the item reference in source container
     local source_item_ref = nil
@@ -403,7 +405,7 @@ function M.sync_changes(changes)
       M.apply_item_properties(source_item, target_item,
         source_container.start_time, linked_container.start_time)
 
-      Logger.debug('CONTAINER', 'Synced to %s', linked_container.name)
+      reaper.ShowConsoleMsg(string.format('[MediaContainer] Synced to %s\n', linked_container.name))
 
       -- Update cache (using relative position to linked container)
       local new_hash = State.get_item_state_hash(target_item, linked_container)

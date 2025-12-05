@@ -4,7 +4,6 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local Config = require('ItemPicker.config.constants')
 local M = {}
 
 -- PERF: Localize math functions
@@ -195,8 +194,8 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
 
   -- Draw insertion preview
   if rect_x1 then
-    -- Grey crosshair lines
-    local line_color = Ark.Colors.WithOpacity(Config.DRAG.crosshair_color, 0.8)
+    -- Grey crosshair lines instead of blue
+    local line_color = Ark.Colors.WithOpacity(0x808080FF, 0.8)
 
     -- Get the items being dragged
     local dragging_count = (state.dragging_keys and #state.dragging_keys) or 1
@@ -227,7 +226,7 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
             r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
             item_color = ImGui.ColorConvertDouble4ToU32(r, g, b, 0.8)
           else
-            item_color = Config.DRAG.fallback_grey
+            item_color = 0xB1B4B4CC  -- Grey at 80% opacity
           end
 
           -- Draw base rectangle with item color

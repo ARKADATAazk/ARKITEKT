@@ -17,6 +17,10 @@ M.GRID = Constants.GRID
 M.TILE_RENDER = Constants.TILE_RENDER
 M.REGION_TAGS = Constants.REGION_TAGS
 M.UI_PANELS = Constants.UI_PANELS
+M.ANIMATION = Constants.ANIMATION
+M.AUTO_RELOAD = Constants.AUTO_RELOAD
+M.SEARCH = Constants.SEARCH
+M.LOADING = Constants.LOADING
 
 -- Re-export validation
 M.validate = Constants.validate

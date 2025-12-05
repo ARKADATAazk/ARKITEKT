@@ -109,9 +109,6 @@ function M.new(opts)
 
     -- Per-app theme overrides
     app_name        = config.app_name,
-
-    -- Dev mode
-    dev_mode        = config.dev_mode,
   }
   
   function titlebar:_truncate_text(ctx, text, max_width, font, font_size)
@@ -146,11 +143,8 @@ function M.new(opts)
       local sub_w = ImGui.CalcTextSize(ctx, sub)
       if font then ImGui.PopFont(ctx) end
 
-      if sub_w <= target_w then
-        best = mid
-        lo = mid + 1
-      else
-        hi = mid - 1
+      if sub_w + ellipsis_w <= max_width then
+        return sub .. ellipsis
       end
     end
 

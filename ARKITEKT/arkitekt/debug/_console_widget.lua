@@ -207,16 +207,16 @@ function M.new(config)
             width = 55,
             on_click = function()
               local entries = Logger.get_entries()
-              local lines = {}
-              for i, entry in ipairs(entries) do
+              local export_text = ''
+              for _, entry in ipairs(entries) do
                 local h = (entry.time / 3600) // 1 % 24
                 local m = (entry.time / 60) // 1 % 60
                 local s = entry.time % 60
                 local time_str = string.format('%02d:%02d:%06.3f', h, m, s)
-                lines[i] = string.format('[%s] [%s] %s: %s',
+                export_text = export_text .. string.format('[%s] [%s] %s: %s\n',
                   time_str, entry.level, entry.category, entry.message)
               end
-              reaper.CF_SetClipboard(table.concat(lines, '\n'))
+              reaper.CF_SetClipboard(export_text)
               Logger.info('CONSOLE', 'Exported to clipboard')
             end,
           },
@@ -683,10 +683,11 @@ function M.new(config)
     for _, entry in ipairs(entries) do
       -- Apply filters
       local show = true
-      if filter_cat ~= 'All' and entry.level ~= filter_cat then
+      if self.filter_category ~= 'All' and entry.level ~= self.filter_category then
         show = false
       end
-      if search_lower then
+      if self.search_text ~= '' then
+        local search_lower = self.search_text:lower()
         local text = (entry.message .. entry.category):lower()
         if not text:find(search_lower, 1, true) then
           show = false

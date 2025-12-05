@@ -30,6 +30,7 @@ local function get_default_settings()
     sort_mode = 'none',
     sort_reverse = false,
     waveform_quality = 0.2,
+    waveform_filled = true,
     enable_tile_fx = true,
     layout_mode = 'vertical',
     enable_region_processing = false,  -- Enable region detection and filtering
@@ -152,51 +153,6 @@ function M.save_track_filter(whitelist, enabled)
   local serialized = JSON.encode(filter_data)
   if serialized then
     reaper.SetProjExtState(0, EXTNAME, 'track_filter', serialized)
-  end
-end
-
--- Item usage persistence (for "recent" sort)
-function M.load_item_usage()
-  local has_state, state_str = reaper.GetProjExtState(0, EXTNAME, 'item_usage')
-
-  if not has_state or has_state == 0 or state_str == '' then
-    return {}
-  end
-
-  local usage = JSON.decode(state_str)
-  if not usage or type(usage) ~= 'table' then
-    return {}
-  end
-
-  return usage
-end
-
-function M.save_item_usage(usage)
-  if not usage then return end
-
-  -- Limit to last 100 items to prevent bloat
-  local count = 0
-  for _ in pairs(usage) do count = count + 1 end
-
-  if count > 100 then
-    -- Keep only the 100 most recent
-    local sorted = {}
-    for uuid, time in pairs(usage) do
-      sorted[#sorted + 1] = { uuid = uuid, time = time }
-    end
-    table.sort(sorted, function(a, b) return a.time > b.time end)
-
-    usage = {}
-    for i = 1, 100 do
-      if sorted[i] then
-        usage[sorted[i].uuid] = sorted[i].time
-      end
-    end
-  end
-
-  local serialized = JSON.encode(usage)
-  if serialized then
-    reaper.SetProjExtState(0, EXTNAME, 'item_usage', serialized)
   end
 end
 

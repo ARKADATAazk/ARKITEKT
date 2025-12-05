@@ -29,9 +29,9 @@ local Draw_Text = Ark.Draw.Text
 local M = {}
 
 -- ============================================================================
--- PROFILING (only active in dev mode: Ctrl+Shift+Alt+D to toggle)
+-- PROFILING (set to true to enable, check REAPER console for output)
 -- ============================================================================
-local PROFILE_ENABLED = false  -- Base flag, checked with ARK_DEV_MODE at runtime
+local PROFILE_ENABLED = true
 local _profile = {
   animator = 0,
   color = 0,
@@ -46,7 +46,7 @@ local _profile = {
 }
 
 local function profile_report()
-  if not (PROFILE_ENABLED or Ark.Dev.enabled) then return end
+  if not PROFILE_ENABLED then return end
   local now = time_precise()
   if now - _profile.last_report > 1.0 then
     reaper.ShowConsoleMsg(string.format(
@@ -158,7 +158,7 @@ end
 --- Render region tile
 --- @param opts table Render options (same as M.render)
 function M.render_region(opts)
-  local t0 = (PROFILE_ENABLED or Ark.Dev.enabled) and time_precise() or 0
+  local t0 = PROFILE_ENABLED and time_precise() or 0
 
   local ctx = opts.ctx
   local rect = opts.rect
@@ -193,7 +193,7 @@ function M.render_region(opts)
   local enabled_factor = animator:get(item.key, 'enabled')
   local skip_factor = animator:get(item.key, 'skipped')
 
-  local t1 = (PROFILE_ENABLED or Ark.Dev.enabled) and time_precise() or 0
+  local t1 = PROFILE_ENABLED and time_precise() or 0
 
   local base_color = region.color or M.CONFIG.bg_base
   -- Apply disabled styling
@@ -209,12 +209,12 @@ function M.render_region(opts)
     base_color = clamp_min_lightness(base_color, M.CONFIG.disabled.min_lightness or 0.28)
   end
 
-  local t2 = (PROFILE_ENABLED or Ark.Dev.enabled) and time_precise() or 0
+  local t2 = PROFILE_ENABLED and time_precise() or 0
 
   local fx_config = TileFXConfig.get()
   fx_config.border_thickness = border_thickness or 1.0
 
-  local t3 = (PROFILE_ENABLED or Ark.Dev.enabled) and time_precise() or 0
+  local t3 = PROFILE_ENABLED and time_precise() or 0
 
   local playback_progress, playback_fade = 0, 0
   if bridge and bridge:get_state().is_playing then
@@ -245,12 +245,12 @@ function M.render_region(opts)
     playback_fade = animator:get(item.key, 'progress_fade')
   end
   
-  local t4 = (PROFILE_ENABLED or Ark.Dev.enabled) and time_precise() or 0
+  local t4 = PROFILE_ENABLED and time_precise() or 0
 
   BaseRenderer.draw_base_tile(ctx, dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade)
   if state.selected and fx_config.ants_enabled then BaseRenderer.draw_marching_ants(dl, rect, base_color, fx_config) end
 
-  local t5 = (PROFILE_ENABLED or Ark.Dev.enabled) and time_precise() or 0
+  local t5 = PROFILE_ENABLED and time_precise() or 0
 
   local actual_height = tile_height or (y2 - y1)
   local show_text = actual_height >= M.CONFIG.responsive.hide_text_below
@@ -308,7 +308,7 @@ function M.render_region(opts)
     BaseRenderer.draw_region_text(ctx, dl, text_pos, region, base_color, text_alpha, right_bound_x, grid, rect, item.key)
   end
 
-  local t6 = (PROFILE_ENABLED or Ark.Dev.enabled) and time_precise() or 0
+  local t6 = PROFILE_ENABLED and time_precise() or 0
 
   -- Track reps badge position for overlap badge positioning
   local reps_badge_x, reps_badge_y, reps_badge_height = x2, y1, 0
@@ -334,11 +334,11 @@ function M.render_region(opts)
     reps_badge_height = badge_height
   end
 
-  local t7 = (PROFILE_ENABLED or Ark.Dev.enabled) and time_precise() or 0
+  local t7 = PROFILE_ENABLED and time_precise() or 0
 
   if show_length then BaseRenderer.draw_length_display(ctx, dl, rect, region, base_color, text_alpha) end
 
-  local t8 = (PROFILE_ENABLED or Ark.Dev.enabled) and time_precise() or 0
+  local t8 = PROFILE_ENABLED and time_precise() or 0
 
   -- Track leftmost badge position for stacking badges
   local next_badge_x = reps_badge_x
@@ -417,8 +417,8 @@ function M.render_region(opts)
     end
   end
 
-  -- Profiling accumulation (only in dev mode)
-  if PROFILE_ENABLED or Ark.Dev.enabled then
+  -- Profiling accumulation
+  if PROFILE_ENABLED then
     local t9 = time_precise()
     _profile.animator = _profile.animator + (t1 - t0)
     _profile.color = _profile.color + (t2 - t1)

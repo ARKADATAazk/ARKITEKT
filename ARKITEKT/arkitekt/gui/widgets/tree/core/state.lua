@@ -72,10 +72,6 @@ local function create_initial_state()
     context_menu_x = 0,
     context_menu_y = 0,
 
-    -- Scrollbar interaction
-    scrollbar_dragging = false,
-    scrollbar_drag_offset = 0,
-
     -- TreeTable columns (if applicable)
     sort_column = nil,
     sort_ascending = true,

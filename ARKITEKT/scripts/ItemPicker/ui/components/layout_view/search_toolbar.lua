@@ -79,7 +79,6 @@ function M.Draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
   -- Sort modes
   local sort_modes = {
     {id = 'none', label = 'None'},
-    {id = 'recent', label = 'Recent'},
     {id = 'length', label = 'Length'},
     {id = 'color', label = 'Color'},
     {id = 'name', label = 'Name'},
@@ -251,7 +250,7 @@ function M.Draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
     width = input_width,
     height = search_height,
     placeholder = 'Search ' .. mode_label:lower() .. '...',
-    get_value = function() return state.settings.search_string or '' end,
+    value = state.settings.search_string or '',
     on_change = function(new_text)
       state.set_search_filter(new_text)
     end,

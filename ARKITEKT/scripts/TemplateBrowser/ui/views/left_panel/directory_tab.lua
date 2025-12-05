@@ -408,6 +408,7 @@ function M.Draw(ctx, state, config, width, height, gui)
   local open_sections = {}
   if state.physical_section_open then open_sections[#open_sections + 1] = 'physical' end
   if state.virtual_section_open then open_sections[#open_sections + 1] = 'virtual' end
+  if state.inbox_section_open then open_sections[#open_sections + 1] = 'inbox' end
   if state.archive_section_open then open_sections[#open_sections + 1] = 'archive' end
 
   local num_open = #open_sections
@@ -600,6 +601,64 @@ function M.Draw(ctx, state, config, width, height, gui)
     end
 
     ImGui.SetCursorScreenPos(ctx, sep2_x, sep2_y + separator_height)
+  end
+
+  -- === INBOX SECTION ===
+  local inbox_clicked = draw_custom_collapsible_header(ctx, 'Inbox', state.inbox_section_open, width, config)
+
+  -- Update open state on click
+  if inbox_clicked then
+    state.inbox_section_open = not state.inbox_section_open
+  end
+  local inbox_open = state.inbox_section_open
+
+  if inbox_open then
+    local tree_height = inbox_actual_height - header_height
+    if tree_height > 10 then
+      TreeViewModule.draw_inbox_tree(ctx, state, config, tree_height)
+    end
+  end
+
+  -- === SEPARATOR 3 (before Archive) - only if inbox is open ===
+  if inbox_open then
+    local sep3_x, sep3_y = ImGui.GetCursorScreenPos(ctx)
+    local mx, my = ImGui.GetMousePos(ctx)
+    local sep3_hovered = mx >= sep3_x and mx < sep3_x + width and
+                         my >= sep3_y and my < sep3_y + separator_height + 4
+
+    -- Track hover time
+    if sep3_hovered then
+      state.sep3_hover_time = state.sep3_hover_time + (1/60)
+    else
+      state.sep3_hover_time = 0
+    end
+
+    -- Draw separator line
+    draw_thin_separator(ctx, dl, sep3_x, sep3_y + separator_height / 2, width, sep3_hovered, state.sep3_hover_time)
+
+    -- Invisible button for drag interaction
+    ImGui.SetCursorScreenPos(ctx, sep3_x, sep3_y - 2)
+    ImGui.InvisibleButton(ctx, '##sep3', width, separator_height + 4)
+
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNS)
+    end
+
+    -- Handle drag with proper initial height tracking (only when multiple sections open)
+    if num_open >= 2 and ImGui.IsItemActive(ctx) then
+      if not state.sep3_drag_start_height then
+        state.sep3_drag_start_height = state.inbox_section_height
+      end
+      local _, delta_y = ImGui.GetMouseDragDelta(ctx, 0, 0)
+      state.inbox_section_height = state.sep3_drag_start_height + delta_y
+      state.inbox_section_height = math.max(min_section_height,
+        math.min(state.inbox_section_height,
+          total_tree_height - state.physical_section_height - state.virtual_section_height - min_section_height - separator_height * 3))
+    else
+      state.sep3_drag_start_height = nil
+    end
+
+    ImGui.SetCursorScreenPos(ctx, sep3_x, sep3_y + separator_height)
   end
 
   -- === ARCHIVE SECTION ===

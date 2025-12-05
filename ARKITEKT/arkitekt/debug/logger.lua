@@ -173,12 +173,7 @@ end
 --- @param category string Category name
 --- @param key string Slot key
 function M.clear_live_slot(category, key)
-  local slot_key = category .. ':' .. key
-  if live_slots[slot_key] then
-    live_slots[slot_key] = nil
-    live_slot_count = live_slot_count - 1
-    live_slot_version = live_slot_version + 1
-  end
+  live_slots[category .. ':' .. key] = nil
 end
 
 --- Clear all live slots

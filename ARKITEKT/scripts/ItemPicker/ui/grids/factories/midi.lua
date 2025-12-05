@@ -143,8 +143,6 @@ function M.create_options(config, state, visualization, animator, disable_animat
         track_muted = track_muted,  -- Track mute state
         item_muted = item_muted,  -- Item mute state
         duration = duration,  -- Cached duration for renderer
-        _metadata_loaded_at = entry._metadata_loaded_at,  -- For text fade-in animation
-        _spawned_at = entry._spawned_at,  -- For tile spawn animation
       }
 
       ::continue::
@@ -198,18 +196,6 @@ function M.create_options(config, state, visualization, animator, disable_animat
           end
         else
           return (a.name or '') < (b.name or '')  -- Then alphabetically
-        end
-      end)
-    elseif sort_mode == 'recent' then
-      -- Sort by last used time (most recent first)
-      local item_usage = state.item_usage or {}
-      table.sort(filtered, function(a, b)
-        local a_time = item_usage[a.uuid] or 0
-        local b_time = item_usage[b.uuid] or 0
-        if sort_reverse then
-          return a_time < b_time  -- Oldest first
-        else
-          return a_time > b_time  -- Most recent first
         end
       end)
     end

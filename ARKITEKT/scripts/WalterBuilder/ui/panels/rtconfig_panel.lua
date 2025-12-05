@@ -8,7 +8,7 @@ local RtconfigParser = require('WalterBuilder.domain.rtconfig_parser')
 local RtconfigConverter = require('WalterBuilder.domain.rtconfig_converter')
 local ThemeConnector = require('WalterBuilder.domain.theme_connector')
 local Colors = require('WalterBuilder.config.colors')
-local WalterSettings = require('WalterBuilder.data.settings')
+local WalterSettings = require('WalterBuilder.infra.settings')
 
 local M = {}
 local Panel = {}
@@ -228,15 +228,20 @@ function Panel:draw_load_controls(ctx)
 
   -- Force Visible checkbox
   local force_visible = WalterSettings.get_force_visible()
-  local fv_result = Ark.Checkbox(ctx, {
-    id = 'force_visible',
-    label = 'Force Visible',
-    is_checked = force_visible,
-    tooltip = 'Show all elements regardless of size.\nMany elements have 0x0 size due to conditional logic.\nEnable to see their positions anyway.',
-  })
-  if fv_result.changed then
-    WalterSettings.set_force_visible(fv_result.value)
+  local changed, new_val = ImGui.Checkbox(ctx, 'Force Visible', force_visible)
+  if changed then
+    WalterSettings.set_force_visible(new_val)
     WalterSettings.maybe_flush()
+  end
+
+  if ImGui.IsItemHovered(ctx) then
+    ImGui.BeginTooltip(ctx)
+    ImGui.Text(ctx, 'Show all elements regardless of size')
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xAAAAAAFF)
+    ImGui.Text(ctx, 'Many elements have 0x0 size due to conditional')
+    ImGui.Text(ctx, 'logic. Enable to see their positions anyway.')
+    ImGui.PopStyleColor(ctx)
+    ImGui.EndTooltip(ctx)
   end
 
   ImGui.Dummy(ctx, 0, 4)
@@ -253,7 +258,13 @@ function Panel:draw_load_controls(ctx)
     preset = 'primary',
   })
 
-  if load_result.clicked and can_load then
+  local load_clicked = ImGui.Button(ctx, 'Load to Canvas', -1, 28)
+
+  if not can_load then
+    ImGui.PopStyleVar(ctx)
+  end
+
+  if load_clicked and can_load then
     local elements = self:get_loadable_elements()
     if elements and #elements > 0 then
       return {
@@ -320,17 +331,11 @@ function Panel:draw_context_controls(ctx)
         end
       elseif var.type == 'float' then
         local current = RtconfigConverter.get_context_value(var.key)
-        local slider_result = Slider.Draw(ctx, {
-          id = 'ctx_' .. var.key,
-          label = var.label,
-          value = current,
-          min = var.min,
-          max = var.max,
-          width = 100,
-          format = '%.1f',
-        })
-        if slider_result.changed then
-          RtconfigConverter.set_context_value(var.key, slider_result.value)
+        ImGui.PushItemWidth(ctx, 100)
+        local val_changed, new_val = ImGui.SliderDouble(ctx, var.label, current, var.min, var.max, '%.1f')
+        ImGui.PopItemWidth(ctx)
+        if val_changed then
+          RtconfigConverter.set_context_value(var.key, new_val)
           changed = true
         end
       end
@@ -530,14 +535,10 @@ function Panel:draw_section_detail(ctx, section)
   ImGui.Separator(ctx)
 
   -- Filter
-  local avail_w = ImGui.GetContentRegionAvail(ctx)
-  local filter_result = Ark.InputText(ctx, {
-    id = 'section_filter',
-    text = self.filter_text,
-    hint = 'Filter items...',
-    width = avail_w,
-  })
-  if filter_result.changed then self.filter_text = filter_result.value end
+  ImGui.PushItemWidth(ctx, -1)
+  local changed, text = ImGui.InputTextWithHint(ctx, '##filter', 'Filter items...', self.filter_text)
+  if changed then self.filter_text = text end
+  ImGui.PopItemWidth(ctx)
 
   ImGui.Dummy(ctx, 0, 4)
 
@@ -691,27 +692,13 @@ function Panel:draw(ctx)
   local result = nil
 
   -- Load buttons
-  local theme_result = Ark.Button(ctx, {
-    id = 'load_from_theme',
-    label = 'Load from Theme',
-    width = 120,
-    height = 22,
-    advance = 'none',
-  })
-  if theme_result.clicked then
+  if ImGui.Button(ctx, 'Load from Theme', 120, 0) then
     self:load_from_theme()
   end
 
   ImGui.SameLine(ctx)
 
-  local ref_result = Ark.Button(ctx, {
-    id = 'load_reference',
-    label = 'Load Reference',
-    width = 100,
-    height = 22,
-    advance = 'none',
-  })
-  if ref_result.clicked then
+  if ImGui.Button(ctx, 'Load Reference', 100, 0) then
     -- Load the bundled reference rtconfig
     local script_path = debug.getinfo(1, 'S').source:sub(2)
     local script_dir = script_path:match('(.*[/\\])')
@@ -782,16 +769,7 @@ function Panel:draw(ctx)
 
   -- Splitter (using Ark.Splitter)
   local splitter_x, splitter_y = ImGui.GetCursorScreenPos(ctx)
-  local tree_start_x = splitter_x - self.tree_width
-  local Splitter = require('arkitekt.gui.widgets.primitives.splitter')
-  local splitter_result = Splitter.Draw(ctx, {
-    id = 'rtconfig_splitter',
-    x = splitter_x,
-    y = splitter_y,
-    orientation = 'vertical',
-    height = avail_h - 20,
-    thickness = splitter_w,
-  })
+  ImGui.Button(ctx, '##rtconfig_splitter', splitter_w, avail_h - 20)
 
   -- Handle splitter drag
   if splitter_result.action == 'drag' then
@@ -804,7 +782,7 @@ function Panel:draw(ctx)
 
   -- Draw splitter visual
   local dl = ImGui.GetWindowDrawList(ctx)
-  local splitter_color = splitter_result.dragging and 0x888888FF or 0x555555FF
+  local splitter_color = (is_hovered or is_active) and 0x888888FF or 0x555555FF
   ImGui.DrawList_AddRectFilled(dl, splitter_x, splitter_y, splitter_x + splitter_w, splitter_y + avail_h - 20, splitter_color)
 
   ImGui.SameLine(ctx, 0, 0)

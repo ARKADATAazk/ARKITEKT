@@ -436,7 +436,10 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
   ImGui.DrawList_PopClipRect(draw_list)
 end
 
-function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_width, uuid, cache)
+function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_width, uuid, cache, use_filled)
+  -- Default to filled if not specified (for backwards compatibility)
+  if use_filled == nil then use_filled = true end
+
   -- Cache ImGui functions for performance
   local GetItemRectMin = ImGui.GetItemRectMin
   local GetItemRectSize = ImGui.GetItemRectSize

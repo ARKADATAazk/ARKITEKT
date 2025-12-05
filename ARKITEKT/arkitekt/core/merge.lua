@@ -97,29 +97,6 @@ end
 -- SAFE MERGE (No Overwrite)
 -- ============================================================================
 
--- Deep copy helper (2 levels deep to handle options arrays)
--- Optimized: Defined at module level instead of per-call
-local function deep_copy_value(v)
-  if type(v) ~= 'table' then
-    return v  -- Primitives and functions copied by reference
-  end
-
-  local copy = {}
-  for k2, v2 in pairs(v) do
-    if type(v2) == 'table' then
-      -- Copy nested tables (e.g., options = {{value=x, label=y}, ...})
-      local nested = {}
-      for k3, v3 in pairs(v2) do
-        nested[k3] = v3
-      end
-      copy[k2] = nested
-    else
-      copy[k2] = v2
-    end
-  end
-  return copy
-end
-
 --- Merge supplement into base, but ONLY for keys not already in base
 --- Use for context defaults that shouldn't override presets
 --- @param base table Base configuration (already has preset applied)
@@ -127,6 +104,28 @@ end
 --- @return table New table with non-conflicting values merged
 function M.merge_safe(base, supplement)
   local result = {}
+
+  -- Deep copy helper (2 levels deep to handle options arrays)
+  local function deep_copy_value(v)
+    if type(v) ~= 'table' then
+      return v  -- Primitives and functions copied by reference
+    end
+
+    local copy = {}
+    for k2, v2 in pairs(v) do
+      if type(v2) == 'table' then
+        -- Copy nested tables (e.g., options = {{value=x, label=y}, ...})
+        local nested = {}
+        for k3, v3 in pairs(v2) do
+          nested[k3] = v3
+        end
+        copy[k2] = nested
+      else
+        copy[k2] = v2
+      end
+    end
+    return copy
+  end
 
   -- Copy base completely (deep copy to prevent reference pollution)
   for k, v in pairs(base or {}) do

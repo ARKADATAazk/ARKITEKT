@@ -50,6 +50,8 @@ local UpdateArrange = reaper.UpdateArrange
 local Undo_BeginBlock = reaper.Undo_BeginBlock
 local Undo_EndBlock = reaper.Undo_EndBlock
 
+local ImGui = require('arkitekt.core.imgui')
+local Ark = require('arkitekt')
 local M = {}
 
 -- Drag state
@@ -72,8 +74,8 @@ end
 local function get_track_screen_pos(track, window_y)
   if not track then return nil, nil end
 
-  local track_y = GetMediaTrackInfo_Value(track, 'I_TCPY')
-  local track_h = GetMediaTrackInfo_Value(track, 'I_TCPH')
+  local track_y = reaper.GetMediaTrackInfo_Value(track, 'I_TCPY')
+  local track_h = reaper.GetMediaTrackInfo_Value(track, 'I_TCPH')
 
   return window_y + track_y, track_h
 end
@@ -97,8 +99,8 @@ local function move_container_items(container, time_delta, State)
     local item_ref = items[i]
     local item = State.find_item_by_guid(item_ref.guid)
     if item then
-      local pos = GetMediaItemInfo_Value(item, 'D_POSITION')
-      SetMediaItemInfo_Value(item, 'D_POSITION', pos + time_delta)
+      local pos = reaper.GetMediaItemInfo_Value(item, 'D_POSITION')
+      reaper.SetMediaItemInfo_Value(item, 'D_POSITION', pos + time_delta)
     end
   end
 
@@ -128,7 +130,7 @@ end
 
 -- Draw container bounds on arrange view
 function M.draw_containers(ctx, draw_list, State)
-  local arrange_window = JS_Window_Find('trackview', true)
+  local arrange_window = reaper.JS_Window_Find('trackview', true)
   if not arrange_window then return end
 
   local rv, w_x1, w_y1, w_x2, w_y2 = JS_Window_GetRect(arrange_window)
@@ -162,7 +164,7 @@ function M.draw_containers(ctx, draw_list, State)
       end
     else
       -- End drag
-      Undo_EndBlock('Move Media Container', -1)
+      reaper.Undo_EndBlock('Move Media Container', -1)
       M.dragging_container_id = nil
       M.drag_start_time = nil
       M.drag_start_mouse_x = nil
@@ -174,7 +176,7 @@ function M.draw_containers(ctx, draw_list, State)
   SetNextWindowSize(ctx, w_width, w_height - 17)  -- -17 for scrollbar
   PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
 
-  local visible = Begin(ctx, 'MediaContainer_Overlay', false,
+  local visible = ImGui.Begin(ctx, 'MediaContainer_Overlay', false,
     ImGui.WindowFlags_NoCollapse |
     ImGui.WindowFlags_NoInputs |
     ImGui.WindowFlags_NoTitleBar |
@@ -243,12 +245,12 @@ function M.draw_containers(ctx, draw_list, State)
     -- Fill color (semi-transparent)
     local fill_alpha = is_linked and 0.15 or 0.20
     if is_dragging then fill_alpha = fill_alpha + 0.1 end
-    local fill_color = Colors.WithOpacity(base_color, fill_alpha)
+    local fill_color = Ark.Colors.WithOpacity(base_color, fill_alpha)
 
     -- Border color
     local border_alpha = is_linked and 0.6 or 0.8
     if is_dragging then border_alpha = 1.0 end
-    local border_color = Colors.WithOpacity(base_color, border_alpha)
+    local border_color = Ark.Colors.WithOpacity(base_color, border_alpha)
 
     -- Dashed pattern for linked containers
     local border_thickness = is_linked and 1 or 2
@@ -305,10 +307,10 @@ function M.draw_containers(ctx, draw_list, State)
       label = label .. ' [linked]'
     end
 
-    local text_color = Colors.WithOpacity(0xFFFFFFFF, 0.9)
-    local label_bg = Colors.WithOpacity(0x000000FF, 0.6)
+    local text_color = Ark.Colors.WithOpacity(0xFFFFFFFF, 0.9)
+    local label_bg = Ark.Colors.WithOpacity(0x000000FF, 0.6)
     if hovered_container == container and not M.dragging_container_id then
-      label_bg = Colors.WithOpacity(0x333333FF, 0.8)  -- Highlight on hover
+      label_bg = Ark.Colors.WithOpacity(0x333333FF, 0.8)  -- Highlight on hover
     end
 
     local text_w, text_h = CalcTextSize(ctx, label)
@@ -354,10 +356,10 @@ function M.draw_containers(ctx, draw_list, State)
         SetMediaItemSelected(item, true)
         selected_count = selected_count + 1
       else
-        Logger.warn('OVERLAY', 'Could not find item with GUID %s', item_ref.guid)
+        reaper.ShowConsoleMsg(string.format('[MediaContainer] WARNING: Could not find item with GUID %s\n', item_ref.guid))
       end
     end
-    Logger.debug('OVERLAY', 'Selected %d items', selected_count)
+    reaper.ShowConsoleMsg(string.format('[MediaContainer] Selected %d items\n', selected_count))
   end
 
   -- Update mouse state for next frame

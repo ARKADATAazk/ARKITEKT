@@ -231,9 +231,7 @@ function M.validate()
 
   local valid, err
   if #errors > 0 then
-    valid, err = false, table.concat(errors, '\n')
-  else
-    valid, err = true, nil
+    return false, table.concat(errors, '\n')
   end
 
   -- Cache the result
@@ -588,8 +586,9 @@ function M.render_debug_window(ctx, ImGui, state)
     end
   end
 
-  -- Modified count (cached)
-  local mod_count = M._mod_count
+  -- Modified count
+  local mod_count = 0
+  for _ in pairs(M.modified_keys) do mod_count = mod_count + 1 end
   if mod_count > 0 then
     ImGui.SameLine(ctx)
     ImGui.TextColored(ctx, 0xFFAA00FF, string.format('[%d modified]', mod_count))
@@ -684,20 +683,22 @@ function M.render_debug_window(ctx, ImGui, state)
         -- Build cache key from filter state
         local cache_key = M.filter_text .. (M.show_only_modified and '1' or '0')
 
-        -- Rebuild categories only when filter changes or cache invalidated
-        local categories
-        if M._filtered_cache and M._filter_cache_key == cache_key then
-          categories = M._filtered_cache
-        else
-          categories = {}
-          local filter_lower = M.filter_text ~= '' and M.filter_text:lower() or nil
+          -- Filter check
+          if M.filter_text ~= '' then
+            include = key:lower():find(M.filter_text:lower(), 1, true) ~= nil
+          end
 
           for key in pairs(Palette.colors) do
             local include = true
 
-            -- Filter check (pre-computed filter_lower)
-            if filter_lower then
-              include = key:lower():find(filter_lower, 1, true) ~= nil
+          if include then
+            -- Find category
+            local cat = 'OTHER'
+            for _, prefix in ipairs(CATEGORY_ORDER) do
+              if key:sub(1, #prefix) == prefix then
+                cat = prefix
+                break
+              end
             end
 
             -- Modified-only check
@@ -804,8 +805,8 @@ function M.render_debug_window(ctx, ImGui, state)
           local keys = {}
           for key in pairs(palette_def) do
             local include = true
-            if script_filter_lower then
-              include = key:lower():find(script_filter_lower, 1, true) ~= nil
+            if M.filter_text ~= '' then
+              include = key:lower():find(M.filter_text:lower(), 1, true) ~= nil
             end
             if include then
               keys[#keys + 1] = key

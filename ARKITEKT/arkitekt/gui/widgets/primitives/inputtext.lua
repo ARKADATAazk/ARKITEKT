@@ -211,7 +211,7 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   ImGui.SetCursorScreenPos(ctx, x + padding_x, y + padding_y)
   ImGui.PushItemWidth(ctx, width - padding_x * 2)
 
-  -- Make input background transparent, style text and selection
+  -- Make input background transparent
   local C = Theme.COLORS
   ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, C.BG_TRANSPARENT)
   ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, C.BG_TRANSPARENT)
@@ -221,10 +221,7 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   ImGui.PushStyleColor(ctx, ImGui.Col_TextSelectedBg, 0x4488FFAA)  -- Selection highlight
 
   local changed, new_text
-  -- Include generation in ID to force ImGui to re-create widget after Clear()
-  -- This bypasses ImGui's internal buffer caching when the widget was focused
-  local gen = state.clear_generation or 0
-  local input_id = gen > 0 and ('##' .. id .. '_g' .. gen) or ('##' .. id)
+  local input_id = '##' .. id
 
   -- Handle disabled state
   if is_disabled then
@@ -400,9 +397,6 @@ function M.SetText(id, text)
     }
   end
   field_state[id].text = text or ''
-  -- Increment generation to force ImGui to accept the new value
-  -- (in case the widget is currently focused with a different buffer)
-  field_state[id].clear_generation = (field_state[id].clear_generation or 0) + 1
 end
 
 --- Clear text for a field
@@ -411,9 +405,6 @@ end
 function M.Clear(id)
   if field_state[id] then
     field_state[id].text = ''
-    -- Increment generation to force ImGui to create a "new" widget instance
-    -- This bypasses ImGui's internal buffer caching when the widget is focused
-    field_state[id].clear_generation = (field_state[id].clear_generation or 0) + 1
   end
 end
 

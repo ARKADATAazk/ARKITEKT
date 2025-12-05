@@ -111,6 +111,14 @@ function GUI:initialize_once(ctx, is_overlay_mode)
           end
         end
       end
+    elseif self.state.quick_access_mode == 'inbox' then
+      -- Get templates in _Inbox folder
+      templates = {}
+      for _, tmpl in ipairs(self.state.templates) do
+        if tmpl.relative_path == '_Inbox' then
+          templates[#templates + 1] = tmpl
+        end
+      end
     elseif self.state.quick_access_mode == 'most_used' then
       -- Get most used
       local usage_list = {}

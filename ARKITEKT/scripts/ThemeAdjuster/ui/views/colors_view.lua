@@ -5,6 +5,7 @@
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Colors = require('arkitekt.core.colors')
+local hex = Colors.hex  -- For runtime RGB→packed conversion
 local Background = require('arkitekt.gui.draw.patterns')
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
@@ -238,7 +239,8 @@ function ColorsView:draw(ctx, shell_state)
     ImGui.SetCursorPosX(ctx, start_x)
 
     for i, color in ipairs(current_palette.colors) do
-      local color_packed = Colors.ComponentsToRgba(color[1], color[2], color[3], 255)
+      local color_hex = string.format('#%02X%02X%02X', color[1], color[2], color[3])
+      local color_packed = hex(color_hex)
 
       -- Draw color button
       ImGui.PushStyleColor(ctx, ImGui.Col_Button, color_packed)

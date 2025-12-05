@@ -30,7 +30,7 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 -- DEPENDENCIES
 local Shell = require('arkitekt.runtime.shell')
 local State = require('scripts.MIDIHelix.app.state')
-local UI = require('scripts.MIDIHelix.ui.init')
+local EuclideanView = require('scripts.MIDIHelix.ui.euclidean_view')
 local Defaults = require('scripts.MIDIHelix.config.defaults')
 
 -- APP STATE
@@ -41,7 +41,7 @@ UI.init(Ark)
 
 -- Main draw function
 local function draw(ctx)
-  UI.Draw(ctx)
+  EuclideanView.Draw(ctx)
 end
 
 -- Run application

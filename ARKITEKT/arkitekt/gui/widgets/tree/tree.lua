@@ -209,36 +209,24 @@ function M.Draw(ctx, opts)
   }
 
   local nodes = opts.nodes or {}
+  if #nodes == 0 then
+    return result
+  end
 
   -- Get draw area
   local x, y = ImGui.GetCursorScreenPos(ctx)
   local w = opts.width or ImGui.GetContentRegionAvail(ctx)
   local h = opts.height or 200
 
-  -- If no nodes, use minimal height and return early
-  if #nodes == 0 then
-    local empty_h = cfg.item_height  -- Just one row height when empty
-    ImGui.SetCursorScreenPos(ctx, x, y + empty_h)
-    ImGui.Dummy(ctx, w, 0)
-    return result
-  end
-
-  -- Check if scrollbar needed and reserve space
-  local needs_scrollbar = cfg.show_scrollbar and state.total_content_height > h
-  local scrollbar_w = needs_scrollbar and cfg.scrollbar_width or 0
-  local content_w = w - scrollbar_w
-
-  -- Store bounds (content area without scrollbar)
-  state.tree_bounds = { x = x, y = y, w = content_w, h = h }
+  -- Store bounds
+  state.tree_bounds = { x = x, y = y, w = w, h = h }
 
   -- Get draw list
   local dl = ImGui.GetWindowDrawList(ctx)
 
-  -- Draw background (optional)
-  if cfg.show_background then
-    ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, cfg.colors.bg)
-    ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, cfg.colors.border)
-  end
+  -- Draw background
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, cfg.colors.bg)
+  ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, cfg.colors.border)
 
   -- Handle mouse wheel
   Virtual.handle_wheel(ctx, state, cfg, state.tree_bounds)
@@ -247,8 +235,8 @@ function M.Draw(ctx, opts)
   Virtual.clear_flat_list(state)
   state.hovered = nil
 
-  -- Clip rect for tree content (excluding scrollbar area)
-  ImGui.DrawList_PushClipRect(dl, x, y, x + content_w, y + h, true)
+  -- Clip rect for tree content
+  ImGui.DrawList_PushClipRect(dl, x, y, x + w, y + h, true)
 
   -- Calculate visible region
   local visible_top, visible_bottom = Virtual.get_visible_region(state.tree_bounds, cfg)
@@ -260,79 +248,13 @@ function M.Draw(ctx, opts)
 
   for i, node in ipairs(nodes) do
     local is_last = (i == #nodes)
-    current_y, row_index = render_node_recursive(ctx, dl, node, opts, state, cfg, result, x, current_y, content_w, 0, {}, is_last, row_index, nil, visible_top, visible_bottom)
+    current_y, row_index = render_node_recursive(ctx, dl, node, opts, state, cfg, result, x, current_y, w, 0, {}, is_last, row_index, nil, visible_top, visible_bottom)
   end
 
   -- Update content height
   Virtual.update_content_height(state, cfg, start_y, current_y)
 
   ImGui.DrawList_PopClipRect(dl)
-
-  -- Draw scrollbar if needed
-  if needs_scrollbar then
-    local scrollbar_x = x + content_w
-    local scrollbar_h = h
-    local content_height = state.total_content_height
-    local max_scroll = math.max(0, content_height - h)
-
-    -- Calculate thumb size and position
-    local visible_ratio = h / content_height
-    local thumb_h = math.max(20, scrollbar_h * visible_ratio)
-    local scroll_ratio = max_scroll > 0 and (state.scroll_y / max_scroll) or 0
-    local thumb_y = y + (scrollbar_h - thumb_h) * scroll_ratio
-
-    -- Draw track
-    ImGui.DrawList_AddRectFilled(dl, scrollbar_x, y, scrollbar_x + scrollbar_w, y + scrollbar_h, cfg.colors.scrollbar_track, 4)
-
-    -- Check hover/active state for thumb
-    local mx, my = ImGui.GetMousePos(ctx)
-    local thumb_hovered = mx >= scrollbar_x and mx < scrollbar_x + scrollbar_w and
-                          my >= thumb_y and my < thumb_y + thumb_h
-    local track_hovered = mx >= scrollbar_x and mx < scrollbar_x + scrollbar_w and
-                          my >= y and my < y + scrollbar_h
-
-    -- Initialize scrollbar drag state
-    state.scrollbar_dragging = state.scrollbar_dragging or false
-    state.scrollbar_drag_offset = state.scrollbar_drag_offset or 0
-
-    -- Handle scrollbar interaction
-    if ImGui.IsMouseClicked(ctx, 0) then
-      if thumb_hovered then
-        state.scrollbar_dragging = true
-        state.scrollbar_drag_offset = my - thumb_y
-      elseif track_hovered then
-        -- Click on track - jump to position
-        local click_ratio = (my - y - thumb_h / 2) / (scrollbar_h - thumb_h)
-        click_ratio = math.max(0, math.min(1, click_ratio))
-        state.scroll_y = click_ratio * max_scroll
-      end
-    end
-
-    if state.scrollbar_dragging then
-      if ImGui.IsMouseDown(ctx, 0) then
-        local new_thumb_y = my - state.scrollbar_drag_offset
-        local new_ratio = (new_thumb_y - y) / (scrollbar_h - thumb_h)
-        new_ratio = math.max(0, math.min(1, new_ratio))
-        state.scroll_y = new_ratio * max_scroll
-        -- Recalculate thumb position
-        scroll_ratio = max_scroll > 0 and (state.scroll_y / max_scroll) or 0
-        thumb_y = y + (scrollbar_h - thumb_h) * scroll_ratio
-      else
-        state.scrollbar_dragging = false
-      end
-    end
-
-    -- Determine thumb color
-    local thumb_color = cfg.colors.scrollbar_thumb
-    if state.scrollbar_dragging then
-      thumb_color = cfg.colors.scrollbar_thumb_active
-    elseif thumb_hovered then
-      thumb_color = cfg.colors.scrollbar_thumb_hover
-    end
-
-    -- Draw thumb
-    ImGui.DrawList_AddRectFilled(dl, scrollbar_x + 1, thumb_y, scrollbar_x + scrollbar_w - 1, thumb_y + thumb_h, thumb_color, 4)
-  end
 
   -- Initialize focus
   Virtual.init_focus(state)

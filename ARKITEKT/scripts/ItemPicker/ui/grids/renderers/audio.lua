@@ -308,7 +308,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
                         and cached_state.render_color
                         and cached_state.base_color == base_color
                         and not tile_state.selected  -- Don't cache selected (pulsing) tiles
-                        and combined_factor >= 0.999  -- Only cache fully visible tiles (incl. spawn anim)
+                        and cascade_factor >= 0.999  -- Only cache fully visible tiles
 
   if can_use_cache then
     -- Use cached colors
@@ -316,13 +316,12 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     combined_alpha = cached_state.combined_alpha
   else
     -- Compute colors (pass selection_pulse instead of boolean)
-    -- Use combined_factor (cascade * spawn) for alpha calculation
     render_color, combined_alpha = BaseRenderer.compute_tile_color(
       base_color, is_small_tile, hover_factor, muted_factor, enabled_factor,
-      selection_pulse, combined_factor, config, palette
+      selection_pulse, cascade_factor, config, palette
     )
     -- Cache if settled, fully visible, and not selected
-    if cached_state and cached_state.settled and combined_factor >= 0.999 and not tile_state.selected then
+    if cached_state and cached_state.settled and cascade_factor >= 0.999 and not tile_state.selected then
       cached_state.render_color = render_color
       cached_state.combined_alpha = combined_alpha
       cached_state.base_color = base_color
@@ -381,7 +380,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- Render waveform BEFORE header so header can overlay with transparency
   -- (show even when disabled, just with toned down color)
-  if item_data.item and combined_factor > 0.2 then
+  if item_data.item and cascade_factor > 0.2 then
     -- Skip waveform rendering entirely in small tile mode
     if is_small_tile then
       goto skip_waveform
@@ -409,7 +408,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
           -- Apply waveform quality multiplier to reduce resolution (better performance with many items)
           -- PERF: Use cached settings instead of per-tile state.settings lookup
           local target_width = (content_w * settings.waveform_quality) // 1
-          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache)
+          local use_filled = settings.waveform_filled
+          if use_filled == nil then use_filled = true end
+          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache, use_filled)
         end
       else
         -- Show placeholder with spinner and queue waveform generation
@@ -715,6 +716,26 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     end
   end
 
+  -- PROFILER: After text
+  if M.profile_enabled then t7 = time_precise() end
+
+  -- PERF: Pre-compute cycle badge dimensions once (reused for star and pool positioning)
+  local cycle_badge_w, cycle_text
+  local has_cycle = item_data.total and item_data.total > 1
+  if has_cycle then
+    local idx = item_data.index or 1
+    local cache_key = idx * 10000 + item_data.total
+    local cached = _cached.cycle_badges[cache_key]
+    if cached then
+      cycle_text, cycle_badge_w = cached[1], cached[2] + cfg.badge_cycle_padding_x * 2
+    else
+      cycle_text = format('%d/%d', idx, item_data.total)
+      local w = CalcTextSize(ctx, cycle_text)
+      _cached.cycle_badges[cache_key] = {cycle_text, w}
+      cycle_badge_w = w + cfg.badge_cycle_padding_x * 2
+    end
+  end
+
   -- Render favorite star badge (vertically centered in header, to the left of cycle badge)
   if combined_factor > 0.5 and is_favorite then
     local star_x
@@ -740,7 +761,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- PERF: Use cached settings instead of per-tile state.settings lookup
   if settings.show_region_tags and item_data.regions and #item_data.regions > 0 and
      not is_small_tile and scaled_h >= cfg.region_min_tile_height and
-     combined_factor > 0.5 then
+     cascade_factor > 0.5 then
 
     local chip_cfg = cfg.region_chip
     local chip_x = scaled_x1 + chip_cfg.margin_left
@@ -891,7 +912,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   if show_duration == nil then show_duration = true end
   -- PERF: Use cached duration from item_data (avoids GetMediaItemInfo_Value per frame)
   local duration = item_data.duration or 0
-  if show_duration and combined_factor > 0.3 and compact_factor < 0.5 and duration > 0 then
+  if show_duration and cascade_factor > 0.3 and compact_factor < 0.5 and duration > 0 then
       -- PERF: Cache duration text and dimensions by UUID (consistent with region chips)
       local dur_cache = _cached.duration_text[item_data.uuid]
       local duration_text, dur_text_w, dur_text_h

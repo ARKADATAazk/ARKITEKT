@@ -12,23 +12,11 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 -- LOAD APPLICATION
 -- ============================================================================
 
+local ImGui = require('arkitekt.core.imgui')
 local Shell = require('arkitekt.runtime.shell')
-local Settings = require('arkitekt.core.settings')
-local App = require('MediaContainer.app.init')
-
--- Initialize settings
-local data_dir = Ark._bootstrap.get_data_dir('MediaContainer')
-local settings = Settings.new(data_dir, 'settings.json')
-
--- Initialize state with settings
-App.state.initialize(settings)
-
--- Create GUI with proper options pattern
-local gui = App.ui.new({
-  state = App.state,
-  config = App.config,
-  settings = settings,
-})
+local MediaContainer = require('MediaContainer.init')
+-- Initialize
+MediaContainer.initialize()
 
 -- ============================================================================
 -- RUN APPLICATION
@@ -37,9 +25,82 @@ local gui = App.ui.new({
 Shell.run({
   title        = 'Media Container',
   version      = 'v0.1.0',
-  app_name     = 'MediaContainer',
-  draw         = function(ctx, shell_state) gui:draw(ctx, shell_state) end,
-  settings     = settings,
+  draw         = function(ctx, shell_state)
+    local draw_list = ImGui.GetBackgroundDrawList(ctx)
+    MediaContainer.Update(ctx, draw_list)
+
+    local containers = MediaContainer.get_containers()
+
+    -- Action buttons
+    local button_width = 80
+    if ImGui.Button(ctx, 'Create', button_width, 0) then
+      MediaContainer.create_container()
+    end
+    ImGui.SameLine(ctx)
+    if ImGui.Button(ctx, 'Copy', button_width, 0) then
+      MediaContainer.copy_container()
+    end
+    ImGui.SameLine(ctx)
+    if ImGui.Button(ctx, 'Paste', button_width, 0) then
+      MediaContainer.paste_container()
+    end
+
+    ImGui.Separator(ctx)
+
+    -- Container count and list
+    ImGui.Text(ctx, string.format('Containers: %d', #containers))
+
+    if #containers > 0 then
+      -- Scrollable list
+      if ImGui.BeginChild(ctx, 'ContainerList', 0, 120) then
+        for i, container in ipairs(containers) do
+          local linked_text = container.master_id and ' [linked]' or ' [master]'
+          local label = string.format('%s%s (%d items)', container.name, linked_text, #container.items)
+
+          -- Color indicator
+          local r, g, b, a = Ark.Colors.RgbaToComponents(container.color or 0xFF6600FF)
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, ImGui.ColorConvertDouble4ToU32(r/255, g/255, b/255, 1))
+          ImGui.Bullet(ctx)
+          ImGui.PopStyleColor(ctx, 1)
+          ImGui.SameLine(ctx)
+
+          -- Selectable item - click to select items in Reaper
+          if ImGui.Selectable(ctx, label, false) then
+            MediaContainer.select_container(container.id)
+          end
+
+          -- Context menu for individual container
+          if ImGui.BeginPopupContextItem(ctx) then
+            if ImGui.MenuItem(ctx, 'Delete') then
+              MediaContainer.delete_container(container.id)
+            end
+            ImGui.EndPopup(ctx)
+          end
+        end
+        ImGui.EndChild(ctx)
+      end
+
+      ImGui.Separator(ctx)
+
+      -- Delete all button
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, 0x662222FF)
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, 0x883333FF)
+      if ImGui.Button(ctx, 'Delete All', -1, 0) then
+        -- Clear all containers
+        local State = MediaContainer.State
+        State.containers = {}
+        State.container_lookup = {}
+        State.persist()
+      end
+      ImGui.PopStyleColor(ctx, 2)
+    else
+      ImGui.TextDisabled(ctx, 'No containers yet')
+      ImGui.TextDisabled(ctx, 'Select items and click Create')
+    end
+
+    ImGui.Separator(ctx)
+    ImGui.TextDisabled(ctx, 'Sync: Active')
+  end,
   initial_pos  = { x = 100, y = 100 },
   initial_size = { w = 300, h = 300 },
   icon_color   = 0xFF9933FF,
