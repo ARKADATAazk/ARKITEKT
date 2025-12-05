@@ -63,10 +63,16 @@ Processor::Processor()
             parameters.addParameterListener(PadParam::id(pad, static_cast<PadParam::ID>(p)), this);
         }
     }
+
+    // Start timer for async load completion (check every 50ms)
+    startTimer(50);
 }
 
 Processor::~Processor()
 {
+    stopTimer();
+    loadPool.removeAllJobs(true, 1000);  // Wait up to 1s for jobs to finish
+
     for (int pad = 0; pad < NUM_PADS; ++pad)
     {
         for (int p = 0; p < PadParam::COUNT; ++p)
@@ -275,6 +281,96 @@ void Processor::clearPadSample(int padIndex, int layerIndex)
     }
 }
 
+void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
+                                      const juce::String& filePath, bool roundRobin)
+{
+    if (padIndex < 0 || padIndex >= NUM_PADS)
+        return;
+    if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
+        return;
+
+    juce::File file(filePath);
+    if (!file.existsAsFile())
+        return;
+
+    // Capture format manager pointer for thread pool job
+    auto* fmt = &formatManager;
+    auto* queue = &completedLoads;
+    auto* mtx = &loadQueueMutex;
+
+    loadPool.addJob([=]()
+    {
+        // Load sample in background thread
+        std::unique_ptr<juce::AudioFormatReader> reader(fmt->createReaderFor(file));
+        if (!reader)
+            return;
+
+        LoadedSample result;
+        result.padIndex = padIndex;
+        result.layerIndex = layerIndex;
+        result.isRoundRobin = roundRobin;
+        result.path = filePath;
+        result.sampleRate = reader->sampleRate;
+
+        result.buffer.setSize(static_cast<int>(reader->numChannels),
+                              static_cast<int>(reader->lengthInSamples));
+        reader->read(&result.buffer, 0,
+                     static_cast<int>(reader->lengthInSamples), 0, true, true);
+
+        // Compute normalization gain
+        float peak = 0.0f;
+        for (int ch = 0; ch < result.buffer.getNumChannels(); ++ch)
+            peak = juce::jmax(peak, result.buffer.getMagnitude(ch, 0, result.buffer.getNumSamples()));
+        result.normGain = (peak > 0.0001f) ? (1.0f / peak) : 1.0f;
+
+        // Queue result for main thread
+        std::lock_guard<std::mutex> lock(*mtx);
+        queue->push(std::move(result));
+    });
+}
+
+// =============================================================================
+// ASYNC LOAD COMPLETION (Timer callback)
+// =============================================================================
+
+void Processor::timerCallback()
+{
+    applyCompletedLoads();
+}
+
+void Processor::applyCompletedLoads()
+{
+    std::lock_guard<std::mutex> lock(loadQueueMutex);
+
+    while (!completedLoads.empty())
+    {
+        auto loaded = std::move(completedLoads.front());
+        completedLoads.pop();
+
+        if (loaded.padIndex >= 0 && loaded.padIndex < NUM_PADS)
+        {
+            if (loaded.isRoundRobin)
+            {
+                pads[loaded.padIndex].addRoundRobinBuffer(
+                    loaded.layerIndex,
+                    std::move(loaded.buffer),
+                    loaded.sampleRate,
+                    loaded.path,
+                    loaded.normGain);
+            }
+            else
+            {
+                pads[loaded.padIndex].setSampleBuffer(
+                    loaded.layerIndex,
+                    std::move(loaded.buffer),
+                    loaded.sampleRate,
+                    loaded.path,
+                    loaded.normGain);
+            }
+        }
+    }
+}
+
 // =============================================================================
 // BUS LAYOUT
 // =============================================================================
@@ -405,7 +501,59 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
 
 bool Processor::handleNamedConfigParam(const juce::String& name, const juce::String& value)
 {
-    // Pattern: P{pad}_L{layer}_SAMPLE
+    // Pattern: P{pad}_L{layer}_SAMPLE_ASYNC (async load)
+    if (name.startsWith("P") && name.contains("_L") && name.endsWith("_SAMPLE_ASYNC"))
+    {
+        int underscorePos = name.indexOf("_");
+        if (underscorePos > 1)
+        {
+            int padIndex = name.substring(1, underscorePos).getIntValue();
+
+            int lPos = name.indexOf("_L") + 2;
+            int secondUnderscorePos = name.indexOf(lPos, "_");
+            if (secondUnderscorePos > lPos)
+            {
+                int layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
+
+                if (padIndex >= 0 && padIndex < NUM_PADS &&
+                    layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+                {
+                    if (value.isEmpty())
+                        clearPadSample(padIndex, layerIndex);
+                    else
+                        loadSampleToPadAsync(padIndex, layerIndex, value, false);
+                    return true;
+                }
+            }
+        }
+    }
+
+    // Pattern: P{pad}_L{layer}_RR_ASYNC (async round-robin add)
+    if (name.startsWith("P") && name.contains("_L") && name.endsWith("_RR_ASYNC"))
+    {
+        int underscorePos = name.indexOf("_");
+        if (underscorePos > 1)
+        {
+            int padIndex = name.substring(1, underscorePos).getIntValue();
+
+            int lPos = name.indexOf("_L") + 2;
+            int secondUnderscorePos = name.indexOf(lPos, "_");
+            if (secondUnderscorePos > lPos)
+            {
+                int layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
+
+                if (padIndex >= 0 && padIndex < NUM_PADS &&
+                    layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS &&
+                    value.isNotEmpty())
+                {
+                    loadSampleToPadAsync(padIndex, layerIndex, value, true);
+                    return true;
+                }
+            }
+        }
+    }
+
+    // Pattern: P{pad}_L{layer}_SAMPLE (sync load)
     if (name.startsWith("P") && name.contains("_L") && name.endsWith("_SAMPLE"))
     {
         int underscorePos = name.indexOf("_");

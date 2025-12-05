@@ -109,11 +109,18 @@ Pads route to Main + their assigned Output Group bus.
 
 ## DrumBlocks/Lua Integration
 
-### Loading Samples (via chunk commands)
+### Loading Samples
 
 ```lua
--- Load sample to pad 0, velocity layer 0
+-- Sync load (blocks until complete - use for state restore)
 Bridge.loadSample(track, fx, 0, 0, "/path/to/kick.wav")
+
+-- Async load (returns immediately, loads in background thread)
+Bridge.loadSampleAsync(track, fx, 0, 0, "/path/to/kick.wav")
+
+-- Add round-robin sample (async)
+Bridge.addRoundRobin(track, fx, 0, 0, "/path/to/kick_rr1.wav")
+Bridge.addRoundRobin(track, fx, 0, 0, "/path/to/kick_rr2.wav")
 
 -- Clear sample from pad 5, layer 1
 Bridge.clearSample(track, fx, 5, 1)
@@ -181,5 +188,5 @@ Sample paths are stored in the project state XML and reloaded on project open:
 
 ## TODO
 
-- [ ] Async sample loading (don't block audio thread)
+- [x] Async sample loading (don't block audio thread)
 - [ ] Random mode for round-robin

@@ -354,6 +354,39 @@ bool Pad::addRoundRobinSample(int layerIndex,
     return true;
 }
 
+void Pad::setSampleBuffer(int layerIndex,
+                          juce::AudioBuffer<float>&& buffer,
+                          double sampleRate,
+                          const juce::String& path,
+                          float normGain)
+{
+    if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
+        return;
+
+    auto& layer = layers[layerIndex];
+    layer.buffer = std::move(buffer);
+    layer.numSamples = layer.buffer.getNumSamples();
+    layer.sourceSampleRate = sampleRate;
+    layer.filePath = path;
+    layer.normGain = normGain;
+}
+
+void Pad::addRoundRobinBuffer(int layerIndex,
+                              juce::AudioBuffer<float>&& buffer,
+                              double sampleRate,
+                              const juce::String& path,
+                              float normGain)
+{
+    if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
+        return;
+
+    auto& layer = layers[layerIndex];
+    layer.roundRobinBuffers.push_back(std::move(buffer));
+    layer.roundRobinSampleRates.push_back(sampleRate);
+    layer.roundRobinPaths.push_back(path);
+    layer.roundRobinNormGains.push_back(normGain);
+}
+
 void Pad::clearSample(int layerIndex)
 {
     if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)

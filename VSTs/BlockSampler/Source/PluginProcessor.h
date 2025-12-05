@@ -9,9 +9,26 @@
 #include <juce_audio_formats/juce_audio_formats.h>
 #include "Parameters.h"
 #include "Pad.h"
+#include <queue>
+#include <mutex>
 
 namespace BlockSampler
 {
+
+// =============================================================================
+// ASYNC SAMPLE LOAD RESULT
+// =============================================================================
+
+struct LoadedSample
+{
+    int padIndex = -1;
+    int layerIndex = -1;
+    bool isRoundRobin = false;
+    juce::AudioBuffer<float> buffer;
+    double sampleRate = 44100.0;
+    juce::String path;
+    float normGain = 1.0f;
+};
 
 // =============================================================================
 // PROCESSOR CLASS
@@ -19,7 +36,8 @@ namespace BlockSampler
 
 class Processor : public juce::AudioProcessor,
                   public juce::AudioProcessorValueTreeState::Listener,
-                  public juce::VST3ClientExtensions
+                  public juce::VST3ClientExtensions,
+                  private juce::Timer
 {
 public:
     Processor();
@@ -77,8 +95,12 @@ public:
     // SAMPLE MANAGEMENT (called from Lua via chunk commands)
     // -------------------------------------------------------------------------
 
+    // Synchronous (blocks calling thread - use for state restore)
     bool loadSampleToPad(int padIndex, int layerIndex, const juce::String& filePath);
     void clearPadSample(int padIndex, int layerIndex);
+
+    // Asynchronous (returns immediately, loads in background)
+    void loadSampleToPadAsync(int padIndex, int layerIndex, const juce::String& filePath, bool roundRobin = false);
 
     // -------------------------------------------------------------------------
     // PARAMETER LISTENER
@@ -136,6 +158,14 @@ private:
         std::atomic<float>* sampleEnd = nullptr;
     };
     std::array<PadParams, NUM_PADS> padParams;
+
+    // Async sample loading
+    juce::ThreadPool loadPool { 2 };  // 2 worker threads
+    std::mutex loadQueueMutex;
+    std::queue<LoadedSample> completedLoads;
+
+    void timerCallback() override;
+    void applyCompletedLoads();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Processor)
 };

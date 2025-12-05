@@ -204,6 +204,7 @@ local function setVstChunk(track, fx, chunk)
 end
 
 -- Load sample by modifying VST chunk with a Commands node
+-- Note: For async loading, use loadSampleAsync() if supported
 function M.loadSample(track, fx, pad, layer, file_path)
   if not track or not fx or fx < 0 then return false end
 
@@ -236,6 +237,29 @@ end
 
 function M.clearSample(track, fx, pad, layer)
   return M.loadSample(track, fx, pad, layer, '')
+end
+
+-- Async sample loading (non-blocking, loads in background thread)
+-- Returns immediately; sample becomes available after loading completes
+function M.loadSampleAsync(track, fx, pad, layer, file_path)
+  if not track or not fx or fx < 0 then return false end
+
+  -- Use ASYNC suffix for named config param to trigger async loading
+  local param_name = string.format('P%d_L%d_SAMPLE_ASYNC', pad, layer)
+  local result = reaper.TrackFX_SetNamedConfigParm(track, fx, param_name, file_path)
+  if result then return true end
+
+  -- Fallback to sync load if async not supported
+  return M.loadSample(track, fx, pad, layer, file_path)
+end
+
+-- Add round-robin sample to a pad/layer (async)
+function M.addRoundRobin(track, fx, pad, layer, file_path)
+  if not track or not fx or fx < 0 then return false end
+
+  local param_name = string.format('P%d_L%d_RR_ASYNC', pad, layer)
+  local result = reaper.TrackFX_SetNamedConfigParm(track, fx, param_name, file_path)
+  return result or false
 end
 
 -- Clear all samples from a pad

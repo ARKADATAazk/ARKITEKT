@@ -80,6 +80,7 @@ public:
     // SAMPLE MANAGEMENT
     // -------------------------------------------------------------------------
 
+    // Synchronous loading (blocks calling thread)
     bool loadSample(int layerIndex,
                     const juce::File& file,
                     juce::AudioFormatManager& formatManager);
@@ -87,6 +88,19 @@ public:
     bool addRoundRobinSample(int layerIndex,
                              const juce::File& file,
                              juce::AudioFormatManager& formatManager);
+
+    // Direct buffer assignment (for async loading - buffer already loaded)
+    void setSampleBuffer(int layerIndex,
+                         juce::AudioBuffer<float>&& buffer,
+                         double sampleRate,
+                         const juce::String& path,
+                         float normGain);
+
+    void addRoundRobinBuffer(int layerIndex,
+                             juce::AudioBuffer<float>&& buffer,
+                             double sampleRate,
+                             const juce::String& path,
+                             float normGain);
 
     void clearSample(int layerIndex);
     void clearRoundRobin(int layerIndex);
