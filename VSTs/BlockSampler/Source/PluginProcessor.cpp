@@ -242,12 +242,24 @@ void Processor::getStateInformation(juce::MemoryBlock& destData)
     // Save parameters
     auto state = parameters.copyState();
 
-    // Add sample paths
+    // Add sample paths as child nodes
+    juce::ValueTree samplesNode("Samples");
     for (int pad = 0; pad < NUM_PADS; ++pad)
     {
-        // TODO: Store sample file paths in state
-        // state.setProperty("p" + String(pad) + "_sample0", pads[pad].layers[0].filePath, nullptr);
+        for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+        {
+            auto path = pads[pad].getSamplePath(layer);
+            if (path.isNotEmpty())
+            {
+                juce::ValueTree sampleNode("Sample");
+                sampleNode.setProperty("pad", pad, nullptr);
+                sampleNode.setProperty("layer", layer, nullptr);
+                sampleNode.setProperty("path", path, nullptr);
+                samplesNode.addChild(sampleNode, -1, nullptr);
+            }
+        }
     }
+    state.addChild(samplesNode, -1, nullptr);
 
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
     copyXmlToBinary(*xml, destData);
@@ -258,9 +270,26 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
     std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
     if (xml && xml->hasTagName(parameters.state.getType()))
     {
-        parameters.replaceState(juce::ValueTree::fromXml(*xml));
+        auto state = juce::ValueTree::fromXml(*xml);
+        parameters.replaceState(state);
 
-        // TODO: Reload samples from paths stored in state
+        // Reload samples from paths stored in state
+        auto samplesNode = state.getChildWithName("Samples");
+        if (samplesNode.isValid())
+        {
+            for (int i = 0; i < samplesNode.getNumChildren(); ++i)
+            {
+                auto sampleNode = samplesNode.getChild(i);
+                int pad = sampleNode.getProperty("pad", -1);
+                int layer = sampleNode.getProperty("layer", 0);
+                juce::String path = sampleNode.getProperty("path", "");
+
+                if (pad >= 0 && pad < NUM_PADS && path.isNotEmpty())
+                {
+                    loadSampleToPad(pad, layer, path);
+                }
+            }
+        }
     }
 }
 

@@ -227,6 +227,20 @@ public:
             layers[layerIndex].clear();
     }
 
+    juce::String getSamplePath(int layerIndex) const
+    {
+        if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+            return layers[layerIndex].filePath;
+        return {};
+    }
+
+    bool hasSample(int layerIndex) const
+    {
+        if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+            return layers[layerIndex].isLoaded();
+        return false;
+    }
+
     // Parameters (set from PluginProcessor)
     float volume = 0.8f;
     float pan = 0.0f;
