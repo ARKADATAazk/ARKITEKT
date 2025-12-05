@@ -83,13 +83,27 @@ function M.Draw(ctx)
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
 
   -- Header with buttons
-  if ImGui.Button(ctx, 'Clear', 60, 0) then
+  local clear_result = Ark.Button(ctx, {
+    id = 'console_clear',
+    label = 'Clear',
+    width = 60,
+    height = 22,
+    advance = 'none',
+  })
+  if clear_result.clicked then
     M.Clear()
   end
 
   ImGui.SameLine(ctx)
 
-  if ImGui.Button(ctx, 'Copy All', 70, 0) then
+  local copy_result = Ark.Button(ctx, {
+    id = 'console_copy',
+    label = 'Copy All',
+    width = 70,
+    height = 22,
+    advance = 'none',
+  })
+  if copy_result.clicked then
     ImGui.SetClipboardText(ctx, M.get_all_text())
   end
 

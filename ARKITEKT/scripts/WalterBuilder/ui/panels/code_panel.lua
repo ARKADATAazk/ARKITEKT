@@ -134,15 +134,27 @@ function Panel:draw(ctx)
   ImGui.Dummy(ctx, 0, 4)
 
   -- Options row
-  local _, inc_comments = ImGui.Checkbox(ctx, 'Comments', self.include_comments)
-  self.include_comments = inc_comments
-  if inc_comments ~= self.include_comments then self.cache_dirty = true end
+  local comments_result = Ark.Checkbox(ctx, {
+    id = 'code_comments',
+    label = 'Comments',
+    is_checked = self.include_comments,
+    advance = 'none',
+  })
+  if comments_result.changed then
+    self.include_comments = comments_result.value
+    self.cache_dirty = true
+  end
 
   ImGui.SameLine(ctx, 0, 16)
 
-  local _, inc_header = ImGui.Checkbox(ctx, 'Header', self.include_header)
-  if inc_header ~= self.include_header then
-    self.include_header = inc_header
+  local header_result = Ark.Checkbox(ctx, {
+    id = 'code_header',
+    label = 'Header',
+    is_checked = self.include_header,
+    advance = 'vertical',
+  })
+  if header_result.changed then
+    self.include_header = header_result.value
     self.cache_dirty = true
   end
 
@@ -154,10 +166,15 @@ function Panel:draw(ctx)
   ImGui.PopStyleColor(ctx)
 
   ImGui.SameLine(ctx)
-  ImGui.SetNextItemWidth(ctx, 150)
-  local changed, name = ImGui.InputText(ctx, '##layout_name', self.layout_name)
-  if changed then
-    self.layout_name = name
+  local name_result = Ark.InputText(ctx, {
+    id = 'layout_name',
+    text = self.layout_name,
+    width = 150,
+    hint = 'MyLayout',
+    advance = 'vertical',
+  })
+  if name_result.changed then
+    self.layout_name = name_result.value
     self.cache_dirty = true
   end
 
@@ -165,13 +182,17 @@ function Panel:draw(ctx)
 
   -- Copy button
   local copy_label = self.copy_feedback_timer > 0 and 'Copied!' or 'Copy to Clipboard'
-  local copy_color = self.copy_feedback_timer > 0 and 0x2A4A2AFF or 0x2A2A2AFF
-
-  ImGui.PushStyleColor(ctx, ImGui.Col_Button, copy_color)
-  if ImGui.Button(ctx, copy_label, -1, 26) then
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
+  local copy_result = Ark.Button(ctx, {
+    id = 'copy_code',
+    label = copy_label,
+    width = avail_w,
+    height = 26,
+    preset = self.copy_feedback_timer > 0 and 'success' or nil,
+  })
+  if copy_result.clicked then
     self:copy_to_clipboard(ctx)
   end
-  ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 8)
   ImGui.Separator(ctx)

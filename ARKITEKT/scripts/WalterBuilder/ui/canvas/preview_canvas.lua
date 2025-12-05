@@ -3,6 +3,7 @@
 -- Main resizable preview canvas for WALTER layout visualization
 
 local ImGui = require('arkitekt.core.imgui')
+local Ark = require('arkitekt')
 local Colors = require('WalterBuilder.config.colors')
 local Simulator = require('WalterBuilder.domain.simulator')
 local ElementRenderer = require('WalterBuilder.ui.canvas.element_renderer')
@@ -963,19 +964,42 @@ function Canvas:draw(ctx)
   ImGui.SameLine(ctx, 0, 20)
 
   -- View mode toggle
-  if ImGui.Button(ctx, self.view_mode == M.VIEW_TRACKS and 'Tracks' or 'Single', 60, 0) then
+  local view_label = self.view_mode == M.VIEW_TRACKS and 'Tracks' or 'Single'
+  local view_result = Ark.Button(ctx, {
+    id = 'view_mode',
+    label = view_label,
+    width = 60,
+    height = 22,
+    advance = 'none',
+  })
+  if view_result.clicked then
     self.view_mode = (self.view_mode == M.VIEW_TRACKS) and M.VIEW_SINGLE or M.VIEW_TRACKS
   end
 
   ImGui.SameLine(ctx, 0, 10)
 
-  -- Toggle buttons
-  local _, show_grid = ImGui.Checkbox(ctx, 'Grid', self.config.show_grid)
-  self.config.show_grid = show_grid
+  -- Toggle checkboxes
+  local grid_result = Ark.Checkbox(ctx, {
+    id = 'show_grid',
+    label = 'Grid',
+    is_checked = self.config.show_grid,
+    advance = 'none',
+  })
+  if grid_result.changed then
+    self.config.show_grid = grid_result.value
+  end
 
   ImGui.SameLine(ctx)
-  local _, show_attach = ImGui.Checkbox(ctx, 'Attachments', self.config.show_attachments)
-  self.config.show_attachments = show_attach
+
+  local attach_result = Ark.Checkbox(ctx, {
+    id = 'show_attachments',
+    label = 'Attachments',
+    is_checked = self.config.show_attachments,
+    advance = 'none',
+  })
+  if attach_result.changed then
+    self.config.show_attachments = attach_result.value
+  end
 
   return result
 end

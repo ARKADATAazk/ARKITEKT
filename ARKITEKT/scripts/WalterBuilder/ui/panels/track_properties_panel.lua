@@ -277,11 +277,14 @@ function Panel:draw(ctx)
   ImGui.PopStyleColor(ctx)
 
   ImGui.SameLine(ctx, 60)
-  ImGui.SetNextItemWidth(ctx, -1)
-
-  local name_changed, new_name = ImGui.InputText(ctx, '##track_name', track.name)
-  if name_changed then
-    track.name = new_name
+  local name_avail_w = ImGui.GetContentRegionAvail(ctx)
+  local name_result = Ark.InputText(ctx, {
+    id = 'track_name',
+    text = track.name,
+    width = name_avail_w,
+  })
+  if name_result.changed then
+    track.name = name_result.value
     changed = true
   end
 
