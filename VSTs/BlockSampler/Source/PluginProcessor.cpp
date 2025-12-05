@@ -271,6 +271,52 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
     if (xml && xml->hasTagName(parameters.state.getType()))
     {
         auto state = juce::ValueTree::fromXml(*xml);
+
+        // Process runtime commands BEFORE replacing state
+        // These are transient and should not persist
+        auto commandsNode = state.getChildWithName("Commands");
+        if (commandsNode.isValid())
+        {
+            for (int i = 0; i < commandsNode.getNumChildren(); ++i)
+            {
+                auto cmd = commandsNode.getChild(i);
+                juce::String cmdType = cmd.getType().toString();
+
+                if (cmdType == "LoadSample")
+                {
+                    int pad = cmd.getProperty("pad", -1);
+                    int layer = cmd.getProperty("layer", 0);
+                    juce::String path = cmd.getProperty("path", "");
+
+                    if (pad >= 0 && pad < NUM_PADS)
+                    {
+                        if (path.isEmpty())
+                            clearPadSample(pad, layer);
+                        else
+                            loadSampleToPad(pad, layer, path);
+                    }
+                }
+                else if (cmdType == "ClearPad")
+                {
+                    int pad = cmd.getProperty("pad", -1);
+                    if (pad >= 0 && pad < NUM_PADS)
+                    {
+                        for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+                            clearPadSample(pad, layer);
+                    }
+                }
+                else if (cmdType == "ClearAll")
+                {
+                    for (int pad = 0; pad < NUM_PADS; ++pad)
+                        for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+                            clearPadSample(pad, layer);
+                }
+            }
+
+            // Remove commands from state (they're transient)
+            state.removeChild(commandsNode, nullptr);
+        }
+
         parameters.replaceState(state);
 
         // Reload samples from paths stored in state
@@ -291,6 +337,99 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
             }
         }
     }
+}
+
+// ============================================================================
+// NAMED CONFIG PARAMS (for REAPER/Lua integration)
+// ============================================================================
+
+bool Processor::handleNamedConfigParam(const juce::String& name, const juce::String& value)
+{
+    // Parse sample loading: P{pad}_L{layer}_SAMPLE
+    if (name.startsWith("P") && name.contains("_L") && name.endsWith("_SAMPLE"))
+    {
+        // Extract pad index: P{pad}_L...
+        int underscorePos = name.indexOf("_");
+        if (underscorePos > 1)
+        {
+            int padIndex = name.substring(1, underscorePos).getIntValue();
+
+            // Extract layer index: ..._L{layer}_SAMPLE
+            int lPos = name.indexOf("_L") + 2;
+            int secondUnderscorePos = name.indexOf(lPos, "_");
+            if (secondUnderscorePos > lPos)
+            {
+                int layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
+
+                if (padIndex >= 0 && padIndex < NUM_PADS &&
+                    layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+                {
+                    if (value.isEmpty())
+                        clearPadSample(padIndex, layerIndex);
+                    else
+                        loadSampleToPad(padIndex, layerIndex, value);
+                    return true;
+                }
+            }
+        }
+    }
+
+    // Parse clear sample: P{pad}_CLEAR
+    if (name.startsWith("P") && name.endsWith("_CLEAR"))
+    {
+        int padIndex = name.substring(1, name.length() - 6).getIntValue();
+        if (padIndex >= 0 && padIndex < NUM_PADS)
+        {
+            for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+                clearPadSample(padIndex, layer);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+juce::String Processor::getNamedConfigParam(const juce::String& name) const
+{
+    // Get sample path: P{pad}_L{layer}_SAMPLE
+    if (name.startsWith("P") && name.contains("_L") && name.endsWith("_SAMPLE"))
+    {
+        int underscorePos = name.indexOf("_");
+        if (underscorePos > 1)
+        {
+            int padIndex = name.substring(1, underscorePos).getIntValue();
+
+            int lPos = name.indexOf("_L") + 2;
+            int secondUnderscorePos = name.indexOf(lPos, "_");
+            if (secondUnderscorePos > lPos)
+            {
+                int layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
+
+                if (padIndex >= 0 && padIndex < NUM_PADS &&
+                    layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+                {
+                    return pads[padIndex].getSamplePath(layerIndex);
+                }
+            }
+        }
+    }
+
+    // Check if pad has any sample: P{pad}_HAS_SAMPLE
+    if (name.startsWith("P") && name.endsWith("_HAS_SAMPLE"))
+    {
+        int padIndex = name.substring(1, name.length() - 11).getIntValue();
+        if (padIndex >= 0 && padIndex < NUM_PADS)
+        {
+            for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+            {
+                if (pads[padIndex].hasSample(layer))
+                    return "1";
+            }
+            return "0";
+        }
+    }
+
+    return {};
 }
 
 }  // namespace BlockSampler

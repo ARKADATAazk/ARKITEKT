@@ -9,7 +9,8 @@ namespace BlockSampler
 {
 
 class Processor : public juce::AudioProcessor,
-                  public juce::AudioProcessorValueTreeState::Listener
+                  public juce::AudioProcessorValueTreeState::Listener,
+                  public juce::VST3ClientExtensions
 {
 public:
     Processor();
@@ -50,6 +51,14 @@ public:
 
     // Parameter listener
     void parameterChanged(const juce::String& parameterID, float newValue) override;
+
+    // VST3ClientExtensions - enables REAPER integration
+    VST3ClientExtensions* getVST3ClientExtensions() override { return this; }
+
+    // Named config param support for REAPER
+    // Pattern: P{pad}_L{layer}_SAMPLE = file_path
+    bool handleNamedConfigParam(const juce::String& name, const juce::String& value);
+    juce::String getNamedConfigParam(const juce::String& name) const;
 
 private:
     void handleMidiEvent(const juce::MidiMessage& msg);

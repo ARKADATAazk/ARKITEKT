@@ -141,18 +141,125 @@ function M.setReverse(track, fx, pad, enabled)
 end
 
 -- ============================================================================
--- SAMPLE LOADING
+-- SAMPLE LOADING (via chunk modification)
 -- ============================================================================
 
+-- XML parsing helpers
+local function parseXmlTag(xml, tag)
+  local pattern = '<' .. tag .. '[^>]*>(.-)</' .. tag .. '>'
+  return xml:match(pattern)
+end
+
+local function xmlEscape(str)
+  return str:gsub('&', '&amp;'):gsub('<', '&lt;'):gsub('>', '&gt;'):gsub('"', '&quot;')
+end
+
+-- Get VST chunk as XML string
+local function getVstChunk(track, fx)
+  local retval, chunk = reaper.TrackFX_GetFXChunk(track, fx)
+  if not retval or not chunk then return nil end
+  return chunk
+end
+
+-- Set VST chunk from XML string
+local function setVstChunk(track, fx, chunk)
+  return reaper.TrackFX_SetFXChunk(track, fx, chunk, false)
+end
+
+-- Load sample by modifying VST chunk with a Commands node
 function M.loadSample(track, fx, pad, layer, file_path)
   if not track or not fx or fx < 0 then return false end
-  -- Use named config param: P{pad}_L{layer}_SAMPLE
+
+  -- Try TrackFX_SetNamedConfigParm first (simpler if supported)
   local param_name = string.format('P%d_L%d_SAMPLE', pad, layer)
-  return reaper.TrackFX_SetNamedConfigParm(track, fx, param_name, file_path)
+  local result = reaper.TrackFX_SetNamedConfigParm(track, fx, param_name, file_path)
+  if result then return true end
+
+  -- Fallback: chunk modification
+  local chunk = getVstChunk(track, fx)
+  if not chunk then return false end
+
+  -- Build command XML
+  local cmd_xml = string.format(
+    '<LoadSample pad="%d" layer="%d" path="%s"/>',
+    pad, layer, xmlEscape(file_path)
+  )
+
+  -- Insert Commands node into chunk
+  -- Look for </BlockSamplerParams> or similar closing tag
+  local insert_pos = chunk:find('</BlockSamplerParams>')
+  if insert_pos then
+    local commands_section = '<Commands>' .. cmd_xml .. '</Commands>\n'
+    chunk = chunk:sub(1, insert_pos - 1) .. commands_section .. chunk:sub(insert_pos)
+    return setVstChunk(track, fx, chunk)
+  end
+
+  return false
 end
 
 function M.clearSample(track, fx, pad, layer)
   return M.loadSample(track, fx, pad, layer, '')
+end
+
+-- Clear all samples from a pad
+function M.clearPad(track, fx, pad)
+  if not track or not fx or fx < 0 then return false end
+
+  local chunk = getVstChunk(track, fx)
+  if not chunk then return false end
+
+  local cmd_xml = string.format('<ClearPad pad="%d"/>', pad)
+  local insert_pos = chunk:find('</BlockSamplerParams>')
+  if insert_pos then
+    local commands_section = '<Commands>' .. cmd_xml .. '</Commands>\n'
+    chunk = chunk:sub(1, insert_pos - 1) .. commands_section .. chunk:sub(insert_pos)
+    return setVstChunk(track, fx, chunk)
+  end
+
+  return false
+end
+
+-- Get sample path from VST state
+function M.getSamplePath(track, fx, pad, layer)
+  if not track or not fx or fx < 0 then return nil end
+
+  -- Try named config param first
+  local param_name = string.format('P%d_L%d_SAMPLE', pad, layer)
+  local retval, value = reaper.TrackFX_GetNamedConfigParm(track, fx, param_name)
+  if retval and value ~= '' then
+    return value
+  end
+
+  -- Fallback: parse from chunk
+  local chunk = getVstChunk(track, fx)
+  if not chunk then return nil end
+
+  -- Look for Sample node with matching pad and layer
+  local pattern = '<Sample pad="' .. pad .. '" layer="' .. layer .. '" path="([^"]*)"'
+  local path = chunk:match(pattern)
+  return path
+end
+
+-- Check if pad has any sample loaded
+function M.hasSample(track, fx, pad)
+  if not track or not fx or fx < 0 then return false end
+
+  -- Try named config param first
+  local param_name = string.format('P%d_HAS_SAMPLE', pad)
+  local retval, value = reaper.TrackFX_GetNamedConfigParm(track, fx, param_name)
+  if retval then
+    return value == '1'
+  end
+
+  -- Fallback: check each layer
+  for layer = 0, M.NUM_VELOCITY_LAYERS - 1 do
+    local path = M.getSamplePath(track, fx, pad, layer)
+    if path and path ~= '' then
+      return true
+    end
+  end
+
+  return false
 end
 
 -- ============================================================================
