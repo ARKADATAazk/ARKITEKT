@@ -4,9 +4,19 @@
 local M = {}
 
 -- ===== ENCODE =====
+-- Optimized: Single-pass escape with lookup table (was 7 passes)
+local ESC_MAP = {
+  ['\\'] = '\\\\',
+  ['"'] = '\\"',
+  ['\b'] = '\\b',
+  ['\f'] = '\\f',
+  ['\n'] = '\\n',
+  ['\r'] = '\\r',
+  ['\t'] = '\\t',
+}
+
 local function esc_str(s)
-  return s:gsub('\\','\\\\'):gsub('"','\\"'):gsub('\b','\\b'):gsub('\f','\\f')
-          :gsub('\n','\\n'):gsub('\r','\\r'):gsub('\t','\\t')
+  return (s:gsub('[\\"\b\f\n\r\t]', ESC_MAP))
 end
 
 local function is_array(t)

@@ -44,11 +44,18 @@ function M.new(config)
   local pending_resize_w  = nil
   local pending_resize_h  = nil
 
-  -- Dynamic color getters (read from Theme.COLORS each frame for theming)
+  -- Dynamic color getters (cached, rebuild on theme change)
+  local _colors_cache = nil
+  local _colors_cache_key = nil  -- Track BG_CHROME to detect theme changes
   local function get_colors()
     local C = Theme.COLORS
-    return {
-      bg = C.BG_CHROME,  -- Chrome color (significantly darker than content)
+    local bg = C.BG_CHROME
+    -- Only rebuild if theme changed (BG_CHROME is a good indicator)
+    if _colors_cache and _colors_cache_key == bg then
+      return _colors_cache
+    end
+    _colors_cache = {
+      bg = bg,  -- Chrome color (significantly darker than content)
       border = C.BORDER_OUTER,
       text = C.TEXT_NORMAL,
       sep = C.TEXT_DIMMED,
@@ -57,6 +64,8 @@ function M.new(config)
       red = C.ACCENT_DANGER or 0xE04141FF,
       resize_handle = C.TEXT_DIMMED,
     }
+    _colors_cache_key = bg
+    return _colors_cache
   end
 
   local function set_right_text(text)
@@ -190,7 +199,7 @@ function M.new(config)
     local center_y = y1 + (h / 2)
 
     local text_w, text_h = ImGui.CalcTextSize(ctx, status_text)
-    local label_y = center_y - (text_h / 2) - 1
+    local label_y = center_y - (text_h / 2)
     local label_x = x1 + LEFT_PAD
     add_text(dl, label_x, label_y, text_color, status_text)
 
@@ -248,7 +257,7 @@ function M.new(config)
     for i, info in ipairs(item_widths) do
       if info.type == 'text' then
         local _, rtext_h = ImGui.CalcTextSize(ctx, info.content)
-        local rtext_y = center_y - (rtext_h / 2) - 1
+        local rtext_y = center_y - (rtext_h / 2)
         add_text(dl, x1 + right_x, rtext_y, colors.text, info.content)
         right_x = right_x + info.width + 10
       elseif info.type == 'button' then

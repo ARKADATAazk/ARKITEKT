@@ -266,6 +266,7 @@ local MODULES = {
   Theme = 'arkitekt.theme',
   Settings = 'arkitekt.core.settings',
   Logger = 'arkitekt.debug.logger',
+  Dev = 'arkitekt.debug.dev',
 
   -- Interaction
   Selection = 'arkitekt.gui.interaction.selection',

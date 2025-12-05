@@ -14,6 +14,107 @@ local Base = require('arkitekt.gui.widgets.base')
 local M = {}
 
 -- ============================================================================
+-- DEV MODE: Visual feedback state (module-level for persistence across frames)
+-- ============================================================================
+local dev_toast = {
+  message = nil,
+  start_time = 0,
+  duration = 1.5,
+}
+local dev_flash = {
+  active = false,
+  start_time = 0,
+  duration = 0.3,
+  color = 0x00FF0040,  -- Green with low alpha
+}
+
+local function show_dev_flash(color)
+  dev_flash.active = true
+  dev_flash.start_time = reaper.time_precise()
+  dev_flash.color = color or 0x00FF0040  -- Default: green
+end
+
+-- Stored window bounds for flash/toast (updated each frame while window is active)
+local dev_window_bounds = { x = 0, y = 0, w = 800, h = 600 }
+
+local function update_dev_window_bounds(ctx)
+  local wx, wy = ImGui.GetWindowPos(ctx)
+  local ww, wh = ImGui.GetWindowSize(ctx)
+  dev_window_bounds.x = wx
+  dev_window_bounds.y = wy
+  dev_window_bounds.w = ww
+  dev_window_bounds.h = wh
+end
+
+local function draw_dev_flash(ctx)
+  if not dev_flash.active then return end
+
+  local elapsed = reaper.time_precise() - dev_flash.start_time
+  if elapsed > dev_flash.duration then
+    dev_flash.active = false
+    return
+  end
+
+  -- Quick fade out
+  local alpha = 1.0 - (elapsed / dev_flash.duration)
+  alpha = alpha * alpha  -- Ease out
+
+  local base_alpha = (dev_flash.color & 0xFF)
+  local final_alpha = math.floor(base_alpha * alpha)
+  local flash_color = (dev_flash.color & 0xFFFFFF00) | final_alpha
+
+  -- Full window overlay using stored bounds
+  local dl = ImGui.GetForegroundDrawList(ctx)
+  ImGui.DrawList_AddRectFilled(dl,
+    dev_window_bounds.x, dev_window_bounds.y,
+    dev_window_bounds.x + dev_window_bounds.w,
+    dev_window_bounds.y + dev_window_bounds.h,
+    flash_color)
+end
+
+local function show_dev_toast(message)
+  dev_toast.message = message
+  dev_toast.start_time = reaper.time_precise()
+end
+
+local function draw_dev_toast(ctx)
+  if not dev_toast.message then return end
+
+  local elapsed = reaper.time_precise() - dev_toast.start_time
+  if elapsed > dev_toast.duration then
+    dev_toast.message = nil
+    return
+  end
+
+  -- Fade out in last 0.3 seconds
+  local alpha = 1.0
+  local fade_start = dev_toast.duration - 0.3
+  if elapsed > fade_start then
+    alpha = 1.0 - (elapsed - fade_start) / 0.3
+  end
+
+  -- Draw at top center of window using stored bounds
+  local text_w = ImGui.CalcTextSize(ctx, dev_toast.message)
+  local x = dev_window_bounds.x + (dev_window_bounds.w - text_w) / 2
+  local y = dev_window_bounds.y + 50
+
+  local dl = ImGui.GetForegroundDrawList(ctx)
+  local bg_color = 0x000000CC  -- Semi-transparent black
+  local text_color = 0x00FF00FF  -- Bright green for visibility
+  text_color = (text_color & 0xFFFFFF00) | math.floor(alpha * 255)
+  bg_color = (bg_color & 0xFFFFFF00) | math.floor(0xCC * alpha)
+
+  -- Background pill
+  ImGui.DrawList_AddRectFilled(dl, x - 12, y - 6, x + text_w + 12, y + 22, bg_color, 6)
+  -- Text
+  ImGui.DrawList_AddText(dl, x, y, text_color, dev_toast.message)
+end
+
+-- Export for potential future use
+M._show_dev_toast = show_dev_toast
+M._show_dev_flash = show_dev_flash
+
+-- ============================================================================
 -- ERROR HANDLING: Wrap reaper.defer with xpcall for full stack traces
 -- Logs to both Logger (debug console) and REAPER console (immediate visibility)
 -- ============================================================================
@@ -372,8 +473,17 @@ function M.run(opts)
   end
 
   -- ============================================================================
+  -- DEV MODE: Configuration
+  -- ============================================================================
+  local Dev = require('arkitekt.debug.dev')
+  local dev_mode = config.dev_mode or false
+  Dev.enabled = dev_mode  -- Sync to shared module
+
+  -- ============================================================================
   -- WINDOW MODE: Standard window with chrome
   -- ============================================================================
+  -- Keep window title stable for ImGui (don't include [DEV] badge)
+  -- The titlebar handles the [DEV] prefix display separately
   local title    = config.title
   local version  = config.version
   local draw_fn  = config.draw or function(ctx) ImGui.Text(ctx, 'No draw function provided') end
@@ -398,9 +508,11 @@ function M.run(opts)
   -- before any UI renders. This prevents the 'dark defaults on light theme' bug.
   -- Theme preferences are persisted via REAPER ExtState and restored automatically.
   local reaper_theme_sync, cross_app_theme_sync
+  local ThemeManagerRef  -- Cached module reference for per-frame debug overlay
   do
     local ok, ThemeManager = pcall(require, 'arkitekt.theme.manager')
     if ok and ThemeManager and ThemeManager.init then
+      ThemeManagerRef = ThemeManager  -- Cache for per-frame use
       -- init() loads saved preference or defaults to 'adapt' mode
       ThemeManager.init('adapt', config.app_name)
 
@@ -476,11 +588,19 @@ function M.run(opts)
 
     -- Debug mode: show ImGui metrics window
     show_imgui_metrics = show_metrics,
+
+    -- Dev mode
+    dev_mode        = dev_mode,
   })
 
 
   if config.overlay then
     window.overlay = config.overlay
+  end
+
+  -- Set initial [DEV] badge on titlebar if dev_mode is enabled at startup
+  if dev_mode and window._titlebar then
+    window._titlebar:set_title('[DEV] ' .. config.title)
   end
 
   local state = {
@@ -536,6 +656,32 @@ function M.run(opts)
 
     local visible, open = window:Begin(ctx)
     if visible then
+      -- Store window bounds for dev mode overlays (flash/toast)
+      update_dev_window_bounds(ctx)
+
+      -- ======================================================================
+      -- DEV MODE: Keyboard shortcuts (must be after window:Begin for focus)
+      -- ======================================================================
+      -- Toggle dev mode: Ctrl+Shift+Alt+D
+      do
+        local ctrl = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
+        local shift = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
+        local alt = ImGui.IsKeyDown(ctx, ImGui.Mod_Alt)
+        local d_pressed = ImGui.IsKeyPressed(ctx, ImGui.Key_D, false)
+
+        if ctrl and shift and alt and d_pressed then
+          dev_mode = not dev_mode
+          Dev.enabled = dev_mode  -- Sync to shared module
+          -- Update titlebar display only (not window title for ImGui stability)
+          if window._titlebar then
+            window._titlebar:set_title(dev_mode and ('[DEV] ' .. config.title) or config.title)
+            window._titlebar.dev_mode = dev_mode
+          end
+          show_dev_toast(dev_mode and 'Dev Mode: ON' or 'Dev Mode: OFF')
+          Logger.info('DEV', 'Dev mode %s', dev_mode and 'enabled' or 'disabled')
+        end
+      end
+
       if raw_content then
         draw_with_profiling(ctx, state)
       else
@@ -544,6 +690,10 @@ function M.run(opts)
           window:EndBody(ctx)
         end
       end
+
+      -- Draw dev mode overlays while window is active
+      draw_dev_flash(ctx)
+      draw_dev_toast(ctx)
     end
     window:End(ctx)
 
@@ -560,11 +710,8 @@ function M.run(opts)
     end
 
     -- Render theme debug overlay (if enabled via titlebar menu or F12)
-    do
-      local ok, ThemeManager = pcall(require, 'arkitekt.theme.manager')
-      if ok and ThemeManager and ThemeManager.render_debug_overlay then
-        ThemeManager.render_debug_overlay(ctx, ImGui)
-      end
+    if ThemeManagerRef and ThemeManagerRef.render_debug_overlay then
+      ThemeManagerRef.render_debug_overlay(ctx, ImGui)
     end
 
     if settings and settings.maybe_flush then

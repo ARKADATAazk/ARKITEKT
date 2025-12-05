@@ -109,6 +109,9 @@ function M.new(opts)
 
     -- Per-app theme overrides
     app_name        = config.app_name,
+
+    -- Dev mode
+    dev_mode        = config.dev_mode,
   }
   
   function titlebar:_truncate_text(ctx, text, max_width, font, font_size)
@@ -131,18 +134,30 @@ function M.new(opts)
       return ''
     end
 
-    for i = #text, 1, -1 do
-      local sub = text:sub(1, i)
+    local target_w = max_width - ellipsis_w
+
+    -- Binary search for optimal truncation point: O(log n) instead of O(n)
+    local lo, hi = 1, #text
+    local best = 0
+    while lo <= hi do
+      local mid = (lo + hi) // 2
+      local sub = text:sub(1, mid)
       if font then ImGui.PushFont(ctx, font, font_size) end
       local sub_w = ImGui.CalcTextSize(ctx, sub)
       if font then ImGui.PopFont(ctx) end
 
-      if sub_w + ellipsis_w <= max_width then
-        return sub .. ellipsis
+      if sub_w <= target_w then
+        best = mid
+        lo = mid + 1
+      else
+        hi = mid - 1
       end
     end
 
-    return ellipsis
+    if best == 0 then
+      return ellipsis
+    end
+    return text:sub(1, best) .. ellipsis
   end
 
   function titlebar:_draw_icon(ctx, x, y, color)

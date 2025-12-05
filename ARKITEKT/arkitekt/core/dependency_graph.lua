@@ -212,13 +212,19 @@ function Graph:_find_path(start_id, target_id)
     for _, dep_id in ipairs(node.direct_deps) do
       if dep_id == target_id then
         -- Found target - reconstruct path from parent pointers
+        -- Optimized: Append then reverse O(n) instead of insert(1) O(n²)
         local path = {}
         local p = current_id
         while p ~= start_id do
-          table.insert(path, 1, p)
+          path[#path + 1] = p
           p = parent[p]
         end
-        table.insert(path, 1, start_id)
+        path[#path + 1] = start_id
+        -- Reverse in-place
+        local n = #path
+        for i = 1, n // 2 do
+          path[i], path[n - i + 1] = path[n - i + 1], path[i]
+        end
         return path
       end
 

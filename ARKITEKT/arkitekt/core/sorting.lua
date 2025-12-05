@@ -4,6 +4,9 @@
 
 local Colors = require('arkitekt.core.colors')
 
+-- Performance: Localize math functions
+local abs = abs
+
 local M = {}
 
 -- =============================================================================
@@ -55,12 +58,12 @@ function M.compare_color(a, b, opts)
   local h_b, s_b, l_b = M.get_color_sort_key(color_b)
 
   -- Primary: sort by hue (ascending = red→purple)
-  if math.abs(h_a - h_b) > 0.5 then
+  if abs(h_a - h_b) > 0.5 then
     return h_a < h_b
   end
 
   -- Secondary: higher saturation first (more vibrant)
-  if math.abs(s_a - s_b) > 0.01 then
+  if abs(s_a - s_b) > 0.01 then
     return s_a > s_b
   end
 
