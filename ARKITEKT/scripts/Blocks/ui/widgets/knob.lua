@@ -1,5 +1,5 @@
 -- @noindex
--- ProductionPanel/ui/widgets/knob.lua
+-- Blocks/ui/widgets/knob.lua
 -- Rotary knob widget for macro controls
 
 local M = {}

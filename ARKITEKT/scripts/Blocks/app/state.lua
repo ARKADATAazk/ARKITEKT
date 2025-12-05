@@ -1,5 +1,5 @@
 -- @noindex
--- ProductionPanel/app/state.lua
+-- Blocks/app/state.lua
 -- Application state management
 
 local M = {}

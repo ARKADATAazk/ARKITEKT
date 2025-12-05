@@ -321,6 +321,32 @@ local function run_overlay_mode(config)
 end
 
 function M.run(opts)
+  -- ============================================================================
+  -- COMPONENT MODE: Return drawable handle instead of running defer loop
+  -- ============================================================================
+  -- When hosted by Blocks (or another container), components detect this via
+  -- the global flag and return a drawable handle instead of running their own
+  -- defer loop. The host manages the single defer loop for all components.
+  if _G.ARKITEKT_BLOCKS_HOST then
+    local config = Config.deepMerge(Constants.WINDOW, opts or {})
+    local draw_fn = config.draw or function(ctx) ImGui.Text(ctx, 'No draw function') end
+
+    -- Return component handle for host to call
+    return {
+      -- Draw the component (called each frame by host)
+      draw = function(ctx, shell_state)
+        draw_fn(ctx, shell_state or {})
+      end,
+
+      -- Component metadata
+      title = config.title or 'Component',
+      version = config.version,
+
+      -- Optional lifecycle hooks
+      on_close = opts and opts.on_close,
+    }
+  end
+
   -- Merge user opts with framework defaults
   local config = Config.deepMerge(Constants.WINDOW, opts or {})
 

@@ -1,0 +1,231 @@
+desc:DrumRack Choke Groups
+//author: ARKITEKT (based on MPL's choke concept)
+//version: 1.0
+//about:
+//  Handles choke groups for DrumRack.
+//  Place on parent track BEFORE MIDI routing to children.
+//  When a note in a choke group plays, all other notes in that group are killed.
+//
+//  Example: Hi-hats
+//    Group 1: 42 (closed), 44 (pedal), 46 (open)
+//    Playing closed (42) will kill open (46) if it's sustaining.
+//
+//  Supports 8 choke groups, each with up to 8 notes.
+
+options:gmem=DrumRack_Choke
+
+// ============================================================================
+// CHOKE GROUP CONFIGURATION
+// Format: Set note numbers (0 = unused). Notes in same group choke each other.
+// ============================================================================
+
+// Group 1: Hi-hats (default)
+slider1:42<0,127,1>Group 1 - Note A (Closed HH)
+slider2:44<0,127,1>Group 1 - Note B (Pedal HH)
+slider3:46<0,127,1>Group 1 - Note C (Open HH)
+slider4:0<0,127,1>Group 1 - Note D
+slider5:0<0,127,1>Group 1 - Note E
+slider6:0<0,127,1>Group 1 - Note F
+slider7:0<0,127,1>Group 1 - Note G
+slider8:0<0,127,1>Group 1 - Note H
+
+// Group 2: Crashes/Rides (example)
+slider9:49<0,127,1>Group 2 - Note A (Crash 1)
+slider10:52<0,127,1>Group 2 - Note B (China)
+slider11:0<0,127,1>Group 2 - Note C
+slider12:0<0,127,1>Group 2 - Note D
+slider13:0<0,127,1>Group 2 - Note E
+slider14:0<0,127,1>Group 2 - Note F
+slider15:0<0,127,1>Group 2 - Note G
+slider16:0<0,127,1>Group 2 - Note H
+
+// Group 3
+slider17:0<0,127,1>Group 3 - Note A
+slider18:0<0,127,1>Group 3 - Note B
+slider19:0<0,127,1>Group 3 - Note C
+slider20:0<0,127,1>Group 3 - Note D
+slider21:0<0,127,1>Group 3 - Note E
+slider22:0<0,127,1>Group 3 - Note F
+slider23:0<0,127,1>Group 3 - Note G
+slider24:0<0,127,1>Group 3 - Note H
+
+// Group 4
+slider25:0<0,127,1>Group 4 - Note A
+slider26:0<0,127,1>Group 4 - Note B
+slider27:0<0,127,1>Group 4 - Note C
+slider28:0<0,127,1>Group 4 - Note D
+slider29:0<0,127,1>Group 4 - Note E
+slider30:0<0,127,1>Group 4 - Note F
+slider31:0<0,127,1>Group 4 - Note G
+slider32:0<0,127,1>Group 4 - Note H
+
+// Group 5-8 use gmem configuration (for UI-driven setup)
+// slider33-64 reserved for future groups or UI sync
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+@init
+
+// Note-to-group lookup table (128 notes)
+// note_to_group[note] = group number (1-8), 0 = not in any group
+note_to_group = 0;  // Base address for 128 entries
+
+// Group membership arrays (which notes are in each group)
+// group_notes[group][slot] = note number
+group_notes = 128;  // Base address (8 groups x 8 slots = 64 entries)
+
+// Active notes tracking (was this note choked?)
+// choked_notes[note] = 1 if was choked, 0 otherwise
+choked_notes = 256;  // Base address for 128 entries
+
+// Build lookup tables
+function rebuild_tables() local(g, s, note, slider_idx) (
+  // Clear note_to_group
+  memset(note_to_group, 0, 128);
+
+  // Process groups 1-4 from sliders
+  g = 0;
+  while (g < 4) (
+    s = 0;
+    while (s < 8) (
+      slider_idx = g * 8 + s + 1;  // slider1-32
+      note = slider(slider_idx);
+      note > 0 && note <= 127 ? (
+        note_to_group[note] = g + 1;  // Group 1-4
+        group_notes[g * 8 + s] = note;
+      ) : (
+        group_notes[g * 8 + s] = -1;  // Empty slot
+      );
+      s += 1;
+    );
+    g += 1;
+  );
+
+  // Groups 5-8 could be configured via gmem (future UI integration)
+);
+
+rebuild_tables();
+
+// ============================================================================
+// SLIDER CHANGE - Rebuild tables when config changes
+// ============================================================================
+@slider
+rebuild_tables();
+
+// ============================================================================
+// MIDI PROCESSING
+// ============================================================================
+@block
+
+buf = 10000;
+buf_noteoff = 10100;
+maxlen = 3;
+
+while (midirecv(offset, msg1, msg2, msg3)) (
+
+  status = msg1 & 0xF0;
+  channel = msg1 & 0x0F;
+  note = msg2;
+  velocity = msg3;
+
+  pass_through = 1;  // Default: forward the message
+
+  // NOTE ON
+  status == 0x90 && velocity > 0 ? (
+
+    group = note_to_group[note];
+
+    group > 0 ? (
+      // This note is in a choke group - kill others in same group
+
+      g_base = (group - 1) * 8;
+      s = 0;
+      while (s < 8) (
+        other_note = group_notes[g_base + s];
+
+        // Kill other notes in this group (not self)
+        other_note > 0 && other_note != note ? (
+          // Send note-off for the other note
+          midisend(offset, 0x80 | channel, other_note, 0);
+          // Mark it as choked (so we ignore its natural note-off later)
+          choked_notes[other_note] = 1;
+        );
+
+        s += 1;
+      );
+
+      // Clear choked flag for the triggering note (it's playing now)
+      choked_notes[note] = 0;
+    );
+  );
+
+  // NOTE OFF
+  (status == 0x80) || (status == 0x90 && velocity == 0) ? (
+
+    // If this note was choked, ignore its note-off (we already sent one)
+    choked_notes[note] == 1 ? (
+      pass_through = 0;
+      choked_notes[note] = 0;  // Reset flag
+    );
+  );
+
+  // Forward message if not suppressed
+  pass_through ? (
+    midisend(offset, msg1, msg2, msg3);
+  );
+);
+
+// ============================================================================
+// GRAPHICS (optional - shows active choke groups)
+// ============================================================================
+@gfx 400 100
+
+gfx_clear = 0x1a1a1a;
+
+gfx_setfont(1, "Arial", 14);
+gfx_set(1, 1, 1, 1);
+gfx_x = 10; gfx_y = 10;
+gfx_drawstr("DrumRack Choke Groups");
+
+gfx_setfont(1, "Arial", 11);
+gfx_set(0.7, 0.7, 0.7, 1);
+
+// Show configured groups
+g = 0;
+while (g < 4) (
+  gfx_x = 10 + (g * 95);
+  gfx_y = 35;
+
+  // Count notes in group
+  count = 0;
+  g_base = (g) * 8;
+  s = 0;
+  while (s < 8) (
+    group_notes[g_base + s] > 0 ? count += 1;
+    s += 1;
+  );
+
+  count > 0 ? (
+    gfx_set(0.3, 0.8, 0.5, 1);  // Green for active
+  ) : (
+    gfx_set(0.4, 0.4, 0.4, 1);  // Gray for empty
+  );
+
+  gfx_printf("G%d: %d notes", g + 1, count);
+
+  // List notes
+  gfx_set(0.6, 0.6, 0.6, 1);
+  gfx_y = 52;
+  gfx_x = 10 + (g * 95);
+  s = 0;
+  while (s < 8 && gfx_y < 90) (
+    n = group_notes[g_base + s];
+    n > 0 ? (
+      gfx_printf("%d ", n);
+    );
+    s += 1;
+  );
+
+  g += 1;
+);
