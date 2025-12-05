@@ -9,8 +9,8 @@
 #include <juce_audio_formats/juce_audio_formats.h>
 #include "Parameters.h"
 #include "Pad.h"
-#include <queue>
-#include <mutex>
+#include <bitset>
+#include <atomic>
 
 namespace BlockSampler
 {
@@ -30,14 +30,16 @@ struct LoadedSample
     float normGain = 1.0f;
 };
 
+// Lock-free SPSC queue size (must be power of 2)
+constexpr int LOAD_QUEUE_SIZE = 64;
+
 // =============================================================================
 // PROCESSOR CLASS
 // =============================================================================
 
 class Processor : public juce::AudioProcessor,
                   public juce::AudioProcessorValueTreeState::Listener,
-                  public juce::VST3ClientExtensions,
-                  private juce::Timer
+                  public juce::VST3ClientExtensions
 {
 public:
     Processor();
@@ -126,6 +128,14 @@ private:
     void handleMidiEvent(const juce::MidiMessage& msg);
     void updatePadParameters(int padIndex);
     void processKillGroups(int triggeredPad);
+    void applyCompletedLoads();  // Called at start of processBlock (audio thread)
+
+    // Helper for parsing pad/layer from named config params
+    // Returns true if parsed successfully, fills padIndex and layerIndex
+    static bool parsePadLayerParam(const juce::String& name,
+                                   const juce::String& suffix,
+                                   int& padIndex,
+                                   int& layerIndex);
 
     // -------------------------------------------------------------------------
     // PRIVATE STATE
@@ -135,6 +145,9 @@ private:
     juce::AudioFormatManager formatManager;
 
     std::array<Pad, NUM_PADS> pads;
+
+    // Active pad tracking for optimized rendering
+    std::bitset<NUM_PADS> activePads;
 
     // Cached parameter pointers for fast audio-thread access
     struct PadParams
@@ -160,13 +173,11 @@ private:
     };
     std::array<PadParams, NUM_PADS> padParams;
 
-    // Async sample loading
+    // Async sample loading - lock-free SPSC FIFO
+    // Producer: background thread pool, Consumer: audio thread
     juce::ThreadPool loadPool { 2 };  // 2 worker threads
-    std::mutex loadQueueMutex;
-    std::queue<LoadedSample> completedLoads;
-
-    void timerCallback() override;
-    void applyCompletedLoads();
+    juce::AbstractFifo loadFifo { LOAD_QUEUE_SIZE };
+    std::array<LoadedSample, LOAD_QUEUE_SIZE> loadQueue;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Processor)
 };

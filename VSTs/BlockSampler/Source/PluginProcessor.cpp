@@ -64,14 +64,10 @@ Processor::Processor()
             parameters.addParameterListener(PadParam::id(pad, static_cast<PadParam::ID>(p)), this);
         }
     }
-
-    // Start timer for async load completion
-    startTimer(ASYNC_LOAD_CHECK_INTERVAL_MS);
 }
 
 Processor::~Processor()
 {
-    stopTimer();
     loadPool.removeAllJobs(true, 1000);  // Wait up to 1s for jobs to finish
 
     for (int pad = 0; pad < NUM_PADS; ++pad)
@@ -112,6 +108,9 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
 {
     juce::ScopedNoDenormals noDenormals;
 
+    // Apply any completed async sample loads (thread-safe: only audio thread consumes)
+    applyCompletedLoads();
+
     const int numSamples = buffer.getNumSamples();
 
     // Clear all output channels (buffer.clear() handles all buses)
@@ -123,11 +122,22 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
         handleMidiEvent(metadata.getMessage());
     }
 
-    // Render each pad and route to appropriate buses
-    // Note: Parameter update moved inside loop to only update playing pads (optimization)
+    // Update active pads bitset
     for (int i = 0; i < NUM_PADS; ++i)
     {
-        if (!pads[i].isPlaying)
+        if (pads[i].isPlaying)
+            activePads.set(i);
+        else
+            activePads.reset(i);
+    }
+
+    // Render only active pads (optimization: skip inactive pads entirely)
+    if (activePads.none())
+        return;
+
+    for (int i = 0; i < NUM_PADS; ++i)
+    {
+        if (!activePads.test(i))
             continue;
 
         // Only update parameters for pads that are playing
@@ -135,7 +145,10 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
 
         int rendered = pads[i].renderNextBlock(numSamples);
         if (rendered == 0)
+        {
+            activePads.reset(i);  // Pad stopped during render
             continue;
+        }
 
         const auto& padOutput = pads[i].getOutputBuffer();
 
@@ -292,10 +305,10 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
     if (!file.existsAsFile())
         return;
 
-    // Capture format manager pointer for thread pool job
+    // Capture pointers for thread pool job
     auto* fmt = &formatManager;
-    auto* queue = &completedLoads;
-    auto* mtx = &loadQueueMutex;
+    auto* fifo = &loadFifo;
+    auto* queue = &loadQueue;
 
     loadPool.addJob([=]()
     {
@@ -322,29 +335,32 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
             peak = juce::jmax(peak, result.buffer.getMagnitude(ch, 0, result.buffer.getNumSamples()));
         result.normGain = (peak > NORM_PEAK_THRESHOLD) ? (1.0f / peak) : 1.0f;
 
-        // Queue result for main thread
-        std::lock_guard<std::mutex> lock(*mtx);
-        queue->push(std::move(result));
+        // Queue result for audio thread via lock-free FIFO
+        int start1, size1, start2, size2;
+        fifo->prepareToWrite(1, start1, size1, start2, size2);
+
+        if (size1 > 0)
+        {
+            (*queue)[start1] = std::move(result);
+            fifo->finishedWrite(1);
+        }
+        // If FIFO is full, drop the load (will be retried by user)
     });
 }
 
 // =============================================================================
-// ASYNC LOAD COMPLETION (Timer callback)
+// ASYNC LOAD COMPLETION (Called at start of processBlock - audio thread)
 // =============================================================================
-
-void Processor::timerCallback()
-{
-    applyCompletedLoads();
-}
 
 void Processor::applyCompletedLoads()
 {
-    std::lock_guard<std::mutex> lock(loadQueueMutex);
+    int start1, size1, start2, size2;
+    loadFifo.prepareToRead(loadFifo.getNumReady(), start1, size1, start2, size2);
 
-    while (!completedLoads.empty())
+    // Process first contiguous block
+    for (int i = 0; i < size1; ++i)
     {
-        auto loaded = std::move(completedLoads.front());
-        completedLoads.pop();
+        auto& loaded = loadQueue[start1 + i];
 
         if (loaded.padIndex >= 0 && loaded.padIndex < NUM_PADS)
         {
@@ -367,7 +383,43 @@ void Processor::applyCompletedLoads()
                     loaded.normGain);
             }
         }
+
+        // Clear the slot for reuse
+        loaded = LoadedSample{};
     }
+
+    // Process second contiguous block (wrap-around)
+    for (int i = 0; i < size2; ++i)
+    {
+        auto& loaded = loadQueue[start2 + i];
+
+        if (loaded.padIndex >= 0 && loaded.padIndex < NUM_PADS)
+        {
+            if (loaded.isRoundRobin)
+            {
+                pads[loaded.padIndex].addRoundRobinBuffer(
+                    loaded.layerIndex,
+                    std::move(loaded.buffer),
+                    loaded.sampleRate,
+                    loaded.path,
+                    loaded.normGain);
+            }
+            else
+            {
+                pads[loaded.padIndex].setSampleBuffer(
+                    loaded.layerIndex,
+                    std::move(loaded.buffer),
+                    loaded.sampleRate,
+                    loaded.path,
+                    loaded.normGain);
+            }
+        }
+
+        // Clear the slot for reuse
+        loaded = LoadedSample{};
+    }
+
+    loadFifo.finishedRead(size1 + size2);
 }
 
 // =============================================================================
@@ -498,115 +550,76 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
 // NAMED CONFIG PARAMS (REAPER/Lua integration)
 // =============================================================================
 
+// Helper to parse P{pad}_L{layer}_{suffix} pattern
+// Returns true if valid, fills padIndex and layerIndex
+bool Processor::parsePadLayerParam(const juce::String& name,
+                                   const juce::String& suffix,
+                                   int& padIndex,
+                                   int& layerIndex)
+{
+    if (!name.startsWith("P") || !name.contains("_L") || !name.endsWith(suffix))
+        return false;
+
+    int underscorePos = name.indexOf("_");
+    if (underscorePos <= 1)
+        return false;
+
+    padIndex = name.substring(1, underscorePos).getIntValue();
+
+    int lPos = name.indexOf("_L") + 2;
+    int secondUnderscorePos = name.indexOf(lPos, "_");
+    if (secondUnderscorePos <= lPos)
+        return false;
+
+    layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
+
+    return padIndex >= 0 && padIndex < NUM_PADS &&
+           layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS;
+}
+
 bool Processor::handleNamedConfigParam(const juce::String& name, const juce::String& value)
 {
+    int padIndex, layerIndex;
+
     // Pattern: P{pad}_L{layer}_SAMPLE_ASYNC (async load)
-    if (name.startsWith("P") && name.contains("_L") && name.endsWith("_SAMPLE_ASYNC"))
+    if (parsePadLayerParam(name, "_SAMPLE_ASYNC", padIndex, layerIndex))
     {
-        int underscorePos = name.indexOf("_");
-        if (underscorePos > 1)
-        {
-            int padIndex = name.substring(1, underscorePos).getIntValue();
-
-            int lPos = name.indexOf("_L") + 2;
-            int secondUnderscorePos = name.indexOf(lPos, "_");
-            if (secondUnderscorePos > lPos)
-            {
-                int layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
-
-                if (padIndex >= 0 && padIndex < NUM_PADS &&
-                    layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
-                {
-                    if (value.isEmpty())
-                        clearPadSample(padIndex, layerIndex);
-                    else
-                        loadSampleToPadAsync(padIndex, layerIndex, value, false);
-                    return true;
-                }
-            }
-        }
+        if (value.isEmpty())
+            clearPadSample(padIndex, layerIndex);
+        else
+            loadSampleToPadAsync(padIndex, layerIndex, value, false);
+        return true;
     }
 
     // Pattern: P{pad}_L{layer}_RR_ASYNC (async round-robin add)
-    if (name.startsWith("P") && name.contains("_L") && name.endsWith("_RR_ASYNC"))
+    if (parsePadLayerParam(name, "_RR_ASYNC", padIndex, layerIndex))
     {
-        int underscorePos = name.indexOf("_");
-        if (underscorePos > 1)
-        {
-            int padIndex = name.substring(1, underscorePos).getIntValue();
-
-            int lPos = name.indexOf("_L") + 2;
-            int secondUnderscorePos = name.indexOf(lPos, "_");
-            if (secondUnderscorePos > lPos)
-            {
-                int layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
-
-                if (padIndex >= 0 && padIndex < NUM_PADS &&
-                    layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS &&
-                    value.isNotEmpty())
-                {
-                    loadSampleToPadAsync(padIndex, layerIndex, value, true);
-                    return true;
-                }
-            }
-        }
+        if (value.isNotEmpty())
+            loadSampleToPadAsync(padIndex, layerIndex, value, true);
+        return true;
     }
 
     // Pattern: P{pad}_L{layer}_CLEAR_RR (clear round-robin samples)
-    if (name.startsWith("P") && name.contains("_L") && name.endsWith("_CLEAR_RR"))
+    if (parsePadLayerParam(name, "_CLEAR_RR", padIndex, layerIndex))
     {
-        int underscorePos = name.indexOf("_");
-        if (underscorePos > 1)
-        {
-            int padIndex = name.substring(1, underscorePos).getIntValue();
-
-            int lPos = name.indexOf("_L") + 2;
-            int secondUnderscorePos = name.indexOf(lPos, "_");
-            if (secondUnderscorePos > lPos)
-            {
-                int layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
-
-                if (padIndex >= 0 && padIndex < NUM_PADS &&
-                    layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
-                {
-                    pads[padIndex].clearRoundRobin(layerIndex);
-                    return true;
-                }
-            }
-        }
+        pads[padIndex].clearRoundRobin(layerIndex);
+        return true;
     }
 
     // Pattern: P{pad}_L{layer}_SAMPLE (sync load)
-    if (name.startsWith("P") && name.contains("_L") && name.endsWith("_SAMPLE"))
+    if (parsePadLayerParam(name, "_SAMPLE", padIndex, layerIndex))
     {
-        int underscorePos = name.indexOf("_");
-        if (underscorePos > 1)
-        {
-            int padIndex = name.substring(1, underscorePos).getIntValue();
-
-            int lPos = name.indexOf("_L") + 2;
-            int secondUnderscorePos = name.indexOf(lPos, "_");
-            if (secondUnderscorePos > lPos)
-            {
-                int layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
-
-                if (padIndex >= 0 && padIndex < NUM_PADS &&
-                    layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
-                {
-                    if (value.isEmpty())
-                        clearPadSample(padIndex, layerIndex);
-                    else
-                        loadSampleToPad(padIndex, layerIndex, value);
-                    return true;
-                }
-            }
-        }
+        if (value.isEmpty())
+            clearPadSample(padIndex, layerIndex);
+        else
+            loadSampleToPad(padIndex, layerIndex, value);
+        return true;
     }
 
     // Pattern: P{pad}_CLEAR
     if (name.startsWith("P") && name.endsWith("_CLEAR"))
     {
-        int padIndex = name.substring(1, name.length() - 6).getIntValue();
+        padIndex = name.substring(1, name.length() - 6).getIntValue();
         if (padIndex >= 0 && padIndex < NUM_PADS)
         {
             for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
@@ -618,7 +631,7 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
     // Pattern: P{pad}_PREVIEW (trigger pad for preview, value = velocity 1-127, default 100)
     if (name.startsWith("P") && name.endsWith("_PREVIEW"))
     {
-        int padIndex = name.substring(1, name.length() - 8).getIntValue();
+        padIndex = name.substring(1, name.length() - 8).getIntValue();
         if (padIndex >= 0 && padIndex < NUM_PADS)
         {
             int velocity = value.isEmpty() ? 100 : juce::jlimit(1, 127, value.getIntValue());
@@ -632,7 +645,7 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
     // Pattern: P{pad}_STOP (stop pad playback)
     if (name.startsWith("P") && name.endsWith("_STOP"))
     {
-        int padIndex = name.substring(1, name.length() - 5).getIntValue();
+        padIndex = name.substring(1, name.length() - 5).getIntValue();
         if (padIndex >= 0 && padIndex < NUM_PADS)
         {
             pads[padIndex].stop();
@@ -653,33 +666,24 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
 
 juce::String Processor::getNamedConfigParam(const juce::String& name) const
 {
+    int padIndex, layerIndex;
+
     // Pattern: P{pad}_L{layer}_SAMPLE
-    if (name.startsWith("P") && name.contains("_L") && name.endsWith("_SAMPLE"))
-    {
-        int underscorePos = name.indexOf("_");
-        if (underscorePos > 1)
-        {
-            int padIndex = name.substring(1, underscorePos).getIntValue();
+    if (parsePadLayerParam(name, "_SAMPLE", padIndex, layerIndex))
+        return pads[padIndex].getSamplePath(layerIndex);
 
-            int lPos = name.indexOf("_L") + 2;
-            int secondUnderscorePos = name.indexOf(lPos, "_");
-            if (secondUnderscorePos > lPos)
-            {
-                int layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
+    // Pattern: P{pad}_L{layer}_RR_COUNT (get round-robin sample count)
+    if (parsePadLayerParam(name, "_RR_COUNT", padIndex, layerIndex))
+        return juce::String(pads[padIndex].getRoundRobinCount(layerIndex));
 
-                if (padIndex >= 0 && padIndex < NUM_PADS &&
-                    layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
-                {
-                    return pads[padIndex].getSamplePath(layerIndex);
-                }
-            }
-        }
-    }
+    // Pattern: P{pad}_L{layer}_DURATION (get sample duration in seconds)
+    if (parsePadLayerParam(name, "_DURATION", padIndex, layerIndex))
+        return juce::String(pads[padIndex].getSampleDuration(layerIndex), 3);
 
     // Pattern: P{pad}_HAS_SAMPLE
     if (name.startsWith("P") && name.endsWith("_HAS_SAMPLE"))
     {
-        int padIndex = name.substring(1, name.length() - 11).getIntValue();
+        padIndex = name.substring(1, name.length() - 11).getIntValue();
         if (padIndex >= 0 && padIndex < NUM_PADS)
         {
             for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
@@ -694,57 +698,9 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
     // Pattern: P{pad}_IS_PLAYING
     if (name.startsWith("P") && name.endsWith("_IS_PLAYING"))
     {
-        int padIndex = name.substring(1, name.length() - 11).getIntValue();
+        padIndex = name.substring(1, name.length() - 11).getIntValue();
         if (padIndex >= 0 && padIndex < NUM_PADS)
-        {
             return pads[padIndex].isPlaying ? "1" : "0";
-        }
-    }
-
-    // Pattern: P{pad}_L{layer}_RR_COUNT (get round-robin sample count)
-    if (name.startsWith("P") && name.contains("_L") && name.endsWith("_RR_COUNT"))
-    {
-        int underscorePos = name.indexOf("_");
-        if (underscorePos > 1)
-        {
-            int padIndex = name.substring(1, underscorePos).getIntValue();
-
-            int lPos = name.indexOf("_L") + 2;
-            int secondUnderscorePos = name.indexOf(lPos, "_");
-            if (secondUnderscorePos > lPos)
-            {
-                int layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
-
-                if (padIndex >= 0 && padIndex < NUM_PADS &&
-                    layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
-                {
-                    return juce::String(pads[padIndex].getRoundRobinCount(layerIndex));
-                }
-            }
-        }
-    }
-
-    // Pattern: P{pad}_L{layer}_DURATION (get sample duration in seconds)
-    if (name.startsWith("P") && name.contains("_L") && name.endsWith("_DURATION"))
-    {
-        int underscorePos = name.indexOf("_");
-        if (underscorePos > 1)
-        {
-            int padIndex = name.substring(1, underscorePos).getIntValue();
-
-            int lPos = name.indexOf("_L") + 2;
-            int secondUnderscorePos = name.indexOf(lPos, "_");
-            if (secondUnderscorePos > lPos)
-            {
-                int layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
-
-                if (padIndex >= 0 && padIndex < NUM_PADS &&
-                    layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
-                {
-                    return juce::String(pads[padIndex].getSampleDuration(layerIndex), 3);
-                }
-            }
-        }
     }
 
     return {};
