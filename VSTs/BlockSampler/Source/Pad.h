@@ -142,6 +142,9 @@ private:
     float currentVelocity = 1.0f;
     int playStartSample = 0;
     int playEndSample = 0;
+
+    // Temp buffer for per-pad filtering (avoids filtering other pads' audio)
+    juce::AudioBuffer<float> tempBuffer;
 };
 
 }  // namespace BlockSampler

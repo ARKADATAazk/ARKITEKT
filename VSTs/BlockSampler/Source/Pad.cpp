@@ -71,6 +71,9 @@ void Pad::prepare(double sampleRate, int samplesPerBlock)
     envelope.setSampleRate(sampleRate);
     updateEnvelopeParams();
 
+    // Allocate temp buffer for per-pad filtering
+    tempBuffer.setSize(2, samplesPerBlock);
+
     // Prepare filter
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
@@ -179,6 +182,20 @@ void Pad::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
     const double pitchRatio = std::pow(2.0, tune / 12.0) *
                               (sampleRate / currentSampleRate);
 
+    // Determine if we need per-pad filtering
+    const bool needsFilter = filterCutoff < 19999.0f;
+
+    // If filtering, render to temp buffer first; otherwise render directly to output
+    juce::AudioBuffer<float>& renderTarget = needsFilter ? tempBuffer : outputBuffer;
+    const int renderOffset = needsFilter ? 0 : startSample;
+
+    if (needsFilter)
+    {
+        // Clear only the portion we'll use
+        for (int ch = 0; ch < numChannels; ++ch)
+            renderTarget.clear(ch, 0, numSamples);
+    }
+
     for (int sample = 0; sample < numSamples; ++sample)
     {
         // Check playback boundaries
@@ -189,6 +206,19 @@ void Pad::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
                 if (oneShot)
                 {
                     isPlaying = false;
+                    // If we rendered to temp, add what we have so far
+                    if (needsFilter && sample > 0)
+                    {
+                        filter.setCutoffFrequency(filterCutoff);
+                        filter.setResonance(filterReso);
+                        juce::dsp::AudioBlock<float> block(tempBuffer);
+                        auto subBlock = block.getSubBlock(0, static_cast<size_t>(sample));
+                        juce::dsp::ProcessContextReplacing<float> context(subBlock);
+                        filter.process(context);
+
+                        for (int ch = 0; ch < numChannels; ++ch)
+                            outputBuffer.addFrom(ch, startSample, tempBuffer, ch, 0, sample);
+                    }
                     return;
                 }
                 playPosition = playEndSample - 1;  // Loop back to end
@@ -201,6 +231,19 @@ void Pad::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
                 if (oneShot)
                 {
                     isPlaying = false;
+                    // If we rendered to temp, add what we have so far
+                    if (needsFilter && sample > 0)
+                    {
+                        filter.setCutoffFrequency(filterCutoff);
+                        filter.setResonance(filterReso);
+                        juce::dsp::AudioBlock<float> block(tempBuffer);
+                        auto subBlock = block.getSubBlock(0, static_cast<size_t>(sample));
+                        juce::dsp::ProcessContextReplacing<float> context(subBlock);
+                        filter.process(context);
+
+                        for (int ch = 0; ch < numChannels; ++ch)
+                            outputBuffer.addFrom(ch, startSample, tempBuffer, ch, 0, sample);
+                    }
                     return;
                 }
                 playPosition = playStartSample;  // Loop back to start
@@ -212,6 +255,19 @@ void Pad::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
         if (!envelope.isActive())
         {
             isPlaying = false;
+            // If we rendered to temp, add what we have so far
+            if (needsFilter && sample > 0)
+            {
+                filter.setCutoffFrequency(filterCutoff);
+                filter.setResonance(filterReso);
+                juce::dsp::AudioBlock<float> block(tempBuffer);
+                auto subBlock = block.getSubBlock(0, static_cast<size_t>(sample));
+                juce::dsp::ProcessContextReplacing<float> context(subBlock);
+                filter.process(context);
+
+                for (int ch = 0; ch < numChannels; ++ch)
+                    outputBuffer.addFrom(ch, startSample, tempBuffer, ch, 0, sample);
+            }
             return;
         }
 
@@ -238,7 +294,7 @@ void Pad::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
             else  // Right
                 panGain = std::sin((pan + 1.0f) * 0.25f * juce::MathConstants<float>::pi);
 
-            outputBuffer.addSample(ch, startSample + sample, interpolated * gain * panGain);
+            renderTarget.addSample(ch, renderOffset + sample, interpolated * gain * panGain);
         }
 
         // Advance position
@@ -248,17 +304,20 @@ void Pad::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
             playPosition += pitchRatio;
     }
 
-    // Apply lowpass filter (skip if wide open)
-    if (filterCutoff < 19999.0f)
+    // Apply filter to temp buffer and add to output
+    if (needsFilter)
     {
         filter.setCutoffFrequency(filterCutoff);
         filter.setResonance(filterReso);
 
-        juce::dsp::AudioBlock<float> block(outputBuffer);
-        auto subBlock = block.getSubBlock(static_cast<size_t>(startSample),
-                                          static_cast<size_t>(numSamples));
+        juce::dsp::AudioBlock<float> block(tempBuffer);
+        auto subBlock = block.getSubBlock(0, static_cast<size_t>(numSamples));
         juce::dsp::ProcessContextReplacing<float> context(subBlock);
         filter.process(context);
+
+        // Add filtered result to output
+        for (int ch = 0; ch < numChannels; ++ch)
+            outputBuffer.addFrom(ch, startSample, tempBuffer, ch, 0, numSamples);
     }
 }
 
