@@ -1,7 +1,7 @@
 -- @noindex
 -- TemplateBrowser/ui/views/tree_view.lua
 -- Template Browser TreeView module using new Ark.Tree widget
--- Handles Physical, Virtual, Inbox, and Archive folder trees
+-- Handles Physical, Virtual, and Archive folder trees
 
 local Logger = require('arkitekt.debug.logger')
 local Ark = require('arkitekt')
@@ -34,6 +34,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
       full_path = n.full_path,
       children = {},
       is_virtual = false,
+      icon_type = 'folder',  -- Always show folder icon
     }
 
     -- Add color from metadata if available
@@ -69,6 +70,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
           template_refs = vfolder.template_refs or {},
           color = vfolder.color,
           children = build_virtual_tree(vfolder.id),
+          icon_type = 'folder_virtual',  -- Virtual folder icon
         }
         virtual_children[#virtual_children + 1] = vnode
       end
@@ -103,6 +105,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
           children = scan_archive_dir(sub_path, sub_relative),
           is_archive = true,
           is_folder = true,
+          icon_type = 'folder',  -- Archive folder icon
         }
 
         nodes[#nodes + 1] = folder_node
@@ -145,33 +148,6 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     return archive_children
   end
 
-  -- Build inbox tree from _Inbox folder
-  local function build_inbox_tree()
-    local inbox_children = {}
-
-    if all_templates then
-      for _, tmpl in ipairs(all_templates) do
-        if tmpl.relative_path == Constants.FOLDERS.INBOX then
-          local template_node = {
-            id = '__INBOX_TMPL__' .. tmpl.uuid,
-            name = tmpl.name,
-            path = tmpl.path,
-            full_path = tmpl.path,
-            uuid = tmpl.uuid,
-            children = {},
-            is_inbox = true,
-            is_template = true,
-          }
-          inbox_children[#inbox_children + 1] = template_node
-        end
-      end
-    end
-
-    table.sort(inbox_children, function(a, b) return a.name:lower() < b.name:lower() end)
-
-    return inbox_children
-  end
-
   local root_nodes = {}
 
   -- Physical Root
@@ -187,7 +163,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
 
   if node.children then
     for _, child in ipairs(node.children) do
-      if child.name ~= Constants.FOLDERS.INBOX and child.name ~= Constants.FOLDERS.ARCHIVE then
+      if child.name ~= Constants.FOLDERS.ARCHIVE then
         local converted = convert_physical_node(child)
         physical_root.children[#physical_root.children + 1] = converted
       end
@@ -206,19 +182,6 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   }
 
   root_nodes[#root_nodes + 1] = virtual_root
-
-  -- Inbox Root
-  local inbox_children = build_inbox_tree()
-  local inbox_root = {
-    id = '__INBOX_ROOT__',
-    name = 'Inbox',
-    path = '__INBOX_ROOT__',
-    children = inbox_children,
-    is_inbox = true,
-    template_count = #inbox_children,
-  }
-
-  root_nodes[#root_nodes + 1] = inbox_root
 
   -- Archive Root
   local archive_root = {
@@ -848,66 +811,6 @@ function M.draw_virtual_tree(ctx, state, config, height)
 end
 
 -- ============================================================================
--- INBOX TREE
--- ============================================================================
-
-function M.draw_inbox_tree(ctx, state, config, height)
-  local all_nodes = prepare_tree_nodes(state.folders, state.metadata, state.templates)
-
-  local inbox_nodes = {}
-  local inbox_count = 0
-  for _, node in ipairs(all_nodes) do
-    if node.id == '__INBOX_ROOT__' then
-      inbox_nodes = node.children or {}
-      inbox_count = node.template_count or #inbox_nodes
-      break
-    end
-  end
-
-  if state.folder_open_state['__INBOX_ROOT__'] == nil then
-    state.folder_open_state['__INBOX_ROOT__'] = true
-  end
-
-  local result = Ark.Tree(ctx, {
-    id = 'inbox_tree',
-    nodes = inbox_nodes,
-    width = ImGui.GetContentRegionAvail(ctx),
-    height = height or 200,
-    draggable = true,  -- Allow dragging templates out of inbox
-    renameable = false,
-    multi_select = true,
-
-    on_select = function(id)
-      local node = find_node_by_id(inbox_nodes, id)
-      if node and node.is_template and node.uuid then
-        for _, tmpl in ipairs(state.templates) do
-          if tmpl.uuid == node.uuid then
-            state.selected_template = tmpl
-            break
-          end
-        end
-      end
-      state.selected_folders = { [id] = true }
-      state.last_clicked_folder = id
-    end,
-
-    on_delete = function(ids)
-      -- Inbox templates can't be deleted via Delete key in tree
-    end,
-  })
-
-  if result.selection_changed then
-    state.selected_folders = {}
-    for _, id in ipairs(result.selected_ids) do
-      state.selected_folders[id] = true
-    end
-    state.last_clicked_folder = result.clicked_id
-  end
-
-  return inbox_count
-end
-
--- ============================================================================
 -- ARCHIVE TREE
 -- ============================================================================
 
@@ -956,6 +859,41 @@ function M.draw_archive_tree(ctx, state, config, height)
     end
     state.last_clicked_folder = result.clicked_id
   end
+end
+
+-- ============================================================================
+-- CONTENT CHECK HELPERS
+-- ============================================================================
+
+--- Check if physical tree has content
+function M.has_physical_content(state)
+  if not state.folders or not state.folders.children then return false end
+  for _, child in ipairs(state.folders.children) do
+    if child.name ~= Constants.FOLDERS.ARCHIVE then
+      return true
+    end
+  end
+  return false
+end
+
+--- Check if virtual tree has content
+function M.has_virtual_content(state)
+  if not state.metadata or not state.metadata.virtual_folders then return false end
+  for _, vfolder in pairs(state.metadata.virtual_folders) do
+    if vfolder.parent_id == '__VIRTUAL_ROOT__' then
+      return true
+    end
+  end
+  return false
+end
+
+--- Check if archive has content
+function M.has_archive_content(state)
+  local archive_path = FileOps.get_archive_path()
+  local sep = package.config:sub(1,1)
+  local subdir = reaper.EnumerateSubdirectories(archive_path .. sep, 0)
+  local file = reaper.EnumerateFiles(archive_path .. sep, 0)
+  return subdir ~= nil or file ~= nil
 end
 
 -- ============================================================================

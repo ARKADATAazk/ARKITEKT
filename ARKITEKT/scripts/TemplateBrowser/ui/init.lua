@@ -10,7 +10,7 @@ local TemplateOps = require('TemplateBrowser.domain.template.operations')
 local FileOps = require('TemplateBrowser.data.file_ops')
 local FXQueue = require('TemplateBrowser.domain.fx.queue')
 local Scanner = require('TemplateBrowser.domain.template.scanner')
-local FuzzySearch = require('TemplateBrowser.domain.search.fuzzy')
+local FuzzySearch = require('arkitekt.core.fuzzy')
 
 -- UI components
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
@@ -109,14 +109,6 @@ function GUI:initialize_once(ctx, is_overlay_mode)
             templates[#templates + 1] = tmpl
             break
           end
-        end
-      end
-    elseif self.state.quick_access_mode == 'inbox' then
-      -- Get templates in _Inbox folder
-      templates = {}
-      for _, tmpl in ipairs(self.state.templates) do
-        if tmpl.relative_path == '_Inbox' then
-          templates[#templates + 1] = tmpl
         end
       end
     elseif self.state.quick_access_mode == 'most_used' then

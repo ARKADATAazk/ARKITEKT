@@ -2,6 +2,8 @@
 -- TemplateBrowser/ui/config/left_panel.lua
 -- Panel container configuration for left panel (Directory/VSTs/Tags)
 
+local ImGui = require('arkitekt.core.imgui')
+
 local M = {}
 
 function M.create(callbacks, is_overlay_mode)
@@ -9,6 +11,11 @@ function M.create(callbacks, is_overlay_mode)
     -- Disable grid pattern background
     background_pattern = {
       enabled = false,
+    },
+
+    -- Disable global scrolling - each tree section handles its own scrolling
+    scroll = {
+      flags = ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse,
     },
 
     header = {

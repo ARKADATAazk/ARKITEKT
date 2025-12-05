@@ -355,6 +355,11 @@ function M.resolve_behavior(grid, name)
     end
   end
 
+  -- Block navigation behaviors if keyboard_nav is disabled (default: false)
+  if name:match('^nav_') and not grid.keyboard_nav then
+    return nil
+  end
+
   -- Fall back to default
   return M.DEFAULT_BEHAVIORS[name]
 end

@@ -17,6 +17,7 @@ M.DEFAULTS = {
   icon_width = 13,
   icon_margin = 4,
   header_height = 22,  -- TreeTable only
+  scrollbar_width = 8,
 
   -- Padding
   padding_left = 4,
@@ -27,11 +28,13 @@ M.DEFAULTS = {
   item_padding_right = 4,
 
   -- Visual features
+  show_background = false,  -- Draw background/border container
   show_tree_lines = true,
   tree_line_style = 'dotted',  -- 'solid' or 'dotted'
   tree_line_thickness = 1,
   tree_line_dot_spacing = 2,
   show_alternating_bg = false,
+  show_scrollbar = true,  -- Show scrollbar when content overflows
   virtual_scroll = true,
 
   -- Colors (RRGGBBAA)
@@ -65,6 +68,13 @@ M.DEFAULTS = {
     drop_indicator = 0x4A9EFFFF,
     drag_overlay = 0xFFFFFF18,
     drag_border = 0xFFFFFF40,
+
+    -- Scrollbar
+    scrollbar_bg = 0x00000000,
+    scrollbar_track = 0x28282800,
+    scrollbar_thumb = 0x505050FF,
+    scrollbar_thumb_hover = 0x606060FF,
+    scrollbar_thumb_active = 0x707070FF,
   },
 
   -- Drag & drop
