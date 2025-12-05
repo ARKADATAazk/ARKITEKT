@@ -76,18 +76,41 @@ function M.create_options(config, state, visualization, animator, disable_animat
       -- Check region filter (if any regions are selected)
       local has_selected_regions = state.selected_regions and next(state.selected_regions) ~= nil
       if has_selected_regions then
-        -- Item must have at least one of the selected regions
-        local item_has_selected_region = false
-        if entry.regions then
+        local filter_mode = state.settings.region_filter_mode or 'or'
+        local passes_filter = false
+
+        if not entry.regions or #entry.regions == 0 then
+          -- No regions on item = doesn't pass filter
+          passes_filter = false
+        elseif filter_mode == 'and' then
+          -- AND mode: item must have ALL selected regions
+          passes_filter = true
+          for region_name, _ in pairs(state.selected_regions) do
+            local found = false
+            for _, region in ipairs(entry.regions) do
+              local name = type(region) == 'table' and region.name or region
+              if name == region_name then
+                found = true
+                break
+              end
+            end
+            if not found then
+              passes_filter = false
+              break
+            end
+          end
+        else
+          -- OR mode: item must have at least one selected region
           for _, region in ipairs(entry.regions) do
             local region_name = type(region) == 'table' and region.name or region
             if state.selected_regions[region_name] then
-              item_has_selected_region = true
+              passes_filter = true
               break
             end
           end
         end
-        if not item_has_selected_region then
+
+        if not passes_filter then
           goto continue
         end
       end
@@ -120,6 +143,8 @@ function M.create_options(config, state, visualization, animator, disable_animat
         track_muted = track_muted,  -- Track mute state
         item_muted = item_muted,  -- Item mute state
         duration = duration,  -- Cached duration for renderer
+        _metadata_loaded_at = entry._metadata_loaded_at,  -- For text fade-in animation
+        _spawned_at = entry._spawned_at,  -- For tile spawn animation
       }
 
       ::continue::
@@ -173,6 +198,18 @@ function M.create_options(config, state, visualization, animator, disable_animat
           end
         else
           return (a.name or '') < (b.name or '')  -- Then alphabetically
+        end
+      end)
+    elseif sort_mode == 'recent' then
+      -- Sort by last used time (most recent first)
+      local item_usage = state.item_usage or {}
+      table.sort(filtered, function(a, b)
+        local a_time = item_usage[a.uuid] or 0
+        local b_time = item_usage[b.uuid] or 0
+        if sort_reverse then
+          return a_time < b_time  -- Oldest first
+        else
+          return a_time > b_time  -- Most recent first
         end
       end)
     end
@@ -457,6 +494,10 @@ function M.create_options(config, state, visualization, animator, disable_animat
     enter = function(grid, keys)
       if not keys or #keys == 0 then return end
       ItemsService.insert_items_at_cursor(keys, state, false, false)  -- is_audio=false
+      -- Mark all inserted items as used (for "recent" sort)
+      for _, uuid in ipairs(keys) do
+        state.mark_item_used(uuid)
+      end
     end,
 
     -- SPACE: Preview
@@ -480,16 +521,14 @@ function M.create_options(config, state, visualization, animator, disable_animat
       end
     end,
 
-    -- Double-click: start rename
+    -- Double-click: preview (always plays, restarts if same item)
     double_click = function(grid, key)
       local items = get_items()
       for _, item_data in ipairs(items) do
         if item_data.uuid == key then
-          state.rename_active = true
-          state.rename_uuid = key
-          state.rename_text = item_data.name
-          state.rename_is_audio = false
-          state.rename_focused = false  -- Reset focus flag
+          -- Always stop current and start new (restarts if same item)
+          state.stop_preview()
+          state.start_preview(item_data.item)
           return
         end
       end

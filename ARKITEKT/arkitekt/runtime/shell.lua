@@ -279,13 +279,18 @@ local function run_overlay_mode(config)
         },
       }
 
-      -- Call user's draw function
-      draw_fn(ctx, state)
+      -- Call user's draw function (return false to close)
+      local keep_open = draw_fn(ctx, state)
 
       ImGui.PopFont(ctx)
 
       if style and style.PopMyStyle then
         style.PopMyStyle(ctx)
+      end
+
+      -- If draw function returns false, close the overlay
+      if keep_open == false then
+        overlay_mgr:pop()
       end
     end,
 

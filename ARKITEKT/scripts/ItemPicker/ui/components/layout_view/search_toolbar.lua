@@ -79,6 +79,7 @@ function M.Draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
   -- Sort modes
   local sort_modes = {
     {id = 'none', label = 'None'},
+    {id = 'recent', label = 'Recent'},
     {id = 'length', label = 'Length'},
     {id = 'color', label = 'Color'},
     {id = 'name', label = 'Name'},
@@ -214,6 +215,27 @@ function M.Draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
   local overlap = Constants.SEARCH.overlap  -- -1 for overlap effect
   local input_width = search_width - dropdown_width + overlap
 
+  -- Clear button (X) - detect click BEFORE input to capture it
+  -- Must be done before InputText so click doesn't focus the input
+  local search_text = state.settings.search_string or ''
+  local clear_clicked = false
+  local clear_hovered = false
+  local clear_x, clear_y, clear_size
+  if search_text ~= '' then
+    clear_size = 16
+    local clear_padding = 6
+    clear_x = search_x + input_width - clear_size - clear_padding
+    clear_y = search_y + (search_height - clear_size) / 2
+
+    -- Use InvisibleButton to properly capture click before InputText
+    ImGui.SetCursorScreenPos(ctx, clear_x, clear_y)
+    if ImGui.InvisibleButton(ctx, '##search_clear', clear_size, clear_size) then
+      clear_clicked = true
+    end
+    clear_hovered = ImGui.IsItemHovered(ctx)
+    -- X icon drawn AFTER InputText to appear on top
+  end
+
   -- Focus search on init or Ctrl+F
   if (not state.initialized and state.settings.focus_keyboard_on_init) or state.focus_search then
     ImGui.SetCursorScreenPos(ctx, search_x, search_y)
@@ -229,11 +251,27 @@ function M.Draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
     width = input_width,
     height = search_height,
     placeholder = 'Search ' .. mode_label:lower() .. '...',
-    value = state.settings.search_string or '',
+    get_value = function() return state.settings.search_string or '' end,
     on_change = function(new_text)
       state.set_search_filter(new_text)
     end,
   })
+
+  -- Draw X icon AFTER InputText so it appears on top of the input background
+  if search_text ~= '' and clear_x then
+    local dl = ImGui.GetWindowDrawList(ctx)
+    local icon_color = clear_hovered and 0xFFFFFFFF or 0x888888FF
+    local cx, cy = clear_x + clear_size / 2, clear_y + clear_size / 2
+    local icon_r = 4
+    ImGui.DrawList_AddLine(dl, cx - icon_r, cy - icon_r, cx + icon_r, cy + icon_r, icon_color, 1.5)
+    ImGui.DrawList_AddLine(dl, cx + icon_r, cy - icon_r, cx - icon_r, cy + icon_r, icon_color, 1.5)
+  end
+
+  -- Handle clear click after InputText (so state is properly synced)
+  if clear_clicked then
+    state.set_search_filter('')
+    Ark.InputText.Clear('item_picker_search')
+  end
 
   Ark.Combo(ctx, {
     id = 'search_mode_dropdown',

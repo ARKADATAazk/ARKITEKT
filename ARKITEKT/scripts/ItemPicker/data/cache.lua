@@ -18,6 +18,14 @@ local current_cache = nil -- In-memory cache for current project
 local MAX_PROJECTS = 5
 local flushed = false -- Prevent double flush
 
+-- PROFILING: Set to true to measure cache save times
+local PROFILE_ENABLED = false
+local function profile_log(msg)
+  if PROFILE_ENABLED then
+    reaper.ShowConsoleMsg('[ItemPicker Cache] ' .. msg .. '\n')
+  end
+end
+
 -- SECURITY FIX: Use safe JSON encoding/decoding instead of unsafe load()
 -- Simple wrapper functions for JSON serialization
 local function serialize(t)
@@ -303,11 +311,67 @@ function M.flush()
   end
 
   if current_cache and current_project_guid then
-    local success = save_project_cache(current_project_guid, current_cache)
-    if success then
+    local t0 = PROFILE_ENABLED and reaper.time_precise() or nil
+
+    -- Count items for stats
+    local waveform_count, midi_count = 0, 0
+    for _, entry in pairs(current_cache) do
+      if entry.waveform then waveform_count = waveform_count + 1 end
+      if entry.midi_thumbnail then midi_count = midi_count + 1 end
+    end
+
+    -- Time serialization separately
+    local t_serialize = PROFILE_ENABLED and reaper.time_precise() or nil
+    local data = serialize(current_cache)
+    local serialize_ms = t_serialize and (reaper.time_precise() - t_serialize) * 1000 or 0
+
+    -- Time file write
+    local t_write = PROFILE_ENABLED and reaper.time_precise() or nil
+    local cache_path = cache_dir .. '/' .. current_project_guid .. '.lua'
+    local file = io.open(cache_path, 'w')
+    if file then
+      file:write(data)
+      file:close()
       flushed = true
     end
+    local write_ms = t_write and (reaper.time_precise() - t_write) * 1000 or 0
+
+    if t0 then
+      local total_ms = (reaper.time_precise() - t0) * 1000
+      local data_size_kb = #data / 1024
+      profile_log(string.format('FLUSH: %d waveforms, %d midi | Serialize: %.0fms | Write: %.0fms | Total: %.0fms | Size: %.1fKB',
+        waveform_count, midi_count, serialize_ms, write_ms, total_ms, data_size_kb))
+    end
   end
+end
+
+-- Test flush timing without actually saving (for profiling)
+function M.test_flush_timing()
+  if not current_cache or not current_project_guid then
+    profile_log('TEST: No cache to measure')
+    return
+  end
+
+  local waveform_count, midi_count = 0, 0
+  for _, entry in pairs(current_cache) do
+    if entry.waveform then waveform_count = waveform_count + 1 end
+    if entry.midi_thumbnail then midi_count = midi_count + 1 end
+  end
+
+  local t0 = reaper.time_precise()
+  local data = serialize(current_cache)
+  local serialize_ms = (reaper.time_precise() - t0) * 1000
+  local data_size_kb = #data / 1024
+
+  profile_log(string.format('TEST FLUSH: %d waveforms, %d midi | Serialize: %.0fms | Size: %.1fKB',
+    waveform_count, midi_count, serialize_ms, data_size_kb))
+
+  return {
+    waveform_count = waveform_count,
+    midi_count = midi_count,
+    serialize_ms = serialize_ms,
+    size_kb = data_size_kb,
+  }
 end
 
 -- Clear cache for current project

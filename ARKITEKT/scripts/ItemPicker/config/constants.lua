@@ -345,7 +345,7 @@ function M.get_tile_render()
     cascade = {
       stagger_delay = 0.03,
       scale_from = 0.85,
-      y_offset = 20,
+      y_offset = 50,  -- Tiles rise from further below
       rotation_degrees = 3,
     },
 
@@ -482,6 +482,87 @@ M.UI_PANELS = {
 }
 
 -- =============================================================================
+-- TRACK FILTER MODAL
+-- =============================================================================
+
+M.TRACK_FILTER = {
+  -- Track tile sizing
+  tile_height = 18,
+  indent = 16,
+
+  -- Alpha values
+  alpha_selected = 0xCC,
+  alpha_hovered = 0x66,
+  alpha_default = 0x33,
+  bar_alpha_selected = 0xFF,
+  bar_alpha_default = 0x88,
+  arrow_alpha = 0x88,
+  text_alpha_unselected = 0xAA,
+
+  -- Layout
+  arrow_size = 6,
+  text_offset_after_arrow = 10,
+  indicator_size = 6,
+  arrow_hover_width = 12,
+
+  -- Modal dimensions
+  modal_padding = 16,
+  modal_width = 320,
+  modal_top_offset = 80,
+  max_content_ratio = 0.6,
+
+  -- Slider
+  slider_area_height = 32,
+  slider_handle_height = 20,
+  slider_spacing_right = 30,
+
+  -- Scrolling
+  scroll_pixels_per_tick = 40,
+
+  -- Tooltip
+  tooltip_x_offset = 12,
+  tooltip_y_offset = 18,
+  tooltip_bg = 0x1A1A1AFF,
+  tooltip_border = 0x505050FF,
+  tooltip_text = 0xCCCCCCFF,
+
+  -- Button
+  button_height = 28,
+
+  -- Default track color
+  default_track_color = 0x555B5BFF,
+}
+
+-- =============================================================================
+-- CONTENT PANELS (Audio/MIDI split view)
+-- =============================================================================
+
+M.CONTENT_PANELS = {
+  -- Padding and rounding
+  padding = 4,
+  rounding = 6,
+
+  -- Title font sizes
+  midi_title_size = 14,
+  audio_title_size = 15,
+
+  -- Opacity
+  background_opacity = 0.6,
+  border_opacity = 0.67,
+
+  -- Horizontal layout minimums
+  min_midi_width_h = 200,
+  min_audio_width_h = 300,
+  default_midi_width_h = 400,
+
+  -- Resize constraints
+  min_midi_width_resize = 100,
+  min_audio_width_resize = 150,
+  min_midi_height_resize = 50,
+  min_audio_height_resize = 50,
+}
+
+-- =============================================================================
 -- VISUALIZATION
 -- =============================================================================
 
@@ -489,6 +570,14 @@ M.VISUALIZATION = {
   WAVEFORM_RESOLUTION = 2000,
   MIDI_CACHE_WIDTH = 400,
   MIDI_CACHE_HEIGHT = 200,
+
+  -- Waveform rendering
+  waveform_height_ratio = 0.95,
+
+  -- MIDI rendering
+  midi_min_range = 10,           -- Minimum note range for display
+  midi_min_note_width = 1.0,     -- Minimum note width in pixels
+  midi_min_note_height = 1.0,    -- Minimum note height in pixels
 }
 
 -- =============================================================================
@@ -503,6 +592,18 @@ M.DRAG = {
   shadow_layers = 5,
   preview_desaturate = 0.3,
   preview_brightness = 0.7,
+
+  -- Guide crosshairs
+  crosshair_thickness = 2,
+  crosshair_color = 0x808080FF,
+  window_height_offset = 17,
+
+  -- Preview visualization HSV adjustments
+  viz_saturation = 0.3,
+  viz_brightness = 0.15,
+
+  -- Fallback colors
+  fallback_grey = 0xB1B4B4CC,
 }
 
 -- =============================================================================
@@ -520,7 +621,29 @@ M.ANIMATOR = {
 M.LOADING = {
   jobs_per_frame_loading = 20,
   jobs_per_frame_normal = 5,
+  jobs_per_frame_max = 8,        -- Max jobs/frame after load ramp-up
   batch_size = 100,
+  items_per_chunk = 200,         -- Items processed per frame during chunked load
+  deferred_load_delay = 0.5,     -- Seconds before deferred load (pool counts, regions)
+}
+
+-- =============================================================================
+-- ANIMATION
+-- =============================================================================
+
+M.ANIMATION = {
+  fade_in_duration = 0.25,       -- Return-from-drag fade duration (seconds)
+  job_ramp_up_duration = 2.0,    -- Time to ramp up job processing after load
+  delta_time = 0.016,            -- Animation update delta (~60fps)
+  spawn_duration_override = 0.4, -- Grid spawn animation override
+}
+
+-- =============================================================================
+-- AUTO RELOAD
+-- =============================================================================
+
+M.AUTO_RELOAD = {
+  check_interval_frames = 60,    -- Check every ~1 second at 60fps
 }
 
 -- =============================================================================
@@ -547,12 +670,32 @@ M.CHIP = {
 -- =============================================================================
 
 M.LAYOUT_VIEW = {
+  -- UI fade animation
   ui_fade_start = 0.15,
   ui_fade_end = 0.85,
+  ui_y_offset_max = 15,          -- Y offset during fade animation
+
+  -- Search fade animation
   search_fade_start = 0.05,
   search_fade_end = 0.95,
+  search_y_offset_max = 25,      -- Y offset during search fade
+  search_height = 28,            -- Search bar height
+
+  -- Checkboxes
   checkbox_padding = 14,
   checkbox_spacing = 20,
+
+  -- Settings panel
+  settings_offset = 11,          -- Offset from search bar
+  settings_retract_delay = 1.5,  -- Seconds before auto-retract
+
+  -- Trigger zones
+  trigger_extension_down = 100,  -- Extension below trigger zone
+
+  -- Background pattern
+  pattern_spacing = 16,
+  pattern_dot_size = 1.5,
+  pattern_overlay_alpha = 180,   -- 0-255
 }
 
 -- =============================================================================
@@ -564,6 +707,16 @@ M.RENDERER = {
   cascade_grid_cell = 150,
   placeholder_rotation_period = 2.0,
   arc_length = math.pi * 1.5,
+  char_width_estimate = 12,      -- Characters for text width estimation
+}
+
+-- =============================================================================
+-- PROFILER
+-- =============================================================================
+
+M.PROFILER = {
+  report_interval_seconds = 1.0,
+  enabled = false,               -- Set to true to enable profiling output
 }
 
 -- =============================================================================

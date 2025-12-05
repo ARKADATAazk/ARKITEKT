@@ -29,11 +29,11 @@ M.SETTINGS = {
   sort_mode = 'none',
   sort_reverse = false,
   waveform_quality = 0.2,
-  waveform_filled = true,
   show_duration = true,
   enable_tile_fx = true,
   layout_mode = 'vertical',
   show_region_tags = false,
+  region_filter_mode = 'or',  -- 'or' = any match, 'and' = all must match
   auto_preview_on_hover = false,
   auto_preview_delay = 0.3,  -- seconds before preview starts
 }
@@ -45,6 +45,7 @@ M.SETTINGS = {
 -- Sort modes
 M.SORT_MODES = {
   'none',
+  'recent',
   'color',
   'name',
   'pool',

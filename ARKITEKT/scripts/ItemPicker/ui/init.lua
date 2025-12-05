@@ -6,6 +6,8 @@ local ImGui = require('arkitekt.core.imgui')
 local Coordinator = require('ItemPicker.ui.grids.coordinator')
 local LayoutView = require('ItemPicker.ui.components.layout_view')
 local TrackFilter = require('ItemPicker.ui.components.track_filter')
+local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
+local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')
 
 local M = {}
 local GUI = {}
@@ -33,6 +35,8 @@ end
 function GUI:initialize_once(ctx)
   if self.initialized then return end
 
+  local t0 = reaper.time_precise()
+
   -- Store context for later use
   self.ctx = ctx
 
@@ -44,40 +48,111 @@ function GUI:initialize_once(ctx)
   self.state.audio_item_lookup = {}
   self.state.midi_item_lookup = {}
 
-  -- Initialize disk cache for waveform/thumbnail persistence
-  -- Pre-loading will happen incrementally as items are loaded
-  local disk_cache = require('ItemPicker.data.cache')
-  local cache_dir = disk_cache.init()
+  -- Disk cache disabled - regeneration is fast enough (~2ms waveform, ~0.05ms MIDI)
+  -- Loading 14MB JSON was slower than regenerating from scratch
 
   -- Initialize job queue for lazy waveform/thumbnail generation
+  local t1 = reaper.time_precise()
   if not self.state.job_queue then
     local job_queue_module = require('ItemPicker.data.job_queue')
     -- Process more jobs per frame during loading, fewer during normal operation
     self.state.job_queue = job_queue_module.new(10) -- Process 10 jobs per frame
   end
+  local job_queue_ms = (reaper.time_precise() - t1) * 1000
 
   -- Create coordinator and layout view with empty data
+  local t2 = reaper.time_precise()
   self.coordinator = Coordinator.new(ctx, self.config, self.state, self.visualization)
+  local coordinator_ms = (reaper.time_precise() - t2) * 1000
+
+  local t3 = reaper.time_precise()
   self.layout_view = LayoutView.new(self.config, self.state, self.coordinator)
+  local layout_view_ms = (reaper.time_precise() - t3) * 1000
 
   -- Store coordinator reference in state for drag cleanup access
   self.state.coordinator = self.coordinator
 
   self.initialized = true
+
+  local total_ms = (reaper.time_precise() - t0) * 1000
+  reaper.ShowConsoleMsg(string.format(
+    '\n=== ItemPicker Init Profile ===\n' ..
+    'Job queue init:  %6.2f ms\n' ..
+    'Coordinator:     %6.2f ms\n' ..
+    'Layout view:     %6.2f ms\n' ..
+    'INIT TOTAL:      %6.2f ms\n',
+    job_queue_ms, coordinator_ms, layout_view_ms, total_ms
+  ))
 end
 
--- Start incremental loading (non-blocking)
+-- Mark loading as started (actual load happens when overlay is ready)
 function GUI:start_incremental_loading()
   if self.loading_started then return end
 
   local current_change_count = reaper.GetProjectStateChangeCount(0)
   self.state.last_change_count = current_change_count
 
-  -- LAZY LOAD: Start loading on NEXT frame (not this one!)
-  -- This allows UI to show immediately
   self.loading_start_time = reaper.time_precise()
   self.loading_started = true
-  self.start_loading_next_frame = true
+
+  -- Wait for overlay before loading
+  self.state._waiting_for_fade = true
+  self.state.skip_visualizations = true  -- No waveforms until tiles settle
+end
+
+-- Start chunked loading (spreads work across frames)
+function GUI:start_chunked_load()
+  AudioRenderer.clear_caches()
+  MidiRenderer.clear_caches()
+
+  local loader_module = require('ItemPicker.data.loader')
+  if not self.state.incremental_loader then
+    local reaper_interface = self.controller.reaper_interface
+    self.state.incremental_loader = loader_module.new(reaper_interface, 50)
+  end
+
+  -- Initialize chunked load state
+  loader_module.start_chunked_load(
+    self.state.incremental_loader,
+    self.state,
+    self.state.settings
+  )
+
+  self.state._chunked_loading = true
+  self.state._chunk_start_time = reaper.time_precise()
+end
+
+-- Process one chunk of items (called each frame during loading)
+function GUI:process_load_chunk()
+  local loader_module = require('ItemPicker.data.loader')
+  local done = loader_module.process_chunk(
+    self.state.incremental_loader,
+    self.state,
+    self.config.LOADING.items_per_chunk
+  )
+
+  if done then
+    self.state._chunked_loading = false
+    self.data_loaded = true
+    -- Schedule deferred load after tiles animate in
+    self.state._deferred_load_at = reaper.time_precise() + self.config.LOADING.deferred_load_delay
+
+    local total_ms = (reaper.time_precise() - self.state._chunk_start_time) * 1000
+    reaper.ShowConsoleMsg(string.format(
+      '\n=== ItemPicker Chunked Load Complete: %6.2f ms ===\n',
+      total_ms
+    ))
+  end
+end
+
+-- Deferred load: pool counts and regions (called after tiles visible)
+function GUI:do_deferred_load()
+  local loader_module = require('ItemPicker.data.loader')
+  loader_module.load_deferred(
+    self.state.incremental_loader,
+    self.state
+  )
+  self.state._deferred_load_at = nil
 end
 
 
@@ -89,34 +164,9 @@ function GUI:draw(ctx, shell_state)
     self.state.draw_list = ImGui.GetWindowDrawList(ctx)
   end
 
-  -- Start loading on SECOND frame (UI shows first)
+  -- Mark loading started (but don't load yet)
   if not self.loading_started then
     self:start_incremental_loading()
-  elseif self.start_loading_next_frame and not self.state.is_loading then
-    -- Start actual loading NOW (after UI is shown)
-    self.start_loading_next_frame = false
-
-    -- Use fast mode (skip expensive chunk processing) but keep visualizations
-    local fast_mode = true  -- Skip expensive chunk-based duplicate detection
-    self.state.skip_visualizations = false  -- Show waveforms and MIDI thumbnails
-
-    -- Smaller batches for smoother UI (100 items per frame)
-    self.controller.start_incremental_loading(self.state, 100, fast_mode)
-  end
-
-  -- Process incremental loading batch every frame
-  if self.state.is_loading then
-    local is_complete, progress = self.controller.process_loading_batch(self.state)
-
-    if is_complete then
-      -- Skip disk cache in fast mode
-      if not self.state.skip_visualizations then
-        local disk_cache = require('ItemPicker.data.cache')
-        disk_cache.preload_to_runtime(self.state.runtime_cache)
-      end
-
-      self.data_loaded = true
-    end
   end
 
   -- Get overlay alpha for cascade animation
@@ -127,7 +177,51 @@ function GUI:draw(ctx, shell_state)
   if is_overlay_mode and overlay and overlay.alpha then
     overlay_alpha = overlay.alpha:value()
   end
+
+  -- Track drag state transitions for fade-in animation
+  local was_dragging = self.state._was_dragging_for_fade or false
+  local is_dragging = self.state.dragging or false
+
+  if was_dragging and not is_dragging then
+    -- Just exited drag mode (CTRL drop) - start fade-in
+    self.state._return_fade_start = reaper.time_precise()
+  end
+  self.state._was_dragging_for_fade = is_dragging
+
+  -- Apply return-from-drag fade-in animation
+  if self.state._return_fade_start then
+    local elapsed = reaper.time_precise() - self.state._return_fade_start
+    local fade_duration = self.config.ANIMATION.fade_in_duration
+    local fade_progress = math.min(1.0, elapsed / fade_duration)
+    -- Use smoothstep for nicer easing
+    local t = fade_progress
+    local smooth_t = t * t * (3 - 2 * t)
+    overlay_alpha = overlay_alpha * smooth_t
+
+    if elapsed >= fade_duration then
+      self.state._return_fade_start = nil
+    end
+  end
+
   self.state.overlay_alpha = overlay_alpha
+
+  -- Start chunked load early - tiles animate alongside overlay fade
+  if self.state._waiting_for_fade and overlay_alpha >= 0.6 then
+    self:start_chunked_load()
+    self.state._waiting_for_fade = false
+    -- Enable visualizations immediately - spinners show while loading
+    self.state.skip_visualizations = false
+  end
+
+  -- Process loading chunks (spreads work across frames)
+  if self.state._chunked_loading then
+    self:process_load_chunk()
+  end
+
+  -- Trigger deferred load (pool counts, regions) after tiles animate in
+  if self.state._deferred_load_at and reaper.time_precise() >= self.state._deferred_load_at then
+    self:do_deferred_load()
+  end
 
   -- Check if track filter modal should be opened
   if self.state.open_track_filter_modal then
@@ -168,7 +262,7 @@ function GUI:draw(ctx, shell_state)
 
     -- Throttle job processing based on state:
     -- - During animation: SKIP entirely (tiles are resizing, thumbnails will be wrong size)
-    -- - During loading: aggressive processing for faster startup
+    -- - After load complete: ramp up gradually from 1 to 8 over 2 seconds
     -- - Normal operation: conservative processing
     local is_animating = self.coordinator and self.coordinator:is_animating()
 
@@ -176,10 +270,25 @@ function GUI:draw(ctx, shell_state)
       -- Skip job processing while tiles are animating
       -- Thumbnails generated now would be the wrong size anyway
       self.state.job_queue.max_per_frame = 0
-    elseif self.state.is_loading then
-      self.state.job_queue.max_per_frame = 20 -- Aggressive during loading
+    elseif self.data_loaded then
+      -- Ramp up job processing gradually after load completes
+      -- Start slow to let tile animations breathe, then speed up
+      if not self.state._job_ramp_start then
+        self.state._job_ramp_start = reaper.time_precise()
+      end
+      local elapsed = reaper.time_precise() - self.state._job_ramp_start
+      local ramp_duration = self.config.ANIMATION.job_ramp_up_duration
+      local max_jobs = self.config.LOADING.jobs_per_frame_max
+
+      if elapsed < ramp_duration then
+        -- Ramp from 1 to max_jobs over ramp_duration
+        local t = elapsed / ramp_duration
+        self.state.job_queue.max_per_frame = math.floor(1 + t * (max_jobs - 1))
+      else
+        self.state.job_queue.max_per_frame = max_jobs
+      end
     else
-      self.state.job_queue.max_per_frame = 5 -- Conservative during normal operation
+      self.state.job_queue.max_per_frame = self.config.LOADING.jobs_per_frame_normal
     end
 
     if self.state.job_queue.max_per_frame > 0 then
@@ -193,7 +302,7 @@ function GUI:draw(ctx, shell_state)
   end
 
   -- Update animations
-  self.coordinator:update_animations(0.016)
+  self.coordinator:update_animations(self.config.ANIMATION.delta_time)
 
   -- Handle tile size shortcuts
   self.coordinator:handle_tile_size_shortcuts(ctx)
@@ -230,23 +339,33 @@ function GUI:draw(ctx, shell_state)
   if self.state.needs_recollect and not self.state.is_loading then
     self.state.needs_recollect = false
 
-    -- Clear current items
-    self.state.samples = {}
-    self.state.sample_indexes = {}
-    self.state.midi_items = {}
-    self.state.midi_indexes = {}
+    -- Clear renderer caches to prevent stale animation/color values
+    AudioRenderer.clear_caches()
+    MidiRenderer.clear_caches()
 
-    -- Use fast mode (skip expensive chunk processing) but keep visualizations
-    local fast_mode = true  -- Skip expensive chunk-based duplicate detection
-    self.state.skip_visualizations = false  -- Show waveforms and MIDI thumbnails
-    self.controller.start_incremental_loading(self.state, 100, fast_mode)
+    -- Clear waveform/MIDI caches (items changed)
+    if self.state.runtime_cache then
+      self.state.runtime_cache.waveforms = {}
+      self.state.runtime_cache.midi_thumbnails = {}
+      self.state.runtime_cache.waveform_polylines = {}
+      self.state.runtime_cache.audio_filter_hash = nil
+      self.state.runtime_cache.midi_filter_hash = nil
+    end
+
+    -- Sync reload all items
+    local loader_module = require('ItemPicker.data.loader')
+    loader_module.load_all_sync(
+      self.state.incremental_loader,
+      self.state,
+      self.state.settings
+    )
   end
 
   -- Auto-reload on project changes (only in persistent window mode)
   -- Uses item count instead of project state count to avoid playback triggering reload
   if self.state.persistent_mode and not self.state.is_loading then
     self.state.frame_count = (self.state.frame_count or 0) + 1
-    if self.state.frame_count % 60 == 0 then  -- Check every ~1 second at 60fps
+    if self.state.frame_count % self.config.AUTO_RELOAD.check_interval_frames == 0 then
       local current_item_count = reaper.CountMediaItems(0)
       if self.state.last_item_count == nil then
         self.state.last_item_count = current_item_count
@@ -261,11 +380,11 @@ function GUI:draw(ctx, shell_state)
   reaper.PreventUIRefresh(1)
 
   -- If we should close, don't render anything - just exit immediately
-  -- Runtime loop will detect the flag and handle cleanup/close
+  -- Return false to signal shell to close the overlay
   if self.state.should_close_after_drop then
     reaper.PreventUIRefresh(-1)
     ImGui.PopFont(ctx)
-    return
+    return false  -- Signal shell to close overlay
   end
 
   -- Check if dragging
@@ -347,14 +466,16 @@ function GUI:draw(ctx, shell_state)
         local original_pooled = self.state.original_pooled_midi_state or false
         local effective_pooled = (original_pooled and not alt) or (not original_pooled and alt)
         use_pooled_copy = effective_pooled
-        -- Debug output
-        reaper.ShowConsoleMsg(string.format('[POOL DEBUG] alt=%s, original=%s, effective=%s, use_pooled=%s\n',
-          tostring(alt), tostring(original_pooled), tostring(effective_pooled), tostring(use_pooled_copy)))
       end
 
       -- Insert the item (pooled copy if ALT held for MIDI)
       self.controller.insert_item_at_mouse(self.state.item_to_add, self.state, use_pooled_copy)
       self.state.drop_completed = true  -- Mark as completed
+
+      -- Mark dropped items as used (for "recent" sort)
+      for _, uuid in ipairs(saved_dragging_keys) do
+        self.state.mark_item_used(uuid)
+      end
 
       if shift then
         -- SHIFT: Keep dragging active for multi-drop

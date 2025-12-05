@@ -460,9 +460,6 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
     -- Ensure use_pooled_copy is boolean (not nil)
     local want_pooled = use_pooled_copy == true
 
-    -- Debug: show toggle state
-    reaper.ShowConsoleMsg(string.format('[TOGGLE DEBUG] want_pooled=%s\n', tostring(want_pooled)))
-
     -- Save original toggle state and set to ON if we want pooled copies
     -- This is needed to create pooled copies from non-pooled sources
     local original_toggle = reaper.GetToggleCommandState(41071) == 1

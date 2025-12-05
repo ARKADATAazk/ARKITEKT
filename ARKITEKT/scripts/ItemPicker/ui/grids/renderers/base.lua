@@ -461,7 +461,8 @@ function M.compute_tile_color(base_color, is_compact, hover_factor, muted_factor
   end
 
   -- combined_alpha is used for text/badges (doesn't include base_alpha)
-  local combined_alpha = cascade_factor * alpha_factor
+  -- Clamp to 1.0 max to prevent overflow when cascade_factor exceeds 1.0 due to float precision
+  local combined_alpha = min(1.0, cascade_factor * alpha_factor)
 
   -- final_alpha for the render_color includes base_alpha from the color itself
   local base_alpha = (render_color & 0xFF) / 255
@@ -669,7 +670,6 @@ function M.cache_settings(state)
   _settings_cache.show_duration = s.show_duration
   _settings_cache.show_region_tags = s.show_region_tags
   _settings_cache.waveform_quality = s.waveform_quality or 0.2
-  _settings_cache.waveform_filled = s.waveform_filled
   _settings_cache.show_visualization_in_small_tiles = s.show_visualization_in_small_tiles
 end
 
@@ -698,11 +698,13 @@ end
 -- @param extra_text_margin Optional extra margin for text truncation only (doesn't affect badge position)
 -- @param text_color Optional custom text color (defaults to config primary_color)
 -- @param truncated_text_cache Optional cache table for truncated text (key -> {name, width, truncated})
-function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index, total, base_color, text_alpha, config, item_key, badge_rects, on_badge_click, extra_text_margin, text_color, truncated_text_cache)
+-- @param text_y_offset Optional Y offset for text animation (positive = down)
+function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index, total, base_color, text_alpha, config, item_key, badge_rects, on_badge_click, extra_text_margin, text_color, truncated_text_cache, text_y_offset)
   -- PERF: Use pre-cached config values (set once per frame)
   local c = _frame_config
-  local show_text = header_height >= c.hide_text_below
-  local show_badge = header_height >= c.hide_badge_below
+
+  local show_text = header_height >= (c.hide_text_below or 0)
+  local show_badge = header_height >= (c.hide_badge_below or 0)
 
   if not show_text then return end
 
@@ -715,7 +717,7 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
   end
 
   local text_x = x1 + c.text_padding_left
-  local text_y = y1 + (header_height - text_line_height) / 2 - (4 - c.text_padding_top) + 1
+  local text_y = y1 + (header_height - text_line_height) / 2 - (4 - c.text_padding_top) + 1 + (text_y_offset or 0)
 
   -- Calculate text truncation boundary (includes extra margin for favorite badge, etc.)
   local right_bound_x = x2 - c.text_margin_right - (extra_text_margin or 0)
