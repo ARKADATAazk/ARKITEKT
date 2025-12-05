@@ -10,10 +10,14 @@ function M.has_active_filter(selected_regions)
 end
 
 -- Check if an item passes the region filter
+-- @param selected_regions table Selected region names
+-- @param item_regions table Regions the item belongs to
+-- @param mode string 'or' (any match) or 'and' (all must match)
 -- Returns true if:
 --   - No regions are selected (filter disabled), OR
---   - Item has at least one of the selected regions
-function M.passes_region_filter(selected_regions, item_regions)
+--   - Mode 'or': Item has at least one of the selected regions
+--   - Mode 'and': Item has ALL of the selected regions
+function M.passes_region_filter(selected_regions, item_regions, mode)
   -- No filter active = pass all items
   if not M.has_active_filter(selected_regions) then
     return true
@@ -24,15 +28,30 @@ function M.passes_region_filter(selected_regions, item_regions)
     return false
   end
 
-  -- Check if item has at least one selected region
+  -- Build lookup of item's regions for O(1) access
+  local item_region_set = {}
   for _, region in ipairs(item_regions) do
     local region_name = type(region) == 'table' and region.name or region
-    if selected_regions[region_name] then
-      return true
-    end
+    item_region_set[region_name] = true
   end
 
-  return false
+  if mode == 'and' then
+    -- AND mode: item must have ALL selected regions
+    for region_name, _ in pairs(selected_regions) do
+      if not item_region_set[region_name] then
+        return false
+      end
+    end
+    return true
+  else
+    -- OR mode (default): item must have at least one selected region
+    for region_name, _ in pairs(selected_regions) do
+      if item_region_set[region_name] then
+        return true
+      end
+    end
+    return false
+  end
 end
 
 -- Initialize selected_regions with all regions selected

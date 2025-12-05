@@ -4,6 +4,7 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
+local Config = require('ItemPicker.config.constants')
 local M = {}
 
 -- PERF: Localize math functions
@@ -100,12 +101,15 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
     state.mouse_was_pressed_after_drop = true
   end
 
+  -- Determine if we should insert or continue dragging
+  local should_insert = false
   if not left_mouse_down then
-    -- Only allow drop if mouse was pressed since last drop (or this is the first drop)
     if state.waiting_for_new_click then
-      return false  -- Continue dragging, don't drop yet
+      -- Continue dragging, don't drop yet - but still draw the guide below
+      should_insert = false
+    else
+      should_insert = true  -- Mouse released, will insert item
     end
-    return true  -- Mouse released, insert item
   end
 
   local arrange_window = reaper.JS_Window_Find('trackview', true)
@@ -113,7 +117,7 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
   local w_width, w_height = w_x2 - w_x1, w_y2 - w_y1
 
   ImGui.SetNextWindowPos(ctx, w_x1, w_y1)
-  ImGui.SetNextWindowSize(ctx, w_width, w_height - 17)
+  ImGui.SetNextWindowSize(ctx, w_width, w_height - Config.DRAG.window_height_offset)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
 
   local _, _ = ImGui.Begin(ctx, 'drag_target_window', false,
@@ -191,8 +195,8 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
 
   -- Draw insertion preview
   if rect_x1 then
-    -- Grey crosshair lines instead of blue
-    local line_color = Ark.Colors.WithOpacity(0x808080FF, 0.8)
+    -- Grey crosshair lines
+    local line_color = Ark.Colors.WithOpacity(Config.DRAG.crosshair_color, 0.8)
 
     -- Get the items being dragged
     local dragging_count = (state.dragging_keys and #state.dragging_keys) or 1
@@ -218,12 +222,12 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
           if item_color then
             local r, g, b = ImGui.ColorConvertU32ToDouble4(item_color)
             local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
-            s = s * 0.7  -- Desaturate a bit
-            v = v * 0.5  -- Darken for preview
+            s = s * Config.DRAG.preview_brightness  -- Desaturate
+            v = v * (1 - Config.DRAG.preview_desaturate)  -- Darken for preview
             r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
             item_color = ImGui.ColorConvertDouble4ToU32(r, g, b, 0.8)
           else
-            item_color = 0xB1B4B4CC  -- Grey at 80% opacity
+            item_color = Config.DRAG.fallback_grey
           end
 
           -- Draw base rectangle with item color
@@ -238,8 +242,8 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
             -- Get dark waveform color for visualization
             local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
             local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
-            s = 0.3
-            v = 0.15
+            s = Config.DRAG.viz_saturation
+            v = Config.DRAG.viz_brightness
             r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
             local viz_color = ImGui.ColorConvertDouble4ToU32(r, g, b, 0.7)
 
@@ -272,16 +276,17 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
     local total_x2 = current_x
 
     -- Crosshair lines (grey)
-    ImGui.DrawList_AddLine(state.draw_list, rect_x1, w_y1, rect_x1, w_y2, line_color, 2)
-    ImGui.DrawList_AddLine(state.draw_list, total_x2, w_y1, total_x2, w_y2, line_color, 2)
-    ImGui.DrawList_AddLine(state.draw_list, w_x1, rect_y1, w_x2, rect_y1, line_color, 2)
-    ImGui.DrawList_AddLine(state.draw_list, w_x1, rect_y2, w_x2, rect_y2, line_color, 2)
+    local thickness = Config.DRAG.crosshair_thickness
+    ImGui.DrawList_AddLine(state.draw_list, rect_x1, w_y1, rect_x1, w_y2, line_color, thickness)
+    ImGui.DrawList_AddLine(state.draw_list, total_x2, w_y1, total_x2, w_y2, line_color, thickness)
+    ImGui.DrawList_AddLine(state.draw_list, w_x1, rect_y1, w_x2, rect_y1, line_color, thickness)
+    ImGui.DrawList_AddLine(state.draw_list, w_x1, rect_y2, w_x2, rect_y2, line_color, thickness)
   end
 
   ImGui.PopStyleVar(ctx, 1)
   ImGui.End(ctx)
 
-  return false  -- Continue dragging
+  return should_insert  -- true = insert item, false = continue dragging
 end
 
 function M.render_drag_preview(ctx, state, mini_font, visualization, config)
@@ -411,10 +416,8 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
           if waveform and visualization.DisplayWaveformTransparent then
             ImGui.SetCursorScreenPos(ctx, x1, content_y)
             ImGui.Dummy(ctx, content_w, content_h)
-            local use_filled = true
-            local show_zero_line = false
             visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, state.draw_list,
-              content_w // 1, item_uuid, state.runtime_cache, use_filled, show_zero_line)
+              content_w // 1, item_uuid, state.runtime_cache)
           end
         end
       end

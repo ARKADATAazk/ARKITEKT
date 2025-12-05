@@ -205,21 +205,6 @@ function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   local checkboxes_x = percent_x + ImGui.CalcTextSize(ctx, percent_text) + 20
   ImGui.SetCursorScreenPos(ctx, checkboxes_x, waveform_y)
 
-  local waveform_filled = state.settings.waveform_filled
-  if waveform_filled == nil then waveform_filled = true end
-  checkbox(ctx, 'waveform_filled',
-    'Fill',
-    waveform_filled, settings_alpha,
-    function()
-      state.set_setting('waveform_filled', not waveform_filled)
-      if state.runtime_cache and state.runtime_cache.waveform_polylines then
-        state.runtime_cache.waveform_polylines = {}
-      end
-    end
-  )
-  ImGui.SameLine(ctx, 0, spacing)
-
-
   local show_duration = state.settings.show_duration
   if show_duration == nil then show_duration = true end
   checkbox(ctx, 'show_duration',

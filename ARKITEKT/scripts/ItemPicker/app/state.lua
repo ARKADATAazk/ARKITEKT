@@ -39,6 +39,7 @@ M.box_current_midi_track = {}  -- { [track_guid] = item_index }
 
 M.disabled = { audio = {}, midi = {} }
 M.favorites = { audio = {}, midi = {} }
+M.item_usage = {}  -- { [uuid] = timestamp } for "recent" sort
 M.track_chunks = {}
 M.item_chunks = {}
 
@@ -129,6 +130,7 @@ function M.initialize(config)
   M.disabled = disabled_data or { audio = {}, midi = {} }
   local favorites_data = Persistence.load_favorites()
   M.favorites = favorites_data or { audio = {}, midi = {} }
+  M.item_usage = Persistence.load_item_usage() or {}
 
   -- Restore tile sizes from settings
   if M.settings.tile_width then
@@ -451,6 +453,23 @@ function M.persist_favorites()
   Persistence.save_favorites(M.favorites)
 end
 
+function M.persist_item_usage()
+  Persistence.save_item_usage(M.item_usage)
+end
+
+-- Mark an item as recently used (for "recent" sort)
+function M.mark_item_used(uuid)
+  if not uuid then return end
+  M.item_usage[uuid] = reaper.time_precise()
+  -- Persist so it survives crashes
+  M.persist_item_usage()
+  -- Only invalidate cache if currently sorting by recent (avoid unnecessary re-sorts)
+  if M.settings.sort_mode == 'recent' and M.runtime_cache then
+    M.runtime_cache.audio_filter_hash = nil
+    M.runtime_cache.midi_filter_hash = nil
+  end
+end
+
 function M.persist_track_filter()
   Persistence.save_track_filter(M.track_whitelist, M.track_filters_enabled)
 end
@@ -460,19 +479,18 @@ function M.persist_all()
   M.persist_disabled()
   M.persist_favorites()
   M.persist_track_filter()
+  M.persist_item_usage()
 end
 
 -- Cleanup
 function M.Cleanup()
   M.persist_all()
 
-  -- Skip disk cache flush - causes 5 second UI freeze
-  -- Waveforms/MIDI will be regenerated on next open (fast with job queue)
-  -- If you want persistent cache, uncomment the code below:
-  -- local disk_cache_ok, disk_cache = pcall(require, 'ItemPicker.data.cache')
-  -- if disk_cache_ok and disk_cache.flush then
-  --   disk_cache.flush()
-  -- end
+  -- Save layout cache for instant launch next time (tiny data, ~4KB)
+  local layout_cache_ok, layout_cache = pcall(require, 'ItemPicker.data.layout_cache')
+  if layout_cache_ok and layout_cache.save then
+    layout_cache.save(M)
+  end
 
   -- Stop preview using SWS command
   M.stop_preview()

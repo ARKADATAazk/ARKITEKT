@@ -65,6 +65,7 @@ local DEFAULTS = {
 
   -- Callbacks
   on_change = nil,
+  get_value = nil,  -- Callback to get external value (for controlled input)
   tooltip = nil,
 
   -- Cursor control
@@ -87,6 +88,7 @@ local function get_or_create_state(id)
       text = '',
       focused = false,
       hover_alpha = 0.0,
+      clear_generation = 0,  -- Incremented on clear to force ImGui to re-read value
     }
   end
   return field_state[id]
@@ -109,9 +111,9 @@ local function resolve_config(opts)
     end
   end
 
-  -- Apply user overrides
+  -- Apply user overrides (copy all non-nil opts, not just those in config)
   for k, v in pairs(opts) do
-    if v ~= nil and config[k] ~= nil then
+    if v ~= nil then
       config[k] = v
     end
   end
@@ -209,16 +211,20 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   ImGui.SetCursorScreenPos(ctx, x + padding_x, y + padding_y)
   ImGui.PushItemWidth(ctx, width - padding_x * 2)
 
-  -- Make input background transparent
+  -- Make input background transparent, style text and selection
   local C = Theme.COLORS
   ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, C.BG_TRANSPARENT)
   ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, C.BG_TRANSPARENT)
   ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, C.BG_TRANSPARENT)
   ImGui.PushStyleColor(ctx, ImGui.Col_Border, C.BG_TRANSPARENT)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
+  ImGui.PushStyleColor(ctx, ImGui.Col_TextSelectedBg, 0x4488FFAA)  -- Selection highlight
 
   local changed, new_text
-  local input_id = '##' .. id
+  -- Include generation in ID to force ImGui to re-create widget after Clear()
+  -- This bypasses ImGui's internal buffer caching when the widget was focused
+  local gen = state.clear_generation or 0
+  local input_id = gen > 0 and ('##' .. id .. '_g' .. gen) or ('##' .. id)
 
   -- Handle disabled state
   if is_disabled then
@@ -270,7 +276,7 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
 
   state.focused = ImGui.IsItemActive(ctx)
 
-  ImGui.PopStyleColor(ctx, 5)
+  ImGui.PopStyleColor(ctx, 6)
   ImGui.PopItemWidth(ctx)
 
   return changed, is_hovered
@@ -381,6 +387,7 @@ function M.GetText(id)
 end
 
 --- Set text value for a field
+--- Also increments generation to force ImGui to re-read the value
 --- @param id string Field identifier
 --- @param text string New text value
 function M.SetText(id, text)
@@ -389,16 +396,24 @@ function M.SetText(id, text)
       text = '',
       focused = false,
       hover_alpha = 0.0,
+      clear_generation = 0,
     }
   end
   field_state[id].text = text or ''
+  -- Increment generation to force ImGui to accept the new value
+  -- (in case the widget is currently focused with a different buffer)
+  field_state[id].clear_generation = (field_state[id].clear_generation or 0) + 1
 end
 
 --- Clear text for a field
+--- Forces ImGui to re-read the value by changing the widget's generation ID
 --- @param id string Field identifier
 function M.Clear(id)
   if field_state[id] then
     field_state[id].text = ''
+    -- Increment generation to force ImGui to create a "new" widget instance
+    -- This bypasses ImGui's internal buffer caching when the widget is focused
+    field_state[id].clear_generation = (field_state[id].clear_generation or 0) + 1
   end
 end
 

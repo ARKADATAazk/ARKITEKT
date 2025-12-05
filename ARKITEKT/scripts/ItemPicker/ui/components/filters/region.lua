@@ -6,6 +6,16 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local M = {}
 
+-- AND/OR toggle button config
+local MODE_TOGGLE = {
+  width = 28,
+  height = 16,
+  rounding = 3,
+  bg_or = 0x3A3A3AFF,      -- Dark grey for OR
+  bg_and = 0x5588BBFF,     -- Blue-ish for AND (more visible)
+  text_color = 0xDDDDDDFF,
+}
+
 -- Ensure color has minimum lightness for readability
 local function ensure_min_lightness(color, min_lightness)
   local h, s, l = Ark.Colors.RgbToHsl(color)
@@ -26,8 +36,17 @@ function M.Draw(ctx, draw_list, x, y, width, state, config, alpha)
   local line_spacing = 4  -- Space between lines
   local chip_height = chip_cfg.height + 2  -- Slightly taller for top bar
 
+  -- AND/OR mode toggle config
+  local mode = state.settings.region_filter_mode or 'or'
+  local toggle_alpha = (0xFF * alpha) // 1
+  local toggle_width = MODE_TOGGLE.width + chip_cfg.margin_x  -- Include margin to next chip
+
   -- Available width for chips (minus padding on both sides)
   local available_width = width - padding_x * 2
+
+  -- Track toggle state for rendering after we know positions
+  local toggle_hovered = false
+  local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
 
   -- First pass: calculate line breaks and positions
   local lines = {{}}  -- Array of lines, each line is array of chip data
@@ -63,8 +82,7 @@ function M.Draw(ctx, draw_list, x, y, width, state, config, alpha)
     current_line_width = current_line_width + needed_width
   end
 
-  -- Second pass: render chips centered per line
-  local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
+  -- Second pass: render chips centered per line (with toggle on first line)
   local total_height = 0
 
   -- Paint mode state for drag selection
@@ -84,8 +102,11 @@ function M.Draw(ctx, draw_list, x, y, width, state, config, alpha)
   end
 
   for line_idx, line in ipairs(lines) do
-    -- Calculate line width
+    -- Calculate line width (include toggle on first line)
     local line_width = 0
+    if line_idx == 1 then
+      line_width = toggle_width
+    end
     for i, chip_data in ipairs(line) do
       line_width = line_width + chip_data.width
       if i < #line then
@@ -97,8 +118,41 @@ function M.Draw(ctx, draw_list, x, y, width, state, config, alpha)
     local line_x = x + padding_x + math.floor((available_width - line_width) / 2)
     local line_y = y + padding_y + (line_idx - 1) * (chip_height + line_spacing)
 
-    -- Render chips on this line
+    -- Render toggle on first line (before chips)
     local chip_x = line_x
+    if line_idx == 1 then
+      local toggle_x = chip_x
+      local toggle_y = line_y + (chip_height - MODE_TOGGLE.height) / 2
+
+      -- Check hover/click
+      toggle_hovered = mouse_x >= toggle_x and mouse_x <= toggle_x + MODE_TOGGLE.width and
+                       mouse_y >= toggle_y and mouse_y <= toggle_y + MODE_TOGGLE.height
+
+      if toggle_hovered and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) then
+        local new_mode = mode == 'or' and 'and' or 'or'
+        state.set_setting('region_filter_mode', new_mode)
+        state.runtime_cache.audio_filter_hash = nil
+        state.runtime_cache.midi_filter_hash = nil
+      end
+
+      -- Draw toggle background
+      local bg_color = mode == 'and' and MODE_TOGGLE.bg_and or MODE_TOGGLE.bg_or
+      if toggle_hovered then
+        bg_color = Ark.Colors.AdjustBrightness(bg_color, 1.2)
+      end
+      bg_color = (bg_color & 0xFFFFFF00) | toggle_alpha
+      ImGui.DrawList_AddRectFilled(draw_list, toggle_x, toggle_y, toggle_x + MODE_TOGGLE.width, toggle_y + MODE_TOGGLE.height, bg_color, MODE_TOGGLE.rounding)
+
+      -- Draw toggle text
+      local label = mode == 'and' and 'AND' or 'OR'
+      local text_w, text_h = ImGui.CalcTextSize(ctx, label)
+      local text_x = toggle_x + (MODE_TOGGLE.width - text_w) / 2
+      local text_y = toggle_y + (MODE_TOGGLE.height - text_h) / 2
+      local text_color = (MODE_TOGGLE.text_color & 0xFFFFFF00) | toggle_alpha
+      ImGui.DrawList_AddText(draw_list, text_x, text_y, text_color, label)
+
+      chip_x = chip_x + toggle_width
+    end
     for i, chip_data in ipairs(line) do
       local region = chip_data.region
       local region_name = region.name
@@ -195,6 +249,14 @@ function M.Draw(ctx, draw_list, x, y, width, state, config, alpha)
     end
 
     total_height = line_y + chip_height - y
+  end
+
+  -- Toggle tooltip (rendered last to be on top)
+  if toggle_hovered then
+    local tooltip = mode == 'or'
+      and 'OR: Items in ANY selected region'
+      or 'AND: Items in ALL selected regions'
+    ImGui.SetTooltip(ctx, tooltip)
   end
 
   return total_height + padding_y * 2  -- Return height used by filter bar

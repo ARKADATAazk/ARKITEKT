@@ -14,6 +14,22 @@ local WAVEFORM_RESOLUTION = 2000
 local MIDI_CACHE_WIDTH = 400
 local MIDI_CACHE_HEIGHT = 200
 
+-- PROFILING: Set to true to measure generation times
+local PROFILE_ENABLED = false
+local profile_stats = {
+  waveform_count = 0,
+  waveform_total_ms = 0,
+  midi_count = 0,
+  midi_total_ms = 0,
+  midi_total_notes = 0,
+}
+
+local function profile_log(msg)
+  if PROFILE_ENABLED then
+    reaper.ShowConsoleMsg('[ItemPicker Profile] ' .. msg .. '\n')
+  end
+end
+
 -- Performance: Cache color conversions (5-10% faster)
 -- Uses weak table so unused colors get garbage collected
 local waveform_color_cache = {}
@@ -53,6 +69,8 @@ function M.GetItemWaveform(cache, item, uuid)
   if cache and cache.waveforms and cache.waveforms[uuid] then
     return cache.waveforms[uuid]
   end
+
+  local t0 = PROFILE_ENABLED and reaper.time_precise() or nil
 
   -- Validate item and take
   if not item or not reaper.ValidatePtr2(0, item, 'MediaItem*') then
@@ -128,6 +146,18 @@ function M.GetItemWaveform(cache, item, uuid)
   if cache and cache.waveforms then
     cache.waveforms[uuid] = ret_tab
   end
+
+  -- PROFILING: Log generation time
+  if t0 then
+    local elapsed_ms = (reaper.time_precise() - t0) * 1000
+    profile_stats.waveform_count = profile_stats.waveform_count + 1
+    profile_stats.waveform_total_ms = profile_stats.waveform_total_ms + elapsed_ms
+    profile_log(string.format('Waveform #%d: %.2fms (avg: %.2fms)',
+      profile_stats.waveform_count,
+      elapsed_ms,
+      profile_stats.waveform_total_ms / profile_stats.waveform_count))
+  end
+
   return ret_tab
 end
 
@@ -279,6 +309,8 @@ function M.GenerateMidiThumbnail(cache, item, w, h, uuid)
     return cache.midi_thumbnails[uuid]
   end
 
+  local t0 = PROFILE_ENABLED and reaper.time_precise() or nil
+
   -- Validate item
   if not item or not reaper.ValidatePtr2(0, item, 'MediaItem*') then
     return nil
@@ -339,6 +371,22 @@ function M.GenerateMidiThumbnail(cache, item, w, h, uuid)
   if cache and cache.midi_thumbnails then
     cache.midi_thumbnails[uuid] = thumbnail
   end
+
+  -- PROFILING: Log generation time
+  if t0 then
+    local elapsed_ms = (reaper.time_precise() - t0) * 1000
+    local note_count = #thumbnail
+    profile_stats.midi_count = profile_stats.midi_count + 1
+    profile_stats.midi_total_ms = profile_stats.midi_total_ms + elapsed_ms
+    profile_stats.midi_total_notes = profile_stats.midi_total_notes + note_count
+    profile_log(string.format('MIDI #%d: %.2fms, %d notes (avg: %.2fms, %.0f notes)',
+      profile_stats.midi_count,
+      elapsed_ms,
+      note_count,
+      profile_stats.midi_total_ms / profile_stats.midi_count,
+      profile_stats.midi_total_notes / profile_stats.midi_count))
+  end
+
   return thumbnail
 end
 
@@ -388,18 +436,13 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
   ImGui.DrawList_PopClipRect(draw_list)
 end
 
-function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_width, uuid, cache, use_filled)
-  -- Default to filled if not specified (for backwards compatibility)
-  if use_filled == nil then use_filled = true end
-
+function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_width, uuid, cache)
   -- Cache ImGui functions for performance
   local GetItemRectMin = ImGui.GetItemRectMin
-  local GetItemRectMax = ImGui.GetItemRectMax
   local GetItemRectSize = ImGui.GetItemRectSize
   local DrawList_AddPolyline = ImGui.DrawList_AddPolyline
 
   local item_x1, item_y1 = GetItemRectMin(ctx)
-  local item_x2, item_y2 = GetItemRectMax(ctx)
   local item_w, item_h = GetItemRectSize(ctx)
 
   if not waveform then return end
@@ -423,81 +466,32 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
     local norm_bottom = cached_polylines.norm_bottom
 
     if norm_top and norm_bottom then
-      if use_filled then
-        -- Build filled polygon arrays (waveform + zero line closure)
-        local top_fill_table = {}
-        local top_idx = 1
-
-        -- Top waveform points (left to right)
-        for i = 1, #norm_top, 2 do
-          top_fill_table[top_idx] = item_x1 + norm_top[i] * item_w  -- Scale X
-          top_fill_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height  -- Scale Y
-          top_idx = top_idx + 2
-        end
-
-        -- Close polygon along zero line (right to left)
-        top_fill_table[top_idx] = item_x2
-        top_fill_table[top_idx + 1] = zero_line
+      -- Build polyline arrays from cached normalized coordinates
+      local top_points_table = {}
+      local top_idx = 1
+      for i = 1, #norm_top, 2 do
+        top_points_table[top_idx] = item_x1 + norm_top[i] * item_w  -- Scale X
+        top_points_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height  -- Scale Y
         top_idx = top_idx + 2
-        top_fill_table[top_idx] = item_x1
-        top_fill_table[top_idx + 1] = zero_line
+      end
 
-        -- Bottom polygon
-        local bottom_fill_table = {}
-        local bottom_idx = 1
-
-        -- Bottom waveform points (left to right)
-        for i = 1, #norm_bottom, 2 do
-          bottom_fill_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w  -- Scale X
-          bottom_fill_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height  -- Scale Y
-          bottom_idx = bottom_idx + 2
-        end
-
-        -- Close polygon along zero line (right to left)
-        bottom_fill_table[bottom_idx] = item_x2
-        bottom_fill_table[bottom_idx + 1] = zero_line
+      local bottom_points_table = {}
+      local bottom_idx = 1
+      for i = 1, #norm_bottom, 2 do
+        bottom_points_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w  -- Scale X
+        bottom_points_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height  -- Scale Y
         bottom_idx = bottom_idx + 2
-        bottom_fill_table[bottom_idx] = item_x1
-        bottom_fill_table[bottom_idx + 1] = zero_line
+      end
 
-        -- Fill polygons
-        if #top_fill_table >= 8 then  -- Need at least 4 points (8 values) for a polygon
-          local top_fill_array = reaper.new_array(top_fill_table)
-          ImGui.DrawList_AddConvexPolyFilled(draw_list, top_fill_array, col_wave)
-        end
+      -- Draw polylines
+      if #top_points_table >= 4 then
+        local top_array = reaper.new_array(top_points_table)
+        DrawList_AddPolyline(draw_list, top_array, col_wave, ImGui.DrawFlags_None, 1.0)
+      end
 
-        if #bottom_fill_table >= 8 then
-          local bottom_fill_array = reaper.new_array(bottom_fill_table)
-          ImGui.DrawList_AddConvexPolyFilled(draw_list, bottom_fill_array, col_wave)
-        end
-      else
-        -- Build outline polyline arrays (just waveform points)
-        local top_points_table = {}
-        local top_idx = 1
-        for i = 1, #norm_top, 2 do
-          top_points_table[top_idx] = item_x1 + norm_top[i] * item_w  -- Scale X
-          top_points_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height  -- Scale Y
-          top_idx = top_idx + 2
-        end
-
-        local bottom_points_table = {}
-        local bottom_idx = 1
-        for i = 1, #norm_bottom, 2 do
-          bottom_points_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w  -- Scale X
-          bottom_points_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height  -- Scale Y
-          bottom_idx = bottom_idx + 2
-        end
-
-        -- Draw outline polylines
-        if #top_points_table >= 4 then
-          local top_array = reaper.new_array(top_points_table)
-          DrawList_AddPolyline(draw_list, top_array, col_wave, ImGui.DrawFlags_None, 1.0)
-        end
-
-        if #bottom_points_table >= 4 then
-          local bottom_array = reaper.new_array(bottom_points_table)
-          DrawList_AddPolyline(draw_list, bottom_array, col_wave, ImGui.DrawFlags_None, 1.0)
-        end
+      if #bottom_points_table >= 4 then
+        local bottom_array = reaper.new_array(bottom_points_table)
+        DrawList_AddPolyline(draw_list, bottom_array, col_wave, ImGui.DrawFlags_None, 1.0)
       end
     end
   else
@@ -534,82 +528,32 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
       end
     end
 
-    -- Build and render arrays for this frame
-    if use_filled then
-      -- Build filled polygon arrays
-      local top_fill_table = {}
-      local top_idx = 1
-
-      -- Top waveform points
-      for i = 1, #norm_top, 2 do
-        top_fill_table[top_idx] = item_x1 + norm_top[i] * item_w
-        top_fill_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height
-        top_idx = top_idx + 2
-      end
-
-      -- Close polygon along zero line
-      top_fill_table[top_idx] = item_x2
-      top_fill_table[top_idx + 1] = zero_line
+    -- Build polyline arrays
+    local top_points_table = {}
+    local top_idx = 1
+    for i = 1, #norm_top, 2 do
+      top_points_table[top_idx] = item_x1 + norm_top[i] * item_w
+      top_points_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height
       top_idx = top_idx + 2
-      top_fill_table[top_idx] = item_x1
-      top_fill_table[top_idx + 1] = zero_line
+    end
 
-      -- Bottom polygon
-      local bottom_fill_table = {}
-      local bottom_idx = 1
-
-      -- Bottom waveform points
-      for i = 1, #norm_bottom, 2 do
-        bottom_fill_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w
-        bottom_fill_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height
-        bottom_idx = bottom_idx + 2
-      end
-
-      -- Close polygon along zero line
-      bottom_fill_table[bottom_idx] = item_x2
-      bottom_fill_table[bottom_idx + 1] = zero_line
+    local bottom_points_table = {}
+    local bottom_idx = 1
+    for i = 1, #norm_bottom, 2 do
+      bottom_points_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w
+      bottom_points_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height
       bottom_idx = bottom_idx + 2
-      bottom_fill_table[bottom_idx] = item_x1
-      bottom_fill_table[bottom_idx + 1] = zero_line
+    end
 
-      -- Fill polygons
-      if #top_fill_table >= 8 then
-        local top_fill_array = reaper.new_array(top_fill_table)
-        ImGui.DrawList_AddConvexPolyFilled(draw_list, top_fill_array, col_wave)
-      end
+    -- Draw polylines
+    if #top_points_table >= 4 then
+      local top_array = reaper.new_array(top_points_table)
+      DrawList_AddPolyline(draw_list, top_array, col_wave, ImGui.DrawFlags_None, 1.0)
+    end
 
-      if #bottom_fill_table >= 8 then
-        local bottom_fill_array = reaper.new_array(bottom_fill_table)
-        ImGui.DrawList_AddConvexPolyFilled(draw_list, bottom_fill_array, col_wave)
-      end
-    else
-      -- Build outline polyline arrays
-      local top_points_table = {}
-      local top_idx = 1
-      for i = 1, #norm_top, 2 do
-        top_points_table[top_idx] = item_x1 + norm_top[i] * item_w
-        top_points_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height
-        top_idx = top_idx + 2
-      end
-
-      local bottom_points_table = {}
-      local bottom_idx = 1
-      for i = 1, #norm_bottom, 2 do
-        bottom_points_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w
-        bottom_points_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height
-        bottom_idx = bottom_idx + 2
-      end
-
-      -- Draw outline polylines
-      if #top_points_table >= 4 then
-        local top_array = reaper.new_array(top_points_table)
-        DrawList_AddPolyline(draw_list, top_array, col_wave, ImGui.DrawFlags_None, 1.0)
-      end
-
-      if #bottom_points_table >= 4 then
-        local bottom_array = reaper.new_array(bottom_points_table)
-        DrawList_AddPolyline(draw_list, bottom_array, col_wave, ImGui.DrawFlags_None, 1.0)
-      end
+    if #bottom_points_table >= 4 then
+      local bottom_array = reaper.new_array(bottom_points_table)
+      DrawList_AddPolyline(draw_list, bottom_array, col_wave, ImGui.DrawFlags_None, 1.0)
     end
 
     -- Cache the normalized coordinates for this uuid+width
@@ -688,6 +632,40 @@ function M.DisplayPreviewLine(ctx, preview_start, preview_end, draw_list)
     local x = item_x1 + item_w * progress
     ImGui.DrawList_AddLine(draw_list, x, item_y1, x, item_y2, 0xFFFFFFFF)
   end
+end
+
+-- PROFILING: Print summary stats
+function M.print_profile_summary()
+  if not PROFILE_ENABLED then
+    reaper.ShowConsoleMsg('[ItemPicker Profile] Profiling disabled\n')
+    return
+  end
+
+  reaper.ShowConsoleMsg('\n========== VISUALIZATION PROFILE SUMMARY ==========\n')
+  reaper.ShowConsoleMsg(string.format('Waveforms: %d generated, total %.1fms, avg %.2fms each\n',
+    profile_stats.waveform_count,
+    profile_stats.waveform_total_ms,
+    profile_stats.waveform_count > 0 and profile_stats.waveform_total_ms / profile_stats.waveform_count or 0))
+  reaper.ShowConsoleMsg(string.format('MIDI: %d generated, total %.1fms, avg %.2fms each, avg %.0f notes\n',
+    profile_stats.midi_count,
+    profile_stats.midi_total_ms,
+    profile_stats.midi_count > 0 and profile_stats.midi_total_ms / profile_stats.midi_count or 0,
+    profile_stats.midi_count > 0 and profile_stats.midi_total_notes / profile_stats.midi_count or 0))
+  reaper.ShowConsoleMsg('====================================================\n\n')
+end
+
+-- PROFILING: Get stats table
+function M.get_profile_stats()
+  return profile_stats
+end
+
+-- PROFILING: Reset stats
+function M.reset_profile_stats()
+  profile_stats.waveform_count = 0
+  profile_stats.waveform_total_ms = 0
+  profile_stats.midi_count = 0
+  profile_stats.midi_total_ms = 0
+  profile_stats.midi_total_notes = 0
 end
 
 return M

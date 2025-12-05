@@ -140,6 +140,16 @@ local _tile_state_cache = {}
 -- Key: tile_key, Value: { name, width, truncated }
 local _truncated_text_cache = {}
 
+-- Clear all caches (call when data reloads to prevent stale values)
+function M.clear_caches()
+  _tile_state_cache = {}
+  _truncated_text_cache = {}
+  _cached.duration_text = {}
+  _cached.cycle_badges = {}
+  _cached.pool_badges = {}
+  _cached.region_colors = {}
+end
+
 function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects, disable_animator)
   -- PROFILER: Start timing
   local t0, t1, t2, t3, t4, t5, t6, t7, t8
@@ -156,11 +166,26 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- PERF: Inline cascade_factor for common case (overlay_alpha = 1.0)
   local cascade_factor = overlay_alpha >= 0.999 and 1.0 or BaseRenderer.calculate_cascade_factor(rect, overlay_alpha, config)
 
-  if cascade_factor < 0.001 then return end
+  -- Early spawn animation (when tiles appear before overlay fade completes)
+  local spawn_factor = 1.0
+  if item_data._spawned_at then
+    local time_since_spawn = time_precise() - item_data._spawned_at
+    local spawn_duration = 0.4  -- 400ms spawn animation
+    if time_since_spawn < spawn_duration then
+      -- Ease out quart: smooth deceleration
+      local t = time_since_spawn / spawn_duration
+      local inv = 1 - t
+      spawn_factor = 1 - inv * inv * inv * inv
+    end
+  end
 
-  -- Apply cascade animation transform
-  local scale = cfg.cascade_scale_from + (1.0 - cfg.cascade_scale_from) * cascade_factor
-  local y_offset = cfg.cascade_y_offset * (1.0 - cascade_factor)
+  -- Combine cascade and spawn factors
+  local combined_factor = cascade_factor * spawn_factor
+  if combined_factor < 0.001 then return end
+
+  -- Apply combined animation transform
+  local scale = cfg.cascade_scale_from + (1.0 - cfg.cascade_scale_from) * combined_factor
+  local y_offset = cfg.cascade_y_offset * (1.0 - combined_factor)
 
   local scaled_w = tile_w * scale
   local scaled_h = tile_h * scale
@@ -283,7 +308,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
                         and cached_state.render_color
                         and cached_state.base_color == base_color
                         and not tile_state.selected  -- Don't cache selected (pulsing) tiles
-                        and cascade_factor >= 0.999  -- Only cache fully visible tiles
+                        and combined_factor >= 0.999  -- Only cache fully visible tiles (incl. spawn anim)
 
   if can_use_cache then
     -- Use cached colors
@@ -291,12 +316,13 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     combined_alpha = cached_state.combined_alpha
   else
     -- Compute colors (pass selection_pulse instead of boolean)
+    -- Use combined_factor (cascade * spawn) for alpha calculation
     render_color, combined_alpha = BaseRenderer.compute_tile_color(
       base_color, is_small_tile, hover_factor, muted_factor, enabled_factor,
-      selection_pulse, cascade_factor, config, palette
+      selection_pulse, combined_factor, config, palette
     )
     -- Cache if settled, fully visible, and not selected
-    if cached_state and cached_state.settled and cascade_factor >= 0.999 and not tile_state.selected then
+    if cached_state and cached_state.settled and combined_factor >= 0.999 and not tile_state.selected then
       cached_state.render_color = render_color
       cached_state.combined_alpha = combined_alpha
       cached_state.base_color = base_color
@@ -306,7 +332,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Capture animation color for disable animation (without alpha)
   local animation_color = with_alpha(render_color, 0xFF)
 
-  local text_alpha = (0xFF * combined_alpha) // 1
+  -- PERF: Clamp to 0-255 to prevent overflow (256 & 0xFF = 0, making text invisible)
+  local text_alpha = min(255, max(0, (0xFF * combined_alpha) // 1))
   local text_color = BaseRenderer.get_text_color(muted_factor, config)
 
   -- PROFILER: After color computation
@@ -354,7 +381,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- Render waveform BEFORE header so header can overlay with transparency
   -- (show even when disabled, just with toned down color)
-  if item_data.item and cascade_factor > 0.2 then
+  if item_data.item and combined_factor > 0.2 then
     -- Skip waveform rendering entirely in small tile mode
     if is_small_tile then
       goto skip_waveform
@@ -382,12 +409,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
           -- Apply waveform quality multiplier to reduce resolution (better performance with many items)
           -- PERF: Use cached settings instead of per-tile state.settings lookup
           local target_width = (content_w * settings.waveform_quality) // 1
-          local use_filled = settings.waveform_filled
-          if use_filled == nil then use_filled = true end
-          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache, use_filled)
+          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache)
         end
       else
-        -- Show placeholder and queue waveform generation
+        -- Show placeholder with spinner and queue waveform generation
         BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
 
         -- Queue waveform job
@@ -422,7 +447,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   if M.profile_enabled then t5 = time_precise() end
 
   -- Render marching ants for selection
-  if tile_state.selected and cascade_factor > 0.5 then
+  if tile_state.selected and combined_factor > 0.5 then
     -- Use palette values if available for theme-reactive ants
     local ants_sat = palette.ants_saturation or cfg.selection_border_saturation
     local ants_bright = palette.ants_brightness or cfg.selection_border_brightness
@@ -485,7 +510,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   -- Add pool badge space if needed
-  if item_data.pool_count and item_data.pool_count > 1 and cascade_factor > 0.5 then
+  if item_data.pool_count and item_data.pool_count > 1 and combined_factor > 0.5 then
     -- PERF: Use cached pool badge dimensions
     local pool_count = item_data.pool_count
     local cached_pool = _cached.pool_badges and _cached.pool_badges[pool_count]
@@ -508,8 +533,25 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     state.rename_text = item_data.name
   end
 
+  -- Calculate text reveal animation (fade-up effect when metadata loads)
+  local text_reveal_factor = 1.0
+  local text_y_offset = 0
+  if item_data._metadata_loaded_at then
+    local time_since_load = time_precise() - item_data._metadata_loaded_at
+    local reveal_duration = 0.25  -- 250ms animation
+    if time_since_load < reveal_duration then
+      -- Ease out quad: fast start, slow finish
+      local t = time_since_load / reveal_duration
+      text_reveal_factor = t * (2 - t)  -- ease out quad
+      text_y_offset = (1 - text_reveal_factor) * 6  -- Start 6px below, move up
+    end
+  end
+
+  -- Apply text reveal to alpha
+  local animated_text_alpha = min(255, (text_alpha * text_reveal_factor) // 1)
+
   -- Render text and badge (with reduced width if star is present)
-  if cascade_factor > 0.3 then
+  if combined_factor > 0.3 then
     if is_renaming then
       -- Render inline rename input
       local input_x = scaled_x1 + 8
@@ -646,9 +688,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- PERF: Badge click handling moved to coordinator (single hit-test vs per-tile InvisibleButton)
       -- Pass full x2 (cycle badge position stays fixed), use extra_text_margin for text truncation only
       -- PERF: Pass truncated text cache for cross-frame caching
+      -- Pass animated alpha and y_offset for text reveal effect
       BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, scaled_x2, header_height,
-        item_data.name, item_data.index, item_data.total, render_color, text_alpha, config,
-        item_data.uuid, badge_rects, nil, extra_text_margin, display_text_color, _truncated_text_cache)
+        item_data.name, item_data.index, item_data.total, render_color, animated_text_alpha, config,
+        item_data.uuid, badge_rects, nil, extra_text_margin, display_text_color, _truncated_text_cache, text_y_offset)
     end
   end
 
@@ -673,7 +716,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   -- Render favorite star badge (vertically centered in header, to the left of cycle badge)
-  if cascade_factor > 0.5 and is_favorite then
+  if combined_factor > 0.5 and is_favorite then
     local star_x
     -- Position favorite to the left of cycle badge (if it exists)
     if has_cycle then
@@ -697,7 +740,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- PERF: Use cached settings instead of per-tile state.settings lookup
   if settings.show_region_tags and item_data.regions and #item_data.regions > 0 and
      not is_small_tile and scaled_h >= cfg.region_min_tile_height and
-     cascade_factor > 0.5 then
+     combined_factor > 0.5 then
 
     local chip_cfg = cfg.region_chip
     local chip_x = scaled_x1 + chip_cfg.margin_left
@@ -793,7 +836,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   -- Render pool count badge in header (left of favorite/cycle badge) if more than 1 instance
-  local should_show_pool_count = item_data.pool_count and item_data.pool_count > 1 and cascade_factor > 0.5
+  local should_show_pool_count = item_data.pool_count and item_data.pool_count > 1 and combined_factor > 0.5
   if should_show_pool_count then
     -- PERF: Cache pool badge dimensions (limited set of values)
     local pool_count = item_data.pool_count
@@ -848,7 +891,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   if show_duration == nil then show_duration = true end
   -- PERF: Use cached duration from item_data (avoids GetMediaItemInfo_Value per frame)
   local duration = item_data.duration or 0
-  if show_duration and cascade_factor > 0.3 and compact_factor < 0.5 and duration > 0 then
+  if show_duration and combined_factor > 0.3 and compact_factor < 0.5 and duration > 0 then
       -- PERF: Cache duration text and dimensions by UUID (consistent with region chips)
       local dur_cache = _cached.duration_text[item_data.uuid]
       local duration_text, dur_text_w, dur_text_h

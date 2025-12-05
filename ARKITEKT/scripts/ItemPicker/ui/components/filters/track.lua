@@ -233,10 +233,11 @@ function M.Draw(ctx, draw_list, x, y, height, state, alpha)
 
       ImGui.DrawList_AddRectFilled(draw_list, tag_x, tag_top, tag_x + tag_width, tag_bottom, bg_color, TAG.ROUNDING)
 
-      -- Color bar
+      -- Color bar (use display_color if available, otherwise convert on-the-fly)
       local bar_alpha = is_enabled and 0xFF or 0x66
       bar_alpha = (bar_alpha * alpha) // 1
-      local bar_color = Ark.Colors.WithAlpha(track.display_color, bar_alpha)
+      local display_color = track.display_color or get_display_color(track.color)
+      local bar_color = Ark.Colors.WithAlpha(display_color, bar_alpha)
 
       ImGui.DrawList_AddRectFilled(draw_list,
         tag_x, tag_top,

@@ -1,6 +1,6 @@
 -- @noindex
 local M = {}
-local disk_cache = require('ItemPicker.data.cache')
+-- Note: Disk cache removed - regeneration is fast enough (~2ms waveform, ~0.05ms MIDI)
 
 function M.new(max_per_frame)
   local queue = {
@@ -91,20 +91,41 @@ function M.process_jobs(job_queue, visualization, runtime_cache, imgui_ctx)
   end
 
   local processed = 0
+  local waveforms_this_frame = 0
 
-  while processed < job_queue.max_per_frame do
+  -- OPTIMIZATION: Process ALL pending MIDI first (they're ~0.05ms each, essentially free)
+  -- This makes the UI feel much more responsive
+  while #job_queue.midi_queue_priority > 0 do
+    local job = table.remove(job_queue.midi_queue_priority, 1)
+    job_queue.processing_keys[job.cache_key] = true
+    if visualization.GenerateMidiThumbnail then
+      local thumbnail = visualization.GenerateMidiThumbnail(runtime_cache, job.item, job.width, job.height, job.cache_key)
+    end
+    job_queue.processing_keys[job.cache_key] = nil
+    processed = processed + 1
+  end
+
+  -- Then process background MIDI (also very fast)
+  while #job_queue.midi_queue > 0 do
+    local job = table.remove(job_queue.midi_queue, 1)
+    job_queue.processing_keys[job.cache_key] = true
+    if visualization.GenerateMidiThumbnail then
+      local thumbnail = visualization.GenerateMidiThumbnail(runtime_cache, job.item, job.width, job.height, job.cache_key)
+    end
+    job_queue.processing_keys[job.cache_key] = nil
+    processed = processed + 1
+  end
+
+  -- Now process waveforms (slower, ~2ms each) with frame budget
+  while waveforms_this_frame < job_queue.max_per_frame do
     local job = nil
 
-    -- Process priority queues first (visible items)
+    -- Priority waveforms first (visible items)
     if #job_queue.waveform_queue_priority > 0 then
       job = table.remove(job_queue.waveform_queue_priority, 1)
-    elseif #job_queue.midi_queue_priority > 0 then
-      job = table.remove(job_queue.midi_queue_priority, 1)
-    -- Then process normal queues (invisible items)
+    -- Then background waveforms
     elseif #job_queue.waveform_queue > 0 then
       job = table.remove(job_queue.waveform_queue, 1)
-    elseif #job_queue.midi_queue > 0 then
-      job = table.remove(job_queue.midi_queue, 1)
     else
       break
     end
@@ -112,45 +133,13 @@ function M.process_jobs(job_queue, visualization, runtime_cache, imgui_ctx)
     if job then
       job_queue.processing_keys[job.cache_key] = true
 
-      if job.type == 'waveform' then
-        -- Try disk cache first
-        local cached_waveform = disk_cache.load_waveform(job.item, job.cache_key)
-        if cached_waveform then
-          -- Load from disk cache into runtime cache
-          if runtime_cache and runtime_cache.waveforms then
-            runtime_cache.waveforms[job.cache_key] = cached_waveform
-          end
-        else
-          -- Generate new waveform
-          if visualization.GetItemWaveform then
-            local waveform = visualization.GetItemWaveform(runtime_cache, job.item, job.cache_key)
-            -- Save to disk cache (already stored in runtime_cache by GetItemWaveform)
-            if waveform then
-              disk_cache.save_waveform(job.item, job.cache_key, waveform)
-            end
-          end
-        end
-      elseif job.type == 'midi' then
-        -- Try disk cache first
-        local cached_thumbnail = disk_cache.load_midi_thumbnail(job.item, job.cache_key)
-        if cached_thumbnail then
-          -- Load from disk cache into runtime cache
-          if runtime_cache and runtime_cache.midi_thumbnails then
-            runtime_cache.midi_thumbnails[job.cache_key] = cached_thumbnail
-          end
-        else
-          -- Generate new thumbnail
-          if visualization.GenerateMidiThumbnail then
-            local thumbnail = visualization.GenerateMidiThumbnail(runtime_cache, job.item, job.width, job.height, job.cache_key)
-            -- Save to disk cache (already stored in runtime_cache by GenerateMidiThumbnail)
-            if thumbnail then
-              disk_cache.save_midi_thumbnail(job.item, job.cache_key, thumbnail)
-            end
-          end
-        end
+      -- Generate waveform (no disk cache - regeneration is fast enough)
+      if visualization.GetItemWaveform then
+        visualization.GetItemWaveform(runtime_cache, job.item, job.cache_key)
       end
 
       job_queue.processing_keys[job.cache_key] = nil
+      waveforms_this_frame = waveforms_this_frame + 1
       processed = processed + 1
     end
   end
