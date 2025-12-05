@@ -359,6 +359,9 @@ bool Pad::loadSample(int layerIndex,
     if (!reader)
         return false;
 
+    // Stop playback to prevent race condition with audio thread
+    stop();
+
     auto& layer = layers[layerIndex];
     layer.buffer.setSize(static_cast<int>(reader->numChannels),
                          static_cast<int>(reader->lengthInSamples));
@@ -382,6 +385,10 @@ bool Pad::addRoundRobinSample(int layerIndex,
     std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(file));
     if (!reader)
         return false;
+
+    // Stop playback to prevent race condition with audio thread
+    // (push_back could reallocate vector while audio reads from it)
+    stop();
 
     auto& layer = layers[layerIndex];
 
