@@ -155,7 +155,7 @@ Bridge.setSampleRange(track, fx, 2, 0.1, 0.95)
 ### Direct Parameter Access
 
 ```lua
-local PARAMS_PER_PAD = 15
+local PARAMS_PER_PAD = 18
 local pad = 0
 local VOLUME = 0
 
@@ -181,6 +181,7 @@ Sample paths are stored in the project state XML and reloaded on project open:
 - [x] 128 pads, 4 velocity layers
 - [x] Sample start/end points
 - [x] Round-robin playback (sequential + random modes)
+- [x] Async sample loading (ThreadPool + timer callback)
 - [x] Kill groups (8)
 - [x] Output groups (16)
 - [x] ADSR per pad
@@ -191,9 +192,4 @@ Sample paths are stored in the project state XML and reloaded on project open:
 - [x] 2304 automatable parameters
 - [x] Multi-out rendering to group buses
 
-## TODO
-
-- [x] Async sample loading (don't block audio thread)
-- [x] Random mode for round-robin
-
-All planned features complete!
+All planned Phase 1 features complete!

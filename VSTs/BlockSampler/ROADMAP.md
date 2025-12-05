@@ -18,8 +18,8 @@
 │                          ▼                              │
 │  ┌─────────────────────────────────────────────────┐   │
 │  │ BlockSampler VST3 (headless audio engine)       │   │
-│  │ 128 pads × 4 velocity layers × 13 params each   │   │
-│  │ Kill groups, output groups, ADSR, filter        │   │
+│  │ 128 pads × 4 velocity layers × 18 params each   │   │
+│  │ Kill groups, output groups, ADSR, LP/HP filter  │   │
 │  └─────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -42,7 +42,7 @@
 - [x] Reverse playback
 
 ### 1.2 Parameter System ✅ DONE
-- [x] 13 params × 128 pads = 1664 automatable parameters
+- [x] 18 params × 128 pads = 2304 automatable parameters
 - [x] AudioProcessorValueTreeState for automation
 - [x] Parameter IDs: `p{pad}_{param}` (e.g., `p0_volume`)
 
@@ -55,12 +55,15 @@
 - [x] Named config param handler (`P{pad}_L{layer}_SAMPLE`)
 - [x] State save/restore (sample paths in XML)
 - [x] Chunk-based runtime sample loading via Commands node
-- [ ] Async sample loading (don't block audio thread)
+- [x] Async sample loading (ThreadPool + timer callback)
 
 ### 1.5 Sample Playback ✅ DONE
 - [x] Sample start/end points (automatable, 0-1 normalized)
 - [x] Round-robin playback (multiple samples per layer, cycles on trigger)
-- [x] 15 params × 128 pads = 1920 automatable parameters
+- [x] Round-robin random mode (per-pad)
+- [x] Peak normalization (computed on load, applied during playback)
+- [x] HP filter mode (in addition to LP)
+- [x] 18 params × 128 pads = 2304 automatable parameters
 
 ### 1.6 TODO: Build & Test
 - [ ] Build on Windows (VST3)
@@ -207,7 +210,7 @@ DrumBlocks auto-creates:
 ### 3.3 Round-Robin ✅ DONE
 - [x] Multiple samples per layer
 - [x] Cycle through on each trigger
-- [ ] Random mode option
+- [x] Random mode option (per-pad parameter)
 
 ### 3.4 Sample Analysis
 - [ ] Auto-detect pitch (for tune suggestion)

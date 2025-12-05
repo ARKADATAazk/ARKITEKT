@@ -326,7 +326,7 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
         float peak = 0.0f;
         for (int ch = 0; ch < result.buffer.getNumChannels(); ++ch)
             peak = juce::jmax(peak, result.buffer.getMagnitude(ch, 0, result.buffer.getNumSamples()));
-        result.normGain = (peak > 0.0001f) ? (1.0f / peak) : 1.0f;
+        result.normGain = (peak > NORM_PEAK_THRESHOLD) ? (1.0f / peak) : 1.0f;
 
         // Queue result for main thread
         std::lock_guard<std::mutex> lock(*mtx);
