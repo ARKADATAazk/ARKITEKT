@@ -1,19 +1,18 @@
 --[[
   @noindex
 
-  Production Panel - Unified workflow hub for REAPER
+  Blocks - Modular component platform for REAPER
 
-  A comprehensive production tool combining:
+  A dockable host for modular UI components (blocks) that combine
+  multiple scripts into a single unified interface.
+
+  Current components:
   - Macro Controls: 8 assignable knobs for FX container parameter mapping
   - Drum Rack: 16-pad sampler with per-pad FX chains
-  - Sample/FX Browser: Visual browser for samples, chains, and templates
-
-  Inspired by Ableton Live's production workflow, reimagined for REAPER.
 
   Features:
-  - Zero-config macro controls with learn mode
-  - Visual drum rack with MIDI routing
-  - Integrated sample and FX chain browser
+  - Single defer loop hosts multiple components
+  - Modular architecture for adding new blocks
   - Modern, themeable UI with ARKITEKT framework
 
   License: GPL-3.0
@@ -29,15 +28,15 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 -- ============================================================================
 local Shell = require('arkitekt.runtime.shell')
 local Settings = require('arkitekt.core.settings')
-local State = require('scripts.ProductionPanel.app.state')
-local GUI = require('scripts.ProductionPanel.ui.init')
-local Defaults = require('scripts.ProductionPanel.config.defaults')
+local State = require('scripts.Blocks.app.state')
+local GUI = require('scripts.Blocks.ui.init')
+local Defaults = require('scripts.Blocks.config.defaults')
 local Colors = require('arkitekt.core.colors')
 
 -- ============================================================================
 -- SETTINGS & STATE INITIALIZATION
 -- ============================================================================
-local data_dir = Ark._bootstrap.get_data_dir('ProductionPanel')
+local data_dir = Ark._bootstrap.get_data_dir('Blocks')
 local settings = Settings.new(data_dir, 'settings.json')
 
 State.initialize(settings)

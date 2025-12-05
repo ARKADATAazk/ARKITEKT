@@ -1,10 +1,10 @@
 -- @noindex
--- ProductionPanel/defs/defaults.lua
+-- Blocks/config/defaults.lua
 -- Default values and configuration
 
 return {
   WINDOW = {
-    TITLE = 'Production Panel',
+    TITLE = 'Blocks',
     WIDTH = 1200,
     HEIGHT = 700,
     MIN_WIDTH = 800,

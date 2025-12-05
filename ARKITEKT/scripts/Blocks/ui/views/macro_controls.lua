@@ -1,13 +1,13 @@
 -- @noindex
--- ProductionPanel/ui/views/macro_controls.lua
+-- Blocks/ui/views/macro_controls.lua
 -- Macro controls view with 8 assignable knobs
 
 local M = {}
 
 -- DEPENDENCIES
 local Ark = require('arkitekt')
-local Knob = require('scripts.ProductionPanel.ui.widgets.knob')
-local Defaults = require('scripts.ProductionPanel.config.defaults')
+local Knob = require('scripts.Blocks.ui.widgets.knob')
+local Defaults = require('scripts.Blocks.config.defaults')
 local ImGui = Ark.ImGui
 local Colors = Ark.Colors
 local Theme = require('arkitekt.theme')
