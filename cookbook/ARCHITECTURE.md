@@ -632,8 +632,6 @@ Shell.run({
 
 ### Architecture Rules
 
-- [ ] Framework `core/` is pure (no reaper.*, no ImGui.*)
-- [ ] Scripts can use `reaper.*` in `domain/` (pragmatic)
 - [ ] Dependency flow: UI → app → domain ← data
 - [ ] No ImGui in `domain/` layer
 - [ ] State container is thin (no logic)
