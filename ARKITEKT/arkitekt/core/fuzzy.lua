@@ -1,6 +1,6 @@
 -- @noindex
--- TemplateBrowser/domain/search/fuzzy.lua
--- Fuzzy string matching for template search
+-- arkitekt/core/fuzzy.lua
+-- Fuzzy string matching for search functionality
 
 local M = {}
 
@@ -36,8 +36,11 @@ local function is_camel_boundary(str, pos)
   return curr:match('%u') and prev:match('%l')
 end
 
--- Calculate fuzzy match score between query and target
--- Returns score (0 if no match) and match positions
+--- Calculate fuzzy match score between query and target
+--- @param query string Search query
+--- @param target string String to match against
+--- @return number score Score (0 if no match)
+--- @return table positions Array of match positions in target
 function M.score(query, target)
   if not query or query == '' then
     return 0, {}
@@ -65,8 +68,8 @@ function M.score(query, target)
 
   -- Greedy matching with scoring
   local positions = {}
-  local score = 0
-  local qi = 1
+  local match_score = 0
+  qi = 1
   local prev_match_pos = 0
   local in_gap = false
 
@@ -79,21 +82,21 @@ function M.score(query, target)
     if target_char == query_char then
       -- Match found
       positions[#positions + 1] = ti
-      score = score + SCORE.MATCH
+      match_score = match_score + SCORE.MATCH
 
       -- Consecutive match bonus
       if prev_match_pos == ti - 1 then
-        score = score + SCORE.CONSECUTIVE
+        match_score = match_score + SCORE.CONSECUTIVE
       end
 
       -- Word boundary bonus
       if is_word_start(target, ti) or is_camel_boundary(target, ti) then
-        score = score + SCORE.WORD_START
+        match_score = match_score + SCORE.WORD_START
       end
 
       -- First character bonus
       if qi == 1 then
-        score = score + SCORE.FIRST_CHAR
+        match_score = match_score + SCORE.FIRST_CHAR
       end
 
       prev_match_pos = ti
@@ -102,10 +105,10 @@ function M.score(query, target)
     else
       -- Gap
       if not in_gap and prev_match_pos > 0 then
-        score = score + SCORE.GAP_START
+        match_score = match_score + SCORE.GAP_START
         in_gap = true
       elseif in_gap then
-        score = score + SCORE.GAP_EXTEND
+        match_score = match_score + SCORE.GAP_EXTEND
       end
     end
   end
@@ -116,23 +119,25 @@ function M.score(query, target)
   end
 
   -- Normalize score slightly by query length (longer queries = more potential score)
-  -- This helps shorter matches not dominate
-  score = score + (query_len * 2)
+  match_score = match_score + (query_len * 2)
 
-  return math.max(score, 1), positions
+  return math.max(match_score, 1), positions
 end
 
--- Check if query fuzzy-matches target (boolean result)
+--- Check if query fuzzy-matches target
+--- @param query string Search query
+--- @param target string String to match against
+--- @return boolean matches True if query matches target
 function M.matches(query, target)
-  local score = M.score(query, target)
-  return score > 0
+  local s = M.score(query, target)
+  return s > 0
 end
 
--- Filter and sort a list of items by fuzzy match score
--- items: array of items
--- get_text: function(item) -> string to match against
--- query: search string
--- Returns: filtered and sorted array of {item, score, positions}
+--- Filter and sort a list of items by fuzzy match score
+--- @param items table Array of items to filter
+--- @param get_text function Function(item) -> string to match against
+--- @param query string Search query
+--- @return table results Array of {item, score, positions} sorted by score descending
 function M.filter(items, get_text, query)
   if not query or query == '' then
     -- No query: return all items with score 0
@@ -147,12 +152,12 @@ function M.filter(items, get_text, query)
 
   for _, item in ipairs(items) do
     local text = get_text(item)
-    local score, positions = M.score(query, text)
+    local s, positions = M.score(query, text)
 
-    if score > 0 then
+    if s > 0 then
       results[#results + 1] = {
         item = item,
-        score = score,
+        score = s,
         positions = positions,
       }
     end
@@ -166,7 +171,11 @@ function M.filter(items, get_text, query)
   return results
 end
 
--- Simple interface: filter items and return just the items (not scores)
+--- Filter items and return just the items (not scores)
+--- @param items table Array of items to filter
+--- @param get_text function Function(item) -> string to match against
+--- @param query string Search query
+--- @return table filtered Array of matching items sorted by score
 function M.filter_items(items, get_text, query)
   local results = M.filter(items, get_text, query)
   local filtered = {}

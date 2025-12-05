@@ -25,7 +25,6 @@ function M.create(callbacks, is_overlay_mode)
             enable_sort = false,
             get_value = callbacks.get_quick_access_mode,
             options = {
-              { value = 'inbox', label = 'Inbox' },
               { value = 'recents', label = 'Recents' },
               { value = 'favorites', label = 'Favorites' },
               { value = 'most_used', label = 'Most Used' },

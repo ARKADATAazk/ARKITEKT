@@ -182,7 +182,6 @@ M.DRAG_TYPES = {
 -- SPECIAL FOLDERS
 -- ============================================================================
 M.FOLDERS = {
-  INBOX = '_Inbox',     -- Unsorted templates, pinned at top
   ARCHIVE = '_Archive', -- Deleted templates
 }
 

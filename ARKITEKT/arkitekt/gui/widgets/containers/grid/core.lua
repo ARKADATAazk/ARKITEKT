@@ -160,6 +160,7 @@ function M.new(opts)
     behaviors        = opts.behaviors or {},
     mouse_behaviors  = opts.mouse_behaviors or {},
     custom_shortcuts = opts.shortcuts or {},
+    keyboard_nav     = opts.keyboard_nav or false,  -- Disabled by default
     render_item      = opts.render_item or function() end,
     render_overlays  = opts.render_overlays,
 
@@ -1419,6 +1420,9 @@ local function _update_grid_from_opts(grid, opts)
   if opts.reorderable ~= nil then
     grid._reorderable = opts.reorderable
   end
+  if opts.keyboard_nav ~= nil then
+    grid.keyboard_nav = opts.keyboard_nav
+  end
 
   -- Update panel clip bounds (for grids inside panels/containers)
   if opts.clip_bounds ~= nil then
@@ -1529,6 +1533,7 @@ function M.Draw(ctx, opts)
       on_external_drop = opts.on_external_drop,
       on_click_empty = opts.on_click_empty,
       render_overlays = opts.render_overlays,
+      keyboard_nav = opts.keyboard_nav,
     }
     grid = _create_grid_instance(create_opts)
     _grid_state.instances[id] = grid
