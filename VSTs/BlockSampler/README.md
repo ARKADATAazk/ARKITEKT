@@ -152,6 +152,23 @@ Bridge.setOutputGroup(track, fx, 0, 1)
 Bridge.setSampleRange(track, fx, 2, 0.1, 0.95)
 ```
 
+### Preview / Playback Control
+
+```lua
+-- Preview pad (triggers playback without MIDI routing)
+Bridge.previewPad(track, fx, 0, 100)   -- Pad 0 at velocity 100
+Bridge.previewPad(track, fx, 5)         -- Pad 5 at default velocity
+
+-- Stop playback
+Bridge.stopPad(track, fx, 0)           -- Stop pad 0
+Bridge.stopAll(track, fx)              -- Stop all pads
+
+-- Check if playing (useful for UI feedback)
+if Bridge.isPlaying(track, fx, 0) then
+  -- Pad 0 is currently playing
+end
+```
+
 ### Direct Parameter Access
 
 ```lua

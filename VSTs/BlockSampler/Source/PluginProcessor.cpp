@@ -597,6 +597,39 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
         }
     }
 
+    // Pattern: P{pad}_PREVIEW (trigger pad for preview, value = velocity 1-127, default 100)
+    if (name.startsWith("P") && name.endsWith("_PREVIEW"))
+    {
+        int padIndex = name.substring(1, name.length() - 8).getIntValue();
+        if (padIndex >= 0 && padIndex < NUM_PADS)
+        {
+            int velocity = value.isEmpty() ? 100 : juce::jlimit(1, 127, value.getIntValue());
+            updatePadParameters(padIndex);
+            processKillGroups(padIndex);
+            pads[padIndex].trigger(velocity);
+            return true;
+        }
+    }
+
+    // Pattern: P{pad}_STOP (stop pad playback)
+    if (name.startsWith("P") && name.endsWith("_STOP"))
+    {
+        int padIndex = name.substring(1, name.length() - 5).getIntValue();
+        if (padIndex >= 0 && padIndex < NUM_PADS)
+        {
+            pads[padIndex].stop();
+            return true;
+        }
+    }
+
+    // Pattern: STOP_ALL (stop all pads)
+    if (name == "STOP_ALL")
+    {
+        for (auto& pad : pads)
+            pad.stop();
+        return true;
+    }
+
     return false;
 }
 
@@ -637,6 +670,16 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
                     return "1";
             }
             return "0";
+        }
+    }
+
+    // Pattern: P{pad}_IS_PLAYING
+    if (name.startsWith("P") && name.endsWith("_IS_PLAYING"))
+    {
+        int padIndex = name.substring(1, name.length() - 11).getIntValue();
+        if (padIndex >= 0 && padIndex < NUM_PADS)
+        {
+            return pads[padIndex].isPlaying ? "1" : "0";
         }
     }
 

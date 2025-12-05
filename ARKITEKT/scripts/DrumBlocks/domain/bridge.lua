@@ -368,9 +368,39 @@ function M.loadKit(track, fx, kit_data)
 end
 
 -- ============================================================================
--- MIDI PREVIEW
+-- PREVIEW / PLAYBACK CONTROL
 -- ============================================================================
 
+-- Preview pad via named config param (doesn't require MIDI routing)
+function M.previewPad(track, fx, pad, velocity)
+  if not track or not fx or fx < 0 then return false end
+  velocity = velocity or 100
+  local param_name = string.format('P%d_PREVIEW', pad)
+  return reaper.TrackFX_SetNamedConfigParm(track, fx, param_name, tostring(velocity))
+end
+
+-- Stop pad playback
+function M.stopPad(track, fx, pad)
+  if not track or not fx or fx < 0 then return false end
+  local param_name = string.format('P%d_STOP', pad)
+  return reaper.TrackFX_SetNamedConfigParm(track, fx, param_name, '')
+end
+
+-- Stop all pads
+function M.stopAll(track, fx)
+  if not track or not fx or fx < 0 then return false end
+  return reaper.TrackFX_SetNamedConfigParm(track, fx, 'STOP_ALL', '')
+end
+
+-- Check if pad is currently playing
+function M.isPlaying(track, fx, pad)
+  if not track or not fx or fx < 0 then return false end
+  local param_name = string.format('P%d_IS_PLAYING', pad)
+  local retval, value = reaper.TrackFX_GetNamedConfigParm(track, fx, param_name)
+  return retval and value == '1'
+end
+
+-- Legacy MIDI preview (requires MIDI routing to track)
 function M.triggerPad(pad, velocity)
   velocity = velocity or 100
   -- Send MIDI note to trigger pad (pad index = MIDI note)
