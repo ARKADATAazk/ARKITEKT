@@ -1,6 +1,6 @@
 // =============================================================================
 // BlockSampler/Source/Parameters.h
-// Parameter definitions and layout for 128 pads × 15 params = 1920 total
+// Parameter definitions and layout for 128 pads × 17 params = 2176 total
 // =============================================================================
 
 #pragma once
@@ -26,7 +26,7 @@ constexpr int MIDI_NOTE_OFFSET = 0;  // Note 0 = Pad 0 (full MIDI range)
 
 namespace PadParam
 {
-    // Parameter IDs per pad (15 total)
+    // Parameter IDs per pad (17 total)
     enum ID
     {
         Volume = 0,       // 0-1
@@ -38,16 +38,18 @@ namespace PadParam
         Release,          // 0-5000 ms
         FilterCutoff,     // 20-20000 Hz
         FilterReso,       // 0-1
+        FilterType,       // 0=LP, 1=HP
         KillGroup,        // 0-8 (0 = none)
         OutputGroup,      // 0-16 (0 = main only)
         OneShot,          // bool
         Reverse,          // bool
+        Normalize,        // bool - apply peak normalization
         SampleStart,      // 0-1 normalized
         SampleEnd,        // 0-1 normalized
-        COUNT             // = 15
+        COUNT             // = 17
     };
 
-    // Total parameters: 15 × 128 = 1920
+    // Total parameters: 17 × 128 = 2176
     constexpr int TOTAL_PARAMS = COUNT * NUM_PADS;
 
     // Get flat index for parameter
@@ -61,8 +63,8 @@ namespace PadParam
     {
         static const char* names[] = {
             "volume", "pan", "tune", "attack", "decay", "sustain",
-            "release", "cutoff", "reso", "killgroup", "outgroup",
-            "oneshot", "reverse", "start", "end"
+            "release", "cutoff", "reso", "filtertype", "killgroup", "outgroup",
+            "oneshot", "reverse", "normalize", "start", "end"
         };
         return "p" + juce::String(pad) + "_" + names[param];
     }
@@ -139,6 +141,12 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             prefix + "Resonance",
             0.0f, 1.0f, 0.0f));
 
+        // Filter Type (0=LP, 1=HP)
+        params.push_back(std::make_unique<juce::AudioParameterInt>(
+            juce::ParameterID { PadParam::id(pad, PadParam::FilterType), 1 },
+            prefix + "Filter Type",
+            0, 1, 0));
+
         // Kill Group (0-8, 0 = none)
         params.push_back(std::make_unique<juce::AudioParameterInt>(
             juce::ParameterID { PadParam::id(pad, PadParam::KillGroup), 1 },
@@ -161,6 +169,12 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
         params.push_back(std::make_unique<juce::AudioParameterBool>(
             juce::ParameterID { PadParam::id(pad, PadParam::Reverse), 1 },
             prefix + "Reverse",
+            false));
+
+        // Normalize (apply peak normalization)
+        params.push_back(std::make_unique<juce::AudioParameterBool>(
+            juce::ParameterID { PadParam::id(pad, PadParam::Normalize), 1 },
+            prefix + "Normalize",
             false));
 
         // Sample Start (0-1 normalized)

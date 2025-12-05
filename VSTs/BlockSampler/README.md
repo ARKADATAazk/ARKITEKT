@@ -11,13 +11,14 @@ Headless 128-pad drum sampler VST3 for REAPER, controlled by DrumBlocks (ARKITEK
 - **Kill groups** (hi-hat choke, 8 groups)
 - **Output groups** (route pads to 16 stereo buses)
 - **ADSR envelope** per pad
-- **SVF lowpass filter** per pad
+- **SVF filter** per pad (lowpass or highpass)
+- **Peak normalization** per pad
 - **Tune/pitch** per pad (-24 to +24 semitones)
 - **One-shot / sustain** mode
 - **Reverse playback**
 - **Multi-out** (main + 16 group stereo outputs)
 - **Headless** - DrumBlocks provides the UI
-- **1920 automatable parameters** (15 per pad × 128)
+- **2176 automatable parameters** (17 per pad × 128)
 
 ## Build
 
@@ -69,7 +70,7 @@ Source/
 
 Full MIDI range: 128 notes = 128 pads.
 
-## Parameters (15 per pad)
+## Parameters (17 per pad)
 
 | Index | Name | Range | Default |
 |-------|------|-------|---------|
@@ -82,14 +83,16 @@ Full MIDI range: 128 notes = 128 pads.
 | 6 | Release | 0-5000 ms | 200 |
 | 7 | Filter Cutoff | 20-20000 Hz | 20000 |
 | 8 | Filter Reso | 0-1 | 0 |
-| 9 | Kill Group | 0-8 | 0 |
-| 10 | Output Group | 0-16 | 0 |
-| 11 | One-Shot | bool | true |
-| 12 | Reverse | bool | false |
-| 13 | Sample Start | 0-1 | 0 |
-| 14 | Sample End | 0-1 | 1 |
+| 9 | Filter Type | 0=LP, 1=HP | 0 |
+| 10 | Kill Group | 0-8 | 0 |
+| 11 | Output Group | 0-16 | 0 |
+| 12 | One-Shot | bool | true |
+| 13 | Reverse | bool | false |
+| 14 | Normalize | bool | false |
+| 15 | Sample Start | 0-1 | 0 |
+| 16 | Sample End | 0-1 | 1 |
 
-**Parameter index formula**: `pad_index * 15 + param_index`
+**Parameter index formula**: `pad_index * 17 + param_index`
 
 ## Output Routing
 
@@ -169,10 +172,11 @@ Sample paths are stored in the project state XML and reloaded on project open:
 - [x] Kill groups (8)
 - [x] Output groups (16)
 - [x] ADSR per pad
-- [x] SVF filter per pad
+- [x] SVF filter per pad (LP/HP)
+- [x] Peak normalization per pad
 - [x] State save/load with sample paths
 - [x] Runtime sample loading via chunk commands
-- [x] 1920 automatable parameters
+- [x] 2176 automatable parameters
 - [x] Multi-out rendering to group buses
 
 ## TODO

@@ -49,10 +49,12 @@ Processor::Processor()
         padParams[pad].release = parameters.getRawParameterValue(PadParam::id(pad, PadParam::Release));
         padParams[pad].filterCutoff = parameters.getRawParameterValue(PadParam::id(pad, PadParam::FilterCutoff));
         padParams[pad].filterReso = parameters.getRawParameterValue(PadParam::id(pad, PadParam::FilterReso));
+        padParams[pad].filterType = parameters.getRawParameterValue(PadParam::id(pad, PadParam::FilterType));
         padParams[pad].killGroup = parameters.getRawParameterValue(PadParam::id(pad, PadParam::KillGroup));
         padParams[pad].outputGroup = parameters.getRawParameterValue(PadParam::id(pad, PadParam::OutputGroup));
         padParams[pad].oneShot = parameters.getRawParameterValue(PadParam::id(pad, PadParam::OneShot));
         padParams[pad].reverse = parameters.getRawParameterValue(PadParam::id(pad, PadParam::Reverse));
+        padParams[pad].normalize = parameters.getRawParameterValue(PadParam::id(pad, PadParam::Normalize));
         padParams[pad].sampleStart = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SampleStart));
         padParams[pad].sampleEnd = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SampleEnd));
 
@@ -224,10 +226,12 @@ void Processor::updatePadParameters(int padIndex)
     pad.release = params.release->load();
     pad.filterCutoff = params.filterCutoff->load();
     pad.filterReso = params.filterReso->load();
+    pad.filterType = static_cast<int>(params.filterType->load());
     pad.killGroup = static_cast<int>(params.killGroup->load());
     pad.outputGroup = static_cast<int>(params.outputGroup->load());
     pad.oneShot = params.oneShot->load() > 0.5f;
     pad.reverse = params.reverse->load() > 0.5f;
+    pad.normalize = params.normalize->load() > 0.5f;
     pad.sampleStart = params.sampleStart->load();
     pad.sampleEnd = params.sampleEnd->load();
 }

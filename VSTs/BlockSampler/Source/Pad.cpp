@@ -43,6 +43,13 @@ double VelocityLayer::getCurrentSampleRate() const
     return roundRobinSampleRates[roundRobinIndex % roundRobinSampleRates.size()];
 }
 
+float VelocityLayer::getCurrentNormGain() const
+{
+    if (roundRobinBuffers.empty() || roundRobinNormGains.empty())
+        return normGain;
+    return roundRobinNormGains[roundRobinIndex % roundRobinNormGains.size()];
+}
+
 void VelocityLayer::advanceRoundRobin()
 {
     if (!roundRobinBuffers.empty())
@@ -54,9 +61,11 @@ void VelocityLayer::clear()
     buffer.setSize(0, 0);
     numSamples = 0;
     filePath.clear();
+    normGain = 1.0f;
     roundRobinBuffers.clear();
     roundRobinSampleRates.clear();
     roundRobinPaths.clear();
+    roundRobinNormGains.clear();
     roundRobinIndex = 0;
 }
 
@@ -172,6 +181,7 @@ int Pad::renderNextBlock(int numSamples)
     const auto& sampleBuffer = layer.getCurrentBuffer();
     const int sampleNumSamples = layer.getCurrentNumSamples();
     const double sampleRate = layer.getCurrentSampleRate();
+    const float normGain = normalize ? layer.getCurrentNormGain() : 1.0f;
 
     const int numChannels = juce::jmin(2, sampleBuffer.getNumChannels());
 
@@ -226,8 +236,8 @@ int Pad::renderNextBlock(int numSamples)
         pos1 = juce::jlimit(0, sampleNumSamples - 1, pos1);
         float frac = static_cast<float>(playPosition - pos0);
 
-        // Apply volume, velocity, envelope
-        float gain = volume * currentVelocity * envValue;
+        // Apply volume, velocity, envelope, normalization
+        float gain = volume * currentVelocity * envValue * normGain;
 
         for (int ch = 0; ch < numChannels; ++ch)
         {
@@ -255,9 +265,15 @@ int Pad::renderNextBlock(int numSamples)
         ++samplesRendered;
     }
 
-    // Apply lowpass filter if not wide open
-    if (samplesRendered > 0 && filterCutoff < 19999.0f)
+    // Apply filter (LP if cutoff < 20kHz, HP if cutoff > 20Hz)
+    bool applyFilter = (filterType == 0 && filterCutoff < 19999.0f) ||
+                       (filterType == 1 && filterCutoff > 21.0f);
+
+    if (samplesRendered > 0 && applyFilter)
     {
+        filter.setType(filterType == 0
+            ? juce::dsp::StateVariableTPTFilterType::lowpass
+            : juce::dsp::StateVariableTPTFilterType::highpass);
         filter.setCutoffFrequency(filterCutoff);
         filter.setResonance(filterReso);
 
@@ -273,6 +289,18 @@ int Pad::renderNextBlock(int numSamples)
 // =============================================================================
 // SAMPLE MANAGEMENT
 // =============================================================================
+
+// Compute gain to normalize buffer to peak = 1.0
+static float computeNormGain(const juce::AudioBuffer<float>& buffer)
+{
+    float peak = 0.0f;
+    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+        peak = juce::jmax(peak, buffer.getMagnitude(ch, 0, buffer.getNumSamples()));
+
+    if (peak > 0.0001f)
+        return 1.0f / peak;
+    return 1.0f;
+}
 
 bool Pad::loadSample(int layerIndex,
                      const juce::File& file,
@@ -293,6 +321,7 @@ bool Pad::loadSample(int layerIndex,
     layer.numSamples = static_cast<int>(reader->lengthInSamples);
     layer.sourceSampleRate = reader->sampleRate;
     layer.filePath = file.getFullPathName();
+    layer.normGain = computeNormGain(layer.buffer);
 
     return true;
 }
@@ -315,9 +344,12 @@ bool Pad::addRoundRobinSample(int layerIndex,
                       static_cast<int>(reader->lengthInSamples));
     reader->read(&newBuffer, 0, static_cast<int>(reader->lengthInSamples), 0, true, true);
 
+    float gain = computeNormGain(newBuffer);
+
     layer.roundRobinBuffers.push_back(std::move(newBuffer));
     layer.roundRobinSampleRates.push_back(reader->sampleRate);
     layer.roundRobinPaths.push_back(file.getFullPathName());
+    layer.roundRobinNormGains.push_back(gain);
 
     return true;
 }

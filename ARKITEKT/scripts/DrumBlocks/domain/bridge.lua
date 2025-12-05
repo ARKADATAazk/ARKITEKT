@@ -8,7 +8,7 @@ local M = {}
 M.NUM_PADS = 128
 M.NUM_VELOCITY_LAYERS = 4
 M.NUM_OUTPUT_GROUPS = 16
-M.PARAMS_PER_PAD = 15
+M.PARAMS_PER_PAD = 17
 
 -- Parameter indices (must match BlockSampler/Source/Parameters.h)
 M.Param = {
@@ -21,12 +21,14 @@ M.Param = {
   Release = 6,
   FilterCutoff = 7,
   FilterReso = 8,
-  KillGroup = 9,
-  OutputGroup = 10,
-  OneShot = 11,
-  Reverse = 12,
-  SampleStart = 13,
-  SampleEnd = 14,
+  FilterType = 9,    -- 0=LP, 1=HP
+  KillGroup = 10,
+  OutputGroup = 11,
+  OneShot = 12,
+  Reverse = 13,
+  Normalize = 14,    -- Peak normalization
+  SampleStart = 15,
+  SampleEnd = 16,
 }
 
 -- ============================================================================
@@ -124,6 +126,19 @@ function M.setFilterReso(track, fx, pad, value)
   return M.setParam(track, fx, pad, M.Param.FilterReso, value)
 end
 
+function M.setFilterType(track, fx, pad, filter_type)
+  -- 0 = lowpass, 1 = highpass
+  return M.setParam(track, fx, pad, M.Param.FilterType, filter_type)
+end
+
+function M.setFilterLP(track, fx, pad)
+  return M.setFilterType(track, fx, pad, 0)
+end
+
+function M.setFilterHP(track, fx, pad)
+  return M.setFilterType(track, fx, pad, 1)
+end
+
 function M.setKillGroup(track, fx, pad, group)
   -- Group is 0-8
   return M.setParam(track, fx, pad, M.Param.KillGroup, group / 8)
@@ -140,6 +155,11 @@ end
 
 function M.setReverse(track, fx, pad, enabled)
   return M.setParam(track, fx, pad, M.Param.Reverse, enabled and 1 or 0)
+end
+
+function M.setNormalize(track, fx, pad, enabled)
+  -- Enable/disable peak normalization
+  return M.setParam(track, fx, pad, M.Param.Normalize, enabled and 1 or 0)
 end
 
 function M.setSampleStart(track, fx, pad, normalized)

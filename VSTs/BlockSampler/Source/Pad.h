@@ -24,11 +24,13 @@ struct VelocityLayer
     int numSamples = 0;
     double sourceSampleRate = 44100.0;
     juce::String filePath;
+    float normGain = 1.0f;  // Peak normalization gain (computed on load)
 
     // Round-robin: multiple samples that cycle on each trigger
     std::vector<juce::AudioBuffer<float>> roundRobinBuffers;
     std::vector<double> roundRobinSampleRates;
     std::vector<juce::String> roundRobinPaths;
+    std::vector<float> roundRobinNormGains;
     int roundRobinIndex = 0;
 
     // Queries
@@ -39,6 +41,7 @@ struct VelocityLayer
     const juce::AudioBuffer<float>& getCurrentBuffer() const;
     int getCurrentNumSamples() const;
     double getCurrentSampleRate() const;
+    float getCurrentNormGain() const;
     void advanceRoundRobin();
 
     // Management
@@ -109,10 +112,12 @@ public:
     float release = 200.0f;      // ms
     float filterCutoff = 20000.0f;  // Hz
     float filterReso = 0.0f;     // 0-1
+    int filterType = 0;          // 0=LP, 1=HP
     int killGroup = 0;           // 0 = none, 1-8 = group
     int outputGroup = 0;         // 0 = main, 1-16 = group bus
     bool oneShot = true;
     bool reverse = false;
+    bool normalize = false;      // Apply peak normalization
     float sampleStart = 0.0f;    // 0-1 normalized
     float sampleEnd = 1.0f;      // 0-1 normalized
 

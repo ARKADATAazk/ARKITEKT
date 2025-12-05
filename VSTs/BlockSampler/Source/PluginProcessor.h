@@ -126,10 +126,12 @@ private:
         std::atomic<float>* release = nullptr;
         std::atomic<float>* filterCutoff = nullptr;
         std::atomic<float>* filterReso = nullptr;
+        std::atomic<float>* filterType = nullptr;
         std::atomic<float>* killGroup = nullptr;
         std::atomic<float>* outputGroup = nullptr;
         std::atomic<float>* oneShot = nullptr;
         std::atomic<float>* reverse = nullptr;
+        std::atomic<float>* normalize = nullptr;
         std::atomic<float>* sampleStart = nullptr;
         std::atomic<float>* sampleEnd = nullptr;
     };
