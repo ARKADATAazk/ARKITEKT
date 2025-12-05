@@ -10,9 +10,24 @@ include(FetchContent)
 FetchContent_Declare(
     JUCE
     GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-    GIT_TAG        7.0.9  # Or latest stable
+    GIT_TAG        8.0.11
 )
 FetchContent_MakeAvailable(JUCE)
+
+# Fetch clap-juce-extensions for CLAP support
+FetchContent_Declare(
+    clap-juce-extensions
+    GIT_REPOSITORY https://github.com/free-audio/clap-juce-extensions.git
+    GIT_TAG        main
+)
+FetchContent_MakeAvailable(clap-juce-extensions)
+
+# Plugin formats (platform-specific)
+if(APPLE)
+    set(BLOCKSAMPLER_FORMATS VST3 AU Standalone)
+else()
+    set(BLOCKSAMPLER_FORMATS VST3 Standalone)
+endif()
 
 # Plugin target
 juce_add_plugin(BlockSampler
@@ -21,13 +36,13 @@ juce_add_plugin(BlockSampler
     PLUGIN_CODE Bsmp
 
     # Formats to build
-    FORMATS VST3 Standalone  # Add AU for Mac
+    FORMATS ${BLOCKSAMPLER_FORMATS}
 
     # Plugin info
     PRODUCT_NAME "BlockSampler"
-    DESCRIPTION "16-pad drum sampler for DrumBlocks"
+    DESCRIPTION "128-pad drum sampler for DrumBlocks"
 
-    # Multi-out: 1 main stereo + 16 pad stereo = 17 stereo buses
+    # Multi-out: 1 main stereo + 16 group stereo = 17 stereo buses
     VST3_AUTO_MANIFEST FALSE
 
     # No editor - DrumBlocks is the UI
@@ -37,6 +52,13 @@ juce_add_plugin(BlockSampler
     NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
+)
+
+# Add CLAP format via clap-juce-extensions
+clap_juce_extensions_plugin(
+    TARGET BlockSampler
+    CLAP_ID "com.arkitekt.blocksampler"
+    CLAP_FEATURES instrument sampler drum
 )
 
 # Source files
