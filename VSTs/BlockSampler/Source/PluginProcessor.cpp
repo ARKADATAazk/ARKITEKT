@@ -558,6 +558,30 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
         }
     }
 
+    // Pattern: P{pad}_L{layer}_CLEAR_RR (clear round-robin samples)
+    if (name.startsWith("P") && name.contains("_L") && name.endsWith("_CLEAR_RR"))
+    {
+        int underscorePos = name.indexOf("_");
+        if (underscorePos > 1)
+        {
+            int padIndex = name.substring(1, underscorePos).getIntValue();
+
+            int lPos = name.indexOf("_L") + 2;
+            int secondUnderscorePos = name.indexOf(lPos, "_");
+            if (secondUnderscorePos > lPos)
+            {
+                int layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
+
+                if (padIndex >= 0 && padIndex < NUM_PADS &&
+                    layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+                {
+                    pads[padIndex].clearRoundRobin(layerIndex);
+                    return true;
+                }
+            }
+        }
+    }
+
     // Pattern: P{pad}_L{layer}_SAMPLE (sync load)
     if (name.startsWith("P") && name.contains("_L") && name.endsWith("_SAMPLE"))
     {
@@ -680,6 +704,29 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
         if (padIndex >= 0 && padIndex < NUM_PADS)
         {
             return pads[padIndex].isPlaying ? "1" : "0";
+        }
+    }
+
+    // Pattern: P{pad}_L{layer}_RR_COUNT (get round-robin sample count)
+    if (name.startsWith("P") && name.contains("_L") && name.endsWith("_RR_COUNT"))
+    {
+        int underscorePos = name.indexOf("_");
+        if (underscorePos > 1)
+        {
+            int padIndex = name.substring(1, underscorePos).getIntValue();
+
+            int lPos = name.indexOf("_L") + 2;
+            int secondUnderscorePos = name.indexOf(lPos, "_");
+            if (secondUnderscorePos > lPos)
+            {
+                int layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
+
+                if (padIndex >= 0 && padIndex < NUM_PADS &&
+                    layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+                {
+                    return juce::String(pads[padIndex].getRoundRobinCount(layerIndex));
+                }
+            }
         }
     }
 

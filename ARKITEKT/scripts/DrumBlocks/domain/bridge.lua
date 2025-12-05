@@ -276,6 +276,29 @@ function M.addRoundRobin(track, fx, pad, layer, file_path)
   return result or false
 end
 
+-- Clear round-robin samples from a layer (keeps primary sample)
+function M.clearRoundRobin(track, fx, pad, layer)
+  if not track or not fx or fx < 0 then return false end
+  layer = layer or 0
+
+  local param_name = string.format('P%d_L%d_CLEAR_RR', pad, layer)
+  local result = reaper.TrackFX_SetNamedConfigParm(track, fx, param_name, '')
+  return result or false
+end
+
+-- Get round-robin sample count for a layer
+function M.getRoundRobinCount(track, fx, pad, layer)
+  if not track or not fx or fx < 0 then return 0 end
+  layer = layer or 0
+
+  local param_name = string.format('P%d_L%d_RR_COUNT', pad, layer)
+  local retval, value = reaper.TrackFX_GetNamedConfigParm(track, fx, param_name)
+  if retval then
+    return tonumber(value) or 0
+  end
+  return 0
+end
+
 -- Clear all samples from a pad
 function M.clearPad(track, fx, pad)
   if not track or not fx or fx < 0 then return false end
