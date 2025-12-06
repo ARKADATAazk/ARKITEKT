@@ -9,6 +9,7 @@
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <juce_dsp/juce_dsp.h>
 #include "Parameters.h"
+#include <atomic>
 
 namespace BlockSampler
 {
@@ -151,7 +152,7 @@ public:
     // PUBLIC STATE (read by PluginProcessor)
     // -------------------------------------------------------------------------
 
-    bool isPlaying = false;
+    std::atomic<bool> isPlaying{false};
     int currentLayer = -1;
 
 private:

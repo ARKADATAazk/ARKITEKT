@@ -32,6 +32,8 @@ struct LoadedSample
 
 // Lock-free SPSC queue size (must be power of 2)
 constexpr int LOAD_QUEUE_SIZE = 64;
+static_assert((LOAD_QUEUE_SIZE & (LOAD_QUEUE_SIZE - 1)) == 0,
+              "LOAD_QUEUE_SIZE must be power of 2");
 
 // =============================================================================
 // PROCESSOR CLASS

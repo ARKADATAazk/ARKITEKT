@@ -4,6 +4,7 @@
 // =============================================================================
 
 #include "Pad.h"
+#include <limits>
 
 namespace BlockSampler
 {
@@ -368,6 +369,10 @@ bool Pad::loadSample(int layerIndex,
     if (!reader)
         return false;
 
+    // Guard against integer overflow for very long samples
+    if (reader->lengthInSamples > std::numeric_limits<int>::max())
+        return false;
+
     // Stop playback to prevent race condition with audio thread
     stop();
 
@@ -393,6 +398,10 @@ bool Pad::addRoundRobinSample(int layerIndex,
 
     std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(file));
     if (!reader)
+        return false;
+
+    // Guard against integer overflow for very long samples
+    if (reader->lengthInSamples > std::numeric_limits<int>::max())
         return false;
 
     // Stop playback to prevent race condition with audio thread
@@ -507,9 +516,13 @@ double Pad::getSampleDuration(int layerIndex) const
     if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
     {
         const auto& layer = layers[layerIndex];
-        if (layer.isLoaded() && layer.sourceSampleRate > 0)
+        if (layer.isLoaded())
         {
-            return static_cast<double>(layer.numSamples) / layer.sourceSampleRate;
+            // Use current sample (handles round-robin case correctly)
+            int numSamples = layer.getCurrentNumSamples();
+            double sampleRate = layer.getCurrentSampleRate();
+            if (numSamples > 0 && sampleRate > 0)
+                return static_cast<double>(numSamples) / sampleRate;
         }
     }
     return 0.0;

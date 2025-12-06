@@ -4,6 +4,7 @@
 // =============================================================================
 
 #include "PluginProcessor.h"
+#include <limits>
 
 namespace BlockSampler
 {
@@ -65,7 +66,9 @@ Processor::Processor()
 
 Processor::~Processor()
 {
-    loadPool.removeAllJobs(true, 1000);  // Wait up to 1s for jobs to finish
+    // Wait indefinitely for jobs to finish (they capture raw pointers to our members)
+    // Jobs are quick file loads, so this should complete promptly
+    loadPool.removeAllJobs(true, -1);
 }
 
 // =============================================================================
@@ -289,6 +292,10 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
         // Load sample in background thread
         std::unique_ptr<juce::AudioFormatReader> reader(fmt->createReaderFor(file));
         if (!reader)
+            return;
+
+        // Guard against integer overflow for very long samples
+        if (reader->lengthInSamples > std::numeric_limits<int>::max())
             return;
 
         LoadedSample result;

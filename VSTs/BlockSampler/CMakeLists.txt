@@ -15,6 +15,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(JUCE)
 
 # Fetch clap-juce-extensions for CLAP support
+# Note: Using main branch as there are no formal releases and JUCE 8 support
+# requires recent commits. Monitor for breaking changes.
 FetchContent_Declare(
     clap-juce-extensions
     GIT_REPOSITORY https://github.com/free-audio/clap-juce-extensions.git
