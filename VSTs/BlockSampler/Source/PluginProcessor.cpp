@@ -343,8 +343,13 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
 
 void Processor::applyCompletedLoads()
 {
+    // Limit loads per block to prevent audio dropout from batch operations
+    const int numReady = juce::jmin(loadFifo.getNumReady(), MAX_LOADS_PER_BLOCK);
+    if (numReady == 0)
+        return;
+
     int start1, size1, start2, size2;
-    loadFifo.prepareToRead(loadFifo.getNumReady(), start1, size1, start2, size2);
+    loadFifo.prepareToRead(numReady, start1, size1, start2, size2);
 
     // Helper lambda to apply a single loaded sample
     auto applyLoad = [this](LoadedSample& loaded)
@@ -470,7 +475,8 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
                     int layer = cmd.getProperty("layer", 0);
                     juce::String path = cmd.getProperty("path", "");
 
-                    if (pad >= 0 && pad < NUM_PADS)
+                    if (pad >= 0 && pad < NUM_PADS &&
+                        layer >= 0 && layer < NUM_VELOCITY_LAYERS)
                     {
                         if (path.isEmpty())
                             clearPadSample(pad, layer);
@@ -540,14 +546,22 @@ bool Processor::parsePadLayerParam(const juce::String& name,
     if (underscorePos <= 1)
         return false;
 
-    padIndex = name.substring(1, underscorePos).getIntValue();
+    // Validate pad index is digits only
+    juce::String padStr = name.substring(1, underscorePos);
+    if (!padStr.containsOnly("0123456789"))
+        return false;
+    padIndex = padStr.getIntValue();
 
     int lPos = name.indexOf("_L") + 2;
     int secondUnderscorePos = name.indexOf(lPos, "_");
     if (secondUnderscorePos <= lPos)
         return false;
 
-    layerIndex = name.substring(lPos, secondUnderscorePos).getIntValue();
+    // Validate layer index is digits only
+    juce::String layerStr = name.substring(lPos, secondUnderscorePos);
+    if (!layerStr.containsOnly("0123456789"))
+        return false;
+    layerIndex = layerStr.getIntValue();
 
     return padIndex >= 0 && padIndex < NUM_PADS &&
            layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS;
@@ -656,11 +670,19 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
         }
     }
 
-    // Pattern: STOP_ALL (stop all pads)
+    // Pattern: STOP_ALL (stop all pads immediately)
     if (name == "STOP_ALL")
     {
         for (auto& pad : pads)
             pad.stop();
+        return true;
+    }
+
+    // Pattern: RELEASE_ALL (graceful fade-out for all playing pads)
+    if (name == "RELEASE_ALL")
+    {
+        for (auto& pad : pads)
+            pad.forceRelease();
         return true;
     }
 

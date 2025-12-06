@@ -35,6 +35,9 @@ constexpr int LOAD_QUEUE_SIZE = 64;
 static_assert((LOAD_QUEUE_SIZE & (LOAD_QUEUE_SIZE - 1)) == 0,
               "LOAD_QUEUE_SIZE must be power of 2");
 
+// Max samples to apply per processBlock (prevents audio dropout from batch loads)
+constexpr int MAX_LOADS_PER_BLOCK = 4;
+
 // =============================================================================
 // PROCESSOR CLASS
 // =============================================================================

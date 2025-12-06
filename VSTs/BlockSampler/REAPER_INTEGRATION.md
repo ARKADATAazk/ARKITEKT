@@ -523,7 +523,8 @@ Communication between Lua and BlockSampler VST.
 | `P{n}_PREVIEW` | 1-127 | Trigger pad with velocity |
 | `P{n}_STOP` | any | Stop pad immediately (hard cut) |
 | `P{n}_RELEASE` | any | Trigger release phase (graceful fade-out) |
-| `STOP_ALL` | any | Stop all pads |
+| `STOP_ALL` | any | Stop all pads immediately |
+| `RELEASE_ALL` | any | Release all pads (graceful fade-out) |
 
 ### Helper Functions
 
