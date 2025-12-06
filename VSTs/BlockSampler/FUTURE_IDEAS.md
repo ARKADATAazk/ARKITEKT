@@ -60,15 +60,28 @@ Some features might be better handled externally:
 
 ## Design Philosophy
 
-Keep the VST focused on:
-1. Sample playback engine (done well)
-2. Per-pad parameters that need sample-accurate timing
-3. Features that benefit from tight integration
+**Lua ↔ VST ↔ REAPER** - Logical back-and-forth between layers.
 
-Defer to REAPER for:
-1. Effects processing
-2. Complex modulation
-3. Mixing/routing beyond basic groups
+### VST Responsibilities (BlockSampler)
+- Sample playback engine
+- Per-pad treatments that need sample-accurate timing
+- Parameters controllable via Lua/named config params
+- Built-in processing that's commonly needed (envelopes, filters, pitch)
+
+### REAPER Responsibilities
+- FX chains (saturation, compression, EQ, reverb, delay)
+- Complex routing beyond the 16 output groups
+- Sidechain routing
+- Mixing and mastering
+
+### Lua/DrumBlocks Responsibilities
+- UI and user interaction
+- Sample management (drag-drop, library browsing)
+- Preset/kit management
+- Orchestrating VST params + REAPER FX together
+- Time-stretching, pitch detection, transient detection (via REAPER API)
+
+The VST should have useful treatments available, but FX chains ultimately belong to REAPER. Lua ties it all together.
 
 ---
 
