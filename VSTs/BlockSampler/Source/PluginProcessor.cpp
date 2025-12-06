@@ -451,6 +451,24 @@ void Processor::applyQueuedCommands()
                 for (auto& pad : pads)
                     pad.forceRelease();
                 break;
+
+            case PadCommandType::ClearLayer:
+                if (cmd.padIndex >= 0 && cmd.padIndex < NUM_PADS)
+                    pads[cmd.padIndex].clearSample(cmd.layerIndex);
+                break;
+
+            case PadCommandType::ClearRoundRobin:
+                if (cmd.padIndex >= 0 && cmd.padIndex < NUM_PADS)
+                    pads[cmd.padIndex].clearRoundRobin(cmd.layerIndex);
+                break;
+
+            case PadCommandType::ClearPad:
+                if (cmd.padIndex >= 0 && cmd.padIndex < NUM_PADS)
+                {
+                    for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+                        pads[cmd.padIndex].clearSample(layer);
+                }
+                break;
         }
     };
 
@@ -554,25 +572,21 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
                         layer >= 0 && layer < NUM_VELOCITY_LAYERS)
                     {
                         if (path.isEmpty())
-                            clearPadSample(pad, layer);
+                            queueCommand({ PadCommandType::ClearLayer, pad, 0, layer });
                         else
-                            loadSampleToPadAsync(pad, layer, path, false);  // Use async to avoid blocking
+                            loadSampleToPadAsync(pad, layer, path, false);
                     }
                 }
                 else if (cmdType == "ClearPad")
                 {
                     int pad = cmd.getProperty("pad", -1);
                     if (pad >= 0 && pad < NUM_PADS)
-                    {
-                        for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
-                            clearPadSample(pad, layer);
-                    }
+                        queueCommand({ PadCommandType::ClearPad, pad, 0, 0 });
                 }
                 else if (cmdType == "ClearAll")
                 {
                     for (int pad = 0; pad < NUM_PADS; ++pad)
-                        for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
-                            clearPadSample(pad, layer);
+                        queueCommand({ PadCommandType::ClearPad, pad, 0, 0 });
                 }
             }
 
@@ -647,10 +661,11 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
     int padIndex, layerIndex;
 
     // Pattern: P{pad}_L{layer}_SAMPLE_ASYNC (async load)
+    // Note: Clear is queued to audio thread for thread safety
     if (parsePadLayerParam(name, "_SAMPLE_ASYNC", padIndex, layerIndex))
     {
         if (value.isEmpty())
-            clearPadSample(padIndex, layerIndex);
+            queueCommand({ PadCommandType::ClearLayer, padIndex, 0, layerIndex });
         else
             loadSampleToPadAsync(padIndex, layerIndex, value, false);
         return true;
@@ -665,23 +680,26 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
     }
 
     // Pattern: P{pad}_L{layer}_CLEAR_RR (clear round-robin samples)
+    // Note: Queued to audio thread for thread safety
     if (parsePadLayerParam(name, "_CLEAR_RR", padIndex, layerIndex))
     {
-        pads[padIndex].clearRoundRobin(layerIndex);
+        queueCommand({ PadCommandType::ClearRoundRobin, padIndex, 0, layerIndex });
         return true;
     }
 
-    // Pattern: P{pad}_L{layer}_SAMPLE (sync load)
+    // Pattern: P{pad}_L{layer}_SAMPLE (now uses async for thread safety)
+    // Note: Previously sync, now routes through async path to avoid thread issues
     if (parsePadLayerParam(name, "_SAMPLE", padIndex, layerIndex))
     {
         if (value.isEmpty())
-            clearPadSample(padIndex, layerIndex);
+            queueCommand({ PadCommandType::ClearLayer, padIndex, 0, layerIndex });
         else
-            loadSampleToPad(padIndex, layerIndex, value);
+            loadSampleToPadAsync(padIndex, layerIndex, value, false);
         return true;
     }
 
     // Pattern: P{pad}_CLEAR (min length: "P0_CLEAR" = 8)
+    // Note: Queued to audio thread for thread safety
     if (name.length() >= 8 && name.startsWith("P") && name.endsWith("_CLEAR"))
     {
         juce::String padStr = name.substring(1, name.length() - 6);
@@ -690,8 +708,7 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
             padIndex = padStr.getIntValue();
             if (padIndex >= 0 && padIndex < NUM_PADS)
             {
-                for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
-                    clearPadSample(padIndex, layer);
+                queueCommand({ PadCommandType::ClearPad, padIndex, 0, 0 });
                 return true;
             }
         }

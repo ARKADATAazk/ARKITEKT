@@ -52,11 +52,14 @@ constexpr int MAX_COMMANDS_PER_BLOCK = 16;
 
 enum class PadCommandType : uint8_t
 {
-    Trigger,      // Trigger pad with velocity
-    Stop,         // Stop pad immediately
-    Release,      // Trigger release phase (graceful stop)
-    StopAll,      // Stop all pads
-    ReleaseAll    // Release all pads
+    Trigger,        // Trigger pad with velocity
+    Stop,           // Stop pad immediately
+    Release,        // Trigger release phase (graceful stop)
+    StopAll,        // Stop all pads
+    ReleaseAll,     // Release all pads
+    ClearLayer,     // Clear specific layer (requires layerIndex)
+    ClearRoundRobin,// Clear round-robin samples for layer (requires layerIndex)
+    ClearPad        // Clear all layers for pad
 };
 
 struct PadCommand
@@ -64,6 +67,7 @@ struct PadCommand
     PadCommandType type = PadCommandType::Stop;
     int padIndex = -1;      // -1 for "all pads" commands
     int velocity = 100;     // For Trigger command
+    int layerIndex = 0;     // For layer-specific commands (ClearLayer, ClearRoundRobin)
 };
 
 // =============================================================================
