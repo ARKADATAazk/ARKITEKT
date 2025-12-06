@@ -109,6 +109,10 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
     buffer.clear();
 
     // Process MIDI events (update parameters for triggered pads)
+    // TODO: MIDI timing improvement - currently all events trigger at sample 0
+    // of the block. For sample-accurate timing, would need to split the render
+    // loop by MIDI event boundaries using metadata.samplePosition.
+    // Current latency: up to one block (e.g., 11ms at 44.1kHz/512 samples).
     for (const auto metadata : midiMessages)
     {
         handleMidiEvent(metadata.getMessage());
