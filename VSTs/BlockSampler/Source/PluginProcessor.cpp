@@ -298,6 +298,10 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
         if (reader->lengthInSamples > std::numeric_limits<int>::max())
             return;
 
+        // Validate sample has audio content
+        if (reader->numChannels == 0 || reader->sampleRate <= 0)
+            return;
+
         LoadedSample result;
         result.padIndex = padIndex;
         result.layerIndex = layerIndex;
@@ -467,7 +471,7 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
                         if (path.isEmpty())
                             clearPadSample(pad, layer);
                         else
-                            loadSampleToPad(pad, layer, path);
+                            loadSampleToPadAsync(pad, layer, path, false);  // Use async to avoid blocking
                     }
                 }
                 else if (cmdType == "ClearPad")
@@ -628,6 +632,21 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
             if (padIndex >= 0 && padIndex < NUM_PADS)
             {
                 pads[padIndex].stop();
+                return true;
+            }
+        }
+    }
+
+    // Pattern: P{pad}_RELEASE (min length: "P0_RELEASE" = 10) - graceful fade-out
+    if (name.length() >= 10 && name.startsWith("P") && name.endsWith("_RELEASE"))
+    {
+        juce::String padStr = name.substring(1, name.length() - 8);
+        if (padStr.containsOnly("0123456789"))
+        {
+            padIndex = padStr.getIntValue();
+            if (padIndex >= 0 && padIndex < NUM_PADS)
+            {
+                pads[padIndex].forceRelease();
                 return true;
             }
         }

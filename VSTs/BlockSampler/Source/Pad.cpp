@@ -86,6 +86,7 @@ void VelocityLayer::clear()
 {
     buffer.setSize(0, 0);
     numSamples = 0;
+    sourceSampleRate = 44100.0;  // Reset to default
     filePath.clear();
     normGain = 1.0f;
     roundRobinSamples.clear();
@@ -117,11 +118,13 @@ void Pad::prepare(double sampleRate, int samplesPerBlock)
 
 void Pad::trigger(int velocity)
 {
-    if (velocity == 0)
+    // Validate velocity range (MIDI is 0-127, but be defensive)
+    if (velocity <= 0)
     {
         noteOff();
         return;
     }
+    velocity = juce::jmin(velocity, 127);  // Clamp to valid MIDI range
 
     // Select velocity layer
     currentLayer = selectVelocityLayer(velocity);
@@ -153,10 +156,17 @@ void Pad::trigger(int velocity)
         return;  // Empty or corrupted sample
 
     // Calculate actual start/end sample positions
-    int startSample = static_cast<int>(sampleStart * currentNumSamples);
-    int endSample = static_cast<int>(sampleEnd * currentNumSamples);
+    float effectiveStart = sampleStart;
+    float effectiveEnd = sampleEnd;
 
-    // Clamp to valid range
+    // Swap if start > end (user set them backwards)
+    if (effectiveStart > effectiveEnd)
+        std::swap(effectiveStart, effectiveEnd);
+
+    int startSample = static_cast<int>(effectiveStart * currentNumSamples);
+    int endSample = static_cast<int>(effectiveEnd * currentNumSamples);
+
+    // Clamp to valid range and ensure at least 1 sample of playback
     startSample = juce::jlimit(0, currentNumSamples - 1, startSample);
     endSample = juce::jlimit(startSample + 1, currentNumSamples, endSample);
 
@@ -184,6 +194,16 @@ void Pad::trigger(int velocity)
 void Pad::noteOff()
 {
     if (!oneShot)
+    {
+        envelope.noteOff();
+    }
+}
+
+void Pad::forceRelease()
+{
+    // Trigger release phase regardless of oneShot mode
+    // Allows graceful fade-out of long one-shot samples
+    if (isPlaying)
     {
         envelope.noteOff();
     }
@@ -386,6 +406,10 @@ bool Pad::loadSample(int layerIndex,
     if (reader->lengthInSamples > std::numeric_limits<int>::max())
         return false;
 
+    // Validate sample has audio content
+    if (reader->numChannels == 0 || reader->sampleRate <= 0)
+        return false;
+
     // Stop playback to prevent race condition with audio thread
     stop();
 
@@ -409,12 +433,20 @@ bool Pad::addRoundRobinSample(int layerIndex,
     if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
         return false;
 
+    // Check capacity before loading (avoid wasted I/O)
+    if (layers[layerIndex].roundRobinSamples.size() >= MAX_ROUND_ROBIN_SAMPLES)
+        return false;
+
     std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(file));
     if (!reader)
         return false;
 
     // Guard against integer overflow for very long samples
     if (reader->lengthInSamples > std::numeric_limits<int>::max())
+        return false;
+
+    // Validate sample has audio content
+    if (reader->numChannels == 0 || reader->sampleRate <= 0)
         return false;
 
     // Stop playback to prevent race condition with audio thread
@@ -464,6 +496,10 @@ void Pad::addRoundRobinBuffer(int layerIndex,
 {
     if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
         return;
+
+    // Prevent vector reallocation on audio thread by enforcing capacity limit
+    if (layers[layerIndex].roundRobinSamples.size() >= MAX_ROUND_ROBIN_SAMPLES)
+        return;  // Silently drop - at capacity
 
     // Stop playback unconditionally to prevent race conditions
     stop();

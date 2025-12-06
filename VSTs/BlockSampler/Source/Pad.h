@@ -79,6 +79,7 @@ public:
     void prepare(double sampleRate, int samplesPerBlock);
     void trigger(int velocity);
     void noteOff();
+    void forceRelease();  // Trigger release phase even in one-shot mode
     void stop();
 
     // -------------------------------------------------------------------------
