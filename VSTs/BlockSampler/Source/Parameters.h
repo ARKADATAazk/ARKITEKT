@@ -53,7 +53,7 @@ namespace PadParam
         Release,          // 0-5000 ms
         FilterCutoff,     // 20-20000 Hz
         FilterReso,       // 0-1
-        FilterType,       // 0=LP, 1=HP
+        FilterType,       // 0=LP, 1=HP, 2=BP, 3=Notch
         KillGroup,        // 0-8 (0 = none)
         OutputGroup,      // 0-16 (0 = main only)
         OneShot,          // bool
@@ -157,11 +157,11 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             prefix + "Resonance",
             0.0f, 1.0f, 0.0f));
 
-        // Filter Type (0=LP, 1=HP)
+        // Filter Type (0=LP, 1=HP, 2=BP, 3=Notch)
         params.push_back(std::make_unique<juce::AudioParameterInt>(
             juce::ParameterID { PadParam::id(pad, PadParam::FilterType), 1 },
             prefix + "Filter Type",
-            0, 1, 0));
+            0, 3, 0));
 
         // Kill Group (0-8, 0 = none)
         params.push_back(std::make_unique<juce::AudioParameterInt>(

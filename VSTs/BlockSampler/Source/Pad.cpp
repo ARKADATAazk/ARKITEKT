@@ -307,18 +307,28 @@ int Pad::renderNextBlock(int numSamples)
         ++samplesRendered;
     }
 
-    // Apply filter (LP if cutoff < 20kHz, HP if cutoff > 20Hz)
-    const bool applyFilter = (filterType == 0 && filterCutoff < FILTER_LP_BYPASS_THRESHOLD) ||
-                             (filterType == 1 && filterCutoff > FILTER_HP_BYPASS_THRESHOLD);
+    // Apply filter (bypass LP at max cutoff, HP at min cutoff; BP/Notch always apply)
+    bool applyFilter = false;
+    switch (filterType)
+    {
+        case 0: applyFilter = (filterCutoff < FILTER_LP_BYPASS_THRESHOLD); break;  // LP
+        case 1: applyFilter = (filterCutoff > FILTER_HP_BYPASS_THRESHOLD); break;  // HP
+        case 2: applyFilter = true; break;  // BP - always apply
+        case 3: applyFilter = true; break;  // Notch - always apply
+    }
 
     if (samplesRendered > 0 && applyFilter)
     {
         // Only update filter params when changed (optimization)
         if (filterType != lastFilterType)
         {
-            filter.setType(filterType == 0
-                ? juce::dsp::StateVariableTPTFilterType::lowpass
-                : juce::dsp::StateVariableTPTFilterType::highpass);
+            switch (filterType)
+            {
+                case 0: filter.setType(juce::dsp::StateVariableTPTFilterType::lowpass); break;
+                case 1: filter.setType(juce::dsp::StateVariableTPTFilterType::highpass); break;
+                case 2: filter.setType(juce::dsp::StateVariableTPTFilterType::bandpass); break;
+                case 3: filter.setType(juce::dsp::StateVariableTPTFilterType::notch); break;
+            }
             lastFilterType = filterType;
         }
         if (filterCutoff != lastFilterCutoff)
