@@ -38,6 +38,34 @@ static_assert((LOAD_QUEUE_SIZE & (LOAD_QUEUE_SIZE - 1)) == 0,
 // Max samples to apply per processBlock (prevents audio dropout from batch loads)
 constexpr int MAX_LOADS_PER_BLOCK = 4;
 
+// Command queue for message-thread-to-audio-thread operations
+constexpr int COMMAND_QUEUE_SIZE = 64;
+static_assert((COMMAND_QUEUE_SIZE & (COMMAND_QUEUE_SIZE - 1)) == 0,
+              "COMMAND_QUEUE_SIZE must be power of 2");
+
+// Max commands to process per processBlock
+constexpr int MAX_COMMANDS_PER_BLOCK = 16;
+
+// =============================================================================
+// PAD COMMAND (for thread-safe message-to-audio operations)
+// =============================================================================
+
+enum class PadCommandType : uint8_t
+{
+    Trigger,      // Trigger pad with velocity
+    Stop,         // Stop pad immediately
+    Release,      // Trigger release phase (graceful stop)
+    StopAll,      // Stop all pads
+    ReleaseAll    // Release all pads
+};
+
+struct PadCommand
+{
+    PadCommandType type = PadCommandType::Stop;
+    int padIndex = -1;      // -1 for "all pads" commands
+    int velocity = 100;     // For Trigger command
+};
+
 // =============================================================================
 // PROCESSOR CLASS
 // =============================================================================
@@ -72,7 +100,7 @@ public:
     bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 0.5; }
+    double getTailLengthSeconds() const override { return 5.0; }  // Max release time
 
     // -------------------------------------------------------------------------
     // PRESETS
@@ -126,7 +154,9 @@ private:
     void handleMidiEvent(const juce::MidiMessage& msg);
     void updatePadParameters(int padIndex);
     void processKillGroups(int triggeredPad);
-    void applyCompletedLoads();  // Called at start of processBlock (audio thread)
+    void applyCompletedLoads();    // Called at start of processBlock (audio thread)
+    void applyQueuedCommands();    // Called at start of processBlock (audio thread)
+    void queueCommand(PadCommand cmd);  // Thread-safe command queuing (message thread)
 
     // Helper for parsing pad/layer from named config params
     // Returns true if parsed successfully, fills padIndex and layerIndex
@@ -176,6 +206,11 @@ private:
     juce::ThreadPool loadPool { 2 };  // 2 worker threads
     juce::AbstractFifo loadFifo { LOAD_QUEUE_SIZE };
     std::array<LoadedSample, LOAD_QUEUE_SIZE> loadQueue;
+
+    // Command queue - lock-free SPSC FIFO for message-to-audio-thread operations
+    // Producer: message thread (named config params), Consumer: audio thread
+    juce::AbstractFifo commandFifo { COMMAND_QUEUE_SIZE };
+    std::array<PadCommand, COMMAND_QUEUE_SIZE> commandQueue;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Processor)
 };

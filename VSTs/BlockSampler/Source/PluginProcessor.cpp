@@ -100,6 +100,9 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
 {
     juce::ScopedNoDenormals noDenormals;
 
+    // Apply any queued commands from message thread (trigger, stop, release)
+    applyQueuedCommands();
+
     // Apply any completed async sample loads (thread-safe: only audio thread consumes)
     applyCompletedLoads();
 
@@ -389,6 +392,78 @@ void Processor::applyCompletedLoads()
 }
 
 // =============================================================================
+// COMMAND QUEUE (Thread-safe message-to-audio operations)
+// =============================================================================
+
+void Processor::queueCommand(PadCommand cmd)
+{
+    // Called from message thread - queue command for audio thread
+    int start1, size1, start2, size2;
+    commandFifo.prepareToWrite(1, start1, size1, start2, size2);
+
+    if (size1 > 0)
+    {
+        commandQueue[start1] = cmd;
+        commandFifo.finishedWrite(1);
+    }
+    // If FIFO is full, drop the command (rare edge case)
+}
+
+void Processor::applyQueuedCommands()
+{
+    // Called from audio thread at start of processBlock
+    const int numReady = juce::jmin(commandFifo.getNumReady(), MAX_COMMANDS_PER_BLOCK);
+    if (numReady == 0)
+        return;
+
+    int start1, size1, start2, size2;
+    commandFifo.prepareToRead(numReady, start1, size1, start2, size2);
+
+    auto processCommand = [this](const PadCommand& cmd)
+    {
+        switch (cmd.type)
+        {
+            case PadCommandType::Trigger:
+                if (cmd.padIndex >= 0 && cmd.padIndex < NUM_PADS)
+                {
+                    updatePadParameters(cmd.padIndex);
+                    processKillGroups(cmd.padIndex);
+                    pads[cmd.padIndex].trigger(cmd.velocity);
+                }
+                break;
+
+            case PadCommandType::Stop:
+                if (cmd.padIndex >= 0 && cmd.padIndex < NUM_PADS)
+                    pads[cmd.padIndex].stop();
+                break;
+
+            case PadCommandType::Release:
+                if (cmd.padIndex >= 0 && cmd.padIndex < NUM_PADS)
+                    pads[cmd.padIndex].forceRelease();
+                break;
+
+            case PadCommandType::StopAll:
+                for (auto& pad : pads)
+                    pad.stop();
+                break;
+
+            case PadCommandType::ReleaseAll:
+                for (auto& pad : pads)
+                    pad.forceRelease();
+                break;
+        }
+    };
+
+    for (int i = 0; i < size1; ++i)
+        processCommand(commandQueue[start1 + i]);
+
+    for (int i = 0; i < size2; ++i)
+        processCommand(commandQueue[start2 + i]);
+
+    commandFifo.finishedRead(size1 + size2);
+}
+
+// =============================================================================
 // BUS LAYOUT
 // =============================================================================
 
@@ -623,6 +698,7 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
     }
 
     // Pattern: P{pad}_PREVIEW (min length: "P0_PREVIEW" = 10)
+    // Note: Command queued for audio thread to avoid thread safety issues
     if (name.length() >= 10 && name.startsWith("P") && name.endsWith("_PREVIEW"))
     {
         juce::String padStr = name.substring(1, name.length() - 8);
@@ -632,15 +708,14 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
             if (padIndex >= 0 && padIndex < NUM_PADS)
             {
                 int velocity = value.isEmpty() ? 100 : juce::jlimit(1, 127, value.getIntValue());
-                updatePadParameters(padIndex);
-                processKillGroups(padIndex);
-                pads[padIndex].trigger(velocity);
+                queueCommand({ PadCommandType::Trigger, padIndex, velocity });
                 return true;
             }
         }
     }
 
     // Pattern: P{pad}_STOP (min length: "P0_STOP" = 7)
+    // Note: Command queued for audio thread to avoid thread safety issues
     if (name.length() >= 7 && name.startsWith("P") && name.endsWith("_STOP"))
     {
         juce::String padStr = name.substring(1, name.length() - 5);
@@ -649,13 +724,14 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
             padIndex = padStr.getIntValue();
             if (padIndex >= 0 && padIndex < NUM_PADS)
             {
-                pads[padIndex].stop();
+                queueCommand({ PadCommandType::Stop, padIndex, 0 });
                 return true;
             }
         }
     }
 
     // Pattern: P{pad}_RELEASE (min length: "P0_RELEASE" = 10) - graceful fade-out
+    // Note: Command queued for audio thread to avoid thread safety issues
     if (name.length() >= 10 && name.startsWith("P") && name.endsWith("_RELEASE"))
     {
         juce::String padStr = name.substring(1, name.length() - 8);
@@ -664,25 +740,25 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
             padIndex = padStr.getIntValue();
             if (padIndex >= 0 && padIndex < NUM_PADS)
             {
-                pads[padIndex].forceRelease();
+                queueCommand({ PadCommandType::Release, padIndex, 0 });
                 return true;
             }
         }
     }
 
     // Pattern: STOP_ALL (stop all pads immediately)
+    // Note: Command queued for audio thread to avoid thread safety issues
     if (name == "STOP_ALL")
     {
-        for (auto& pad : pads)
-            pad.stop();
+        queueCommand({ PadCommandType::StopAll, -1, 0 });
         return true;
     }
 
     // Pattern: RELEASE_ALL (graceful fade-out for all playing pads)
+    // Note: Command queued for audio thread to avoid thread safety issues
     if (name == "RELEASE_ALL")
     {
-        for (auto& pad : pads)
-            pad.forceRelease();
+        queueCommand({ PadCommandType::ReleaseAll, -1, 0 });
         return true;
     }
 

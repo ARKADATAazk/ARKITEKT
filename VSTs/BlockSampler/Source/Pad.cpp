@@ -222,7 +222,8 @@ void Pad::stop()
 int Pad::renderNextBlock(int numSamples)
 {
     // Validate playback state and layer bounds
-    if (!isPlaying || currentLayer < 0 || currentLayer >= NUM_VELOCITY_LAYERS)
+    const int layerIdx = currentLayer.load();
+    if (!isPlaying || layerIdx < 0 || layerIdx >= NUM_VELOCITY_LAYERS)
         return 0;
 
     // Safety check: ensure tempBuffer is prepared and clamp to its capacity
@@ -232,7 +233,7 @@ int Pad::renderNextBlock(int numSamples)
         return 0;  // prepare() not called yet
     numSamples = juce::jmin(numSamples, bufferCapacity);
 
-    auto& layer = layers[currentLayer];
+    auto& layer = layers[layerIdx];
     if (!layer.isLoaded())
         return 0;
 
