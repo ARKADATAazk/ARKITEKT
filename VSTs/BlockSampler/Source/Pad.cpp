@@ -51,7 +51,7 @@ float VelocityLayer::getCurrentNormGain() const
     return roundRobinSamples[roundRobinIndex % roundRobinSamples.size()].normGain;
 }
 
-void VelocityLayer::advanceRoundRobin(bool randomMode)
+void VelocityLayer::advanceRoundRobin(juce::Random& rng, bool randomMode)
 {
     const int count = static_cast<int>(roundRobinSamples.size());
     if (count == 0)
@@ -62,7 +62,7 @@ void VelocityLayer::advanceRoundRobin(bool randomMode)
         // Random selection (avoid repeating same sample)
         int newIndex;
         do {
-            newIndex = juce::Random::getSystemRandom().nextInt(count);
+            newIndex = rng.nextInt(count);
         } while (newIndex == roundRobinIndex);
         roundRobinIndex = newIndex;
     }
@@ -71,6 +71,15 @@ void VelocityLayer::advanceRoundRobin(bool randomMode)
         // Sequential cycling
         roundRobinIndex = (roundRobinIndex + 1) % count;
     }
+}
+
+std::vector<juce::String> VelocityLayer::getRoundRobinPaths() const
+{
+    std::vector<juce::String> paths;
+    paths.reserve(roundRobinSamples.size());
+    for (const auto& sample : roundRobinSamples)
+        paths.push_back(sample.path);
+    return paths;
 }
 
 void VelocityLayer::clear()
@@ -135,8 +144,8 @@ void Pad::trigger(int velocity)
 
     auto& layer = layers[currentLayer];
 
-    // Advance round-robin before getting sample info
-    layer.advanceRoundRobin(roundRobinMode == 1);
+    // Advance round-robin before getting sample info (uses per-pad RNG for thread safety)
+    layer.advanceRoundRobin(rng, roundRobinMode == 1);
 
     // Get current sample length (accounting for round-robin)
     int currentNumSamples = layer.getCurrentNumSamples();
@@ -192,7 +201,8 @@ void Pad::stop()
 
 int Pad::renderNextBlock(int numSamples)
 {
-    if (!isPlaying || currentLayer < 0)
+    // Validate playback state and layer bounds
+    if (!isPlaying || currentLayer < 0 || currentLayer >= NUM_VELOCITY_LAYERS)
         return 0;
 
     // Safety check: ensure tempBuffer is prepared and clamp to its capacity
@@ -213,8 +223,9 @@ int Pad::renderNextBlock(int numSamples)
     const float normGain = normalize ? layer.getCurrentNormGain() : 1.0f;
 
     const int numChannels = juce::jmin(2, sampleBuffer.getNumChannels());
-    if (numChannels == 0 || sampleNumSamples <= 0)
-        return 0;  // Corrupted sample - no audio channels or no frames
+    // Validate sample data: need channels, frames, and valid sample rates
+    if (numChannels == 0 || sampleNumSamples <= 0 || sampleRate <= 0 || currentSampleRate <= 0)
+        return 0;
 
     const bool isMono = (numChannels == 1);
 
@@ -329,7 +340,9 @@ int Pad::renderNextBlock(int numSamples)
         }
         if (filterReso != lastFilterReso)
         {
-            filter.setResonance(filterReso);
+            // Map 0-1 resonance to Q factor (0.707 Butterworth to 10 high-reso)
+            float q = FILTER_Q_MIN + filterReso * (FILTER_Q_MAX - FILTER_Q_MIN);
+            filter.setResonance(q);
             lastFilterReso = filterReso;
         }
 
@@ -494,6 +507,13 @@ juce::String Pad::getSamplePath(int layerIndex) const
 {
     if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
         return layers[layerIndex].filePath;
+    return {};
+}
+
+std::vector<juce::String> Pad::getRoundRobinPaths(int layerIndex) const
+{
+    if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+        return layers[layerIndex].getRoundRobinPaths();
     return {};
 }
 

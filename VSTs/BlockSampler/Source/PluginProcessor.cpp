@@ -405,12 +405,13 @@ void Processor::getStateInformation(juce::MemoryBlock& destData)
 {
     auto state = parameters.copyState();
 
-    // Add sample paths as child nodes
+    // Add sample paths as child nodes (both primary and round-robin)
     juce::ValueTree samplesNode("Samples");
     for (int pad = 0; pad < NUM_PADS; ++pad)
     {
         for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
         {
+            // Primary sample
             auto path = pads[pad].getSamplePath(layer);
             if (path.isNotEmpty())
             {
@@ -419,6 +420,17 @@ void Processor::getStateInformation(juce::MemoryBlock& destData)
                 sampleNode.setProperty("layer", layer, nullptr);
                 sampleNode.setProperty("path", path, nullptr);
                 samplesNode.addChild(sampleNode, -1, nullptr);
+            }
+
+            // Round-robin samples
+            auto rrPaths = pads[pad].getRoundRobinPaths(layer);
+            for (const auto& rrPath : rrPaths)
+            {
+                juce::ValueTree rrNode("RoundRobin");
+                rrNode.setProperty("pad", pad, nullptr);
+                rrNode.setProperty("layer", layer, nullptr);
+                rrNode.setProperty("path", rrPath, nullptr);
+                samplesNode.addChild(rrNode, -1, nullptr);
             }
         }
     }
@@ -480,7 +492,7 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
 
         parameters.replaceState(state);
 
-        // Reload samples from stored paths
+        // Reload samples from stored paths (async to avoid blocking message thread)
         auto samplesNode = state.getChildWithName("Samples");
         if (samplesNode.isValid())
         {
@@ -490,10 +502,12 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
                 int pad = sampleNode.getProperty("pad", -1);
                 int layer = sampleNode.getProperty("layer", 0);
                 juce::String path = sampleNode.getProperty("path", "");
+                juce::String nodeType = sampleNode.getType().toString();
 
                 if (pad >= 0 && pad < NUM_PADS && path.isNotEmpty())
                 {
-                    loadSampleToPad(pad, layer, path);
+                    bool isRoundRobin = (nodeType == "RoundRobin");
+                    loadSampleToPadAsync(pad, layer, path, isRoundRobin);
                 }
             }
         }
@@ -570,40 +584,52 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
         return true;
     }
 
-    // Pattern: P{pad}_CLEAR
-    if (name.startsWith("P") && name.endsWith("_CLEAR"))
+    // Pattern: P{pad}_CLEAR (min length: "P0_CLEAR" = 8)
+    if (name.length() >= 8 && name.startsWith("P") && name.endsWith("_CLEAR"))
     {
-        padIndex = name.substring(1, name.length() - 6).getIntValue();
-        if (padIndex >= 0 && padIndex < NUM_PADS)
+        juce::String padStr = name.substring(1, name.length() - 6);
+        if (padStr.containsOnly("0123456789"))
         {
-            for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
-                clearPadSample(padIndex, layer);
-            return true;
+            padIndex = padStr.getIntValue();
+            if (padIndex >= 0 && padIndex < NUM_PADS)
+            {
+                for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+                    clearPadSample(padIndex, layer);
+                return true;
+            }
         }
     }
 
-    // Pattern: P{pad}_PREVIEW (trigger pad for preview, value = velocity 1-127, default 100)
-    if (name.startsWith("P") && name.endsWith("_PREVIEW"))
+    // Pattern: P{pad}_PREVIEW (min length: "P0_PREVIEW" = 10)
+    if (name.length() >= 10 && name.startsWith("P") && name.endsWith("_PREVIEW"))
     {
-        padIndex = name.substring(1, name.length() - 8).getIntValue();
-        if (padIndex >= 0 && padIndex < NUM_PADS)
+        juce::String padStr = name.substring(1, name.length() - 8);
+        if (padStr.containsOnly("0123456789"))
         {
-            int velocity = value.isEmpty() ? 100 : juce::jlimit(1, 127, value.getIntValue());
-            updatePadParameters(padIndex);
-            processKillGroups(padIndex);
-            pads[padIndex].trigger(velocity);
-            return true;
+            padIndex = padStr.getIntValue();
+            if (padIndex >= 0 && padIndex < NUM_PADS)
+            {
+                int velocity = value.isEmpty() ? 100 : juce::jlimit(1, 127, value.getIntValue());
+                updatePadParameters(padIndex);
+                processKillGroups(padIndex);
+                pads[padIndex].trigger(velocity);
+                return true;
+            }
         }
     }
 
-    // Pattern: P{pad}_STOP (stop pad playback)
-    if (name.startsWith("P") && name.endsWith("_STOP"))
+    // Pattern: P{pad}_STOP (min length: "P0_STOP" = 7)
+    if (name.length() >= 7 && name.startsWith("P") && name.endsWith("_STOP"))
     {
-        padIndex = name.substring(1, name.length() - 5).getIntValue();
-        if (padIndex >= 0 && padIndex < NUM_PADS)
+        juce::String padStr = name.substring(1, name.length() - 5);
+        if (padStr.containsOnly("0123456789"))
         {
-            pads[padIndex].stop();
-            return true;
+            padIndex = padStr.getIntValue();
+            if (padIndex >= 0 && padIndex < NUM_PADS)
+            {
+                pads[padIndex].stop();
+                return true;
+            }
         }
     }
 
@@ -634,27 +660,35 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
     if (parsePadLayerParam(name, "_DURATION", padIndex, layerIndex))
         return juce::String(pads[padIndex].getSampleDuration(layerIndex), 3);
 
-    // Pattern: P{pad}_HAS_SAMPLE
-    if (name.startsWith("P") && name.endsWith("_HAS_SAMPLE"))
+    // Pattern: P{pad}_HAS_SAMPLE (min length: "P0_HAS_SAMPLE" = 13)
+    if (name.length() >= 13 && name.startsWith("P") && name.endsWith("_HAS_SAMPLE"))
     {
-        padIndex = name.substring(1, name.length() - 11).getIntValue();
-        if (padIndex >= 0 && padIndex < NUM_PADS)
+        juce::String padStr = name.substring(1, name.length() - 11);
+        if (padStr.containsOnly("0123456789"))
         {
-            for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+            padIndex = padStr.getIntValue();
+            if (padIndex >= 0 && padIndex < NUM_PADS)
             {
-                if (pads[padIndex].hasSample(layer))
-                    return "1";
+                for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+                {
+                    if (pads[padIndex].hasSample(layer))
+                        return "1";
+                }
+                return "0";
             }
-            return "0";
         }
     }
 
-    // Pattern: P{pad}_IS_PLAYING
-    if (name.startsWith("P") && name.endsWith("_IS_PLAYING"))
+    // Pattern: P{pad}_IS_PLAYING (min length: "P0_IS_PLAYING" = 13)
+    if (name.length() >= 13 && name.startsWith("P") && name.endsWith("_IS_PLAYING"))
     {
-        padIndex = name.substring(1, name.length() - 11).getIntValue();
-        if (padIndex >= 0 && padIndex < NUM_PADS)
-            return pads[padIndex].isPlaying ? "1" : "0";
+        juce::String padStr = name.substring(1, name.length() - 11);
+        if (padStr.containsOnly("0123456789"))
+        {
+            padIndex = padStr.getIntValue();
+            if (padIndex >= 0 && padIndex < NUM_PADS)
+                return pads[padIndex].isPlaying ? "1" : "0";
+        }
     }
 
     return {};

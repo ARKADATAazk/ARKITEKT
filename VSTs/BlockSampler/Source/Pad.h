@@ -32,6 +32,8 @@ struct RoundRobinSample
 
 struct VelocityLayer
 {
+    VelocityLayer() { roundRobinSamples.reserve(MAX_ROUND_ROBIN_SAMPLES); }
+
     // Primary sample
     juce::AudioBuffer<float> buffer;
     int numSamples = 0;
@@ -39,7 +41,7 @@ struct VelocityLayer
     juce::String filePath;
     float normGain = 1.0f;  // Peak normalization gain (computed on load)
 
-    // Round-robin samples (consolidated struct for better cache locality)
+    // Round-robin samples (pre-reserved to avoid audio-thread allocation)
     std::vector<RoundRobinSample> roundRobinSamples;
     int roundRobinIndex = 0;
 
@@ -52,7 +54,10 @@ struct VelocityLayer
     int getCurrentNumSamples() const;
     double getCurrentSampleRate() const;
     float getCurrentNormGain() const;
-    void advanceRoundRobin(bool randomMode = false);
+    void advanceRoundRobin(juce::Random& rng, bool randomMode);
+
+    // Get all round-robin paths for state persistence
+    std::vector<juce::String> getRoundRobinPaths() const;
 
     // Management
     void clear();
@@ -121,6 +126,7 @@ public:
     // -------------------------------------------------------------------------
 
     juce::String getSamplePath(int layerIndex) const;
+    std::vector<juce::String> getRoundRobinPaths(int layerIndex) const;
     bool hasSample(int layerIndex) const;
     int getRoundRobinCount(int layerIndex) const;
     double getSampleDuration(int layerIndex) const;  // Duration in seconds
@@ -181,6 +187,9 @@ private:
     float lastFilterCutoff = -1.0f;
     float lastFilterReso = -1.0f;
     int lastFilterType = -1;
+
+    // Per-pad random generator (thread-safe: only used on audio thread)
+    juce::Random rng;
 
     // Temp buffer for per-pad filtering (avoids filtering other pads' audio)
     juce::AudioBuffer<float> tempBuffer;

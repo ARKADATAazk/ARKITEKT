@@ -30,6 +30,13 @@ constexpr float FILTER_LP_BYPASS_THRESHOLD = 20000.0f;  // Skip LP filter at max
 constexpr float FILTER_HP_BYPASS_THRESHOLD = 20.0f;     // Skip HP filter at min cutoff
 constexpr float NORM_PEAK_THRESHOLD = 0.0001f;          // Min peak for normalization
 
+// Filter Q mapping: 0-1 resonance parameter maps to Q_MIN-Q_MAX
+constexpr float FILTER_Q_MIN = 0.707f;   // Butterworth (no resonance)
+constexpr float FILTER_Q_MAX = 10.0f;    // High resonance
+
+// Round-robin limits
+constexpr int MAX_ROUND_ROBIN_SAMPLES = 16;  // Max RR samples per layer (for pre-allocation)
+
 // Velocity layer thresholds (4 layers: 0-31, 32-63, 64-95, 96-127)
 constexpr int VELOCITY_LAYER_1_MIN = 32;   // Layer 1 starts at velocity 32
 constexpr int VELOCITY_LAYER_2_MIN = 64;   // Layer 2 starts at velocity 64
