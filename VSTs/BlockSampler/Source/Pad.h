@@ -146,6 +146,8 @@ public:
     float sampleStart = 0.0f;    // 0-1 normalized
     float sampleEnd = 1.0f;      // 0-1 normalized
     int roundRobinMode = 0;      // 0=sequential, 1=random
+    int velocityCurve = 0;       // 0=linear, 1=soft, 2=hard, 3=switch
+    int loopMode = 0;            // 0=one-shot, 1=loop, 2=ping-pong
 
     // -------------------------------------------------------------------------
     // PUBLIC STATE (read by PluginProcessor)

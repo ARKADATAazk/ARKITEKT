@@ -156,7 +156,17 @@ void Pad::trigger(int velocity)
 
     // Reset playback position
     playPosition = reverse ? (endSample - 1) : startSample;
-    currentVelocity = velocity / 127.0f;
+
+    // Apply velocity curve
+    float vel = velocity / 127.0f;
+    switch (velocityCurve)
+    {
+        case 1: vel = vel * vel; break;              // Soft (logarithmic feel)
+        case 2: vel = std::sqrt(vel); break;         // Hard (exponential feel)
+        case 3: vel = vel > 0.5f ? 1.0f : 0.0f; break; // Switch (binary)
+        default: break;                              // Linear (no change)
+    }
+    currentVelocity = vel;
     isPlaying = true;
 
     // Reset envelope and trigger
@@ -242,22 +252,34 @@ int Pad::renderNextBlock(int numSamples)
 
     int samplesRendered = 0;
 
-    // Hoist direction-specific logic outside main loop
-    const double positionDelta = reverse ? -pitchRatio : pitchRatio;
-    const int boundaryCheck = reverse ? playStartSample : playEndSample;
+    // Direction-specific logic (may change in ping-pong mode)
+    double positionDelta = reverse ? -pitchRatio : pitchRatio;
 
     for (int sample = 0; sample < numSamples; ++sample)
     {
-        // Check playback boundaries (direction-agnostic comparison)
-        bool pastBoundary = reverse ? (playPosition < boundaryCheck) : (playPosition >= boundaryCheck);
+        // Check playback boundaries
+        bool pastBoundary = reverse ? (playPosition < playStartSample) : (playPosition >= playEndSample);
         if (pastBoundary)
         {
-            if (oneShot)
+            switch (loopMode)
             {
-                isPlaying = false;
-                break;
+                case 0:  // One-shot: stop playback
+                    isPlaying = false;
+                    break;
+                case 1:  // Loop: reset to start
+                    playPosition = reverse ? (playEndSample - 1) : playStartSample;
+                    break;
+                case 2:  // Ping-pong: reverse direction and position delta
+                    reverse = !reverse;
+                    positionDelta = -positionDelta;
+                    // Clamp position to valid range after direction change
+                    playPosition = juce::jlimit(static_cast<double>(playStartSample),
+                                                static_cast<double>(playEndSample - 1),
+                                                playPosition);
+                    break;
             }
-            playPosition = reverse ? (playEndSample - 1) : playStartSample;
+            if (loopMode == 0)
+                break;  // Exit sample loop
         }
 
         // Get envelope value

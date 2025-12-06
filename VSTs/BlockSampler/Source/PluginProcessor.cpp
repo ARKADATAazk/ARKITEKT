@@ -60,6 +60,8 @@ Processor::Processor()
         padParams[pad].sampleStart = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SampleStart));
         padParams[pad].sampleEnd = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SampleEnd));
         padParams[pad].roundRobinMode = parameters.getRawParameterValue(PadParam::id(pad, PadParam::RoundRobinMode));
+        padParams[pad].velocityCurve = parameters.getRawParameterValue(PadParam::id(pad, PadParam::VelocityCurve));
+        padParams[pad].loopMode = parameters.getRawParameterValue(PadParam::id(pad, PadParam::LoopMode));
     }
 }
 
@@ -241,6 +243,8 @@ void Processor::updatePadParameters(int padIndex)
     pad.sampleStart = params.sampleStart->load();
     pad.sampleEnd = params.sampleEnd->load();
     pad.roundRobinMode = static_cast<int>(params.roundRobinMode->load());
+    pad.velocityCurve = static_cast<int>(params.velocityCurve->load());
+    pad.loopMode = static_cast<int>(params.loopMode->load());
 }
 
 // =============================================================================

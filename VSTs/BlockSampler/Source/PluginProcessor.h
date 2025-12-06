@@ -163,6 +163,8 @@ private:
         std::atomic<float>* sampleStart = nullptr;
         std::atomic<float>* sampleEnd = nullptr;
         std::atomic<float>* roundRobinMode = nullptr;
+        std::atomic<float>* velocityCurve = nullptr;
+        std::atomic<float>* loopMode = nullptr;
     };
     std::array<PadParams, NUM_PADS> padParams;
 

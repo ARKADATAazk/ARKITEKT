@@ -1,6 +1,6 @@
 // =============================================================================
 // BlockSampler/Source/Parameters.h
-// Parameter definitions and layout for 128 pads × 18 params = 2304 total
+// Parameter definitions and layout for 128 pads × 20 params = 2560 total
 // =============================================================================
 
 #pragma once
@@ -41,7 +41,7 @@ constexpr int VELOCITY_LAYER_3_MIN = 96;   // Layer 3 starts at velocity 96
 
 namespace PadParam
 {
-    // Parameter IDs per pad (18 total)
+    // Parameter IDs per pad (20 total)
     enum ID
     {
         Volume = 0,       // 0-1
@@ -56,16 +56,18 @@ namespace PadParam
         FilterType,       // 0=LP, 1=HP, 2=BP, 3=Notch
         KillGroup,        // 0-8 (0 = none)
         OutputGroup,      // 0-16 (0 = main only)
-        OneShot,          // bool
+        OneShot,          // bool (legacy - use LoopMode instead)
         Reverse,          // bool
         Normalize,        // bool - apply peak normalization
         SampleStart,      // 0-1 normalized
         SampleEnd,        // 0-1 normalized
         RoundRobinMode,   // 0=sequential, 1=random
-        COUNT             // = 18
+        VelocityCurve,    // 0=linear, 1=soft, 2=hard, 3=switch
+        LoopMode,         // 0=one-shot, 1=loop, 2=ping-pong
+        COUNT             // = 20
     };
 
-    // Total parameters: 18 × 128 = 2304
+    // Total parameters: 20 × 128 = 2560
     constexpr int TOTAL_PARAMS = COUNT * NUM_PADS;
 
     // Get flat index for parameter
@@ -80,7 +82,8 @@ namespace PadParam
         static const char* names[] = {
             "volume", "pan", "tune", "attack", "decay", "sustain",
             "release", "cutoff", "reso", "filtertype", "killgroup", "outgroup",
-            "oneshot", "reverse", "normalize", "start", "end", "rrmode"
+            "oneshot", "reverse", "normalize", "start", "end", "rrmode",
+            "velcurve", "loopmode"
         };
         return "p" + juce::String(pad) + "_" + names[param];
     }
@@ -210,6 +213,18 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             juce::ParameterID { PadParam::id(pad, PadParam::RoundRobinMode), 1 },
             prefix + "RR Mode",
             0, 1, 0));
+
+        // Velocity Curve (0=linear, 1=soft/log, 2=hard/exp, 3=switch)
+        params.push_back(std::make_unique<juce::AudioParameterInt>(
+            juce::ParameterID { PadParam::id(pad, PadParam::VelocityCurve), 1 },
+            prefix + "Vel Curve",
+            0, 3, 0));
+
+        // Loop Mode (0=one-shot, 1=loop, 2=ping-pong)
+        params.push_back(std::make_unique<juce::AudioParameterInt>(
+            juce::ParameterID { PadParam::id(pad, PadParam::LoopMode), 1 },
+            prefix + "Loop Mode",
+            0, 2, 0));
     }
 
     return { params.begin(), params.end() };
