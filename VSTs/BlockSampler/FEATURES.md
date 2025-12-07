@@ -145,3 +145,129 @@ Bridge.applyPreset(track, fx, pad, Bridge.Presets.SubKick808)
 Bridge.applyPreset(track, fx, pad, Bridge.Presets.PunchyKick808)
 -- pitch_env_amount = -8, decay = 30ms
 ```
+
+---
+
+## Kit Morphing via Velocity Crossfade
+
+The velocity crossfade system enables **smooth kit morphing** between velocity layers, eliminating the "machine gun effect" common in multi-layer samplers.
+
+### How It Works
+
+Traditional samplers hard-switch between layers at velocity thresholds (e.g., vel 63 plays Layer 1, vel 64 plays Layer 2). This creates audible discontinuities.
+
+BlockSampler's crossfade blends adjacent layers in a configurable zone:
+
+```
+Velocity:    0 -------- 32 -------- 64 -------- 96 ------- 127
+Layer:       [   L0    ][   L1    ][   L2    ][   L3    ]
+                     ↑ blend zone ↑
+```
+
+With `velCrossfade = 0.5`, at velocity 60:
+- Blend zone width = 32 × 0.5 = 16 velocity units
+- Zone spans 48-64
+- At vel 60: (60-48)/(64-48) = 75% → blend 25% L1 + 75% L2
+
+### Usage
+
+```lua
+-- Enable smooth crossfade (0.5 = 50% blend zone)
+Bridge.setVelCrossfade(track, fx, pad, 0.5)
+
+-- Disable crossfade (traditional hard switching)
+Bridge.setVelCrossfade(track, fx, pad, 0)
+
+-- Maximum crossfade (100% blend zone - always blending)
+Bridge.setVelCrossfade(track, fx, pad, 1.0)
+```
+
+### Best Use Cases
+
+- **Acoustic drums**: Natural velocity response without stepping
+- **Orchestral samples**: Smooth pp→ff transitions
+- **Layered synth hits**: Morphing between textures
+- **Sound design**: Creative blend between different samples
+
+---
+
+## Project State & Architecture
+
+### Current State (Dec 2024)
+
+BlockSampler is a **headless VST3 drum sampler** designed for REAPER integration via the DrumBlocks Lua UI. Core features are complete and production-ready:
+
+- ✅ 128 pads with 4 velocity layers each
+- ✅ 16 round-robin samples per layer (8,192 total sample slots)
+- ✅ Full ADSR envelope + pitch envelope (808-style)
+- ✅ 3 loop modes (OneShot, Loop, PingPong)
+- ✅ Velocity layer crossfade (kit morphing)
+- ✅ SVF filter (LP/HP with resonance)
+- ✅ 16 stereo output buses + 8 kill groups
+- ✅ Thread-safe async sample loading
+- ✅ Complete Lua bridge API
+
+### Architecture
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    REAPER / DrumBlocks                   │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │  Lua UI (DrumBlocks)                                │ │
+│  │  - Pad grid, waveform view, kit browser             │ │
+│  │  - Drag-drop, parameter editing                     │ │
+│  └────────────────────┬────────────────────────────────┘ │
+│                       │ bridge.lua                       │
+│                       ▼                                  │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │  Named Config Params / TrackFX API                  │ │
+│  │  P{pad}_L{layer}_SAMPLE_ASYNC, etc.                 │ │
+│  └────────────────────┬────────────────────────────────┘ │
+└───────────────────────┼──────────────────────────────────┘
+                        │ VST3
+                        ▼
+┌──────────────────────────────────────────────────────────┐
+│                   BlockSampler VST3                      │
+│  ┌──────────────────┐  ┌──────────────────────────────┐ │
+│  │   Processor      │  │   128 × Pad                  │ │
+│  │   - MIDI routing │  │   - 4 velocity layers        │ │
+│  │   - Kill groups  │  │   - ADSR + pitch envelope    │ │
+│  │   - Output buses │  │   - Filter (SVF)             │ │
+│  │   - Async loader │  │   - Loop modes               │ │
+│  └──────────────────┘  │   - Crossfade blending       │ │
+│                        └──────────────────────────────┘ │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Future Ideas (Not Implemented)
+
+| Feature | Complexity | Notes |
+|---------|------------|-------|
+| Filter envelope | Medium | Dedicated ADSR for cutoff modulation |
+| More choke groups | Low | Expand from 8 to 16 groups |
+| Velocity curves | Low | Per-pad velocity response shaping |
+| LFO modulation | Medium | Pitch/filter/pan modulation |
+| Sample-accurate MIDI | Medium | Currently block-based timing |
+| Modular FX slots | High | Per-pad insert effects |
+
+**Philosophy**: Keep DSP lean, defer complex features to REAPER/Lua where possible. Time-stretching, slicing, and advanced effects are better handled by REAPER's native capabilities.
+
+---
+
+## File Reference
+
+```
+VSTs/BlockSampler/
+├── Source/
+│   ├── Parameters.h      # 23 params × 128 pads, LoopMode enum
+│   ├── Pad.h/cpp         # Audio rendering, velocity crossfade
+│   ├── PluginProcessor.* # VST3 host, async loading, MIDI
+│   └── ...
+├── FEATURES.md           # This file
+└── BlockSampler.jucer    # JUCE project
+
+ARKITEKT/scripts/DrumBlocks/
+├── domain/
+│   └── bridge.lua        # Lua ↔ VST communication
+└── ...
+```
