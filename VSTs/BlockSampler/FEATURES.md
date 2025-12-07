@@ -7,7 +7,7 @@
 | Pads | 16 | 128 | **BlockSampler** |
 | Velocity layers | ❌ | ✅ 4 per pad + crossfade | **BlockSampler** |
 | Round-robin | ❌ | ✅ 16 per layer | **BlockSampler** |
-| Choke/kill groups | ✅ 16 | ✅ 8 | Sitala (more groups) |
+| Choke/kill groups | ✅ 16 | ✅ 16 | Tie |
 | Multi-out routing | ✅ 16 stereo | ✅ 16 stereo | Tie |
 | ADSR envelope | ✅ | ✅ | Tie |
 | Filter | ✅ Tone knob | ✅ SVF LP/HP + reso | **BlockSampler** |
@@ -33,7 +33,7 @@
 | Pads | 128 | 128 | Tie |
 | Velocity layers | ✅ (via Simpler) | ✅ 4 built-in + crossfade | **BlockSampler** |
 | Round-robin | ✅ (manual setup) | ✅ 16 per layer | **BlockSampler** (easier) |
-| Choke groups | ✅ 16 | ✅ 8 | Drum Rack |
+| Choke groups | ✅ 16 | ✅ 16 | Tie |
 | Multi-out routing | ✅ Unlimited | ✅ 16 stereo | Drum Rack |
 | ADSR envelope | ✅ Full | ✅ Full | Tie |
 | Filter | ✅ Multi-mode | ✅ SVF LP/HP | Drum Rack |
@@ -54,7 +54,7 @@
 
 ## BlockSampler Unique Strengths
 
-1. **2816 Automatable Parameters**
+1. **3072 Automatable Parameters**
    - Every parameter on every pad exposed to DAW automation
    - Full Lua API for scripted control
 
@@ -88,7 +88,7 @@
 ## Current Parameter Count
 
 ```
-Per-Pad Parameters: 23
+Per-Pad Parameters: 24
   0:  Volume           (0-1)
   1:  Pan              (-1 to +1)
   2:  Tune             (-24 to +24 semitones)
@@ -99,7 +99,7 @@ Per-Pad Parameters: 23
   7:  Filter Cutoff    (20-20000 Hz)
   8:  Filter Reso      (0-1)
   9:  Filter Type      (0=LP, 1=HP)
-  10: Kill Group       (0-8)
+  10: Kill Group       (0-16)
   11: Output Group     (0-16)
   12: Loop Mode        (0=OneShot, 1=Loop, 2=PingPong)
   13: Reverse          (bool)
@@ -112,8 +112,9 @@ Per-Pad Parameters: 23
   20: Pitch Env Decay  (0-2000 ms)
   21: Pitch Env Sustain(0-1)
   22: Vel Crossfade    (0-1, 0=hard switch, 1=full blend)
+  23: Vel Curve        (0-1, 0=soft, 0.5=linear, 1=hard)
 
-Total: 23 × 128 pads = 2,944 parameters
+Total: 24 × 128 pads = 3,072 parameters
 ```
 
 ---
@@ -203,7 +204,8 @@ BlockSampler is a **headless VST3 drum sampler** designed for REAPER integration
 - ✅ 3 loop modes (OneShot, Loop, PingPong)
 - ✅ Velocity layer crossfade (kit morphing)
 - ✅ SVF filter (LP/HP with resonance)
-- ✅ 16 stereo output buses + 8 kill groups
+- ✅ Velocity curve (soft/linear/hard response)
+- ✅ 16 stereo output buses + 16 kill groups
 - ✅ Thread-safe async sample loading
 - ✅ Complete Lua bridge API
 
@@ -244,10 +246,9 @@ BlockSampler is a **headless VST3 drum sampler** designed for REAPER integration
 | Feature | Complexity | Notes |
 |---------|------------|-------|
 | Filter envelope | Medium | Dedicated ADSR for cutoff modulation |
-| More choke groups | Low | Expand from 8 to 16 groups |
-| Velocity curves | Low | Per-pad velocity response shaping |
 | LFO modulation | Medium | Pitch/filter/pan modulation |
 | Sample-accurate MIDI | Medium | Currently block-based timing |
+| More filter types | Low | Add bandpass, notch, peak |
 | Modular FX slots | High | Per-pad insert effects |
 
 **Philosophy**: Keep DSP lean, defer complex features to REAPER/Lua where possible. Time-stretching, slicing, and advanced effects are better handled by REAPER's native capabilities.

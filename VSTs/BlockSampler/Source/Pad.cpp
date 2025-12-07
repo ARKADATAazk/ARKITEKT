@@ -235,7 +235,14 @@ void Pad::trigger(int velocity)
 
     // Reset playback position
     playPosition = reverse ? (endSample - 1) : startSample;
-    currentVelocity = velocity / 127.0f;
+
+    // Apply velocity curve (response shaping)
+    // velCurve: 0=soft/log, 0.5=linear, 1=hard/exp
+    // Maps to exponent: 2.0 (soft) → 1.0 (linear) → 0.5 (hard)
+    const float normalizedVel = velocity / 127.0f;
+    const float curveExp = std::pow(2.0f, 1.0f - 2.0f * velCurve);
+    currentVelocity = std::pow(normalizedVel, curveExp);
+
     isPlaying = true;
 
     // Reset ping-pong direction (always start in initial direction)

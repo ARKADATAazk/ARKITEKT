@@ -8,7 +8,7 @@ local M = {}
 M.NUM_PADS = 128
 M.NUM_VELOCITY_LAYERS = 4
 M.NUM_OUTPUT_GROUPS = 16
-M.PARAMS_PER_PAD = 23  -- Updated: was 22, now 23 with velocity crossfade
+M.PARAMS_PER_PAD = 24  -- Updated: 24 params with velocity curve
 
 -- Parameter indices (must match BlockSampler/Source/Parameters.h)
 M.Param = {
@@ -35,6 +35,7 @@ M.Param = {
   PitchEnvDecay = 20,   -- 0-2000 ms (pitch envelope decay)
   PitchEnvSustain = 21, -- 0-1 (pitch envelope sustain level)
   VelCrossfade = 22,    -- 0-1 (velocity layer crossfade width)
+  VelCurve = 23,        -- 0-1 (velocity response: 0=soft, 0.5=linear, 1=hard)
 }
 
 -- Loop mode constants
@@ -256,6 +257,35 @@ end
 
 function M.getVelCrossfade(track, fx, pad)
   return M.getParam(track, fx, pad, M.Param.VelCrossfade)
+end
+
+-- ============================================================================
+-- VELOCITY CURVE (response shaping)
+-- ============================================================================
+
+function M.setVelCurve(track, fx, pad, value)
+  -- Value is 0-1:
+  --   0   = soft/logarithmic (quieter response, good for brushes/jazz)
+  --   0.5 = linear (default, MIDI velocity as-is)
+  --   1   = hard/exponential (punchy response, good for electronic/rock)
+  return M.setParam(track, fx, pad, M.Param.VelCurve, math.min(1, math.max(0, value)))
+end
+
+function M.getVelCurve(track, fx, pad)
+  return M.getParam(track, fx, pad, M.Param.VelCurve)
+end
+
+-- Convenience presets
+function M.setVelCurveSoft(track, fx, pad)
+  return M.setVelCurve(track, fx, pad, 0)
+end
+
+function M.setVelCurveLinear(track, fx, pad)
+  return M.setVelCurve(track, fx, pad, 0.5)
+end
+
+function M.setVelCurveHard(track, fx, pad)
+  return M.setVelCurve(track, fx, pad, 1)
 end
 
 -- ============================================================================
@@ -481,6 +511,9 @@ function M.loadKit(track, fx, kit_data)
 
     -- Velocity layer crossfade
     if pad_data.vel_crossfade ~= nil then M.setVelCrossfade(track, fx, pad_idx, pad_data.vel_crossfade) end
+
+    -- Velocity curve
+    if pad_data.vel_curve ~= nil then M.setVelCurve(track, fx, pad_idx, pad_data.vel_curve) end
   end
 
   return true
@@ -659,6 +692,7 @@ function M.applyPreset(track, fx, pad, preset)
   if preset.tune then M.setTune(track, fx, pad, preset.tune) end
   if preset.volume then M.setVolume(track, fx, pad, preset.volume) end
   if preset.vel_crossfade ~= nil then M.setVelCrossfade(track, fx, pad, preset.vel_crossfade) end
+  if preset.vel_curve ~= nil then M.setVelCurve(track, fx, pad, preset.vel_curve) end
 
   return true
 end

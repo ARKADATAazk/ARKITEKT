@@ -223,6 +223,7 @@ private:
         std::atomic<float>* pitchEnvDecay = nullptr;    // Pitch envelope decay
         std::atomic<float>* pitchEnvSustain = nullptr;  // Pitch envelope sustain
         std::atomic<float>* velCrossfade = nullptr;     // Velocity layer crossfade
+        std::atomic<float>* velCurve = nullptr;         // Velocity response curve
     };
     std::array<PadParams, NUM_PADS> padParams;
 

@@ -156,6 +156,9 @@ public:
     // Velocity layer crossfade
     float velCrossfade = 0.0f;      // 0-1 (0 = hard switch, 1 = full blend zone)
 
+    // Velocity curve (response shaping)
+    float velCurve = 0.5f;          // 0=soft/log, 0.5=linear, 1=hard/exp
+
     // -------------------------------------------------------------------------
     // PUBLIC STATE (read by PluginProcessor)
     // -------------------------------------------------------------------------

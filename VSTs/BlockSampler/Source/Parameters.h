@@ -18,7 +18,7 @@ namespace BlockSampler
 constexpr int NUM_PADS = 128;
 constexpr int NUM_VELOCITY_LAYERS = 4;
 constexpr int NUM_OUTPUT_GROUPS = 16;
-constexpr int NUM_KILL_GROUPS = 8;
+constexpr int NUM_KILL_GROUPS = 16;  // Matches Sitala/Drum Rack
 
 // MIDI mapping
 constexpr int MIDI_NOTE_OFFSET = 0;  // Note 0 = Pad 0 (full MIDI range)
@@ -82,7 +82,8 @@ namespace PadParam
         PitchEnvDecay,    // 0-2000 ms (pitch envelope decay)
         PitchEnvSustain,  // 0-1 (pitch envelope sustain level, 0=full sweep)
         VelCrossfade,     // 0-1 (velocity layer crossfade width, 0=hard switch)
-        COUNT             // = 23
+        VelCurve,         // 0-1 (velocity response: 0=soft/log, 0.5=linear, 1=hard/exp)
+        COUNT             // = 24
     };
 
     // Total parameters: 18 × 128 = 2304
@@ -102,7 +103,7 @@ namespace PadParam
             "release", "cutoff", "reso", "filtertype", "killgroup", "outgroup",
             "loopmode", "reverse", "normalize", "start", "end", "rrmode",
             "pitchenvamt", "pitchenvattack", "pitchenvdecay", "pitchenvsustain",
-            "velcrossfade"
+            "velcrossfade", "velcurve"
         };
         return "p" + juce::String(pad) + "_" + names[param];
     }
@@ -267,6 +268,15 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             juce::ParameterID { PadParam::id(pad, PadParam::VelCrossfade), 1 },
             prefix + "Vel Crossfade",
             0.0f, 1.0f, 0.0f));  // Default 0 = traditional hard switching
+
+        // Velocity Curve (0-1 response shaping)
+        // 0.0 = soft/logarithmic (quiet response, good for brushes)
+        // 0.5 = linear (default, MIDI velocity as-is)
+        // 1.0 = hard/exponential (punchy response, good for electronic)
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID { PadParam::id(pad, PadParam::VelCurve), 1 },
+            prefix + "Vel Curve",
+            0.0f, 1.0f, 0.5f));  // Default 0.5 = linear
     }
 
     return { params.begin(), params.end() };
