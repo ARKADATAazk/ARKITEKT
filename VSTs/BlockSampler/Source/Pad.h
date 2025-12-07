@@ -140,12 +140,18 @@ public:
     int filterType = 0;          // 0=LP, 1=HP
     int killGroup = 0;           // 0 = none, 1-8 = group
     int outputGroup = 0;         // 0 = main, 1-16 = group bus
-    bool oneShot = true;
+    LoopMode loopMode = LoopMode::OneShot;  // OneShot, Loop, or PingPong
     bool reverse = false;
     bool normalize = false;      // Apply peak normalization
     float sampleStart = 0.0f;    // 0-1 normalized
     float sampleEnd = 1.0f;      // 0-1 normalized
     int roundRobinMode = 0;      // 0=sequential, 1=random
+
+    // Pitch envelope parameters (for 808-style pitch drops)
+    float pitchEnvAmount = 0.0f;    // semitones (-24 to +24), 0 = off
+    float pitchEnvAttack = 0.0f;    // ms (0-100)
+    float pitchEnvDecay = 50.0f;    // ms (0-2000)
+    float pitchEnvSustain = 0.0f;   // 0-1 (sustain level, 0 = full sweep)
 
     // -------------------------------------------------------------------------
     // PUBLIC STATE (read by PluginProcessor)
@@ -161,6 +167,8 @@ private:
 
     int selectVelocityLayer(int velocity);
     void updateEnvelopeParams();
+    void updatePitchEnvelopeParams();
+    float getPitchEnvelopeValue();  // Returns pitch modulation in semitones
 
     // -------------------------------------------------------------------------
     // PRIVATE STATE
@@ -168,6 +176,7 @@ private:
 
     std::array<VelocityLayer, NUM_VELOCITY_LAYERS> layers;
     juce::ADSR envelope;
+    juce::ADSR pitchEnvelope;  // Separate envelope for pitch modulation
     juce::dsp::StateVariableTPTFilter<float> filter;
 
     double currentSampleRate = 44100.0;
@@ -175,6 +184,9 @@ private:
     float currentVelocity = 1.0f;
     int playStartSample = 0;
     int playEndSample = 0;
+
+    // Ping-pong state
+    bool pingPongForward = true;  // Direction for ping-pong mode
 
     // Cached filter state to avoid redundant updates
     float lastFilterCutoff = -1.0f;

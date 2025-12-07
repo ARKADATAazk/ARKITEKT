@@ -55,12 +55,16 @@ Processor::Processor()
         padParams[pad].filterType = parameters.getRawParameterValue(PadParam::id(pad, PadParam::FilterType));
         padParams[pad].killGroup = parameters.getRawParameterValue(PadParam::id(pad, PadParam::KillGroup));
         padParams[pad].outputGroup = parameters.getRawParameterValue(PadParam::id(pad, PadParam::OutputGroup));
-        padParams[pad].oneShot = parameters.getRawParameterValue(PadParam::id(pad, PadParam::OneShot));
+        padParams[pad].loopMode = parameters.getRawParameterValue(PadParam::id(pad, PadParam::LoopModeParam));
         padParams[pad].reverse = parameters.getRawParameterValue(PadParam::id(pad, PadParam::Reverse));
         padParams[pad].normalize = parameters.getRawParameterValue(PadParam::id(pad, PadParam::Normalize));
         padParams[pad].sampleStart = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SampleStart));
         padParams[pad].sampleEnd = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SampleEnd));
         padParams[pad].roundRobinMode = parameters.getRawParameterValue(PadParam::id(pad, PadParam::RoundRobinMode));
+        padParams[pad].pitchEnvAmount = parameters.getRawParameterValue(PadParam::id(pad, PadParam::PitchEnvAmount));
+        padParams[pad].pitchEnvAttack = parameters.getRawParameterValue(PadParam::id(pad, PadParam::PitchEnvAttack));
+        padParams[pad].pitchEnvDecay = parameters.getRawParameterValue(PadParam::id(pad, PadParam::PitchEnvDecay));
+        padParams[pad].pitchEnvSustain = parameters.getRawParameterValue(PadParam::id(pad, PadParam::PitchEnvSustain));
     }
 }
 
@@ -245,12 +249,16 @@ void Processor::updatePadParameters(int padIndex)
     pad.filterType = static_cast<int>(params.filterType->load());
     pad.killGroup = static_cast<int>(params.killGroup->load());
     pad.outputGroup = static_cast<int>(params.outputGroup->load());
-    pad.oneShot = params.oneShot->load() > 0.5f;
+    pad.loopMode = static_cast<LoopMode>(static_cast<int>(params.loopMode->load()));
     pad.reverse = params.reverse->load() > 0.5f;
     pad.normalize = params.normalize->load() > 0.5f;
     pad.sampleStart = params.sampleStart->load();
     pad.sampleEnd = params.sampleEnd->load();
     pad.roundRobinMode = static_cast<int>(params.roundRobinMode->load());
+    pad.pitchEnvAmount = params.pitchEnvAmount->load();
+    pad.pitchEnvAttack = params.pitchEnvAttack->load();
+    pad.pitchEnvDecay = params.pitchEnvDecay->load();
+    pad.pitchEnvSustain = params.pitchEnvSustain->load();
 }
 
 // =============================================================================

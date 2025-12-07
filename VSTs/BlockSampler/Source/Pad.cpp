@@ -104,6 +104,10 @@ void Pad::prepare(double sampleRate, int samplesPerBlock)
     envelope.setSampleRate(sampleRate);
     updateEnvelopeParams();
 
+    // Initialize pitch envelope
+    pitchEnvelope.setSampleRate(sampleRate);
+    updatePitchEnvelopeParams();
+
     // Allocate temp buffer for per-pad filtering
     tempBuffer.setSize(2, samplesPerBlock);
 
@@ -179,10 +183,18 @@ void Pad::trigger(int velocity)
     currentVelocity = velocity / 127.0f;
     isPlaying = true;
 
+    // Reset ping-pong direction (always start in initial direction)
+    pingPongForward = !reverse;
+
     // Reset envelope and trigger
     updateEnvelopeParams();
     envelope.reset();
     envelope.noteOn();
+
+    // Reset and trigger pitch envelope (for 808-style pitch drops)
+    updatePitchEnvelopeParams();
+    pitchEnvelope.reset();
+    pitchEnvelope.noteOn();
 
     // Reset filter DSP state to prevent artifacts from previous note
     filter.reset();
@@ -193,19 +205,22 @@ void Pad::trigger(int velocity)
 
 void Pad::noteOff()
 {
-    if (!oneShot)
+    // In non-one-shot modes, note-off triggers release phase
+    if (loopMode != LoopMode::OneShot)
     {
         envelope.noteOff();
+        pitchEnvelope.noteOff();
     }
 }
 
 void Pad::forceRelease()
 {
-    // Trigger release phase regardless of oneShot mode
+    // Trigger release phase regardless of loopMode
     // Allows graceful fade-out of long one-shot samples
     if (isPlaying)
     {
         envelope.noteOff();
+        pitchEnvelope.noteOff();
     }
 }
 
@@ -213,6 +228,7 @@ void Pad::stop()
 {
     isPlaying = false;
     envelope.reset();
+    pitchEnvelope.reset();
 }
 
 // =============================================================================
@@ -258,10 +274,6 @@ int Pad::renderNextBlock(int numSamples)
     float* destL = tempBuffer.getWritePointer(0);
     float* destR = tempBuffer.getWritePointer(1);
 
-    // Calculate pitch ratio for tuning
-    const double pitchRatio = std::pow(2.0, tune / 12.0) *
-                              (sampleRate / currentSampleRate);
-
     // Pre-calculate pan gains (constant power panning)
     const float panAngle = (pan + 1.0f) * 0.25f * juce::MathConstants<float>::pi;
     const float panGainL = std::cos(panAngle);
@@ -275,25 +287,62 @@ int Pad::renderNextBlock(int numSamples)
 
     int samplesRendered = 0;
 
-    // Hoist direction-specific logic outside main loop
-    const double positionDelta = reverse ? -pitchRatio : pitchRatio;
-    const int boundaryCheck = reverse ? playStartSample : playEndSample;
+    // Base pitch ratio from sample rate conversion
+    const double baseSampleRateRatio = sampleRate / currentSampleRate;
 
     for (int sample = 0; sample < numSamples; ++sample)
     {
-        // Check playback boundaries (direction-agnostic comparison)
-        bool pastBoundary = reverse ? (playPosition < boundaryCheck) : (playPosition >= boundaryCheck);
+        // Get pitch envelope modulation (returns semitones offset)
+        const float pitchEnvMod = getPitchEnvelopeValue();
+
+        // Calculate pitch ratio: base tune + pitch envelope modulation
+        const double pitchRatio = std::pow(2.0, (tune + pitchEnvMod) / 12.0) * baseSampleRateRatio;
+
+        // Determine playback direction (accounting for reverse and ping-pong)
+        bool movingForward;
+        if (loopMode == LoopMode::PingPong)
+            movingForward = pingPongForward;
+        else
+            movingForward = !reverse;
+
+        const double positionDelta = movingForward ? pitchRatio : -pitchRatio;
+
+        // Check playback boundaries
+        bool pastBoundary = movingForward ? (playPosition >= playEndSample) : (playPosition < playStartSample);
+
         if (pastBoundary)
         {
-            if (oneShot)
+            switch (loopMode)
             {
-                isPlaying = false;
-                break;
+                case LoopMode::OneShot:
+                    isPlaying = false;
+                    break;
+
+                case LoopMode::Loop:
+                    // Simple loop: jump back to start
+                    playPosition = movingForward ? playStartSample : (playEndSample - 1);
+                    break;
+
+                case LoopMode::PingPong:
+                    // Reverse direction at boundaries
+                    pingPongForward = !pingPongForward;
+                    // Bounce back inside boundaries
+                    if (movingForward)
+                        playPosition = playEndSample - 1 - (playPosition - playEndSample);
+                    else
+                        playPosition = playStartSample + (playStartSample - playPosition);
+                    // Clamp to valid range
+                    playPosition = juce::jlimit(static_cast<double>(playStartSample),
+                                                static_cast<double>(playEndSample - 1),
+                                                playPosition);
+                    break;
             }
-            playPosition = reverse ? (playEndSample - 1) : playStartSample;
+
+            if (!isPlaying)
+                break;
         }
 
-        // Get envelope value
+        // Get amplitude envelope value
         const float envValue = envelope.getNextSample();
         if (!envelope.isActive())
         {
@@ -311,7 +360,7 @@ int Pad::renderNextBlock(int numSamples)
             break;
         }
 
-        const int pos1 = juce::jlimit(0, sampleNumSamples - 1, reverse ? (pos0 - 1) : (pos0 + 1));
+        const int pos1 = juce::jlimit(0, sampleNumSamples - 1, movingForward ? (pos0 + 1) : (pos0 - 1));
         const float frac = static_cast<float>(std::fabs(playPosition - pos0));
 
         // Combined gain with envelope
@@ -543,6 +592,36 @@ void Pad::updateEnvelopeParams()
     params.sustain = sustain;
     params.release = release / 1000.0f;
     envelope.setParameters(params);
+}
+
+void Pad::updatePitchEnvelopeParams()
+{
+    // Pitch envelope: attack → decay → sustain level
+    // For 808-style kicks: attack=0, decay=50-200ms, sustain=0 (full sweep)
+    juce::ADSR::Parameters params;
+    params.attack = pitchEnvAttack / 1000.0f;   // ms to seconds
+    params.decay = pitchEnvDecay / 1000.0f;
+    params.sustain = pitchEnvSustain;           // 0 = full sweep to base pitch
+    params.release = 0.001f;                    // Very short release (instant)
+    pitchEnvelope.setParameters(params);
+}
+
+float Pad::getPitchEnvelopeValue()
+{
+    // Skip if pitch envelope is disabled
+    if (std::abs(pitchEnvAmount) < 0.001f)
+        return 0.0f;
+
+    // Get envelope value (0 to 1)
+    // Note: We advance the pitch envelope each sample
+    const float envValue = pitchEnvelope.getNextSample();
+
+    // Return pitch modulation in semitones
+    // envValue = 1.0 at attack peak, decays to sustain level
+    // pitchEnvAmount can be negative (pitch drop) or positive (pitch rise)
+    // When sustain = 0: full sweep from (tune + amount) to (tune)
+    // When sustain = 1: no sweep (stays at tune + amount)
+    return pitchEnvAmount * envValue;
 }
 
 }  // namespace BlockSampler

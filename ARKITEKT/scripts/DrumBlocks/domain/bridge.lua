@@ -8,7 +8,7 @@ local M = {}
 M.NUM_PADS = 128
 M.NUM_VELOCITY_LAYERS = 4
 M.NUM_OUTPUT_GROUPS = 16
-M.PARAMS_PER_PAD = 18
+M.PARAMS_PER_PAD = 22  -- Updated: was 18, now 22 with pitch envelope
 
 -- Parameter indices (must match BlockSampler/Source/Parameters.h)
 M.Param = {
@@ -21,15 +21,26 @@ M.Param = {
   Release = 6,
   FilterCutoff = 7,
   FilterReso = 8,
-  FilterType = 9,    -- 0=LP, 1=HP
+  FilterType = 9,       -- 0=LP, 1=HP
   KillGroup = 10,
   OutputGroup = 11,
-  OneShot = 12,
+  LoopMode = 12,        -- 0=OneShot, 1=Loop, 2=PingPong (replaces OneShot)
   Reverse = 13,
-  Normalize = 14,    -- Peak normalization
+  Normalize = 14,       -- Peak normalization
   SampleStart = 15,
   SampleEnd = 16,
-  RoundRobinMode = 17, -- 0=sequential, 1=random
+  RoundRobinMode = 17,  -- 0=sequential, 1=random
+  PitchEnvAmount = 18,  -- -24 to +24 semitones (pitch envelope depth)
+  PitchEnvAttack = 19,  -- 0-100 ms (pitch envelope attack)
+  PitchEnvDecay = 20,   -- 0-2000 ms (pitch envelope decay)
+  PitchEnvSustain = 21, -- 0-1 (pitch envelope sustain level)
+}
+
+-- Loop mode constants
+M.LoopMode = {
+  OneShot = 0,
+  Loop = 1,
+  PingPong = 2,
 }
 
 -- ============================================================================
@@ -150,8 +161,14 @@ function M.setOutputGroup(track, fx, pad, group)
   return M.setParam(track, fx, pad, M.Param.OutputGroup, group / 16)
 end
 
+function M.setLoopMode(track, fx, pad, mode)
+  -- Mode: 0=OneShot, 1=Loop, 2=PingPong
+  return M.setParam(track, fx, pad, M.Param.LoopMode, mode / 2)
+end
+
 function M.setOneShot(track, fx, pad, enabled)
-  return M.setParam(track, fx, pad, M.Param.OneShot, enabled and 1 or 0)
+  -- Legacy compatibility: maps to LoopMode.OneShot or LoopMode.Loop
+  return M.setLoopMode(track, fx, pad, enabled and M.LoopMode.OneShot or M.LoopMode.Loop)
 end
 
 function M.setReverse(track, fx, pad, enabled)
@@ -189,6 +206,40 @@ end
 
 function M.setRoundRobinRandom(track, fx, pad)
   return M.setRoundRobinMode(track, fx, pad, 1)
+end
+
+-- ============================================================================
+-- PITCH ENVELOPE (for 808-style pitch drops)
+-- ============================================================================
+
+function M.setPitchEnvAmount(track, fx, pad, semitones)
+  -- Amount is -24 to +24 semitones, normalize to 0-1
+  -- Negative values = pitch drop (classic 808 kick), positive = pitch rise
+  return M.setParam(track, fx, pad, M.Param.PitchEnvAmount, (semitones + 24) / 48)
+end
+
+function M.setPitchEnvAttack(track, fx, pad, ms)
+  -- Attack is 0-100ms, normalize to 0-1
+  return M.setParam(track, fx, pad, M.Param.PitchEnvAttack, ms / 100)
+end
+
+function M.setPitchEnvDecay(track, fx, pad, ms)
+  -- Decay is 0-2000ms, normalize to 0-1
+  return M.setParam(track, fx, pad, M.Param.PitchEnvDecay, ms / 2000)
+end
+
+function M.setPitchEnvSustain(track, fx, pad, value)
+  -- Sustain is 0-1 (0 = full sweep to base pitch, 1 = no sweep)
+  return M.setParam(track, fx, pad, M.Param.PitchEnvSustain, value)
+end
+
+-- Configure complete pitch envelope with one call
+-- Classic 808 kick: amount=-12 to -24, attack=0, decay=50-200, sustain=0
+function M.setPitchEnvelope(track, fx, pad, amount, attack, decay, sustain)
+  M.setPitchEnvAmount(track, fx, pad, amount or 0)
+  M.setPitchEnvAttack(track, fx, pad, attack or 0)
+  M.setPitchEnvDecay(track, fx, pad, decay or 50)
+  M.setPitchEnvSustain(track, fx, pad, sustain or 0)
 end
 
 -- ============================================================================
@@ -396,8 +447,21 @@ function M.loadKit(track, fx, kit_data)
     if pad_data.release then M.setRelease(track, fx, pad_idx, pad_data.release) end
     if pad_data.kill_group then M.setKillGroup(track, fx, pad_idx, pad_data.kill_group) end
     if pad_data.output_group then M.setOutputGroup(track, fx, pad_idx, pad_data.output_group) end
-    if pad_data.one_shot ~= nil then M.setOneShot(track, fx, pad_idx, pad_data.one_shot) end
+
+    -- Loop mode (new) or legacy one_shot
+    if pad_data.loop_mode ~= nil then
+      M.setLoopMode(track, fx, pad_idx, pad_data.loop_mode)
+    elseif pad_data.one_shot ~= nil then
+      M.setOneShot(track, fx, pad_idx, pad_data.one_shot)
+    end
+
     if pad_data.reverse ~= nil then M.setReverse(track, fx, pad_idx, pad_data.reverse) end
+
+    -- Pitch envelope (for 808-style sounds)
+    if pad_data.pitch_env_amount then M.setPitchEnvAmount(track, fx, pad_idx, pad_data.pitch_env_amount) end
+    if pad_data.pitch_env_attack then M.setPitchEnvAttack(track, fx, pad_idx, pad_data.pitch_env_attack) end
+    if pad_data.pitch_env_decay then M.setPitchEnvDecay(track, fx, pad_idx, pad_data.pitch_env_decay) end
+    if pad_data.pitch_env_sustain then M.setPitchEnvSustain(track, fx, pad_idx, pad_data.pitch_env_sustain) end
   end
 
   return true
@@ -442,6 +506,141 @@ function M.triggerPad(pad, velocity)
   -- Send MIDI note to trigger pad (pad index = MIDI note)
   reaper.StuffMIDIMessage(0, 0x90, pad, velocity)  -- Note on
   -- Note off after short delay handled by one-shot mode
+end
+
+-- ============================================================================
+-- 808 PRESET PATTERNS
+-- Classic TR-808 style settings for common drum sounds
+-- ============================================================================
+
+M.Presets = {}
+
+-- Classic 808 kick with pitch drop
+-- Apply to any pad that has a kick sample
+M.Presets.Kick808 = {
+  pitch_env_amount = -12,   -- Drop 1 octave (classic 808 boing)
+  pitch_env_attack = 0,     -- Instant attack
+  pitch_env_decay = 80,     -- 80ms decay (adjust for "boing" length)
+  pitch_env_sustain = 0,    -- Full sweep to base pitch
+  attack = 0,               -- Instant attack
+  decay = 500,              -- Medium decay
+  sustain = 0.3,            -- Low sustain
+  release = 200,            -- Medium release
+}
+
+-- Deep 808 sub kick (more extreme pitch drop)
+M.Presets.SubKick808 = {
+  pitch_env_amount = -24,   -- Drop 2 octaves (deep sub)
+  pitch_env_attack = 0,
+  pitch_env_decay = 150,    -- Longer decay for sub
+  pitch_env_sustain = 0,
+  attack = 0,
+  decay = 800,
+  sustain = 0.4,
+  release = 300,
+}
+
+-- Punchy 808 kick (short pitch sweep)
+M.Presets.PunchyKick808 = {
+  pitch_env_amount = -8,    -- Subtle pitch drop
+  pitch_env_attack = 0,
+  pitch_env_decay = 30,     -- Very fast decay (punchy)
+  pitch_env_sustain = 0,
+  attack = 0,
+  decay = 200,
+  sustain = 0.1,
+  release = 100,
+}
+
+-- 808 snare with slight pitch
+M.Presets.Snare808 = {
+  pitch_env_amount = -4,    -- Subtle pitch drop
+  pitch_env_attack = 0,
+  pitch_env_decay = 20,     -- Very fast
+  pitch_env_sustain = 0,
+  attack = 0,
+  decay = 150,
+  sustain = 0.2,
+  release = 150,
+}
+
+-- 808 tom (melodic pitch drop)
+M.Presets.Tom808 = {
+  pitch_env_amount = -5,    -- Slight pitch drop
+  pitch_env_attack = 0,
+  pitch_env_decay = 100,
+  pitch_env_sustain = 0,
+  attack = 0,
+  decay = 400,
+  sustain = 0.3,
+  release = 200,
+}
+
+-- Hi-hat (no pitch envelope, tight response)
+M.Presets.HiHat808 = {
+  pitch_env_amount = 0,     -- No pitch envelope
+  pitch_env_attack = 0,
+  pitch_env_decay = 0,
+  pitch_env_sustain = 0,
+  attack = 0,
+  decay = 50,
+  sustain = 0,
+  release = 50,
+}
+
+-- Open hi-hat (longer decay)
+M.Presets.OpenHat808 = {
+  pitch_env_amount = 0,
+  pitch_env_attack = 0,
+  pitch_env_decay = 0,
+  pitch_env_sustain = 0,
+  attack = 0,
+  decay = 300,
+  sustain = 0.5,
+  release = 200,
+}
+
+-- Clap (no pitch envelope)
+M.Presets.Clap808 = {
+  pitch_env_amount = 0,
+  pitch_env_attack = 0,
+  pitch_env_decay = 0,
+  pitch_env_sustain = 0,
+  attack = 0,
+  decay = 200,
+  sustain = 0.1,
+  release = 200,
+}
+
+-- Cowbell (slight pitch drop for "ding")
+M.Presets.Cowbell808 = {
+  pitch_env_amount = -2,
+  pitch_env_attack = 0,
+  pitch_env_decay = 30,
+  pitch_env_sustain = 0,
+  attack = 0,
+  decay = 300,
+  sustain = 0.4,
+  release = 150,
+}
+
+-- Apply a preset to a pad
+function M.applyPreset(track, fx, pad, preset)
+  if not track or not fx or fx < 0 then return false end
+  if not preset then return false end
+
+  if preset.pitch_env_amount then M.setPitchEnvAmount(track, fx, pad, preset.pitch_env_amount) end
+  if preset.pitch_env_attack then M.setPitchEnvAttack(track, fx, pad, preset.pitch_env_attack) end
+  if preset.pitch_env_decay then M.setPitchEnvDecay(track, fx, pad, preset.pitch_env_decay) end
+  if preset.pitch_env_sustain then M.setPitchEnvSustain(track, fx, pad, preset.pitch_env_sustain) end
+  if preset.attack then M.setAttack(track, fx, pad, preset.attack) end
+  if preset.decay then M.setDecay(track, fx, pad, preset.decay) end
+  if preset.sustain then M.setSustain(track, fx, pad, preset.sustain) end
+  if preset.release then M.setRelease(track, fx, pad, preset.release) end
+  if preset.tune then M.setTune(track, fx, pad, preset.tune) end
+  if preset.volume then M.setVolume(track, fx, pad, preset.volume) end
+
+  return true
 end
 
 return M

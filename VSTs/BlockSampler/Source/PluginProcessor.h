@@ -212,12 +212,16 @@ private:
         std::atomic<float>* filterType = nullptr;
         std::atomic<float>* killGroup = nullptr;
         std::atomic<float>* outputGroup = nullptr;
-        std::atomic<float>* oneShot = nullptr;
+        std::atomic<float>* loopMode = nullptr;         // Replaces oneShot
         std::atomic<float>* reverse = nullptr;
         std::atomic<float>* normalize = nullptr;
         std::atomic<float>* sampleStart = nullptr;
         std::atomic<float>* sampleEnd = nullptr;
         std::atomic<float>* roundRobinMode = nullptr;
+        std::atomic<float>* pitchEnvAmount = nullptr;   // Pitch envelope depth
+        std::atomic<float>* pitchEnvAttack = nullptr;   // Pitch envelope attack
+        std::atomic<float>* pitchEnvDecay = nullptr;    // Pitch envelope decay
+        std::atomic<float>* pitchEnvSustain = nullptr;  // Pitch envelope sustain
     };
     std::array<PadParams, NUM_PADS> padParams;
 

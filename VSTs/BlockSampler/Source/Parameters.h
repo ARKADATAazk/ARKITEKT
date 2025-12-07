@@ -46,9 +46,17 @@ constexpr int VELOCITY_LAYER_3_MIN = 96;   // Layer 3 starts at velocity 96
 // PARAMETER DEFINITIONS
 // =============================================================================
 
+// Loop modes for sample playback
+enum class LoopMode
+{
+    OneShot = 0,    // Play once and stop
+    Loop = 1,       // Loop continuously
+    PingPong = 2    // Loop back and forth
+};
+
 namespace PadParam
 {
-    // Parameter IDs per pad (18 total)
+    // Parameter IDs per pad (22 total)
     enum ID
     {
         Volume = 0,       // 0-1
@@ -63,13 +71,17 @@ namespace PadParam
         FilterType,       // 0=LP, 1=HP
         KillGroup,        // 0-8 (0 = none)
         OutputGroup,      // 0-16 (0 = main only)
-        OneShot,          // bool
+        LoopModeParam,    // 0=OneShot, 1=Loop, 2=PingPong (replaces OneShot bool)
         Reverse,          // bool
         Normalize,        // bool - apply peak normalization
         SampleStart,      // 0-1 normalized
         SampleEnd,        // 0-1 normalized
         RoundRobinMode,   // 0=sequential, 1=random
-        COUNT             // = 18
+        PitchEnvAmount,   // -24 to +24 semitones (pitch envelope depth)
+        PitchEnvAttack,   // 0-100 ms (pitch envelope attack)
+        PitchEnvDecay,    // 0-2000 ms (pitch envelope decay)
+        PitchEnvSustain,  // 0-1 (pitch envelope sustain level, 0=full sweep)
+        COUNT             // = 22
     };
 
     // Total parameters: 18 × 128 = 2304
@@ -87,7 +99,8 @@ namespace PadParam
         static const char* names[] = {
             "volume", "pan", "tune", "attack", "decay", "sustain",
             "release", "cutoff", "reso", "filtertype", "killgroup", "outgroup",
-            "oneshot", "reverse", "normalize", "start", "end", "rrmode"
+            "loopmode", "reverse", "normalize", "start", "end", "rrmode",
+            "pitchenvamt", "pitchenvattack", "pitchenvdecay", "pitchenvsustain"
         };
         return "p" + juce::String(pad) + "_" + names[param];
     }
@@ -182,11 +195,11 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             prefix + "Output Group",
             0, NUM_OUTPUT_GROUPS, 0));
 
-        // One-Shot mode (default true for drums)
-        params.push_back(std::make_unique<juce::AudioParameterBool>(
-            juce::ParameterID { PadParam::id(pad, PadParam::OneShot), 1 },
-            prefix + "One-Shot",
-            true));
+        // Loop Mode (0=OneShot, 1=Loop, 2=PingPong, default OneShot for drums)
+        params.push_back(std::make_unique<juce::AudioParameterInt>(
+            juce::ParameterID { PadParam::id(pad, PadParam::LoopModeParam), 1 },
+            prefix + "Loop Mode",
+            0, 2, 0));
 
         // Reverse playback
         params.push_back(std::make_unique<juce::AudioParameterBool>(
@@ -217,6 +230,33 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             juce::ParameterID { PadParam::id(pad, PadParam::RoundRobinMode), 1 },
             prefix + "RR Mode",
             0, 1, 0));
+
+        // Pitch Envelope Amount (-24 to +24 semitones, default 0 = off)
+        // Classic 808 kicks use -12 to -24 for that "boing" attack
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID { PadParam::id(pad, PadParam::PitchEnvAmount), 1 },
+            prefix + "Pitch Env Amt",
+            -24.0f, 24.0f, 0.0f));
+
+        // Pitch Envelope Attack (0-100ms, fast attack for punchy drums)
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID { PadParam::id(pad, PadParam::PitchEnvAttack), 1 },
+            prefix + "Pitch Env Atk",
+            juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f, 0.5f),
+            0.0f, "ms"));
+
+        // Pitch Envelope Decay (0-2000ms, controls how fast pitch sweeps to sustain)
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID { PadParam::id(pad, PadParam::PitchEnvDecay), 1 },
+            prefix + "Pitch Env Dcy",
+            juce::NormalisableRange<float>(0.0f, 2000.0f, 1.0f, 0.3f),
+            50.0f, "ms"));
+
+        // Pitch Envelope Sustain (0-1, 0=full sweep to base pitch, 1=no sweep)
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID { PadParam::id(pad, PadParam::PitchEnvSustain), 1 },
+            prefix + "Pitch Env Sus",
+            0.0f, 1.0f, 0.0f));
     }
 
     return { params.begin(), params.end() };
