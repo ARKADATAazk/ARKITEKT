@@ -321,7 +321,11 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
                 (*queue)[start1] = std::move(result);
                 fifo->finishedWrite(1);
             }
-            // If FIFO is full, drop the load (will be retried by user)
+            else
+            {
+                // FIFO full - increment drop counter for debugging
+                droppedLoadCount.fetch_add(1, std::memory_order_relaxed);
+            }
         }
     });
 }
@@ -394,7 +398,11 @@ void Processor::queueCommand(PadCommand cmd)
         commandQueue[start1] = cmd;
         commandFifo.finishedWrite(1);
     }
-    // If FIFO is full, drop the command (rare edge case)
+    else
+    {
+        // FIFO full - increment drop counter for debugging
+        droppedCommandCount.fetch_add(1, std::memory_order_relaxed);
+    }
 }
 
 void Processor::applyQueuedCommands()
@@ -485,8 +493,12 @@ void Processor::updatePadMetadata(int padIndex)
     if (padIndex < 0 || padIndex >= NUM_PADS)
         return;
 
-    // Called from audio thread - take exclusive lock to update metadata
-    std::unique_lock<std::shared_mutex> lock(metadataMutex);
+    // Called from audio thread - try to acquire lock without blocking
+    // If message thread holds a read lock, skip this update (non-critical metadata)
+    // The metadata will be updated on the next sample load
+    std::unique_lock<std::shared_mutex> lock(metadataMutex, std::try_to_lock);
+    if (!lock.owns_lock())
+        return;  // Skip update to avoid blocking audio thread
 
     auto& meta = padMetadata[padIndex];
     auto& pad = pads[padIndex];
@@ -513,8 +525,11 @@ void Processor::updatePadMetadataAfterClear(int padIndex, int layerIndex)
     if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
         return;
 
-    // Called from audio thread - take exclusive lock to update metadata
-    std::unique_lock<std::shared_mutex> lock(metadataMutex);
+    // Called from audio thread - try to acquire lock without blocking
+    // If message thread holds a read lock, skip this update (non-critical metadata)
+    std::unique_lock<std::shared_mutex> lock(metadataMutex, std::try_to_lock);
+    if (!lock.owns_lock())
+        return;  // Skip update to avoid blocking audio thread
 
     auto& meta = padMetadata[padIndex];
     auto& pad = pads[padIndex];

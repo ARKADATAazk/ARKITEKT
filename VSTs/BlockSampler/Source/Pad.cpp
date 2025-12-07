@@ -59,12 +59,10 @@ void VelocityLayer::advanceRoundRobin(juce::Random& rng, bool randomMode)
 
     if (randomMode && count > 1)
     {
-        // Random selection (avoid repeating same sample)
-        int newIndex;
-        do {
-            newIndex = rng.nextInt(count);
-        } while (newIndex == roundRobinIndex);
-        roundRobinIndex = newIndex;
+        // Random selection using offset to guarantee different sample (no infinite loop)
+        // Pick random offset 1..(count-1), add to current index
+        int offset = 1 + rng.nextInt(count - 1);
+        roundRobinIndex = (roundRobinIndex + offset) % count;
     }
     else
     {

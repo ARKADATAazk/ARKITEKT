@@ -238,6 +238,10 @@ private:
     juce::AbstractFifo commandFifo { COMMAND_QUEUE_SIZE };
     std::array<PadCommand, COMMAND_QUEUE_SIZE> commandQueue;
 
+    // Debug counters for FIFO overflow detection (atomic for thread-safe reads)
+    std::atomic<uint32_t> droppedLoadCount { 0 };
+    std::atomic<uint32_t> droppedCommandCount { 0 };
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Processor)
 };
 
