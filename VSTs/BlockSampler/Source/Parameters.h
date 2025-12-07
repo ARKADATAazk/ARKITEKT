@@ -30,9 +30,12 @@ constexpr float FILTER_LP_BYPASS_THRESHOLD = 20000.0f;  // Skip LP filter at max
 constexpr float FILTER_HP_BYPASS_THRESHOLD = 20.0f;     // Skip HP filter at min cutoff
 constexpr float NORM_PEAK_THRESHOLD = 0.0001f;          // Min peak for normalization
 
-// Filter Q mapping: 0-1 resonance parameter maps to Q_MIN-Q_MAX
+// Filter Q mapping: 0-1 resonance parameter maps to Q_MIN-Q_MAX (logarithmic)
 constexpr float FILTER_Q_MIN = 0.707f;   // Butterworth (no resonance)
 constexpr float FILTER_Q_MAX = 10.0f;    // High resonance
+// Pre-computed log ratio for logarithmic Q mapping: ln(Q_MAX / Q_MIN)
+// Used in Pad.cpp: Q = Q_MIN * exp(reso * LOG_RATIO)
+constexpr float FILTER_Q_LOG_RATIO = 2.6476f;  // ln(10.0 / 0.707) ≈ 2.6476
 
 // Round-robin limits
 constexpr int MAX_ROUND_ROBIN_SAMPLES = 16;  // Max RR samples per layer (for pre-allocation)

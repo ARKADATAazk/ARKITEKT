@@ -46,7 +46,8 @@ struct PadMetadata
 {
     // Atomic snapshot of pad state - updated by audio thread, read by message thread
     std::array<juce::String, NUM_VELOCITY_LAYERS> samplePaths;
-    std::array<std::vector<juce::String>, NUM_VELOCITY_LAYERS> roundRobinPaths;
+    // Fixed arrays for round-robin paths (no allocations during updates)
+    std::array<std::array<juce::String, MAX_ROUND_ROBIN_SAMPLES>, NUM_VELOCITY_LAYERS> roundRobinPaths;
     std::array<int, NUM_VELOCITY_LAYERS> roundRobinCounts = {};
     std::array<double, NUM_VELOCITY_LAYERS> sampleDurations = {};
     std::array<bool, NUM_VELOCITY_LAYERS> hasLayerSample = {};

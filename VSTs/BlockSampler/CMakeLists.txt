@@ -95,3 +95,52 @@ target_compile_definitions(BlockSampler
         JUCE_VST3_CAN_REPLACE_VST2=0
         JUCE_DISPLAY_SPLASH_SCREEN=0
 )
+
+# =============================================================================
+# UNIT TESTS (Optional - build with -DBUILD_TESTS=ON)
+# =============================================================================
+
+option(BUILD_TESTS "Build unit tests" OFF)
+
+if(BUILD_TESTS)
+    # Fetch Catch2
+    FetchContent_Declare(
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG        v3.5.2
+    )
+    FetchContent_MakeAvailable(Catch2)
+
+    # Test executable
+    add_executable(BlockSamplerTests
+        Tests/TestMain.cpp
+        Tests/PadTests.cpp
+        Source/Pad.cpp
+    )
+
+    target_include_directories(BlockSamplerTests
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/Source
+    )
+
+    target_link_libraries(BlockSamplerTests
+        PRIVATE
+            Catch2::Catch2WithMain
+            juce::juce_audio_basics
+            juce::juce_audio_formats
+            juce::juce_core
+            juce::juce_dsp
+    )
+
+    target_compile_definitions(BlockSamplerTests
+        PRIVATE
+            JUCE_STANDALONE_APPLICATION=1
+            JUCE_WEB_BROWSER=0
+            JUCE_USE_CURL=0
+    )
+
+    # Enable CTest integration
+    include(CTest)
+    include(Catch)
+    catch_discover_tests(BlockSamplerTests)
+endif()

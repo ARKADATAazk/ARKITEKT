@@ -560,8 +560,7 @@ void Processor::updatePadMetadata(int padIndex)
     for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
     {
         meta.samplePaths[layer] = pad.getSamplePath(layer);
-        meta.roundRobinPaths[layer] = pad.getRoundRobinPaths(layer);
-        meta.roundRobinCounts[layer] = pad.getRoundRobinCount(layer);
+        meta.roundRobinCounts[layer] = pad.getRoundRobinPaths(layer, meta.roundRobinPaths[layer]);
         meta.sampleDurations[layer] = pad.getSampleDuration(layer);
         meta.hasLayerSample[layer] = pad.hasSample(layer);
 
@@ -588,8 +587,7 @@ void Processor::updatePadMetadataAfterClear(int padIndex, int layerIndex)
 
     // Update only the affected layer
     meta.samplePaths[layerIndex] = pad.getSamplePath(layerIndex);
-    meta.roundRobinPaths[layerIndex] = pad.getRoundRobinPaths(layerIndex);
-    meta.roundRobinCounts[layerIndex] = pad.getRoundRobinCount(layerIndex);
+    meta.roundRobinCounts[layerIndex] = pad.getRoundRobinPaths(layerIndex, meta.roundRobinPaths[layerIndex]);
     meta.sampleDurations[layerIndex] = pad.getSampleDuration(layerIndex);
     meta.hasLayerSample[layerIndex] = pad.hasSample(layerIndex);
 
@@ -656,10 +654,11 @@ void Processor::getStateInformation(juce::MemoryBlock& destData)
                     samplesNode.addChild(sampleNode, -1, nullptr);
                 }
 
-                // Round-robin samples
-                const auto& rrPaths = meta.roundRobinPaths[layer];
-                for (const auto& rrPath : rrPaths)
+                // Round-robin samples (iterate only up to roundRobinCount)
+                const int rrCount = meta.roundRobinCounts[layer];
+                for (int rr = 0; rr < rrCount; ++rr)
                 {
+                    const auto& rrPath = meta.roundRobinPaths[layer][static_cast<size_t>(rr)];
                     juce::ValueTree rrNode("RoundRobin");
                     rrNode.setProperty("pad", pad, nullptr);
                     rrNode.setProperty("layer", layer, nullptr);

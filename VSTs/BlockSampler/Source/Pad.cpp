@@ -73,13 +73,11 @@ void VelocityLayer::advanceRoundRobin(juce::Random& rng, bool randomMode)
     }
 }
 
-std::vector<juce::String> VelocityLayer::getRoundRobinPaths() const
+int VelocityLayer::getRoundRobinPaths(std::array<juce::String, MAX_ROUND_ROBIN_SAMPLES>& outPaths) const
 {
-    std::vector<juce::String> paths;
-    paths.reserve(static_cast<size_t>(roundRobinCount));
     for (int i = 0; i < roundRobinCount; ++i)
-        paths.push_back(roundRobinSamples[static_cast<size_t>(i)].path);
-    return paths;
+        outPaths[static_cast<size_t>(i)] = roundRobinSamples[static_cast<size_t>(i)].path;
+    return roundRobinCount;
 }
 
 void VelocityLayer::clear()
@@ -306,7 +304,7 @@ int Pad::renderNextBlock(int numSamples)
     // Pre-calculate base gain (volume * velocity * normalization)
     const float baseGain = volume * currentVelocity * normGainValue;
 
-    // Clear temp buffer for this render
+    // Clear temp buffer for this render (JUCE uses SIMD internally)
     tempBuffer.clear(0, numSamples);
 
     int samplesRendered = 0;
@@ -315,65 +313,128 @@ int Pad::renderNextBlock(int numSamples)
     const double positionDelta = reverse ? -pitchRatio : pitchRatio;
     const int boundaryCheck = reverse ? playStartSample : playEndSample;
 
-    for (int sample = 0; sample < numSamples; ++sample)
+    // Fast path: unity pitch ratio (no interpolation needed)
+    // Common case for drum samples played at original pitch and sample rate
+    constexpr double UNITY_PITCH_EPSILON = 0.0001;
+    const bool unityPitch = std::fabs(pitchRatio - 1.0) < UNITY_PITCH_EPSILON && !reverse;
+
+    if (unityPitch)
     {
-        // Check playback boundaries (direction-agnostic comparison)
-        bool pastBoundary = reverse ? (playPosition < boundaryCheck) : (playPosition >= boundaryCheck);
-        if (pastBoundary)
+        // Optimized path: direct sample copy without interpolation
+        int pos = static_cast<int>(playPosition);
+        const int maxSamples = juce::jmin(numSamples, playEndSample - pos);
+
+        for (int sample = 0; sample < maxSamples; ++sample)
         {
-            if (oneShot)
+            // Check playback boundaries
+            if (pos >= playEndSample)
+            {
+                if (oneShot)
+                {
+                    isPlaying = false;
+                    break;
+                }
+                pos = playStartSample;
+            }
+
+            // Get envelope value
+            const float envValue = envelope.getNextSample();
+            if (!envelope.isActive())
             {
                 isPlaying = false;
                 break;
             }
-            playPosition = reverse ? (playEndSample - 1) : playStartSample;
-        }
 
-        // Get envelope value
-        const float envValue = envelope.getNextSample();
-        if (!envelope.isActive())
+            // Bounds check
+            if (pos < 0 || pos >= sampleNumSamples)
+            {
+                isPlaying = false;
+                break;
+            }
+
+            // Direct sample access (no interpolation)
+            const float gain = baseGain * envValue;
+
+            if (isMono)
+            {
+                const float monoSample = srcL[pos] * gain;
+                destL[sample] = monoSample * panGainL;
+                destR[sample] = monoSample * panGainR;
+            }
+            else
+            {
+                destL[sample] = srcL[pos] * gain * panGainL;
+                destR[sample] = srcR[pos] * gain * panGainR;
+            }
+
+            ++pos;
+            ++samplesRendered;
+        }
+        playPosition = static_cast<double>(pos);
+    }
+    else
+    {
+        // Standard path: linear interpolation for pitch shifting
+        for (int sample = 0; sample < numSamples; ++sample)
         {
-            isPlaying = false;
-            break;
+            // Check playback boundaries (direction-agnostic comparison)
+            bool pastBoundary = reverse ? (playPosition < boundaryCheck) : (playPosition >= boundaryCheck);
+            if (pastBoundary)
+            {
+                if (oneShot)
+                {
+                    isPlaying = false;
+                    break;
+                }
+                playPosition = reverse ? (playEndSample - 1) : playStartSample;
+            }
+
+            // Get envelope value
+            const float envValue = envelope.getNextSample();
+            if (!envelope.isActive())
+            {
+                isPlaying = false;
+                break;
+            }
+
+            // Linear interpolation for pitch shifting
+            const int pos0 = static_cast<int>(playPosition);
+
+            // Bounds check pos0 to prevent buffer overrun
+            if (pos0 < 0 || pos0 >= sampleNumSamples)
+            {
+                isPlaying = false;
+                break;
+            }
+
+            const int pos1 = juce::jlimit(0, sampleNumSamples - 1, reverse ? (pos0 - 1) : (pos0 + 1));
+            const float frac = static_cast<float>(std::fabs(playPosition - pos0));
+
+            // Combined gain with envelope
+            const float gain = baseGain * envValue;
+
+            // Interpolate and write samples (mono path optimized)
+            if (isMono)
+            {
+                const float s0 = srcL[pos0];
+                const float s1 = srcL[pos1];
+                const float monoSample = (s0 + frac * (s1 - s0)) * gain;
+                destL[sample] = monoSample * panGainL;
+                destR[sample] = monoSample * panGainR;
+            }
+            else
+            {
+                // Stereo: process both channels inline (avoid loop overhead)
+                const float sL0 = srcL[pos0], sL1 = srcL[pos1];
+                const float sR0 = srcR[pos0], sR1 = srcR[pos1];
+                destL[sample] = (sL0 + frac * (sL1 - sL0)) * gain * panGainL;
+                destR[sample] = (sR0 + frac * (sR1 - sR0)) * gain * panGainR;
+            }
+
+            // Advance position
+            playPosition += positionDelta;
+            ++samplesRendered;
         }
-
-        // Linear interpolation for pitch shifting
-        const int pos0 = static_cast<int>(playPosition);
-
-        // Bounds check pos0 to prevent buffer overrun
-        if (pos0 < 0 || pos0 >= sampleNumSamples)
-        {
-            isPlaying = false;
-            break;
-        }
-
-        const int pos1 = juce::jlimit(0, sampleNumSamples - 1, reverse ? (pos0 - 1) : (pos0 + 1));
-        const float frac = static_cast<float>(std::fabs(playPosition - pos0));
-
-        // Combined gain with envelope
-        const float gain = baseGain * envValue;
-
-        // Interpolate and write samples (mono path optimized)
-        if (isMono)
-        {
-            const float s0 = srcL[pos0];
-            const float s1 = srcL[pos1];
-            const float monoSample = (s0 + frac * (s1 - s0)) * gain;
-            destL[sample] = monoSample * panGainL;
-            destR[sample] = monoSample * panGainR;
-        }
-        else
-        {
-            // Stereo: process both channels inline (avoid loop overhead)
-            const float sL0 = srcL[pos0], sL1 = srcL[pos1];
-            const float sR0 = srcR[pos0], sR1 = srcR[pos1];
-            destL[sample] = (sL0 + frac * (sL1 - sL0)) * gain * panGainL;
-            destR[sample] = (sR0 + frac * (sR1 - sR0)) * gain * panGainR;
-        }
-
-        // Advance position
-        playPosition += positionDelta;
-        ++samplesRendered;
     }
 
     // Apply filter (LP if cutoff < 20kHz, HP if cutoff > 20Hz)
@@ -397,8 +458,10 @@ int Pad::renderNextBlock(int numSamples)
         }
         if (filterReso != lastFilterReso)
         {
-            // Map 0-1 resonance to Q factor (0.707 Butterworth to 10 high-reso)
-            float q = FILTER_Q_MIN + filterReso * (FILTER_Q_MAX - FILTER_Q_MIN);
+            // Logarithmic mapping: 0-1 resonance to Q factor (0.707 to 10)
+            // Q = Q_MIN * exp(reso * ln(Q_MAX/Q_MIN)) gives perceptually linear response
+            // At reso=0: Q=0.707 (Butterworth), at reso=1: Q=10 (high resonance)
+            float q = FILTER_Q_MIN * std::exp(filterReso * FILTER_Q_LOG_RATIO);
             filter.setResonance(q);
             lastFilterReso = filterReso;
         }
@@ -512,11 +575,11 @@ juce::String Pad::getSamplePath(int layerIndex) const
     return {};
 }
 
-std::vector<juce::String> Pad::getRoundRobinPaths(int layerIndex) const
+int Pad::getRoundRobinPaths(int layerIndex, std::array<juce::String, MAX_ROUND_ROBIN_SAMPLES>& outPaths) const
 {
     if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
-        return layers[layerIndex].getRoundRobinPaths();
-    return {};
+        return layers[layerIndex].getRoundRobinPaths(outPaths);
+    return 0;
 }
 
 bool Pad::hasSample(int layerIndex) const
