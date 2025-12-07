@@ -76,7 +76,8 @@ enum class PadCommandType : uint8_t
     ReleaseAll,     // Release all pads
     ClearLayer,     // Clear specific layer (requires layerIndex)
     ClearRoundRobin,// Clear round-robin samples for layer (requires layerIndex)
-    ClearPad        // Clear all layers for pad
+    ClearPad,       // Clear all layers for pad
+    ClearAllPads    // Clear all samples from all pads (single command)
 };
 
 struct PadCommand

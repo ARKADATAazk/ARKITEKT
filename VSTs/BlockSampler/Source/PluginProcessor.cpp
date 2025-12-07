@@ -472,6 +472,15 @@ void Processor::applyQueuedCommands()
                     updatePadMetadata(cmd.padIndex);
                 }
                 break;
+
+            case PadCommandType::ClearAllPads:
+                for (int pad = 0; pad < NUM_PADS; ++pad)
+                {
+                    for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+                        pads[pad].clearSample(layer);
+                    updatePadMetadata(pad);
+                }
+                break;
         }
     };
 
@@ -662,8 +671,7 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
                 }
                 else if (cmdType == "ClearAll")
                 {
-                    for (int pad = 0; pad < NUM_PADS; ++pad)
-                        queueCommand({ PadCommandType::ClearPad, pad, 0, 0 });
+                    queueCommand({ PadCommandType::ClearAllPads, -1, 0, 0 });
                 }
             }
 
@@ -671,6 +679,10 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
         }
 
         parameters.replaceState(state);
+
+        // Clear all existing samples before loading new state
+        // This prevents leftover samples from previous project
+        queueCommand({ PadCommandType::ClearAllPads, -1, 0, 0 });
 
         // Reload samples from stored paths (async to avoid blocking message thread)
         auto samplesNode = state.getChildWithName("Samples");
@@ -684,7 +696,9 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
                 juce::String path = sampleNode.getProperty("path", "");
                 juce::String nodeType = sampleNode.getType().toString();
 
-                if (pad >= 0 && pad < NUM_PADS && path.isNotEmpty())
+                if (pad >= 0 && pad < NUM_PADS &&
+                    layer >= 0 && layer < NUM_VELOCITY_LAYERS &&
+                    path.isNotEmpty())
                 {
                     bool isRoundRobin = (nodeType == "RoundRobin");
                     loadSampleToPadAsync(pad, layer, path, isRoundRobin);
