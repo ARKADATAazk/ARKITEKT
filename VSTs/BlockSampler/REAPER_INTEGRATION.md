@@ -500,11 +500,14 @@ Communication between Lua and BlockSampler VST.
 
 | Param | Format | Description |
 |-------|--------|-------------|
-| `P{n}_L{l}_SAMPLE` | path | Sync load sample to pad n, layer l |
-| `P{n}_L{l}_SAMPLE_ASYNC` | path | Async load (non-blocking) |
-| `P{n}_L{l}_RR_ASYNC` | path | Add round-robin sample |
-| `P{n}_L{l}_CLEAR_RR` | any | Clear round-robin samples |
-| `P{n}_CLEAR` | any | Clear all layers on pad |
+| `P{n}_L{l}_SAMPLE` | path | Load sample to pad n, layer l (async) |
+| `P{n}_L{l}_SAMPLE_ASYNC` | path | Alias for above (async) |
+| `P{n}_L{l}_RR_ASYNC` | path | Add round-robin sample (async) |
+| `P{n}_L{l}_CLEAR_RR` | any | Clear round-robin samples (queued) |
+| `P{n}_CLEAR` | any | Clear all layers on pad (queued) |
+
+> **Note:** All sample operations are async/queued to ensure thread safety.
+> Loads happen in a background thread; clear operations are queued to the audio thread.
 
 ### Queries
 
@@ -520,11 +523,14 @@ Communication between Lua and BlockSampler VST.
 
 | Param | Value | Description |
 |-------|-------|-------------|
-| `P{n}_PREVIEW` | 1-127 | Trigger pad with velocity |
-| `P{n}_STOP` | any | Stop pad immediately (hard cut) |
-| `P{n}_RELEASE` | any | Trigger release phase (graceful fade-out) |
-| `STOP_ALL` | any | Stop all pads immediately |
-| `RELEASE_ALL` | any | Release all pads (graceful fade-out) |
+| `P{n}_PREVIEW` | 1-127 | Trigger pad with velocity (queued) |
+| `P{n}_STOP` | any | Stop pad immediately, hard cut (queued) |
+| `P{n}_RELEASE` | any | Trigger release phase, graceful fade-out (queued) |
+| `STOP_ALL` | any | Stop all pads immediately (queued) |
+| `RELEASE_ALL` | any | Release all pads gracefully (queued) |
+
+> **Note:** Playback commands are queued to the audio thread for thread safety.
+> They execute at the start of the next audio buffer (typically <10ms latency).
 
 ### Helper Functions
 

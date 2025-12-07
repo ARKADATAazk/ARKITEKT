@@ -130,14 +130,11 @@ public:
     bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
 
     // -------------------------------------------------------------------------
-    // SAMPLE MANAGEMENT (called from Lua via chunk commands)
+    // SAMPLE MANAGEMENT
     // -------------------------------------------------------------------------
 
-    // Synchronous (blocks calling thread - use for state restore)
-    bool loadSampleToPad(int padIndex, int layerIndex, const juce::String& filePath);
-    void clearPadSample(int padIndex, int layerIndex);
-
-    // Asynchronous (returns immediately, loads in background)
+    // Asynchronous sample loading (returns immediately, loads in background thread)
+    // Sample is applied to pad on next audio processBlock via lock-free FIFO
     void loadSampleToPadAsync(int padIndex, int layerIndex, const juce::String& filePath, bool roundRobin = false);
 
     // -------------------------------------------------------------------------

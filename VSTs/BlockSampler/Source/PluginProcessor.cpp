@@ -257,26 +257,6 @@ void Processor::updatePadParameters(int padIndex)
 // SAMPLE MANAGEMENT
 // =============================================================================
 
-bool Processor::loadSampleToPad(int padIndex, int layerIndex, const juce::String& filePath)
-{
-    if (padIndex < 0 || padIndex >= NUM_PADS)
-        return false;
-
-    juce::File file(filePath);
-    if (!file.existsAsFile())
-        return false;
-
-    return pads[padIndex].loadSample(layerIndex, file, formatManager);
-}
-
-void Processor::clearPadSample(int padIndex, int layerIndex)
-{
-    if (padIndex >= 0 && padIndex < NUM_PADS)
-    {
-        pads[padIndex].clearSample(layerIndex);
-    }
-}
-
 void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
                                       const juce::String& filePath, bool roundRobin)
 {
