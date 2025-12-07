@@ -8,7 +8,7 @@ local M = {}
 M.NUM_PADS = 128
 M.NUM_VELOCITY_LAYERS = 4
 M.NUM_OUTPUT_GROUPS = 16
-M.PARAMS_PER_PAD = 22  -- Updated: was 18, now 22 with pitch envelope
+M.PARAMS_PER_PAD = 23  -- Updated: was 22, now 23 with velocity crossfade
 
 -- Parameter indices (must match BlockSampler/Source/Parameters.h)
 M.Param = {
@@ -34,6 +34,7 @@ M.Param = {
   PitchEnvAttack = 19,  -- 0-100 ms (pitch envelope attack)
   PitchEnvDecay = 20,   -- 0-2000 ms (pitch envelope decay)
   PitchEnvSustain = 21, -- 0-1 (pitch envelope sustain level)
+  VelCrossfade = 22,    -- 0-1 (velocity layer crossfade width)
 }
 
 -- Loop mode constants
@@ -240,6 +241,21 @@ function M.setPitchEnvelope(track, fx, pad, amount, attack, decay, sustain)
   M.setPitchEnvAttack(track, fx, pad, attack or 0)
   M.setPitchEnvDecay(track, fx, pad, decay or 50)
   M.setPitchEnvSustain(track, fx, pad, sustain or 0)
+end
+
+-- ============================================================================
+-- VELOCITY LAYER CROSSFADE
+-- ============================================================================
+
+function M.setVelCrossfade(track, fx, pad, value)
+  -- Value is 0-1:
+  --   0 = hard switch between velocity layers (traditional behavior)
+  --   1 = maximum crossfade zone (smooth blend near layer boundaries)
+  return M.setParam(track, fx, pad, M.Param.VelCrossfade, math.min(1, math.max(0, value)))
+end
+
+function M.getVelCrossfade(track, fx, pad)
+  return M.getParam(track, fx, pad, M.Param.VelCrossfade)
 end
 
 -- ============================================================================
@@ -462,6 +478,9 @@ function M.loadKit(track, fx, kit_data)
     if pad_data.pitch_env_attack then M.setPitchEnvAttack(track, fx, pad_idx, pad_data.pitch_env_attack) end
     if pad_data.pitch_env_decay then M.setPitchEnvDecay(track, fx, pad_idx, pad_data.pitch_env_decay) end
     if pad_data.pitch_env_sustain then M.setPitchEnvSustain(track, fx, pad_idx, pad_data.pitch_env_sustain) end
+
+    -- Velocity layer crossfade
+    if pad_data.vel_crossfade ~= nil then M.setVelCrossfade(track, fx, pad_idx, pad_data.vel_crossfade) end
   end
 
   return true
@@ -639,6 +658,7 @@ function M.applyPreset(track, fx, pad, preset)
   if preset.release then M.setRelease(track, fx, pad, preset.release) end
   if preset.tune then M.setTune(track, fx, pad, preset.tune) end
   if preset.volume then M.setVolume(track, fx, pad, preset.volume) end
+  if preset.vel_crossfade ~= nil then M.setVelCrossfade(track, fx, pad, preset.vel_crossfade) end
 
   return true
 end

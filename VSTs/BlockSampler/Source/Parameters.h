@@ -81,7 +81,8 @@ namespace PadParam
         PitchEnvAttack,   // 0-100 ms (pitch envelope attack)
         PitchEnvDecay,    // 0-2000 ms (pitch envelope decay)
         PitchEnvSustain,  // 0-1 (pitch envelope sustain level, 0=full sweep)
-        COUNT             // = 22
+        VelCrossfade,     // 0-1 (velocity layer crossfade width, 0=hard switch)
+        COUNT             // = 23
     };
 
     // Total parameters: 18 × 128 = 2304
@@ -100,7 +101,8 @@ namespace PadParam
             "volume", "pan", "tune", "attack", "decay", "sustain",
             "release", "cutoff", "reso", "filtertype", "killgroup", "outgroup",
             "loopmode", "reverse", "normalize", "start", "end", "rrmode",
-            "pitchenvamt", "pitchenvattack", "pitchenvdecay", "pitchenvsustain"
+            "pitchenvamt", "pitchenvattack", "pitchenvdecay", "pitchenvsustain",
+            "velcrossfade"
         };
         return "p" + juce::String(pad) + "_" + names[param];
     }
@@ -257,6 +259,14 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             juce::ParameterID { PadParam::id(pad, PadParam::PitchEnvSustain), 1 },
             prefix + "Pitch Env Sus",
             0.0f, 1.0f, 0.0f));
+
+        // Velocity Crossfade (0-1, 0=hard switch between layers, 1=full blend zone)
+        // At 0: traditional hard switching at velocity thresholds
+        // At 1: smooth crossfade across the full overlap zone between layers
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID { PadParam::id(pad, PadParam::VelCrossfade), 1 },
+            prefix + "Vel Crossfade",
+            0.0f, 1.0f, 0.0f));  // Default 0 = traditional hard switching
     }
 
     return { params.begin(), params.end() };

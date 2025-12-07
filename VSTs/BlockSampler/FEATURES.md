@@ -5,7 +5,7 @@
 | Feature | Sitala | BlockSampler | Winner |
 |---------|--------|--------------|--------|
 | Pads | 16 | 128 | **BlockSampler** |
-| Velocity layers | ❌ | ✅ 4 per pad | **BlockSampler** |
+| Velocity layers | ❌ | ✅ 4 per pad + crossfade | **BlockSampler** |
 | Round-robin | ❌ | ✅ 16 per layer | **BlockSampler** |
 | Choke/kill groups | ✅ 16 | ✅ 8 | Sitala (more groups) |
 | Multi-out routing | ✅ 16 stereo | ✅ 16 stereo | Tie |
@@ -31,7 +31,7 @@
 | Feature | Drum Rack | BlockSampler | Winner |
 |---------|-----------|--------------|--------|
 | Pads | 128 | 128 | Tie |
-| Velocity layers | ✅ (via Simpler) | ✅ 4 built-in | Tie |
+| Velocity layers | ✅ (via Simpler) | ✅ 4 built-in + crossfade | **BlockSampler** |
 | Round-robin | ✅ (manual setup) | ✅ 16 per layer | **BlockSampler** (easier) |
 | Choke groups | ✅ 16 | ✅ 8 | Drum Rack |
 | Multi-out routing | ✅ Unlimited | ✅ 16 stereo | Drum Rack |
@@ -63,17 +63,22 @@
    - Fast `pow2` approximation for CPU efficiency
    - Classic kick "boing" in 4 parameters
 
-3. **Deep Round-Robin**
+3. **Velocity Layer Crossfade**
+   - Smooth blending between adjacent velocity layers
+   - Configurable blend zone width (0-100%)
+   - Eliminates harsh transitions in multi-layer samples
+
+4. **Deep Round-Robin**
    - 16 samples per velocity layer
    - Sequential or random mode
    - No manual routing needed
 
-4. **Thread-Safe Async Loading**
+5. **Thread-Safe Async Loading**
    - Background sample loading
    - Lock-free command queue
    - No audio dropouts during kit changes
 
-5. **REAPER/Lua Integration**
+6. **REAPER/Lua Integration**
    - Full named config param support
    - Kit save/load via scripts
    - 808 presets built into bridge
@@ -83,7 +88,7 @@
 ## Current Parameter Count
 
 ```
-Per-Pad Parameters: 22
+Per-Pad Parameters: 23
   0:  Volume           (0-1)
   1:  Pan              (-1 to +1)
   2:  Tune             (-24 to +24 semitones)
@@ -106,8 +111,9 @@ Per-Pad Parameters: 22
   19: Pitch Env Attack (0-100 ms)
   20: Pitch Env Decay  (0-2000 ms)
   21: Pitch Env Sustain(0-1)
+  22: Vel Crossfade    (0-1, 0=hard switch, 1=full blend)
 
-Total: 22 × 128 pads = 2,816 parameters
+Total: 23 × 128 pads = 2,944 parameters
 ```
 
 ---

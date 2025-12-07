@@ -153,6 +153,9 @@ public:
     float pitchEnvDecay = 50.0f;    // ms (0-2000)
     float pitchEnvSustain = 0.0f;   // 0-1 (sustain level, 0 = full sweep)
 
+    // Velocity layer crossfade
+    float velCrossfade = 0.0f;      // 0-1 (0 = hard switch, 1 = full blend zone)
+
     // -------------------------------------------------------------------------
     // PUBLIC STATE (read by PluginProcessor)
     // -------------------------------------------------------------------------
@@ -186,6 +189,12 @@ private:
 
     // Ping-pong state
     bool pingPongForward = true;  // Direction for ping-pong mode
+
+    // Velocity layer crossfade state (for blending two adjacent layers)
+    int secondaryLayer = -1;        // Secondary layer index (-1 = no blending)
+    float layerBlendFactor = 0.0f;  // 0 = 100% primary, 1 = 100% secondary
+    double secondaryPlayPosition = 0.0;
+    bool secondaryPingPongForward = true;
 
     // Cached filter state to avoid redundant updates
     float lastFilterCutoff = -1.0f;

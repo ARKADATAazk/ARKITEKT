@@ -65,6 +65,7 @@ Processor::Processor()
         padParams[pad].pitchEnvAttack = parameters.getRawParameterValue(PadParam::id(pad, PadParam::PitchEnvAttack));
         padParams[pad].pitchEnvDecay = parameters.getRawParameterValue(PadParam::id(pad, PadParam::PitchEnvDecay));
         padParams[pad].pitchEnvSustain = parameters.getRawParameterValue(PadParam::id(pad, PadParam::PitchEnvSustain));
+        padParams[pad].velCrossfade = parameters.getRawParameterValue(PadParam::id(pad, PadParam::VelCrossfade));
     }
 }
 
@@ -259,6 +260,7 @@ void Processor::updatePadParameters(int padIndex)
     pad.pitchEnvAttack = params.pitchEnvAttack->load();
     pad.pitchEnvDecay = params.pitchEnvDecay->load();
     pad.pitchEnvSustain = params.pitchEnvSustain->load();
+    pad.velCrossfade = params.velCrossfade->load();
 }
 
 // =============================================================================
