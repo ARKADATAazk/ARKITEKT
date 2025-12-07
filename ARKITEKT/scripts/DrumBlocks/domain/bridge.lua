@@ -21,7 +21,7 @@ M.Param = {
   Release = 6,
   FilterCutoff = 7,
   FilterReso = 8,
-  FilterType = 9,       -- 0=LP, 1=HP
+  FilterType = 9,       -- 0=LP, 1=HP, 2=BP
   KillGroup = 10,
   OutputGroup = 11,
   LoopMode = 12,        -- 0=OneShot, 1=Loop, 2=PingPong (replaces OneShot)
@@ -43,6 +43,13 @@ M.LoopMode = {
   OneShot = 0,
   Loop = 1,
   PingPong = 2,
+}
+
+-- Filter type constants
+M.FilterType = {
+  LP = 0,   -- Lowpass
+  HP = 1,   -- Highpass
+  BP = 2,   -- Bandpass
 }
 
 -- ============================================================================
@@ -141,21 +148,25 @@ function M.setFilterReso(track, fx, pad, value)
 end
 
 function M.setFilterType(track, fx, pad, filter_type)
-  -- 0 = lowpass, 1 = highpass
-  return M.setParam(track, fx, pad, M.Param.FilterType, filter_type)
+  -- 0 = lowpass, 1 = highpass, 2 = bandpass
+  return M.setParam(track, fx, pad, M.Param.FilterType, filter_type / 2)
 end
 
 function M.setFilterLP(track, fx, pad)
-  return M.setFilterType(track, fx, pad, 0)
+  return M.setFilterType(track, fx, pad, M.FilterType.LP)
 end
 
 function M.setFilterHP(track, fx, pad)
-  return M.setFilterType(track, fx, pad, 1)
+  return M.setFilterType(track, fx, pad, M.FilterType.HP)
+end
+
+function M.setFilterBP(track, fx, pad)
+  return M.setFilterType(track, fx, pad, M.FilterType.BP)
 end
 
 function M.setKillGroup(track, fx, pad, group)
-  -- Group is 0-8
-  return M.setParam(track, fx, pad, M.Param.KillGroup, group / 8)
+  -- Group is 0-16 (0 = none)
+  return M.setParam(track, fx, pad, M.Param.KillGroup, group / 16)
 end
 
 function M.setOutputGroup(track, fx, pad, group)

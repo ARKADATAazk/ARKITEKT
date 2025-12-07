@@ -686,18 +686,22 @@ int Pad::renderNextBlock(int numSamples)
         ++samplesRendered;
     }
 
-    // Apply filter (LP if cutoff < 20kHz, HP if cutoff > 20Hz)
+    // Apply filter (LP if cutoff < 20kHz, HP if cutoff > 20Hz, BP always)
     const bool applyFilter = (filterType == 0 && filterCutoff < FILTER_LP_BYPASS_THRESHOLD) ||
-                             (filterType == 1 && filterCutoff > FILTER_HP_BYPASS_THRESHOLD);
+                             (filterType == 1 && filterCutoff > FILTER_HP_BYPASS_THRESHOLD) ||
+                             (filterType == 2);  // Bandpass always applies
 
     if (samplesRendered > 0 && applyFilter)
     {
         // Only update filter params when changed (optimization)
         if (filterType != lastFilterType)
         {
-            filter.setType(filterType == 0
-                ? juce::dsp::StateVariableTPTFilterType::lowpass
-                : juce::dsp::StateVariableTPTFilterType::highpass);
+            switch (filterType)
+            {
+                case 0:  filter.setType(juce::dsp::StateVariableTPTFilterType::lowpass);  break;
+                case 1:  filter.setType(juce::dsp::StateVariableTPTFilterType::highpass); break;
+                default: filter.setType(juce::dsp::StateVariableTPTFilterType::bandpass); break;
+            }
             lastFilterType = filterType;
         }
         if (filterCutoff != lastFilterCutoff)

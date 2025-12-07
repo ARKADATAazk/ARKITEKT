@@ -10,7 +10,7 @@
 | Choke/kill groups | ✅ 16 | ✅ 16 | Tie |
 | Multi-out routing | ✅ 16 stereo | ✅ 16 stereo | Tie |
 | ADSR envelope | ✅ | ✅ | Tie |
-| Filter | ✅ Tone knob | ✅ SVF LP/HP + reso | **BlockSampler** |
+| Filter | ✅ Tone knob | ✅ SVF LP/HP/BP + reso | **BlockSampler** |
 | **Pitch envelope** | ❌ | ✅ Full ADSR | **BlockSampler** |
 | **Loop modes** | ❌ | ✅ OneShot/Loop/PingPong | **BlockSampler** |
 | Sample start/end | ✅ | ✅ | Tie |
@@ -36,7 +36,7 @@
 | Choke groups | ✅ 16 | ✅ 16 | Tie |
 | Multi-out routing | ✅ Unlimited | ✅ 16 stereo | Drum Rack |
 | ADSR envelope | ✅ Full | ✅ Full | Tie |
-| Filter | ✅ Multi-mode | ✅ SVF LP/HP | Drum Rack |
+| Filter | ✅ Multi-mode | ✅ SVF LP/HP/BP | Tie |
 | **Pitch envelope** | ✅ (via Simpler) | ✅ Dedicated | Tie |
 | **Loop modes** | ✅ Full | ✅ 3 modes | Drum Rack (more options) |
 | Warp/time-stretch | ✅ | ❌ | Drum Rack |
@@ -98,7 +98,7 @@ Per-Pad Parameters: 24
   6:  Release          (0-5000 ms)
   7:  Filter Cutoff    (20-20000 Hz)
   8:  Filter Reso      (0-1)
-  9:  Filter Type      (0=LP, 1=HP)
+  9:  Filter Type      (0=LP, 1=HP, 2=BP)
   10: Kill Group       (0-16)
   11: Output Group     (0-16)
   12: Loop Mode        (0=OneShot, 1=Loop, 2=PingPong)
@@ -203,7 +203,7 @@ BlockSampler is a **headless VST3 drum sampler** designed for REAPER integration
 - ✅ Full ADSR envelope + pitch envelope (808-style)
 - ✅ 3 loop modes (OneShot, Loop, PingPong)
 - ✅ Velocity layer crossfade (kit morphing)
-- ✅ SVF filter (LP/HP with resonance)
+- ✅ SVF filter (LP/HP/BP with resonance)
 - ✅ Velocity curve (soft/linear/hard response)
 - ✅ 16 stereo output buses + 16 kill groups
 - ✅ Thread-safe async sample loading
@@ -248,7 +248,7 @@ BlockSampler is a **headless VST3 drum sampler** designed for REAPER integration
 | Filter envelope | Medium | Dedicated ADSR for cutoff modulation |
 | LFO modulation | Medium | Pitch/filter/pan modulation |
 | Sample-accurate MIDI | Medium | Currently block-based timing |
-| More filter types | Low | Add bandpass, notch, peak |
+| Notch/peak filters | Low | Add notch and peak filter types |
 | Modular FX slots | High | Per-pad insert effects |
 
 **Philosophy**: Keep DSP lean, defer complex features to REAPER/Lua where possible. Time-stretching, slicing, and advanced effects are better handled by REAPER's native capabilities.
@@ -260,7 +260,7 @@ BlockSampler is a **headless VST3 drum sampler** designed for REAPER integration
 ```
 VSTs/BlockSampler/
 ├── Source/
-│   ├── Parameters.h      # 23 params × 128 pads, LoopMode enum
+│   ├── Parameters.h      # 24 params × 128 pads, LoopMode enum
 │   ├── Pad.h/cpp         # Audio rendering, velocity crossfade
 │   ├── PluginProcessor.* # VST3 host, async loading, MIDI
 │   └── ...
