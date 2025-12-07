@@ -11,6 +11,8 @@
 #include "Pad.h"
 #include <bitset>
 #include <atomic>
+#include <mutex>
+#include <shared_mutex>
 
 namespace BlockSampler
 {
@@ -34,6 +36,21 @@ struct LoadedSample
 constexpr int LOAD_QUEUE_SIZE = 64;
 static_assert((LOAD_QUEUE_SIZE & (LOAD_QUEUE_SIZE - 1)) == 0,
               "LOAD_QUEUE_SIZE must be power of 2");
+
+// =============================================================================
+// THREAD-SAFE PAD METADATA (for message thread queries)
+// =============================================================================
+
+struct PadMetadata
+{
+    // Atomic snapshot of pad state - updated by audio thread, read by message thread
+    std::array<juce::String, NUM_VELOCITY_LAYERS> samplePaths;
+    std::array<std::vector<juce::String>, NUM_VELOCITY_LAYERS> roundRobinPaths;
+    std::array<int, NUM_VELOCITY_LAYERS> roundRobinCounts = {};
+    std::array<double, NUM_VELOCITY_LAYERS> sampleDurations = {};
+    std::array<bool, NUM_VELOCITY_LAYERS> hasLayerSample = {};
+    bool hasSample = false;
+};
 
 // Max samples to apply per processBlock (prevents audio dropout from batch loads)
 constexpr int MAX_LOADS_PER_BLOCK = 4;
@@ -158,6 +175,8 @@ private:
     void applyCompletedLoads();    // Called at start of processBlock (audio thread)
     void applyQueuedCommands();    // Called at start of processBlock (audio thread)
     void queueCommand(PadCommand cmd);  // Thread-safe command queuing (message thread)
+    void updatePadMetadata(int padIndex);  // Update thread-safe metadata after sample changes (audio thread)
+    void updatePadMetadataAfterClear(int padIndex, int layerIndex);  // Update after clearing layer (audio thread)
 
     // Helper for parsing pad/layer from named config params
     // Returns true if parsed successfully, fills padIndex and layerIndex
@@ -202,11 +221,17 @@ private:
     };
     std::array<PadParams, NUM_PADS> padParams;
 
-    // Async sample loading - lock-free SPSC FIFO
-    // Producer: background thread pool, Consumer: audio thread
+    // Async sample loading - FIFO with mutex protection for multiple producers
+    // Producer: background thread pool (multiple threads), Consumer: audio thread
     juce::ThreadPool loadPool { 2 };  // 2 worker threads
     juce::AbstractFifo loadFifo { LOAD_QUEUE_SIZE };
     std::array<LoadedSample, LOAD_QUEUE_SIZE> loadQueue;
+    std::mutex loadFifoWriteMutex;  // Protects writes from multiple producer threads
+
+    // Thread-safe metadata for message thread queries
+    // Protected by shared_mutex: audio thread writes, message thread reads
+    mutable std::shared_mutex metadataMutex;
+    std::array<PadMetadata, NUM_PADS> padMetadata;
 
     // Command queue - lock-free SPSC FIFO for message-to-audio-thread operations
     // Producer: message thread (named config params), Consumer: audio thread

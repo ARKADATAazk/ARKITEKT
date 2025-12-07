@@ -273,6 +273,7 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
     auto* fmt = &formatManager;
     auto* fifo = &loadFifo;
     auto* queue = &loadQueue;
+    auto* fifoMutex = &loadFifoWriteMutex;
 
     loadPool.addJob([=]()
     {
@@ -307,16 +308,21 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
             peak = juce::jmax(peak, result.buffer.getMagnitude(ch, 0, result.buffer.getNumSamples()));
         result.normGain = (peak > NORM_PEAK_THRESHOLD) ? (1.0f / peak) : 1.0f;
 
-        // Queue result for audio thread via lock-free FIFO
-        int start1, size1, start2, size2;
-        fifo->prepareToWrite(1, start1, size1, start2, size2);
-
-        if (size1 > 0)
+        // Queue result for audio thread via FIFO
+        // CRITICAL: Mutex required because multiple thread pool workers can write concurrently
+        // AbstractFifo is SPSC (single-producer), so we serialize writes with a mutex
         {
-            (*queue)[start1] = std::move(result);
-            fifo->finishedWrite(1);
+            std::lock_guard<std::mutex> lock(*fifoMutex);
+            int start1, size1, start2, size2;
+            fifo->prepareToWrite(1, start1, size1, start2, size2);
+
+            if (size1 > 0)
+            {
+                (*queue)[start1] = std::move(result);
+                fifo->finishedWrite(1);
+            }
+            // If FIFO is full, drop the load (will be retried by user)
         }
-        // If FIFO is full, drop the load (will be retried by user)
     });
 }
 
@@ -357,6 +363,8 @@ void Processor::applyCompletedLoads()
                     loaded.path,
                     loaded.normGain);
             }
+            // Update thread-safe metadata for message thread queries
+            updatePadMetadata(loaded.padIndex);
         }
         loaded = LoadedSample{};  // Clear slot for reuse
     };
@@ -434,12 +442,18 @@ void Processor::applyQueuedCommands()
 
             case PadCommandType::ClearLayer:
                 if (cmd.padIndex >= 0 && cmd.padIndex < NUM_PADS)
+                {
                     pads[cmd.padIndex].clearSample(cmd.layerIndex);
+                    updatePadMetadataAfterClear(cmd.padIndex, cmd.layerIndex);
+                }
                 break;
 
             case PadCommandType::ClearRoundRobin:
                 if (cmd.padIndex >= 0 && cmd.padIndex < NUM_PADS)
+                {
                     pads[cmd.padIndex].clearRoundRobin(cmd.layerIndex);
+                    updatePadMetadataAfterClear(cmd.padIndex, cmd.layerIndex);
+                }
                 break;
 
             case PadCommandType::ClearPad:
@@ -447,6 +461,7 @@ void Processor::applyQueuedCommands()
                 {
                     for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
                         pads[cmd.padIndex].clearSample(layer);
+                    updatePadMetadata(cmd.padIndex);
                 }
                 break;
         }
@@ -459,6 +474,68 @@ void Processor::applyQueuedCommands()
         processCommand(commandQueue[start2 + i]);
 
     commandFifo.finishedRead(size1 + size2);
+}
+
+// =============================================================================
+// PAD METADATA (Thread-safe snapshots for message thread queries)
+// =============================================================================
+
+void Processor::updatePadMetadata(int padIndex)
+{
+    if (padIndex < 0 || padIndex >= NUM_PADS)
+        return;
+
+    // Called from audio thread - take exclusive lock to update metadata
+    std::unique_lock<std::shared_mutex> lock(metadataMutex);
+
+    auto& meta = padMetadata[padIndex];
+    auto& pad = pads[padIndex];
+
+    meta.hasSample = false;
+
+    for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+    {
+        meta.samplePaths[layer] = pad.getSamplePath(layer);
+        meta.roundRobinPaths[layer] = pad.getRoundRobinPaths(layer);
+        meta.roundRobinCounts[layer] = pad.getRoundRobinCount(layer);
+        meta.sampleDurations[layer] = pad.getSampleDuration(layer);
+        meta.hasLayerSample[layer] = pad.hasSample(layer);
+
+        if (meta.hasLayerSample[layer])
+            meta.hasSample = true;
+    }
+}
+
+void Processor::updatePadMetadataAfterClear(int padIndex, int layerIndex)
+{
+    if (padIndex < 0 || padIndex >= NUM_PADS)
+        return;
+    if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
+        return;
+
+    // Called from audio thread - take exclusive lock to update metadata
+    std::unique_lock<std::shared_mutex> lock(metadataMutex);
+
+    auto& meta = padMetadata[padIndex];
+    auto& pad = pads[padIndex];
+
+    // Update only the affected layer
+    meta.samplePaths[layerIndex] = pad.getSamplePath(layerIndex);
+    meta.roundRobinPaths[layerIndex] = pad.getRoundRobinPaths(layerIndex);
+    meta.roundRobinCounts[layerIndex] = pad.getRoundRobinCount(layerIndex);
+    meta.sampleDurations[layerIndex] = pad.getSampleDuration(layerIndex);
+    meta.hasLayerSample[layerIndex] = pad.hasSample(layerIndex);
+
+    // Recalculate hasSample
+    meta.hasSample = false;
+    for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+    {
+        if (meta.hasLayerSample[layer])
+        {
+            meta.hasSample = true;
+            break;
+        }
+    }
 }
 
 // =============================================================================
@@ -492,31 +569,36 @@ void Processor::getStateInformation(juce::MemoryBlock& destData)
     auto state = parameters.copyState();
 
     // Add sample paths as child nodes (both primary and round-robin)
+    // THREAD SAFETY: Use shared lock to read from padMetadata (message thread)
     juce::ValueTree samplesNode("Samples");
-    for (int pad = 0; pad < NUM_PADS; ++pad)
     {
-        for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+        std::shared_lock<std::shared_mutex> lock(metadataMutex);
+        for (int pad = 0; pad < NUM_PADS; ++pad)
         {
-            // Primary sample
-            auto path = pads[pad].getSamplePath(layer);
-            if (path.isNotEmpty())
+            const auto& meta = padMetadata[pad];
+            for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
             {
-                juce::ValueTree sampleNode("Sample");
-                sampleNode.setProperty("pad", pad, nullptr);
-                sampleNode.setProperty("layer", layer, nullptr);
-                sampleNode.setProperty("path", path, nullptr);
-                samplesNode.addChild(sampleNode, -1, nullptr);
-            }
+                // Primary sample
+                const auto& path = meta.samplePaths[layer];
+                if (path.isNotEmpty())
+                {
+                    juce::ValueTree sampleNode("Sample");
+                    sampleNode.setProperty("pad", pad, nullptr);
+                    sampleNode.setProperty("layer", layer, nullptr);
+                    sampleNode.setProperty("path", path, nullptr);
+                    samplesNode.addChild(sampleNode, -1, nullptr);
+                }
 
-            // Round-robin samples
-            auto rrPaths = pads[pad].getRoundRobinPaths(layer);
-            for (const auto& rrPath : rrPaths)
-            {
-                juce::ValueTree rrNode("RoundRobin");
-                rrNode.setProperty("pad", pad, nullptr);
-                rrNode.setProperty("layer", layer, nullptr);
-                rrNode.setProperty("path", rrPath, nullptr);
-                samplesNode.addChild(rrNode, -1, nullptr);
+                // Round-robin samples
+                const auto& rrPaths = meta.roundRobinPaths[layer];
+                for (const auto& rrPath : rrPaths)
+                {
+                    juce::ValueTree rrNode("RoundRobin");
+                    rrNode.setProperty("pad", pad, nullptr);
+                    rrNode.setProperty("layer", layer, nullptr);
+                    rrNode.setProperty("path", rrPath, nullptr);
+                    samplesNode.addChild(rrNode, -1, nullptr);
+                }
             }
         }
     }
@@ -767,16 +849,26 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
     int padIndex, layerIndex;
 
     // Pattern: P{pad}_L{layer}_SAMPLE
+    // THREAD SAFETY: Read from padMetadata with shared lock (message thread)
     if (parsePadLayerParam(name, "_SAMPLE", padIndex, layerIndex))
-        return pads[padIndex].getSamplePath(layerIndex);
+    {
+        std::shared_lock<std::shared_mutex> lock(metadataMutex);
+        return padMetadata[padIndex].samplePaths[layerIndex];
+    }
 
     // Pattern: P{pad}_L{layer}_RR_COUNT (get round-robin sample count)
     if (parsePadLayerParam(name, "_RR_COUNT", padIndex, layerIndex))
-        return juce::String(pads[padIndex].getRoundRobinCount(layerIndex));
+    {
+        std::shared_lock<std::shared_mutex> lock(metadataMutex);
+        return juce::String(padMetadata[padIndex].roundRobinCounts[layerIndex]);
+    }
 
     // Pattern: P{pad}_L{layer}_DURATION (get sample duration in seconds)
     if (parsePadLayerParam(name, "_DURATION", padIndex, layerIndex))
-        return juce::String(pads[padIndex].getSampleDuration(layerIndex), 3);
+    {
+        std::shared_lock<std::shared_mutex> lock(metadataMutex);
+        return juce::String(padMetadata[padIndex].sampleDurations[layerIndex], 3);
+    }
 
     // Pattern: P{pad}_HAS_SAMPLE (min length: "P0_HAS_SAMPLE" = 13)
     if (name.length() >= 13 && name.startsWith("P") && name.endsWith("_HAS_SAMPLE"))
@@ -787,17 +879,14 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
             padIndex = padStr.getIntValue();
             if (padIndex >= 0 && padIndex < NUM_PADS)
             {
-                for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
-                {
-                    if (pads[padIndex].hasSample(layer))
-                        return "1";
-                }
-                return "0";
+                std::shared_lock<std::shared_mutex> lock(metadataMutex);
+                return padMetadata[padIndex].hasSample ? "1" : "0";
             }
         }
     }
 
     // Pattern: P{pad}_IS_PLAYING (min length: "P0_IS_PLAYING" = 13)
+    // Note: isPlaying is atomic, so no lock needed
     if (name.length() >= 13 && name.startsWith("P") && name.endsWith("_IS_PLAYING"))
     {
         juce::String padStr = name.substring(1, name.length() - 11);
