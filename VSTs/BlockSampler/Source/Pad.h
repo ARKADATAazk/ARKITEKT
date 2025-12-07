@@ -93,20 +93,12 @@ public:
     const juce::AudioBuffer<float>& getOutputBuffer() const { return tempBuffer; }
 
     // -------------------------------------------------------------------------
-    // SAMPLE MANAGEMENT
+    // SAMPLE MANAGEMENT (Audio thread only)
     // -------------------------------------------------------------------------
 
-    // Synchronous loading (blocks calling thread)
-    bool loadSample(int layerIndex,
-                    const juce::File& file,
-                    juce::AudioFormatManager& formatManager);
-
-    bool addRoundRobinSample(int layerIndex,
-                             const juce::File& file,
-                             juce::AudioFormatManager& formatManager);
-
-    // Direct buffer assignment (for async loading - buffer already loaded)
-    // Note: Stops playback if modifying the currently-playing layer (thread safety)
+    // Buffer assignment from pre-loaded data (called by Processor::applyCompletedLoads)
+    // IMPORTANT: These methods must only be called from the audio thread.
+    // They stop playback before modifying to prevent races within the audio thread.
     void setSampleBuffer(int layerIndex,
                          juce::AudioBuffer<float>&& buffer,
                          double sampleRate,
