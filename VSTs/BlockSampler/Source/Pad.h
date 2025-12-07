@@ -24,6 +24,7 @@ struct RoundRobinSample
     double sampleRate = 44100.0;
     juce::String path;
     float normGain = 1.0f;
+    bool isLoaded = false;  // Slot occupancy flag for fixed array
 };
 
 // =============================================================================
@@ -32,8 +33,6 @@ struct RoundRobinSample
 
 struct VelocityLayer
 {
-    VelocityLayer() { roundRobinSamples.reserve(MAX_ROUND_ROBIN_SAMPLES); }
-
     // Primary sample
     juce::AudioBuffer<float> buffer;
     int numSamples = 0;
@@ -41,8 +40,9 @@ struct VelocityLayer
     juce::String filePath;
     float normGain = 1.0f;  // Peak normalization gain (computed on load)
 
-    // Round-robin samples (pre-reserved to avoid audio-thread allocation)
-    std::vector<RoundRobinSample> roundRobinSamples;
+    // Round-robin samples (fixed array - no allocations on audio thread)
+    std::array<RoundRobinSample, MAX_ROUND_ROBIN_SAMPLES> roundRobinSamples;
+    int roundRobinCount = 0;  // Number of loaded round-robin samples
     int roundRobinIndex = 0;
 
     // Queries
@@ -161,6 +161,7 @@ private:
 
     int selectVelocityLayer(int velocity);
     void updateEnvelopeParams();
+    void updateCachedParams();  // Update cached pitch/pan when params change
 
     // -------------------------------------------------------------------------
     // PRIVATE STATE
@@ -180,6 +181,14 @@ private:
     float lastFilterCutoff = -1.0f;
     float lastFilterReso = -1.0f;
     int lastFilterType = -1;
+
+    // Cached pitch/pan state to avoid redundant calculations (pow, sin, cos are expensive)
+    float lastTune = 0.0f;
+    float lastPan = 0.0f;
+    double cachedPitchRatio = 1.0;       // 2^(tune/12)
+    float cachedPanGainL = 0.707f;       // cos(panAngle)
+    float cachedPanGainR = 0.707f;       // sin(panAngle)
+    double cachedSourceSampleRate = 0.0; // For pitch ratio recalc on sample change
 
     // Per-pad random generator (thread-safe: only used on audio thread)
     juce::Random rng;

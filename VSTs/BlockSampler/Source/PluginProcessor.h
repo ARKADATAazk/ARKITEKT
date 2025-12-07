@@ -30,6 +30,7 @@ struct LoadedSample
     double sampleRate = 44100.0;
     juce::String path;
     float normGain = 1.0f;
+    uint32_t generation = 0;  // State generation when load was queued
 };
 
 // Lock-free SPSC queue size (must be power of 2)
@@ -242,6 +243,10 @@ private:
     // Debug counters for FIFO overflow detection (atomic for thread-safe reads)
     std::atomic<uint32_t> droppedLoadCount { 0 };
     std::atomic<uint32_t> droppedCommandCount { 0 };
+
+    // State restoration generation counter - incremented on each setStateInformation
+    // Loads tagged with old generation are discarded to prevent race conditions
+    std::atomic<uint32_t> stateGeneration { 0 };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Processor)
 };

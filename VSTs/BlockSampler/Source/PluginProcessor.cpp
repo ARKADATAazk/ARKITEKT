@@ -261,34 +261,57 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
                                       const juce::String& filePath, bool roundRobin)
 {
     if (padIndex < 0 || padIndex >= NUM_PADS)
+    {
+        DBG("BlockSampler: Invalid pad index " << padIndex);
         return;
+    }
     if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
+    {
+        DBG("BlockSampler: Invalid layer index " << layerIndex);
         return;
+    }
 
     juce::File file(filePath);
     if (!file.existsAsFile())
+    {
+        DBG("BlockSampler: File not found: " << filePath);
         return;
+    }
+
+    // Capture current generation to detect stale loads after state restoration
+    const uint32_t loadGeneration = stateGeneration.load(std::memory_order_acquire);
 
     // Capture pointers for thread pool job
     auto* fmt = &formatManager;
     auto* fifo = &loadFifo;
     auto* queue = &loadQueue;
     auto* fifoMutex = &loadFifoWriteMutex;
+    auto* droppedCount = &droppedLoadCount;
 
     loadPool.addJob([=]()
     {
         // Load sample in background thread
         std::unique_ptr<juce::AudioFormatReader> reader(fmt->createReaderFor(file));
         if (!reader)
+        {
+            DBG("BlockSampler: Failed to create reader for: " << filePath);
             return;
+        }
 
         // Guard against integer overflow for very long samples
         if (reader->lengthInSamples > std::numeric_limits<int>::max())
+        {
+            DBG("BlockSampler: Sample too long (>" << std::numeric_limits<int>::max() << " frames): " << filePath);
             return;
+        }
 
         // Validate sample has audio content
         if (reader->numChannels == 0 || reader->sampleRate <= 0)
+        {
+            DBG("BlockSampler: Invalid sample format (channels=" << reader->numChannels
+                << ", rate=" << reader->sampleRate << "): " << filePath);
             return;
+        }
 
         LoadedSample result;
         result.padIndex = padIndex;
@@ -296,6 +319,7 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
         result.isRoundRobin = roundRobin;
         result.path = filePath;
         result.sampleRate = reader->sampleRate;
+        result.generation = loadGeneration;  // Tag with generation for staleness check
 
         result.buffer.setSize(static_cast<int>(reader->numChannels),
                               static_cast<int>(reader->lengthInSamples));
@@ -323,8 +347,9 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
             }
             else
             {
-                // FIFO full - increment drop counter for debugging
-                droppedLoadCount.fetch_add(1, std::memory_order_relaxed);
+                // FIFO full - increment drop counter and log
+                const uint32_t dropped = droppedCount->fetch_add(1, std::memory_order_relaxed) + 1;
+                DBG("BlockSampler: Load dropped (FIFO full). Total dropped: " << dropped);
             }
         }
     });
@@ -341,12 +366,25 @@ void Processor::applyCompletedLoads()
     if (numReady == 0)
         return;
 
+    // Get current generation for staleness check
+    const uint32_t currentGen = stateGeneration.load(std::memory_order_acquire);
+
     int start1, size1, start2, size2;
     loadFifo.prepareToRead(numReady, start1, size1, start2, size2);
 
     // Helper lambda to apply a single loaded sample
-    auto applyLoad = [this](LoadedSample& loaded)
+    auto applyLoad = [this, currentGen](LoadedSample& loaded)
     {
+        // Discard stale loads from previous state restoration
+        // This prevents race conditions where old loads arrive after new state
+        if (loaded.generation != currentGen)
+        {
+            DBG("BlockSampler: Discarding stale load (gen " << loaded.generation
+                << " != current " << currentGen << ") for pad " << loaded.padIndex);
+            loaded = LoadedSample{};  // Clear slot
+            return;
+        }
+
         if (loaded.padIndex >= 0 && loaded.padIndex < NUM_PADS)
         {
             if (loaded.isRoundRobin)
@@ -389,7 +427,11 @@ void Processor::applyCompletedLoads()
 
 void Processor::queueCommand(PadCommand cmd)
 {
-    // Called from message thread - queue command for audio thread
+    // IMPORTANT: This function must only be called from the message thread.
+    // If called from multiple threads, a mutex would be needed around the FIFO write.
+    jassert(juce::MessageManager::existsAndIsCurrentThread() ||
+            juce::MessageManager::getInstance() == nullptr);  // Allow during startup
+
     int start1, size1, start2, size2;
     commandFifo.prepareToWrite(1, start1, size1, start2, size2);
 
@@ -400,8 +442,9 @@ void Processor::queueCommand(PadCommand cmd)
     }
     else
     {
-        // FIFO full - increment drop counter for debugging
-        droppedCommandCount.fetch_add(1, std::memory_order_relaxed);
+        // FIFO full - increment drop counter and log for debugging
+        const uint32_t dropped = droppedCommandCount.fetch_add(1, std::memory_order_relaxed) + 1;
+        DBG("BlockSampler: Command dropped (FIFO full). Total dropped: " << dropped);
     }
 }
 
@@ -638,6 +681,12 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
     if (xml && xml->hasTagName(parameters.state.getType()))
     {
         auto state = juce::ValueTree::fromXml(*xml);
+
+        // Increment generation counter FIRST - this invalidates any in-flight loads
+        // from previous state, preventing race conditions where old samples arrive
+        // after new state has been applied
+        stateGeneration.fetch_add(1, std::memory_order_release);
+        DBG("BlockSampler: State restoration started, generation = " << stateGeneration.load());
 
         // Process runtime commands (transient, don't persist)
         auto commandsNode = state.getChildWithName("Commands");

@@ -15,68 +15,70 @@ namespace BlockSampler
 
 bool VelocityLayer::isLoaded() const
 {
-    return numSamples > 0 || !roundRobinSamples.empty();
+    return numSamples > 0 || roundRobinCount > 0;
 }
 
 int VelocityLayer::getRoundRobinCount() const
 {
-    return static_cast<int>(roundRobinSamples.size());
+    return roundRobinCount;
 }
 
 const juce::AudioBuffer<float>& VelocityLayer::getCurrentBuffer() const
 {
-    if (roundRobinSamples.empty())
+    if (roundRobinCount == 0)
         return buffer;
-    return roundRobinSamples[roundRobinIndex % roundRobinSamples.size()].buffer;
+    jassert(roundRobinIndex >= 0 && roundRobinIndex < roundRobinCount);
+    return roundRobinSamples[static_cast<size_t>(roundRobinIndex)].buffer;
 }
 
 int VelocityLayer::getCurrentNumSamples() const
 {
-    if (roundRobinSamples.empty())
+    if (roundRobinCount == 0)
         return numSamples;
     return getCurrentBuffer().getNumSamples();
 }
 
 double VelocityLayer::getCurrentSampleRate() const
 {
-    if (roundRobinSamples.empty())
+    if (roundRobinCount == 0)
         return sourceSampleRate;
-    return roundRobinSamples[roundRobinIndex % roundRobinSamples.size()].sampleRate;
+    jassert(roundRobinIndex >= 0 && roundRobinIndex < roundRobinCount);
+    return roundRobinSamples[static_cast<size_t>(roundRobinIndex)].sampleRate;
 }
 
 float VelocityLayer::getCurrentNormGain() const
 {
-    if (roundRobinSamples.empty())
+    if (roundRobinCount == 0)
         return normGain;
-    return roundRobinSamples[roundRobinIndex % roundRobinSamples.size()].normGain;
+    jassert(roundRobinIndex >= 0 && roundRobinIndex < roundRobinCount);
+    return roundRobinSamples[static_cast<size_t>(roundRobinIndex)].normGain;
 }
 
 void VelocityLayer::advanceRoundRobin(juce::Random& rng, bool randomMode)
 {
-    const int count = static_cast<int>(roundRobinSamples.size());
-    if (count == 0)
+    if (roundRobinCount == 0)
         return;
 
-    if (randomMode && count > 1)
+    if (randomMode && roundRobinCount > 1)
     {
         // Random selection using offset to guarantee different sample (no infinite loop)
         // Pick random offset 1..(count-1), add to current index
-        int offset = 1 + rng.nextInt(count - 1);
-        roundRobinIndex = (roundRobinIndex + offset) % count;
+        int offset = 1 + rng.nextInt(roundRobinCount - 1);
+        roundRobinIndex = (roundRobinIndex + offset) % roundRobinCount;
     }
     else
     {
         // Sequential cycling
-        roundRobinIndex = (roundRobinIndex + 1) % count;
+        roundRobinIndex = (roundRobinIndex + 1) % roundRobinCount;
     }
 }
 
 std::vector<juce::String> VelocityLayer::getRoundRobinPaths() const
 {
     std::vector<juce::String> paths;
-    paths.reserve(roundRobinSamples.size());
-    for (const auto& sample : roundRobinSamples)
-        paths.push_back(sample.path);
+    paths.reserve(static_cast<size_t>(roundRobinCount));
+    for (int i = 0; i < roundRobinCount; ++i)
+        paths.push_back(roundRobinSamples[static_cast<size_t>(i)].path);
     return paths;
 }
 
@@ -87,7 +89,14 @@ void VelocityLayer::clear()
     sourceSampleRate = 44100.0;  // Reset to default
     filePath.clear();
     normGain = 1.0f;
-    roundRobinSamples.clear();
+    // Clear round-robin slots
+    for (int i = 0; i < roundRobinCount; ++i)
+    {
+        roundRobinSamples[static_cast<size_t>(i)].buffer.setSize(0, 0);
+        roundRobinSamples[static_cast<size_t>(i)].path.clear();
+        roundRobinSamples[static_cast<size_t>(i)].isLoaded = false;
+    }
+    roundRobinCount = 0;
     roundRobinIndex = 0;
 }
 
@@ -153,16 +162,19 @@ void Pad::trigger(int velocity)
     if (currentNumSamples <= 0)
         return;  // Empty or corrupted sample
 
-    // Calculate actual start/end sample positions
-    float effectiveStart = sampleStart;
-    float effectiveEnd = sampleEnd;
+    // Calculate actual start/end sample positions using double precision
+    // to avoid truncation errors with large sample counts (>2^24 frames)
+    double effectiveStart = static_cast<double>(sampleStart);
+    double effectiveEnd = static_cast<double>(sampleEnd);
 
     // Swap if start > end (user set them backwards)
     if (effectiveStart > effectiveEnd)
         std::swap(effectiveStart, effectiveEnd);
 
-    int startSample = static_cast<int>(effectiveStart * currentNumSamples);
-    int endSample = static_cast<int>(effectiveEnd * currentNumSamples);
+    // Use double for intermediate calculation to preserve precision
+    const double numSamplesD = static_cast<double>(currentNumSamples);
+    int startSample = static_cast<int>(std::floor(effectiveStart * numSamplesD));
+    int endSample = static_cast<int>(std::ceil(effectiveEnd * numSamplesD));
 
     // Clamp to valid range and ensure at least 1 sample of playback
     startSample = juce::jlimit(0, currentNumSamples - 1, startSample);
@@ -217,6 +229,31 @@ void Pad::stop()
 // AUDIO PROCESSING
 // =============================================================================
 
+void Pad::updateCachedParams()
+{
+    // Update cached pitch ratio when tune or source sample rate changes
+    // This avoids expensive std::pow() call every render block
+    auto& layer = layers[currentLayer.load()];
+    const double sampleRate = layer.getCurrentSampleRate();
+
+    if (tune != lastTune || sampleRate != cachedSourceSampleRate)
+    {
+        cachedPitchRatio = std::pow(2.0, static_cast<double>(tune) / 12.0);
+        cachedSourceSampleRate = sampleRate;
+        lastTune = tune;
+    }
+
+    // Update cached pan gains when pan changes
+    // This avoids expensive sin/cos calls every render block
+    if (pan != lastPan)
+    {
+        const float panAngle = (pan + 1.0f) * 0.25f * juce::MathConstants<float>::pi;
+        cachedPanGainL = std::cos(panAngle);
+        cachedPanGainR = std::sin(panAngle);
+        lastPan = pan;
+    }
+}
+
 int Pad::renderNextBlock(int numSamples)
 {
     // Validate playback state and layer bounds
@@ -239,7 +276,7 @@ int Pad::renderNextBlock(int numSamples)
     const auto& sampleBuffer = layer.getCurrentBuffer();
     const int sampleNumSamples = layer.getCurrentNumSamples();
     const double sampleRate = layer.getCurrentSampleRate();
-    const float normGain = normalize ? layer.getCurrentNormGain() : 1.0f;
+    const float normGainValue = normalize ? layer.getCurrentNormGain() : 1.0f;
 
     const int numChannels = juce::jmin(2, sampleBuffer.getNumChannels());
     // Validate sample data: need channels, frames, and valid sample rates
@@ -256,17 +293,18 @@ int Pad::renderNextBlock(int numSamples)
     float* destL = tempBuffer.getWritePointer(0);
     float* destR = tempBuffer.getWritePointer(1);
 
-    // Calculate pitch ratio for tuning
-    const double pitchRatio = std::pow(2.0, tune / 12.0) *
-                              (sampleRate / currentSampleRate);
+    // Update cached pitch/pan values if params changed (avoids pow/sin/cos per block)
+    updateCachedParams();
 
-    // Pre-calculate pan gains (constant power panning)
-    const float panAngle = (pan + 1.0f) * 0.25f * juce::MathConstants<float>::pi;
-    const float panGainL = std::cos(panAngle);
-    const float panGainR = std::sin(panAngle);
+    // Calculate final pitch ratio including sample rate conversion
+    const double pitchRatio = cachedPitchRatio * (sampleRate / currentSampleRate);
+
+    // Use cached pan gains
+    const float panGainL = cachedPanGainL;
+    const float panGainR = cachedPanGainR;
 
     // Pre-calculate base gain (volume * velocity * normalization)
-    const float baseGain = volume * currentVelocity * normGain;
+    const float baseGain = volume * currentVelocity * normGainValue;
 
     // Clear temp buffer for this render
     tempBuffer.clear(0, numSamples);
@@ -408,20 +446,28 @@ void Pad::addRoundRobinBuffer(int layerIndex,
     if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
         return;
 
-    // Prevent vector reallocation on audio thread by enforcing capacity limit
-    if (layers[layerIndex].roundRobinSamples.size() >= MAX_ROUND_ROBIN_SAMPLES)
-        return;  // Silently drop - at capacity
+    auto& layer = layers[layerIndex];
+
+    // Enforce fixed array capacity limit (no allocations on audio thread)
+    if (layer.roundRobinCount >= MAX_ROUND_ROBIN_SAMPLES)
+    {
+        DBG("BlockSampler: Round-robin capacity exceeded for layer " << layerIndex);
+        return;
+    }
 
     // Stop playback unconditionally to prevent race conditions
     stop();
 
-    RoundRobinSample sample;
-    sample.buffer = std::move(buffer);
-    sample.sampleRate = sampleRate;
-    sample.path = path;
-    sample.normGain = inNormGain;
+    // Use next available slot in fixed array
+    const int slotIndex = layer.roundRobinCount;
+    auto& slot = layer.roundRobinSamples[static_cast<size_t>(slotIndex)];
+    slot.buffer = std::move(buffer);
+    slot.sampleRate = sampleRate;
+    slot.path = path;
+    slot.normGain = inNormGain;
+    slot.isLoaded = true;
 
-    layers[layerIndex].roundRobinSamples.push_back(std::move(sample));
+    layer.roundRobinCount++;
 }
 
 void Pad::clearSample(int layerIndex)
@@ -441,8 +487,17 @@ void Pad::clearRoundRobin(int layerIndex)
         // Stop playback unconditionally to prevent race conditions
         stop();
 
-        layers[layerIndex].roundRobinSamples.clear();
-        layers[layerIndex].roundRobinIndex = 0;
+        auto& layer = layers[layerIndex];
+        // Clear all loaded round-robin slots
+        for (int i = 0; i < layer.roundRobinCount; ++i)
+        {
+            auto& slot = layer.roundRobinSamples[static_cast<size_t>(i)];
+            slot.buffer.setSize(0, 0);
+            slot.path.clear();
+            slot.isLoaded = false;
+        }
+        layer.roundRobinCount = 0;
+        layer.roundRobinIndex = 0;
     }
 }
 
