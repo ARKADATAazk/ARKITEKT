@@ -913,6 +913,14 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
         }
     }
 
+    // Debug: get dropped load count
+    if (name == "DEBUG_DROPPED_LOADS")
+        return juce::String(droppedLoadCount.load(std::memory_order_relaxed));
+
+    // Debug: get dropped command count
+    if (name == "DEBUG_DROPPED_COMMANDS")
+        return juce::String(droppedCommandCount.load(std::memory_order_relaxed));
+
     return {};
 }
 
