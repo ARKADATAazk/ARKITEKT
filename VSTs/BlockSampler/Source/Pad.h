@@ -168,7 +168,6 @@ private:
     int selectVelocityLayer(int velocity);
     void updateEnvelopeParams();
     void updatePitchEnvelopeParams();
-    float getPitchEnvelopeValue();  // Returns pitch modulation in semitones
 
     // -------------------------------------------------------------------------
     // PRIVATE STATE
