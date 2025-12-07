@@ -1,116 +1,141 @@
-# BlockSampler vs RS5K Feature Comparison
+# BlockSampler Feature Comparison
 
-## What RS5K Does (That We Need)
+## vs Sitala (Free Drum Sampler)
 
-| Feature | RS5K | BlockSampler |
-|---------|------|--------------|
-| Sample playback | ✅ | ✅ |
-| ADSR envelope | ✅ Basic | ✅ Per-pad |
-| Filter (LP/HP/BP) | ✅ Basic | ✅ SVF per-pad |
-| Pitch/tune | ✅ Via speed | ✅ Via speed (same) |
-| Volume/Pan | ✅ | ✅ Per-pad |
-| Note range | ✅ | ✅ Fixed: 36-51 (pads 0-15) |
-| Velocity sensitivity | ✅ | ✅ + layers |
-| Obey note-off | ✅ | ✅ Optional per-pad |
+| Feature | Sitala | BlockSampler | Winner |
+|---------|--------|--------------|--------|
+| Pads | 16 | 128 | **BlockSampler** |
+| Velocity layers | ❌ | ✅ 4 per pad | **BlockSampler** |
+| Round-robin | ❌ | ✅ 16 per layer | **BlockSampler** |
+| Choke/kill groups | ✅ 16 | ✅ 8 | Sitala (more groups) |
+| Multi-out routing | ✅ 16 stereo | ✅ 16 stereo | Tie |
+| ADSR envelope | ✅ | ✅ | Tie |
+| Filter | ✅ Tone knob | ✅ SVF LP/HP + reso | **BlockSampler** |
+| **Pitch envelope** | ❌ | ✅ Full ADSR | **BlockSampler** |
+| **Loop modes** | ❌ | ✅ OneShot/Loop/PingPong | **BlockSampler** |
+| Sample start/end | ✅ | ✅ | Tie |
+| Reverse playback | ❌ | ✅ | **BlockSampler** |
+| Peak normalization | ❌ | ✅ | **BlockSampler** |
+| Built-in effects | ✅ (tone, bitcrush) | ❌ (use DAW FX) | Sitala |
+| GUI | ✅ Nice | ❌ Headless | Sitala |
+| Drag & drop | ✅ | ❌ (Lua/chunk) | Sitala |
+| Parameter automation | ✅ ~80 | ✅ 2816 | **BlockSampler** |
+| Price | Free | Free | Tie |
 
-## What RS5K Lacks (That We Add)
+**Summary:** BlockSampler wins on audio features (pitch envelope, velocity layers, round-robin), Sitala wins on usability (GUI, drag & drop).
 
-| Feature | RS5K | BlockSampler |
-|---------|------|--------------|
-| Multiple pads per instance | ❌ (need 16 instances) | ✅ 16 pads |
-| Velocity layers | ❌ | ✅ 4 layers per pad |
-| Round-robin | ❌ | ✅ Per layer |
-| Kill groups (hi-hat choke) | ❌ | ✅ 8 groups |
-| Multi-out routing | ❌ (1 stereo) | ✅ 16 stereo outs |
-| Sample start/end | ⚠️ Basic | ✅ Per-pad |
-| One-shot mode | ⚠️ Clunky | ✅ Per-pad toggle |
-| Reverse playback | ❌ | ✅ Per-pad |
-| Parameter exposure for Lua | ❌ | ✅ Full control |
+---
 
-## What We Skip (Not Worth Complexity)
+## vs Ableton Drum Rack
 
-| Feature | Why Skip |
-|---------|----------|
-| Time-stretching | Complex, CPU heavy, rarely needed for drums |
-| Pitch-independent | Same - drums don't need it |
-| Loop modes | One-shot is 99% of drum use |
-| Complex modulation | DrumBlocks handles this via automation |
-| Built-in FX (reverb, delay) | Use REAPER FX chain instead |
+| Feature | Drum Rack | BlockSampler | Winner |
+|---------|-----------|--------------|--------|
+| Pads | 128 | 128 | Tie |
+| Velocity layers | ✅ (via Simpler) | ✅ 4 built-in | Tie |
+| Round-robin | ✅ (manual setup) | ✅ 16 per layer | **BlockSampler** (easier) |
+| Choke groups | ✅ 16 | ✅ 8 | Drum Rack |
+| Multi-out routing | ✅ Unlimited | ✅ 16 stereo | Drum Rack |
+| ADSR envelope | ✅ Full | ✅ Full | Tie |
+| Filter | ✅ Multi-mode | ✅ SVF LP/HP | Drum Rack |
+| **Pitch envelope** | ✅ (via Simpler) | ✅ Dedicated | Tie |
+| **Loop modes** | ✅ Full | ✅ 3 modes | Drum Rack (more options) |
+| Warp/time-stretch | ✅ | ❌ | Drum Rack |
+| Slice to pads | ✅ | ❌ | Drum Rack |
+| Macro controls | ✅ 8 | ❌ (use Lua) | Drum Rack |
+| Per-pad FX chains | ✅ Full | ❌ (use DAW) | Drum Rack |
+| Parameter automation | ✅ | ✅ 2816 params | Tie |
+| Scripting/API | ❌ | ✅ Full Lua | **BlockSampler** |
+| DAW integration | Ableton only | REAPER | Depends |
+| Price | $$$$ (Suite) | Free | **BlockSampler** |
 
-## Parameter Layout (160 total)
+**Summary:** Drum Rack has more features overall, but BlockSampler is free and has superior scripting/automation for REAPER workflows.
+
+---
+
+## BlockSampler Unique Strengths
+
+1. **2816 Automatable Parameters**
+   - Every parameter on every pad exposed to DAW automation
+   - Full Lua API for scripted control
+
+2. **808-Style Pitch Envelope**
+   - Dedicated A-D-S envelope for pitch modulation
+   - Fast `pow2` approximation for CPU efficiency
+   - Classic kick "boing" in 4 parameters
+
+3. **Deep Round-Robin**
+   - 16 samples per velocity layer
+   - Sequential or random mode
+   - No manual routing needed
+
+4. **Thread-Safe Async Loading**
+   - Background sample loading
+   - Lock-free command queue
+   - No audio dropouts during kit changes
+
+5. **REAPER/Lua Integration**
+   - Full named config param support
+   - Kit save/load via scripts
+   - 808 presets built into bridge
+
+---
+
+## Current Parameter Count
 
 ```
-Per-Pad Parameters (10 × 16 pads = 160):
-  0: Volume        (0.0 - 1.0)
-  1: Pan           (-1.0 - 1.0)
-  2: Tune          (-24 - +24 semitones)
-  3: Attack        (0 - 2000 ms)
-  4: Decay         (0 - 2000 ms)
-  5: Sustain       (0.0 - 1.0)
-  6: Release       (0 - 5000 ms)
-  7: Filter Cutoff (20 - 20000 Hz, log scale)
-  8: Filter Reso   (0.0 - 1.0)
-  9: Kill Group    (0-8, 0 = none)
+Per-Pad Parameters: 22
+  0:  Volume           (0-1)
+  1:  Pan              (-1 to +1)
+  2:  Tune             (-24 to +24 semitones)
+  3:  Attack           (0-2000 ms)
+  4:  Decay            (0-2000 ms)
+  5:  Sustain          (0-1)
+  6:  Release          (0-5000 ms)
+  7:  Filter Cutoff    (20-20000 Hz)
+  8:  Filter Reso      (0-1)
+  9:  Filter Type      (0=LP, 1=HP)
+  10: Kill Group       (0-8)
+  11: Output Group     (0-16)
+  12: Loop Mode        (0=OneShot, 1=Loop, 2=PingPong)
+  13: Reverse          (bool)
+  14: Normalize        (bool)
+  15: Sample Start     (0-1)
+  16: Sample End       (0-1)
+  17: Round Robin Mode (0=seq, 1=random)
+  18: Pitch Env Amount (-24 to +24 semitones)
+  19: Pitch Env Attack (0-100 ms)
+  20: Pitch Env Decay  (0-2000 ms)
+  21: Pitch Env Sustain(0-1)
+
+Total: 22 × 128 pads = 2,816 parameters
 ```
 
-## Named Config Parameters (Strings)
+---
 
-```
-P0_SAMPLE  = "/path/to/kick.wav"
-P0_SAMPLE1 = "/path/to/kick_soft.wav"   (velocity layer 1)
-P0_SAMPLE2 = "/path/to/kick_medium.wav" (velocity layer 2)
-P0_SAMPLE3 = "/path/to/kick_hard.wav"   (velocity layer 3)
-...
-P15_SAMPLE = "/path/to/crash.wav"
-```
+## What We Still Skip
 
-## MIDI Mapping
+| Feature | Why |
+|---------|-----|
+| Time-stretching | CPU heavy, drums don't need it |
+| Granular/wavetable | Out of scope for drum sampler |
+| Built-in FX | Use REAPER FX chain (more flexible) |
+| Slice detection | DrumBlocks can handle via Lua |
+| GUI | Headless by design (DrumBlocks provides UI) |
 
-```
-Note 36 (C1)  → Pad 0  (Kick)
-Note 37 (C#1) → Pad 1  (Snare)
-Note 38 (D1)  → Pad 2  (Closed HH)
-...
-Note 51 (D#2) → Pad 15
-```
+---
 
-## Multi-Out Configuration
+## 808 Preset Quick Reference
 
-```
-Bus 0:  Main Stereo (mix of all pads)
-Bus 1:  Pad 0 stereo
-Bus 2:  Pad 1 stereo
-...
-Bus 16: Pad 15 stereo
-```
+```lua
+-- Classic 808 kick
+Bridge.applyPreset(track, fx, pad, Bridge.Presets.Kick808)
+-- pitch_env_amount = -12, decay = 80ms
 
-## Kill Group Logic
+-- Deep sub kick
+Bridge.applyPreset(track, fx, pad, Bridge.Presets.SubKick808)
+-- pitch_env_amount = -24, decay = 150ms
 
-```cpp
-// When pad triggers:
-if (pad.killGroup > 0) {
-    for (auto& other : pads) {
-        if (&other != &pad && other.killGroup == pad.killGroup) {
-            other.stopImmediately();  // Or fast release
-        }
-    }
-}
-
-// Typical use:
-// Pad 2 (Closed HH) → Kill Group 1
-// Pad 3 (Open HH)   → Kill Group 1
-// Closed stops Open, Open stops Closed
-```
-
-## Velocity Layer Selection
-
-```cpp
-// 4 layers with configurable thresholds
-// Default: 0-31, 32-63, 64-95, 96-127
-int selectLayer(int velocity) {
-    if (velocity < 32) return 0;
-    if (velocity < 64) return 1;
-    if (velocity < 96) return 2;
-    return 3;
-}
+-- Punchy kick
+Bridge.applyPreset(track, fx, pad, Bridge.Presets.PunchyKick808)
+-- pitch_env_amount = -8, decay = 30ms
 ```
