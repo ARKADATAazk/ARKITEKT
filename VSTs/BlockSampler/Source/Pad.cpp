@@ -449,6 +449,10 @@ int Pad::renderNextBlock(int numSamples)
     // Note: normGain is applied per-layer since they may differ
     const float baseGain = volume * currentVelocity;
 
+    // Pre-multiply constant gain factors (baseGain * panGain) to save per-sample multiplications
+    const float gainFactorL = baseGain * panGainL;
+    const float gainFactorR = baseGain * panGainR;
+
     // Blend weights
     const float primaryWeight = 1.0f - layerBlendFactor;
     const float secondaryWeight = layerBlendFactor;
@@ -712,8 +716,8 @@ int Pad::renderNextBlock(int numSamples)
             isPingPong ? (pos0 + (movingForward ? 1 : -1)) : (pos0 + interpOffset));
         const float frac = static_cast<float>(playPosition - static_cast<double>(pos0));
 
-        // Combined gain with envelope
-        const float gain = baseGain * envValue;
+        // Get envelope value (used for both gain and possible pitch envelope)
+        // Note: gainFactorL/R already includes baseGain and pan, so we just multiply by envelope
 
         // Sample primary layer
         float sampleL, sampleR;
@@ -763,8 +767,9 @@ int Pad::renderNextBlock(int numSamples)
         }
 
         // Apply gain and panning, write to output
-        destL[sample] = sampleL * gain * panGainL;
-        destR[sample] = sampleR * gain * panGainR;
+        // Uses pre-multiplied gainFactorL/R (baseGain * panGain) to reduce per-sample multiplications
+        destL[sample] = sampleL * envValue * gainFactorL;
+        destR[sample] = sampleR * envValue * gainFactorR;
 
         // Advance positions
         playPosition += positionDelta;
