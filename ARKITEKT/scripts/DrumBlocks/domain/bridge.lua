@@ -510,9 +510,14 @@ function M.loadKit(track, fx, kit_data)
   if not track or not fx or fx < 0 then return false end
 
   for pad_idx, pad_data in pairs(kit_data.pads or {}) do
+    -- Skip invalid pad indices
+    if not isValidPad(pad_idx) then goto continue end
+
     -- Load samples
     for layer_idx, sample_path in pairs(pad_data.samples or {}) do
-      M.loadSample(track, fx, pad_idx, layer_idx, sample_path)
+      if isValidLayer(layer_idx) then
+        M.loadSample(track, fx, pad_idx, layer_idx, sample_path)
+      end
     end
 
     -- Set parameters
@@ -546,6 +551,8 @@ function M.loadKit(track, fx, kit_data)
 
     -- Velocity curve
     if pad_data.vel_curve ~= nil then M.setVelCurve(track, fx, pad_idx, pad_data.vel_curve) end
+
+    ::continue::
   end
 
   return true
@@ -715,6 +722,7 @@ M.Presets.Cowbell808 = {
 -- Apply a preset to a pad
 function M.applyPreset(track, fx, pad, preset)
   if not track or not fx or fx < 0 then return false end
+  if not isValidPad(pad) then return false end
   if not preset then return false end
 
   if preset.pitch_env_amount then M.setPitchEnvAmount(track, fx, pad, preset.pitch_env_amount) end
