@@ -482,6 +482,9 @@ int Pad::renderNextBlock(int numSamples)
     const double secStaticPositionDelta = (hasPitchEnv || !blendActive) ? 0.0
         : (baseForward ? secStaticPitchRatio : -secStaticPitchRatio);
 
+    // Pre-compute interpolation offset for non-ping-pong modes (1 if forward, -1 if reverse)
+    const int interpOffset = baseForward ? 1 : -1;
+
     // Loop boundaries as doubles (avoid repeated casts)
     const double startBoundary = static_cast<double>(playStartSample);
     const double endBoundary = static_cast<double>(playEndSample);
@@ -704,7 +707,9 @@ int Pad::renderNextBlock(int numSamples)
         }
 
         // Calculate interpolation position (use pre-computed sampleLastIndex)
-        const int pos1 = juce::jlimit(0, sampleLastIndex, movingForward ? (pos0 + 1) : (pos0 - 1));
+        // For non-ping-pong modes, use pre-computed interpOffset; for ping-pong, compute per-sample
+        const int pos1 = juce::jlimit(0, sampleLastIndex,
+            isPingPong ? (pos0 + (movingForward ? 1 : -1)) : (pos0 + interpOffset));
         const float frac = static_cast<float>(playPosition - static_cast<double>(pos0));
 
         // Combined gain with envelope
@@ -732,7 +737,8 @@ int Pad::renderNextBlock(int numSamples)
             const int secPos0 = static_cast<int>(secondaryPlayPosition);
             if (secPos0 >= 0 && secPos0 <= secSampleLastIndex)
             {
-                const int secPos1 = juce::jlimit(0, secSampleLastIndex, secMovingForward ? (secPos0 + 1) : (secPos0 - 1));
+                const int secPos1 = juce::jlimit(0, secSampleLastIndex,
+                    isPingPong ? (secPos0 + (secMovingForward ? 1 : -1)) : (secPos0 + interpOffset));
                 const float secFrac = static_cast<float>(secondaryPlayPosition - static_cast<double>(secPos0));
 
                 float secSampleL, secSampleR;
