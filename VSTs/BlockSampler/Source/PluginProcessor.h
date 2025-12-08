@@ -53,6 +53,13 @@ struct PadMetadata
     std::array<double, NUM_VELOCITY_LAYERS> sampleDurations = {};
     std::array<bool, NUM_VELOCITY_LAYERS> hasLayerSample = {};
     bool hasSample = false;
+
+    // Pre-allocate vector capacity to minimize audio-thread allocations
+    PadMetadata()
+    {
+        for (auto& paths : roundRobinPaths)
+            paths.reserve(MAX_ROUND_ROBIN_SAMPLES);
+    }
 };
 
 // Double-buffer container for lock-free metadata updates

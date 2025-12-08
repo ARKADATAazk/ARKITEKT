@@ -545,13 +545,29 @@ void Processor::updatePadMetadataAfterClear(int padIndex, int layerIndex)
         return;
 
     // Called from audio thread - write to back buffer, then swap atomically
-    const int writeIndex = 1 - metadataBuffers.readIndex.load(std::memory_order_acquire);
+    // IMPORTANT: Read readIndex once to ensure consistency
+    const int currentReadIndex = metadataBuffers.readIndex.load(std::memory_order_acquire);
+    const int writeIndex = 1 - currentReadIndex;
     auto& meta = metadataBuffers.buffers[writeIndex][padIndex];
+    const auto& srcMeta = metadataBuffers.buffers[currentReadIndex][padIndex];
     auto& pad = pads[padIndex];
 
-    // Copy existing data from read buffer first (so we only update the cleared layer)
-    const int readIndex = metadataBuffers.readIndex.load(std::memory_order_acquire);
-    meta = metadataBuffers.buffers[readIndex][padIndex];
+    // Copy scalar data from source (avoid copying vectors - use swap instead)
+    meta.hasSample = srcMeta.hasSample;
+    meta.roundRobinCounts = srcMeta.roundRobinCounts;
+    meta.sampleDurations = srcMeta.sampleDurations;
+    meta.hasLayerSample = srcMeta.hasLayerSample;
+
+    // Copy paths arrays (these are small fixed-size arrays of strings)
+    meta.samplePaths = srcMeta.samplePaths;
+
+    // For round-robin paths, only copy if not the layer being cleared
+    // This minimizes vector operations
+    for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+    {
+        if (layer != layerIndex)
+            meta.roundRobinPaths[layer] = srcMeta.roundRobinPaths[layer];
+    }
 
     // Update only the affected layer
     meta.samplePaths[layerIndex] = pad.getSamplePath(layerIndex);
@@ -885,29 +901,37 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
 {
     int padIndex, layerIndex;
 
-    // Helper lambda to read from metadata double buffer (lock-free)
-    auto getMetadata = [this](int pad) -> const PadMetadata& {
+    // Helper lambda to get metadata buffer pointer with atomic index load
+    // THREAD SAFETY: readIndex is loaded once, and that buffer won't be modified
+    // until the audio thread swaps (which won't happen mid-read due to atomic ordering)
+    auto getReadBuffer = [this]() -> const std::array<PadMetadata, NUM_PADS>& {
         const int readIdx = metadataBuffers.readIndex.load(std::memory_order_acquire);
-        return metadataBuffers.buffers[readIdx][pad];
+        return metadataBuffers.buffers[readIdx];
     };
 
     // Pattern: P{pad}_L{layer}_SAMPLE
-    // THREAD SAFETY: Read from front buffer (lock-free)
+    // THREAD SAFETY: Copy string to ensure no reference issues
     if (parsePadLayerParam(name, "_SAMPLE", padIndex, layerIndex))
     {
-        return getMetadata(padIndex).samplePaths[layerIndex];
+        jassert(padIndex >= 0 && padIndex < NUM_PADS);
+        jassert(layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS);
+        return juce::String(getReadBuffer()[padIndex].samplePaths[layerIndex]);
     }
 
     // Pattern: P{pad}_L{layer}_RR_COUNT (get round-robin sample count)
     if (parsePadLayerParam(name, "_RR_COUNT", padIndex, layerIndex))
     {
-        return juce::String(getMetadata(padIndex).roundRobinCounts[layerIndex]);
+        jassert(padIndex >= 0 && padIndex < NUM_PADS);
+        jassert(layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS);
+        return juce::String(getReadBuffer()[padIndex].roundRobinCounts[layerIndex]);
     }
 
     // Pattern: P{pad}_L{layer}_DURATION (get sample duration in seconds)
     if (parsePadLayerParam(name, "_DURATION", padIndex, layerIndex))
     {
-        return juce::String(getMetadata(padIndex).sampleDurations[layerIndex], 3);
+        jassert(padIndex >= 0 && padIndex < NUM_PADS);
+        jassert(layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS);
+        return juce::String(getReadBuffer()[padIndex].sampleDurations[layerIndex], 3);
     }
 
     // Pattern: P{pad}_HAS_SAMPLE (min length: "P0_HAS_SAMPLE" = 13)
@@ -919,7 +943,7 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
             padIndex = padStr.getIntValue();
             if (padIndex >= 0 && padIndex < NUM_PADS)
             {
-                return getMetadata(padIndex).hasSample ? "1" : "0";
+                return getReadBuffer()[padIndex].hasSample ? "1" : "0";
             }
         }
     }

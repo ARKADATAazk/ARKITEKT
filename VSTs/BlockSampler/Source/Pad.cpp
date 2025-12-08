@@ -350,6 +350,10 @@ inline float fastPow2(float x)
 
 int Pad::renderNextBlock(int numSamples)
 {
+    // Debug assertions for development (stripped in release builds)
+    jassert(numSamples > 0);
+    jassert(currentSampleRate > 0);
+
     // Validate playback state and layer bounds
     const int layerIdx = currentLayer.load();
     if (!isPlaying || layerIdx < 0 || layerIdx >= NUM_VELOCITY_LAYERS)
@@ -361,6 +365,7 @@ int Pad::renderNextBlock(int numSamples)
     if (bufferCapacity == 0)
         return 0;  // prepare() not called yet
     numSamples = juce::jmin(numSamples, bufferCapacity);
+    jassert(numSamples <= bufferCapacity);  // Sanity check after clamping
 
     auto& layer = layers[layerIdx];
     if (!layer.isLoaded())
@@ -630,7 +635,10 @@ int Pad::renderNextBlock(int numSamples)
         // Linear interpolation for pitch shifting (primary layer)
         const int pos0 = static_cast<int>(playPosition);
 
-        // Bounds check pos0 to prevent buffer overrun
+        // Debug assertion: playPosition should always be valid at this point
+        jassert(pos0 >= 0 && pos0 < sampleNumSamples);
+
+        // Bounds check pos0 to prevent buffer overrun (defense-in-depth for release builds)
         if (pos0 < 0 || pos0 >= sampleNumSamples)
         {
             isPlaying = false;
@@ -702,12 +710,13 @@ int Pad::renderNextBlock(int numSamples)
 
         // Drift correction: every 4096 samples, re-anchor to nearest integer to prevent
         // cumulative floating-point precision errors during long playback (hours)
-        // This keeps playPosition tightly coupled to actual sample positions
+        // Uses fast floor+0.5 instead of std::round for better performance
         if ((samplesRendered & 0xFFF) == 0)  // Every 4096 samples (~93ms at 44.1kHz)
         {
-            playPosition = std::round(playPosition);
+            // Fast round: floor(x + 0.5) - works for positive values (playPosition is always >= 0)
+            playPosition = static_cast<double>(static_cast<int64_t>(playPosition + 0.5));
             if (hasBlend && secSrcL != nullptr)
-                secondaryPlayPosition = std::round(secondaryPlayPosition);
+                secondaryPlayPosition = static_cast<double>(static_cast<int64_t>(secondaryPlayPosition + 0.5));
         }
     }
 
