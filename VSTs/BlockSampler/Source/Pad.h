@@ -1,0 +1,219 @@
+// =============================================================================
+// BlockSampler/Source/Pad.h
+// Single pad with velocity layers, round-robin, ADSR, filter
+// =============================================================================
+
+#pragma once
+
+#include <juce_audio_basics/juce_audio_basics.h>
+#include <juce_audio_formats/juce_audio_formats.h>
+#include <juce_dsp/juce_dsp.h>
+#include "Parameters.h"
+#include <atomic>
+
+namespace BlockSampler
+{
+
+// =============================================================================
+// ROUND-ROBIN SAMPLE (consolidated for cache locality)
+// =============================================================================
+
+struct RoundRobinSample
+{
+    juce::AudioBuffer<float> buffer;
+    double sampleRate = 44100.0;
+    juce::String path;
+    float normGain = 1.0f;
+};
+
+// =============================================================================
+// VELOCITY LAYER
+// =============================================================================
+
+struct VelocityLayer
+{
+    VelocityLayer() { roundRobinSamples.reserve(MAX_ROUND_ROBIN_SAMPLES); }
+
+    // Primary sample
+    juce::AudioBuffer<float> buffer;
+    int numSamples = 0;
+    double sourceSampleRate = 44100.0;
+    juce::String filePath;
+    float normGain = 1.0f;  // Peak normalization gain (computed on load)
+
+    // Round-robin samples (pre-reserved to avoid audio-thread allocation)
+    std::vector<RoundRobinSample> roundRobinSamples;
+    int roundRobinIndex = 0;
+
+    // Queries
+    bool isLoaded() const;
+    int getRoundRobinCount() const;
+
+    // Round-robin access
+    const juce::AudioBuffer<float>& getCurrentBuffer() const;
+    int getCurrentNumSamples() const;
+    double getCurrentSampleRate() const;
+    float getCurrentNormGain() const;
+    void advanceRoundRobin(juce::Random& rng, bool randomMode);
+
+    // Get all round-robin paths for state persistence (allocates - use for non-audio-thread only)
+    std::vector<juce::String> getRoundRobinPaths() const;
+
+    // Get single round-robin path by index (allocation-free - safe for audio thread)
+    // Returns empty string if index is out of range
+    const juce::String& getRoundRobinPath(int index) const;
+
+    // Management
+    void clear();
+};
+
+// =============================================================================
+// PAD CLASS
+// =============================================================================
+
+class Pad
+{
+public:
+    Pad() = default;
+
+    // -------------------------------------------------------------------------
+    // LIFECYCLE
+    // -------------------------------------------------------------------------
+
+    void prepare(double sampleRate, int samplesPerBlock);
+    void trigger(int velocity);
+    void noteOff();
+    void forceRelease();  // Trigger release phase even in one-shot mode
+    void stop();
+
+    // -------------------------------------------------------------------------
+    // AUDIO PROCESSING
+    // -------------------------------------------------------------------------
+
+    // Renders to internal buffer, returns samples rendered (0 if not playing)
+    int renderNextBlock(int numSamples);
+
+    // Get rendered audio (valid after renderNextBlock)
+    const juce::AudioBuffer<float>& getOutputBuffer() const { return tempBuffer; }
+
+    // -------------------------------------------------------------------------
+    // SAMPLE MANAGEMENT (Audio thread only)
+    // -------------------------------------------------------------------------
+
+    // Buffer assignment from pre-loaded data (called by Processor::applyCompletedLoads)
+    // IMPORTANT: These methods must only be called from the audio thread.
+    // They stop playback before modifying to prevent races within the audio thread.
+    void setSampleBuffer(int layerIndex,
+                         juce::AudioBuffer<float>&& buffer,
+                         double sampleRate,
+                         const juce::String& path,
+                         float inNormGain);
+
+    void addRoundRobinBuffer(int layerIndex,
+                             juce::AudioBuffer<float>&& buffer,
+                             double sampleRate,
+                             const juce::String& path,
+                             float inNormGain);
+
+    void clearSample(int layerIndex);
+    void clearRoundRobin(int layerIndex);
+
+    // -------------------------------------------------------------------------
+    // QUERIES
+    // -------------------------------------------------------------------------
+
+    juce::String getSamplePath(int layerIndex) const;
+    std::vector<juce::String> getRoundRobinPaths(int layerIndex) const;  // Allocates - non-audio-thread only
+    const juce::String& getRoundRobinPath(int layerIndex, int rrIndex) const;  // Allocation-free
+    bool hasSample(int layerIndex) const;
+    int getRoundRobinCount(int layerIndex) const;
+    double getSampleDuration(int layerIndex) const;  // Duration in seconds
+
+    // -------------------------------------------------------------------------
+    // PUBLIC PARAMETERS (set from PluginProcessor)
+    // -------------------------------------------------------------------------
+
+    float volume = 0.8f;
+    float pan = 0.0f;
+    float tune = 0.0f;           // semitones (-24 to +24)
+    float attack = 0.0f;         // ms
+    float decay = 100.0f;        // ms
+    float sustain = 1.0f;        // 0-1
+    float release = 200.0f;      // ms
+    float filterCutoff = 20000.0f;  // Hz
+    float filterReso = 0.0f;     // 0-1
+    int filterType = 0;          // 0=LP, 1=HP, 2=BP
+    int killGroup = 0;           // 0 = none, 1-16 = group
+    int outputGroup = 0;         // 0 = main, 1-16 = group bus
+    LoopMode loopMode = LoopMode::OneShot;  // OneShot, Loop, or PingPong
+    bool reverse = false;
+    bool normalize = false;      // Apply peak normalization
+    float sampleStart = 0.0f;    // 0-1 normalized
+    float sampleEnd = 1.0f;      // 0-1 normalized
+    int roundRobinMode = 0;      // 0=sequential, 1=random
+
+    // Pitch envelope parameters (for 808-style pitch drops)
+    float pitchEnvAmount = 0.0f;    // semitones (-24 to +24), 0 = off
+    float pitchEnvAttack = 0.0f;    // ms (0-100)
+    float pitchEnvDecay = 50.0f;    // ms (0-2000)
+    float pitchEnvSustain = 0.0f;   // 0-1 (sustain level, 0 = full sweep)
+
+    // Velocity layer crossfade
+    float velCrossfade = 0.0f;      // 0-1 (0 = hard switch, 1 = full blend zone)
+
+    // Velocity curve (response shaping)
+    float velCurve = 0.5f;          // 0=soft/log, 0.5=linear, 1=hard/exp
+
+    // -------------------------------------------------------------------------
+    // PUBLIC STATE (read by PluginProcessor)
+    // -------------------------------------------------------------------------
+
+    std::atomic<bool> isPlaying{false};
+    std::atomic<int> currentLayer{-1};
+
+private:
+    // -------------------------------------------------------------------------
+    // PRIVATE HELPERS
+    // -------------------------------------------------------------------------
+
+    int selectVelocityLayer(int velocity);
+    void updateEnvelopeParams();
+    void updatePitchEnvelopeParams();
+
+    // -------------------------------------------------------------------------
+    // PRIVATE STATE
+    // -------------------------------------------------------------------------
+
+    std::array<VelocityLayer, NUM_VELOCITY_LAYERS> layers;
+    juce::ADSR envelope;
+    juce::ADSR pitchEnvelope;  // Separate envelope for pitch modulation
+    juce::dsp::StateVariableTPTFilter<float> filter;
+
+    double currentSampleRate = 44100.0;
+    double playPosition = 0.0;
+    float currentVelocity = 1.0f;
+    int playStartSample = 0;
+    int playEndSample = 0;
+
+    // Ping-pong state
+    bool pingPongForward = true;  // Direction for ping-pong mode
+
+    // Velocity layer crossfade state (for blending two adjacent layers)
+    int secondaryLayer = -1;        // Secondary layer index (-1 = no blending)
+    float layerBlendFactor = 0.0f;  // 0 = 100% primary, 1 = 100% secondary
+    double secondaryPlayPosition = 0.0;
+    bool secondaryPingPongForward = true;
+
+    // Cached filter state to avoid redundant updates
+    float lastFilterCutoff = -1.0f;
+    float lastFilterReso = -1.0f;
+    int lastFilterType = -1;
+
+    // Per-pad random generator (thread-safe: only used on audio thread)
+    juce::Random rng;
+
+    // Temp buffer for per-pad filtering (avoids filtering other pads' audio)
+    juce::AudioBuffer<float> tempBuffer;
+};
+
+}  // namespace BlockSampler
