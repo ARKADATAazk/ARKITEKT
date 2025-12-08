@@ -391,6 +391,9 @@ int Pad::renderNextBlock(int numSamples)
     if (numChannels == 0 || sampleNumSamples <= 0 || sampleRate <= 0 || currentSampleRate <= 0)
         return 0;
 
+    // Pre-compute sample bounds (used multiple times in loop)
+    const int sampleLastIndex = sampleNumSamples - 1;
+
     const bool isMono = (numChannels == 1);
 
     // Cache sample read pointers outside loop (optimization)
@@ -406,6 +409,8 @@ int Pad::renderNextBlock(int numSamples)
     double secSampleRate = 0.0;
     float secNormGain = 1.0f;
     bool secIsMono = true;
+
+    int secSampleLastIndex = 0;
 
     if (hasBlend)
     {
@@ -423,6 +428,7 @@ int Pad::renderNextBlock(int numSamples)
                 secIsMono = (secNumChannels == 1);
                 secSrcL = secBuffer.getReadPointer(0);
                 secSrcR = secIsMono ? secSrcL : secBuffer.getReadPointer(1);
+                secSampleLastIndex = secNumSamples - 1;
             }
         }
     }
@@ -507,7 +513,8 @@ int Pad::renderNextBlock(int numSamples)
     for (int sample = 0; sample < numSamples; ++sample)
     {
         // Calculate pitch ratio (fast path for static pitch, slow path for envelope)
-        double pitchRatio, secPitchRatio = 0.0;
+        double pitchRatio;
+        double secPitchRatio = 0.0;  // Only used when blendActive
         if (JUCE_UNLIKELY(hasPitchEnv))
         {
             // Get pitch envelope modulation and compute pitch ratio
@@ -521,7 +528,8 @@ int Pad::renderNextBlock(int numSamples)
         else
         {
             pitchRatio = staticPitchRatio;
-            secPitchRatio = secStaticPitchRatio;
+            if (blendActive)
+                secPitchRatio = secStaticPitchRatio;
         }
 
         // Determine playback direction (accounting for reverse and ping-pong)
@@ -529,8 +537,14 @@ int Pad::renderNextBlock(int numSamples)
         const bool movingForward = isPingPong ? pingPongForward : baseForward;
         const double positionDelta = movingForward ? pitchRatio : -pitchRatio;
 
-        const bool secMovingForward = isPingPong ? secondaryPingPongForward : baseForward;
-        const double secPositionDelta = secMovingForward ? secPitchRatio : -secPitchRatio;
+        // Secondary layer direction (only compute when blending)
+        bool secMovingForward = baseForward;  // Default, overwritten if blending
+        double secPositionDelta = 0.0;
+        if (blendActive)
+        {
+            secMovingForward = isPingPong ? secondaryPingPongForward : baseForward;
+            secPositionDelta = secMovingForward ? secPitchRatio : -secPitchRatio;
+        }
 
         // Check playback boundaries (primary layer)
         // JUCE_LIKELY: most samples are within bounds, boundary crossing is rare
@@ -645,16 +659,17 @@ int Pad::renderNextBlock(int numSamples)
         const int pos0 = static_cast<int>(playPosition);
 
         // Debug assertion: playPosition should always be valid at this point
-        jassert(pos0 >= 0 && pos0 < sampleNumSamples);
+        jassert(pos0 >= 0 && pos0 <= sampleLastIndex);
 
         // Bounds check pos0 to prevent buffer overrun (defense-in-depth for release builds)
-        if (pos0 < 0 || pos0 >= sampleNumSamples)
+        if (JUCE_UNLIKELY(pos0 < 0 || pos0 > sampleLastIndex))
         {
             isPlaying = false;
             break;
         }
 
-        const int pos1 = juce::jlimit(0, sampleNumSamples - 1, movingForward ? (pos0 + 1) : (pos0 - 1));
+        // Calculate interpolation position (use pre-computed sampleLastIndex)
+        const int pos1 = juce::jlimit(0, sampleLastIndex, movingForward ? (pos0 + 1) : (pos0 - 1));
         const float frac = static_cast<float>(playPosition - static_cast<double>(pos0));
 
         // Combined gain with envelope
@@ -680,9 +695,9 @@ int Pad::renderNextBlock(int numSamples)
         if (blendActive)
         {
             const int secPos0 = static_cast<int>(secondaryPlayPosition);
-            if (secPos0 >= 0 && secPos0 < secNumSamples)
+            if (secPos0 >= 0 && secPos0 <= secSampleLastIndex)
             {
-                const int secPos1 = juce::jlimit(0, secNumSamples - 1, secMovingForward ? (secPos0 + 1) : (secPos0 - 1));
+                const int secPos1 = juce::jlimit(0, secSampleLastIndex, secMovingForward ? (secPos0 + 1) : (secPos0 - 1));
                 const float secFrac = static_cast<float>(secondaryPlayPosition - static_cast<double>(secPos0));
 
                 float secSampleL, secSampleR;
