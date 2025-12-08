@@ -520,12 +520,34 @@ void Processor::updatePadMetadata(int padIndex)
     const int currentReadIndex = metadataBuffers.readIndex.load(std::memory_order_acquire);
     const int writeIndex = 1 - currentReadIndex;
 
-    // Copy entire buffer to maintain consistency for all pads
-    // This is O(NUM_PADS) but only happens during sample loading (rare)
-    metadataBuffers.buffers[writeIndex] = metadataBuffers.buffers[currentReadIndex];
+    auto& srcBuffer = metadataBuffers.buffers[currentReadIndex];
+    auto& dstBuffer = metadataBuffers.buffers[writeIndex];
+
+    // Copy all pads using allocation-free copy for vectors
+    // This preserves pre-reserved capacity while avoiding heap allocation
+    for (int p = 0; p < NUM_PADS; ++p)
+    {
+        auto& src = srcBuffer[p];
+        auto& dst = dstBuffer[p];
+
+        // Copy primitive arrays (no allocation)
+        dst.samplePaths = src.samplePaths;
+        dst.roundRobinCounts = src.roundRobinCounts;
+        dst.sampleDurations = src.sampleDurations;
+        dst.hasLayerSample = src.hasLayerSample;
+        dst.hasSample = src.hasSample;
+
+        // Copy vectors without allocation: clear + push_back stays within reserved capacity
+        for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+        {
+            dst.roundRobinPaths[layer].clear();  // Doesn't deallocate
+            for (const auto& path : src.roundRobinPaths[layer])
+                dst.roundRobinPaths[layer].push_back(path);
+        }
+    }
 
     // Now update the specific pad
-    auto& meta = metadataBuffers.buffers[writeIndex][padIndex];
+    auto& meta = dstBuffer[padIndex];
     auto& pad = pads[padIndex];
 
     meta.hasSample = false;
@@ -533,8 +555,14 @@ void Processor::updatePadMetadata(int padIndex)
     for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
     {
         meta.samplePaths[layer] = pad.getSamplePath(layer);
-        meta.roundRobinPaths[layer] = pad.getRoundRobinPaths(layer);
-        meta.roundRobinCounts[layer] = pad.getRoundRobinCount(layer);
+
+        // Use allocation-free path access: clear + push_back within reserved capacity
+        meta.roundRobinPaths[layer].clear();
+        const int rrCount = pad.getRoundRobinCount(layer);
+        for (int rr = 0; rr < rrCount; ++rr)
+            meta.roundRobinPaths[layer].push_back(pad.getRoundRobinPath(layer, rr));
+
+        meta.roundRobinCounts[layer] = rrCount;
         meta.sampleDurations[layer] = pad.getSampleDuration(layer);
         meta.hasLayerSample[layer] = pad.hasSample(layer);
 
@@ -557,17 +585,45 @@ void Processor::updatePadMetadataAfterClear(int padIndex, int layerIndex)
     const int currentReadIndex = metadataBuffers.readIndex.load(std::memory_order_acquire);
     const int writeIndex = 1 - currentReadIndex;
 
-    // CRITICAL: Copy entire buffer to prevent stale data for other pads
-    metadataBuffers.buffers[writeIndex] = metadataBuffers.buffers[currentReadIndex];
+    auto& srcBuffer = metadataBuffers.buffers[currentReadIndex];
+    auto& dstBuffer = metadataBuffers.buffers[writeIndex];
+
+    // Copy all pads using allocation-free copy for vectors
+    for (int p = 0; p < NUM_PADS; ++p)
+    {
+        auto& src = srcBuffer[p];
+        auto& dst = dstBuffer[p];
+
+        // Copy primitive arrays (no allocation)
+        dst.samplePaths = src.samplePaths;
+        dst.roundRobinCounts = src.roundRobinCounts;
+        dst.sampleDurations = src.sampleDurations;
+        dst.hasLayerSample = src.hasLayerSample;
+        dst.hasSample = src.hasSample;
+
+        // Copy vectors without allocation: clear + push_back stays within reserved capacity
+        for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+        {
+            dst.roundRobinPaths[layer].clear();
+            for (const auto& path : src.roundRobinPaths[layer])
+                dst.roundRobinPaths[layer].push_back(path);
+        }
+    }
 
     // Now update only the affected pad/layer
-    auto& meta = metadataBuffers.buffers[writeIndex][padIndex];
+    auto& meta = dstBuffer[padIndex];
     auto& pad = pads[padIndex];
 
     // Update only the affected layer (rest was copied above)
     meta.samplePaths[layerIndex] = pad.getSamplePath(layerIndex);
-    meta.roundRobinPaths[layerIndex] = pad.getRoundRobinPaths(layerIndex);
-    meta.roundRobinCounts[layerIndex] = pad.getRoundRobinCount(layerIndex);
+
+    // Use allocation-free path access
+    meta.roundRobinPaths[layerIndex].clear();
+    const int rrCount = pad.getRoundRobinCount(layerIndex);
+    for (int rr = 0; rr < rrCount; ++rr)
+        meta.roundRobinPaths[layerIndex].push_back(pad.getRoundRobinPath(layerIndex, rr));
+
+    meta.roundRobinCounts[layerIndex] = rrCount;
     meta.sampleDurations[layerIndex] = pad.getSampleDuration(layerIndex);
     meta.hasLayerSample[layerIndex] = pad.hasSample(layerIndex);
 

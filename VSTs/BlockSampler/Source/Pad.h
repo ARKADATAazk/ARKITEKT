@@ -56,8 +56,12 @@ struct VelocityLayer
     float getCurrentNormGain() const;
     void advanceRoundRobin(juce::Random& rng, bool randomMode);
 
-    // Get all round-robin paths for state persistence
+    // Get all round-robin paths for state persistence (allocates - use for non-audio-thread only)
     std::vector<juce::String> getRoundRobinPaths() const;
+
+    // Get single round-robin path by index (allocation-free - safe for audio thread)
+    // Returns empty string if index is out of range
+    const juce::String& getRoundRobinPath(int index) const;
 
     // Management
     void clear();
@@ -119,7 +123,8 @@ public:
     // -------------------------------------------------------------------------
 
     juce::String getSamplePath(int layerIndex) const;
-    std::vector<juce::String> getRoundRobinPaths(int layerIndex) const;
+    std::vector<juce::String> getRoundRobinPaths(int layerIndex) const;  // Allocates - non-audio-thread only
+    const juce::String& getRoundRobinPath(int layerIndex, int rrIndex) const;  // Allocation-free
     bool hasSample(int layerIndex) const;
     int getRoundRobinCount(int layerIndex) const;
     double getSampleDuration(int layerIndex) const;  // Duration in seconds

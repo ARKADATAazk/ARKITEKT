@@ -85,6 +85,15 @@ std::vector<juce::String> VelocityLayer::getRoundRobinPaths() const
     return paths;
 }
 
+const juce::String& VelocityLayer::getRoundRobinPath(int index) const
+{
+    // Allocation-free path access by index
+    static const juce::String emptyString;
+    if (index >= 0 && index < static_cast<int>(roundRobinSamples.size()))
+        return roundRobinSamples[index].path;
+    return emptyString;
+}
+
 void VelocityLayer::clear()
 {
     buffer.setSize(0, 0);
@@ -418,6 +427,9 @@ int Pad::renderNextBlock(int numSamples)
         }
     }
 
+    // Cache combined blend condition (constant during render loop)
+    const bool blendActive = hasBlend && secSrcL != nullptr;
+
     // Get write pointers for temp buffer
     float* destL = tempBuffer.getWritePointer(0);
     float* destR = tempBuffer.getWritePointer(1);
@@ -464,7 +476,7 @@ int Pad::renderNextBlock(int numSamples)
 
     // Secondary layer boundaries (using normalized positions)
     double secStartBoundary = 0.0, secEndBoundary = 0.0, secEndBoundaryMinus1 = 0.0;
-    if (hasBlend && secSrcL != nullptr)
+    if (blendActive)
     {
         // Map same normalized range to secondary sample
         float effectiveStart = sampleStart;
@@ -485,7 +497,7 @@ int Pad::renderNextBlock(int numSamples)
     // Clamp playPosition to valid bounds before loop starts
     // (prevents floating-point accumulation errors from causing out-of-bounds access)
     playPosition = juce::jlimit(startBoundary, endBoundaryMinus1, playPosition);
-    if (hasBlend && secSrcL != nullptr)
+    if (blendActive)
         secondaryPlayPosition = juce::jlimit(secStartBoundary, secEndBoundaryMinus1, secondaryPlayPosition);
 
     // Pre-compute loop mode flags (constant during render)
@@ -503,7 +515,7 @@ int Pad::renderNextBlock(int numSamples)
             const float totalPitch = tune + pitchEnvAmount * envValue;
             const float pitchMult = fastPow2(totalPitch / 12.0f);
             pitchRatio = static_cast<double>(pitchMult) * baseSampleRateRatio;
-            if (hasBlend && secSrcL != nullptr)
+            if (blendActive)
                 secPitchRatio = static_cast<double>(pitchMult) * secBaseSampleRateRatio;
         }
         else
@@ -579,7 +591,7 @@ int Pad::renderNextBlock(int numSamples)
         }
 
         // Handle secondary layer boundaries (if blending)
-        if (hasBlend && secSrcL != nullptr)
+        if (blendActive)
         {
             const bool secPastBoundary = secMovingForward
                 ? (secondaryPlayPosition >= secEndBoundary)
@@ -665,7 +677,7 @@ int Pad::renderNextBlock(int numSamples)
         }
 
         // Blend with secondary layer (if active)
-        if (hasBlend && secSrcL != nullptr)
+        if (blendActive)
         {
             const int secPos0 = static_cast<int>(secondaryPlayPosition);
             if (secPos0 >= 0 && secPos0 < secNumSamples)
@@ -700,7 +712,7 @@ int Pad::renderNextBlock(int numSamples)
 
         // Advance positions
         playPosition += positionDelta;
-        if (hasBlend && secSrcL != nullptr)
+        if (blendActive)
             secondaryPlayPosition += secPositionDelta;
 
         ++samplesRendered;
@@ -712,7 +724,7 @@ int Pad::renderNextBlock(int numSamples)
         {
             // Fast round: floor(x + 0.5) - works for positive values (playPosition is always >= 0)
             playPosition = static_cast<double>(static_cast<int64_t>(playPosition + 0.5));
-            if (hasBlend && secSrcL != nullptr)
+            if (blendActive)
                 secondaryPlayPosition = static_cast<double>(static_cast<int64_t>(secondaryPlayPosition + 0.5));
         }
     }
@@ -847,6 +859,15 @@ std::vector<juce::String> Pad::getRoundRobinPaths(int layerIndex) const
     if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
         return layers[layerIndex].getRoundRobinPaths();
     return {};
+}
+
+const juce::String& Pad::getRoundRobinPath(int layerIndex, int rrIndex) const
+{
+    // Allocation-free path access - safe for audio thread
+    static const juce::String emptyString;
+    if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+        return layers[layerIndex].getRoundRobinPath(rrIndex);
+    return emptyString;
 }
 
 bool Pad::hasSample(int layerIndex) const
