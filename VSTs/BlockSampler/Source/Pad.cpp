@@ -475,6 +475,13 @@ int Pad::renderNextBlock(int numSamples)
     // Ping-pong uses pingPongForward which changes dynamically
     const bool baseForward = !reverse;
 
+    // Pre-compute static position delta for non-ping-pong, no-pitch-envelope case
+    // This avoids per-sample conditional computation in the most common scenario
+    const double staticPositionDelta = hasPitchEnv ? 0.0
+        : (baseForward ? staticPitchRatio : -staticPitchRatio);
+    const double secStaticPositionDelta = (hasPitchEnv || !blendActive) ? 0.0
+        : (baseForward ? secStaticPitchRatio : -secStaticPitchRatio);
+
     // Loop boundaries as doubles (avoid repeated casts)
     const double startBoundary = static_cast<double>(playStartSample);
     const double endBoundary = static_cast<double>(playEndSample);
@@ -512,38 +519,66 @@ int Pad::renderNextBlock(int numSamples)
 
     for (int sample = 0; sample < numSamples; ++sample)
     {
-        // Calculate pitch ratio (fast path for static pitch, slow path for envelope)
-        double pitchRatio;
-        double secPitchRatio = 0.0;  // Only used when blendActive
-        if (JUCE_UNLIKELY(hasPitchEnv))
+        // Calculate position delta based on mode:
+        // - Ping-pong: must compute per-sample (direction changes on boundary)
+        // - Pitch envelope: must compute per-sample (pitch changes per-sample)
+        // - Otherwise: use pre-computed static value (most common case)
+        double positionDelta;
+        double secPositionDelta = 0.0;
+        bool movingForward;
+        bool secMovingForward = baseForward;
+
+        if (JUCE_UNLIKELY(isPingPong))
         {
-            // Get pitch envelope modulation and compute pitch ratio
+            // Ping-pong mode: direction can change, must compute per-sample
+            movingForward = pingPongForward;
+            if (JUCE_UNLIKELY(hasPitchEnv))
+            {
+                const float envValue = pitchEnvelope.getNextSample();
+                const float totalPitch = tune + pitchEnvAmount * envValue;
+                const float pitchMult = fastPow2(totalPitch / 12.0f);
+                const double pitchRatio = static_cast<double>(pitchMult) * baseSampleRateRatio;
+                positionDelta = movingForward ? pitchRatio : -pitchRatio;
+                if (blendActive)
+                {
+                    secMovingForward = secondaryPingPongForward;
+                    const double secPitchRatio = static_cast<double>(pitchMult) * secBaseSampleRateRatio;
+                    secPositionDelta = secMovingForward ? secPitchRatio : -secPitchRatio;
+                }
+            }
+            else
+            {
+                positionDelta = movingForward ? staticPitchRatio : -staticPitchRatio;
+                if (blendActive)
+                {
+                    secMovingForward = secondaryPingPongForward;
+                    secPositionDelta = secMovingForward ? secStaticPitchRatio : -secStaticPitchRatio;
+                }
+            }
+        }
+        else if (JUCE_UNLIKELY(hasPitchEnv))
+        {
+            // Pitch envelope active: must compute pitch per-sample, but direction is constant
+            movingForward = baseForward;
             const float envValue = pitchEnvelope.getNextSample();
             const float totalPitch = tune + pitchEnvAmount * envValue;
             const float pitchMult = fastPow2(totalPitch / 12.0f);
-            pitchRatio = static_cast<double>(pitchMult) * baseSampleRateRatio;
+            const double pitchRatio = static_cast<double>(pitchMult) * baseSampleRateRatio;
+            positionDelta = movingForward ? pitchRatio : -pitchRatio;
             if (blendActive)
-                secPitchRatio = static_cast<double>(pitchMult) * secBaseSampleRateRatio;
+            {
+                const double secPitchRatio = static_cast<double>(pitchMult) * secBaseSampleRateRatio;
+                secPositionDelta = movingForward ? secPitchRatio : -secPitchRatio;
+            }
         }
         else
         {
-            pitchRatio = staticPitchRatio;
+            // Most common case: no ping-pong, no pitch envelope
+            // Use pre-computed static values (fastest path)
+            movingForward = baseForward;
+            positionDelta = staticPositionDelta;
             if (blendActive)
-                secPitchRatio = secStaticPitchRatio;
-        }
-
-        // Determine playback direction (accounting for reverse and ping-pong)
-        // For non-ping-pong modes, direction is constant (baseForward)
-        const bool movingForward = isPingPong ? pingPongForward : baseForward;
-        const double positionDelta = movingForward ? pitchRatio : -pitchRatio;
-
-        // Secondary layer direction (only compute when blending)
-        bool secMovingForward = baseForward;  // Default, overwritten if blending
-        double secPositionDelta = 0.0;
-        if (blendActive)
-        {
-            secMovingForward = isPingPong ? secondaryPingPongForward : baseForward;
-            secPositionDelta = secMovingForward ? secPitchRatio : -secPitchRatio;
+                secPositionDelta = secStaticPositionDelta;
         }
 
         // Check playback boundaries (primary layer)
