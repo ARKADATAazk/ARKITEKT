@@ -109,8 +109,8 @@ function M.setParam(track, fx, pad, param, value)
 end
 
 function M.getParam(track, fx, pad, param)
-  if not track or not fx or fx < 0 then return 0 end
-  if not isValidPad(pad) then return 0 end
+  if not track or not fx or fx < 0 then return nil end
+  if not isValidPad(pad) then return nil end
   local idx = getParamIndex(pad, param)
   local value, _, _ = reaper.TrackFX_GetParam(track, fx, idx)
   return value
@@ -132,12 +132,17 @@ function M.setTune(track, fx, pad, semitones)
 end
 
 function M.setAttack(track, fx, pad, ms)
-  -- Attack is 0-2000ms, normalize to 0-1
-  return M.setParam(track, fx, pad, M.Param.Attack, ms / 2000)
+  -- Attack is 0-2000ms with JUCE skew factor 0.3
+  ms = math.max(0, math.min(2000, ms))
+  local normalized = (ms / 2000) ^ 0.3
+  return M.setParam(track, fx, pad, M.Param.Attack, normalized)
 end
 
 function M.setDecay(track, fx, pad, ms)
-  return M.setParam(track, fx, pad, M.Param.Decay, ms / 2000)
+  -- Decay is 0-2000ms with JUCE skew factor 0.3
+  ms = math.max(0, math.min(2000, ms))
+  local normalized = (ms / 2000) ^ 0.3
+  return M.setParam(track, fx, pad, M.Param.Decay, normalized)
 end
 
 function M.setSustain(track, fx, pad, value)
@@ -145,14 +150,18 @@ function M.setSustain(track, fx, pad, value)
 end
 
 function M.setRelease(track, fx, pad, ms)
-  -- Release is 0-5000ms
-  return M.setParam(track, fx, pad, M.Param.Release, ms / 5000)
+  -- Release is 0-5000ms with JUCE skew factor 0.3
+  ms = math.max(0, math.min(5000, ms))
+  local normalized = (ms / 5000) ^ 0.3
+  return M.setParam(track, fx, pad, M.Param.Release, normalized)
 end
 
 function M.setFilterCutoff(track, fx, pad, hz)
-  -- Cutoff is 20-20000Hz, log scale approximation
-  local normalized = math.log(hz / 20) / math.log(1000)
-  return M.setParam(track, fx, pad, M.Param.FilterCutoff, math.min(1, math.max(0, normalized)))
+  -- Cutoff is 20-20000Hz with JUCE skew factor 0.25
+  -- JUCE formula: normalized = ((hz - min) / (max - min)) ^ skew
+  hz = math.max(20, math.min(20000, hz))  -- Clamp to valid range
+  local normalized = ((hz - 20) / 19980) ^ 0.25
+  return M.setParam(track, fx, pad, M.Param.FilterCutoff, normalized)
 end
 
 function M.setFilterReso(track, fx, pad, value)
@@ -244,13 +253,17 @@ function M.setPitchEnvAmount(track, fx, pad, semitones)
 end
 
 function M.setPitchEnvAttack(track, fx, pad, ms)
-  -- Attack is 0-100ms, normalize to 0-1
-  return M.setParam(track, fx, pad, M.Param.PitchEnvAttack, ms / 100)
+  -- Attack is 0-100ms with JUCE skew factor 0.5
+  ms = math.max(0, math.min(100, ms))
+  local normalized = (ms / 100) ^ 0.5
+  return M.setParam(track, fx, pad, M.Param.PitchEnvAttack, normalized)
 end
 
 function M.setPitchEnvDecay(track, fx, pad, ms)
-  -- Decay is 0-2000ms, normalize to 0-1
-  return M.setParam(track, fx, pad, M.Param.PitchEnvDecay, ms / 2000)
+  -- Decay is 0-2000ms with JUCE skew factor 0.3
+  ms = math.max(0, math.min(2000, ms))
+  local normalized = (ms / 2000) ^ 0.3
+  return M.setParam(track, fx, pad, M.Param.PitchEnvDecay, normalized)
 end
 
 function M.setPitchEnvSustain(track, fx, pad, value)
@@ -411,31 +424,33 @@ function M.clearRoundRobin(track, fx, pad, layer)
 end
 
 -- Get round-robin sample count for a layer
+-- Returns nil on error, 0+ on success
 function M.getRoundRobinCount(track, fx, pad, layer)
-  if not track or not fx or fx < 0 then return 0 end
+  if not track or not fx or fx < 0 then return nil end
   layer = layer or 0
-  if not isValidPad(pad) or not isValidLayer(layer) then return 0 end
+  if not isValidPad(pad) or not isValidLayer(layer) then return nil end
 
   local param_name = string.format('P%d_L%d_RR_COUNT', pad, layer)
   local retval, value = reaper.TrackFX_GetNamedConfigParm(track, fx, param_name)
   if retval then
     return tonumber(value) or 0
   end
-  return 0
+  return 0  -- Valid: no round-robin samples loaded
 end
 
 -- Get sample duration in seconds
+-- Returns nil on error, 0+ on success
 function M.getSampleDuration(track, fx, pad, layer)
-  if not track or not fx or fx < 0 then return 0 end
+  if not track or not fx or fx < 0 then return nil end
   layer = layer or 0
-  if not isValidPad(pad) or not isValidLayer(layer) then return 0 end
+  if not isValidPad(pad) or not isValidLayer(layer) then return nil end
 
   local param_name = string.format('P%d_L%d_DURATION', pad, layer)
   local retval, value = reaper.TrackFX_GetNamedConfigParm(track, fx, param_name)
   if retval then
     return tonumber(value) or 0
   end
-  return 0
+  return 0  -- Valid: no sample loaded
 end
 
 -- Clear all samples from a pad

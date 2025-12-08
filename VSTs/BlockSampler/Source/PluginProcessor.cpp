@@ -716,9 +716,9 @@ bool Processor::parsePadLayerParam(const juce::String& name,
     if (underscorePos <= 1)
         return false;
 
-    // Validate pad index is digits only
+    // Validate pad index is digits only and not too long (prevent overflow)
     juce::String padStr = name.substring(1, underscorePos);
-    if (!padStr.containsOnly("0123456789"))
+    if (!padStr.containsOnly("0123456789") || padStr.length() > 3)
         return false;
     padIndex = padStr.getIntValue();
 
@@ -727,9 +727,9 @@ bool Processor::parsePadLayerParam(const juce::String& name,
     if (secondUnderscorePos <= lPos)
         return false;
 
-    // Validate layer index is digits only
+    // Validate layer index is digits only and not too long (prevent overflow)
     juce::String layerStr = name.substring(lPos, secondUnderscorePos);
-    if (!layerStr.containsOnly("0123456789"))
+    if (!layerStr.containsOnly("0123456789") || layerStr.length() > 1)
         return false;
     layerIndex = layerStr.getIntValue();
 

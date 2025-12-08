@@ -90,12 +90,14 @@ namespace PadParam
         COUNT             // = 24
     };
 
-    // Total parameters: 18 × 128 = 2304
+    // Total parameters: 24 × 128 = 3072
     constexpr int TOTAL_PARAMS = COUNT * NUM_PADS;
 
     // Get flat index for parameter
     inline int index(int pad, ID param)
     {
+        jassert(pad >= 0 && pad < NUM_PADS);
+        jassert(static_cast<int>(param) >= 0 && static_cast<int>(param) < COUNT);
         return pad * COUNT + static_cast<int>(param);
     }
 

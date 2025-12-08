@@ -170,7 +170,8 @@ void Pad::trigger(int velocity)
         const float blendWidth = layerRange * velCrossfade;
 
         // Check if we're in the upper blend zone (transitioning to higher layer)
-        if (currentLayer < NUM_VELOCITY_LAYERS - 1)
+        // Guard against division by zero when blendWidth is too small
+        if (currentLayer < NUM_VELOCITY_LAYERS - 1 && blendWidth > 0.5f)
         {
             const int upperThreshold = layerMax;
             const int blendZoneStart = static_cast<int>(upperThreshold - blendWidth);
@@ -193,7 +194,8 @@ void Pad::trigger(int velocity)
             const float lowerBlendWidth = lowerLayerRange * velCrossfade;
             const int blendZoneEnd = static_cast<int>(lowerThreshold + lowerBlendWidth);
 
-            if (velocity < blendZoneEnd && layers[currentLayer - 1].isLoaded())
+            // Guard against division by zero when lowerBlendWidth is too small
+            if (velocity < blendZoneEnd && layers[currentLayer - 1].isLoaded() && lowerBlendWidth > 0.5f)
             {
                 secondaryLayer = currentLayer - 1;
                 // Calculate blend factor: 1 at lowerThreshold, 0 at blendZoneEnd
@@ -475,6 +477,12 @@ int Pad::renderNextBlock(int numSamples)
         secEndBoundaryMinus1 = static_cast<double>(secEnd - 1);
     }
 
+    // Clamp playPosition to valid bounds before loop starts
+    // (prevents floating-point accumulation errors from causing out-of-bounds access)
+    playPosition = juce::jlimit(startBoundary, endBoundaryMinus1, playPosition);
+    if (hasBlend && secSrcL != nullptr)
+        secondaryPlayPosition = juce::jlimit(secStartBoundary, secEndBoundaryMinus1, secondaryPlayPosition);
+
     for (int sample = 0; sample < numSamples; ++sample)
     {
         // Calculate pitch ratio (fast path for static pitch, slow path for envelope)
@@ -524,7 +532,7 @@ int Pad::renderNextBlock(int numSamples)
                 {
                     // Handle potentially multiple bounces for high pitch ratios
                     const double loopLength = endBoundary - startBoundary;
-                    if (loopLength <= 0)
+                    if (loopLength < 1.0)  // Must have at least 1 sample to loop
                     {
                         isPlaying = false;
                         break;
@@ -536,7 +544,8 @@ int Pad::renderNextBlock(int numSamples)
                         : (startBoundary - playPosition);
 
                     // Handle multiple bounces (for extreme pitch ratios)
-                    while (overshoot >= 0)
+                    // Max iterations guard prevents infinite loop from edge cases
+                    for (int bounces = 0; bounces < 100 && overshoot >= 0; ++bounces)
                     {
                         pingPongForward = !pingPongForward;
                         if (overshoot < loopLength)
@@ -582,13 +591,14 @@ int Pad::renderNextBlock(int numSamples)
                     case LoopMode::PingPong:
                     {
                         const double secLoopLength = secEndBoundary - secStartBoundary;
-                        if (secLoopLength > 0)
+                        if (secLoopLength >= 1.0)  // Must have at least 1 sample to loop
                         {
                             double overshoot = secMovingForward
                                 ? (secondaryPlayPosition - secEndBoundary)
                                 : (secStartBoundary - secondaryPlayPosition);
 
-                            while (overshoot >= 0)
+                            // Max iterations guard prevents infinite loop from edge cases
+                            for (int bounces = 0; bounces < 100 && overshoot >= 0; ++bounces)
                             {
                                 secondaryPingPongForward = !secondaryPingPongForward;
                                 if (overshoot < secLoopLength)
