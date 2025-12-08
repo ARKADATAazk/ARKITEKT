@@ -131,6 +131,24 @@ function M.setTune(track, fx, pad, semitones)
   return M.setParam(track, fx, pad, M.Param.Tune, (semitones + 24) / 48)
 end
 
+function M.getVolume(track, fx, pad)
+  return M.getParam(track, fx, pad, M.Param.Volume)
+end
+
+function M.getPan(track, fx, pad)
+  -- Pan is stored as 0-1, convert back to -1 to +1
+  local normalized = M.getParam(track, fx, pad, M.Param.Pan)
+  if not normalized then return nil end
+  return normalized * 2 - 1
+end
+
+function M.getTune(track, fx, pad)
+  -- Tune is stored as 0-1, convert back to -24 to +24 semitones
+  local normalized = M.getParam(track, fx, pad, M.Param.Tune)
+  if not normalized then return nil end
+  return normalized * 48 - 24
+end
+
 function M.setAttack(track, fx, pad, ms)
   -- Attack is 0-2000ms with JUCE skew factor 0.3
   ms = math.max(0, math.min(2000, ms))
@@ -154,6 +172,31 @@ function M.setRelease(track, fx, pad, ms)
   ms = math.max(0, math.min(5000, ms))
   local normalized = (ms / 5000) ^ 0.3
   return M.setParam(track, fx, pad, M.Param.Release, normalized)
+end
+
+function M.getAttack(track, fx, pad)
+  -- Reverse JUCE skew 0.3: ms = (normalized ^ (1/0.3)) * 2000
+  local normalized = M.getParam(track, fx, pad, M.Param.Attack)
+  if not normalized then return nil end
+  return (normalized ^ (1/0.3)) * 2000
+end
+
+function M.getDecay(track, fx, pad)
+  -- Reverse JUCE skew 0.3: ms = (normalized ^ (1/0.3)) * 2000
+  local normalized = M.getParam(track, fx, pad, M.Param.Decay)
+  if not normalized then return nil end
+  return (normalized ^ (1/0.3)) * 2000
+end
+
+function M.getSustain(track, fx, pad)
+  return M.getParam(track, fx, pad, M.Param.Sustain)
+end
+
+function M.getRelease(track, fx, pad)
+  -- Reverse JUCE skew 0.3: ms = (normalized ^ (1/0.3)) * 5000
+  local normalized = M.getParam(track, fx, pad, M.Param.Release)
+  if not normalized then return nil end
+  return (normalized ^ (1/0.3)) * 5000
 end
 
 function M.setFilterCutoff(track, fx, pad, hz)
@@ -183,6 +226,24 @@ end
 
 function M.setFilterBP(track, fx, pad)
   return M.setFilterType(track, fx, pad, M.FilterType.BP)
+end
+
+function M.getFilterCutoff(track, fx, pad)
+  -- Reverse JUCE skew 0.25: hz = 20 + (normalized ^ (1/0.25)) * 19980
+  local normalized = M.getParam(track, fx, pad, M.Param.FilterCutoff)
+  if not normalized then return nil end
+  return 20 + (normalized ^ (1/0.25)) * 19980
+end
+
+function M.getFilterReso(track, fx, pad)
+  return M.getParam(track, fx, pad, M.Param.FilterReso)
+end
+
+function M.getFilterType(track, fx, pad)
+  -- Returns 0=LP, 1=HP, 2=BP
+  local normalized = M.getParam(track, fx, pad, M.Param.FilterType)
+  if not normalized then return nil end
+  return math.floor(normalized * 2 + 0.5)
 end
 
 function M.setKillGroup(track, fx, pad, group)
@@ -278,6 +339,31 @@ function M.setPitchEnvelope(track, fx, pad, amount, attack, decay, sustain)
   M.setPitchEnvAttack(track, fx, pad, attack or 0)
   M.setPitchEnvDecay(track, fx, pad, decay or 50)
   M.setPitchEnvSustain(track, fx, pad, sustain or 0)
+end
+
+function M.getPitchEnvAmount(track, fx, pad)
+  -- Reverse: semitones = normalized * 48 - 24
+  local normalized = M.getParam(track, fx, pad, M.Param.PitchEnvAmount)
+  if not normalized then return nil end
+  return normalized * 48 - 24
+end
+
+function M.getPitchEnvAttack(track, fx, pad)
+  -- Reverse JUCE skew 0.5: ms = (normalized ^ (1/0.5)) * 100
+  local normalized = M.getParam(track, fx, pad, M.Param.PitchEnvAttack)
+  if not normalized then return nil end
+  return (normalized ^ 2) * 100
+end
+
+function M.getPitchEnvDecay(track, fx, pad)
+  -- Reverse JUCE skew 0.3: ms = (normalized ^ (1/0.3)) * 2000
+  local normalized = M.getParam(track, fx, pad, M.Param.PitchEnvDecay)
+  if not normalized then return nil end
+  return (normalized ^ (1/0.3)) * 2000
+end
+
+function M.getPitchEnvSustain(track, fx, pad)
+  return M.getParam(track, fx, pad, M.Param.PitchEnvSustain)
 end
 
 -- ============================================================================

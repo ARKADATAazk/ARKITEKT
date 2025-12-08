@@ -33,6 +33,9 @@ struct LoadedSample
 };
 
 // Lock-free SPSC queue size (must be power of 2)
+// NOTE: If the load queue is full when loadSampleToPadAsync() is called,
+// the load request is silently dropped. The caller should retry if needed.
+// This can happen during rapid batch loading (>64 samples in flight).
 constexpr int LOAD_QUEUE_SIZE = 64;
 static_assert((LOAD_QUEUE_SIZE & (LOAD_QUEUE_SIZE - 1)) == 0,
               "LOAD_QUEUE_SIZE must be power of 2");
@@ -56,6 +59,9 @@ struct PadMetadata
 constexpr int MAX_LOADS_PER_BLOCK = 4;
 
 // Command queue for message-thread-to-audio-thread operations
+// NOTE: If the command queue is full when queueCommand() is called,
+// the command is silently dropped. This is rare in practice (<64 commands
+// pending between processBlock calls) but can occur under extreme load.
 constexpr int COMMAND_QUEUE_SIZE = 64;
 static_assert((COMMAND_QUEUE_SIZE & (COMMAND_QUEUE_SIZE - 1)) == 0,
               "COMMAND_QUEUE_SIZE must be power of 2");
