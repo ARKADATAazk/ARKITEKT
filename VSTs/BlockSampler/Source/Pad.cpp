@@ -699,6 +699,16 @@ int Pad::renderNextBlock(int numSamples)
             secondaryPlayPosition += secPositionDelta;
 
         ++samplesRendered;
+
+        // Drift correction: every 4096 samples, re-anchor to nearest integer to prevent
+        // cumulative floating-point precision errors during long playback (hours)
+        // This keeps playPosition tightly coupled to actual sample positions
+        if ((samplesRendered & 0xFFF) == 0)  // Every 4096 samples (~93ms at 44.1kHz)
+        {
+            playPosition = std::round(playPosition);
+            if (hasBlend && secSrcL != nullptr)
+                secondaryPlayPosition = std::round(secondaryPlayPosition);
+        }
     }
 
     // Apply filter (LP if cutoff < 20kHz, HP if cutoff > 20Hz, BP always)
@@ -711,11 +721,13 @@ int Pad::renderNextBlock(int numSamples)
         // Only update filter params when changed (optimization)
         if (filterType != lastFilterType)
         {
+            // Filter types: 0=LP, 1=HP, 2=BP (matching Parameters.h definition)
             switch (filterType)
             {
                 case 0:  filter.setType(juce::dsp::StateVariableTPTFilterType::lowpass);  break;
                 case 1:  filter.setType(juce::dsp::StateVariableTPTFilterType::highpass); break;
-                default: filter.setType(juce::dsp::StateVariableTPTFilterType::bandpass); break;
+                case 2:  filter.setType(juce::dsp::StateVariableTPTFilterType::bandpass); break;
+                default: filter.setType(juce::dsp::StateVariableTPTFilterType::lowpass);  break;  // Fallback to LP for invalid values
             }
             lastFilterType = filterType;
         }

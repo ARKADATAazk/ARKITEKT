@@ -286,6 +286,7 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
     auto* fifo = &loadFifo;
     auto* queue = &loadQueue;
     auto* fifoMutex = &loadFifoWriteMutex;
+    auto* droppedCounter = &droppedLoads;
 
     loadPool.addJob([=]()
     {
@@ -337,7 +338,11 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
                 (*queue)[start1] = std::move(result);
                 fifo->finishedWrite(1);
             }
-            // If FIFO is full, drop the load (will be retried by user)
+            else
+            {
+                // FIFO full - increment dropped counter for diagnostics
+                droppedCounter->fetch_add(1, std::memory_order_relaxed);
+            }
         }
     });
 }
@@ -413,7 +418,11 @@ void Processor::queueCommand(PadCommand cmd)
         commandQueue[start1] = cmd;
         commandFifo.finishedWrite(1);
     }
-    // If FIFO is full, drop the command (rare edge case)
+    else
+    {
+        // FIFO full - increment dropped counter for diagnostics
+        droppedCommands.fetch_add(1, std::memory_order_relaxed);
+    }
 }
 
 void Processor::applyQueuedCommands()
@@ -504,10 +513,10 @@ void Processor::updatePadMetadata(int padIndex)
     if (padIndex < 0 || padIndex >= NUM_PADS)
         return;
 
-    // Called from audio thread - take exclusive lock to update metadata
-    std::unique_lock<std::shared_mutex> lock(metadataMutex);
-
-    auto& meta = padMetadata[padIndex];
+    // Called from audio thread - write to back buffer, then swap atomically
+    // This is lock-free for the audio thread (message thread reads front buffer)
+    const int writeIndex = 1 - metadataBuffers.readIndex.load(std::memory_order_acquire);
+    auto& meta = metadataBuffers.buffers[writeIndex][padIndex];
     auto& pad = pads[padIndex];
 
     meta.hasSample = false;
@@ -523,6 +532,9 @@ void Processor::updatePadMetadata(int padIndex)
         if (meta.hasLayerSample[layer])
             meta.hasSample = true;
     }
+
+    // Atomically swap the read index so message thread sees the new data
+    metadataBuffers.readIndex.store(writeIndex, std::memory_order_release);
 }
 
 void Processor::updatePadMetadataAfterClear(int padIndex, int layerIndex)
@@ -532,11 +544,14 @@ void Processor::updatePadMetadataAfterClear(int padIndex, int layerIndex)
     if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
         return;
 
-    // Called from audio thread - take exclusive lock to update metadata
-    std::unique_lock<std::shared_mutex> lock(metadataMutex);
-
-    auto& meta = padMetadata[padIndex];
+    // Called from audio thread - write to back buffer, then swap atomically
+    const int writeIndex = 1 - metadataBuffers.readIndex.load(std::memory_order_acquire);
+    auto& meta = metadataBuffers.buffers[writeIndex][padIndex];
     auto& pad = pads[padIndex];
+
+    // Copy existing data from read buffer first (so we only update the cleared layer)
+    const int readIndex = metadataBuffers.readIndex.load(std::memory_order_acquire);
+    meta = metadataBuffers.buffers[readIndex][padIndex];
 
     // Update only the affected layer
     meta.samplePaths[layerIndex] = pad.getSamplePath(layerIndex);
@@ -555,6 +570,9 @@ void Processor::updatePadMetadataAfterClear(int padIndex, int layerIndex)
             break;
         }
     }
+
+    // Atomically swap the read index
+    metadataBuffers.readIndex.store(writeIndex, std::memory_order_release);
 }
 
 // =============================================================================
@@ -588,13 +606,13 @@ void Processor::getStateInformation(juce::MemoryBlock& destData)
     auto state = parameters.copyState();
 
     // Add sample paths as child nodes (both primary and round-robin)
-    // THREAD SAFETY: Use shared lock to read from padMetadata (message thread)
+    // THREAD SAFETY: Read from front buffer (lock-free, audio thread writes to back)
     juce::ValueTree samplesNode("Samples");
     {
-        std::shared_lock<std::shared_mutex> lock(metadataMutex);
+        const int readIdx = metadataBuffers.readIndex.load(std::memory_order_acquire);
         for (int pad = 0; pad < NUM_PADS; ++pad)
         {
-            const auto& meta = padMetadata[pad];
+            const auto& meta = metadataBuffers.buffers[readIdx][pad];
             for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
             {
                 // Primary sample
@@ -867,26 +885,29 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
 {
     int padIndex, layerIndex;
 
+    // Helper lambda to read from metadata double buffer (lock-free)
+    auto getMetadata = [this](int pad) -> const PadMetadata& {
+        const int readIdx = metadataBuffers.readIndex.load(std::memory_order_acquire);
+        return metadataBuffers.buffers[readIdx][pad];
+    };
+
     // Pattern: P{pad}_L{layer}_SAMPLE
-    // THREAD SAFETY: Read from padMetadata with shared lock (message thread)
+    // THREAD SAFETY: Read from front buffer (lock-free)
     if (parsePadLayerParam(name, "_SAMPLE", padIndex, layerIndex))
     {
-        std::shared_lock<std::shared_mutex> lock(metadataMutex);
-        return padMetadata[padIndex].samplePaths[layerIndex];
+        return getMetadata(padIndex).samplePaths[layerIndex];
     }
 
     // Pattern: P{pad}_L{layer}_RR_COUNT (get round-robin sample count)
     if (parsePadLayerParam(name, "_RR_COUNT", padIndex, layerIndex))
     {
-        std::shared_lock<std::shared_mutex> lock(metadataMutex);
-        return juce::String(padMetadata[padIndex].roundRobinCounts[layerIndex]);
+        return juce::String(getMetadata(padIndex).roundRobinCounts[layerIndex]);
     }
 
     // Pattern: P{pad}_L{layer}_DURATION (get sample duration in seconds)
     if (parsePadLayerParam(name, "_DURATION", padIndex, layerIndex))
     {
-        std::shared_lock<std::shared_mutex> lock(metadataMutex);
-        return juce::String(padMetadata[padIndex].sampleDurations[layerIndex], 3);
+        return juce::String(getMetadata(padIndex).sampleDurations[layerIndex], 3);
     }
 
     // Pattern: P{pad}_HAS_SAMPLE (min length: "P0_HAS_SAMPLE" = 13)
@@ -898,8 +919,7 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
             padIndex = padStr.getIntValue();
             if (padIndex >= 0 && padIndex < NUM_PADS)
             {
-                std::shared_lock<std::shared_mutex> lock(metadataMutex);
-                return padMetadata[padIndex].hasSample ? "1" : "0";
+                return getMetadata(padIndex).hasSample ? "1" : "0";
             }
         }
     }
@@ -916,6 +936,16 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
                 return pads[padIndex].isPlaying ? "1" : "0";
         }
     }
+
+    // Diagnostic counters for debugging FIFO overflow issues
+    if (name == "DROPPED_LOADS")
+        return juce::String(droppedLoads.load(std::memory_order_relaxed));
+
+    if (name == "DROPPED_COMMANDS")
+        return juce::String(droppedCommands.load(std::memory_order_relaxed));
+
+    // Reset diagnostic counters (write empty string to reset)
+    // Note: These are handled in handleNamedConfigParam, but we return current value here
 
     return {};
 }

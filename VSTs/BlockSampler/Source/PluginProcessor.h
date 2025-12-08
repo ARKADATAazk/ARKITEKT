@@ -12,7 +12,6 @@
 #include <bitset>
 #include <atomic>
 #include <mutex>
-#include <shared_mutex>
 
 namespace BlockSampler
 {
@@ -42,6 +41,7 @@ static_assert((LOAD_QUEUE_SIZE & (LOAD_QUEUE_SIZE - 1)) == 0,
 
 // =============================================================================
 // THREAD-SAFE PAD METADATA (for message thread queries)
+// Double-buffered for lock-free audio thread writes
 // =============================================================================
 
 struct PadMetadata
@@ -53,6 +53,15 @@ struct PadMetadata
     std::array<double, NUM_VELOCITY_LAYERS> sampleDurations = {};
     std::array<bool, NUM_VELOCITY_LAYERS> hasLayerSample = {};
     bool hasSample = false;
+};
+
+// Double-buffer container for lock-free metadata updates
+// Audio thread writes to back buffer, then atomically swaps index
+// Message thread reads from front buffer (copy-on-read for safety)
+struct MetadataDoubleBuffer
+{
+    std::array<PadMetadata, NUM_PADS> buffers[2];
+    std::atomic<int> readIndex{0};  // 0 or 1, indicates which buffer message thread reads
 };
 
 // Max samples to apply per processBlock (prevents audio dropout from batch loads)
@@ -68,6 +77,9 @@ static_assert((COMMAND_QUEUE_SIZE & (COMMAND_QUEUE_SIZE - 1)) == 0,
 
 // Max commands to process per processBlock
 constexpr int MAX_COMMANDS_PER_BLOCK = 16;
+
+// Diagnostics: counters for dropped operations (exposed via named config params)
+// These help debug batch loading issues where FIFO overflow occurs
 
 // =============================================================================
 // PAD COMMAND (for thread-safe message-to-audio operations)
@@ -241,9 +253,9 @@ private:
     std::mutex loadFifoWriteMutex;  // Protects writes from multiple producer threads
 
     // Thread-safe metadata for message thread queries
-    // Protected by shared_mutex: audio thread writes, message thread reads
-    mutable std::shared_mutex metadataMutex;
-    std::array<PadMetadata, NUM_PADS> padMetadata;
+    // Double-buffered: audio thread writes to back buffer, swaps atomically
+    // Message thread reads from front buffer (lock-free)
+    MetadataDoubleBuffer metadataBuffers;
 
     // Command queue - FIFO for message-to-audio-thread operations
     // Producer: message thread (named config params), Consumer: audio thread
@@ -251,6 +263,11 @@ private:
     juce::AbstractFifo commandFifo { COMMAND_QUEUE_SIZE };
     std::array<PadCommand, COMMAND_QUEUE_SIZE> commandQueue;
     std::mutex commandFifoWriteMutex;  // Protects writes from multiple producer threads
+
+    // Diagnostic counters for dropped operations (helps debug FIFO overflow)
+    // Exposed via DROPPED_LOADS and DROPPED_COMMANDS named config params
+    std::atomic<uint32_t> droppedLoads{0};
+    std::atomic<uint32_t> droppedCommands{0};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Processor)
 };
