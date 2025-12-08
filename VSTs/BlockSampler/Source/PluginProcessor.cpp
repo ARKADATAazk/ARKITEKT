@@ -514,8 +514,17 @@ void Processor::updatePadMetadata(int padIndex)
         return;
 
     // Called from audio thread - write to back buffer, then swap atomically
-    // This is lock-free for the audio thread (message thread reads front buffer)
-    const int writeIndex = 1 - metadataBuffers.readIndex.load(std::memory_order_acquire);
+    // CRITICAL: Must copy ALL pads from read to write buffer first to prevent
+    // stale data when swapping. Without this, other pads' data could become
+    // outdated after the swap.
+    const int currentReadIndex = metadataBuffers.readIndex.load(std::memory_order_acquire);
+    const int writeIndex = 1 - currentReadIndex;
+
+    // Copy entire buffer to maintain consistency for all pads
+    // This is O(NUM_PADS) but only happens during sample loading (rare)
+    metadataBuffers.buffers[writeIndex] = metadataBuffers.buffers[currentReadIndex];
+
+    // Now update the specific pad
     auto& meta = metadataBuffers.buffers[writeIndex][padIndex];
     auto& pad = pads[padIndex];
 
@@ -545,38 +554,24 @@ void Processor::updatePadMetadataAfterClear(int padIndex, int layerIndex)
         return;
 
     // Called from audio thread - write to back buffer, then swap atomically
-    // IMPORTANT: Read readIndex once to ensure consistency
     const int currentReadIndex = metadataBuffers.readIndex.load(std::memory_order_acquire);
     const int writeIndex = 1 - currentReadIndex;
+
+    // CRITICAL: Copy entire buffer to prevent stale data for other pads
+    metadataBuffers.buffers[writeIndex] = metadataBuffers.buffers[currentReadIndex];
+
+    // Now update only the affected pad/layer
     auto& meta = metadataBuffers.buffers[writeIndex][padIndex];
-    const auto& srcMeta = metadataBuffers.buffers[currentReadIndex][padIndex];
     auto& pad = pads[padIndex];
 
-    // Copy scalar data from source (avoid copying vectors - use swap instead)
-    meta.hasSample = srcMeta.hasSample;
-    meta.roundRobinCounts = srcMeta.roundRobinCounts;
-    meta.sampleDurations = srcMeta.sampleDurations;
-    meta.hasLayerSample = srcMeta.hasLayerSample;
-
-    // Copy paths arrays (these are small fixed-size arrays of strings)
-    meta.samplePaths = srcMeta.samplePaths;
-
-    // For round-robin paths, only copy if not the layer being cleared
-    // This minimizes vector operations
-    for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
-    {
-        if (layer != layerIndex)
-            meta.roundRobinPaths[layer] = srcMeta.roundRobinPaths[layer];
-    }
-
-    // Update only the affected layer
+    // Update only the affected layer (rest was copied above)
     meta.samplePaths[layerIndex] = pad.getSamplePath(layerIndex);
     meta.roundRobinPaths[layerIndex] = pad.getRoundRobinPaths(layerIndex);
     meta.roundRobinCounts[layerIndex] = pad.getRoundRobinCount(layerIndex);
     meta.sampleDurations[layerIndex] = pad.getSampleDuration(layerIndex);
     meta.hasLayerSample[layerIndex] = pad.hasSample(layerIndex);
 
-    // Recalculate hasSample
+    // Recalculate hasSample for this pad
     meta.hasSample = false;
     for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
     {

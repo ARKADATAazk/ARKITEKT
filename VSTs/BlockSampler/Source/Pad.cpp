@@ -488,11 +488,15 @@ int Pad::renderNextBlock(int numSamples)
     if (hasBlend && secSrcL != nullptr)
         secondaryPlayPosition = juce::jlimit(secStartBoundary, secEndBoundaryMinus1, secondaryPlayPosition);
 
+    // Pre-compute loop mode flags (constant during render)
+    const bool isPingPong = (loopMode == LoopMode::PingPong);
+    const bool isOneShot = (loopMode == LoopMode::OneShot);
+
     for (int sample = 0; sample < numSamples; ++sample)
     {
         // Calculate pitch ratio (fast path for static pitch, slow path for envelope)
         double pitchRatio, secPitchRatio = 0.0;
-        if (hasPitchEnv)
+        if (JUCE_UNLIKELY(hasPitchEnv))
         {
             // Get pitch envelope modulation and compute pitch ratio
             const float envValue = pitchEnvelope.getNextSample();
@@ -509,40 +513,36 @@ int Pad::renderNextBlock(int numSamples)
         }
 
         // Determine playback direction (accounting for reverse and ping-pong)
-        const bool movingForward = (loopMode == LoopMode::PingPong) ? pingPongForward : baseForward;
+        // For non-ping-pong modes, direction is constant (baseForward)
+        const bool movingForward = isPingPong ? pingPongForward : baseForward;
         const double positionDelta = movingForward ? pitchRatio : -pitchRatio;
 
-        const bool secMovingForward = (loopMode == LoopMode::PingPong) ? secondaryPingPongForward : baseForward;
+        const bool secMovingForward = isPingPong ? secondaryPingPongForward : baseForward;
         const double secPositionDelta = secMovingForward ? secPitchRatio : -secPitchRatio;
 
         // Check playback boundaries (primary layer)
+        // JUCE_LIKELY: most samples are within bounds, boundary crossing is rare
         const bool pastBoundary = movingForward
             ? (playPosition >= endBoundary)
             : (playPosition < startBoundary);
 
-        if (pastBoundary)
+        if (JUCE_UNLIKELY(pastBoundary))
         {
-            switch (loopMode)
+            // Handle boundary crossing based on pre-computed loop mode flags
+            if (isOneShot)
             {
-                case LoopMode::OneShot:
-                    isPlaying = false;
-                    break;
-
-                case LoopMode::Loop:
-                    // Simple loop: jump back to start
-                    playPosition = movingForward ? startBoundary : endBoundaryMinus1;
-                    break;
-
-                case LoopMode::PingPong:
+                isPlaying = false;
+            }
+            else if (isPingPong)
+            {
+                // Handle potentially multiple bounces for high pitch ratios
+                const double loopLength = endBoundary - startBoundary;
+                if (loopLength < 1.0)  // Must have at least 1 sample to loop
                 {
-                    // Handle potentially multiple bounces for high pitch ratios
-                    const double loopLength = endBoundary - startBoundary;
-                    if (loopLength < 1.0)  // Must have at least 1 sample to loop
-                    {
-                        isPlaying = false;
-                        break;
-                    }
-
+                    isPlaying = false;
+                }
+                else
+                {
                     // Calculate overshoot
                     double overshoot = movingForward
                         ? (playPosition - endBoundary)
@@ -566,8 +566,12 @@ int Pad::renderNextBlock(int numSamples)
 
                     // Clamp to valid range (safety)
                     playPosition = juce::jlimit(startBoundary, endBoundaryMinus1, playPosition);
-                    break;
                 }
+            }
+            else  // LoopMode::Loop
+            {
+                // Simple loop: jump back to start
+                playPosition = movingForward ? startBoundary : endBoundaryMinus1;
             }
 
             if (!isPlaying)
@@ -581,45 +585,38 @@ int Pad::renderNextBlock(int numSamples)
                 ? (secondaryPlayPosition >= secEndBoundary)
                 : (secondaryPlayPosition < secStartBoundary);
 
-            if (secPastBoundary)
+            if (JUCE_UNLIKELY(secPastBoundary))
             {
-                switch (loopMode)
+                // OneShot: secondary stops but primary continues (do nothing)
+                if (isPingPong)
                 {
-                    case LoopMode::OneShot:
-                        // Secondary stops but primary continues
-                        break;
-
-                    case LoopMode::Loop:
-                        secondaryPlayPosition = secMovingForward ? secStartBoundary : secEndBoundaryMinus1;
-                        break;
-
-                    case LoopMode::PingPong:
+                    const double secLoopLength = secEndBoundary - secStartBoundary;
+                    if (secLoopLength >= 1.0)  // Must have at least 1 sample to loop
                     {
-                        const double secLoopLength = secEndBoundary - secStartBoundary;
-                        if (secLoopLength >= 1.0)  // Must have at least 1 sample to loop
+                        double overshoot = secMovingForward
+                            ? (secondaryPlayPosition - secEndBoundary)
+                            : (secStartBoundary - secondaryPlayPosition);
+
+                        // Max iterations guard prevents infinite loop from edge cases
+                        for (int bounces = 0; bounces < 100 && overshoot >= 0; ++bounces)
                         {
-                            double overshoot = secMovingForward
-                                ? (secondaryPlayPosition - secEndBoundary)
-                                : (secStartBoundary - secondaryPlayPosition);
-
-                            // Max iterations guard prevents infinite loop from edge cases
-                            for (int bounces = 0; bounces < 100 && overshoot >= 0; ++bounces)
+                            secondaryPingPongForward = !secondaryPingPongForward;
+                            if (overshoot < secLoopLength)
                             {
-                                secondaryPingPongForward = !secondaryPingPongForward;
-                                if (overshoot < secLoopLength)
-                                {
-                                    secondaryPlayPosition = secondaryPingPongForward
-                                        ? (secStartBoundary + overshoot)
-                                        : (secEndBoundaryMinus1 - overshoot);
-                                    break;
-                                }
-                                overshoot -= secLoopLength;
+                                secondaryPlayPosition = secondaryPingPongForward
+                                    ? (secStartBoundary + overshoot)
+                                    : (secEndBoundaryMinus1 - overshoot);
+                                break;
                             }
-
-                            secondaryPlayPosition = juce::jlimit(secStartBoundary, secEndBoundaryMinus1, secondaryPlayPosition);
+                            overshoot -= secLoopLength;
                         }
-                        break;
+
+                        secondaryPlayPosition = juce::jlimit(secStartBoundary, secEndBoundaryMinus1, secondaryPlayPosition);
                     }
+                }
+                else if (!isOneShot)  // LoopMode::Loop
+                {
+                    secondaryPlayPosition = secMovingForward ? secStartBoundary : secEndBoundaryMinus1;
                 }
             }
         }
