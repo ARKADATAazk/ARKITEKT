@@ -5,6 +5,7 @@
 
 #include "Pad.h"
 #include <limits>
+#include <cstring>  // For memcpy (type-punning)
 
 namespace BlockSampler
 {
@@ -60,10 +61,12 @@ void VelocityLayer::advanceRoundRobin(juce::Random& rng, bool randomMode)
     if (randomMode && count > 1)
     {
         // Random selection (avoid repeating same sample)
-        int newIndex;
-        do {
+        // Max iterations guard prevents infinite loop if RNG misbehaves
+        int newIndex = roundRobinIndex;
+        for (int attempts = 0; attempts < 10 && newIndex == roundRobinIndex; ++attempts)
+        {
             newIndex = rng.nextInt(count);
-        } while (newIndex == roundRobinIndex);
+        }
         roundRobinIndex = newIndex;
     }
     else
@@ -335,10 +338,12 @@ inline float fastPow2(float x)
     const float p = 1.0f + f * (0.6931472f + f * (0.2402265f + f * 0.0558011f));
 
     // Combine with integer exponent via bit manipulation
-    union { float f; int32_t i; } u;
-    u.i = (i + 127) << 23;  // Create 2^i as float
+    // Use memcpy for well-defined type-punning (avoids strict aliasing UB)
+    const int32_t bits = (i + 127) << 23;  // Create 2^i as float bits
+    float pow2i;
+    std::memcpy(&pow2i, &bits, sizeof(float));
 
-    return u.f * p;
+    return pow2i * p;
 }
 
 int Pad::renderNextBlock(int numSamples)

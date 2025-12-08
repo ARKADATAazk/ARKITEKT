@@ -298,6 +298,10 @@ void Processor::loadSampleToPadAsync(int padIndex, int layerIndex,
         if (reader->lengthInSamples > std::numeric_limits<int>::max())
             return;
 
+        // Guard against OOM from extremely long samples (e.g., 6-hour recordings)
+        if (reader->lengthInSamples > MAX_SAMPLE_LENGTH)
+            return;
+
         // Validate sample has audio content
         if (reader->numChannels == 0 || reader->sampleRate <= 0)
             return;
@@ -398,6 +402,9 @@ void Processor::applyCompletedLoads()
 void Processor::queueCommand(PadCommand cmd)
 {
     // Called from message thread - queue command for audio thread
+    // CRITICAL: Mutex required because multiple message threads can call concurrently
+    std::lock_guard<std::mutex> lock(commandFifoWriteMutex);
+
     int start1, size1, start2, size2;
     commandFifo.prepareToWrite(1, start1, size1, start2, size2);
 

@@ -37,6 +37,10 @@ constexpr float FILTER_Q_MAX = 10.0f;    // High resonance
 // Round-robin limits
 constexpr int MAX_ROUND_ROBIN_SAMPLES = 16;  // Max RR samples per layer (for pre-allocation)
 
+// Sample length limits (prevent OOM from very long files)
+// 10 minutes at 192kHz stereo ≈ 230MB per sample - reasonable limit
+constexpr int64_t MAX_SAMPLE_LENGTH = 120000000;  // ~10 min at 192kHz
+
 // Velocity layer thresholds (4 layers: 0-31, 32-63, 64-95, 96-127)
 constexpr int VELOCITY_LAYER_1_MIN = 32;   // Layer 1 starts at velocity 32
 constexpr int VELOCITY_LAYER_2_MIN = 64;   // Layer 2 starts at velocity 64
@@ -69,7 +73,7 @@ namespace PadParam
         FilterCutoff,     // 20-20000 Hz
         FilterReso,       // 0-1
         FilterType,       // 0=LP, 1=HP, 2=BP
-        KillGroup,        // 0-8 (0 = none)
+        KillGroup,        // 0-16 (0 = none)
         OutputGroup,      // 0-16 (0 = main only)
         LoopModeParam,    // 0=OneShot, 1=Loop, 2=PingPong (replaces OneShot bool)
         Reverse,          // bool

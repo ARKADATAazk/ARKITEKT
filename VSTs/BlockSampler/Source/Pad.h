@@ -137,8 +137,8 @@ public:
     float release = 200.0f;      // ms
     float filterCutoff = 20000.0f;  // Hz
     float filterReso = 0.0f;     // 0-1
-    int filterType = 0;          // 0=LP, 1=HP
-    int killGroup = 0;           // 0 = none, 1-8 = group
+    int filterType = 0;          // 0=LP, 1=HP, 2=BP
+    int killGroup = 0;           // 0 = none, 1-16 = group
     int outputGroup = 0;         // 0 = main, 1-16 = group bus
     LoopMode loopMode = LoopMode::OneShot;  // OneShot, Loop, or PingPong
     bool reverse = false;

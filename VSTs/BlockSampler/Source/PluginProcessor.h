@@ -239,10 +239,12 @@ private:
     mutable std::shared_mutex metadataMutex;
     std::array<PadMetadata, NUM_PADS> padMetadata;
 
-    // Command queue - lock-free SPSC FIFO for message-to-audio-thread operations
+    // Command queue - FIFO for message-to-audio-thread operations
     // Producer: message thread (named config params), Consumer: audio thread
+    // Mutex required because multiple message threads can call named config params concurrently
     juce::AbstractFifo commandFifo { COMMAND_QUEUE_SIZE };
     std::array<PadCommand, COMMAND_QUEUE_SIZE> commandQueue;
+    std::mutex commandFifoWriteMutex;  // Protects writes from multiple producer threads
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Processor)
 };

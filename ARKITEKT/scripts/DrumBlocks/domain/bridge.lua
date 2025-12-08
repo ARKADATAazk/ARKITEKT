@@ -91,14 +91,21 @@ local function getParamIndex(pad, param)
   return pad * M.PARAMS_PER_PAD + param
 end
 
+-- Validate pad index is in valid range
+local function isValidPad(pad)
+  return pad and pad >= 0 and pad < M.NUM_PADS
+end
+
 function M.setParam(track, fx, pad, param, value)
   if not track or not fx or fx < 0 then return false end
+  if not isValidPad(pad) then return false end
   local idx = getParamIndex(pad, param)
   return reaper.TrackFX_SetParam(track, fx, idx, value)
 end
 
 function M.getParam(track, fx, pad, param)
   if not track or not fx or fx < 0 then return 0 end
+  if not isValidPad(pad) then return 0 end
   local idx = getParamIndex(pad, param)
   local value, _, _ = reaper.TrackFX_GetParam(track, fx, idx)
   return value
