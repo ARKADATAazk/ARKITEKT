@@ -508,46 +508,39 @@ void Processor::applyQueuedCommands()
 // PAD METADATA (Thread-safe snapshots for message thread queries)
 // =============================================================================
 
+// Helper to copy a single pad's metadata (allocation-free for vectors)
+static void copyPadMetadataEntry(const PadMetadata& src, PadMetadata& dst)
+{
+    // Copy primitive arrays (no allocation)
+    dst.samplePaths = src.samplePaths;
+    dst.roundRobinCounts = src.roundRobinCounts;
+    dst.sampleDurations = src.sampleDurations;
+    dst.hasLayerSample = src.hasLayerSample;
+    dst.hasSample = src.hasSample;
+
+    // Copy vectors without allocation: clear + push_back stays within reserved capacity
+    for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
+    {
+        dst.roundRobinPaths[layer].clear();  // Doesn't deallocate
+        for (const auto& path : src.roundRobinPaths[layer])
+            dst.roundRobinPaths[layer].push_back(path);
+    }
+}
+
 void Processor::updatePadMetadata(int padIndex)
 {
     if (padIndex < 0 || padIndex >= NUM_PADS)
         return;
 
     // Called from audio thread - write to back buffer, then swap atomically
-    // CRITICAL: Must copy ALL pads from read to write buffer first to prevent
-    // stale data when swapping. Without this, other pads' data could become
-    // outdated after the swap.
+    // OPTIMIZATION: Instead of copying ALL 128 pads before swap (O(NUM_PADS)),
+    // we update only the changed pad, swap, then copy that pad to the new write
+    // buffer to keep both buffers synchronized for future swaps.
     const int currentReadIndex = metadataBuffers.readIndex.load(std::memory_order_acquire);
     const int writeIndex = 1 - currentReadIndex;
 
-    auto& srcBuffer = metadataBuffers.buffers[currentReadIndex];
-    auto& dstBuffer = metadataBuffers.buffers[writeIndex];
-
-    // Copy all pads using allocation-free copy for vectors
-    // This preserves pre-reserved capacity while avoiding heap allocation
-    for (int p = 0; p < NUM_PADS; ++p)
-    {
-        auto& src = srcBuffer[p];
-        auto& dst = dstBuffer[p];
-
-        // Copy primitive arrays (no allocation)
-        dst.samplePaths = src.samplePaths;
-        dst.roundRobinCounts = src.roundRobinCounts;
-        dst.sampleDurations = src.sampleDurations;
-        dst.hasLayerSample = src.hasLayerSample;
-        dst.hasSample = src.hasSample;
-
-        // Copy vectors without allocation: clear + push_back stays within reserved capacity
-        for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
-        {
-            dst.roundRobinPaths[layer].clear();  // Doesn't deallocate
-            for (const auto& path : src.roundRobinPaths[layer])
-                dst.roundRobinPaths[layer].push_back(path);
-        }
-    }
-
-    // Now update the specific pad
-    auto& meta = dstBuffer[padIndex];
+    // Update the specific pad in write buffer
+    auto& meta = metadataBuffers.buffers[writeIndex][padIndex];
     auto& pad = pads[padIndex];
 
     meta.hasSample = false;
@@ -572,6 +565,11 @@ void Processor::updatePadMetadata(int padIndex)
 
     // Atomically swap the read index so message thread sees the new data
     metadataBuffers.readIndex.store(writeIndex, std::memory_order_release);
+
+    // Copy the updated pad to the new write buffer (old read buffer) so it
+    // stays fresh across future swaps. This is O(1) instead of O(NUM_PADS).
+    // Safe: message thread reads from new readIndex, we write to old readIndex.
+    copyPadMetadataEntry(meta, metadataBuffers.buffers[currentReadIndex][padIndex]);
 }
 
 void Processor::updatePadMetadataAfterClear(int padIndex, int layerIndex)
@@ -581,40 +579,19 @@ void Processor::updatePadMetadataAfterClear(int padIndex, int layerIndex)
     if (layerIndex < 0 || layerIndex >= NUM_VELOCITY_LAYERS)
         return;
 
-    // Called from audio thread - write to back buffer, then swap atomically
+    // Called from audio thread - optimized single-pad update with double-buffer swap
     const int currentReadIndex = metadataBuffers.readIndex.load(std::memory_order_acquire);
     const int writeIndex = 1 - currentReadIndex;
 
-    auto& srcBuffer = metadataBuffers.buffers[currentReadIndex];
-    auto& dstBuffer = metadataBuffers.buffers[writeIndex];
-
-    // Copy all pads using allocation-free copy for vectors
-    for (int p = 0; p < NUM_PADS; ++p)
-    {
-        auto& src = srcBuffer[p];
-        auto& dst = dstBuffer[p];
-
-        // Copy primitive arrays (no allocation)
-        dst.samplePaths = src.samplePaths;
-        dst.roundRobinCounts = src.roundRobinCounts;
-        dst.sampleDurations = src.sampleDurations;
-        dst.hasLayerSample = src.hasLayerSample;
-        dst.hasSample = src.hasSample;
-
-        // Copy vectors without allocation: clear + push_back stays within reserved capacity
-        for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
-        {
-            dst.roundRobinPaths[layer].clear();
-            for (const auto& path : src.roundRobinPaths[layer])
-                dst.roundRobinPaths[layer].push_back(path);
-        }
-    }
-
-    // Now update only the affected pad/layer
-    auto& meta = dstBuffer[padIndex];
+    // Update only the affected pad/layer in write buffer
+    auto& meta = metadataBuffers.buffers[writeIndex][padIndex];
     auto& pad = pads[padIndex];
 
-    // Update only the affected layer (rest was copied above)
+    // First, copy the current state of this pad from read buffer to ensure
+    // other layers retain their data (the write buffer may have stale data)
+    copyPadMetadataEntry(metadataBuffers.buffers[currentReadIndex][padIndex], meta);
+
+    // Now update the cleared layer
     meta.samplePaths[layerIndex] = pad.getSamplePath(layerIndex);
 
     // Use allocation-free path access
@@ -640,6 +617,9 @@ void Processor::updatePadMetadataAfterClear(int padIndex, int layerIndex)
 
     // Atomically swap the read index
     metadataBuffers.readIndex.store(writeIndex, std::memory_order_release);
+
+    // Copy the updated pad to the new write buffer to keep both in sync
+    copyPadMetadataEntry(meta, metadataBuffers.buffers[currentReadIndex][padIndex]);
 }
 
 // =============================================================================

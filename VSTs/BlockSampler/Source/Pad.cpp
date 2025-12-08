@@ -6,6 +6,7 @@
 #include "Pad.h"
 #include <limits>
 #include <cstring>  // For memcpy (type-punning)
+#include <cmath>    // For std::fmod, std::abs
 
 namespace BlockSampler
 {
@@ -63,7 +64,7 @@ void VelocityLayer::advanceRoundRobin(juce::Random& rng, bool randomMode)
         // Random selection (avoid repeating same sample)
         // Max iterations guard prevents infinite loop if RNG misbehaves
         int newIndex = roundRobinIndex;
-        for (int attempts = 0; attempts < 10 && newIndex == roundRobinIndex; ++attempts)
+        for (int attempts = 0; attempts < RANDOM_RR_MAX_RETRIES && newIndex == roundRobinIndex; ++attempts)
         {
             newIndex = rng.nextInt(count);
         }
@@ -616,21 +617,19 @@ int Pad::renderNextBlock(int numSamples)
                         ? (playPosition - endBoundary)
                         : (startBoundary - playPosition);
 
-                    // Handle multiple bounces (for extreme pitch ratios)
-                    // Max iterations guard prevents infinite loop from edge cases
-                    for (int bounces = 0; bounces < 100 && overshoot >= 0; ++bounces)
-                    {
+                    // Mathematical solution for multiple bounces (O(1) instead of O(bounces))
+                    // Number of full loop traversals in the overshoot
+                    const int numBounces = static_cast<int>(overshoot / loopLength) + 1;
+                    const double remainingOvershoot = std::fmod(overshoot, loopLength);
+
+                    // Each bounce flips direction; odd bounces = direction changed
+                    if (numBounces % 2 == 1)
                         pingPongForward = !pingPongForward;
-                        if (overshoot < loopLength)
-                        {
-                            // Final bounce
-                            playPosition = pingPongForward
-                                ? (startBoundary + overshoot)
-                                : (endBoundaryMinus1 - overshoot);
-                            break;
-                        }
-                        overshoot -= loopLength;
-                    }
+
+                    // Calculate final position based on new direction
+                    playPosition = pingPongForward
+                        ? (startBoundary + remainingOvershoot)
+                        : (endBoundaryMinus1 - remainingOvershoot);
 
                     // Clamp to valid range (safety)
                     playPosition = juce::jlimit(startBoundary, endBoundaryMinus1, playPosition);
@@ -665,19 +664,16 @@ int Pad::renderNextBlock(int numSamples)
                             ? (secondaryPlayPosition - secEndBoundary)
                             : (secStartBoundary - secondaryPlayPosition);
 
-                        // Max iterations guard prevents infinite loop from edge cases
-                        for (int bounces = 0; bounces < 100 && overshoot >= 0; ++bounces)
-                        {
+                        // Mathematical solution for multiple bounces (O(1))
+                        const int numBounces = static_cast<int>(overshoot / secLoopLength) + 1;
+                        const double remainingOvershoot = std::fmod(overshoot, secLoopLength);
+
+                        if (numBounces % 2 == 1)
                             secondaryPingPongForward = !secondaryPingPongForward;
-                            if (overshoot < secLoopLength)
-                            {
-                                secondaryPlayPosition = secondaryPingPongForward
-                                    ? (secStartBoundary + overshoot)
-                                    : (secEndBoundaryMinus1 - overshoot);
-                                break;
-                            }
-                            overshoot -= secLoopLength;
-                        }
+
+                        secondaryPlayPosition = secondaryPingPongForward
+                            ? (secStartBoundary + remainingOvershoot)
+                            : (secEndBoundaryMinus1 - remainingOvershoot);
 
                         secondaryPlayPosition = juce::jlimit(secStartBoundary, secEndBoundaryMinus1, secondaryPlayPosition);
                     }
@@ -778,10 +774,10 @@ int Pad::renderNextBlock(int numSamples)
 
         ++samplesRendered;
 
-        // Drift correction: every 4096 samples, re-anchor to nearest integer to prevent
-        // cumulative floating-point precision errors during long playback (hours)
+        // Drift correction: re-anchor to nearest integer to prevent cumulative
+        // floating-point precision errors during long playback (hours)
         // Uses fast floor+0.5 instead of std::round for better performance
-        if ((samplesRendered & 0xFFF) == 0)  // Every 4096 samples (~93ms at 44.1kHz)
+        if ((samplesRendered & DRIFT_CORRECTION_MASK) == 0)
         {
             // Fast round: floor(x + 0.5) - works for positive values (playPosition is always >= 0)
             playPosition = static_cast<double>(static_cast<int64_t>(playPosition + 0.5));
@@ -810,12 +806,16 @@ int Pad::renderNextBlock(int numSamples)
             }
             lastFilterType = filterType;
         }
-        if (filterCutoff != lastFilterCutoff)
+        // Use epsilon comparison for floats to handle floating-point precision
+        constexpr float cutoffEpsilon = 0.01f;   // 0.01 Hz threshold
+        constexpr float resoEpsilon = 0.0001f;   // Small threshold for 0-1 range
+
+        if (std::abs(filterCutoff - lastFilterCutoff) > cutoffEpsilon)
         {
             filter.setCutoffFrequency(filterCutoff);
             lastFilterCutoff = filterCutoff;
         }
-        if (filterReso != lastFilterReso)
+        if (std::abs(filterReso - lastFilterReso) > resoEpsilon)
         {
             // Map 0-1 resonance to Q factor (0.707 Butterworth to 10 high-reso)
             float q = FILTER_Q_MIN + filterReso * (FILTER_Q_MAX - FILTER_Q_MIN);

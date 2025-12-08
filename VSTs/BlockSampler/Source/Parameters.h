@@ -30,12 +30,22 @@ constexpr float FILTER_LP_BYPASS_THRESHOLD = 20000.0f;  // Skip LP filter at max
 constexpr float FILTER_HP_BYPASS_THRESHOLD = 20.0f;     // Skip HP filter at min cutoff
 constexpr float NORM_PEAK_THRESHOLD = 0.0001f;          // Min peak for normalization
 
+// ADSR envelope limits (milliseconds)
+constexpr float MAX_RELEASE_MS = 5000.0f;      // Maximum release time in ms
+constexpr double MAX_TAIL_LENGTH_SECONDS = MAX_RELEASE_MS / 1000.0;  // For getTailLengthSeconds()
+
 // Filter Q mapping: 0-1 resonance parameter maps to Q_MIN-Q_MAX
 constexpr float FILTER_Q_MIN = 0.707f;   // Butterworth (no resonance)
 constexpr float FILTER_Q_MAX = 10.0f;    // High resonance
 
 // Round-robin limits
 constexpr int MAX_ROUND_ROBIN_SAMPLES = 16;  // Max RR samples per layer (for pre-allocation)
+constexpr int RANDOM_RR_MAX_RETRIES = 10;    // Max attempts to avoid repeating same RR sample
+
+// Playback position drift correction
+// Every N samples, re-anchor playPosition to prevent cumulative float error
+constexpr int DRIFT_CORRECTION_INTERVAL = 4096;  // ~93ms at 44.1kHz
+constexpr int DRIFT_CORRECTION_MASK = DRIFT_CORRECTION_INTERVAL - 1;  // For fast modulo via bitwise AND
 
 // Sample length limits (prevent OOM from very long files)
 // 10 minutes at 192kHz stereo ≈ 230MB per sample - reasonable limit
@@ -166,11 +176,11 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             prefix + "Sustain",
             0.0f, 1.0f, 1.0f));
 
-        // Release (0-5000ms)
+        // Release (0-MAX_RELEASE_MS)
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             juce::ParameterID { PadParam::id(pad, PadParam::Release), 1 },
             prefix + "Release",
-            juce::NormalisableRange<float>(0.0f, 5000.0f, 1.0f, 0.3f),
+            juce::NormalisableRange<float>(0.0f, MAX_RELEASE_MS, 1.0f, 0.3f),
             200.0f, "ms"));
 
         // Filter Cutoff (20-20000 Hz, log scale)
