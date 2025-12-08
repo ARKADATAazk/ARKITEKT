@@ -96,6 +96,11 @@ local function isValidPad(pad)
   return pad and pad >= 0 and pad < M.NUM_PADS
 end
 
+-- Validate layer index is in valid range
+local function isValidLayer(layer)
+  return layer and layer >= 0 and layer < M.NUM_VELOCITY_LAYERS
+end
+
 function M.setParam(track, fx, pad, param, value)
   if not track or not fx or fx < 0 then return false end
   if not isValidPad(pad) then return false end
@@ -336,6 +341,7 @@ end
 -- Note: For async loading, use loadSampleAsync() if supported
 function M.loadSample(track, fx, pad, layer, file_path)
   if not track or not fx or fx < 0 then return false end
+  if not isValidPad(pad) or not isValidLayer(layer) then return false end
 
   -- Try TrackFX_SetNamedConfigParm first (simpler if supported)
   local param_name = string.format('P%d_L%d_SAMPLE', pad, layer)
@@ -372,6 +378,7 @@ end
 -- Returns immediately; sample becomes available after loading completes
 function M.loadSampleAsync(track, fx, pad, layer, file_path)
   if not track or not fx or fx < 0 then return false end
+  if not isValidPad(pad) or not isValidLayer(layer) then return false end
 
   -- Use ASYNC suffix for named config param to trigger async loading
   local param_name = string.format('P%d_L%d_SAMPLE_ASYNC', pad, layer)
@@ -385,6 +392,7 @@ end
 -- Add round-robin sample to a pad/layer (async)
 function M.addRoundRobin(track, fx, pad, layer, file_path)
   if not track or not fx or fx < 0 then return false end
+  if not isValidPad(pad) or not isValidLayer(layer) then return false end
 
   local param_name = string.format('P%d_L%d_RR_ASYNC', pad, layer)
   local result = reaper.TrackFX_SetNamedConfigParm(track, fx, param_name, file_path)
@@ -395,6 +403,7 @@ end
 function M.clearRoundRobin(track, fx, pad, layer)
   if not track or not fx or fx < 0 then return false end
   layer = layer or 0
+  if not isValidPad(pad) or not isValidLayer(layer) then return false end
 
   local param_name = string.format('P%d_L%d_CLEAR_RR', pad, layer)
   local result = reaper.TrackFX_SetNamedConfigParm(track, fx, param_name, '')
@@ -405,6 +414,7 @@ end
 function M.getRoundRobinCount(track, fx, pad, layer)
   if not track or not fx or fx < 0 then return 0 end
   layer = layer or 0
+  if not isValidPad(pad) or not isValidLayer(layer) then return 0 end
 
   local param_name = string.format('P%d_L%d_RR_COUNT', pad, layer)
   local retval, value = reaper.TrackFX_GetNamedConfigParm(track, fx, param_name)
@@ -418,6 +428,7 @@ end
 function M.getSampleDuration(track, fx, pad, layer)
   if not track or not fx or fx < 0 then return 0 end
   layer = layer or 0
+  if not isValidPad(pad) or not isValidLayer(layer) then return 0 end
 
   local param_name = string.format('P%d_L%d_DURATION', pad, layer)
   local retval, value = reaper.TrackFX_GetNamedConfigParm(track, fx, param_name)
@@ -430,6 +441,7 @@ end
 -- Clear all samples from a pad
 function M.clearPad(track, fx, pad)
   if not track or not fx or fx < 0 then return false end
+  if not isValidPad(pad) then return false end
 
   local chunk = getVstChunk(track, fx)
   if not chunk then return false end
@@ -448,6 +460,7 @@ end
 -- Get sample path from VST state
 function M.getSamplePath(track, fx, pad, layer)
   if not track or not fx or fx < 0 then return nil end
+  if not isValidPad(pad) or not isValidLayer(layer) then return nil end
 
   -- Try named config param first
   local param_name = string.format('P%d_L%d_SAMPLE', pad, layer)
@@ -469,6 +482,7 @@ end
 -- Check if pad has any sample loaded
 function M.hasSample(track, fx, pad)
   if not track or not fx or fx < 0 then return false end
+  if not isValidPad(pad) then return false end
 
   -- Try named config param first
   local param_name = string.format('P%d_HAS_SAMPLE', pad)
@@ -544,6 +558,7 @@ end
 -- Preview pad via named config param (doesn't require MIDI routing)
 function M.previewPad(track, fx, pad, velocity)
   if not track or not fx or fx < 0 then return false end
+  if not isValidPad(pad) then return false end
   velocity = velocity or 100
   local param_name = string.format('P%d_PREVIEW', pad)
   return reaper.TrackFX_SetNamedConfigParm(track, fx, param_name, tostring(velocity))
@@ -552,6 +567,7 @@ end
 -- Stop pad playback
 function M.stopPad(track, fx, pad)
   if not track or not fx or fx < 0 then return false end
+  if not isValidPad(pad) then return false end
   local param_name = string.format('P%d_STOP', pad)
   return reaper.TrackFX_SetNamedConfigParm(track, fx, param_name, '')
 end
@@ -565,6 +581,7 @@ end
 -- Check if pad is currently playing
 function M.isPlaying(track, fx, pad)
   if not track or not fx or fx < 0 then return false end
+  if not isValidPad(pad) then return false end
   local param_name = string.format('P%d_IS_PLAYING', pad)
   local retval, value = reaper.TrackFX_GetNamedConfigParm(track, fx, param_name)
   return retval and value == '1'
@@ -572,6 +589,7 @@ end
 
 -- Legacy MIDI preview (requires MIDI routing to track)
 function M.triggerPad(pad, velocity)
+  if not isValidPad(pad) then return end
   velocity = velocity or 100
   -- Send MIDI note to trigger pad (pad index = MIDI note)
   reaper.StuffMIDIMessage(0, 0x90, pad, velocity)  -- Note on
