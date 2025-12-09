@@ -21,8 +21,8 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 local Shell = require('arkitekt.runtime.shell')
 local Settings = require('arkitekt.core.settings')
 local State = require('WalterBuilder.app.state')
-local Controller = require('WalterBuilder.core.controller')
-local GUI = require('WalterBuilder.ui.gui')
+local Controller = require('WalterBuilder.app.controller')
+local GUI = require('WalterBuilder.ui.init')
 
 -- ============================================================================
 -- INITIALIZE SETTINGS AND STATE

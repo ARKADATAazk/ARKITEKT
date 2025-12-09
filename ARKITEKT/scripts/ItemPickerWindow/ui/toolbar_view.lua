@@ -4,8 +4,18 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
-local SearchWithMode = require('ItemPicker.ui.components.search_with_mode')
 local M = {}
+
+-- Simple search with mode draw function (inline replacement for missing module)
+local function DrawSearchWithMode(ctx, draw_list, x, y, w, h, state, config)
+  ImGui.SetCursorScreenPos(ctx, x, y)
+  ImGui.PushItemWidth(ctx, w)
+  local changed, new_val = ImGui.InputTextWithHint(ctx, '##search', 'Search...', state.settings.search_string or '')
+  ImGui.PopItemWidth(ctx)
+  if changed then
+    state.set_search_filter(new_val)
+  end
+end
 
 local ToolbarView = {}
 ToolbarView.__index = ToolbarView
@@ -137,7 +147,7 @@ function ToolbarView:draw(ctx, shell_state)
     self.focus_search = false
   end
 
-  SearchWithMode.Draw(ctx, draw_list, search_x, search_y, search_width, button_height, self.state, self.config)
+  DrawSearchWithMode(ctx, draw_list, search_x, search_y, search_width, button_height, self.state, self.config)
 
   -- Position sort buttons to the right of search
   local sort_x = search_x + search_width + button_gap

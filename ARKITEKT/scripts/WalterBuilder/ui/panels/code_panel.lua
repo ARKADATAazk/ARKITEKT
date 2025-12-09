@@ -171,6 +171,7 @@ function Panel:draw(ctx)
   if ImGui.Button(ctx, copy_label, -1, 26) then
     self:copy_to_clipboard(ctx)
   end
+  ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 8)
   ImGui.Separator(ctx)

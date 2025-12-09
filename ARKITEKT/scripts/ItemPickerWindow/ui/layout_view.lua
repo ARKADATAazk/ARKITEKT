@@ -79,8 +79,8 @@ function LayoutView:draw_vertical(ctx, coordinator, shell_state)
   })
 
   -- Block grid input during separator drag
-  if coordinator.midi_grid then coordinator.midi_grid.block_all_input = sep_result.dragging end
-  if coordinator.audio_grid then coordinator.audio_grid.block_all_input = sep_result.dragging end
+  if coordinator.midi_grid_opts then coordinator.midi_grid_opts.block_all_input = sep_result.dragging end
+  if coordinator.audio_grid_opts then coordinator.audio_grid_opts.block_all_input = sep_result.dragging end
 
   if sep_result.action == 'reset' then
     self.state.set_separator_position(self.config.SEPARATOR.default_midi_height or 250)
@@ -155,8 +155,8 @@ function LayoutView:draw_horizontal(ctx, coordinator, shell_state)
   })
 
   -- Block grid input during separator drag
-  if coordinator.midi_grid then coordinator.midi_grid.block_all_input = sep_result.dragging end
-  if coordinator.audio_grid then coordinator.audio_grid.block_all_input = sep_result.dragging end
+  if coordinator.midi_grid_opts then coordinator.midi_grid_opts.block_all_input = sep_result.dragging end
+  if coordinator.audio_grid_opts then coordinator.audio_grid_opts.block_all_input = sep_result.dragging end
 
   if sep_result.action == 'reset' then
     self.state.set_setting('separator_position_horizontal', 400)
