@@ -1,5 +1,5 @@
 // =============================================================================
-// BlockSampler/Source/PluginProcessor.h
+// DrumBlocks/Source/PluginProcessor.h
 // Main VST3 processor - headless drum sampler with 128 pads
 // =============================================================================
 
@@ -13,7 +13,7 @@
 #include <atomic>
 #include <mutex>
 
-namespace BlockSampler
+namespace DrumBlocks
 {
 
 // =============================================================================
@@ -44,21 +44,31 @@ static_assert((LOAD_QUEUE_SIZE & (LOAD_QUEUE_SIZE - 1)) == 0,
 // Double-buffered for lock-free audio thread writes
 // =============================================================================
 
+// Pre-allocated path capacity to avoid audio-thread allocations
+// 512 bytes covers most file paths (Windows MAX_PATH=260, typical paths shorter)
+constexpr size_t PREALLOCATED_PATH_CAPACITY = 512;
+
 struct PadMetadata
 {
     // Atomic snapshot of pad state - updated by audio thread, read by message thread
     std::array<juce::String, NUM_VELOCITY_LAYERS> samplePaths;
-    std::array<std::vector<juce::String>, NUM_VELOCITY_LAYERS> roundRobinPaths;
+    // Fixed-size array of pre-allocated strings (avoids vector reallocation on audio thread)
+    std::array<std::array<juce::String, MAX_ROUND_ROBIN_SAMPLES>, NUM_VELOCITY_LAYERS> roundRobinPaths;
     std::array<int, NUM_VELOCITY_LAYERS> roundRobinCounts = {};
     std::array<double, NUM_VELOCITY_LAYERS> sampleDurations = {};
     std::array<bool, NUM_VELOCITY_LAYERS> hasLayerSample = {};
     bool hasSample = false;
 
-    // Pre-allocate vector capacity to minimize audio-thread allocations
+    // Pre-allocate string capacity to minimize audio-thread allocations
     PadMetadata()
     {
-        for (auto& paths : roundRobinPaths)
-            paths.reserve(MAX_ROUND_ROBIN_SAMPLES);
+        // Pre-allocate path strings to avoid allocation during audio-thread updates
+        for (auto& path : samplePaths)
+            path.preallocateBytes(PREALLOCATED_PATH_CAPACITY);
+
+        for (auto& layerPaths : roundRobinPaths)
+            for (auto& path : layerPaths)
+                path.preallocateBytes(PREALLOCATED_PATH_CAPACITY);
     }
 };
 
@@ -142,7 +152,7 @@ public:
     // PLUGIN INFO
     // -------------------------------------------------------------------------
 
-    const juce::String getName() const override { return "BlockSampler"; }
+    const juce::String getName() const override { return "DrumBlocks"; }
     bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
@@ -186,8 +196,8 @@ public:
     VST3ClientExtensions* getVST3ClientExtensions() override { return this; }
 
     // Named config param support: P{pad}_L{layer}_SAMPLE = file_path
-    bool handleNamedConfigParam(const juce::String& name, const juce::String& value);
-    juce::String getNamedConfigParam(const juce::String& name) const;
+    [[nodiscard]] bool handleNamedConfigParam(const juce::String& name, const juce::String& value);
+    [[nodiscard]] juce::String getNamedConfigParam(const juce::String& name) const;
 
 private:
     // -------------------------------------------------------------------------
@@ -197,6 +207,7 @@ private:
     void handleMidiEvent(const juce::MidiMessage& msg);
     void updatePadParameters(int padIndex);
     void processKillGroups(int triggeredPad);
+    void rebuildKillGroupsIfNeeded();  // Lazy rebuild of kill group membership
     void applyCompletedLoads();    // Called at start of processBlock (audio thread)
     void applyQueuedCommands();    // Called at start of processBlock (audio thread)
     void queueCommand(PadCommand cmd);  // Thread-safe command queuing (message thread)
@@ -221,6 +232,13 @@ private:
 
     // Active pad tracking for optimized rendering
     std::bitset<NUM_PADS> activePads;
+
+    // Pre-computed kill group membership for O(1) lookup instead of O(NUM_PADS)
+    // killGroupMembers[group] contains indices of pads in that kill group
+    // Updated lazily when pad parameters are read (kill group rarely changes)
+    std::array<std::vector<int>, NUM_KILL_GROUPS + 1> killGroupMembers;
+    std::array<int, NUM_PADS> lastKnownKillGroup;  // Track changes to rebuild
+    bool killGroupsDirty = true;  // Force initial build
 
     // Cached parameter pointers for fast audio-thread access
     struct PadParams
@@ -249,8 +267,16 @@ private:
         std::atomic<float>* pitchEnvSustain = nullptr;  // Pitch envelope sustain
         std::atomic<float>* velCrossfade = nullptr;     // Velocity layer crossfade
         std::atomic<float>* velCurve = nullptr;         // Velocity response curve
+        std::atomic<float>* satDrive = nullptr;         // Saturation drive amount
+        std::atomic<float>* satType = nullptr;          // Saturation algorithm type
+        std::atomic<float>* satMix = nullptr;           // Saturation dry/wet mix
+        std::atomic<float>* transAttack = nullptr;      // Transient shaper attack
+        std::atomic<float>* transSustain = nullptr;     // Transient shaper sustain
     };
     std::array<PadParams, NUM_PADS> padParams;
+
+    // Global parameters
+    std::atomic<float>* globalQuality = nullptr;      // Interpolation quality (0=Normal, 1=High, 2=Ultra)
 
     // Async sample loading - FIFO with mutex protection for multiple producers
     // Producer: background thread pool (multiple threads), Consumer: audio thread
@@ -279,4 +305,4 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Processor)
 };
 
-}  // namespace BlockSampler
+}  // namespace DrumBlocks

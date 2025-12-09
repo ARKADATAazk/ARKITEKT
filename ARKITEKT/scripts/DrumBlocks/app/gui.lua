@@ -38,30 +38,27 @@ function M:draw(ctx)
   -- ========================================================================
   -- MAIN CONTENT
   -- ========================================================================
-  if ImGui.BeginChild(ctx, '##main_content', 0, 0) then
-    -- Left panel: Browser (collapsible)
-    local browser_width = 200
+  -- Left panel: Browser (collapsible)
+  local browser_width = 200
 
-    if ImGui.BeginChild(ctx, '##browser_panel', browser_width, 0, ImGui.ChildFlags_Border) then
-      self:drawBrowser(ctx)
-    end
-    ImGui.EndChild(ctx)
+  if ImGui.BeginChild(ctx, '##browser_panel', browser_width, 0, ImGui.ChildFlags_Borders) then
+    self:drawBrowser(ctx)
+  end
+  ImGui.EndChild(ctx)
 
-    ImGui.SameLine(ctx)
+  ImGui.SameLine(ctx)
 
-    -- Center: Pad Grid
-    if ImGui.BeginChild(ctx, '##pad_panel', 380, 0) then
-      self:drawPadSection(ctx)
-    end
-    ImGui.EndChild(ctx)
+  -- Center: Pad Grid
+  if ImGui.BeginChild(ctx, '##pad_panel', 380, 0) then
+    self:drawPadSection(ctx)
+  end
+  ImGui.EndChild(ctx)
 
-    ImGui.SameLine(ctx)
+  ImGui.SameLine(ctx)
 
-    -- Right: Pad Editor
-    if ImGui.BeginChild(ctx, '##editor_panel', 0, 0, ImGui.ChildFlags_Border) then
-      self:drawPadEditor(ctx)
-    end
-    ImGui.EndChild(ctx)
+  -- Right: Pad Editor
+  if ImGui.BeginChild(ctx, '##editor_panel', 0, 0, ImGui.ChildFlags_Borders) then
+    self:drawPadEditor(ctx)
   end
   ImGui.EndChild(ctx)
 end
@@ -101,14 +98,14 @@ function M:drawTopBar(ctx)
   ImGui.Dummy(ctx, 20, 0)
   ImGui.SameLine(ctx)
 
-  -- BlockSampler status
-  if state.hasBlockSampler() then
-    ImGui.TextColored(ctx, 0x88FF88FF, 'BlockSampler: Connected')
+  -- DrumBlocks VST status
+  if state.hasDrumBlocks() then
+    ImGui.TextColored(ctx, 0x88FF88FF, 'DrumBlocks: Connected')
   else
-    ImGui.TextColored(ctx, 0xFF8888FF, 'BlockSampler: Not Found')
+    ImGui.TextColored(ctx, 0xFF8888FF, 'DrumBlocks: Not Found')
     ImGui.SameLine(ctx)
     if Ark.Button(ctx, 'Insert') then
-      state.insertBlockSampler()
+      state.insertDrumBlocks()
     end
   end
 

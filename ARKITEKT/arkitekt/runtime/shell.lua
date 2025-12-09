@@ -711,8 +711,8 @@ function M.run(opts)
       else
         if window:BeginBody(ctx) then
           draw_with_profiling(ctx, state)
-          window:EndBody(ctx)
         end
+        window:EndBody(ctx)
       end
 
       -- Draw dev mode overlays while window is active

@@ -60,7 +60,7 @@ function M.initialize(settings)
     state.kit.pads[i] = M.createEmptyPad()
   end
 
-  -- Try to find BlockSampler on selected track
+  -- Try to find DrumBlocks on selected track
   M.refreshTrack()
 end
 
@@ -91,7 +91,7 @@ end
 function M.refreshTrack()
   state.track = reaper.GetSelectedTrack(0, 0)
   if state.track then
-    state.fx_index = Bridge.findBlockSampler(state.track)
+    state.fx_index = Bridge.findDrumBlocks(state.track)
   else
     state.fx_index = nil
   end
@@ -105,20 +105,21 @@ function M.getFxIndex()
   return state.fx_index
 end
 
-function M.hasBlockSampler()
+function M.hasDrumBlocks()
   return state.track ~= nil and state.fx_index ~= nil
 end
 
-function M.insertBlockSampler()
+function M.insertDrumBlocks()
   if not state.track then
     state.track = reaper.GetSelectedTrack(0, 0)
   end
   if state.track then
-    state.fx_index = Bridge.insertBlockSampler(state.track)
+    state.fx_index = Bridge.insertDrumBlocks(state.track)
     return state.fx_index ~= nil
   end
   return false
 end
+
 
 -- ============================================================================
 -- PAD STATE
@@ -173,7 +174,7 @@ function M.setPadSample(pad_index, layer, file_path)
   end
 
   -- Send to VST
-  if M.hasBlockSampler() then
+  if M.hasDrumBlocks() then
     Bridge.loadSample(state.track, state.fx_index, pad_index, layer, file_path or '')
   end
 end
@@ -206,7 +207,7 @@ function M.setPadVolume(pad_index, value)
   local pad = state.kit.pads[pad_index]
   if pad then
     pad.volume = value
-    if M.hasBlockSampler() then
+    if M.hasDrumBlocks() then
       Bridge.setVolume(state.track, state.fx_index, pad_index, value)
     end
   end
@@ -216,7 +217,7 @@ function M.setPadPan(pad_index, value)
   local pad = state.kit.pads[pad_index]
   if pad then
     pad.pan = value
-    if M.hasBlockSampler() then
+    if M.hasDrumBlocks() then
       Bridge.setPan(state.track, state.fx_index, pad_index, value)
     end
   end
@@ -226,7 +227,7 @@ function M.setPadTune(pad_index, semitones)
   local pad = state.kit.pads[pad_index]
   if pad then
     pad.tune = semitones
-    if M.hasBlockSampler() then
+    if M.hasDrumBlocks() then
       Bridge.setTune(state.track, state.fx_index, pad_index, semitones)
     end
   end
@@ -236,7 +237,7 @@ function M.setPadKillGroup(pad_index, group)
   local pad = state.kit.pads[pad_index]
   if pad then
     pad.kill_group = group
-    if M.hasBlockSampler() then
+    if M.hasDrumBlocks() then
       Bridge.setKillGroup(state.track, state.fx_index, pad_index, group)
     end
   end
@@ -246,7 +247,7 @@ function M.setPadOutputGroup(pad_index, group)
   local pad = state.kit.pads[pad_index]
   if pad then
     pad.output_group = group
-    if M.hasBlockSampler() then
+    if M.hasDrumBlocks() then
       Bridge.setOutputGroup(state.track, state.fx_index, pad_index, group)
     end
   end
@@ -368,7 +369,7 @@ function M.newKit()
     state.kit.pads[i] = M.createEmptyPad()
   end
   -- Clear VST
-  if M.hasBlockSampler() then
+  if M.hasDrumBlocks() then
     for i = 0, Bridge.NUM_PADS - 1 do
       for layer = 0, Bridge.NUM_VELOCITY_LAYERS - 1 do
         Bridge.clearSample(state.track, state.fx_index, i, layer)
@@ -384,7 +385,7 @@ end
 function M.loadKitData(kit_data)
   state.kit = kit_data
   -- Sync to VST
-  if M.hasBlockSampler() then
+  if M.hasDrumBlocks() then
     Bridge.loadKit(state.track, state.fx_index, kit_data)
   end
 end

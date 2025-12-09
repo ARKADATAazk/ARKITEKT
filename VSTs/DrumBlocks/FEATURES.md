@@ -1,38 +1,38 @@
-# BlockSampler Feature Comparison
+# DrumBlocks VST Feature Comparison
 
 ## vs Sitala (Free Drum Sampler)
 
-| Feature | Sitala | BlockSampler | Winner |
+| Feature | Sitala | DrumBlocks | Winner |
 |---------|--------|--------------|--------|
-| Pads | 16 | 128 | **BlockSampler** |
-| Velocity layers | ❌ | ✅ 4 per pad + crossfade | **BlockSampler** |
-| Round-robin | ❌ | ✅ 16 per layer | **BlockSampler** |
+| Pads | 16 | 128 | **DrumBlocks** |
+| Velocity layers | ❌ | ✅ 4 per pad + crossfade | **DrumBlocks** |
+| Round-robin | ❌ | ✅ 16 per layer | **DrumBlocks** |
 | Choke/kill groups | ✅ 16 | ✅ 16 | Tie |
 | Multi-out routing | ✅ 16 stereo | ✅ 16 stereo | Tie |
 | ADSR envelope | ✅ | ✅ | Tie |
-| Filter | ✅ Tone knob | ✅ SVF LP/HP/BP + reso | **BlockSampler** |
-| **Pitch envelope** | ❌ | ✅ Full ADSR | **BlockSampler** |
-| **Loop modes** | ❌ | ✅ OneShot/Loop/PingPong | **BlockSampler** |
+| Filter | ✅ Tone knob | ✅ SVF LP/HP/BP + reso | **DrumBlocks** |
+| **Pitch envelope** | ❌ | ✅ Full ADSR | **DrumBlocks** |
+| **Loop modes** | ❌ | ✅ OneShot/Loop/PingPong | **DrumBlocks** |
 | Sample start/end | ✅ | ✅ | Tie |
-| Reverse playback | ❌ | ✅ | **BlockSampler** |
-| Peak normalization | ❌ | ✅ | **BlockSampler** |
+| Reverse playback | ❌ | ✅ | **DrumBlocks** |
+| Peak normalization | ❌ | ✅ | **DrumBlocks** |
 | Built-in effects | ✅ (tone, bitcrush) | ❌ (use DAW FX) | Sitala |
 | GUI | ✅ Nice | ❌ Headless | Sitala |
 | Drag & drop | ✅ | ❌ (Lua/chunk) | Sitala |
-| Parameter automation | ✅ ~80 | ✅ 2816 | **BlockSampler** |
+| Parameter automation | ✅ ~80 | ✅ 2816 | **DrumBlocks** |
 | Price | Free | Free | Tie |
 
-**Summary:** BlockSampler wins on audio features (pitch envelope, velocity layers, round-robin), Sitala wins on usability (GUI, drag & drop).
+**Summary:** DrumBlocks wins on audio features (pitch envelope, velocity layers, round-robin), Sitala wins on usability (GUI, drag & drop).
 
 ---
 
 ## vs Ableton Drum Rack
 
-| Feature | Drum Rack | BlockSampler | Winner |
+| Feature | Drum Rack | DrumBlocks | Winner |
 |---------|-----------|--------------|--------|
 | Pads | 128 | 128 | Tie |
-| Velocity layers | ✅ (via Simpler) | ✅ 4 built-in + crossfade | **BlockSampler** |
-| Round-robin | ✅ (manual setup) | ✅ 16 per layer | **BlockSampler** (easier) |
+| Velocity layers | ✅ (via Simpler) | ✅ 4 built-in + crossfade | **DrumBlocks** |
+| Round-robin | ✅ (manual setup) | ✅ 16 per layer | **DrumBlocks** (easier) |
 | Choke groups | ✅ 16 | ✅ 16 | Tie |
 | Multi-out routing | ✅ Unlimited | ✅ 16 stereo | Drum Rack |
 | ADSR envelope | ✅ Full | ✅ Full | Tie |
@@ -44,15 +44,15 @@
 | Macro controls | ✅ 8 | ❌ (use Lua) | Drum Rack |
 | Per-pad FX chains | ✅ Full | ❌ (use DAW) | Drum Rack |
 | Parameter automation | ✅ | ✅ 2816 params | Tie |
-| Scripting/API | ❌ | ✅ Full Lua | **BlockSampler** |
+| Scripting/API | ❌ | ✅ Full Lua | **DrumBlocks** |
 | DAW integration | Ableton only | REAPER | Depends |
-| Price | $$$$ (Suite) | Free | **BlockSampler** |
+| Price | $$$$ (Suite) | Free | **DrumBlocks** |
 
-**Summary:** Drum Rack has more features overall, but BlockSampler is free and has superior scripting/automation for REAPER workflows.
+**Summary:** Drum Rack has more features overall, but DrumBlocks is free and has superior scripting/automation for REAPER workflows.
 
 ---
 
-## BlockSampler Unique Strengths
+## DrumBlocks VST Unique Strengths
 
 1. **3072 Automatable Parameters**
    - Every parameter on every pad exposed to DAW automation
@@ -157,7 +157,7 @@ The velocity crossfade system enables **smooth kit morphing** between velocity l
 
 Traditional samplers hard-switch between layers at velocity thresholds (e.g., vel 63 plays Layer 1, vel 64 plays Layer 2). This creates audible discontinuities.
 
-BlockSampler's crossfade blends adjacent layers in a configurable zone:
+DrumBlocks' crossfade blends adjacent layers in a configurable zone:
 
 ```
 Velocity:    0 -------- 32 -------- 64 -------- 96 ------- 127
@@ -196,7 +196,7 @@ Bridge.setVelCrossfade(track, fx, pad, 1.0)
 
 ### Current State (Dec 2024)
 
-BlockSampler is a **headless VST3 drum sampler** designed for REAPER integration via the DrumBlocks Lua UI. Core features are complete and production-ready:
+DrumBlocks VST is a **headless VST3 drum sampler** designed for REAPER integration via the DrumBlocks Lua script. Core features are complete and production-ready:
 
 - ✅ 128 pads with 4 velocity layers each
 - ✅ 16 round-robin samples per layer (8,192 total sample slots)
@@ -229,7 +229,7 @@ BlockSampler is a **headless VST3 drum sampler** designed for REAPER integration
                         │ VST3
                         ▼
 ┌──────────────────────────────────────────────────────────┐
-│                   BlockSampler VST3                      │
+│                   DrumBlocks VST3                        │
 │  ┌──────────────────┐  ┌──────────────────────────────┐ │
 │  │   Processor      │  │   128 × Pad                  │ │
 │  │   - MIDI routing │  │   - 4 velocity layers        │ │
@@ -258,14 +258,14 @@ BlockSampler is a **headless VST3 drum sampler** designed for REAPER integration
 ## File Reference
 
 ```
-VSTs/BlockSampler/
+VSTs/DrumBlocks/
 ├── Source/
 │   ├── Parameters.h      # 24 params × 128 pads, LoopMode enum
 │   ├── Pad.h/cpp         # Audio rendering, velocity crossfade
 │   ├── PluginProcessor.* # VST3 host, async loading, MIDI
 │   └── ...
 ├── FEATURES.md           # This file
-└── BlockSampler.jucer    # JUCE project
+└── CMakeLists.txt        # CMake build configuration
 
 ARKITEKT/scripts/DrumBlocks/
 ├── domain/

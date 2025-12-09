@@ -134,40 +134,14 @@ function M.process_jobs(job_queue, visualization, runtime_cache, imgui_ctx)
       job_queue.processing_keys[job.cache_key] = true
 
       if job.type == 'waveform' then
-        -- Try disk cache first
-        local cached_waveform = disk_cache.load_waveform(job.item, job.cache_key)
-        if cached_waveform then
-          -- Load from disk cache into runtime cache
-          if runtime_cache and runtime_cache.waveforms then
-            runtime_cache.waveforms[job.cache_key] = cached_waveform
-          end
-        else
-          -- Generate new waveform
-          if visualization.GetItemWaveform then
-            local waveform = visualization.GetItemWaveform(runtime_cache, job.item, job.cache_key)
-            -- Save to disk cache (already stored in runtime_cache by GetItemWaveform)
-            if waveform then
-              disk_cache.save_waveform(job.item, job.cache_key, waveform)
-            end
-          end
+        -- Generate waveform directly (no disk cache - regeneration is fast enough)
+        if visualization.GetItemWaveform then
+          visualization.GetItemWaveform(runtime_cache, job.item, job.cache_key)
         end
       elseif job.type == 'midi' then
-        -- Try disk cache first
-        local cached_thumbnail = disk_cache.load_midi_thumbnail(job.item, job.cache_key)
-        if cached_thumbnail then
-          -- Load from disk cache into runtime cache
-          if runtime_cache and runtime_cache.midi_thumbnails then
-            runtime_cache.midi_thumbnails[job.cache_key] = cached_thumbnail
-          end
-        else
-          -- Generate new thumbnail
-          if visualization.GenerateMidiThumbnail then
-            local thumbnail = visualization.GenerateMidiThumbnail(runtime_cache, job.item, job.width, job.height, job.cache_key)
-            -- Save to disk cache (already stored in runtime_cache by GenerateMidiThumbnail)
-            if thumbnail then
-              disk_cache.save_midi_thumbnail(job.item, job.cache_key, thumbnail)
-            end
-          end
+        -- Generate MIDI thumbnail directly
+        if visualization.GenerateMidiThumbnail then
+          visualization.GenerateMidiThumbnail(runtime_cache, job.item, job.width, job.height, job.cache_key)
         end
       end
 

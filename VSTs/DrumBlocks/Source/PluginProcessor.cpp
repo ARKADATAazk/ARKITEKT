@@ -1,12 +1,12 @@
 // =============================================================================
-// BlockSampler/Source/PluginProcessor.cpp
+// DrumBlocks/Source/PluginProcessor.cpp
 // Main VST3 processor implementation
 // =============================================================================
 
 #include "PluginProcessor.h"
 #include <limits>
 
-namespace BlockSampler
+namespace DrumBlocks
 {
 
 // =============================================================================
@@ -34,7 +34,7 @@ Processor::Processor()
           .withOutput("Group 14", juce::AudioChannelSet::stereo(), false)
           .withOutput("Group 15", juce::AudioChannelSet::stereo(), false)
           .withOutput("Group 16", juce::AudioChannelSet::stereo(), false)),
-      parameters(*this, nullptr, "BlockSamplerParams", createParameterLayout())
+      parameters(*this, nullptr, "DrumBlocksParams", createParameterLayout())
 {
     formatManager.registerBasicFormats();
 
@@ -67,14 +67,37 @@ Processor::Processor()
         padParams[pad].pitchEnvSustain = parameters.getRawParameterValue(PadParam::id(pad, PadParam::PitchEnvSustain));
         padParams[pad].velCrossfade = parameters.getRawParameterValue(PadParam::id(pad, PadParam::VelCrossfade));
         padParams[pad].velCurve = parameters.getRawParameterValue(PadParam::id(pad, PadParam::VelCurve));
+        padParams[pad].satDrive = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SaturationDrive));
+        padParams[pad].satType = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SaturationType));
+        padParams[pad].satMix = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SaturationMix));
+        padParams[pad].transAttack = parameters.getRawParameterValue(PadParam::id(pad, PadParam::TransientAttack));
+        padParams[pad].transSustain = parameters.getRawParameterValue(PadParam::id(pad, PadParam::TransientSustain));
     }
+
+    // Cache global parameter pointer
+    globalQuality = parameters.getRawParameterValue(GlobalParam::qualityId());
+
+    // Initialize kill group tracking
+    lastKnownKillGroup.fill(-1);  // Force rebuild on first use
+    for (auto& group : killGroupMembers)
+        group.reserve(16);  // Pre-allocate to avoid audio-thread allocation
 }
 
 Processor::~Processor()
 {
-    // Wait indefinitely for jobs to finish (they capture raw pointers to our members)
-    // Jobs are quick file loads, so this should complete promptly
-    loadPool.removeAllJobs(true, -1);
+    // Wait for background jobs with a reasonable timeout (5 seconds)
+    // Jobs capture raw pointers to our members, so we must wait for completion
+    // If timeout expires, force-kill remaining jobs to prevent hangs (e.g., stuck network drive)
+    constexpr int DESTRUCTOR_TIMEOUT_MS = 5000;
+    const int remainingJobs = loadPool.removeAllJobs(true, DESTRUCTOR_TIMEOUT_MS);
+
+    if (remainingJobs > 0)
+    {
+        // Force-kill any remaining jobs that didn't complete in time
+        // This is a last resort - may leak memory from in-flight loads, but prevents UI hang
+        loadPool.removeAllJobs(false, 0);
+        DBG("DrumBlocks: Force-killed " << remainingJobs << " stuck load jobs on shutdown");
+    }
 }
 
 // =============================================================================
@@ -117,11 +140,34 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
     // Clear all output channels (buffer.clear() handles all buses)
     buffer.clear();
 
+    // Rebuild kill group membership if any pad's kill group changed
+    // This is O(NUM_PADS) scan but only triggers rebuild when actually changed
+    rebuildKillGroupsIfNeeded();
+
     // Process MIDI events (update parameters for triggered pads)
-    // TODO: MIDI timing improvement - currently all events trigger at sample 0
-    // of the block. For sample-accurate timing, would need to split the render
-    // loop by MIDI event boundaries using metadata.samplePosition.
-    // Current latency: up to one block (e.g., 11ms at 44.1kHz/512 samples).
+    //
+    // DESIGN NOTE: Block-based vs Sample-accurate MIDI timing
+    // --------------------------------------------------------
+    // Current: All MIDI events trigger at sample 0 of the block (block-based).
+    // This means metadata.samplePosition is ignored.
+    //
+    // Impact:
+    //   - Worst-case latency: one block (e.g., 11ms at 48kHz/512 samples)
+    //   - Average latency: half a block (~5ms)
+    //   - At low-latency settings (128 samples): worst-case ~2.7ms
+    //
+    // Sample-accurate alternative would require:
+    //   1. Sort MIDI events by samplePosition
+    //   2. Render in chunks between events (multiple renderNextBlock calls)
+    //   3. Significantly more complexity and CPU overhead
+    //
+    // Decision: Keep block-based (2024-12 review)
+    //   - Industry standard for drum samplers (Sitala, Battery, etc.)
+    //   - Live performers use low-latency buffers anyway (<3ms)
+    //   - Sequenced MIDI is pre-quantized by DAW
+    //   - Complexity cost not justified for drum sampler use case
+    //   - Can revisit if users report timing issues with fast rolls/flams
+    //
     for (const auto metadata : midiMessages)
     {
         handleMidiEvent(metadata.getMessage());
@@ -165,11 +211,11 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
         int group = pads[i].outputGroup;
         if (group > 0 && group <= NUM_OUTPUT_GROUPS)
         {
-            auto* groupBuffer = getBusBuffer(buffer, false, group);
-            if (groupBuffer && groupBuffer->getNumChannels() >= 2)
+            auto groupBuffer = getBusBuffer(buffer, false, group);
+            if (groupBuffer.getNumChannels() >= 2)
             {
                 for (int ch = 0; ch < 2; ++ch)
-                    groupBuffer->addFrom(ch, 0, padOutput, ch, 0, rendered);
+                    groupBuffer.addFrom(ch, 0, padOutput, ch, 0, rendered);
             }
         }
     }
@@ -213,20 +259,52 @@ void Processor::handleMidiEvent(const juce::MidiMessage& msg)
     }
 }
 
-void Processor::processKillGroups(int triggeredPad)
+void Processor::rebuildKillGroupsIfNeeded()
 {
-    int killGroup = pads[triggeredPad].killGroup;
-    if (killGroup == 0)
+    // Check if any kill group assignments have changed
+    bool needsRebuild = killGroupsDirty;
+    if (!needsRebuild)
+    {
+        for (int i = 0; i < NUM_PADS; ++i)
+        {
+            int currentKillGroup = pads[i].killGroup;
+            if (currentKillGroup != lastKnownKillGroup[i])
+            {
+                needsRebuild = true;
+                break;
+            }
+        }
+    }
+
+    if (!needsRebuild)
         return;
+
+    // Rebuild kill group membership (clears without deallocation due to reserve)
+    for (auto& group : killGroupMembers)
+        group.clear();
 
     for (int i = 0; i < NUM_PADS; ++i)
     {
-        if (i != triggeredPad &&
-            pads[i].killGroup == killGroup &&
-            pads[i].isPlaying)
-        {
-            pads[i].stop();
-        }
+        int kg = pads[i].killGroup;
+        lastKnownKillGroup[i] = kg;
+        if (kg > 0 && kg <= NUM_KILL_GROUPS)
+            killGroupMembers[kg].push_back(i);
+    }
+
+    killGroupsDirty = false;
+}
+
+void Processor::processKillGroups(int triggeredPad)
+{
+    int killGroup = pads[triggeredPad].killGroup;
+    if (killGroup == 0 || killGroup > NUM_KILL_GROUPS)
+        return;
+
+    // O(members) instead of O(NUM_PADS) - typically 1-4 pads per kill group
+    for (int padIdx : killGroupMembers[killGroup])
+    {
+        if (padIdx != triggeredPad && pads[padIdx].isPlaying)
+            pads[padIdx].stop();
     }
 }
 
@@ -263,6 +341,14 @@ void Processor::updatePadParameters(int padIndex)
     pad.pitchEnvSustain = params.pitchEnvSustain->load();
     pad.velCrossfade = params.velCrossfade->load();
     pad.velCurve = params.velCurve->load();
+    pad.satDrive = params.satDrive->load();
+    pad.satType = static_cast<int>(params.satType->load());
+    pad.satMix = params.satMix->load();
+    pad.transAttack = params.transAttack->load();
+    pad.transSustain = params.transSustain->load();
+
+    // Global parameter: interpolation quality
+    pad.interpolationQuality = static_cast<InterpolationQuality>(static_cast<int>(globalQuality->load()));
 }
 
 // =============================================================================
@@ -508,22 +594,22 @@ void Processor::applyQueuedCommands()
 // PAD METADATA (Thread-safe snapshots for message thread queries)
 // =============================================================================
 
-// Helper to copy a single pad's metadata (allocation-free for vectors)
+// Helper to copy a single pad's metadata (allocation-free with pre-allocated strings)
 static void copyPadMetadataEntry(const PadMetadata& src, PadMetadata& dst)
 {
     // Copy primitive arrays (no allocation)
-    dst.samplePaths = src.samplePaths;
     dst.roundRobinCounts = src.roundRobinCounts;
     dst.sampleDurations = src.sampleDurations;
     dst.hasLayerSample = src.hasLayerSample;
     dst.hasSample = src.hasSample;
 
-    // Copy vectors without allocation: clear + push_back stays within reserved capacity
+    // Copy strings (assignment to pre-allocated strings avoids allocation for typical paths)
     for (int layer = 0; layer < NUM_VELOCITY_LAYERS; ++layer)
     {
-        dst.roundRobinPaths[layer].clear();  // Doesn't deallocate
-        for (const auto& path : src.roundRobinPaths[layer])
-            dst.roundRobinPaths[layer].push_back(path);
+        dst.samplePaths[layer] = src.samplePaths[layer];
+        const int rrCount = src.roundRobinCounts[layer];
+        for (int rr = 0; rr < rrCount; ++rr)
+            dst.roundRobinPaths[layer][rr] = src.roundRobinPaths[layer][rr];
     }
 }
 
@@ -549,11 +635,10 @@ void Processor::updatePadMetadata(int padIndex)
     {
         meta.samplePaths[layer] = pad.getSamplePath(layer);
 
-        // Use allocation-free path access: clear + push_back within reserved capacity
-        meta.roundRobinPaths[layer].clear();
-        const int rrCount = pad.getRoundRobinCount(layer);
+        // Copy round-robin paths to fixed-size array (pre-allocated strings avoid allocation)
+        const int rrCount = juce::jmin(pad.getRoundRobinCount(layer), MAX_ROUND_ROBIN_SAMPLES);
         for (int rr = 0; rr < rrCount; ++rr)
-            meta.roundRobinPaths[layer].push_back(pad.getRoundRobinPath(layer, rr));
+            meta.roundRobinPaths[layer][rr] = pad.getRoundRobinPath(layer, rr);
 
         meta.roundRobinCounts[layer] = rrCount;
         meta.sampleDurations[layer] = pad.getSampleDuration(layer);
@@ -594,11 +679,10 @@ void Processor::updatePadMetadataAfterClear(int padIndex, int layerIndex)
     // Now update the cleared layer
     meta.samplePaths[layerIndex] = pad.getSamplePath(layerIndex);
 
-    // Use allocation-free path access
-    meta.roundRobinPaths[layerIndex].clear();
-    const int rrCount = pad.getRoundRobinCount(layerIndex);
+    // Copy round-robin paths to fixed-size array
+    const int rrCount = juce::jmin(pad.getRoundRobinCount(layerIndex), MAX_ROUND_ROBIN_SAMPLES);
     for (int rr = 0; rr < rrCount; ++rr)
-        meta.roundRobinPaths[layerIndex].push_back(pad.getRoundRobinPath(layerIndex, rr));
+        meta.roundRobinPaths[layerIndex][rr] = pad.getRoundRobinPath(layerIndex, rr);
 
     meta.roundRobinCounts[layerIndex] = rrCount;
     meta.sampleDurations[layerIndex] = pad.getSampleDuration(layerIndex);
@@ -673,15 +757,19 @@ void Processor::getStateInformation(juce::MemoryBlock& destData)
                     samplesNode.addChild(sampleNode, -1, nullptr);
                 }
 
-                // Round-robin samples
-                const auto& rrPaths = meta.roundRobinPaths[layer];
-                for (const auto& rrPath : rrPaths)
+                // Round-robin samples (use count to know how many are valid)
+                const int rrCount = meta.roundRobinCounts[layer];
+                for (int rr = 0; rr < rrCount; ++rr)
                 {
-                    juce::ValueTree rrNode("RoundRobin");
-                    rrNode.setProperty("pad", pad, nullptr);
-                    rrNode.setProperty("layer", layer, nullptr);
-                    rrNode.setProperty("path", rrPath, nullptr);
-                    samplesNode.addChild(rrNode, -1, nullptr);
+                    const auto& rrPath = meta.roundRobinPaths[layer][rr];
+                    if (rrPath.isNotEmpty())
+                    {
+                        juce::ValueTree rrNode("RoundRobin");
+                        rrNode.setProperty("pad", pad, nullptr);
+                        rrNode.setProperty("layer", layer, nullptr);
+                        rrNode.setProperty("path", rrPath, nullptr);
+                        samplesNode.addChild(rrNode, -1, nullptr);
+                    }
                 }
             }
         }
@@ -767,6 +855,26 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
 // NAMED CONFIG PARAMS (REAPER/Lua integration)
 // =============================================================================
 
+// Minimum string lengths for named config param patterns (P{pad}_{suffix})
+// Formula: 1 (P) + 1 (min digit) + suffix length
+namespace ConfigParamLen
+{
+    constexpr int CLEAR       = 8;   // "P0_CLEAR"
+    constexpr int STOP        = 7;   // "P0_STOP"
+    constexpr int PREVIEW     = 10;  // "P0_PREVIEW"
+    constexpr int RELEASE     = 10;  // "P0_RELEASE"
+    constexpr int HAS_SAMPLE  = 13;  // "P0_HAS_SAMPLE"
+    constexpr int IS_PLAYING  = 13;  // "P0_IS_PLAYING"
+
+    // Suffix lengths (for substring extraction)
+    constexpr int SUFFIX_CLEAR       = 6;   // "_CLEAR"
+    constexpr int SUFFIX_STOP        = 5;   // "_STOP"
+    constexpr int SUFFIX_PREVIEW     = 8;   // "_PREVIEW"
+    constexpr int SUFFIX_RELEASE     = 8;   // "_RELEASE"
+    constexpr int SUFFIX_HAS_SAMPLE  = 11;  // "_HAS_SAMPLE"
+    constexpr int SUFFIX_IS_PLAYING  = 11;  // "_IS_PLAYING"
+}
+
 // Helper to parse P{pad}_L{layer}_{suffix} pattern
 // Returns true if valid, fills padIndex and layerIndex
 bool Processor::parsePadLayerParam(const juce::String& name,
@@ -844,11 +952,11 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
         return true;
     }
 
-    // Pattern: P{pad}_CLEAR (min length: "P0_CLEAR" = 8)
+    // Pattern: P{pad}_CLEAR
     // Note: Queued to audio thread for thread safety
-    if (name.length() >= 8 && name.startsWith("P") && name.endsWith("_CLEAR"))
+    if (name.length() >= ConfigParamLen::CLEAR && name.startsWith("P") && name.endsWith("_CLEAR"))
     {
-        juce::String padStr = name.substring(1, name.length() - 6);
+        juce::String padStr = name.substring(1, name.length() - ConfigParamLen::SUFFIX_CLEAR);
         if (padStr.containsOnly("0123456789"))
         {
             padIndex = padStr.getIntValue();
@@ -860,28 +968,28 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
         }
     }
 
-    // Pattern: P{pad}_PREVIEW (min length: "P0_PREVIEW" = 10)
+    // Pattern: P{pad}_PREVIEW
     // Note: Command queued for audio thread to avoid thread safety issues
-    if (name.length() >= 10 && name.startsWith("P") && name.endsWith("_PREVIEW"))
+    if (name.length() >= ConfigParamLen::PREVIEW && name.startsWith("P") && name.endsWith("_PREVIEW"))
     {
-        juce::String padStr = name.substring(1, name.length() - 8);
+        juce::String padStr = name.substring(1, name.length() - ConfigParamLen::SUFFIX_PREVIEW);
         if (padStr.containsOnly("0123456789"))
         {
             padIndex = padStr.getIntValue();
             if (padIndex >= 0 && padIndex < NUM_PADS)
             {
-                int velocity = value.isEmpty() ? 100 : juce::jlimit(1, 127, value.getIntValue());
+                int velocity = value.isEmpty() ? 100 : juce::jlimit(1, MIDI_VELOCITY_MAX, value.getIntValue());
                 queueCommand({ PadCommandType::Trigger, padIndex, velocity });
                 return true;
             }
         }
     }
 
-    // Pattern: P{pad}_STOP (min length: "P0_STOP" = 7)
+    // Pattern: P{pad}_STOP
     // Note: Command queued for audio thread to avoid thread safety issues
-    if (name.length() >= 7 && name.startsWith("P") && name.endsWith("_STOP"))
+    if (name.length() >= ConfigParamLen::STOP && name.startsWith("P") && name.endsWith("_STOP"))
     {
-        juce::String padStr = name.substring(1, name.length() - 5);
+        juce::String padStr = name.substring(1, name.length() - ConfigParamLen::SUFFIX_STOP);
         if (padStr.containsOnly("0123456789"))
         {
             padIndex = padStr.getIntValue();
@@ -893,11 +1001,11 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
         }
     }
 
-    // Pattern: P{pad}_RELEASE (min length: "P0_RELEASE" = 10) - graceful fade-out
+    // Pattern: P{pad}_RELEASE - graceful fade-out
     // Note: Command queued for audio thread to avoid thread safety issues
-    if (name.length() >= 10 && name.startsWith("P") && name.endsWith("_RELEASE"))
+    if (name.length() >= ConfigParamLen::RELEASE && name.startsWith("P") && name.endsWith("_RELEASE"))
     {
-        juce::String padStr = name.substring(1, name.length() - 8);
+        juce::String padStr = name.substring(1, name.length() - ConfigParamLen::SUFFIX_RELEASE);
         if (padStr.containsOnly("0123456789"))
         {
             padIndex = padStr.getIntValue();
@@ -965,10 +1073,10 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
         return juce::String(getReadBuffer()[padIndex].sampleDurations[layerIndex], 3);
     }
 
-    // Pattern: P{pad}_HAS_SAMPLE (min length: "P0_HAS_SAMPLE" = 13)
-    if (name.length() >= 13 && name.startsWith("P") && name.endsWith("_HAS_SAMPLE"))
+    // Pattern: P{pad}_HAS_SAMPLE
+    if (name.length() >= ConfigParamLen::HAS_SAMPLE && name.startsWith("P") && name.endsWith("_HAS_SAMPLE"))
     {
-        juce::String padStr = name.substring(1, name.length() - 11);
+        juce::String padStr = name.substring(1, name.length() - ConfigParamLen::SUFFIX_HAS_SAMPLE);
         if (padStr.containsOnly("0123456789"))
         {
             padIndex = padStr.getIntValue();
@@ -979,11 +1087,11 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
         }
     }
 
-    // Pattern: P{pad}_IS_PLAYING (min length: "P0_IS_PLAYING" = 13)
+    // Pattern: P{pad}_IS_PLAYING
     // Note: isPlaying is atomic, so no lock needed
-    if (name.length() >= 13 && name.startsWith("P") && name.endsWith("_IS_PLAYING"))
+    if (name.length() >= ConfigParamLen::IS_PLAYING && name.startsWith("P") && name.endsWith("_IS_PLAYING"))
     {
-        juce::String padStr = name.substring(1, name.length() - 11);
+        juce::String padStr = name.substring(1, name.length() - ConfigParamLen::SUFFIX_IS_PLAYING);
         if (padStr.containsOnly("0123456789"))
         {
             padIndex = padStr.getIntValue();
@@ -1005,7 +1113,7 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
     return {};
 }
 
-}  // namespace BlockSampler
+}  // namespace DrumBlocks
 
 // =============================================================================
 // PLUGIN ENTRY POINT
@@ -1013,5 +1121,5 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new BlockSampler::Processor();
+    return new DrumBlocks::Processor();
 }

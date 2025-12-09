@@ -1,5 +1,5 @@
 // =============================================================================
-// BlockSampler/Source/Pad.h
+// DrumBlocks/Source/Pad.h
 // Single pad with velocity layers, round-robin, ADSR, filter
 // =============================================================================
 
@@ -11,7 +11,7 @@
 #include "Parameters.h"
 #include <atomic>
 
-namespace BlockSampler
+namespace DrumBlocks
 {
 
 // =============================================================================
@@ -21,7 +21,7 @@ namespace BlockSampler
 struct RoundRobinSample
 {
     juce::AudioBuffer<float> buffer;
-    double sampleRate = 44100.0;
+    double sampleRate = DEFAULT_SAMPLE_RATE;
     juce::String path;
     float normGain = 1.0f;
 };
@@ -37,7 +37,7 @@ struct VelocityLayer
     // Primary sample
     juce::AudioBuffer<float> buffer;
     int numSamples = 0;
-    double sourceSampleRate = 44100.0;
+    double sourceSampleRate = DEFAULT_SAMPLE_RATE;
     juce::String filePath;
     float normGain = 1.0f;  // Peak normalization gain (computed on load)
 
@@ -84,7 +84,8 @@ public:
     void trigger(int velocity);
     void noteOff();
     void forceRelease();  // Trigger release phase even in one-shot mode
-    void stop();
+    void stop();          // Immediate stop (with click-free fade)
+    void stopImmediate(); // Hard stop without fade (for internal use)
 
     // -------------------------------------------------------------------------
     // AUDIO PROCESSING
@@ -164,6 +165,18 @@ public:
     // Velocity curve (response shaping)
     float velCurve = 0.5f;          // 0=soft/log, 0.5=linear, 1=hard/exp
 
+    // Interpolation quality (0=Normal/8-tap, 1=High/16-tap, 2=Ultra/32-tap)
+    InterpolationQuality interpolationQuality = InterpolationQuality::High;
+
+    // Saturation parameters
+    float satDrive = 0.0f;          // 0-1 (0 = off, maps to 1x-20x internal gain)
+    int satType = 0;                // 0=Soft, 1=Hard, 2=Tube, 3=Tape, 4=Fold, 5=Crush
+    float satMix = 1.0f;            // 0-1 dry/wet blend
+
+    // Transient shaper parameters
+    float transAttack = 0.0f;       // -1 to +1 (boost/cut attack)
+    float transSustain = 0.0f;      // -1 to +1 (boost/cut sustain)
+
     // -------------------------------------------------------------------------
     // PUBLIC STATE (read by PluginProcessor)
     // -------------------------------------------------------------------------
@@ -189,7 +202,7 @@ private:
     juce::ADSR pitchEnvelope;  // Separate envelope for pitch modulation
     juce::dsp::StateVariableTPTFilter<float> filter;
 
-    double currentSampleRate = 44100.0;
+    double currentSampleRate = DEFAULT_SAMPLE_RATE;
     double playPosition = 0.0;
     float currentVelocity = 1.0f;
     int playStartSample = 0;
@@ -214,6 +227,53 @@ private:
 
     // Temp buffer for per-pad filtering (avoids filtering other pads' audio)
     juce::AudioBuffer<float> tempBuffer;
+
+    // -------------------------------------------------------------------------
+    // DSP QUALITY IMPROVEMENTS
+    // -------------------------------------------------------------------------
+
+    // Click-free stop: fade-out ramp (samples remaining, 0 = not fading)
+    int fadeOutSamplesRemaining = 0;
+    static constexpr int FADE_OUT_SAMPLES = 128;  // ~3ms at 44.1kHz
+
+    // Parameter smoothing (one-pole filters for zipper-free automation)
+    float smoothedVolume = 0.8f;
+    float smoothedPanL = 0.707f;
+    float smoothedPanR = 0.707f;
+    float smoothedFilterCutoff = 20000.0f;
+    float smoothedFilterReso = 0.0f;
+    float paramSmoothCoeff = 0.995f;  // Computed from sample rate in prepare()
+
+    // Anti-aliasing filter for pitch-up (biquad LP, 12dB/octave)
+    // State: [0-1] = L channel z^-1 and z^-2, [2-3] = R channel
+    float antiAliasState[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+
+    // Smoothed biquad coefficients (prevents artifacts from rapid coefficient changes)
+    float smoothedAAb0 = 0.0f;
+    float smoothedAAb1 = 0.0f;
+    float smoothedAAa1 = 0.0f;
+    float smoothedAAa2 = 0.0f;
+    bool aaCoeffsInitialized = false;  // First sample needs instant coefficient set
+    float aaCoeffSmoothAlpha = 0.1f;   // Computed from sample rate in prepare()
+
+    // Kahan summation error compensation for drift-free position accumulation
+    double playPositionError = 0.0;
+    double secondaryPositionError = 0.0;
+
+    // Transient shaper envelope followers (for attack/sustain detection)
+    // Fast envelope tracks transients, slow envelope tracks sustain
+    // Difference = transient signal, sum = sustain signal
+    float transEnvFast = 0.0f;          // Fast envelope follower state
+    float transEnvSlow = 0.0f;          // Slow envelope follower state
+    float transAttackCoeff = 0.0f;      // Fast attack coefficient (computed in prepare)
+    float transReleaseCoeffFast = 0.0f; // Fast release coefficient
+    float transReleaseCoeffSlow = 0.0f; // Slow release coefficient
+
+    // DC blocker state (one-pole highpass at ~10Hz to remove DC offset from saturation)
+    // Applied after saturation to prevent DC buildup from asymmetric waveshaping
+    float dcBlockerStateL = 0.0f;
+    float dcBlockerStateR = 0.0f;
+    float dcBlockerCoeff = 0.9995f;     // Computed from sample rate in prepare()
 };
 
-}  // namespace BlockSampler
+}  // namespace DrumBlocks

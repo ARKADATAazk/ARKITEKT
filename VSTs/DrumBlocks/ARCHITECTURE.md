@@ -1,4 +1,4 @@
-# BlockSampler Architecture Guide
+# DrumBlocks Architecture Guide
 
 > A layman's explanation of how the VST works and why we made certain choices.
 
@@ -8,11 +8,11 @@ A **VST** (Virtual Studio Technology) is a plugin format that lets software inst
 
 ```
 REAPER (host)
-  └── BlockSampler.vst3 (our plugin)
-        └── DrumBlocks (Lua UI that controls it)
+  └── DrumBlocks.vst3 (our plugin)
+        └── DrumBlocks Lua script (UI that controls it)
 ```
 
-**Why "headless"?** BlockSampler has no built-in GUI. Instead, DrumBlocks (your Lua/ImGui app) controls it remotely. This keeps the C++ code simple and lets you iterate on the UI in Lua without recompiling.
+**Why "headless"?** DrumBlocks VST has no built-in GUI. Instead, the DrumBlocks Lua script (your Lua/ImGui app) controls it remotely. This keeps the C++ code simple and lets you iterate on the UI in Lua without recompiling.
 
 ---
 
@@ -38,7 +38,7 @@ CMakeLists.txt (recipe)
   cmake --build .
        │
        ▼
-  BlockSampler.vst3 (final plugin)
+  DrumBlocks.vst3 (final plugin)
 ```
 
 ### Key Parts of CMakeLists.txt
@@ -48,21 +48,21 @@ CMakeLists.txt (recipe)
 FetchContent_Declare(JUCE ...)
 FetchContent_MakeAvailable(JUCE)
 
-# "Build a plugin called BlockSampler"
-juce_add_plugin(BlockSampler
+# "Build a plugin called DrumBlocks"
+juce_add_plugin(DrumBlocks
     FORMATS VST3 AU CLAP Standalone  # What formats to build
     IS_SYNTH TRUE                     # It makes sound (not just effects)
     NEEDS_MIDI_INPUT TRUE             # It responds to MIDI notes
 )
 
 # "These are the source files"
-target_sources(BlockSampler PRIVATE
+target_sources(DrumBlocks PRIVATE
     Source/PluginProcessor.cpp
     Source/Pad.cpp
 )
 
 # "Link these JUCE modules"
-target_link_libraries(BlockSampler PRIVATE
+target_link_libraries(DrumBlocks PRIVATE
     juce::juce_audio_formats   # Read WAV/MP3/FLAC files
     juce::juce_dsp             # Filters, envelopes
     # ...
@@ -178,7 +178,7 @@ MIDI Note On (velocity 100)
 This is the main class that REAPER talks to:
 
 ```
-REAPER                          BlockSampler
+REAPER                          DrumBlocks VST
    │                                 │
    ├── "Here's MIDI" ──────────────► handleMidiEvent()
    │                                 │
@@ -189,7 +189,7 @@ REAPER                          BlockSampler
    ├── "Load this state" ──────────► setStateInformation()
    │                                 │
    └── "Set P0_L0_SAMPLE=/kick.wav"─► handleNamedConfigParam()
-       (from DrumBlocks Lua)
+       (from DrumBlocks Lua script)
 ```
 
 **Key methods:**
@@ -225,11 +225,11 @@ void processBlock(AudioBuffer& buffer, MidiBuffer& midi)
 
 ---
 
-## How DrumBlocks Talks to BlockSampler
+## How DrumBlocks Lua Talks to DrumBlocks VST
 
 ### Loading Samples
 
-DrumBlocks can't directly call C++ functions. Instead, it uses REAPER's parameter system:
+The Lua script can't directly call C++ functions. Instead, it uses REAPER's parameter system:
 
 ```lua
 -- In DrumBlocks (Lua)
@@ -261,7 +261,7 @@ reaper.TrackFX_SetParam(track, fx, param_index, 0.8)
 
 ### Multi-Output Routing
 
-BlockSampler has 17 stereo outputs:
+DrumBlocks VST has 17 stereo outputs:
 - Bus 0: Main (all pads)
 - Bus 1-16: Group buses (optional routing)
 
@@ -282,7 +282,7 @@ Audio code has strict rules because it runs in a **real-time thread**:
 **Our solution for sample loading:**
 
 ```
-DrumBlocks: "Load /kick.wav to pad 0"
+DrumBlocks Lua: "Load /kick.wav to pad 0"
                     │
                     ▼
             ┌───────────────┐
@@ -321,18 +321,18 @@ The audio thread never waits for file I/O - samples appear "magically" when read
 ### Build Commands
 
 ```bash
-cd VSTs/BlockSampler
+cd VSTs/DrumBlocks
 mkdir build && cd build
 cmake ..
 cmake --build . --config Release
 
 # Output locations:
-# Windows: build/BlockSampler_artefacts/Release/VST3/BlockSampler.vst3
-# macOS:   build/BlockSampler_artefacts/Release/VST3/BlockSampler.vst3
-#          build/BlockSampler_artefacts/Release/AU/BlockSampler.component
-#          build/BlockSampler_artefacts/Release/CLAP/BlockSampler.clap
-# Linux:   build/BlockSampler_artefacts/Release/VST3/BlockSampler.vst3
-#          build/BlockSampler_artefacts/Release/CLAP/BlockSampler.clap
+# Windows: build/DrumBlocks_artefacts/Release/VST3/DrumBlocks.vst3
+# macOS:   build/DrumBlocks_artefacts/Release/VST3/DrumBlocks.vst3
+#          build/DrumBlocks_artefacts/Release/AU/DrumBlocks.component
+#          build/DrumBlocks_artefacts/Release/CLAP/DrumBlocks.clap
+# Linux:   build/DrumBlocks_artefacts/Release/VST3/DrumBlocks.vst3
+#          build/DrumBlocks_artefacts/Release/CLAP/DrumBlocks.clap
 ```
 
 ### Install Locations
