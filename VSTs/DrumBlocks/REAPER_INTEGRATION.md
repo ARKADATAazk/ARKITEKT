@@ -1,6 +1,6 @@
-# BlockSampler REAPER Integration
+# DrumBlocks REAPER Integration
 
-> Lua/ReaScript patterns for extending BlockSampler with REAPER's audio processing.
+> Lua/ReaScript patterns for extending DrumBlocks VST with REAPER's audio processing.
 
 The VST handles real-time playback. REAPER handles offline processing. This separation keeps the VST lean while leveraging REAPER's powerful audio engine.
 
@@ -36,7 +36,7 @@ REAPER has world-class time-stretch algorithms (élastique). Use them instead of
 ```lua
 -- Stretch a sample file using REAPER's engine
 -- Returns path to stretched file (cached)
-function BlockSampler_StretchSample(inputPath, stretchRatio, pitchMode)
+function DrumBlocks_StretchSample(inputPath, stretchRatio, pitchMode)
     pitchMode = pitchMode or 0x70000  -- élastique Pro default
 
     if stretchRatio == 1.0 then
@@ -44,7 +44,7 @@ function BlockSampler_StretchSample(inputPath, stretchRatio, pitchMode)
     end
 
     -- Generate cache path
-    local cacheDir = reaper.GetProjectPath() .. "/BlockSampler_Cache/"
+    local cacheDir = reaper.GetProjectPath() .. "/DrumBlocks_Cache/"
     reaper.RecursiveCreateDirectory(cacheDir, 0)
 
     local filename = inputPath:match("([^/\\]+)$")
@@ -84,7 +84,7 @@ function BlockSampler_StretchSample(inputPath, stretchRatio, pitchMode)
     reaper.SetMediaItemInfo_Value(item, "D_LENGTH", srcLength * stretchRatio)
 
     -- Render to new file
-    local renderOK = BlockSampler_RenderItemToFile(item, cachePath)
+    local renderOK = DrumBlocks_RenderItemToFile(item, cachePath)
 
     -- Cleanup
     reaper.DeleteTrack(tempTrack)
@@ -93,7 +93,7 @@ function BlockSampler_StretchSample(inputPath, stretchRatio, pitchMode)
 end
 
 -- Helper: Render item to file
-function BlockSampler_RenderItemToFile(item, outputPath)
+function DrumBlocks_RenderItemToFile(item, outputPath)
     -- Select only this item
     reaper.SelectAllMediaItems(0, false)
     reaper.SetMediaItemSelected(item, true)
@@ -124,19 +124,19 @@ function BlockSampler_RenderItemToFile(item, outputPath)
 end
 ```
 
-### Integration with BlockSampler
+### Integration with DrumBlocks VST
 
 ```lua
 -- Stretch pad sample and reload
 function DrumBlocks_StretchPad(fx, padIndex, stretchRatio)
     local paramName = string.format("P%d_L0_SAMPLE", padIndex)
-    local currentPath = BlockSampler_GetNamedParam(fx, paramName)
+    local currentPath = DrumBlocks_GetNamedParam(fx, paramName)
 
     if currentPath == "" then return false end
 
-    local stretchedPath = BlockSampler_StretchSample(currentPath, stretchRatio)
+    local stretchedPath = DrumBlocks_StretchSample(currentPath, stretchRatio)
     if stretchedPath then
-        BlockSampler_SetNamedParam(fx, paramName, stretchedPath)
+        DrumBlocks_SetNamedParam(fx, paramName, stretchedPath)
         return true
     end
     return false
@@ -151,7 +151,7 @@ Detect the pitch/key of a sample for auto-tuning or display.
 
 ```lua
 -- Analyze pitch using ReaTune or built-in detection
-function BlockSampler_DetectPitch(filePath)
+function DrumBlocks_DetectPitch(filePath)
     local source = reaper.PCM_Source_CreateFromFile(filePath)
     if not source then return nil end
 
@@ -207,7 +207,7 @@ Use REAPER's transient detection to auto-slice samples to pads.
 
 ```lua
 -- Detect transients in a sample
-function BlockSampler_DetectTransients(filePath, sensitivity)
+function DrumBlocks_DetectTransients(filePath, sensitivity)
     sensitivity = sensitivity or 0.5  -- 0-1, higher = more transients
 
     -- Create temp item for analysis
@@ -251,7 +251,7 @@ function DrumBlocks_SliceToPads(fx, filePath, startPad, maxSlices)
     maxSlices = maxSlices or 16
     startPad = startPad or 0
 
-    local transients = BlockSampler_DetectTransients(filePath)
+    local transients = DrumBlocks_DetectTransients(filePath)
     local source = reaper.PCM_Source_CreateFromFile(filePath)
     local totalLength = reaper.GetMediaSourceLength(source)
     reaper.PCM_Source_Destroy(source)
@@ -266,13 +266,13 @@ function DrumBlocks_SliceToPads(fx, filePath, startPad, maxSlices)
         local sliceEnd = transients[i + 1] or totalLength
 
         -- Render slice
-        local slicePath = BlockSampler_RenderSlice(filePath, sliceStart, sliceEnd)
+        local slicePath = DrumBlocks_RenderSlice(filePath, sliceStart, sliceEnd)
 
         -- Load to pad
         local padIdx = startPad + i - 1
         if padIdx < 128 then
             local paramName = string.format("P%d_L0_SAMPLE_ASYNC", padIdx)
-            BlockSampler_SetNamedParam(fx, paramName, slicePath)
+            DrumBlocks_SetNamedParam(fx, paramName, slicePath)
         end
     end
 
@@ -288,7 +288,7 @@ REAPER-side loudness analysis and normalization.
 
 ```lua
 -- Analyze loudness (peak and RMS)
-function BlockSampler_AnalyzeLoudness(filePath)
+function DrumBlocks_AnalyzeLoudness(filePath)
     local source = reaper.PCM_Source_CreateFromFile(filePath)
     if not source then return nil end
 
@@ -334,10 +334,10 @@ function BlockSampler_AnalyzeLoudness(filePath)
 end
 
 -- Apply offline normalization (renders new file)
-function BlockSampler_NormalizeSample(filePath, targetPeakDb)
+function DrumBlocks_NormalizeSample(filePath, targetPeakDb)
     targetPeakDb = targetPeakDb or 0
 
-    local analysis = BlockSampler_AnalyzeLoudness(filePath)
+    local analysis = DrumBlocks_AnalyzeLoudness(filePath)
     if not analysis then return nil end
 
     local gainDb = targetPeakDb - analysis.peakDb
@@ -361,11 +361,11 @@ function BlockSampler_NormalizeSample(filePath, targetPeakDb)
     reaper.SetMediaItemInfo_Value(item, "D_VOL", gainLinear)
 
     -- Render
-    local cacheDir = reaper.GetProjectPath() .. "/BlockSampler_Cache/"
+    local cacheDir = reaper.GetProjectPath() .. "/DrumBlocks_Cache/"
     local filename = filePath:match("([^/\\]+)$"):gsub("%.%w+$", "")
     local outputPath = cacheDir .. filename .. "_norm.wav"
 
-    BlockSampler_RenderItemToFile(item, outputPath)
+    DrumBlocks_RenderItemToFile(item, outputPath)
 
     reaper.DeleteTrack(tempTrack)
 
@@ -381,7 +381,7 @@ Convert samples to project sample rate using REAPER's resamplers.
 
 ```lua
 -- Get available resampling modes
-function BlockSampler_GetResampleModes()
+function DrumBlocks_GetResampleModes()
     local modes = {}
     local idx = 0
     while true do
@@ -394,7 +394,7 @@ function BlockSampler_GetResampleModes()
 end
 
 -- Resample file to target sample rate
-function BlockSampler_Resample(filePath, targetRate, mode)
+function DrumBlocks_Resample(filePath, targetRate, mode)
     mode = mode or 4  -- High quality default
 
     local source = reaper.PCM_Source_CreateFromFile(filePath)
@@ -408,7 +408,7 @@ function BlockSampler_Resample(filePath, targetRate, mode)
     -- Use REAPER render with target sample rate
     -- (Implementation similar to stretch, but adjusting project render settings)
 
-    local cacheDir = reaper.GetProjectPath() .. "/BlockSampler_Cache/"
+    local cacheDir = reaper.GetProjectPath() .. "/DrumBlocks_Cache/"
     local filename = filePath:match("([^/\\]+)$"):gsub("%.%w+$", "")
     local outputPath = string.format("%s%s_%dHz.wav", cacheDir, filename, targetRate)
 
@@ -425,7 +425,7 @@ function BlockSampler_Resample(filePath, targetRate, mode)
     reaper.InsertMedia(filePath, 0)
 
     local item = reaper.GetTrackMediaItem(tempTrack, 0)
-    BlockSampler_RenderItemToFile(item, outputPath)
+    DrumBlocks_RenderItemToFile(item, outputPath)
 
     -- Cleanup
     reaper.DeleteTrack(tempTrack)
@@ -443,7 +443,7 @@ Process multiple samples efficiently.
 
 ```lua
 -- Batch process samples with a custom function
-function BlockSampler_BatchProcess(filePaths, processFunc, progressCallback)
+function DrumBlocks_BatchProcess(filePaths, processFunc, progressCallback)
     local results = {}
     local total = #filePaths
 
@@ -472,8 +472,8 @@ end
 function DrumBlocks_BatchLoadNormalized(fx, filePaths, startPad)
     startPad = startPad or 0
 
-    local results = BlockSampler_BatchProcess(filePaths, function(path)
-        return BlockSampler_NormalizeSample(path, -1)  -- -1 dB peak
+    local results = DrumBlocks_BatchProcess(filePaths, function(path)
+        return DrumBlocks_NormalizeSample(path, -1)  -- -1 dB peak
     end)
 
     for i, result in ipairs(results) do
@@ -481,7 +481,7 @@ function DrumBlocks_BatchLoadNormalized(fx, filePaths, startPad)
             local padIdx = startPad + i - 1
             if padIdx < 128 then
                 local paramName = string.format("P%d_L0_SAMPLE_ASYNC", padIdx)
-                BlockSampler_SetNamedParam(fx, paramName, result.output)
+                DrumBlocks_SetNamedParam(fx, paramName, result.output)
             end
         end
     end
@@ -494,7 +494,7 @@ end
 
 ## Named Config Params Reference
 
-Communication between Lua and BlockSampler VST.
+Communication between Lua and DrumBlocks VST.
 
 ### Sample Loading
 
@@ -536,13 +536,13 @@ Communication between Lua and BlockSampler VST.
 
 ```lua
 -- Get/Set named config params
-function BlockSampler_GetNamedParam(fx, name)
+function DrumBlocks_GetNamedParam(fx, name)
     local track = reaper.GetTrack(0, 0)  -- Adjust as needed
     local retval, value = reaper.TrackFX_GetNamedConfigParm(track, fx, name)
     return retval and value or ""
 end
 
-function BlockSampler_SetNamedParam(fx, name, value)
+function DrumBlocks_SetNamedParam(fx, name, value)
     local track = reaper.GetTrack(0, 0)  -- Adjust as needed
     return reaper.TrackFX_SetNamedConfigParm(track, fx, name, tostring(value))
 end
@@ -554,16 +554,16 @@ end
 
 ```lua
 -- Get cache directory
-function BlockSampler_GetCacheDir()
-    local dir = reaper.GetProjectPath() .. "/BlockSampler_Cache/"
+function DrumBlocks_GetCacheDir()
+    local dir = reaper.GetProjectPath() .. "/DrumBlocks_Cache/"
     reaper.RecursiveCreateDirectory(dir, 0)
     return dir
 end
 
 -- Clear old cache files (older than N days)
-function BlockSampler_CleanCache(maxAgeDays)
+function DrumBlocks_CleanCache(maxAgeDays)
     maxAgeDays = maxAgeDays or 7
-    local cacheDir = BlockSampler_GetCacheDir()
+    local cacheDir = DrumBlocks_GetCacheDir()
     local now = os.time()
     local maxAge = maxAgeDays * 24 * 60 * 60
 

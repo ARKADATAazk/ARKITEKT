@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(BlockSampler VERSION 1.0.0)
+project(DrumBlocks VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -26,28 +26,28 @@ FetchContent_MakeAvailable(clap-juce-extensions)
 
 # Plugin formats (platform-specific)
 if(APPLE)
-    set(BLOCKSAMPLER_FORMATS VST3 AU Standalone)
+    set(DRUMBLOCKS_FORMATS VST3 AU Standalone)
 else()
-    set(BLOCKSAMPLER_FORMATS VST3 Standalone)
+    set(DRUMBLOCKS_FORMATS VST3 Standalone)
 endif()
 
 # Plugin target
-juce_add_plugin(BlockSampler
+juce_add_plugin(DrumBlocks
     COMPANY_NAME "ARKITEKT"
     PLUGIN_MANUFACTURER_CODE Arkt
-    PLUGIN_CODE Bsmp
+    PLUGIN_CODE Dblk
 
     # Formats to build
-    FORMATS ${BLOCKSAMPLER_FORMATS}
+    FORMATS ${DRUMBLOCKS_FORMATS}
 
     # Plugin info
-    PRODUCT_NAME "BlockSampler"
-    DESCRIPTION "128-pad drum sampler for DrumBlocks"
+    PRODUCT_NAME "DrumBlocks"
+    DESCRIPTION "128-pad drum sampler for ARKITEKT"
 
     # Multi-out: 1 main stereo + 16 group stereo = 17 stereo buses
     VST3_AUTO_MANIFEST FALSE
 
-    # No editor - DrumBlocks is the UI
+    # No editor - DrumBlocks Lua script is the UI
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
 
     IS_SYNTH TRUE
@@ -58,20 +58,20 @@ juce_add_plugin(BlockSampler
 
 # Add CLAP format via clap-juce-extensions
 clap_juce_extensions_plugin(
-    TARGET BlockSampler
-    CLAP_ID "com.arkitekt.blocksampler"
+    TARGET DrumBlocks
+    CLAP_ID "com.arkitekt.drumblocks"
     CLAP_FEATURES instrument sampler drum
 )
 
 # Source files
-target_sources(BlockSampler
+target_sources(DrumBlocks
     PRIVATE
         Source/PluginProcessor.cpp
         Source/Pad.cpp
 )
 
 # JUCE modules we need
-target_link_libraries(BlockSampler
+target_link_libraries(DrumBlocks
     PRIVATE
         juce::juce_audio_basics
         juce::juce_audio_devices
@@ -88,7 +88,7 @@ target_link_libraries(BlockSampler
 )
 
 # Compile definitions
-target_compile_definitions(BlockSampler
+target_compile_definitions(DrumBlocks
     PUBLIC
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0

@@ -1,16 +1,16 @@
 -- @noindex
 -- DrumBlocks/domain/bridge.lua
--- Communication bridge to BlockSampler VST
+-- Communication bridge to DrumBlocks VST
 
 local M = {}
 
--- BlockSampler constants (must match VST)
+-- DrumBlocks constants (must match VST)
 M.NUM_PADS = 128
 M.NUM_VELOCITY_LAYERS = 4
 M.NUM_OUTPUT_GROUPS = 16
 M.PARAMS_PER_PAD = 24  -- Updated: 24 params with velocity curve
 
--- Parameter indices (must match BlockSampler/Source/Parameters.h)
+-- Parameter indices (must match DrumBlocks/Source/Parameters.h)
 M.Param = {
   Volume = 0,
   Pan = 1,
@@ -56,31 +56,31 @@ M.FilterType = {
 -- VST DETECTION
 -- ============================================================================
 
-function M.findBlockSampler(track)
+function M.findDrumBlocks(track)
   if not track then return nil end
   local fx_count = reaper.TrackFX_GetCount(track)
   for i = 0, fx_count - 1 do
     local _, name = reaper.TrackFX_GetFXName(track, i, '')
-    if name:match('BlockSampler') then
+    if name:match('DrumBlocks') then
       return i
     end
   end
   return nil
 end
 
-function M.insertBlockSampler(track)
+function M.insertDrumBlocks(track)
   if not track then return nil end
-  local fx_index = reaper.TrackFX_AddByName(track, 'BlockSampler', false, -1)
+  local fx_index = reaper.TrackFX_AddByName(track, 'DrumBlocks', false, -1)
   if fx_index >= 0 then
     return fx_index
   end
   return nil
 end
 
-function M.getOrCreateBlockSampler(track)
-  local fx = M.findBlockSampler(track)
+function M.getOrCreateDrumBlocks(track)
+  local fx = M.findDrumBlocks(track)
   if fx then return fx end
-  return M.insertBlockSampler(track)
+  return M.insertDrumBlocks(track)
 end
 
 -- ============================================================================
@@ -458,8 +458,8 @@ function M.loadSample(track, fx, pad, layer, file_path)
   )
 
   -- Insert Commands node into chunk
-  -- Look for </BlockSamplerParams> or similar closing tag
-  local insert_pos = chunk:find('</BlockSamplerParams>')
+  -- Look for </DrumBlocksParams> closing tag
+  local insert_pos = chunk:find('</DrumBlocksParams>')
   if insert_pos then
     local commands_section = '<Commands>' .. cmd_xml .. '</Commands>\n'
     chunk = chunk:sub(1, insert_pos - 1) .. commands_section .. chunk:sub(insert_pos)
@@ -548,7 +548,7 @@ function M.clearPad(track, fx, pad)
   if not chunk then return false end
 
   local cmd_xml = string.format('<ClearPad pad="%d"/>', pad)
-  local insert_pos = chunk:find('</BlockSamplerParams>')
+  local insert_pos = chunk:find('</DrumBlocksParams>')
   if insert_pos then
     local commands_section = '<Commands>' .. cmd_xml .. '</Commands>\n'
     chunk = chunk:sub(1, insert_pos - 1) .. commands_section .. chunk:sub(insert_pos)

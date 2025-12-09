@@ -1,15 +1,15 @@
-# Build and validate BlockSampler VST on all platforms
-name: Build BlockSampler
+# Build and validate DrumBlocks VST on all platforms
+name: Build DrumBlocks
 
 on:
   push:
     paths:
-      - 'VSTs/BlockSampler/**'
-      - '.github/workflows/build-blocksampler.yml'
+      - 'VSTs/DrumBlocks/**'
+      - '.github/workflows/build-DrumBlocks.yml'
   pull_request:
     paths:
-      - 'VSTs/BlockSampler/**'
-      - '.github/workflows/build-blocksampler.yml'
+      - 'VSTs/DrumBlocks/**'
+      - '.github/workflows/build-DrumBlocks.yml'
   workflow_dispatch:  # Manual trigger
 
 jobs:
@@ -22,17 +22,17 @@ jobs:
         include:
           - os: windows-latest
             cmake_flags: ""
-            artifact_path: VST3/BlockSampler.vst3
-            clap_path: CLAP/BlockSampler.clap
+            artifact_path: VST3/DrumBlocks.vst3
+            clap_path: CLAP/DrumBlocks.clap
           - os: macos-latest
             cmake_flags: ""
-            artifact_path: VST3/BlockSampler.vst3
-            clap_path: CLAP/BlockSampler.clap
-            au_path: AU/BlockSampler.component
+            artifact_path: VST3/DrumBlocks.vst3
+            clap_path: CLAP/DrumBlocks.clap
+            au_path: AU/DrumBlocks.component
           - os: ubuntu-latest
             cmake_flags: ""
-            artifact_path: VST3/BlockSampler.vst3
-            clap_path: CLAP/BlockSampler.clap
+            artifact_path: VST3/DrumBlocks.vst3
+            clap_path: CLAP/DrumBlocks.clap
 
     steps:
       - name: Checkout
@@ -56,7 +56,7 @@ jobs:
 
       # Configure
       - name: Configure CMake
-        run: cmake -B build -S VSTs/BlockSampler -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_flags }}
+        run: cmake -B build -S VSTs/DrumBlocks -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_flags }}
 
       # Build
       - name: Build
@@ -67,8 +67,8 @@ jobs:
         shell: bash
         run: |
           echo "=== Build outputs ==="
-          find build/BlockSampler_artefacts -type f -name "*.vst3" -o -name "*.clap" -o -name "*.component" 2>/dev/null || true
-          ls -laR build/BlockSampler_artefacts/Release/ 2>/dev/null || ls -laR build/BlockSampler_artefacts/ || true
+          find build/DrumBlocks_artefacts -type f -name "*.vst3" -o -name "*.clap" -o -name "*.component" 2>/dev/null || true
+          ls -laR build/DrumBlocks_artefacts/Release/ 2>/dev/null || ls -laR build/DrumBlocks_artefacts/ || true
 
       # Download and run pluginval
       - name: Download pluginval
@@ -89,48 +89,48 @@ jobs:
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
-            ./pluginval.exe --validate "build/BlockSampler_artefacts/Release/${{ matrix.artifact_path }}" --strictness-level 5
+            ./pluginval.exe --validate "build/DrumBlocks_artefacts/Release/${{ matrix.artifact_path }}" --strictness-level 5
           elif [ "$RUNNER_OS" == "macOS" ]; then
-            ./pluginval.app/Contents/MacOS/pluginval --validate "build/BlockSampler_artefacts/Release/${{ matrix.artifact_path }}" --strictness-level 5
+            ./pluginval.app/Contents/MacOS/pluginval --validate "build/DrumBlocks_artefacts/Release/${{ matrix.artifact_path }}" --strictness-level 5
           else
-            ./pluginval --validate "build/BlockSampler_artefacts/Release/${{ matrix.artifact_path }}" --strictness-level 5
+            ./pluginval --validate "build/DrumBlocks_artefacts/Release/${{ matrix.artifact_path }}" --strictness-level 5
           fi
 
       - name: Validate CLAP
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
-            ./pluginval.exe --validate "build/BlockSampler_artefacts/Release/${{ matrix.clap_path }}" --strictness-level 5
+            ./pluginval.exe --validate "build/DrumBlocks_artefacts/Release/${{ matrix.clap_path }}" --strictness-level 5
           elif [ "$RUNNER_OS" == "macOS" ]; then
-            ./pluginval.app/Contents/MacOS/pluginval --validate "build/BlockSampler_artefacts/Release/${{ matrix.clap_path }}" --strictness-level 5
+            ./pluginval.app/Contents/MacOS/pluginval --validate "build/DrumBlocks_artefacts/Release/${{ matrix.clap_path }}" --strictness-level 5
           else
-            ./pluginval --validate "build/BlockSampler_artefacts/Release/${{ matrix.clap_path }}" --strictness-level 5
+            ./pluginval --validate "build/DrumBlocks_artefacts/Release/${{ matrix.clap_path }}" --strictness-level 5
           fi
 
       - name: Validate AU (macOS only)
         if: runner.os == 'macOS'
         run: |
-          ./pluginval.app/Contents/MacOS/pluginval --validate "build/BlockSampler_artefacts/Release/${{ matrix.au_path }}" --strictness-level 5
+          ./pluginval.app/Contents/MacOS/pluginval --validate "build/DrumBlocks_artefacts/Release/${{ matrix.au_path }}" --strictness-level 5
 
       # Upload artifacts
       - name: Upload VST3
         uses: actions/upload-artifact@v4
         with:
-          name: BlockSampler-VST3-${{ runner.os }}
-          path: build/BlockSampler_artefacts/Release/${{ matrix.artifact_path }}
+          name: DrumBlocks-VST3-${{ runner.os }}
+          path: build/DrumBlocks_artefacts/Release/${{ matrix.artifact_path }}
 
       - name: Upload CLAP
         uses: actions/upload-artifact@v4
         with:
-          name: BlockSampler-CLAP-${{ runner.os }}
-          path: build/BlockSampler_artefacts/Release/${{ matrix.clap_path }}
+          name: DrumBlocks-CLAP-${{ runner.os }}
+          path: build/DrumBlocks_artefacts/Release/${{ matrix.clap_path }}
 
       - name: Upload AU (macOS only)
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: BlockSampler-AU-macOS
-          path: build/BlockSampler_artefacts/Release/${{ matrix.au_path }}
+          name: DrumBlocks-AU-macOS
+          path: build/DrumBlocks_artefacts/Release/${{ matrix.au_path }}
 
   # Summary job
   summary:
@@ -141,7 +141,7 @@ jobs:
     steps:
       - name: Check build status
         run: |
-          echo "## BlockSampler Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "## DrumBlocks Build Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY

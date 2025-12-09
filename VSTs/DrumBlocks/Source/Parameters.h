@@ -1,13 +1,13 @@
 // =============================================================================
-// BlockSampler/Source/Parameters.h
-// Parameter definitions and layout for 128 pads × 18 params = 2304 total
+// DrumBlocks/Source/Parameters.h
+// Parameter definitions and layout for 128 pads × 24 params = 3072 total
 // =============================================================================
 
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
-namespace BlockSampler
+namespace DrumBlocks
 {
 
 // =============================================================================
@@ -21,7 +21,11 @@ constexpr int NUM_OUTPUT_GROUPS = 16;
 constexpr int NUM_KILL_GROUPS = 16;  // Matches Sitala/Drum Rack
 
 // MIDI mapping
-constexpr int MIDI_NOTE_OFFSET = 0;  // Note 0 = Pad 0 (full MIDI range)
+constexpr int MIDI_NOTE_OFFSET = 0;      // Note 0 = Pad 0 (full MIDI range)
+constexpr int MIDI_VELOCITY_MAX = 127;   // Maximum MIDI velocity value
+
+// Default sample rate (used for initialization, overwritten by host/sample)
+constexpr double DEFAULT_SAMPLE_RATE = 48000.0;
 
 // Audio processing thresholds
 constexpr float FILTER_CUTOFF_MAX = 20000.0f;  // Hz
@@ -38,14 +42,17 @@ constexpr double MAX_TAIL_LENGTH_SECONDS = MAX_RELEASE_MS / 1000.0;  // For getT
 constexpr float FILTER_Q_MIN = 0.707f;   // Butterworth (no resonance)
 constexpr float FILTER_Q_MAX = 10.0f;    // High resonance
 
+// Pitch constants
+constexpr float PITCH_ENV_THRESHOLD = 0.001f;    // Below this, pitch envelope is considered inactive
+constexpr float SEMITONES_PER_OCTAVE = 12.0f;    // Standard semitones per octave
+
+// Anti-aliasing filter normalized cutoff limits
+constexpr float AA_CUTOFF_MIN_NORM = 0.01f;   // Minimum normalized cutoff (prevents instability)
+constexpr float AA_CUTOFF_MAX_NORM = 0.49f;   // Maximum normalized cutoff (below Nyquist)
+
 // Round-robin limits
 constexpr int MAX_ROUND_ROBIN_SAMPLES = 16;  // Max RR samples per layer (for pre-allocation)
 constexpr int RANDOM_RR_MAX_RETRIES = 10;    // Max attempts to avoid repeating same RR sample
-
-// Playback position drift correction
-// Every N samples, re-anchor playPosition to prevent cumulative float error
-constexpr int DRIFT_CORRECTION_INTERVAL = 4096;  // ~93ms at 44.1kHz
-constexpr int DRIFT_CORRECTION_MASK = DRIFT_CORRECTION_INTERVAL - 1;  // For fast modulo via bitwise AND
 
 // Sample length limits (prevent OOM from very long files)
 // 10 minutes at 192kHz stereo ≈ 230MB per sample - reasonable limit
@@ -55,6 +62,13 @@ constexpr int64_t MAX_SAMPLE_LENGTH = 120000000;  // ~10 min at 192kHz
 constexpr int VELOCITY_LAYER_1_MIN = 32;   // Layer 1 starts at velocity 32
 constexpr int VELOCITY_LAYER_2_MIN = 64;   // Layer 2 starts at velocity 64
 constexpr int VELOCITY_LAYER_3_MIN = 96;   // Layer 3 starts at velocity 96
+
+// Velocity crossfade thresholds
+constexpr float VEL_CROSSFADE_MIN_THRESHOLD = 0.001f;  // Min velCrossfade to enable blending
+constexpr float BLEND_WIDTH_MIN_THRESHOLD = 0.5f;      // Min blend zone width (velocity units)
+
+// Time conversion
+constexpr float MS_TO_SECONDS = 0.001f;  // Multiply ms by this to get seconds
 
 // =============================================================================
 // PARAMETER DEFINITIONS
@@ -68,9 +82,24 @@ enum class LoopMode
     PingPong = 2    // Loop back and forth
 };
 
+// Interpolation quality (global setting, affects all pads)
+// Tradeoff: Higher quality = better sound but more CPU
+enum class InterpolationQuality
+{
+    Normal = 0,     // 8-tap sinc  - composing, live performance (~50% CPU of High)
+    High = 1,       // 16-tap sinc - mixing (default)
+    Ultra = 2       // 32-tap sinc - mastering, final render (~200% CPU of High)
+};
+
+// Global parameter IDs (not per-pad)
+namespace GlobalParam
+{
+    inline juce::String qualityId() { return "global_quality"; }
+}
+
 namespace PadParam
 {
-    // Parameter IDs per pad (22 total)
+    // Parameter IDs per pad (24 total - see COUNT at end of enum)
     enum ID
     {
         Volume = 0,       // 0-1
@@ -97,11 +126,29 @@ namespace PadParam
         PitchEnvSustain,  // 0-1 (pitch envelope sustain level, 0=full sweep)
         VelCrossfade,     // 0-1 (velocity layer crossfade width, 0=hard switch)
         VelCurve,         // 0-1 (velocity response: 0=soft/log, 0.5=linear, 1=hard/exp)
-        COUNT             // = 24
+        SaturationDrive,  // 0-1 (saturation amount, 0=off)
+        SaturationType,   // 0=Soft, 1=Hard, 2=Tube, 3=Tape, 4=Fold, 5=Crush
+        SaturationMix,    // 0-1 (dry/wet blend)
+        TransientAttack,  // -1 to +1 (attack boost/cut)
+        TransientSustain, // -1 to +1 (sustain boost/cut)
+        COUNT             // = 29
     };
 
     // Total parameters: 24 × 128 = 3072
     constexpr int TOTAL_PARAMS = COUNT * NUM_PADS;
+
+    // Parameter name strings (namespace-scope to avoid duplication per translation unit)
+    inline constexpr const char* kParamNames[] = {
+        "volume", "pan", "tune", "attack", "decay", "sustain",
+        "release", "cutoff", "reso", "filtertype", "killgroup", "outgroup",
+        "loopmode", "reverse", "normalize", "start", "end", "rrmode",
+        "pitchenvamt", "pitchenvattack", "pitchenvdecay", "pitchenvsustain",
+        "velcrossfade", "velcurve",
+        "satdrive", "sattype", "satmix", "transattack", "transsustain"
+    };
+    // Compile-time check: names array must match enum COUNT
+    static_assert(sizeof(kParamNames) / sizeof(kParamNames[0]) == COUNT,
+                  "Parameter names array size must match PadParam::COUNT");
 
     // Get flat index for parameter
     inline int index(int pad, ID param)
@@ -114,14 +161,7 @@ namespace PadParam
     // Get parameter ID string (e.g., "p0_volume", "p127_end")
     inline juce::String id(int pad, ID param)
     {
-        static const char* names[] = {
-            "volume", "pan", "tune", "attack", "decay", "sustain",
-            "release", "cutoff", "reso", "filtertype", "killgroup", "outgroup",
-            "loopmode", "reverse", "normalize", "start", "end", "rrmode",
-            "pitchenvamt", "pitchenvattack", "pitchenvdecay", "pitchenvsustain",
-            "velcrossfade", "velcurve"
-        };
-        return "p" + juce::String(pad) + "_" + names[param];
+        return "p" + juce::String(pad) + "_" + kParamNames[param];
     }
 }
 
@@ -293,9 +333,46 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             juce::ParameterID { PadParam::id(pad, PadParam::VelCurve), 1 },
             prefix + "Vel Curve",
             0.0f, 1.0f, 0.5f));  // Default 0.5 = linear
+
+        // Saturation Drive (0-1, 0=off, 1=heavy drive)
+        // Maps internally to 1x-20x gain into waveshaper
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID { PadParam::id(pad, PadParam::SaturationDrive), 1 },
+            prefix + "Sat Drive",
+            0.0f, 1.0f, 0.0f));  // Default 0 = off
+
+        // Saturation Type (0=Soft, 1=Hard, 2=Tube, 3=Tape, 4=Fold, 5=Crush)
+        params.push_back(std::make_unique<juce::AudioParameterInt>(
+            juce::ParameterID { PadParam::id(pad, PadParam::SaturationType), 1 },
+            prefix + "Sat Type",
+            0, 5, 0));  // Default 0 = Soft (tanh)
+
+        // Saturation Mix (0-1 dry/wet blend)
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID { PadParam::id(pad, PadParam::SaturationMix), 1 },
+            prefix + "Sat Mix",
+            0.0f, 1.0f, 1.0f));  // Default 1 = 100% wet when drive is on
+
+        // Transient Attack (-1 to +1, boost or cut attack transient)
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID { PadParam::id(pad, PadParam::TransientAttack), 1 },
+            prefix + "Trans Atk",
+            -1.0f, 1.0f, 0.0f));  // Default 0 = no change
+
+        // Transient Sustain (-1 to +1, boost or cut sustain portion)
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID { PadParam::id(pad, PadParam::TransientSustain), 1 },
+            prefix + "Trans Sus",
+            -1.0f, 1.0f, 0.0f));  // Default 0 = no change
     }
+
+    // Global interpolation quality (affects all pads - CPU vs quality tradeoff)
+    params.push_back(std::make_unique<juce::AudioParameterInt>(
+        juce::ParameterID { GlobalParam::qualityId(), 1 },
+        "Interpolation Quality",
+        0, 2, 1));  // 0=Normal(8-tap), 1=High(16-tap, default), 2=Ultra(32-tap)
 
     return { params.begin(), params.end() };
 }
 
-}  // namespace BlockSampler
+}  // namespace DrumBlocks

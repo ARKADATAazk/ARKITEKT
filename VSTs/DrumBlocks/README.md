@@ -1,6 +1,6 @@
-# BlockSampler
+# DrumBlocks VST
 
-Headless 128-pad drum sampler VST3 for REAPER, controlled by DrumBlocks (ARKITEKT).
+Headless 128-pad drum sampler VST3/AU/CLAP for REAPER, controlled by the DrumBlocks Lua script (ARKITEKT).
 
 ## Features
 
@@ -31,15 +31,15 @@ Headless 128-pad drum sampler VST3 for REAPER, controlled by DrumBlocks (ARKITEK
 ### Build Commands
 
 ```bash
-cd VSTs/BlockSampler
+cd VSTs/DrumBlocks
 mkdir build && cd build
 cmake ..
 cmake --build . --config Release
 
 # Output:
-# Windows: build/BlockSampler_artefacts/Release/VST3/BlockSampler.vst3
-# macOS:   build/BlockSampler_artefacts/Release/VST3/BlockSampler.vst3
-# Linux:   build/BlockSampler_artefacts/Release/VST3/BlockSampler.vst3
+# Windows: build/DrumBlocks_artefacts/Release/VST3/DrumBlocks.vst3
+# macOS:   build/DrumBlocks_artefacts/Release/VST3/DrumBlocks.vst3
+# Linux:   build/DrumBlocks_artefacts/Release/VST3/DrumBlocks.vst3
 ```
 
 ### Install
@@ -185,12 +185,12 @@ reaper.TrackFX_SetParam(track, fx, param_idx, 0.8)
 Sample paths are stored in the project state XML and reloaded on project open:
 
 ```xml
-<BlockSamplerParams>
+<DrumBlocksParams>
   <Samples>
     <Sample pad="0" layer="0" path="/path/to/kick.wav"/>
     <Sample pad="1" layer="0" path="/path/to/snare.wav"/>
   </Samples>
-</BlockSamplerParams>
+</DrumBlocksParams>
 ```
 
 ## Completed Features

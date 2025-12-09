@@ -1,4 +1,4 @@
-# DrumBlocks + BlockSampler Roadmap
+# DrumBlocks Roadmap
 
 ## Vision
 
@@ -6,7 +6,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  DrumBlocks (ARKITEKT/Lua)                              │
+│  DrumBlocks Lua Script (ARKITEKT)                       │
 │  ┌─────────────────────────────────────────────────┐   │
 │  │ Visual 16-pad grid (4 banks = 64, 8 banks = 128)│   │
 │  │ Sample browser with hot-swap preview            │   │
@@ -17,7 +17,7 @@
 │                          │                              │
 │                          ▼                              │
 │  ┌─────────────────────────────────────────────────┐   │
-│  │ BlockSampler VST3 (headless audio engine)       │   │
+│  │ DrumBlocks VST3 (headless audio engine)         │   │
 │  │ 128 pads × 4 velocity layers × 18 params each   │   │
 │  │ Kill groups, output groups, ADSR, LP/HP filter  │   │
 │  └─────────────────────────────────────────────────┘   │
@@ -26,9 +26,9 @@
 
 ---
 
-## Phase 1: BlockSampler VST (Foundation)
+## Phase 1: DrumBlocks VST (Foundation)
 
-**Goal:** Working VST that DrumBlocks can control.
+**Goal:** Working VST that DrumBlocks Lua script can control.
 
 ### 1.1 Core Audio Engine ✅ DONE
 - [x] 128 pad sample slots
@@ -75,7 +75,7 @@
 
 ## Phase 2: DrumBlocks UI (ARKITEKT)
 
-**Goal:** Visual interface that controls BlockSampler.
+**Goal:** Visual Lua interface that controls DrumBlocks VST.
 
 ### 2.1 Pad Grid View
 ```
@@ -175,7 +175,7 @@
 ### 3.1 Per-Pad FX (via REAPER Containers)
 ```
 DrumBlocks auto-creates:
-├── BlockSampler (128 pads, 16 group outs)
+├── DrumBlocks VST (128 pads, 16 group outs)
 ├── Container: Kicks FX (receives Group 1)
 │   ├── EQ (user adds)
 │   └── Compressor (user adds)
@@ -220,7 +220,7 @@ DrumBlocks auto-creates:
 ### 3.5 Chain Extraction (Ableton-style)
 - [ ] Drag pad to new track → creates track with:
   - MIDI item with pad's notes
-  - New BlockSampler with just that pad
+  - New DrumBlocks VST with just that pad
   - Or RS5K with sample
 
 ---
@@ -233,10 +233,10 @@ DrumBlocks auto-creates:
 - [ ] Lazy waveform rendering
 
 ### 4.2 Distribution
-- [ ] BlockSampler VST3: GitHub releases
-- [ ] DrumBlocks: ReaPack
+- [ ] DrumBlocks VST3: GitHub releases
+- [ ] DrumBlocks Lua: ReaPack
 - [ ] Auto-check for VST on first run
-- [ ] One-click install link from DrumBlocks
+- [ ] One-click install link from Lua script
 
 ### 4.3 Documentation
 - [ ] User guide with screenshots
@@ -249,8 +249,8 @@ DrumBlocks auto-creates:
 
 | Phase | Duration | Deliverable |
 |-------|----------|-------------|
-| 1: BlockSampler VST | 1 week | Working headless VST3 |
-| 2: DrumBlocks UI | 2-3 weeks | Full pad grid + browser |
+| 1: DrumBlocks VST | 1 week | Working headless VST3 |
+| 2: DrumBlocks Lua UI | 2-3 weeks | Full pad grid + browser |
 | 3: Advanced Features | 2-3 weeks | Per-pad FX, layers, presets |
 | 4: Polish | 1 week | Performance, docs, release |
 | **Total** | **6-8 weeks** | **Complete drum rack** |

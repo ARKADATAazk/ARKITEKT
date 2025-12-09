@@ -2,7 +2,7 @@
 -- @author ARKITEKT
 -- @version 0.1.0
 -- @about
---   128-pad drum rack powered by BlockSampler VST.
+--   128-pad drum rack powered by DrumBlocks VST.
 --   Drag samples, hot-swap, kit presets.
 
 -- ============================================================================
