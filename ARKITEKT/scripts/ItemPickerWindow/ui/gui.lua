@@ -46,8 +46,8 @@ function GUI:initialize_once(ctx)
   self.state.midi_item_lookup = {}
 
   -- Initialize disk cache
-  local disk_cache = require('ItemPicker.data.disk_cache')
-  disk_cache.init()
+  local cache = require('ItemPicker.data.cache')
+  cache.init()
 
   -- Initialize job queue
   if not self.state.job_queue then
@@ -89,8 +89,8 @@ function GUI:update_state(ctx)
         #(self.state.sample_indexes or {}), #(self.state.midi_indexes or {})))
 
       if not self.state.skip_visualizations then
-        local disk_cache = require('ItemPicker.data.disk_cache')
-        local stats = disk_cache.preload_to_runtime(self.state.runtime_cache)
+        local cache = require('ItemPicker.data.cache')
+        local stats = cache.preload_to_runtime(self.state.runtime_cache)
         if stats and stats.loaded > 0 then
           reaper.ShowConsoleMsg(string.format('[ItemPickerWindow] Loaded %d cached visualizations from disk\n', stats.loaded))
         end

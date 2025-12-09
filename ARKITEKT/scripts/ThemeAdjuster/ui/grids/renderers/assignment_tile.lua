@@ -5,7 +5,6 @@
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Colors = require('arkitekt.core.colors')
-local hex = Colors.hex  -- For runtime string→packed conversion
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
 local Math = require('arkitekt.core.math')
@@ -390,10 +389,14 @@ function M.render_group(ctx, rect, item, state, view, tab_id)
   -- Get tab color
   local tab_color = view.tab_colors[tab_id] or 0x888888FF
 
-  -- Parse group color
+  -- Parse group color (legacy string support)
   local group_color = group.color
   if type(group_color) == 'string' then
-    group_color = hex(group_color)
+    local s = group_color:gsub('#', '')
+    local r = tonumber(s:sub(1, 2), 16) or 0
+    local g = tonumber(s:sub(3, 4), 16) or 0
+    local b = tonumber(s:sub(5, 6), 16) or 0
+    group_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
   end
 
   -- Color definitions

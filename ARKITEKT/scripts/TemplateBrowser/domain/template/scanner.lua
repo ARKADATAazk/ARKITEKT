@@ -6,7 +6,7 @@ local M = {}
 local Logger = require('arkitekt.debug.logger')
 local Persistence = require('TemplateBrowser.data.storage')
 local FXQueue = require('TemplateBrowser.domain.fx.queue')
-local FuzzySearch = require('TemplateBrowser.domain.search.fuzzy')
+local FuzzySearch = require('arkitekt.core.fuzzy')
 local Constants = require('TemplateBrowser.config.constants')
 
 -- Scan state for incremental scanning

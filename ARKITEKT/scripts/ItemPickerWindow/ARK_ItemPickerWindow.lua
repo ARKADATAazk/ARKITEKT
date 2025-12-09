@@ -23,17 +23,17 @@ local Colors = require('arkitekt.core.colors')
 local Settings = require('arkitekt.core.settings')
 
 -- Load ItemPicker core modules (reuse data layer)
-local Config = require('scripts.ItemPicker.core.config')
-local State = require('scripts.ItemPicker.core.app_state')
-local Controller = require('scripts.ItemPicker.core.controller')
+local Config = require('ItemPicker.app.config')
+local State = require('ItemPicker.app.state')
+local Controller = require('ItemPicker.domain.items.service')
 
 -- Load window-specific GUI module
-local GUI = require('scripts.ItemPickerWindow.ui.gui')
+local GUI = require('ItemPickerWindow.ui.gui')
 
 -- Data and service modules
-local visualization = require('scripts.ItemPicker.services.visualization')
-local reaper_interface = require('scripts.ItemPicker.data.reaper_api')
-local utils = require('scripts.ItemPicker.services.utils')
+local visualization = require('ItemPicker.ui.visualization')
+local reaper_interface = require('ItemPicker.data.reaper_api')
+local utils = require('ItemPicker.domain.items.utils')
 
 -- Initialize settings
 local data_dir = Ark._bootstrap.get_data_dir('ItemPickerWindow')

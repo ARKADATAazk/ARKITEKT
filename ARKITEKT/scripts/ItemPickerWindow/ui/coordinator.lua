@@ -1,68 +1,19 @@
 -- @noindex
 -- ItemPickerWindow/ui/coordinator.lua
--- Coordinator using TilesContainer panels for Audio and MIDI grids
+-- Coordinator for managing audio and MIDI grids (mirrors ItemPicker/ui/grids/coordinator.lua)
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
-local AudioGridFactory = require('ItemPicker.ui.grids.factories.audio_grid_factory')
-local MidiGridFactory = require('ItemPicker.ui.grids.factories.midi_grid_factory')
+local Lifecycle = require('arkitekt.gui.animation.lifecycle')
+local AudioGridFactory = require('ItemPicker.ui.grids.factories.audio')
+local MidiGridFactory = require('ItemPicker.ui.grids.factories.midi')
+local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
+local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')
 
 local M = {}
 local Coordinator = {}
 Coordinator.__index = Coordinator
-
--- Get container config for Audio panel
-local function get_audio_container_config(opts)
-  return {
-    title = 'Audio Items',
-    show_tabs = false,
-    show_search = true,
-    show_sort = true,
-    header = {
-      height = 36,
-      padding = 8,
-      bg_color = 0x1A1A1AFF,
-      border_color = 0x2A2A2AFF,
-    },
-    sort_modes = {
-      { id = 'none', label = 'None' },
-      { id = 'name', label = 'Name' },
-      { id = 'length', label = 'Length' },
-      { id = 'color', label = 'Color' },
-      { id = 'pool', label = 'Pool' },
-    },
-    on_search = opts.on_audio_search,
-    on_sort = opts.on_audio_sort,
-    on_sort_direction = opts.on_audio_sort_direction,
-  }
-end
-
--- Get container config for MIDI panel
-local function get_midi_container_config(opts)
-  return {
-    title = 'MIDI Items',
-    show_tabs = false,
-    show_search = true,
-    show_sort = true,
-    header = {
-      height = 36,
-      padding = 8,
-      bg_color = 0x1A1A1AFF,
-      border_color = 0x2A2A2AFF,
-    },
-    sort_modes = {
-      { id = 'none', label = 'None' },
-      { id = 'name', label = 'Name' },
-      { id = 'length', label = 'Length' },
-      { id = 'color', label = 'Color' },
-      { id = 'pool', label = 'Pool' },
-    },
-    on_search = opts.on_midi_search,
-    on_sort = opts.on_midi_sort,
-    on_sort_direction = opts.on_midi_sort_direction,
-  }
-end
 
 function M.new(ctx, config, state, visualization)
   local self = setmetatable({
@@ -71,50 +22,28 @@ function M.new(ctx, config, state, visualization)
     visualization = visualization,
 
     animator = nil,
-    audio_grid = nil,
-    midi_grid = nil,
-    audio_container = nil,
-    midi_container = nil,
+    disable_animator = nil,
+
+    -- Grid options and result references
+    audio_grid_opts = nil,
+    audio_grid_result_ref = nil,
+    midi_grid_opts = nil,
+    midi_grid_result_ref = nil,
+
+    -- Badge click handlers
+    audio_badge_click_handler = nil,
+    midi_badge_click_handler = nil,
   }, Coordinator)
 
   -- Create animator
   self.animator = TileAnim.new(12.0)
 
-  -- Create grids using ItemPicker's factories
-  self.audio_grid = AudioGridFactory.create(ctx, config, state, visualization, self.animator)
-  self.midi_grid = MidiGridFactory.create(ctx, config, state, visualization, self.animator)
+  -- Create disable animator
+  self.disable_animator = Lifecycle.DisableAnim.new({duration = 0.10})
 
-  -- Create TilesContainer for Audio panel
-  self.audio_container = Ark.Panel.new({
-    id = 'audio_tiles_container',
-    config = get_audio_container_config({
-      on_audio_search = function(text)
-        state.set_search_filter(text)
-      end,
-      on_audio_sort = function(mode)
-        state.set_setting('sort_mode', mode)
-      end,
-      on_audio_sort_direction = function(direction)
-        state.set_setting('sort_reverse', direction == 'desc')
-      end,
-    }),
-  })
-
-  -- Create TilesContainer for MIDI panel
-  self.midi_container = Ark.Panel.new({
-    id = 'midi_tiles_container',
-    config = get_midi_container_config({
-      on_midi_search = function(text)
-        state.set_search_filter(text)
-      end,
-      on_midi_sort = function(mode)
-        state.set_setting('sort_mode', mode)
-      end,
-      on_midi_sort_direction = function(direction)
-        state.set_setting('sort_reverse', direction == 'desc')
-      end,
-    }),
-  })
+  -- Create grid options using factories
+  self.audio_grid_opts, self.audio_grid_result_ref, self.audio_badge_click_handler = AudioGridFactory.create_options(config, state, visualization, self.animator, self.disable_animator)
+  self.midi_grid_opts, self.midi_grid_result_ref, self.midi_badge_click_handler = MidiGridFactory.create_options(config, state, visualization, self.animator, self.disable_animator)
 
   return self
 end
@@ -122,6 +51,23 @@ end
 function Coordinator:update_animations(dt)
   if self.animator then
     self.animator:update(dt)
+  end
+  if self.disable_animator then
+    self.disable_animator:update(dt)
+  end
+end
+
+function Coordinator:render_disable_animations(ctx)
+  if not self.disable_animator then return end
+
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  for key, anim_data in pairs(self.disable_animator.disabling) do
+    self.disable_animator:render(ctx, dl, key, anim_data.rect,
+                                  nil,
+                                  self.config.TILE.ROUNDING,
+                                  self.state.icon_font,
+                                  self.state.icon_font_size)
   end
 end
 
@@ -146,73 +92,131 @@ function Coordinator:handle_tile_size_shortcuts(ctx)
     self.state.set_tile_size(new_width, current_h)
   end
 
-  -- Update grids with new size
-  if self.midi_grid then
-    self.midi_grid.min_col_w_fn = function() return self.state.get_tile_width() end
-    self.midi_grid.fixed_tile_h = self.state.get_tile_height()
+  -- Update grid options with new size
+  if self.midi_grid_opts then
+    self.midi_grid_opts.fixed_tile_h = self.state.get_tile_height()
   end
 
-  if self.audio_grid then
-    self.audio_grid.min_col_w_fn = function() return self.state.get_tile_width() end
-    self.audio_grid.fixed_tile_h = self.state.get_tile_height()
+  if self.audio_grid_opts then
+    self.audio_grid_opts.fixed_tile_h = self.state.get_tile_height()
   end
 
   return true
 end
 
 function Coordinator:draw_audio(ctx, height, shell_state)
-  if not self.audio_container then return end
-
-  local avail_w = ImGui.GetContentRegionAvail(ctx)
-
-  -- Set container dimensions
-  self.audio_container.width = avail_w
-  self.audio_container.height = height
-
-  -- Begin container draw (handles header, search, etc.)
-  local draw_success = self.audio_container:begin_draw(ctx)
-
-  if draw_success then
-    -- Draw the actual grid inside the container
-    if self.audio_grid then
-      self.audio_grid:draw(ctx)
-    end
+  if not self.audio_grid_opts then
+    ImGui.Text(ctx, '[DEBUG] audio_grid_opts is nil')
+    return
   end
 
-  -- CRITICAL: Always call end_draw to balance begin_draw (even if it failed)
-  self.audio_container:end_draw(ctx)
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
+  if avail_w <= 0 or height <= 0 then
+    ImGui.Text(ctx, string.format('[DEBUG] Invalid size: w=%d h=%d', avail_w, height))
+    return
+  end
+
+  local visible = ImGui.BeginChild(ctx, 'audio_grid', avail_w, height, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar)
+  if visible then
+    -- Check for CTRL/ALT+wheel BEFORE grid draws (prevents scroll)
+    local saved_scroll = nil
+    local wheel_y = ImGui.GetMouseWheel(ctx)
+
+    if wheel_y ~= 0 then
+      local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+      local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+
+      if ctrl or alt then
+        saved_scroll = ImGui.GetScrollY(ctx)
+      end
+    end
+
+    -- Cache renderer config once per frame
+    AudioRenderer.begin_frame(ctx, self.config, self.state)
+
+    -- Call Grid with options and store result
+    local result = Ark.Grid(ctx, self.audio_grid_opts)
+    self.audio_grid_result_ref.current = result
+
+    -- Add Dummy to extend child bounds (required when Grid uses SetCursorScreenPos)
+    ImGui.Dummy(ctx, 0, 0)
+
+    -- Handle badge clicks
+    if self.audio_badge_click_handler then
+      self.audio_badge_click_handler(ctx)
+    end
+
+    -- Render disable animations on top
+    self:render_disable_animations(ctx)
+
+    -- Restore scroll if we consumed wheel for resize
+    if saved_scroll then
+      ImGui.SetScrollY(ctx, saved_scroll)
+    end
+  end
+  ImGui.EndChild(ctx)
 end
 
 function Coordinator:draw_midi(ctx, height, shell_state)
-  if not self.midi_container then return end
-
-  local avail_w = ImGui.GetContentRegionAvail(ctx)
-
-  -- Set container dimensions
-  self.midi_container.width = avail_w
-  self.midi_container.height = height
-
-  -- Begin container draw (handles header, search, etc.)
-  local draw_success = self.midi_container:begin_draw(ctx)
-
-  if draw_success then
-    -- Draw the actual grid inside the container
-    if self.midi_grid then
-      self.midi_grid:draw(ctx)
-    end
+  if not self.midi_grid_opts then
+    ImGui.Text(ctx, '[DEBUG] midi_grid_opts is nil')
+    return
   end
 
-  -- CRITICAL: Always call end_draw to balance begin_draw (even if it failed)
-  self.midi_container:end_draw(ctx)
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
+  if avail_w <= 0 or height <= 0 then
+    ImGui.Text(ctx, string.format('[DEBUG] Invalid size: w=%d h=%d', avail_w, height))
+    return
+  end
+
+  local visible = ImGui.BeginChild(ctx, 'midi_grid', avail_w, height, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar)
+  if visible then
+    -- Check for CTRL/ALT+wheel BEFORE grid draws (prevents scroll)
+    local saved_scroll = nil
+    local wheel_y = ImGui.GetMouseWheel(ctx)
+
+    if wheel_y ~= 0 then
+      local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+      local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+
+      if ctrl or alt then
+        saved_scroll = ImGui.GetScrollY(ctx)
+      end
+    end
+
+    -- Cache renderer config once per frame
+    MidiRenderer.begin_frame(ctx, self.config, self.state)
+
+    -- Call Grid with options and store result
+    local result = Ark.Grid(ctx, self.midi_grid_opts)
+    self.midi_grid_result_ref.current = result
+
+    -- Add Dummy to extend child bounds (required when Grid uses SetCursorScreenPos)
+    ImGui.Dummy(ctx, 0, 0)
+
+    -- Handle badge clicks
+    if self.midi_badge_click_handler then
+      self.midi_badge_click_handler(ctx)
+    end
+
+    -- Render disable animations on top
+    self:render_disable_animations(ctx)
+
+    -- Restore scroll if we consumed wheel for resize
+    if saved_scroll then
+      ImGui.SetScrollY(ctx, saved_scroll)
+    end
+  end
+  ImGui.EndChild(ctx)
 end
 
 -- Clear internal drag state from both grids
 function Coordinator:clear_grid_drag_states()
-  if self.audio_grid and self.audio_grid.drag then
-    self.audio_grid.drag:release()
+  if self.audio_grid_result_ref and self.audio_grid_result_ref.current and self.audio_grid_result_ref.current.drag then
+    self.audio_grid_result_ref.current.drag:release()
   end
-  if self.midi_grid and self.midi_grid.drag then
-    self.midi_grid.drag:release()
+  if self.midi_grid_result_ref and self.midi_grid_result_ref.current and self.midi_grid_result_ref.current.drag then
+    self.midi_grid_result_ref.current.drag:release()
   end
 end
 

@@ -8,7 +8,7 @@ local RtconfigParser = require('WalterBuilder.domain.rtconfig_parser')
 local RtconfigConverter = require('WalterBuilder.domain.rtconfig_converter')
 local ThemeConnector = require('WalterBuilder.domain.theme_connector')
 local Colors = require('WalterBuilder.config.colors')
-local WalterSettings = require('WalterBuilder.infra.settings')
+local WalterSettings = require('WalterBuilder.data.settings')
 
 local M = {}
 local Panel = {}
@@ -565,16 +565,24 @@ function Panel:draw_section_detail(ctx, section)
       display = item.macro .. ' ...'
     elseif item.type == RtconfigParser.TOKEN.COMMENT then
       display = item.text:sub(1, 60)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
     elseif item.type == RtconfigParser.TOKEN.RAW then
       display = (item.code or item.text or ''):sub(1, 60)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
     end
 
     if show then
+      -- Apply color for comment/raw types
+      local needs_pop = false
+      if item.type == RtconfigParser.TOKEN.COMMENT then
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
+        needs_pop = true
+      elseif item.type == RtconfigParser.TOKEN.RAW then
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
+        needs_pop = true
+      end
+
       ImGui.Text(ctx, display)
 
-      if item.type == RtconfigParser.TOKEN.COMMENT or item.type == RtconfigParser.TOKEN.RAW then
+      if needs_pop then
         ImGui.PopStyleColor(ctx)
       end
 
@@ -767,17 +775,26 @@ function Panel:draw(ctx)
 
   ImGui.SameLine(ctx, 0, 0)
 
-  -- Splitter (using Ark.Splitter)
+  -- Splitter
   local splitter_x, splitter_y = ImGui.GetCursorScreenPos(ctx)
   ImGui.Button(ctx, '##rtconfig_splitter', splitter_w, avail_h - 20)
+  local is_hovered = ImGui.IsItemHovered(ctx)
+  local is_active = ImGui.IsItemActive(ctx)
 
   -- Handle splitter drag
-  if splitter_result.action == 'drag' then
-    local new_width = splitter_result.position - tree_start_x
+  if is_active then
+    local mouse_x, _ = ImGui.GetMousePos(ctx)
+    local new_width = mouse_x - splitter_x + splitter_w / 2 - self.tree_width + self.tree_width
+    -- Simpler: just track delta
+    local delta_x, _ = ImGui.GetMouseDragDelta(ctx, 0)
+    if not self._splitter_drag_start then
+      self._splitter_drag_start = self.tree_width
+    end
+    new_width = self._splitter_drag_start + delta_x
     new_width = math.max(self.min_tree_width, math.min(max_tree, new_width))
     self.tree_width = new_width
-  elseif splitter_result.action == 'reset' then
-    self.tree_width = 200  -- Default width
+  else
+    self._splitter_drag_start = nil
   end
 
   -- Draw splitter visual

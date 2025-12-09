@@ -156,4 +156,29 @@ function M.save_track_filter(whitelist, enabled)
   end
 end
 
+-- Item usage persistence (for "recent" sort)
+function M.load_item_usage()
+  local has_state, state_str = reaper.GetProjExtState(0, EXTNAME, 'item_usage')
+
+  if not has_state or has_state == 0 or state_str == '' then
+    return {}
+  end
+
+  local usage = JSON.decode(state_str)
+  if not usage or type(usage) ~= 'table' then
+    return {}
+  end
+
+  return usage
+end
+
+function M.save_item_usage(usage)
+  if not usage then return end
+
+  local serialized = JSON.encode(usage)
+  if serialized then
+    reaper.SetProjExtState(0, EXTNAME, 'item_usage', serialized)
+  end
+end
+
 return M

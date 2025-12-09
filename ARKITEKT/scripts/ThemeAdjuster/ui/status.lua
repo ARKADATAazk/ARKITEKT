@@ -3,6 +3,7 @@
 -- Status bar configuration
 
 local Constants = require('ThemeAdjuster.config.constants')
+local Theme = require('ThemeAdjuster.domain.theme.reader')
 
 local M = {}
 
