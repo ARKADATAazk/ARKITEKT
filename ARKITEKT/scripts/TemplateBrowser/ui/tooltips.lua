@@ -3,14 +3,13 @@
 -- Tooltip configuration and utilities
 
 local Strings = require('TemplateBrowser.config.strings')
-local Defaults = require('TemplateBrowser.config.defaults')
+local Constants = require('TemplateBrowser.config.constants')
 local Stats = require('TemplateBrowser.domain.template.stats')
 
 local M = {}
 
--- Re-export from defs for backward compatibility
 M.TOOLTIPS = Strings.TOOLTIPS
-M.CONFIG = Defaults.TOOLTIP
+M.CONFIG = Constants.TOOLTIP
 
 -- Tooltip color scheme
 local COLORS = {

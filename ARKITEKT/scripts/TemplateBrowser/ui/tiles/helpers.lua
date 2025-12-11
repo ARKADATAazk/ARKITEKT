@@ -3,7 +3,7 @@
 -- Shared helper functions for tile renderers
 
 local ImGui = require('arkitekt.core.imgui')
-local Defaults = require('TemplateBrowser.config.defaults')
+local Constants = require('TemplateBrowser.config.constants')
 
 local M = {}
 
@@ -60,7 +60,7 @@ end
 -- Check if VST name is in the tile blacklist
 function M.is_blacklisted(name)
   if not name then return false end
-  local blacklist = Defaults.VST and Defaults.VST.tile_blacklist or {}
+  local blacklist = Constants.VST and Constants.VST.tile_blacklist or {}
   for _, blocked in ipairs(blacklist) do
     if name:find(blocked, 1, true) then
       return true
