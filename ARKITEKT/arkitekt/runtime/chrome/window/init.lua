@@ -60,6 +60,12 @@ function M.new(opts)
     base_flags = base_flags | ImGui.WindowFlags_NoSavedSettings
   end
 
+  -- Titlebar-only dragging: add NoMove flag to disable default drag behavior
+  local titlebar_drag_only = config.titlebar_drag_only or false
+  if titlebar_drag_only and ImGui.WindowFlags_NoMove then
+    base_flags = base_flags | ImGui.WindowFlags_NoMove
+  end
+
   -- Chrome configuration
   local chrome = {}
   if config.chrome and Constants.CHROME[config.chrome] then
@@ -145,6 +151,7 @@ function M.new(opts)
       icon_color      = config.icon_color,
       icon_draw       = config.icon_draw,
       dev_mode        = opts.dev_mode,
+      drag_only       = titlebar_drag_only,
     },
 
     -- Internal state
@@ -414,9 +421,14 @@ function M.new(opts)
         local titlebar_rendered = false
         if self._titlebar and not self._dock.was_docked then
           local win_w = ImGui.GetWindowSize(ctx)
-          local keep_open = self._titlebar:render(ctx, win_w)
+          local keep_open, drag_dx, drag_dy = self._titlebar:render(ctx, win_w)
           if not keep_open then
             self._should_close = true
+          end
+          -- Apply titlebar drag delta
+          if drag_dx and drag_dy and (drag_dx ~= 0 or drag_dy ~= 0) then
+            local wx, wy = ImGui.GetWindowPos(ctx)
+            self._geo.pending_pos = { x = wx + drag_dx, y = wy + drag_dy }
           end
           titlebar_rendered = true
         end

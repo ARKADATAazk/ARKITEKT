@@ -13,6 +13,9 @@
 #include <atomic>
 #include <mutex>
 
+// Forward declare REAPER interface (avoid including VST3 headers directly)
+namespace Steinberg { class FUnknown; }
+
 namespace DrumBlocks
 {
 
@@ -127,7 +130,8 @@ struct PadCommand
 // =============================================================================
 
 class Processor : public juce::AudioProcessor,
-                  public juce::VST3ClientExtensions
+                  public juce::VST3ClientExtensions,
+                  private juce::Timer
 {
 public:
     Processor();
@@ -142,11 +146,11 @@ public:
     void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
     // -------------------------------------------------------------------------
-    // EDITOR (headless - no GUI)
+    // EDITOR
     // -------------------------------------------------------------------------
 
-    juce::AudioProcessorEditor* createEditor() override { return nullptr; }
-    bool hasEditor() const override { return false; }
+    juce::AudioProcessorEditor* createEditor() override;
+    bool hasEditor() const override { return true; }
 
     // -------------------------------------------------------------------------
     // PLUGIN INFO
@@ -195,9 +199,15 @@ public:
 
     VST3ClientExtensions* getVST3ClientExtensions() override { return this; }
 
+    // VST3ClientExtensions overrides for REAPER support
+    void setIHostApplication(Steinberg::FUnknown* hostApp) override;
+
     // Named config param support: P{pad}_L{layer}_SAMPLE = file_path
     [[nodiscard]] bool handleNamedConfigParam(const juce::String& name, const juce::String& value);
     [[nodiscard]] juce::String getNamedConfigParam(const juce::String& name) const;
+
+    // REAPER host application pointer (for extended API access)
+    void* reaperHostApp = nullptr;
 
 private:
     // -------------------------------------------------------------------------
@@ -214,6 +224,11 @@ private:
     void updatePadMetadata(int padIndex);  // Update thread-safe metadata after sample changes (audio thread)
     void updatePadMetadataAfterClear(int padIndex, int layerIndex);  // Update after clearing layer (audio thread)
 
+    // Timer callback for file-based IPC (Lua command queue)
+    void timerCallback() override;
+    void processCommandFile();  // Read and execute commands from file
+    juce::File getCommandFile() const;  // Get path to command file
+
     // Helper for parsing pad/layer from named config params
     // Returns true if parsed successfully, fills padIndex and layerIndex
     static bool parsePadLayerParam(const juce::String& name,
@@ -229,6 +244,9 @@ private:
     juce::AudioFormatManager formatManager;
 
     std::array<Pad, NUM_PADS> pads;
+
+    // Pad colors for UI display (0 = no custom color, else 0xRRGGBBAA)
+    std::array<uint32_t, NUM_PADS> padColors = {};
 
     // Active pad tracking for optimized rendering
     std::bitset<NUM_PADS> activePads;
@@ -272,11 +290,17 @@ private:
         std::atomic<float>* satMix = nullptr;           // Saturation dry/wet mix
         std::atomic<float>* transAttack = nullptr;      // Transient shaper attack
         std::atomic<float>* transSustain = nullptr;     // Transient shaper sustain
+        std::atomic<float>* noteOffMode = nullptr;      // Note-off behavior (0=Ignore, 1=Release, 2=Cut)
     };
     std::array<PadParams, NUM_PADS> padParams;
 
     // Global parameters
     std::atomic<float>* globalQuality = nullptr;      // Interpolation quality (0=Normal, 1=High, 2=Ultra)
+
+    // Playback progress parameters (written by audio thread, read by host/Lua)
+    // Value: -1 = not playing, 0.0-1.0 = progress within start/end region
+    // We store RangedAudioParameter* to use setValue() which handles normalization
+    std::array<juce::RangedAudioParameter*, NUM_PADS> playbackProgressParams = {};
 
     // Async sample loading - FIFO with mutex protection for multiple producers
     // Producer: background thread pool (multiple threads), Consumer: audio thread

@@ -610,6 +610,9 @@ function M.run(opts)
     bg_color_docked   = config.bg_color_docked,
     topmost         = config.topmost,
 
+    -- Titlebar-only dragging
+    titlebar_drag_only = config.titlebar_drag_only,
+
     -- Debug mode: show ImGui metrics window
     show_imgui_metrics = show_metrics,
 

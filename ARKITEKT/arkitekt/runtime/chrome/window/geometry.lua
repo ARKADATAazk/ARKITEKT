@@ -190,6 +190,11 @@ function M.apply(ctx, geo_state, dock_state, fullscreen, initial_pos, initial_si
     geo_state.pending_restore = false
     geo_state.pos_size_set = true
 
+  -- Manual position change (e.g., titlebar drag)
+  elseif geo_state.pending_pos then
+    ImGui.SetNextWindowPos(ctx, geo_state.pending_pos.x, geo_state.pending_pos.y, ImGui.Cond_Always)
+    geo_state.pending_pos = nil
+
   -- Undocking restoration
   elseif dock_state.pending_undock and (dock_state.pre_dock_pos or dock_state.pre_dock_size) then
     if dock_state.pre_dock_pos then

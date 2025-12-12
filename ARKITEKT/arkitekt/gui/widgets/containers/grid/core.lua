@@ -153,6 +153,7 @@ function M.new(opts)
     -- fixed_tile_h_fn: If opts provides function, use it. Otherwise create function that reads from grid.fixed_tile_h
     fixed_tile_h_fn  = type(opts.fixed_tile_h) == 'function' and opts.fixed_tile_h or function() return grid.fixed_tile_h end,
     fixed_tile_h     = opts.fixed_tile_h,  -- Keep for backward compatibility with direct assignment
+    fixed_cols       = opts.fixed_cols,    -- Lock to exact column count (nil = responsive)
     get_items        = opts.get_items or function() return {} end,
     key              = opts.key or function(item) return tostring(item) end,
     get_exclusion_zones = opts.get_exclusion_zones,
@@ -167,7 +168,7 @@ function M.new(opts)
     external_drag_check = opts.external_drag_check,
     is_copy_mode_check = opts.is_copy_mode_check,
     accept_external_drops = opts.accept_external_drops or false,
-    render_drop_zones = opts.render_drop_zones or true,
+    render_drop_zones = opts.render_drop_zones ~= false,
     on_external_drop = opts.on_external_drop,
     on_destroy_complete = opts.on_destroy_complete,
     on_click_empty   = opts.on_click_empty,
@@ -411,8 +412,13 @@ function Grid:_draw_virtual(ctx, items, num_items)
     return false
   end
 
-  -- Calculate columns
-  local cols = math.max(1, (avail_w + self.gap) // (min_col_w + self.gap))
+  -- Calculate columns (fixed or responsive)
+  local cols
+  if self.fixed_cols and self.fixed_cols > 0 then
+    cols = math.min(self.fixed_cols, num_items)
+  else
+    cols = math.max(1, (avail_w + self.gap) // (min_col_w + self.gap))
+  end
   local tile_w = (avail_w - (cols - 1) * self.gap) / cols
   local row_height = fixed_tile_h + self.gap
 
@@ -789,7 +795,7 @@ function Grid:draw(ctx)
   -- Support both function (preferred) and static value (backward compat)
   local fixed_tile_h = self.fixed_tile_h_fn and self.fixed_tile_h_fn() or self.fixed_tile_h
 
-  local cols, rows, rects = LayoutGrid.calculate(avail_w, min_col_w, self.gap, num_items, origin_x, origin_y, fixed_tile_h)
+  local cols, rows, rects = LayoutGrid.calculate(avail_w, min_col_w, self.gap, num_items, origin_x, origin_y, fixed_tile_h, self.fixed_cols)
 
   self.last_layout_cols = cols
 
@@ -1386,6 +1392,9 @@ local function _update_grid_from_opts(grid, opts)
   if opts.min_col_w ~= nil then
     grid.min_col_w = opts.min_col_w
   end
+  if opts.fixed_cols ~= nil then
+    grid.fixed_cols = opts.fixed_cols
+  end
   if opts.extend_input_area ~= nil then
     grid.extend_input_area = opts.extend_input_area
   end
@@ -1399,6 +1408,9 @@ local function _update_grid_from_opts(grid, opts)
   end
   if opts.accept_external_drops ~= nil then
     grid.accept_external_drops = opts.accept_external_drops
+  end
+  if opts.render_drop_zones ~= nil then
+    grid.render_drop_zones = opts.render_drop_zones
   end
   if opts.on_external_drop ~= nil then
     grid.on_external_drop = opts.on_external_drop
@@ -1518,6 +1530,7 @@ function M.Draw(ctx, opts)
       gap = opts.gap,
       min_col_w = opts.min_col_w or opts.tile_width,
       fixed_tile_h = opts.fixed_tile_h or opts.tile_height,
+      fixed_cols = opts.fixed_cols,
       key = opts.key,
       render_item = opts.render_item,
       get_items = opts.get_items or (opts.items and function() return opts.items end) or function() return {} end,
@@ -1534,6 +1547,7 @@ function M.Draw(ctx, opts)
       on_click_empty = opts.on_click_empty,
       render_overlays = opts.render_overlays,
       keyboard_nav = opts.keyboard_nav,
+      render_drop_zones = opts.render_drop_zones,
     }
     grid = _create_grid_instance(create_opts)
     _grid_state.instances[id] = grid

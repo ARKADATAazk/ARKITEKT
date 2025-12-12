@@ -4,6 +4,7 @@
 // =============================================================================
 
 #include "PluginProcessor.h"
+#include "PluginEditor.h"
 #include <limits>
 
 namespace DrumBlocks
@@ -72,19 +73,36 @@ Processor::Processor()
         padParams[pad].satMix = parameters.getRawParameterValue(PadParam::id(pad, PadParam::SaturationMix));
         padParams[pad].transAttack = parameters.getRawParameterValue(PadParam::id(pad, PadParam::TransientAttack));
         padParams[pad].transSustain = parameters.getRawParameterValue(PadParam::id(pad, PadParam::TransientSustain));
+        padParams[pad].noteOffMode = parameters.getRawParameterValue(PadParam::id(pad, PadParam::NoteOffModeParam));
     }
 
     // Cache global parameter pointer
     globalQuality = parameters.getRawParameterValue(GlobalParam::qualityId());
 
+    // Cache playback progress parameter pointers (for audio-thread updates)
+    // NOTE: We use getParameter() instead of getRawParameterValue() because we need
+    // to call setValue() which properly notifies the host. Raw atomic store() bypasses
+    // the host notification, causing TrackFX_GetParam() to return stale values.
+    for (int pad = 0; pad < NUM_PADS; ++pad)
+    {
+        playbackProgressParams[pad] = parameters.getParameter(PlaybackParam::progressId(pad));
+    }
+
     // Initialize kill group tracking
     lastKnownKillGroup.fill(-1);  // Force rebuild on first use
     for (auto& group : killGroupMembers)
         group.reserve(16);  // Pre-allocate to avoid audio-thread allocation
+
+    // Start timer for file-based IPC (Lua command queue)
+    // Check every 50ms - fast enough for responsive loading, low overhead
+    startTimer(50);
 }
 
 Processor::~Processor()
 {
+    // Stop the file polling timer
+    stopTimer();
+
     // Wait for background jobs with a reasonable timeout (5 seconds)
     // Jobs capture raw pointers to our members, so we must wait for completion
     // If timeout expires, force-kill remaining jobs to prevent hangs (e.g., stuck network drive)
@@ -98,6 +116,27 @@ Processor::~Processor()
         loadPool.removeAllJobs(false, 0);
         DBG("DrumBlocks: Force-killed " << remainingJobs << " stuck load jobs on shutdown");
     }
+}
+
+// =============================================================================
+// EDITOR
+// =============================================================================
+
+juce::AudioProcessorEditor* Processor::createEditor()
+{
+    return new Editor(*this);
+}
+
+// =============================================================================
+// VST3 CLIENT EXTENSIONS (REAPER integration)
+// =============================================================================
+
+void Processor::setIHostApplication(Steinberg::FUnknown* hostApp)
+{
+    // Store REAPER's host application pointer for potential extended API access
+    // This is called by JUCE when the VST3 is loaded in REAPER (or other VST3 hosts)
+    reaperHostApp = hostApp;
+    DBG("DrumBlocks: IHostApplication received from host");
 }
 
 // =============================================================================
@@ -184,12 +223,25 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
 
     // Render only active pads (optimization: skip inactive pads entirely)
     if (activePads.none())
+    {
+        // No pads playing - mark all progress params as 0 (not playing)
+        for (int i = 0; i < NUM_PADS; ++i)
+        {
+            if (playbackProgressParams[i] != nullptr)
+                playbackProgressParams[i]->setValueNotifyingHost(0.0f);
+        }
         return;
+    }
 
     for (int i = 0; i < NUM_PADS; ++i)
     {
         if (!activePads.test(i))
+        {
+            // Not playing - mark progress as 0
+            if (playbackProgressParams[i] != nullptr)
+                playbackProgressParams[i]->setValueNotifyingHost(0.0f);
             continue;
+        }
 
         // Only update parameters for pads that are playing
         updatePadParameters(i);
@@ -198,7 +250,21 @@ void Processor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&
         if (rendered == 0)
         {
             activePads.reset(i);  // Pad stopped during render
+            // Mark as not playing
+            if (playbackProgressParams[i] != nullptr)
+                playbackProgressParams[i]->setValueNotifyingHost(0.0f);
             continue;
+        }
+
+        // Update playback progress AFTER rendering (so playPosition is current)
+        // getPlaybackProgress() returns 0.0-1.0
+        // We use small epsilon to distinguish "at start" from "not playing"
+        if (playbackProgressParams[i] != nullptr)
+        {
+            float progress = pads[i].getPlaybackProgress();  // 0.0 - 1.0
+            // Ensure minimum value > 0 so Lua can distinguish playing from not-playing
+            float value = juce::jmax(0.001f, progress);
+            playbackProgressParams[i]->setValueNotifyingHost(value);
         }
 
         const auto& padOutput = pads[i].getOutputBuffer();
@@ -229,8 +295,8 @@ void Processor::handleMidiEvent(const juce::MidiMessage& msg)
 {
     if (msg.isNoteOn())
     {
-        int note = msg.getNoteNumber();
-        int padIndex = note - MIDI_NOTE_OFFSET;
+        const int note = msg.getNoteNumber();
+        const int padIndex = note - MIDI_NOTE_OFFSET;
 
         if (padIndex >= 0 && padIndex < NUM_PADS)
         {
@@ -346,6 +412,7 @@ void Processor::updatePadParameters(int padIndex)
     pad.satMix = params.satMix->load();
     pad.transAttack = params.transAttack->load();
     pad.transSustain = params.transSustain->load();
+    pad.noteOffMode = static_cast<NoteOffMode>(static_cast<int>(params.noteOffMode->load()));
 
     // Global parameter: interpolation quality
     pad.interpolationQuality = static_cast<InterpolationQuality>(static_cast<int>(globalQuality->load()));
@@ -470,6 +537,7 @@ void Processor::applyCompletedLoads()
                     loaded.path,
                     loaded.normGain);
             }
+
             // Update thread-safe metadata for message thread queries
             updatePadMetadata(loaded.padIndex);
         }
@@ -776,6 +844,20 @@ void Processor::getStateInformation(juce::MemoryBlock& destData)
     }
     state.addChild(samplesNode, -1, nullptr);
 
+    // Add pad colors
+    juce::ValueTree colorsNode("PadColors");
+    for (int pad = 0; pad < NUM_PADS; ++pad)
+    {
+        if (padColors[pad] != 0)
+        {
+            juce::ValueTree colorNode("Color");
+            colorNode.setProperty("pad", pad, nullptr);
+            colorNode.setProperty("value", static_cast<juce::int64>(padColors[pad]), nullptr);
+            colorsNode.addChild(colorNode, -1, nullptr);
+        }
+    }
+    state.addChild(colorsNode, -1, nullptr);
+
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
     copyXmlToBinary(*xml, destData);
 }
@@ -783,70 +865,83 @@ void Processor::getStateInformation(juce::MemoryBlock& destData)
 void Processor::setStateInformation(const void* data, int sizeInBytes)
 {
     std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
-    if (xml && xml->hasTagName(parameters.state.getType()))
+    if (!xml || !xml->hasTagName(parameters.state.getType()))
+        return;
+
+    auto state = juce::ValueTree::fromXml(*xml);
+
+    // Process runtime commands (transient, don't persist)
+    auto commandsNode = state.getChildWithName("Commands");
+    if (commandsNode.isValid())
     {
-        auto state = juce::ValueTree::fromXml(*xml);
-
-        // Process runtime commands (transient, don't persist)
-        auto commandsNode = state.getChildWithName("Commands");
-        if (commandsNode.isValid())
+        for (int i = 0; i < commandsNode.getNumChildren(); ++i)
         {
-            for (int i = 0; i < commandsNode.getNumChildren(); ++i)
+            auto cmd = commandsNode.getChild(i);
+            juce::String cmdType = cmd.getType().toString();
+
+            if (cmdType == "LoadSample")
             {
-                auto cmd = commandsNode.getChild(i);
-                juce::String cmdType = cmd.getType().toString();
+                int pad = cmd.getProperty("pad", -1);
+                int layer = cmd.getProperty("layer", 0);
+                juce::String path = cmd.getProperty("path", "");
 
-                if (cmdType == "LoadSample")
+                if (pad >= 0 && pad < NUM_PADS && layer >= 0 && layer < NUM_VELOCITY_LAYERS)
                 {
-                    int pad = cmd.getProperty("pad", -1);
-                    int layer = cmd.getProperty("layer", 0);
-                    juce::String path = cmd.getProperty("path", "");
-
-                    if (pad >= 0 && pad < NUM_PADS &&
-                        layer >= 0 && layer < NUM_VELOCITY_LAYERS)
-                    {
-                        if (path.isEmpty())
-                            queueCommand({ PadCommandType::ClearLayer, pad, 0, layer });
-                        else
-                            loadSampleToPadAsync(pad, layer, path, false);
-                    }
-                }
-                else if (cmdType == "ClearPad")
-                {
-                    int pad = cmd.getProperty("pad", -1);
-                    if (pad >= 0 && pad < NUM_PADS)
-                        queueCommand({ PadCommandType::ClearPad, pad, 0, 0 });
-                }
-                else if (cmdType == "ClearAll")
-                {
-                    for (int pad = 0; pad < NUM_PADS; ++pad)
-                        queueCommand({ PadCommandType::ClearPad, pad, 0, 0 });
+                    if (path.isEmpty())
+                        queueCommand({ PadCommandType::ClearLayer, pad, 0, layer });
+                    else
+                        loadSampleToPadAsync(pad, layer, path, false);
                 }
             }
-
-            state.removeChild(commandsNode, nullptr);
+            else if (cmdType == "ClearPad")
+            {
+                int pad = cmd.getProperty("pad", -1);
+                if (pad >= 0 && pad < NUM_PADS)
+                    queueCommand({ PadCommandType::ClearPad, pad, 0, 0 });
+            }
+            else if (cmdType == "ClearAll")
+            {
+                for (int pad = 0; pad < NUM_PADS; ++pad)
+                    queueCommand({ PadCommandType::ClearPad, pad, 0, 0 });
+            }
         }
+        state.removeChild(commandsNode, nullptr);
+    }
 
-        parameters.replaceState(state);
+    parameters.replaceState(state);
 
-        // Reload samples from stored paths (async to avoid blocking message thread)
-        auto samplesNode = state.getChildWithName("Samples");
-        if (samplesNode.isValid())
+    // Reload samples from stored paths (async to avoid blocking message thread)
+    auto samplesNode = state.getChildWithName("Samples");
+    if (samplesNode.isValid())
+    {
+        for (int i = 0; i < samplesNode.getNumChildren(); ++i)
         {
-            for (int i = 0; i < samplesNode.getNumChildren(); ++i)
-            {
-                auto sampleNode = samplesNode.getChild(i);
-                int pad = sampleNode.getProperty("pad", -1);
-                int layer = sampleNode.getProperty("layer", 0);
-                juce::String path = sampleNode.getProperty("path", "");
-                juce::String nodeType = sampleNode.getType().toString();
+            auto sampleNode = samplesNode.getChild(i);
+            int pad = sampleNode.getProperty("pad", -1);
+            int layer = sampleNode.getProperty("layer", 0);
+            juce::String path = sampleNode.getProperty("path", "");
 
-                if (pad >= 0 && pad < NUM_PADS && path.isNotEmpty())
-                {
-                    bool isRoundRobin = (nodeType == "RoundRobin");
-                    loadSampleToPadAsync(pad, layer, path, isRoundRobin);
-                }
+            if (pad >= 0 && pad < NUM_PADS && path.isNotEmpty())
+            {
+                bool isRoundRobin = (sampleNode.getType().toString() == "RoundRobin");
+                loadSampleToPadAsync(pad, layer, path, isRoundRobin);
             }
+        }
+    }
+
+    // Load pad colors
+    auto colorsNode = state.getChildWithName("PadColors");
+    if (colorsNode.isValid())
+    {
+        padColors.fill(0);
+        for (int i = 0; i < colorsNode.getNumChildren(); ++i)
+        {
+            auto colorNode = colorsNode.getChild(i);
+            int pad = colorNode.getProperty("pad", -1);
+            juce::int64 color = colorNode.getProperty("value", 0);
+
+            if (pad >= 0 && pad < NUM_PADS)
+                padColors[pad] = static_cast<uint32_t>(color);
         }
     }
 }
@@ -859,20 +954,22 @@ void Processor::setStateInformation(const void* data, int sizeInBytes)
 // Formula: 1 (P) + 1 (min digit) + suffix length
 namespace ConfigParamLen
 {
-    constexpr int CLEAR       = 8;   // "P0_CLEAR"
-    constexpr int STOP        = 7;   // "P0_STOP"
-    constexpr int PREVIEW     = 10;  // "P0_PREVIEW"
-    constexpr int RELEASE     = 10;  // "P0_RELEASE"
-    constexpr int HAS_SAMPLE  = 13;  // "P0_HAS_SAMPLE"
-    constexpr int IS_PLAYING  = 13;  // "P0_IS_PLAYING"
+    constexpr int CLEAR         = 8;   // "P0_CLEAR"
+    constexpr int STOP          = 7;   // "P0_STOP"
+    constexpr int PREVIEW       = 10;  // "P0_PREVIEW"
+    constexpr int RELEASE       = 10;  // "P0_RELEASE"
+    constexpr int HAS_SAMPLE    = 13;  // "P0_HAS_SAMPLE"
+    constexpr int IS_PLAYING    = 13;  // "P0_IS_PLAYING"
+    constexpr int PLAY_PROGRESS = 16;  // "P0_PLAY_PROGRESS"
 
     // Suffix lengths (for substring extraction)
-    constexpr int SUFFIX_CLEAR       = 6;   // "_CLEAR"
-    constexpr int SUFFIX_STOP        = 5;   // "_STOP"
-    constexpr int SUFFIX_PREVIEW     = 8;   // "_PREVIEW"
-    constexpr int SUFFIX_RELEASE     = 8;   // "_RELEASE"
-    constexpr int SUFFIX_HAS_SAMPLE  = 11;  // "_HAS_SAMPLE"
-    constexpr int SUFFIX_IS_PLAYING  = 11;  // "_IS_PLAYING"
+    constexpr int SUFFIX_CLEAR         = 6;   // "_CLEAR"
+    constexpr int SUFFIX_STOP          = 5;   // "_STOP"
+    constexpr int SUFFIX_PREVIEW       = 8;   // "_PREVIEW"
+    constexpr int SUFFIX_RELEASE       = 8;   // "_RELEASE"
+    constexpr int SUFFIX_HAS_SAMPLE    = 11;  // "_HAS_SAMPLE"
+    constexpr int SUFFIX_IS_PLAYING    = 11;  // "_IS_PLAYING"
+    constexpr int SUFFIX_PLAY_PROGRESS = 14;  // "_PLAY_PROGRESS"
 }
 
 // Helper to parse P{pad}_L{layer}_{suffix} pattern
@@ -1033,6 +1130,22 @@ bool Processor::handleNamedConfigParam(const juce::String& name, const juce::Str
         return true;
     }
 
+    // Pattern: pad_{N}_color (set pad color for UI display)
+    // Value: "0" to clear, or decimal color value (0xRRGGBBAA as integer)
+    if (name.startsWith("pad_") && name.endsWith("_color"))
+    {
+        juce::String padStr = name.substring(4, name.length() - 6);
+        if (padStr.containsOnly("0123456789"))
+        {
+            int pad = padStr.getIntValue();
+            if (pad >= 0 && pad < NUM_PADS)
+            {
+                padColors[pad] = static_cast<uint32_t>(value.getLargeIntValue());
+                return true;
+            }
+        }
+    }
+
     return false;
 }
 
@@ -1100,6 +1213,60 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
         }
     }
 
+    // Pattern: P{pad}_PLAY_PROGRESS
+    // Returns: normalized playback position 0-1 within start/end region
+    if (name.length() >= ConfigParamLen::PLAY_PROGRESS && name.startsWith("P") && name.endsWith("_PLAY_PROGRESS"))
+    {
+        juce::String padStr = name.substring(1, name.length() - ConfigParamLen::SUFFIX_PLAY_PROGRESS);
+        if (padStr.containsOnly("0123456789"))
+        {
+            padIndex = padStr.getIntValue();
+            if (padIndex >= 0 && padIndex < NUM_PADS)
+                return juce::String(pads[padIndex].getPlaybackProgress(), 4);  // 4 decimal places
+        }
+    }
+
+    // Pattern: P{pad}_L{layer}_PEAKS_MINI or P{pad}_L{layer}_PEAKS_FULL
+    // Returns: comma-separated float values (max1,max2,...,maxN,min1,min2,...,minN)
+    if (name.startsWith("P") && (name.endsWith("_PEAKS_MINI") || name.endsWith("_PEAKS_FULL")))
+    {
+        const bool isMini = name.endsWith("_PEAKS_MINI");
+        const int suffixLen = isMini ? 11 : 11;  // "_PEAKS_MINI" or "_PEAKS_FULL"
+
+        // Find _L in the middle: P{pad}_L{layer}_PEAKS_xxx
+        int lPos = name.indexOf("_L");
+        if (lPos > 1)
+        {
+            juce::String padStr = name.substring(1, lPos);
+            juce::String layerStr = name.substring(lPos + 2, name.length() - suffixLen);
+
+            if (padStr.containsOnly("0123456789") && layerStr.containsOnly("0123456789"))
+            {
+                int pad = padStr.getIntValue();
+                int layer = layerStr.getIntValue();
+
+                if (pad >= 0 && pad < NUM_PADS && layer >= 0 && layer < NUM_VELOCITY_LAYERS)
+                {
+                    const auto& peaks = isMini ? pads[pad].getPeaksMini(layer)
+                                               : pads[pad].getPeaksFull(layer);
+
+                    if (peaks.empty())
+                        return {};
+
+                    // Build comma-separated string
+                    juce::String result;
+                    result.preallocateBytes(peaks.size() * 8);  // ~6 chars per float + comma
+                    for (size_t i = 0; i < peaks.size(); ++i)
+                    {
+                        if (i > 0) result += ",";
+                        result += juce::String(peaks[i], 4);  // 4 decimal places
+                    }
+                    return result;
+                }
+            }
+        }
+    }
+
     // Diagnostic counters for debugging FIFO overflow issues
     if (name == "DROPPED_LOADS")
         return juce::String(droppedLoads.load(std::memory_order_relaxed));
@@ -1110,7 +1277,131 @@ juce::String Processor::getNamedConfigParam(const juce::String& name) const
     // Reset diagnostic counters (write empty string to reset)
     // Note: These are handled in handleNamedConfigParam, but we return current value here
 
+    // Pattern: pad_{N}_color (get pad color for UI display)
+    // Returns: decimal color value (0xRRGGBBAA as integer string), "0" if no custom color
+    if (name.startsWith("pad_") && name.endsWith("_color"))
+    {
+        juce::String padStr = name.substring(4, name.length() - 6);
+        if (padStr.containsOnly("0123456789"))
+        {
+            int pad = padStr.getIntValue();
+            if (pad >= 0 && pad < NUM_PADS)
+                return juce::String(static_cast<juce::int64>(padColors[pad]));
+        }
+    }
+
     return {};
+}
+
+// =============================================================================
+// FILE-BASED IPC (Lua command queue)
+// =============================================================================
+
+juce::File Processor::getCommandFile() const
+{
+    // Use system temp directory - works for both portable and installed REAPER
+    juce::File tempDir = juce::File::getSpecialLocation(juce::File::tempDirectory);
+    return tempDir.getChildFile("DrumBlocks/commands.txt");
+}
+
+void Processor::timerCallback()
+{
+    processCommandFile();
+}
+
+void Processor::processCommandFile()
+{
+    juce::File cmdFile = getCommandFile();
+
+    if (!cmdFile.existsAsFile())
+        return;
+
+    // Read all lines from the file
+    juce::StringArray lines;
+    cmdFile.readLines(lines);
+
+    if (lines.isEmpty())
+        return;
+
+    // Delete the file immediately to prevent re-processing
+    // (Lua will create a new one for next batch of commands)
+    cmdFile.deleteFile();
+
+    DBG("DrumBlocks: Processing " << lines.size() << " commands from file");
+
+    // Process each command line
+    for (const auto& line : lines)
+    {
+        if (line.isEmpty())
+            continue;
+
+        // Parse command format: COMMAND|arg1|arg2|arg3...
+        juce::StringArray parts;
+        parts.addTokens(line, "|", "");
+
+        if (parts.isEmpty())
+            continue;
+
+        juce::String cmd = parts[0];
+
+        if (cmd == "LOAD_SAMPLE" && parts.size() >= 4)
+        {
+            // LOAD_SAMPLE|pad|layer|filepath
+            int pad = parts[1].getIntValue();
+            int layer = parts[2].getIntValue();
+            juce::String filePath = parts[3];
+
+            // Handle paths with | in them (rejoin remaining parts)
+            for (int i = 4; i < parts.size(); ++i)
+                filePath += "|" + parts[i];
+
+            DBG("DrumBlocks: Loading sample to pad " << pad << " layer " << layer << ": " << filePath);
+
+            if (pad >= 0 && pad < NUM_PADS && layer >= 0 && layer < NUM_VELOCITY_LAYERS)
+            {
+                if (filePath.isEmpty())
+                    queueCommand({ PadCommandType::ClearLayer, pad, 0, layer });
+                else
+                    loadSampleToPadAsync(pad, layer, filePath, false);
+            }
+        }
+        else if (cmd == "PREVIEW" && parts.size() >= 2)
+        {
+            // PREVIEW|pad|velocity (velocity optional, defaults to 100)
+            int pad = parts[1].getIntValue();
+            int velocity = parts.size() >= 3 ? parts[2].getIntValue() : 100;
+            velocity = juce::jlimit(1, 127, velocity);
+
+            DBG("DrumBlocks: Preview pad " << pad << " velocity " << velocity);
+
+            if (pad >= 0 && pad < NUM_PADS)
+                queueCommand({ PadCommandType::Trigger, pad, velocity, 0 });
+        }
+        else if (cmd == "STOP" && parts.size() >= 2)
+        {
+            // STOP|pad
+            int pad = parts[1].getIntValue();
+
+            if (pad >= 0 && pad < NUM_PADS)
+                queueCommand({ PadCommandType::Stop, pad, 0, 0 });
+        }
+        else if (cmd == "STOP_ALL")
+        {
+            queueCommand({ PadCommandType::StopAll, -1, 0, 0 });
+        }
+        else if (cmd == "CLEAR" && parts.size() >= 2)
+        {
+            // CLEAR|pad
+            int pad = parts[1].getIntValue();
+
+            if (pad >= 0 && pad < NUM_PADS)
+                queueCommand({ PadCommandType::ClearPad, pad, 0, 0 });
+        }
+        else
+        {
+            DBG("DrumBlocks: Unknown command: " << cmd);
+        }
+    }
 }
 
 }  // namespace DrumBlocks

@@ -110,6 +110,143 @@ void VelocityLayer::clear()
     normGain = 1.0f;
     roundRobinSamples.clear();
     roundRobinIndex = 0;
+    peaksMini.clear();
+    peaksFull.clear();
+}
+
+void VelocityLayer::computePeaks()
+{
+    // Compute peaks from current buffer at both resolutions in a SINGLE PASS
+    // Format: [max1..maxN, min1..minN] - matches Lua waveform_cache format
+    //
+    // Optimization: Instead of iterating all samples twice (once per resolution),
+    // we iterate once at the higher resolution (512) and downsample to mini (64).
+    // This gives ~2x speedup for typical samples.
+
+    if (numSamples == 0 || buffer.getNumChannels() == 0)
+    {
+        peaksMini.clear();
+        peaksFull.clear();
+        return;
+    }
+
+    const int channels = buffer.getNumChannels();
+    const bool isMono = (channels == 1);
+
+    // Get read pointers (cache for inner loop)
+    const float* srcL = buffer.getReadPointer(0);
+    const float* srcR = isMono ? srcL : buffer.getReadPointer(1);
+
+    // Calculate actual resolutions (can't have more peaks than samples)
+    const int fullRes = std::min(PEAKS_FULL_RESOLUTION, numSamples);
+    const int miniRes = std::min(PEAKS_MINI_RESOLUTION, numSamples);
+
+    if (fullRes < 1 || miniRes < 1)
+    {
+        peaksMini.clear();
+        peaksFull.clear();
+        return;
+    }
+
+    // Allocate output arrays
+    peaksFull.resize(fullRes * 2);
+    peaksMini.resize(miniRes * 2);
+
+    const int samplesPerFullPeak = numSamples / fullRes;
+    const int fullPeaksPerMiniPeak = fullRes / miniRes;  // 512/64 = 8
+
+    float maxAbsPeakFull = 0.0f;
+    float maxAbsPeakMini = 0.0f;
+
+    // Single pass: compute full-resolution peaks
+    // Every 8 full peaks, also update the corresponding mini peak
+    int currentMiniPeak = 0;
+    float miniMaxVal = 0.0f;
+    float miniMinVal = 0.0f;
+
+    for (int i = 0; i < fullRes; ++i)
+    {
+        const int startSample = i * samplesPerFullPeak;
+        const int endSample = std::min(startSample + samplesPerFullPeak, numSamples);
+
+        float maxVal = 0.0f;
+        float minVal = 0.0f;
+
+        // Inner loop: find min/max in this peak's sample range
+        // Optimized: avoid division for mono, use direct pointers
+        if (isMono)
+        {
+            for (int s = startSample; s < endSample; ++s)
+            {
+                const float sample = srcL[s];
+                if (sample > maxVal) maxVal = sample;
+                if (sample < minVal) minVal = sample;
+            }
+        }
+        else
+        {
+            // Stereo: average channels (most common case)
+            for (int s = startSample; s < endSample; ++s)
+            {
+                const float monoSample = (srcL[s] + srcR[s]) * 0.5f;  // Multiply faster than divide
+                if (monoSample > maxVal) maxVal = monoSample;
+                if (monoSample < minVal) minVal = monoSample;
+            }
+        }
+
+        // Store full-resolution peak
+        peaksFull[i] = maxVal;
+        peaksFull[fullRes + i] = minVal;
+
+        // Track for normalization
+        maxAbsPeakFull = std::max(maxAbsPeakFull, std::abs(maxVal));
+        maxAbsPeakFull = std::max(maxAbsPeakFull, std::abs(minVal));
+
+        // Accumulate for mini peak (take max of 8 full peaks)
+        if (maxVal > miniMaxVal) miniMaxVal = maxVal;
+        if (minVal < miniMinVal) miniMinVal = minVal;
+
+        // Every 8 full peaks, store a mini peak
+        if ((i + 1) % fullPeaksPerMiniPeak == 0 && currentMiniPeak < miniRes)
+        {
+            peaksMini[currentMiniPeak] = miniMaxVal;
+            peaksMini[miniRes + currentMiniPeak] = miniMinVal;
+
+            maxAbsPeakMini = std::max(maxAbsPeakMini, std::abs(miniMaxVal));
+            maxAbsPeakMini = std::max(maxAbsPeakMini, std::abs(miniMinVal));
+
+            // Reset for next mini peak group
+            miniMaxVal = 0.0f;
+            miniMinVal = 0.0f;
+            ++currentMiniPeak;
+        }
+    }
+
+    // Handle any remaining mini peaks (if fullRes not evenly divisible)
+    while (currentMiniPeak < miniRes)
+    {
+        peaksMini[currentMiniPeak] = miniMaxVal;
+        peaksMini[miniRes + currentMiniPeak] = miniMinVal;
+        miniMaxVal = 0.0f;
+        miniMinVal = 0.0f;
+        ++currentMiniPeak;
+    }
+
+    // Normalize full peaks (makes quiet waveforms visible)
+    if (maxAbsPeakFull > 0.0f && maxAbsPeakFull < 1.0f)
+    {
+        const float scale = 1.0f / maxAbsPeakFull;
+        for (auto& p : peaksFull)
+            p *= scale;
+    }
+
+    // Normalize mini peaks (separate normalization for correct visual scaling)
+    if (maxAbsPeakMini > 0.0f && maxAbsPeakMini < 1.0f)
+    {
+        const float scale = 1.0f / maxAbsPeakMini;
+        for (auto& p : peaksMini)
+            p *= scale;
+    }
 }
 
 // =============================================================================
@@ -370,11 +507,26 @@ void Pad::trigger(int velocity)
 
 void Pad::noteOff()
 {
-    // In non-one-shot modes, note-off triggers release phase
-    if (loopMode != LoopMode::OneShot)
+    // Handle note-off based on noteOffMode setting
+    switch (noteOffMode)
     {
-        envelope.noteOff();
-        pitchEnvelope.noteOff();
+        case NoteOffMode::Ignore:
+            // Do nothing - sample plays to end (standard drum behavior)
+            break;
+
+        case NoteOffMode::Release:
+            // Trigger ADSR release phase
+            if (isPlaying)
+            {
+                envelope.noteOff();
+                pitchEnvelope.noteOff();
+            }
+            break;
+
+        case NoteOffMode::Cut:
+            // Immediately stop the sample
+            stop();
+            break;
     }
 }
 
@@ -1302,6 +1454,9 @@ void Pad::setSampleBuffer(int layerIndex,
     layer.sourceSampleRate = sampleRate;
     layer.filePath = path;
     layer.normGain = inNormGain;
+
+    // Compute waveform peaks for visualization
+    layer.computePeaks();
 }
 
 void Pad::addRoundRobinBuffer(int layerIndex,
@@ -1409,6 +1564,38 @@ double Pad::getSampleDuration(int layerIndex) const
         }
     }
     return 0.0;
+}
+
+float Pad::getPlaybackProgress() const
+{
+    if (!isPlaying)
+        return 0.0f;
+
+    // Calculate normalized progress within start/end region
+    const double regionLength = static_cast<double>(playEndSample - playStartSample);
+    if (regionLength <= 0)
+        return 0.0f;
+
+    // playPosition is already clamped to [playStartSample, playEndSample] in renderNextBlock
+    const double progress = (playPosition - static_cast<double>(playStartSample)) / regionLength;
+    return static_cast<float>(juce::jlimit(0.0, 1.0, progress));
+}
+
+// Static empty vector for safe reference return
+static const std::vector<float> kEmptyPeaks;
+
+const std::vector<float>& Pad::getPeaksMini(int layerIndex) const
+{
+    if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+        return layers[layerIndex].peaksMini;
+    return kEmptyPeaks;
+}
+
+const std::vector<float>& Pad::getPeaksFull(int layerIndex) const
+{
+    if (layerIndex >= 0 && layerIndex < NUM_VELOCITY_LAYERS)
+        return layers[layerIndex].peaksFull;
+    return kEmptyPeaks;
 }
 
 // =============================================================================

@@ -14,6 +14,7 @@ local Theme = require('arkitekt.theme')
 
 -- Component-based blocks (lazy loaded)
 local DrumRackComponent = nil
+local DrumBlocksComponent = nil
 local ItemBrowserComponent = nil
 
 -- STATE
@@ -41,6 +42,14 @@ function M.init()
     reaper.ShowConsoleMsg('[Blocks] Loaded drum_rack component\n')
   else
     reaper.ShowConsoleMsg('[Blocks] Failed to load drum_rack: ' .. (err1 or 'unknown') .. '\n')
+  end
+
+  local drum_blocks, err_db = Loader.load_by_name('drum_blocks')
+  if drum_blocks then
+    DrumBlocksComponent = drum_blocks
+    reaper.ShowConsoleMsg('[Blocks] Loaded drum_blocks component\n')
+  else
+    reaper.ShowConsoleMsg('[Blocks] Failed to load drum_blocks: ' .. (err_db or 'unknown') .. '\n')
   end
 
   local item_browser, err2 = Loader.load_by_name('item_browser')
@@ -200,9 +209,22 @@ function M.Draw(ctx, shell_state)
       ImGui.EndTabItem(ctx)
     end
 
-    -- Drum Rack Tab (component-based)
-    if ImGui.BeginTabItem(ctx, '🥁 Drum Rack') then
+    -- DrumBlocks Tab (VST-based, primary)
+    if ImGui.BeginTabItem(ctx, '🥁 DrumBlocks') then
       state.current_tab = 2
+      ImGui.Spacing(ctx)
+      if DrumBlocksComponent then
+        DrumBlocksComponent.draw(ctx)
+      else
+        ImGui.TextColored(ctx, 0xFF8888FF, 'DrumBlocks component failed to load')
+        ImGui.TextDisabled(ctx, 'Ensure DrumBlocks VST is installed')
+      end
+      ImGui.EndTabItem(ctx)
+    end
+
+    -- Drum Rack Tab (RS5K-based, legacy)
+    if ImGui.BeginTabItem(ctx, '🎹 Drum Rack (RS5K)') then
+      state.current_tab = 6
       ImGui.Spacing(ctx)
       if DrumRackComponent then
         DrumRackComponent.draw(ctx)
