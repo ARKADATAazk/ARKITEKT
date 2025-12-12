@@ -9,6 +9,14 @@ local RtconfigConverter = require('WalterBuilder.domain.rtconfig_converter')
 local ThemeConnector = require('WalterBuilder.domain.theme_connector')
 local Colors = require('WalterBuilder.config.colors')
 local WalterSettings = require('WalterBuilder.data.settings')
+local DebugConsole = require('WalterBuilder.ui.panels.debug_console')
+
+-- Wire up the logger for domain modules
+-- This allows domain code to log without importing UI modules directly
+RtconfigConverter.logger = function(level, fmt, ...)
+  local log_fn = DebugConsole[level] or DebugConsole.info
+  log_fn(fmt, ...)
+end
 
 local M = {}
 local Panel = {}
