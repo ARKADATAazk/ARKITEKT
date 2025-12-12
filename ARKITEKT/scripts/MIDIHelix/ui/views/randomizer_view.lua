@@ -28,8 +28,8 @@ local LAYOUT = {
   SLIDERS = { X = 160, Y = 30, W = 24, H = 130, SPACING = 32 },
   OPTIONS = { X = 580, Y = 30, SPACING = 28 },
   OCT_SLIDER = { X = 720, Y = 30, W = 30, H = 130 },
-  BTN_PRIMARY = { X = 25, Y = 175, W = 110, H = 25 },
-  BTN_SECONDARY = { X = 25, Y = 140, W = 110, H = 25 },
+  BTN_ROW1 = { X = 25, Y = 140, W = 54, H = 25, GAP = 4 },  -- Shuffle row
+  BTN_ROW2 = { X = 25, Y = 170, W = 54, H = 25, GAP = 4 },  -- Randomize row
 }
 
 -- ============================================================================
@@ -48,7 +48,6 @@ local state = {
   weights = {},
 
   -- Options
-  all_notes = Defaults.RANDOMIZER.ALL_NOTES,
   first_is_root = Defaults.RANDOMIZER.FIRST_IS_ROOT,
   octave_double = Defaults.RANDOMIZER.OCTAVE_DOUBLE,
   octave_prob = Defaults.RANDOMIZER.OCTAVE_PROB,
@@ -130,49 +129,68 @@ local function draw_left_panel(ctx, base_x, base_y, tab_color)
     ImGui.EndCombo(ctx)
   end
 
-  -- Shuffle button
-  local btn2_x = base_x + LAYOUT.BTN_SECONDARY.X
-  local btn2_y = base_y + LAYOUT.BTN_SECONDARY.Y
-  local btn2_w = LAYOUT.BTN_SECONDARY.W
-  local btn2_h = LAYOUT.BTN_SECONDARY.H
+  -- Shuffle buttons (Sel / All)
+  local row1 = LAYOUT.BTN_ROW1
+  local btn1_x = base_x + row1.X
+  local btn1_y = base_y + row1.Y
 
-  ImGui.SetCursorScreenPos(ctx, btn2_x, btn2_y)
   ImGui.PushStyleColor(ctx, ImGui.Col_Button, 0x505050FF)
   ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, 0x606060FF)
   ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, 0x404040FF)
 
-  if ImGui.Button(ctx, 'Shuffle', btn2_w, btn2_h) then
+  ImGui.SetCursorScreenPos(ctx, btn1_x, btn1_y)
+  if ImGui.Button(ctx, 'Shuf Sel', row1.W, row1.H) then
     local success, msg = MidiWriter.randomize_notes(function(notes)
-      return Randomizer.shuffle_notes(notes, not state.all_notes)
-    end, not state.all_notes)
+      return Randomizer.shuffle_notes(notes, true)
+    end, true)
+    state.message = msg
+  end
+
+  ImGui.SetCursorScreenPos(ctx, btn1_x + row1.W + row1.GAP, btn1_y)
+  if ImGui.Button(ctx, 'Shuf All', row1.W, row1.H) then
+    local success, msg = MidiWriter.randomize_notes(function(notes)
+      return Randomizer.shuffle_notes(notes, false)
+    end, false)
     state.message = msg
   end
 
   ImGui.PopStyleColor(ctx, 3)
 
-  -- Randomize button
-  local btn_x = base_x + LAYOUT.BTN_PRIMARY.X
-  local btn_y = base_y + LAYOUT.BTN_PRIMARY.Y
-  local btn_w = LAYOUT.BTN_PRIMARY.W
-  local btn_h = LAYOUT.BTN_PRIMARY.H
+  -- Randomize buttons (Sel / All)
+  local row2 = LAYOUT.BTN_ROW2
+  local btn2_x = base_x + row2.X
+  local btn2_y = base_y + row2.Y
 
-  ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
   ImGui.PushStyleColor(ctx, ImGui.Col_Button, tab_color)
   ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, Colors.AdjustBrightness(tab_color, 1.15))
   ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, Colors.AdjustBrightness(tab_color, 0.85))
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x202020FF)
 
-  if ImGui.Button(ctx, 'Randomize', btn_w, btn_h) then
+  ImGui.SetCursorScreenPos(ctx, btn2_x, btn2_y)
+  if ImGui.Button(ctx, 'Rand Sel', row2.W, row2.H) then
     local root = (state.octave + 1) * 12 + (state.key - 1)
-
     local success, msg = MidiWriter.randomize_notes(function(notes)
       return Randomizer.randomize_notes(notes, state.weights, root, {
         first_is_root = state.first_is_root,
         octave_double = state.octave_double,
         octave_prob = state.octave_prob,
-        selected_only = not state.all_notes,
+        selected_only = true,
       })
-    end, not state.all_notes)
+    end, true)
+    state.message = msg
+  end
+
+  ImGui.SetCursorScreenPos(ctx, btn2_x + row2.W + row2.GAP, btn2_y)
+  if ImGui.Button(ctx, 'Rand All', row2.W, row2.H) then
+    local root = (state.octave + 1) * 12 + (state.key - 1)
+    local success, msg = MidiWriter.randomize_notes(function(notes)
+      return Randomizer.randomize_notes(notes, state.weights, root, {
+        first_is_root = state.first_is_root,
+        octave_double = state.octave_double,
+        octave_prob = state.octave_prob,
+        selected_only = false,
+      })
+    end, false)
     state.message = msg
   end
 
@@ -232,18 +250,13 @@ local function draw_options_panel(ctx, base_x, base_y, tab_color)
   local opt_x = base_x + LAYOUT.OPTIONS.X
   local opt_y = base_y + LAYOUT.OPTIONS.Y
 
-  -- All/Selected toggle
-  ImGui.SetCursorScreenPos(ctx, opt_x, opt_y)
-  local _, all = ImGui.Checkbox(ctx, 'All Notes', state.all_notes)
-  state.all_notes = all
-
   -- First note = root
-  ImGui.SetCursorScreenPos(ctx, opt_x, opt_y + LAYOUT.OPTIONS.SPACING)
+  ImGui.SetCursorScreenPos(ctx, opt_x, opt_y)
   local _, first = ImGui.Checkbox(ctx, '1st=Root', state.first_is_root)
   state.first_is_root = first
 
   -- Octave doubler
-  ImGui.SetCursorScreenPos(ctx, opt_x, opt_y + LAYOUT.OPTIONS.SPACING * 2)
+  ImGui.SetCursorScreenPos(ctx, opt_x, opt_y + LAYOUT.OPTIONS.SPACING)
   local _, oct2 = ImGui.Checkbox(ctx, 'Oct x2', state.octave_double)
   state.octave_double = oct2
 
@@ -323,7 +336,6 @@ function M.get_state()
     octave = state.octave,
     scale_idx = state.scale_idx,
     weights = state.weights,
-    all_notes = state.all_notes,
     first_is_root = state.first_is_root,
     octave_double = state.octave_double,
     octave_prob = state.octave_prob,

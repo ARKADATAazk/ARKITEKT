@@ -5,9 +5,9 @@
 return {
   -- Tab accent colors
   TABS = {
-    RANDOMIZER = 0x50C878FF,  -- Green
-    SEQUENCER  = 0xFFD700FF,  -- Yellow/Gold
     EUCLIDEAN  = 0xFF8C00FF,  -- Orange
+    SEQUENCER  = 0xFFD700FF,  -- Yellow/Gold
+    RANDOMIZER = 0x50C878FF,  -- Green
     MELODIC    = 0x00CED1FF,  -- Cyan/Teal
     RHYTHM     = 0xDA70D6FF,  -- Magenta/Orchid
     GENERATIVE = 0x9370DBFF,  -- Medium Purple

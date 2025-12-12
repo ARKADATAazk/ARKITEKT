@@ -40,7 +40,7 @@ local LAYOUT = {
   LEFT_PANEL = { X = 25 },
   TRANSFORM_SEL = { X = 160, Y = 25 },
   PARAMS = { X = 160, Y = 80 },
-  BTN_APPLY = { X = 25, Y = 175, W = 110, H = 25 },
+  BTN_ROW = { X = 25, Y = 175, W = 54, H = 25, GAP = 4 },
 }
 
 -- ============================================================================
@@ -52,9 +52,6 @@ local state = {
 
   -- Transform selection
   transform_idx = 1,
-
-  -- Common params
-  selected_only = true,
 
   -- Inversion params
   pivot_key = 1,      -- 1-12 (C through B)
@@ -92,24 +89,10 @@ local function draw_left_panel(ctx, base_x, base_y, tab_color)
   local Colors = Ark.Colors
   local lx = base_x + LAYOUT.LEFT_PANEL.X
 
-  -- Source selection
-  ImGui.SetCursorScreenPos(ctx, lx, base_y + 10)
-  ImGui.Text(ctx, 'Source')
-
-  ImGui.SetCursorScreenPos(ctx, lx, base_y + 30)
-  if ImGui.RadioButton(ctx, 'Selected', state.selected_only) then
-    state.selected_only = true
-  end
-
-  ImGui.SetCursorScreenPos(ctx, lx, base_y + 50)
-  if ImGui.RadioButton(ctx, 'All Notes', not state.selected_only) then
-    state.selected_only = false
-  end
-
   -- Scale selection (for diatonic operations)
-  ImGui.SetCursorScreenPos(ctx, lx, base_y + 85)
+  ImGui.SetCursorScreenPos(ctx, lx, base_y + 10)
   ImGui.Text(ctx, 'Scale')
-  ImGui.SetCursorScreenPos(ctx, lx, base_y + 103)
+  ImGui.SetCursorScreenPos(ctx, lx, base_y + 28)
   ImGui.SetNextItemWidth(ctx, 110)
 
   local scale_names = Scales.get_scale_names()
@@ -122,19 +105,27 @@ local function draw_left_panel(ctx, base_x, base_y, tab_color)
     ImGui.EndCombo(ctx)
   end
 
-  -- Apply button
-  local btn_x = base_x + LAYOUT.BTN_APPLY.X
-  local btn_y = base_y + LAYOUT.BTN_APPLY.Y
+  -- Apply buttons (Sel / All)
+  local row = LAYOUT.BTN_ROW
+  local btn_x = base_x + row.X
+  local btn_y = base_y + row.Y
 
-  ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
   ImGui.PushStyleColor(ctx, ImGui.Col_Button, tab_color)
   ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, Colors.AdjustBrightness(tab_color, 1.15))
   ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, Colors.AdjustBrightness(tab_color, 0.85))
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x202020FF)
 
-  if ImGui.Button(ctx, 'Apply', LAYOUT.BTN_APPLY.W, LAYOUT.BTN_APPLY.H) then
+  ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
+  if ImGui.Button(ctx, 'Apply Sel', row.W, row.H) then
     local transform = TRANSFORMS[state.transform_idx]
-    local success, msg = apply_transform(transform.id)
+    local success, msg = apply_transform(transform.id, true)
+    state.message = msg
+  end
+
+  ImGui.SetCursorScreenPos(ctx, btn_x + row.W + row.GAP, btn_y)
+  if ImGui.Button(ctx, 'Apply All', row.W, row.H) then
+    local transform = TRANSFORMS[state.transform_idx]
+    local success, msg = apply_transform(transform.id, false)
     state.message = msg
   end
 
@@ -339,7 +330,7 @@ end
 -- APPLY TRANSFORM
 -- ============================================================================
 
-apply_transform = function(transform_id)
+apply_transform = function(transform_id, selected_only)
   local scale = Scales.get_scale_by_index(state.scale_idx)
   local pivot = (state.pivot_octave + 1) * 12 + (state.pivot_key - 1)
   local root = state.scale_root - 1  -- 0-11
@@ -404,7 +395,7 @@ apply_transform = function(transform_id)
   end
 
   if transform_fn then
-    return MidiWriter.apply_transform(transform_fn, state.selected_only, undo_name)
+    return MidiWriter.apply_transform(transform_fn, selected_only, undo_name)
   end
 
   return false, 'Unknown transform'
@@ -445,7 +436,6 @@ end
 function M.get_state()
   return {
     transform_idx = state.transform_idx,
-    selected_only = state.selected_only,
     pivot_key = state.pivot_key,
     pivot_octave = state.pivot_octave,
     diatonic_mode = state.diatonic_mode,

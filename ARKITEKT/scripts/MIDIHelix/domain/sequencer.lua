@@ -168,10 +168,10 @@ function M.generate_sequence(opts)
 
       notes[#notes + 1] = {
         pitch = pitch,
-        velocity = vel,
+        vel = vel,
         start_ppq = note_start,
         end_ppq = note_end,
-        channel = 0,
+        chan = 0,
         selected = true,
         muted = false,
       }
@@ -183,24 +183,63 @@ function M.generate_sequence(opts)
   return notes
 end
 
---- Get item length in PPQ from active MIDI editor
+--- Get item length in PPQ from active MIDI editor or selected MIDI item
 --- @return number|nil Item length in PPQ, or nil if no active take
 function M.get_item_length_ppq()
-  local take = reaper.MIDIEditor_GetTake(reaper.MIDIEditor_GetActive())
-  if not take then return nil end
+  local take, item
 
-  local item = reaper.GetMediaItemTake_Item(take)
-  if not item then return nil end
+  -- First try: active MIDI editor
+  local editor = reaper.MIDIEditor_GetActive()
+  if editor then
+    take = reaper.MIDIEditor_GetTake(editor)
+    if take and reaper.ValidatePtr2(0, take, 'MediaItem_Take*') then
+      item = reaper.GetMediaItemTake_Item(take)
+    end
+  end
+
+  -- Second try: selected MIDI item
+  if not take then
+    item = reaper.GetSelectedMediaItem(0, 0)
+    if item then
+      take = reaper.GetActiveTake(item)
+      if take and not reaper.TakeIsMIDI(take) then
+        take = nil
+      end
+    end
+  end
+
+  if not take then return nil end
 
   -- Use BR_GetMidiSourceLenPPQ for accurate length
   local ppq_len = reaper.BR_GetMidiSourceLenPPQ(take)
   return ppq_len
 end
 
---- Get current grid size from MIDI editor
+--- Get current grid size from MIDI editor or selected MIDI item
 --- @return number Grid size in QN (quarter notes)
 function M.get_grid_qn()
-  local take = reaper.MIDIEditor_GetTake(reaper.MIDIEditor_GetActive())
+  local take
+
+  -- First try: active MIDI editor
+  local editor = reaper.MIDIEditor_GetActive()
+  if editor then
+    take = reaper.MIDIEditor_GetTake(editor)
+    if take and not reaper.ValidatePtr2(0, take, 'MediaItem_Take*') then
+      take = nil
+    end
+  end
+
+  -- Second try: selected MIDI item
+  if not take then
+    local item = reaper.GetSelectedMediaItem(0, 0)
+    if item then
+      take = reaper.GetActiveTake(item)
+      if take and not reaper.TakeIsMIDI(take) then
+        take = nil
+      end
+    end
+  end
+
   if not take then return 0.25 end  -- Default 1/16
 
   local grid_qn = reaper.MIDI_GetGrid(take)
