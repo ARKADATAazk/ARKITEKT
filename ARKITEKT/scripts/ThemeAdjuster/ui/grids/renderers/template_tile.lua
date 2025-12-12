@@ -6,6 +6,7 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local Math = require('arkitekt.core.math')
+local Constants = require('ThemeAdjuster.config.constants')
 local M = {}
 
 -- Animation state storage (persistent across frames)
@@ -29,7 +30,7 @@ function M.render(ctx, rect, item, state, view)
   local key = 'template_' .. template_id
   M._anim[key] = M._anim[key] or { hover = 0 }
 
-  local hover_t = Math.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
+  local hover_t = Math.lerp(M._anim[key].hover, state.hover and 1 or 0, Constants.ANIMATION.hover_lerp_factor)
   M._anim[key].hover = hover_t
 
   -- Color definitions
@@ -62,10 +63,7 @@ function M.render(ctx, rect, item, state, view)
 
   -- Template name
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCCCCFFFF)
-  local display_name = template.name or 'Unnamed Template'
-  if #display_name > 30 then
-    display_name = display_name:sub(1, 27) .. '...'
-  end
+  local display_name = Visuals.truncate(template.name or 'Unnamed Template', 30)
   ImGui.Text(ctx, display_name)
   ImGui.PopStyleColor(ctx)
 
@@ -87,10 +85,7 @@ function M.render(ctx, rect, item, state, view)
     param_names[#param_names + 1] = param_name
   end
 
-  local params_text = table.concat(param_names, ', ')
-  if #params_text > 50 then
-    params_text = params_text:sub(1, 47) .. '...'
-  end
+  local params_text = Visuals.truncate(table.concat(param_names, ', '), 50)
   ImGui.Text(ctx, params_text)
   ImGui.PopStyleColor(ctx)
 

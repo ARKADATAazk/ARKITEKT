@@ -7,16 +7,15 @@ local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 local Strings = require('ThemeAdjuster.config.strings')
+local Spinners = require('ThemeAdjuster.config.spinners')
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
 local TransportView = {}
 TransportView.__index = TransportView
 
--- Spinner value lists (from Default 6.0)
-local SPINNER_VALUES = {
-  trans_rate_size = {'KNOB', 80, 130, 160, 200, 250, 310, 380},
-}
+-- Spinner value lists (centralized in config/spinners.lua)
+local SPINNER_VALUES = Spinners.FLAT
 
 function M.new(State, Config, settings)
   local self = setmetatable({

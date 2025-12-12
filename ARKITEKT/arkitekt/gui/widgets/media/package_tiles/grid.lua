@@ -93,7 +93,12 @@ local function create_opts(pkg, settings, theme, wrapper)
         local first_key = selected_keys[1]
         local new_status = not pkg.active[first_key]
         for _, id in ipairs(selected_keys) do
-          pkg.active[id] = new_status
+          -- Use toggle method if available (allows model to handle state updates)
+          if pkg.toggle then
+            pkg:toggle(id)
+          else
+            pkg.active[id] = new_status
+          end
         end
         if settings then settings:set('pkg_active', pkg.active) end
       end,
@@ -118,7 +123,12 @@ local function create_opts(pkg, settings, theme, wrapper)
         if #selected_keys > 1 then
           local new_status = not pkg.active[key]
           for _, id in ipairs(selected_keys) do
-            pkg.active[id] = new_status
+            -- Use toggle method if available (allows model to handle state updates)
+            if pkg.toggle then
+              pkg:toggle(id)
+            else
+              pkg.active[id] = new_status
+            end
           end
         else
           pkg:toggle(key)

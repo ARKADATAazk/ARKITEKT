@@ -3,6 +3,7 @@
 -- REAPER theme parameter indexing and access layer
 
 local Logger = require('arkitekt.debug.logger')
+local Spinners = require('ThemeAdjuster.config.spinners')
 local log = Logger.new('ThemeParams')
 
 local M = {}
@@ -197,47 +198,12 @@ function M.is_flag_set(param, flag_bit)
 end
 
 -- ============================================================================
--- SPINNER VALUE LISTS
+-- SPINNER VALUE LISTS (re-exported from config/spinners.lua)
 -- ============================================================================
 
--- These map spinner values to REAPER parameter values
 -- NOTE: These are for display only - REAPER uses 1-based numeric indices
-M.SPINNER_VALUES = {
-  -- TCP
-  tcp_indent = {'NONE', '1/8', '1/4', '1/2', 1, 2, 'MAX'},
-  tcp_control_align = {'FOLDER INDENT', 'ALIGNED', 'EXTEND NAME'},
-  tcp_LabelSize = {'AUTO', 20, 50, 80, 110, 140, 170},
-  tcp_vol_size = {'KNOB', 40, 70, 100, 130, 160, 190},
-  tcp_MeterSize = {4, 10, 20, 40, 80, 160, 320},
-  tcp_InputSize = {'MIN', 25, 40, 60, 90, 150, 200},
-  tcp_MeterLoc = {'LEFT', 'RIGHT', 'LEFT IF ARMED'},
-  tcp_sepSends = {'OFF', 'ON'},
-  tcp_fxparms_size = {'MIN', 50, 75, 100, 125, 150},
-  tcp_recmon_size = {'MIN', 20, 30, 40, 50},
-  tcp_pan_size = {'MIN', 40, 60, 80, 100},
-  tcp_width_size = {'MIN', 40, 60, 80, 100},
-
-  -- MCP
-  mcp_indent = {'NONE', '1/8', '1/4', '1/2', 1, 2, 'MAX'},
-  mcp_align = {'BOTTOM', 'CENTER'},
-  mcp_meterExpSize = {4, 10, 20, 40, 80, 160, 320},
-  mcp_border = {'NONE', 'FILLED', 'BORDER'},
-  mcp_volText_pos = {'NORMAL', 'SEPARATE'},
-  mcp_panText_pos = {'NORMAL', 'SEPARATE'},
-  mcp_extmixer_mode = {'OFF', '1', '2', '3'},
-  mcp_labelSize = {'MIN', 50, 75, 100, 125, 150},
-  mcp_volSize = {'MIN', 40, 60, 80, 100, 120},
-  mcp_fxlist_size = {'MIN', 80, 120, 160, 200},
-  mcp_sendlist_size = {'MIN', 60, 90, 120, 150},
-  mcp_io_size = {'MIN', 50, 75, 100, 125},
-
-  -- ENVCP
-  envcp_labelSize = {'AUTO', 20, 50, 80, 110, 140, 170},
-  envcp_fader_size = {'KNOB', 40, 70, 100, 130, 160, 190},
-
-  -- TRANS
-  trans_rate_size = {'KNOB', 80, 130, 160, 200, 250, 310, 380},
-}
+-- Centralized in config/spinners.lua, re-exported here for backwards compatibility
+M.SPINNER_VALUES = Spinners.FLAT
 
 -- Get display string for a spinner value
 -- REAPER parameter values are already 1-based indices

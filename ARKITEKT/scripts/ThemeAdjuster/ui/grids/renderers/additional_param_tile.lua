@@ -5,6 +5,7 @@
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
+local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local M = {}
 
 -- Tile dimensions
@@ -70,16 +71,8 @@ function M.render(ctx, param, tab_color, shell_state, view)
   local dl = ImGui.GetWindowDrawList(ctx)
 
   -- Background with tab color tint
-  local function dim_color(color, opacity)
-    local r = (color >> 24) & 0xFF
-    local g = (color >> 16) & 0xFF
-    local b = (color >> 8) & 0xFF
-    local a = math.floor(255 * opacity)
-    return (r << 24) | (g << 16) | (b << 8) | a
-  end
-
-  local bg_color = dim_color(tab_color, 0.12)
-  local border_color = dim_color(tab_color, 0.3)
+  local bg_color = Visuals.dim_color(tab_color, 0.12)
+  local border_color = Visuals.dim_color(tab_color, 0.3)
 
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, 3)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 3, 0, 1)
@@ -90,9 +83,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
   -- TOP ROW: Parameter name + tooltip indicator
   ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
   local display_name = metadata.display_name and metadata.display_name ~= '' and metadata.display_name or param_name
-  if #display_name > 35 then
-    display_name = display_name:sub(1, 32) .. '...'
-  end
+  display_name = Visuals.truncate(display_name, 35)
   ImGui.Text(ctx, display_name)
   ImGui.PopFont(ctx)
 
@@ -114,10 +105,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
     ImGui.SameLine(ctx, avail_w - 250)
     local group_color = ParameterLinkManager.get_group_color(param_name) or 0x4AE290FF
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, group_color)
-    local linked_text = 'Linked: ' .. table.concat(other_params, ', ')
-    if #linked_text > 30 then
-      linked_text = linked_text:sub(1, 27) .. '...'
-    end
+    local linked_text = Visuals.truncate('Linked: ' .. table.concat(other_params, ', '), 30)
     ImGui.Text(ctx, linked_text)
     ImGui.PopStyleColor(ctx)
 
@@ -418,16 +406,8 @@ function M.render_group(ctx, group_param, tab_color, shell_state, view)
   local dl = ImGui.GetWindowDrawList(ctx)
 
   -- Background with tab color tint
-  local function dim_color(color, opacity)
-    local r = (color >> 24) & 0xFF
-    local g = (color >> 16) & 0xFF
-    local b = (color >> 8) & 0xFF
-    local a = math.floor(255 * opacity)
-    return (r << 24) | (g << 16) | (b << 8) | a
-  end
-
-  local bg_color = dim_color(tab_color, 0.12)
-  local border_color = dim_color(tab_color, 0.3)
+  local bg_color = Visuals.dim_color(tab_color, 0.12)
+  local border_color = Visuals.dim_color(tab_color, 0.3)
 
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, 3)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 3, 0, 1)
@@ -437,10 +417,7 @@ function M.render_group(ctx, group_param, tab_color, shell_state, view)
 
   -- TOP ROW: Group name
   ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-  local display_name = group_name
-  if #display_name > 35 then
-    display_name = display_name:sub(1, 32) .. '...'
-  end
+  local display_name = Visuals.truncate(group_name, 35)
   ImGui.Text(ctx, display_name)
   ImGui.PopFont(ctx)
 

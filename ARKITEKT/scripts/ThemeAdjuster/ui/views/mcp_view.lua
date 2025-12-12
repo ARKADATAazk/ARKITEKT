@@ -9,28 +9,18 @@ local ThemeParams = require('ThemeAdjuster.domain.theme.params')
 local ThemeMapper = require('ThemeAdjuster.domain.theme.mapper')
 local ParamDiscovery = require('ThemeAdjuster.domain.theme.discovery')
 local Strings = require('ThemeAdjuster.config.strings')
+local Spinners = require('ThemeAdjuster.config.spinners')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
+local LayoutSelector = require('ThemeAdjuster.ui.components.layout_selector')
+local VisibilityTable = require('ThemeAdjuster.ui.components.visibility_table')
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
 local MCPView = {}
 MCPView.__index = MCPView
 
--- Spinner value lists (from Default 6.0)
-local SPINNER_VALUES = {
-  mcp_indent = {'NONE', '1/8', '1/4', '1/2', 1, 2, 'MAX'},
-  mcp_align = {'BOTTOM', 'CENTER'},
-  mcp_meterExpSize = {4, 10, 20, 40, 80, 160, 320},
-  mcp_border = {'NONE', 'FILLED', 'BORDER'},
-  mcp_volText_pos = {'NORMAL', 'SEPARATE'},
-  mcp_panText_pos = {'NORMAL', 'SEPARATE'},
-  mcp_extmixer_mode = {'OFF', '1', '2', '3'},
-  mcp_labelSize = {'MIN', 50, 75, 100, 125, 150},
-  mcp_volSize = {'MIN', 40, 60, 80, 100, 120},
-  mcp_fxlist_size = {'MIN', 80, 120, 160, 200},
-  mcp_sendlist_size = {'MIN', 60, 90, 120, 150},
-  mcp_io_size = {'MIN', 50, 75, 100, 125},
-}
+-- Spinner value lists (centralized in config/spinners.lua)
+local SPINNER_VALUES = Spinners.FLAT
 
 -- Visibility elements with bitflags (from Default 6.0)
 local VISIBILITY_ELEMENTS = {
@@ -351,88 +341,21 @@ function MCPView:draw(ctx, shell_state)
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    -- Active Layout
-    ImGui.AlignTextToFramePadding(ctx)
-    ImGui.Text(ctx, 'Active Layout')
-    ImGui.SameLine(ctx, 120)
-
-    for _, layout in ipairs({'A', 'B', 'C'}) do
-      local is_active = (self.active_layout == layout)
-      if Ark.Button(ctx, {
-        id = 'mcp_layout_' .. layout,
-        label = layout,
-        width = 50,
-        height = 24,
-        is_toggled = is_active,
-        preset_name = 'BUTTON_TOGGLE_WHITE',
-        on_click = function()
-          self.active_layout = layout
-          ThemeParams.set_active_layout('mcp', layout)
-          self:load_from_theme()
-        end
-      }).clicked then
-      end
-      ImGui.SameLine(ctx, 0, 6)
-    end
-    ImGui.NewLine(ctx)
-
-    ImGui.Dummy(ctx, 0, 4)
-
-    -- Apply Size
-    ImGui.AlignTextToFramePadding(ctx)
-    ImGui.Text(ctx, 'Apply Size')
-    ImGui.SameLine(ctx, 120)
-
-    for _, size in ipairs({'100%', '150%', '200%'}) do
-      if Ark.Button(ctx, {
-        id = 'mcp_size_' .. size,
-        label = size,
-        width = 70,
-        height = 24,
-        on_click = function()
-          local scale = (size == '100%') and '' or (size .. '_')
-          ThemeParams.apply_layout_to_tracks('mcp', self.active_layout, scale)
-        end
-      }).clicked then
-      end
-      ImGui.SameLine(ctx, 0, 6)
-    end
-    ImGui.NewLine(ctx)
-
-    ImGui.Dummy(ctx, 0, 4)
-
-    -- Set Default Layout button
-    local default_layout = self:get_default_layout()
-    local is_default = (default_layout == self.active_layout)
-
-    ImGui.AlignTextToFramePadding(ctx)
-    if is_default then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x00FF88FF)
-      ImGui.Text(ctx, 'Default Layout')
-      ImGui.PopStyleColor(ctx)
-    else
-      ImGui.Text(ctx, 'Default Layout')
-    end
-    ImGui.SameLine(ctx, 120)
-
-    if Ark.Button(ctx, {
-      id = 'mcp_set_default',
-      label = is_default and ('✓ ' .. self.active_layout .. ' is Default') or ('Set ' .. self.active_layout .. ' as Default'),
-      width = 200,
-      height = 24,
-      is_toggled = is_default,
-      preset_name = is_default and 'BUTTON_TOGGLE_WHITE' or nil,
-      on_click = function()
-        if not is_default then
-          self:set_default_layout(self.active_layout)
-        end
-      end
-    }).clicked then
-    end
-    if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Strings.format(Strings.MCP.set_default_layout, self.active_layout))
-    end
-    ImGui.NewLine(ctx)
+    LayoutSelector.draw(ctx, {
+      panel = 'mcp',
+      active_layout = self.active_layout,
+      default_layout = self:get_default_layout(),
+      id_prefix = 'mcp',
+      tooltip_strings = Strings.MCP,
+      on_layout_change = function(layout)
+        self.active_layout = layout
+        ThemeParams.set_active_layout('mcp', layout)
+        self:load_from_theme()
+      end,
+      on_set_default = function(layout)
+        self:set_default_layout(layout)
+      end,
+    })
 
     ImGui.Dummy(ctx, 0, 16)
 
@@ -691,48 +614,18 @@ function MCPView:draw(ctx, shell_state)
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 2)
 
-    -- Table
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_CellPadding, 6, 4)
-    if ImGui.BeginTable(ctx, 'mcp_visibility', 5, ImGui.TableFlags_Borders | ImGui.TableFlags_RowBg | ImGui.TableFlags_ScrollY, avail_w - 16, 300) then
-      -- Setup columns
-      ImGui.TableSetupColumn(ctx, 'Element', ImGui.TableColumnFlags_WidthFixed, 130)
-      for _, col in ipairs(VISIBILITY_COLUMNS) do
-        ImGui.TableSetupColumn(ctx, col.label, ImGui.TableColumnFlags_WidthFixed, 85)
-      end
-      ImGui.TableSetupScrollFreeze(ctx, 0, 1)
-      ImGui.TableHeadersRow(ctx)
-
-      -- Rows
-      for _, elem in ipairs(VISIBILITY_ELEMENTS) do
-        ImGui.TableNextRow(ctx)
-
-        -- Element name
-        ImGui.TableSetColumnIndex(ctx, 0)
-        ImGui.AlignTextToFramePadding(ctx)
-        ImGui.Text(ctx, elem.label)
-
-        -- Checkboxes for each condition
-        for col_idx, col in ipairs(VISIBILITY_COLUMNS) do
-          ImGui.TableSetColumnIndex(ctx, col_idx)
-
-          local current_value = self.visibility[elem.id] or 0
-          local is_checked = (current_value & col.bit) ~= 0
-
-          ImGui.PushID(ctx, elem.id .. '_' .. col.bit)
-          if ImGui.Checkbox(ctx, '##check', is_checked) then
-            self:toggle_bitflag(elem.id, col.bit)
-          end
-          if ImGui.IsItemHovered(ctx) then
-            local tooltip = Strings.MCP_VIS_ELEMENTS[elem.id] or ('Toggle ' .. elem.label)
-            ImGui.SetTooltip(ctx, tooltip)
-          end
-          ImGui.PopID(ctx)
-        end
-      end
-
-      ImGui.EndTable(ctx)
-    end
-    ImGui.PopStyleVar(ctx)
+    VisibilityTable.draw(ctx, {
+      id = 'mcp_visibility',
+      elements = VISIBILITY_ELEMENTS,
+      columns = VISIBILITY_COLUMNS,
+      visibility = self.visibility,
+      tooltip_strings = Strings.MCP_VIS_ELEMENTS,
+      width = avail_w - 16,
+      height = 300,
+      on_toggle = function(elem_id, bit)
+        self:toggle_bitflag(elem_id, bit)
+      end,
+    })
     end -- if show_d60 (ELEMENT VISIBILITY)
 
     ImGui.Unindent(ctx, 8)

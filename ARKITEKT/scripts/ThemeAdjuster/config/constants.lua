@@ -73,4 +73,12 @@ M.HEADER = {
   filters_width = 80,
 }
 
+-- ============================================================================
+-- ANIMATION
+-- ============================================================================
+M.ANIMATION = {
+  -- Smoothing factor for hover transitions (~60fps target)
+  hover_lerp_factor = 12.0 * 0.016,
+}
+
 return M
