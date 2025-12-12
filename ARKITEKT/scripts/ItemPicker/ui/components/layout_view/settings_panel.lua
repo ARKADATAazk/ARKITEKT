@@ -65,7 +65,7 @@ function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   )
 
   -- ============================================================================
-  -- LINE 2: Show Favorites Only | Show Audio | Show MIDI | Group Items | Tile FX | Show Viz | Enable Regions | Show on Tiles
+  -- LINE 2: Show Favorites Only | Group Items | Enable Regions | Show on Tiles
   -- ============================================================================
   ImGui.SetCursorScreenPos(ctx, base_x + 14, base_y + 24)
 
@@ -76,17 +76,10 @@ function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   )
   ImGui.SameLine(ctx, 0, spacing)
 
-  checkbox(ctx, 'show_audio',
-    'Show Audio',
-    state.settings.show_audio, settings_alpha,
-    function() state.set_setting('show_audio', not state.settings.show_audio) end
-  )
-  ImGui.SameLine(ctx, 0, spacing)
-
-  checkbox(ctx, 'show_midi',
-    'Show MIDI',
-    state.settings.show_midi, settings_alpha,
-    function() state.set_setting('show_midi', not state.settings.show_midi) end
+  checkbox(ctx, 'pin_favorites_to_top',
+    'Pin Favorites to Top',
+    state.settings.pin_favorites_to_top, settings_alpha,
+    function() state.set_setting('pin_favorites_to_top', not state.settings.pin_favorites_to_top) end
   )
   ImGui.SameLine(ctx, 0, spacing)
 
@@ -99,16 +92,6 @@ function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
     end
   )
   ImGui.SameLine(ctx, 0, spacing)
-
-  local enable_fx = state.settings.enable_tile_fx
-  if enable_fx == nil then enable_fx = true end
-  checkbox(ctx, 'enable_fx',
-    'Tile FX',
-    enable_fx, settings_alpha,
-    function() state.set_setting('enable_tile_fx', not enable_fx) end
-  )
-  ImGui.SameLine(ctx, 0, spacing)
-
 
   local enable_regions = state.settings.enable_region_processing
   if enable_regions == nil then enable_regions = false end
@@ -204,21 +187,6 @@ function M.Draw(ctx, draw_list, base_x, base_y, settings_height, settings_alpha,
   -- Checkboxes after slider (use cursor flow)
   local checkboxes_x = percent_x + ImGui.CalcTextSize(ctx, percent_text) + 20
   ImGui.SetCursorScreenPos(ctx, checkboxes_x, waveform_y)
-
-  local waveform_filled = state.settings.waveform_filled
-  if waveform_filled == nil then waveform_filled = true end
-  checkbox(ctx, 'waveform_filled',
-    'Fill',
-    waveform_filled, settings_alpha,
-    function()
-      state.set_setting('waveform_filled', not waveform_filled)
-      if state.runtime_cache and state.runtime_cache.waveform_polylines then
-        state.runtime_cache.waveform_polylines = {}
-      end
-    end
-  )
-  ImGui.SameLine(ctx, 0, spacing)
-
 
   local show_duration = state.settings.show_duration
   if show_duration == nil then show_duration = true end

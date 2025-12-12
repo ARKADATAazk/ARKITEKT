@@ -738,26 +738,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     end
   end
 
-  -- PROFILER: After text
-  if M.profile_enabled then t7 = time_precise() end
-
-  -- PERF: Pre-compute cycle badge dimensions once (reused for star and pool positioning)
-  local cycle_badge_w, cycle_text
-  local has_cycle = item_data.total and item_data.total > 1
-  if has_cycle then
-    local idx = item_data.index or 1
-    local cache_key = idx * 10000 + item_data.total
-    local cached = _cached.cycle_badges[cache_key]
-    if cached then
-      cycle_text, cycle_badge_w = cached[1], cached[2] + cfg.badge_cycle_padding_x * 2
-    else
-      cycle_text = format('%d/%d', idx, item_data.total)
-      local w = CalcTextSize(ctx, cycle_text)
-      _cached.cycle_badges[cache_key] = {cycle_text, w}
-      cycle_badge_w = w + cfg.badge_cycle_padding_x * 2
-    end
-  end
-
   -- Render favorite star badge (vertically centered in header, to the left of cycle badge)
   if combined_factor > 0.5 and is_favorite then
     local star_x

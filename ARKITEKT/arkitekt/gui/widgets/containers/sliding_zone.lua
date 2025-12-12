@@ -165,6 +165,12 @@ function SlidingZone.new(id)
 
     -- Window bounds tracking (for reliable edge detection)
     last_mouse_in_window = false,
+
+    -- Reusable tables (avoid per-frame allocations)
+    _trigger_ext = {},
+    _trigger_ext_expanded = {},
+    _content_bounds = {},
+    _result = { expanded = false, visibility = 0, bounds = nil, hovered = false, settled = true },
   }, SlidingZone)
 
   return self
@@ -330,7 +336,8 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
     -- Left edge: panel extends from left boundary
     local collapsed_ratio = opts.collapsed_ratio
     local collapsed_width = size * collapsed_ratio
-    local base_trigger = state.is_expanded and size or (collapsed_width + ext.right)
+    local panel_width = state.is_expanded and size or collapsed_width
+    local base_trigger = panel_width + ext.right  -- Extension always applies
 
     -- X bounds: left edge + trigger threshold
     local x1 = bounds.x - ext.left  -- Extend left (outside panel)
@@ -347,7 +354,8 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
     -- Right edge: panel extends from right boundary
     local collapsed_ratio = opts.collapsed_ratio
     local collapsed_width = size * collapsed_ratio
-    local base_trigger = state.is_expanded and size or (collapsed_width + ext.left)
+    local panel_width = state.is_expanded and size or collapsed_width
+    local base_trigger = panel_width + ext.left  -- Extension always applies
 
     -- X bounds: right edge - trigger threshold
     local x1 = bounds.x + bounds.w - base_trigger  -- Extend left (into content)
@@ -364,7 +372,8 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
     -- Top edge: panel extends from top boundary
     local collapsed_ratio = opts.collapsed_ratio
     local collapsed_height = size * collapsed_ratio
-    local base_trigger = state.is_expanded and size or (collapsed_height + ext.down)
+    local panel_height = state.is_expanded and size or collapsed_height
+    local base_trigger = panel_height + ext.down  -- Extension always applies
 
     -- Y bounds: top edge + trigger threshold
     local y1 = bounds.y - ext.up  -- Extend up (outside panel)
@@ -381,7 +390,8 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
     -- Bottom edge: panel extends from bottom boundary
     local collapsed_ratio = opts.collapsed_ratio
     local collapsed_height = size * collapsed_ratio
-    local base_trigger = state.is_expanded and size or (collapsed_height + ext.up)
+    local panel_height = state.is_expanded and size or collapsed_height
+    local base_trigger = panel_height + ext.up  -- Extension always applies
 
     -- Y bounds: bottom edge - trigger threshold
     local y1 = bounds.y + bounds.h - base_trigger  -- Extend up (into content)
@@ -480,7 +490,7 @@ local function normalize_bounds(bounds)
   return bounds
 end
 
-local function calculate_content_bounds(opts, visibility, slide_offset, scale)
+local function calculate_content_bounds(opts, visibility, slide_offset, scale, out)
   local bounds = normalize_bounds(opts.bounds)
   local edge = opts.edge or 'right'
   local size = opts.size or 40
@@ -493,54 +503,34 @@ local function calculate_content_bounds(opts, visibility, slide_offset, scale)
   local visible_size = scaled_size * math.max(collapsed_ratio, visibility)
 
   -- IMPORTANT: Couple slide_offset to visibility to prevent jitter
-  -- Original implementation had one progress value controlling both position and size
-  -- Using separate tracks causes them to desync, creating jittery movement
   local reveal_offset = opts._reveal_offset
   local coupled_slide = reveal_offset * visibility
 
-  -- NOTE: No rounding! ImGui handles sub-pixel positioning smoothly
-  -- Rounding causes 1px jitter when float values continue animating after visual settling
+  -- Reuse output table to avoid allocations
+  out = out or {}
 
   if edge == 'left' then
-    -- Starts clipped outside left edge, slides right
     local base_x = bounds.x - reveal_offset
-    return {
-      x = base_x + coupled_slide,
-      y = bounds.y,
-      w = visible_size,
-      h = bounds.h
-    }
+    out.x, out.y = base_x + coupled_slide, bounds.y
+    out.w, out.h = visible_size, bounds.h
 
   elseif edge == 'right' then
-    -- Starts clipped outside right edge, slides left
     local base_x = bounds.x + bounds.w + reveal_offset - visible_size
-    return {
-      x = base_x - coupled_slide,
-      y = bounds.y,
-      w = visible_size,
-      h = bounds.h
-    }
+    out.x, out.y = base_x - coupled_slide, bounds.y
+    out.w, out.h = visible_size, bounds.h
 
   elseif edge == 'top' then
-    -- Starts clipped outside top edge, slides down
     local base_y = bounds.y - reveal_offset
-    return {
-      x = bounds.x,
-      y = base_y + coupled_slide,
-      w = bounds.w,
-      h = visible_size
-    }
+    out.x, out.y = bounds.x, base_y + coupled_slide
+    out.w, out.h = bounds.w, visible_size
 
   else -- bottom
-    -- Starts clipped outside bottom edge, slides up
     local base_y = bounds.y + bounds.h + reveal_offset - visible_size
-    return {
-      x = bounds.x,
-      y = base_y - coupled_slide,
-      w = bounds.w,
-      h = visible_size
-    }
+    out.x, out.y = bounds.x, base_y - coupled_slide
+    out.w, out.h = bounds.w, visible_size
   end
+
+  return out
 end
 
 -- ============================================================================
@@ -584,6 +574,27 @@ end
 -- PUBLIC API
 -- ============================================================================
 
+--- Normalize trigger extension to directional table {up, down, left, right}
+--- Reuses existing table if provided to avoid allocations
+--- @param ext number|table|nil Input extension (number for uniform, table for directional)
+--- @param default number Default value for missing directions
+--- @param out table|nil Optional output table to reuse
+--- @return table Normalized {up, down, left, right}
+local function normalize_trigger_extension(ext, default, out)
+  out = out or {}
+  if type(ext) == 'number' then
+    out.up, out.down, out.left, out.right = ext, ext, ext, ext
+  elseif type(ext) == 'table' then
+    out.up = ext.up or default
+    out.down = ext.down or default
+    out.left = ext.left or default
+    out.right = ext.right or default
+  else
+    out.up, out.down, out.left, out.right = default, default, default, default
+  end
+  return out
+end
+
 --- Draw a sliding zone
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
@@ -591,55 +602,29 @@ end
 function M.Draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
-  -- Normalize trigger_extension: support both number and table
-  local trigger_ext = opts.trigger_extension or DEFAULTS.trigger_extension
-  if type(trigger_ext) == 'number' then
-    -- Convert number to directional table
-    opts.trigger_extension = {
-      up = trigger_ext,
-      down = trigger_ext,
-      left = trigger_ext,
-      right = trigger_ext,
-    }
-  elseif type(trigger_ext) == 'table' then
-    -- Fill in missing directions with default (8)
-    local default = DEFAULTS.trigger_extension
-    opts.trigger_extension = {
-      up = trigger_ext.up or default,
-      down = trigger_ext.down or default,
-      left = trigger_ext.left or default,
-      right = trigger_ext.right or default,
-    }
-  else
-    -- Fallback to uniform default
-    local default = DEFAULTS.trigger_extension
-    opts.trigger_extension = {
-      up = default,
-      down = default,
-      left = default,
-      right = default,
-    }
-  end
-
-  -- Auto-calculate reveal offset from collapsed_ratio
-  -- Panel slides from collapsed size to full size during reveal
-  local size = opts.size or DEFAULTS.size
-  local collapsed_ratio = opts.collapsed_ratio or DEFAULTS.collapsed_ratio
-  local reveal_offset = size * (1 - collapsed_ratio)
-  opts._reveal_offset = reveal_offset  -- Store calculated value
-
   -- Validate required opts
   if not opts.bounds then
     error('SlidingZone requires \'bounds\' option', 2)
   end
 
-  -- Resolve unique ID
+  -- Resolve unique ID and get instance early (need cached tables)
   local unique_id = Base.resolve_id(ctx, opts, 'sliding_zone')
-
-  -- Get or create instance
   local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new, ctx)
 
-  -- Register in group if specified
+  -- Normalize trigger extensions into cached tables (avoid allocations)
+  local default_ext = DEFAULTS.trigger_extension
+  opts.trigger_extension = normalize_trigger_extension(opts.trigger_extension, default_ext, state._trigger_ext)
+  if opts.trigger_extension_expanded then
+    opts.trigger_extension_expanded = normalize_trigger_extension(opts.trigger_extension_expanded, default_ext, state._trigger_ext_expanded)
+  end
+
+  -- Auto-calculate reveal offset from collapsed_ratio
+  local size = opts.size or DEFAULTS.size
+  local collapsed_ratio = opts.collapsed_ratio or DEFAULTS.collapsed_ratio
+  local reveal_offset = size * (1 - collapsed_ratio)
+  opts._reveal_offset = reveal_offset
+
+  -- Register in group if specified (quick hash lookup, minimal overhead)
   register_in_group(opts.group, unique_id)
 
   -- Configure speeds (allows runtime changes)
@@ -787,19 +772,20 @@ function M.Draw(ctx, opts)
   -- Get current animation values
   local visibility, slide_offset, scale = state:get_values()
 
-  -- Calculate content bounds
-  local content_bounds = calculate_content_bounds(opts, visibility, slide_offset, scale)
+  -- Calculate content bounds (reuse cached table)
+  local content_bounds = calculate_content_bounds(opts, visibility, slide_offset, scale, state._content_bounds)
 
   -- Check if completely hidden (skip drawing)
   local is_settled = state:is_settled(opts.snap_epsilon or 0.001)
   if visibility < 0.001 and slide_offset < 0.5 and is_settled then
-    return {
-      expanded = state.is_expanded,
-      visibility = visibility,
-      bounds = content_bounds,
-      hovered = false,
-      settled = true,
-    }
+    -- Reuse cached result table
+    local result = state._result
+    result.expanded = state.is_expanded
+    result.visibility = visibility
+    result.bounds = content_bounds
+    result.hovered = false
+    result.settled = true
+    return result
   end
 
   -- Apply clipping if enabled
@@ -820,18 +806,19 @@ function M.Draw(ctx, opts)
     ImGui.DrawList_PopClipRect(dl)
   end
 
-  -- Check if mouse is over content bounds (using reaper API for reliability)
-  local mx, my = get_mouse_position(ctx)
+  -- Check if mouse is over content bounds (reuse mx/my from hover check if available)
+  local mx, my = state.last_mouse_x or 0, state.last_mouse_y or 0
   local is_hovered = mx >= content_bounds.x and mx <= content_bounds.x + content_bounds.w and
                      my >= content_bounds.y and my <= content_bounds.y + content_bounds.h
 
-  return {
-    expanded = state.is_expanded,
-    visibility = visibility,
-    bounds = content_bounds,
-    hovered = is_hovered,
-    settled = is_settled,
-  }
+  -- Reuse cached result table
+  local result = state._result
+  result.expanded = state.is_expanded
+  result.visibility = visibility
+  result.bounds = content_bounds
+  result.hovered = is_hovered
+  result.settled = is_settled
+  return result
 end
 
 --- Toggle expanded state (for button trigger mode)

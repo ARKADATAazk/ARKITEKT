@@ -14,7 +14,7 @@
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
 local min = math.min
-local abs = abs
+local abs = math.abs
 
 local M = {}
 

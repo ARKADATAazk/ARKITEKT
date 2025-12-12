@@ -40,14 +40,9 @@ M.SETTINGS_LABELS = {
   show_muted_items = 'Show Muted Items',
   show_disabled_items = 'Show Disabled Items',
   show_favorites_only = 'Show Favorites Only',
-  show_audio = 'Show Audio',
-  show_midi = 'Show MIDI',
   group_items_by_name = 'Group Items by Name',
-  enable_tile_fx = 'Enable TileFX',
-  show_visualization_small = 'Show Visualization in Small Tiles',
   enable_region_tags = 'Enable Region Tags',
   split_midi_by_track = 'Split MIDI by Track',
-  show_on_grid = 'Show on Tile Grid',
   auto_preview_on_hover = 'Auto-Preview on Hover',
 }
 

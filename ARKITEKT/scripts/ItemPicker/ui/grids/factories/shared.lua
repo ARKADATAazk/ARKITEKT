@@ -9,19 +9,44 @@ local pool_utils = require('ItemPicker.domain.filters.pool')
 
 local M = {}
 
+-- Simple string hash for cache keys
+local function string_hash(s)
+  if not s then return 0 end
+  local h = 0
+  for i = 1, math.min(#s, 16) do  -- Only hash first 16 chars for speed
+    h = (h * 31 + string.byte(s, i)) % 2147483647
+  end
+  return h
+end
+
 -- Build filter hash for cache invalidation
+-- Uses numeric hash instead of string concatenation for performance
 function M.build_filter_hash(settings, indexes)
-  return string.format('%s|%s|%s|%s|%s|%s|%s|%s|%s|%d',
+  -- Compute numeric hash of indexes array (avoids O(n) string allocation)
+  -- Uses count + first/last values + sampling for quick change detection
+  local idx_count = #indexes
+  local idx_hash = idx_count
+  if idx_count > 0 then
+    -- Include first, last, and middle values for collision resistance
+    -- indexes contains strings (filenames/item names), so hash them
+    idx_hash = idx_hash * 31 + string_hash(indexes[1])
+    idx_hash = idx_hash * 31 + string_hash(indexes[idx_count])
+    if idx_count > 2 then
+      local mid = (idx_count + 1) // 2
+      idx_hash = idx_hash * 31 + string_hash(indexes[mid])
+    end
+  end
+
+  return string.format('%s|%s|%s|%s|%s|%s|%s|%s|%d',
     tostring(settings.show_favorites_only),
     tostring(settings.show_disabled_items),
     tostring(settings.show_muted_tracks),
     tostring(settings.show_muted_items),
     settings.search_string or '',
     settings.search_mode or 'items',
-    settings.sort_mode or 'none',
+    settings.sort_mode or 'track',
     tostring(settings.sort_reverse or false),
-    table.concat(indexes, ','),
-    #indexes
+    idx_hash
   )
 end
 
@@ -52,25 +77,42 @@ function M.passes_mute_filters(settings, track_muted, item_muted)
   return true
 end
 
+-- Cache for lowercased search string (avoids per-item allocation)
+local _search_cache = { raw = nil, lower = nil }
+
 -- Check if item passes search filter (supports items/tracks/regions/mixed modes)
-function M.passes_search_filter(settings, item_name, track_name, regions)
+-- PERF: Uses cached lowercase search string; accepts optional pre-lowercased names
+function M.passes_search_filter(settings, item_name, track_name, regions, item_name_lower, track_name_lower)
   local search = settings.search_string or ''
   if type(search) ~= 'string' or search == '' then
     return true
   end
 
+  -- Cache lowercase search string (only recompute when search changes)
+  local search_lower
+  if _search_cache.raw == search then
+    search_lower = _search_cache.lower
+  else
+    search_lower = search:lower()
+    _search_cache.raw = search
+    _search_cache.lower = search_lower
+  end
+
   local search_mode = settings.search_mode or 'items'
-  local search_lower = search:lower()
 
   if search_mode == 'items' then
-    return item_name:lower():find(search_lower, 1, true) ~= nil
+    local name_l = item_name_lower or item_name:lower()
+    return name_l:find(search_lower, 1, true) ~= nil
   elseif search_mode == 'tracks' then
-    return track_name and track_name:lower():find(search_lower, 1, true) ~= nil
+    if not track_name then return false end
+    local track_l = track_name_lower or track_name:lower()
+    return track_l:find(search_lower, 1, true) ~= nil
   elseif search_mode == 'regions' then
     if regions then
       for _, region in ipairs(regions) do
         local region_name = type(region) == 'table' and region.name or region
-        if region_name and region_name:lower():find(search_lower, 1, true) then
+        local region_lower = type(region) == 'table' and region.name_lower or (region_name and region_name:lower())
+        if region_lower and region_lower:find(search_lower, 1, true) then
           return true
         end
       end
@@ -78,16 +120,21 @@ function M.passes_search_filter(settings, item_name, track_name, regions)
     return false
   elseif search_mode == 'mixed' then
     -- Search all: item names, track names, and region names
-    if item_name:lower():find(search_lower, 1, true) then
+    local name_l = item_name_lower or item_name:lower()
+    if name_l:find(search_lower, 1, true) then
       return true
     end
-    if track_name and track_name:lower():find(search_lower, 1, true) then
-      return true
+    if track_name then
+      local track_l = track_name_lower or track_name:lower()
+      if track_l:find(search_lower, 1, true) then
+        return true
+      end
     end
     if regions then
       for _, region in ipairs(regions) do
         local region_name = type(region) == 'table' and region.name or region
-        if region_name and region_name:lower():find(search_lower, 1, true) then
+        local region_lower = type(region) == 'table' and region.name_lower or (region_name and region_name:lower())
+        if region_lower and region_lower:find(search_lower, 1, true) then
           return true
         end
       end
@@ -133,7 +180,11 @@ function M.passes_track_filter(state, track_guid)
 end
 
 -- Sort filtered items by various criteria
-function M.apply_sorting(filtered, sort_mode, sort_reverse)
+-- @param filtered table - list of items to sort (modified in place)
+-- @param sort_mode string - 'none', 'length', 'color', 'name', 'pool', 'recent', 'track', 'position'
+-- @param sort_reverse boolean - reverse the sort order
+-- @param item_usage table - (optional) { [uuid] = timestamp } for 'recent' sort
+function M.apply_sorting(filtered, sort_mode, sort_reverse, item_usage)
   if sort_mode == 'length' then
     table.sort(filtered, function(a, b)
       local a_len = a.length or 0
@@ -179,6 +230,53 @@ function M.apply_sorting(filtered, sort_mode, sort_reverse)
       local a_name = (a.name or ''):lower()
       local b_name = (b.name or ''):lower()
       return a_name < b_name
+    end)
+  elseif sort_mode == 'recent' then
+    -- Sort by recently used (most recent first by default)
+    -- Items never used go to the end
+    item_usage = item_usage or {}
+    table.sort(filtered, function(a, b)
+      local a_time = item_usage[a.uuid] or 0
+      local b_time = item_usage[b.uuid] or 0
+      if a_time ~= b_time then
+        if sort_reverse then
+          return a_time < b_time  -- Oldest first when reversed
+        else
+          return a_time > b_time  -- Most recent first (default)
+        end
+      end
+      -- Tie-breaker: alphabetical by name
+      local a_name = (a.name or ''):lower()
+      local b_name = (b.name or ''):lower()
+      return a_name < b_name
+    end)
+  elseif sort_mode == 'track' then
+    -- Sort by track index (top-to-bottom in project)
+    table.sort(filtered, function(a, b)
+      local a_track = a.track_index or 9999
+      local b_track = b.track_index or 9999
+      if a_track ~= b_track then
+        if sort_reverse then
+          return a_track > b_track  -- Bottom tracks first when reversed
+        else
+          return a_track < b_track  -- Top tracks first (default)
+        end
+      end
+      -- Tie-breaker: timeline position
+      local a_pos = a.item_position or 0
+      local b_pos = b.item_position or 0
+      return a_pos < b_pos
+    end)
+  elseif sort_mode == 'position' then
+    -- Sort by timeline position (earliest first by default)
+    table.sort(filtered, function(a, b)
+      local a_pos = a.item_position or 0
+      local b_pos = b.item_position or 0
+      if sort_reverse then
+        return a_pos > b_pos  -- Latest first when reversed
+      else
+        return a_pos < b_pos  -- Earliest first (default)
+      end
     end)
   end
 end

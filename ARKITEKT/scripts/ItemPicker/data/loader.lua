@@ -249,6 +249,10 @@ function M.process_audio_item_fast(loader, item, track, state)
 
   local uuid = get_item_uuid(item)
 
+  -- Capture track index and timeline position for sorting
+  local track_index = GetMediaTrackInfo_Value(track, 'IP_TRACKNUMBER')
+  local item_position = GetMediaItemInfo_Value(item, 'D_POSITION')
+
   -- Get regions if enabled (skip if deferred)
   local regions = nil
   if not loader._skip_regions and loader.settings and (loader.settings.enable_region_processing or loader.settings.show_region_tags) then
@@ -269,6 +273,8 @@ function M.process_audio_item_fast(loader, item, track, state)
     item_muted = item_muted,
     uuid = uuid,
     regions = regions,
+    track_index = track_index,
+    item_position = item_position,
   }
 end
 
@@ -312,6 +318,10 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
   local _, track_name = GetTrackName(track)
   track_name = track_name or ''
 
+  -- Capture track index and timeline position for sorting
+  local track_index = GetMediaTrackInfo_Value(track, 'IP_TRACKNUMBER')
+  local item_position = GetMediaItemInfo_Value(item, 'D_POSITION')
+
   -- Get regions if enabled (check both settings for backwards compatibility)
   local regions = nil
   if loader.settings and (loader.settings.enable_region_processing or loader.settings.show_region_tags) then
@@ -327,6 +337,8 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
     track_guid = track_guid,
     uuid = uuid,
     regions = regions,
+    track_index = track_index,
+    item_position = item_position,
   }
 
   -- ALSO store in raw pool for reorganization
@@ -341,6 +353,8 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
     item_muted = item_muted,
     uuid = uuid,
     regions = regions,
+    track_index = track_index,
+    item_position = item_position,
   }
 end
 
@@ -367,6 +381,10 @@ function M.process_midi_item_fast(loader, item, track, state)
   local _, track_name = GetTrackName(track)
   track_name = track_name or ''
 
+  -- Capture track index and timeline position for sorting
+  local track_index = GetMediaTrackInfo_Value(track, 'IP_TRACKNUMBER')
+  local item_position = GetMediaItemInfo_Value(item, 'D_POSITION')
+
   -- Get regions if enabled (skip if deferred)
   local regions = nil
   if not loader._skip_regions and loader.settings and (loader.settings.enable_region_processing or loader.settings.show_region_tags) then
@@ -386,6 +404,8 @@ function M.process_midi_item_fast(loader, item, track, state)
     uuid = uuid,
     track_name = track_name,
     regions = regions,
+    track_index = track_index,
+    item_position = item_position,
   }
 end
 
@@ -422,6 +442,10 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
   local _, track_name = GetTrackName(track)
   track_name = track_name or ''
 
+  -- Capture track index and timeline position for sorting
+  local track_index = GetMediaTrackInfo_Value(track, 'IP_TRACKNUMBER')
+  local item_position = GetMediaItemInfo_Value(item, 'D_POSITION')
+
   -- Get regions if enabled (check both settings for backwards compatibility)
   local regions = nil
   if loader.settings and (loader.settings.enable_region_processing or loader.settings.show_region_tags) then
@@ -438,6 +462,8 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
     uuid = uuid,
     track_name = track_name,
     regions = regions,
+    track_index = track_index,
+    item_position = item_position,
   }
 
   -- ALSO store in raw pool for reorganization
@@ -451,6 +477,8 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
     uuid = uuid,
     track_name = track_name,
     regions = regions,
+    track_index = track_index,
+    item_position = item_position,
   }
 end
 
@@ -609,6 +637,8 @@ function M.reorganize_items(loader, group_by_name)
       pool_id = raw_item.pool_id,  -- Pool identifier for filtering
       track_name = raw_item.track_name,  -- Track name for search
       regions = raw_item.regions,  -- Region tags
+      track_index = raw_item.track_index,  -- Track position for sorting
+      item_position = raw_item.item_position,  -- Timeline position for sorting
       _metadata_loaded_at = raw_item._metadata_loaded_at,  -- For text fade-in animation
       _spawned_at = raw_item._spawned_at or spawn_time,  -- For tile spawn animation
     }
@@ -651,6 +681,8 @@ function M.reorganize_items(loader, group_by_name)
       pool_id = raw_item.pool_id,  -- Pool identifier for filtering
       track_name = raw_item.track_name,  -- Track name for search
       regions = raw_item.regions,  -- Region tags
+      track_index = raw_item.track_index,  -- Track position for sorting
+      item_position = raw_item.item_position,  -- Timeline position for sorting
       _metadata_loaded_at = raw_item._metadata_loaded_at,  -- For text fade-in animation
       _spawned_at = raw_item._spawned_at or spawn_time,  -- For tile spawn animation
     }

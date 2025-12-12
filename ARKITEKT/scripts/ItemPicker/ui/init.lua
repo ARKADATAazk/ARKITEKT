@@ -3,11 +3,15 @@
 -- GUI orchestrator
 
 local ImGui = require('arkitekt.core.imgui')
+local Ark = require('arkitekt')
 local Coordinator = require('ItemPicker.ui.grids.coordinator')
 local LayoutView = require('ItemPicker.ui.components.layout_view')
 local TrackFilter = require('ItemPicker.ui.components.track_filter')
+local HelpModal = require('ItemPicker.ui.components.help_modal')
 local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
 local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')
+local Loader = require('ItemPicker.data.loader')
+local JobQueue = require('ItemPicker.data.job_queue')
 
 local M = {}
 local GUI = {}
@@ -54,9 +58,8 @@ function GUI:initialize_once(ctx)
   -- Initialize job queue for lazy waveform/thumbnail generation
   local t1 = reaper.time_precise()
   if not self.state.job_queue then
-    local job_queue_module = require('ItemPicker.data.job_queue')
     -- Process more jobs per frame during loading, fewer during normal operation
-    self.state.job_queue = job_queue_module.new(10) -- Process 10 jobs per frame
+    self.state.job_queue = JobQueue.new(10) -- Process 10 jobs per frame
   end
   local job_queue_ms = (reaper.time_precise() - t1) * 1000
 
@@ -105,14 +108,13 @@ function GUI:start_chunked_load()
   AudioRenderer.clear_caches()
   MidiRenderer.clear_caches()
 
-  local loader_module = require('ItemPicker.data.loader')
   if not self.state.incremental_loader then
     local reaper_interface = self.controller.reaper_interface
-    self.state.incremental_loader = loader_module.new(reaper_interface, 50)
+    self.state.incremental_loader = Loader.new(reaper_interface, 50)
   end
 
   -- Initialize chunked load state
-  loader_module.start_chunked_load(
+  Loader.start_chunked_load(
     self.state.incremental_loader,
     self.state,
     self.state.settings
@@ -124,8 +126,7 @@ end
 
 -- Process one chunk of items (called each frame during loading)
 function GUI:process_load_chunk()
-  local loader_module = require('ItemPicker.data.loader')
-  local done = loader_module.process_chunk(
+  local done = Loader.process_chunk(
     self.state.incremental_loader,
     self.state,
     self.config.LOADING.items_per_chunk
@@ -147,8 +148,7 @@ end
 
 -- Deferred load: pool counts and regions (called after tiles visible)
 function GUI:do_deferred_load()
-  local loader_module = require('ItemPicker.data.loader')
-  loader_module.load_deferred(
+  Loader.load_deferred(
     self.state.incremental_loader,
     self.state
   )
@@ -229,6 +229,12 @@ function GUI:draw(ctx, shell_state)
     TrackFilter.open_modal(self.state)
   end
 
+  -- Check if help modal should be opened
+  if self.state.open_help_modal then
+    self.state.open_help_modal = nil
+    self.state.show_help_modal = true
+  end
+
   -- Get screen dimensions
   local SCREEN_W, SCREEN_H
   if is_overlay_mode and shell_state.overlay_state and shell_state.overlay_state.width then
@@ -258,7 +264,6 @@ function GUI:draw(ctx, shell_state)
   -- Process async jobs for waveform/thumbnail generation
   -- Skip job processing entirely if skip_visualizations is enabled
   if not self.state.skip_visualizations and self.state.job_queue and self.state.runtime_cache then
-    local job_queue_module = require('ItemPicker.data.job_queue')
 
     -- Throttle job processing based on state:
     -- - During animation: SKIP entirely (tiles are resizing, thumbnails will be wrong size)
@@ -292,7 +297,7 @@ function GUI:draw(ctx, shell_state)
     end
 
     if self.state.job_queue.max_per_frame > 0 then
-      job_queue_module.process_jobs(
+      JobQueue.process_jobs(
         self.state.job_queue,
         self.visualization,
         self.state.runtime_cache,
@@ -313,9 +318,7 @@ function GUI:draw(ctx, shell_state)
 
     -- Reorganize from raw pool (instant operation)
     if self.state.incremental_loader then
-      local incremental_loader_module = require('ItemPicker.data.loader')
-
-      incremental_loader_module.reorganize_items(
+      Loader.reorganize_items(
         self.state.incremental_loader,
         self.state.settings.group_items_by_name
       )
@@ -327,7 +330,7 @@ function GUI:draw(ctx, shell_state)
       self.state.midi_indexes = self.state.incremental_loader.midi_indexes
 
       -- Rebuild lookups
-      incremental_loader_module.get_results(self.state.incremental_loader, self.state)
+      Loader.get_results(self.state.incremental_loader, self.state)
 
       -- Invalidate filter cache (items changed)
       self.state.runtime_cache.audio_filter_hash = nil
@@ -353,8 +356,7 @@ function GUI:draw(ctx, shell_state)
     end
 
     -- Sync reload all items
-    local loader_module = require('ItemPicker.data.loader')
-    loader_module.load_all_sync(
+    Loader.load_all_sync(
       self.state.incremental_loader,
       self.state,
       self.state.settings
@@ -389,16 +391,32 @@ function GUI:draw(ctx, shell_state)
 
   -- Check if dragging
   if not self.state.dragging then
+    -- Disable main UI when modal is active (must be done BEFORE rendering main UI)
+    local modal_active = self.state.show_track_filter_modal or self.state.show_help_modal
+    if modal_active then
+      Ark.BeginDisabled(ctx, true)
+    end
+
     -- Normal mode - show main UI
     self.layout_view:render(ctx, big_font, big_font_size, 'Item Picker', SCREEN_W, SCREEN_H, is_overlay_mode)
 
-    -- Render track filter modal on top if active
-    TrackFilter.render_modal(ctx, self.state, {
+    if modal_active then
+      Ark.EndDisabled(ctx)
+    end
+
+    -- Modal bounds
+    local modal_bounds = {
       x = 0,
       y = 0,
       width = SCREEN_W,
       height = SCREEN_H
-    })
+    }
+
+    -- Render track filter modal on top (Ark.Modal handles scrim, chrome, close button)
+    TrackFilter.render_modal(ctx, self.state, modal_bounds)
+
+    -- Render help modal on top
+    HelpModal.Draw(ctx, self.state, modal_bounds)
   else
     -- Dragging mode - don't create main window at all
     -- The drag_handler creates its own windows (drag_target_window and MouseFollower)

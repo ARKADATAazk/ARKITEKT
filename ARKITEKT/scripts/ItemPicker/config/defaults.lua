@@ -16,27 +16,28 @@ M.SETTINGS = {
   show_muted_items = false,
   show_disabled_items = false,
   show_favorites_only = false,
+  pin_favorites_to_top = false,
   show_audio = true,
   show_midi = true,
   split_midi_by_track = false,
   group_items_by_name = true,
   focus_keyboard_on_init = true,
   search_string = '',
+  track_bar_search = '',  -- Persistent search for track filter sidebar
   tile_width = nil,
   tile_height = nil,
   separator_position = nil,
   separator_position_horizontal = nil,
-  sort_mode = 'none',
+  sort_mode = 'track',
   sort_reverse = false,
   waveform_quality = 0.2,
-  waveform_filled = true,
   show_duration = true,
-  enable_tile_fx = true,
   layout_mode = 'vertical',
   show_region_tags = false,
   region_filter_mode = 'or',  -- 'or' = any match, 'and' = all must match
   auto_preview_on_hover = false,
   auto_preview_delay = 0.3,  -- seconds before preview starts
+  preview_fadeout_ms = 5,    -- fade-out duration when stopping preview (ms)
 }
 
 -- =============================================================================
@@ -45,11 +46,13 @@ M.SETTINGS = {
 
 -- Sort modes
 M.SORT_MODES = {
-  'none',
-  'color',
+  'track',
   'name',
-  'pool',
+  'recent',
+  'position',
   'length',
+  'color',
+  'pool',
 }
 
 -- Layout modes

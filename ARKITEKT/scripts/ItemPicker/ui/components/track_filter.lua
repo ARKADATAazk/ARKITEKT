@@ -20,34 +20,9 @@ local TRACK_TILE = {
   INDENT = 16,
 }
 
--- Get track color from REAPER's COLORREF format (UI-specific, uses ImGui)
-local function get_track_display_color(track_color)
-  if track_color and (track_color & 0x01000000) ~= 0 then
-    local colorref = track_color & 0x00FFFFFF
-    local R = colorref & 255
-    local G = (colorref >> 8) & 255
-    local B = (colorref >> 16) & 255
-    return ImGui.ColorConvertDouble4ToU32(R/255, G/255, B/255, 1)
-  else
-    return ImGui.ColorConvertDouble4ToU32(85/255, 91/255, 91/255, 1)
-  end
-end
-
--- Add display colors to track tree (UI enhancement)
-local function add_display_colors(tracks)
-  for _, track in ipairs(tracks) do
-    track.display_color = get_track_display_color(track.color)
-    if track.children then
-      add_display_colors(track.children)
-    end
-  end
-end
-
--- Build track hierarchy with display colors
+-- Build track hierarchy (domain layer now includes display_color)
 function M.build_track_tree()
-  local tracks = TrackFilter.build_track_tree()
-  add_display_colors(tracks)
-  return tracks
+  return TrackFilter.build_track_tree()
 end
 
 -- Re-export domain functions for backward compatibility
@@ -136,8 +111,26 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
   return height
 end
 
+-- Check if track name matches search (case-insensitive)
+local function track_matches_search(track, search_lower)
+  if not search_lower or search_lower == '' then return true end
+  local name_lower = track.name:lower()
+  return name_lower:find(search_lower, 1, true) ~= nil
+end
+
+-- Check if track or any descendant matches search
+local function track_or_children_match(track, search_lower)
+  if track_matches_search(track, search_lower) then return true end
+  if track.children then
+    for _, child in ipairs(track.children) do
+      if track_or_children_match(child, search_lower) then return true end
+    end
+  end
+  return false
+end
+
 -- Recursive function to draw track tree
-local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth, current_y, visible_tracks_list, palette)
+local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth, current_y, visible_tracks_list, palette, search_lower)
   depth = depth or 0
   palette = palette or Palette.get()
   current_y = current_y or y
@@ -161,6 +154,10 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
   end
 
   for _, track in ipairs(tracks) do
+    -- Skip tracks that don't match search (check self and children)
+    if search_lower and search_lower ~= '' and not track_or_children_match(track, search_lower) then
+      goto continue_track
+    end
     local tile_y = current_y
     local indent = depth * TRACK_TILE.INDENT
     local tile_x = x + indent
@@ -263,10 +260,13 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
       state.track_filter_hovered_track = track
     end
 
-    -- Draw children if expanded
-    if has_children and is_expanded then
-      current_y = draw_track_tree(ctx, draw_list, track.children, x, y, width, state, depth + 1, current_y, visible_tracks_list, palette)
+    -- Draw children if expanded (or if searching - auto-expand to show matches)
+    local show_children = has_children and (is_expanded or (search_lower and search_lower ~= ''))
+    if show_children then
+      current_y = draw_track_tree(ctx, draw_list, track.children, x, y, width, state, depth + 1, current_y, visible_tracks_list, palette, search_lower)
     end
+
+    ::continue_track::
   end
 
   -- Handle crossing detection for fast cursor movement (only at top level)
@@ -315,7 +315,24 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
 end
 
 -- Use domain functions with UI-specific parameters
-local function calculate_tree_height(tracks, state)
+local function calculate_tree_height(tracks, state, search_lower)
+  -- If searching, we need to calculate height based on filtered/auto-expanded tree
+  if search_lower and search_lower ~= '' then
+    local function calc_filtered_height(tracks, depth)
+      local height = 0
+      for _, track in ipairs(tracks) do
+        if track_or_children_match(track, search_lower) then
+          height = height + TRACK_TILE.HEIGHT + TRACK_TILE.MARGIN_Y
+          -- Auto-expand when searching
+          if track.children then
+            height = height + calc_filtered_height(track.children, depth + 1)
+          end
+        end
+      end
+      return height
+    end
+    return calc_filtered_height(tracks, 0)
+  end
   return TrackFilter.calculate_tree_height(tracks, state.track_expanded, TRACK_TILE.HEIGHT, TRACK_TILE.MARGIN_Y)
 end
 
@@ -341,61 +358,56 @@ function M.open_modal(state)
   end
 
   state.track_filter_scroll_y = 0
+  state.track_filter_search = ''  -- Modal search is temporary (just for navigation)
+  state.track_filter_popup_opened = false  -- Reset so popup will be opened fresh
   state.show_track_filter_modal = true
 end
 
--- Render the track filter modal directly (called from main_window)
--- Returns true if modal is active (to block input behind it)
+-- Render the track filter modal using Ark.Modal
+-- Returns true if modal is active
 function M.render_modal(ctx, state, bounds)
-  if not state.show_track_filter_modal then return false end
   if not state.track_tree then return false end
+
+  -- Get search filter for height calculation
+  local search_text = state.track_filter_search or ''
+  local search_lower = search_text ~= '' and search_text:lower() or nil
+
+  -- Calculate modal size based on content
+  local tree_height = calculate_tree_height(state.track_tree, state, search_lower)
+  local max_tree_height = bounds.height * 0.5  -- Cap tree area at 50% of viewport
+  local tree_area_height = math.min(tree_height + 16, max_tree_height)
+  local modal_width = 360
+  -- Fixed elements: header(42) + padding(40) + count(20) + search(32) + slider(26) + footer(60) = ~220
+  -- Plus tree area
+  local modal_height = 260 + tree_area_height
+
+  -- Check if modal wants to close (sync state)
+  if Ark.Modal.WantsClose('track_filter') then
+    state.show_track_filter_modal = false
+    state.track_filter_search = ''  -- Clear modal search (it's just for navigation)
+    if state.persist_track_filter then state.persist_track_filter() end
+  end
+
+  -- Begin modal (background disabling handled by caller in ui/init.lua)
+  if not Ark.Modal.Begin(ctx, 'track_filter', state.show_track_filter_modal, {
+    title = 'TRACK FILTER',
+    width = modal_width,
+    height = modal_height,
+    bounds = bounds,  -- Pass bounds for proper scrim coverage
+    close_on_escape = true,
+    close_on_scrim_click = not state.track_filter_painting,  -- Don't close while painting
+    close_on_scrim_right_click = not state.track_filter_painting,
+    show_close_button = true,
+  }) then
+    return false
+  end
 
   -- Get palette for theme-reactive colors
   local palette = Palette.get()
+  local draw_list = ImGui.GetWindowDrawList(ctx)
+  local content_w, content_h = ImGui.GetContentRegionAvail(ctx)
 
-  -- Use foreground draw list to render on top of everything
-  local draw_list = ImGui.GetForegroundDrawList(ctx)
-  local padding = 16
-  local alpha = state.overlay_alpha or 1.0
-
-  -- Draw scrim (darkened background)
-  local scrim_color = Ark.Colors.WithAlpha(palette.scrim or 0x000000FF, (0x80 * alpha) // 1)
-  ImGui.DrawList_AddRectFilled(draw_list, bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, scrim_color)
-
-  -- Calculate modal size
-  local tree_height = calculate_tree_height(state.track_tree, state, 0)
-  local max_content = bounds.height * 0.6
-  local content_height = math.min(tree_height + 32, max_content)
-  local modal_width = 320
-  local slider_area_height = 32  -- Height for depth slider
-  local modal_height = 50 + slider_area_height + content_height + 50
-
-  local modal_x = bounds.x + (bounds.width - modal_width) / 2
-  local modal_y = bounds.y + 80  -- Align to top with padding (slider stays fixed)
-
-  -- Check for clicks outside modal to close (left click only, right-click for painting)
-  local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
-  local left_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left)
-  local is_over_modal = mouse_x >= modal_x and mouse_x <= modal_x + modal_width and
-                        mouse_y >= modal_y and mouse_y <= modal_y + modal_height
-
-  -- Only close on left-click outside modal (not right-click, which is used for painting)
-  if left_clicked and not is_over_modal and not state.track_filter_painting then
-    state.show_track_filter_modal = false
-    -- Persist track filter state when modal closes
-    if state.persist_track_filter then state.persist_track_filter() end
-    return false
-  end
-
-  -- Check for Escape to close
-  if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-    state.show_track_filter_modal = false
-    -- Persist track filter state when modal closes
-    if state.persist_track_filter then state.persist_track_filter() end
-    return false
-  end
-
-  -- Keyboard shortcuts
+  -- Keyboard shortcuts (Ctrl+A = All, Ctrl+D = Deselect)
   local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
   if ctrl_down then
     if ImGui.IsKeyPressed(ctx, ImGui.Key_A) then
@@ -408,203 +420,128 @@ function M.render_modal(ctx, state, bounds)
     end
   end
 
-  -- Create invisible button over modal area to register it for IsAnyItemHovered()
-  -- This prevents overlay from closing on right-click within the modal
-  ImGui.SetCursorScreenPos(ctx, modal_x, modal_y)
-  ImGui.InvisibleButton(ctx, '##track_filter_modal_area', modal_width, modal_height)
-
-  -- Modal background
-  local bg_color = Ark.Colors.WithAlpha(palette.panel_bg or 0x1A1A1AFF, (0xF5 * alpha) // 1)
-  ImGui.DrawList_AddRectFilled(draw_list, modal_x, modal_y, modal_x + modal_width, modal_y + modal_height, bg_color, 8)
-
-  -- Border
-  local border_color = Ark.Colors.WithAlpha(palette.panel_border or 0x404040FF, (0xFF * alpha) // 1)
-  ImGui.DrawList_AddRect(draw_list, modal_x, modal_y, modal_x + modal_width, modal_y + modal_height, border_color, 8)
-
-  -- Header
-  local title_color = Ark.Colors.WithAlpha(palette.text_primary or 0xFFFFFFFF, (0xFF * alpha) // 1)
-  ImGui.DrawList_AddText(draw_list, modal_x + padding, modal_y + padding, title_color, 'TRACK FILTER')
-
-  -- Track count
+  -- Track count (right side of header area)
   local total_count, selected_count = TrackFilter.count_tracks(state.track_tree, state.track_whitelist)
   local count_text = string.format('%d / %d selected', selected_count, total_count)
-  local count_w = ImGui.CalcTextSize(ctx, count_text)
-  local count_color = Ark.Colors.WithAlpha(palette.text_dimmed or 0x888888FF, (0xFF * alpha) // 1)
-  ImGui.DrawList_AddText(draw_list, modal_x + modal_width - padding - count_w, modal_y + padding, count_color, count_text)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, palette.text_dimmed or 0x888888FF)
+  ImGui.Text(ctx, count_text)
+  ImGui.PopStyleColor(ctx)
 
-  -- Depth slider area
-  local slider_y = modal_y + 42
-  local slider_x = modal_x + padding
-  local slider_w = modal_width - padding * 2
-  local slider_h = 20
+  ImGui.Spacing(ctx)
 
-  -- Calculate max depth
+  -- Search input
+  local search_result = Ark.InputText(ctx, {
+    id = 'track_filter_search',
+    hint = 'Search tracks...',
+    width = content_w,
+    height = 24,
+    get_value = function() return state.track_filter_search or '' end,
+    on_change = function(new_text)
+      state.track_filter_search = new_text
+      state.track_filter_scroll_y = 0
+    end,
+  })
+
+  if search_result.changed then
+    search_lower = search_result.value ~= '' and search_result.value:lower() or nil
+  end
+
+  ImGui.Spacing(ctx)
+
+  -- Depth slider
   local max_depth = calculate_max_depth(state.track_tree)
-
-  -- Initialize expansion level if not set
   if state.track_filter_expand_level == nil then
-    state.track_filter_expand_level = max_depth  -- Start fully expanded
+    state.track_filter_expand_level = max_depth
   end
 
-  -- Draw slider label
-  local label_text = 'Depth:'
-  local label_color = Ark.Colors.WithAlpha(palette.text_label or 0x888888FF, (0xFF * alpha) // 1)
-  ImGui.DrawList_AddText(draw_list, slider_x, slider_y + 2, label_color, label_text)
+  ImGui.Text(ctx, 'Depth:')
+  ImGui.SameLine(ctx)
 
-  local label_w = ImGui.CalcTextSize(ctx, label_text) + 8
-  local track_x = slider_x + label_w
-  local track_w = slider_w - label_w - 30  -- Leave space for value
+  local slider_result = Ark.Slider.Int(ctx, {
+    id = 'track_filter_depth',
+    value = state.track_filter_expand_level,
+    min = 0,
+    max = max_depth,
+    width = content_w - 60,
+    height = 16,
+  })
 
-  -- Slider track background
-  local track_bg = Ark.Colors.WithAlpha(palette.panel_bg_alt or 0x2A2A2AFF, (0xCC * alpha) // 1)
-  local track_y = slider_y + 8
-  local track_h = 4
-  ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + track_w, track_y + track_h, track_bg, 2)
-
-  -- Slider handle position
-  local handle_radius = 6
-  local slider_value = state.track_filter_expand_level
-  local handle_x = track_x + (slider_value / math.max(1, max_depth)) * track_w
-  if max_depth == 0 then handle_x = track_x + track_w end
-
-  -- Check if dragging slider
-  local is_over_slider = mouse_x >= track_x - handle_radius and mouse_x <= track_x + track_w + handle_radius and
-                         mouse_y >= track_y - handle_radius and mouse_y <= track_y + track_h + handle_radius
-
-  if is_over_slider and ImGui.IsMouseDown(ctx, ImGui.MouseButton_Left) then
-    -- Calculate new value from mouse position
-    local new_value = math.floor(((mouse_x - track_x) / track_w) * max_depth + 0.5)
-    new_value = math.max(0, math.min(new_value, max_depth))
-
-    if new_value ~= state.track_filter_expand_level then
-      state.track_filter_expand_level = new_value
-      -- Update expansion state
-      if not state.track_expanded then state.track_expanded = {} end
-      set_expansion_level(state.track_tree, state, new_value, 0)
-    end
+  if slider_result.changed then
+    state.track_filter_expand_level = slider_result.value
+    if not state.track_expanded then state.track_expanded = {} end
+    set_expansion_level(state.track_tree, state, slider_result.value, 0)
   end
 
-  -- Draw slider handle
-  local handle_color = is_over_slider and (palette.slider_thumb_hover or 0xFFFFFFFF) or (palette.text_secondary or 0xCCCCCCFF)
-  handle_color = Ark.Colors.WithAlpha(handle_color, (0xFF * alpha) // 1)
-  ImGui.DrawList_AddCircleFilled(draw_list, handle_x, track_y + track_h / 2, handle_radius, handle_color)
+  ImGui.Spacing(ctx)
 
-  -- Draw current value
-  local value_text = tostring(slider_value)
-  local value_color = Ark.Colors.WithAlpha(palette.text_primary or 0xFFFFFFFF, (0xFF * alpha) // 1)
-  ImGui.DrawList_AddText(draw_list, track_x + track_w + 8, slider_y + 2, value_color, value_text)
-
-  -- Content area bounds (below slider)
-  local content_x = modal_x + padding
-  local content_y = modal_y + 50 + slider_area_height
-  local content_w = modal_width - padding * 2
-  local content_h = content_height
+  -- Content area for track tree
+  local content_x, content_y = ImGui.GetCursorScreenPos(ctx)
+  -- Get actual remaining height after header elements (count, search, slider) have been drawn
+  local _, avail_h = ImGui.GetContentRegionAvail(ctx)
+  -- Reserve space for footer: Spacing(8) + Separator(2) + Spacing(8) + Buttons(28) + margin(10) = ~56
+  local footer_height = 56
+  local remaining_height = math.max(100, avail_h - footer_height)
 
   -- Handle scrolling
+  local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
   local scroll_y = state.track_filter_scroll_y or 0
-  local max_scroll = math.max(0, tree_height - content_h)
+  local max_scroll = math.max(0, tree_height - remaining_height)
 
-  -- Check if mouse is over content area for scrolling
   local is_over_content = mouse_x >= content_x and mouse_x <= content_x + content_w and
-                          mouse_y >= content_y and mouse_y <= content_y + content_h
+                          mouse_y >= content_y and mouse_y <= content_y + remaining_height
 
   if is_over_content then
     local wheel_v = ImGui.GetMouseWheel(ctx)
     if wheel_v ~= 0 then
-      scroll_y = scroll_y - wheel_v * 40  -- 40 pixels per scroll tick
+      scroll_y = scroll_y - wheel_v * 40
       scroll_y = math.max(0, math.min(scroll_y, max_scroll))
       state.track_filter_scroll_y = scroll_y
     end
   end
 
   -- Clip content area
-  ImGui.DrawList_PushClipRect(draw_list, content_x, content_y, content_x + content_w, content_y + content_h, true)
+  ImGui.DrawList_PushClipRect(draw_list, content_x, content_y, content_x + content_w, content_y + remaining_height, true)
 
-  -- Clear hovered track before drawing (will be set by draw_track_tree if hovering)
+  -- Clear hovered track
   state.track_filter_hovered_track = nil
 
-  -- Draw track tree with scroll offset
-  draw_track_tree(ctx, draw_list, state.track_tree, content_x, content_y - scroll_y, content_w, state, 0, content_y - scroll_y)
+  -- Draw track tree
+  draw_track_tree(ctx, draw_list, state.track_tree, content_x, content_y - scroll_y, content_w, state, 0, content_y - scroll_y, nil, nil, search_lower)
 
   ImGui.DrawList_PopClipRect(draw_list)
 
-  -- Draw tooltip for hovered nested track (outside clip rect)
+  -- Reserve space for content area
+  ImGui.Dummy(ctx, content_w, remaining_height)
+
+  -- Tooltip for hovered nested track
   if state.track_filter_hovered_track then
     local hovered = state.track_filter_hovered_track
     local path_text = get_track_path(hovered)
-    local tooltip_padding = 6
-    local text_w, text_h = ImGui.CalcTextSize(ctx, path_text)
-    local tooltip_w = text_w + tooltip_padding * 2
-    local tooltip_h = text_h + tooltip_padding * 2
-
-    -- Position tooltip below cursor, clamped to screen bounds
-    local tip_x = mouse_x + 12
-    local tip_y = mouse_y + 18
-
-    -- Keep tooltip within modal bounds
-    if tip_x + tooltip_w > modal_x + modal_width - 8 then
-      tip_x = modal_x + modal_width - 8 - tooltip_w
-    end
-    if tip_y + tooltip_h > modal_y + modal_height - 8 then
-      tip_y = mouse_y - tooltip_h - 4
-    end
-
-    -- Draw tooltip background
-    local tip_bg = Ark.Colors.WithAlpha(0x1A1A1AFF, (0xF5 * alpha) // 1)
-    local tip_border = Ark.Colors.WithAlpha(0x505050FF, (0xFF * alpha) // 1)
-    ImGui.DrawList_AddRectFilled(draw_list, tip_x, tip_y, tip_x + tooltip_w, tip_y + tooltip_h, tip_bg, 4)
-    ImGui.DrawList_AddRect(draw_list, tip_x, tip_y, tip_x + tooltip_w, tip_y + tooltip_h, tip_border, 4)
-
-    -- Draw tooltip text
-    local tip_text_color = Ark.Colors.WithAlpha(0xCCCCCCFF, (0xFF * alpha) // 1)
-    ImGui.DrawList_AddText(draw_list, tip_x + tooltip_padding, tip_y + tooltip_padding, tip_text_color, path_text)
+    ImGui.SetTooltip(ctx, path_text)
   end
 
   -- Footer with buttons
-  local footer_y = modal_y + modal_height - 50
+  ImGui.Spacing(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
   local btn_width = (content_w - 8) / 2
-  local btn_height = 28
-  local btn_y = footer_y + (50 - btn_height) / 2
 
-  -- 'All' button
-  local all_x = content_x
-  local all_hovered = mouse_x >= all_x and mouse_x <= all_x + btn_width and
-                      mouse_y >= btn_y and mouse_y <= btn_y + btn_height
-
-  if all_hovered and left_clicked then
+  if Ark.Button(ctx, { id = 'track_filter_all', label = 'All', width = btn_width, height = 28 }).clicked then
     TrackFilter.set_all_tracks(state.track_tree, state.track_whitelist, true)
     if state.persist_track_filter then state.persist_track_filter() end
   end
 
-  local all_bg = all_hovered and 0x3A3A3AFF or 0x2A2A2AFF
-  all_bg = Ark.Colors.WithAlpha(all_bg, (0xEE * alpha) // 1)
-  ImGui.DrawList_AddRectFilled(draw_list, all_x, btn_y, all_x + btn_width, btn_y + btn_height, all_bg, 4)
-  local all_text_w = ImGui.CalcTextSize(ctx, 'All')
-  ImGui.DrawList_AddText(draw_list,
-    all_x + (btn_width - all_text_w) / 2,
-    btn_y + (btn_height - ImGui.GetTextLineHeight(ctx)) / 2,
-    Ark.Colors.WithAlpha(0xFFFFFFFF, (0xEE * alpha) // 1), 'All')
+  ImGui.SameLine(ctx, 0, 8)
 
-  -- 'None' button
-  local none_x = content_x + btn_width + 8
-  local none_hovered = mouse_x >= none_x and mouse_x <= none_x + btn_width and
-                       mouse_y >= btn_y and mouse_y <= btn_y + btn_height
-
-  if none_hovered and left_clicked then
+  if Ark.Button(ctx, { id = 'track_filter_none', label = 'None', width = btn_width, height = 28 }).clicked then
     TrackFilter.set_all_tracks(state.track_tree, state.track_whitelist, false)
     if state.persist_track_filter then state.persist_track_filter() end
   end
 
-  local none_bg = none_hovered and 0x3A3A3AFF or 0x2A2A2AFF
-  none_bg = Ark.Colors.WithAlpha(none_bg, (0xEE * alpha) // 1)
-  ImGui.DrawList_AddRectFilled(draw_list, none_x, btn_y, none_x + btn_width, btn_y + btn_height, none_bg, 4)
-  local none_text_w = ImGui.CalcTextSize(ctx, 'None')
-  ImGui.DrawList_AddText(draw_list,
-    none_x + (btn_width - none_text_w) / 2,
-    btn_y + (btn_height - ImGui.GetTextLineHeight(ctx)) / 2,
-    Ark.Colors.WithAlpha(0xFFFFFFFF, (0xEE * alpha) // 1), 'None')
+  Ark.Modal.End(ctx)
 
-  return true  -- Modal is active, block input behind
+  return true
 end
 
 -- Export helper functions for use by other modules

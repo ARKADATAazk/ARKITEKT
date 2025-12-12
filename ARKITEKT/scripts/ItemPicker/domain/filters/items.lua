@@ -124,7 +124,11 @@ function M.passes_track_filter(track_filters_enabled, track_guid)
 end
 
 -- Sort filtered items by various criteria
-function M.apply_sorting(filtered, sort_mode, sort_reverse)
+-- @param filtered table - list of items to sort (modified in place)
+-- @param sort_mode string - 'none', 'length', 'color', 'name', 'pool', 'recent', 'track', 'position'
+-- @param sort_reverse boolean - reverse the sort order
+-- @param item_usage table - (optional) { [uuid] = timestamp } for 'recent' sort
+function M.apply_sorting(filtered, sort_mode, sort_reverse, item_usage)
   if sort_mode == 'length' then
     table.sort(filtered, function(a, b)
       local a_len = a.length or 0
@@ -169,6 +173,53 @@ function M.apply_sorting(filtered, sort_mode, sort_reverse)
       local a_name = (a.name or ''):lower()
       local b_name = (b.name or ''):lower()
       return a_name < b_name
+    end)
+  elseif sort_mode == 'recent' then
+    -- Sort by recently used (most recent first by default)
+    -- Items never used go to the end
+    item_usage = item_usage or {}
+    table.sort(filtered, function(a, b)
+      local a_time = item_usage[a.uuid] or 0
+      local b_time = item_usage[b.uuid] or 0
+      if a_time ~= b_time then
+        if sort_reverse then
+          return a_time < b_time  -- Oldest first when reversed
+        else
+          return a_time > b_time  -- Most recent first (default)
+        end
+      end
+      -- Tie-breaker: alphabetical by name
+      local a_name = (a.name or ''):lower()
+      local b_name = (b.name or ''):lower()
+      return a_name < b_name
+    end)
+  elseif sort_mode == 'track' then
+    -- Sort by track index (top-to-bottom in project)
+    table.sort(filtered, function(a, b)
+      local a_track = a.track_index or 9999
+      local b_track = b.track_index or 9999
+      if a_track ~= b_track then
+        if sort_reverse then
+          return a_track > b_track  -- Bottom tracks first when reversed
+        else
+          return a_track < b_track  -- Top tracks first (default)
+        end
+      end
+      -- Tie-breaker: timeline position
+      local a_pos = a.item_position or 0
+      local b_pos = b.item_position or 0
+      return a_pos < b_pos
+    end)
+  elseif sort_mode == 'position' then
+    -- Sort by timeline position (earliest first by default)
+    table.sort(filtered, function(a, b)
+      local a_pos = a.item_position or 0
+      local b_pos = b.item_position or 0
+      if sort_reverse then
+        return a_pos > b_pos  -- Latest first when reversed
+      else
+        return a_pos < b_pos  -- Earliest first (default)
+      end
     end)
   end
 end

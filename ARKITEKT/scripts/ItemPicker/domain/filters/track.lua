@@ -4,6 +4,21 @@
 
 local M = {}
 
+-- Convert REAPER COLORREF to ImGui-style 0xRRGGBBAA
+-- REAPER format: 0x01BBGGRR (0x01000000 flag indicates custom color)
+local function colorref_to_rgba(track_color)
+  if track_color and (track_color & 0x01000000) ~= 0 then
+    local colorref = track_color & 0x00FFFFFF
+    local R = colorref & 255
+    local G = (colorref >> 8) & 255
+    local B = (colorref >> 16) & 255
+    return (R << 24) | (G << 16) | (B << 8) | 0xFF
+  else
+    -- Default grey for tracks without custom color
+    return 0x555B5BFF
+  end
+end
+
 -- Build track hierarchy from project
 -- Returns array of track nodes with parent/children relationships
 function M.build_track_tree()
@@ -27,6 +42,7 @@ function M.build_track_tree()
       guid = guid,
       name = name or ('Track ' .. (i + 1)),
       color = color,
+      display_color = colorref_to_rgba(color),  -- Pre-computed for UI rendering
       index = i + 1,
       depth = folder_depth,
       folder_depth = depth,  -- 1 = folder start, 0 = normal, -1/-2 = folder end
