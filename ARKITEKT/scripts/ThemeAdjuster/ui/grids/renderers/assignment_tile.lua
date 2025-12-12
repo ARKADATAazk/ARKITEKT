@@ -8,6 +8,7 @@ local Colors = require('arkitekt.core.colors')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
 local Math = require('arkitekt.core.math')
+local Constants = require('ThemeAdjuster.config.constants')
 local M = {}
 
 -- Animation state storage (persistent across frames)
@@ -38,26 +39,18 @@ function M.render(ctx, rect, item, state, view, tab_id)
   M._anim[key] = M._anim[key] or { hover = 0 }
 
   -- CORRECT: Grid passes state.hover and state.selected (not is_hovered/is_selected!)
-  local hover_t = Math.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
+  local hover_t = Math.lerp(M._anim[key].hover, state.hover and 1 or 0, Constants.ANIMATION.hover_lerp_factor)
   M._anim[key].hover = hover_t
 
   -- Get tab color
   local tab_color = view.tab_colors[tab_id] or 0x888888FF
 
   -- Color definitions - use tab color for base with very low opacity
-  local function dim_color(color, opacity)
-    local r = (color >> 24) & 0xFF
-    local g = (color >> 16) & 0xFF
-    local b = (color >> 8) & 0xFF
-    local a = math.floor(255 * opacity)
-    return (r << 24) | (g << 16) | (b << 8) | a
-  end
-
-  local BG_BASE = dim_color(tab_color, 0.12)  -- 12% opacity of tab color
-  local BG_HOVER = dim_color(tab_color, 0.18)  -- 18% opacity on hover
-  local BRD_BASE = dim_color(tab_color, 0.3)  -- 30% opacity for border
+  local BG_BASE = Visuals.dim_color(tab_color, 0.12)  -- 12% opacity of tab color
+  local BG_HOVER = Visuals.dim_color(tab_color, 0.18)  -- 18% opacity on hover
+  local BRD_BASE = Visuals.dim_color(tab_color, 0.3)  -- 30% opacity for border
   local BRD_HOVER = tab_color  -- Full tab color on hover
-  local ANT_COLOR = dim_color(tab_color, 0.5)  -- 50% opacity for marching ants
+  local ANT_COLOR = Visuals.dim_color(tab_color, 0.5)  -- 50% opacity for marching ants
 
   -- Hover shadow effect (only when not selected)
   if hover_t > 0.01 and not state.selected then
@@ -110,21 +103,15 @@ function M.render(ctx, rect, item, state, view, tab_id)
 
     -- Custom name on LEFT (bright color)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCCCCCCFF)
-    local custom_name = metadata.display_name
     local max_len = link_prefix ~= '' and 26 or 30
-    if #custom_name > max_len then
-      custom_name = custom_name:sub(1, max_len - 3) .. '...'
-    end
+    local custom_name = Visuals.truncate(metadata.display_name, max_len)
     ImGui.Text(ctx, custom_name)
     ImGui.PopStyleColor(ctx)
 
     -- Parameter name on RIGHT (muted)
     ImGui.SameLine(ctx, 0, 12)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x666666FF)
-    local display_name = param_name
-    if #display_name > 25 then
-      display_name = display_name:sub(1, 22) .. '...'
-    end
+    local display_name = Visuals.truncate(param_name, 25)
     ImGui.Text(ctx, '(' .. display_name .. ')')
     ImGui.PopStyleColor(ctx)
   else
@@ -138,11 +125,8 @@ function M.render(ctx, rect, item, state, view, tab_id)
 
     -- No custom name - just show parameter name (muted color)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x888888FF)
-    local display_name = param_name
     local max_len = link_prefix ~= '' and 21 or 25
-    if #display_name > max_len then
-      display_name = display_name:sub(1, max_len - 3) .. '...'
-    end
+    local display_name = Visuals.truncate(param_name, max_len)
     ImGui.Text(ctx, display_name)
     ImGui.PopStyleColor(ctx)
 
@@ -383,7 +367,7 @@ function M.render_group(ctx, rect, item, state, view, tab_id)
   -- Animation state
   local key = 'assign_group_' .. tab_id .. '_' .. group_id
   M._anim[key] = M._anim[key] or { hover = 0 }
-  local hover_t = Math.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
+  local hover_t = Math.lerp(M._anim[key].hover, state.hover and 1 or 0, Constants.ANIMATION.hover_lerp_factor)
   M._anim[key].hover = hover_t
 
   -- Get tab color
@@ -400,19 +384,11 @@ function M.render_group(ctx, rect, item, state, view, tab_id)
   end
 
   -- Color definitions
-  local function dim_color(color, opacity)
-    local r = (color >> 24) & 0xFF
-    local g = (color >> 16) & 0xFF
-    local b = (color >> 8) & 0xFF
-    local a = math.floor(255 * opacity)
-    return (r << 24) | (g << 16) | (b << 8) | a
-  end
-
-  local BG_BASE = dim_color(tab_color, 0.15)
-  local BG_HOVER = dim_color(tab_color, 0.22)
-  local BRD_BASE = dim_color(tab_color, 0.4)
+  local BG_BASE = Visuals.dim_color(tab_color, 0.15)
+  local BG_HOVER = Visuals.dim_color(tab_color, 0.22)
+  local BRD_BASE = Visuals.dim_color(tab_color, 0.4)
   local BRD_HOVER = tab_color
-  local ANT_COLOR = dim_color(tab_color, 0.5)
+  local ANT_COLOR = Visuals.dim_color(tab_color, 0.5)
 
   -- Hover shadow
   if hover_t > 0.01 and not state.selected then
@@ -443,10 +419,7 @@ function M.render_group(ctx, rect, item, state, view, tab_id)
   ImGui.AlignTextToFramePadding(ctx)
 
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCCCCCCFF)
-  local display_name = group.name or ('Group ' .. group_id)
-  if #display_name > 30 then
-    display_name = display_name:sub(1, 27) .. '...'
-  end
+  local display_name = Visuals.truncate(group.name or ('Group ' .. group_id), 30)
   ImGui.Text(ctx, display_name)
   ImGui.PopStyleColor(ctx)
 

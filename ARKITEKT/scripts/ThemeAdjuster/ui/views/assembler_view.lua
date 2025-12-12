@@ -14,17 +14,13 @@ local ImageMap = require('ThemeAdjuster.domain.packages.image_map')
 local Renderer = require('arkitekt.gui.widgets.media.package_tiles.renderer')
 local Draw = require('arkitekt.gui.draw.primitives')
 local Colors = require('arkitekt.core.colors')
+local ScriptColors = require('ThemeAdjuster.config.colors')
 local M = {}
 local AssemblerView = {}
 AssemblerView.__index = AssemblerView
 
--- Result tile colors (golden/amber theme)
-local RESULT_BG_COLOR = 0x3D3520FF      -- Dark amber background
-local RESULT_BG_HOVER = 0x4A4228FF      -- Slightly lighter on hover
-local RESULT_BORDER_COLOR = 0xD4A84AFF  -- Golden border
-local RESULT_TEXT_PRIMARY = 0xFFFFFFFF
-local RESULT_TEXT_SECONDARY = 0xD4A84AFF
-local RESULT_TEXT_DIM = 0x999999FF
+-- Result bar colors (from config/colors.lua)
+local RESULT = ScriptColors.RESULT_BAR
 
 function M.new(State, AppConfig, settings)
   local self = setmetatable({
@@ -276,6 +272,30 @@ function AssemblerView:create_package_model()
 
   -- Create a tile size proxy that syncs with State
   local tile_size = { value = State.get_tile_size() }
+
+  -- Filter cache for memoization
+  local filter_cache = {
+    key = nil,      -- Cache key (search + filters hash)
+    result = nil,   -- Cached filtered packages
+    order_key = nil, -- Order cache key
+    sorted = nil,   -- Cached sorted result
+  }
+
+  -- Helper to compute filter cache key (includes package count for invalidation)
+  local function compute_filter_key(search, filters, pkg_count)
+    return search .. '|' ..
+           (filters.TCP and '1' or '0') ..
+           (filters.MCP and '1' or '0') ..
+           (filters.Transport and '1' or '0') ..
+           (filters.Global and '1' or '0') ..
+           '|' .. tostring(pkg_count)
+  end
+
+  -- Helper to compute order cache key
+  local function compute_order_key(order)
+    return table.concat(order, ',')
+  end
+
   local model = {
     -- Properties
     index = State.get_packages(),  -- All packages (required by grid)
@@ -304,17 +324,44 @@ function AssemblerView:create_package_model()
       local packages = PackageManager.scan_packages(theme_root, demo_mode)
       State.set_packages(packages)
       self.index = packages
+      -- Invalidate cache on rescan
+      filter_cache.key = nil
+      filter_cache.result = nil
+      filter_cache.order_key = nil
+      filter_cache.sorted = nil
     end,
 
     visible = function(self)
       local packages = State.get_packages()
       local search = State.get_search_text()
       local filters = State.get_filters()
-      local filtered = PackageManager.filter_packages(packages, search, filters)
+
+      -- Check filter cache (includes package count to invalidate on add/remove)
+      local filter_key = compute_filter_key(search, filters, #packages)
+      local filtered
+      if filter_cache.key == filter_key and filter_cache.result then
+        filtered = filter_cache.result
+      else
+        filtered = PackageManager.filter_packages(packages, search, filters)
+        filter_cache.key = filter_key
+        filter_cache.result = filtered
+        filter_cache.order_key = nil  -- Invalidate sort cache when filter changes
+        filter_cache.sorted = nil
+      end
+
+      -- Check sort cache
+      local order_key = compute_order_key(self.order)
+      if filter_cache.order_key == order_key and filter_cache.sorted then
+        return filter_cache.sorted
+      end
 
       -- Sort by order array (for drag/drop reordering)
       -- Use self.order which is updated directly by grid reorder behavior
-      table.sort(filtered, function(a, b)
+      local sorted = {}
+      for i, pkg in ipairs(filtered) do
+        sorted[i] = pkg
+      end
+      table.sort(sorted, function(a, b)
         local idx_a, idx_b = 999, 999
         for i, id in ipairs(self.order) do
           if id == a.id then idx_a = i end
@@ -323,7 +370,18 @@ function AssemblerView:create_package_model()
         return idx_a < idx_b
       end)
 
-      return filtered
+      filter_cache.order_key = order_key
+      filter_cache.sorted = sorted
+
+      return sorted
+    end,
+
+    -- Invalidate cache (call when packages change externally)
+    invalidate_cache = function(self)
+      filter_cache.key = nil
+      filter_cache.result = nil
+      filter_cache.order_key = nil
+      filter_cache.sorted = nil
     end,
 
     conflicts = function(self, compute)
@@ -844,11 +902,11 @@ function AssemblerView:draw_result_bar(ctx)
   local hovered = ImGui.IsItemHovered(ctx)
 
   -- Background (same as package tiles)
-  local bg_color = hovered and RESULT_BG_HOVER or RESULT_BG_COLOR
+  local bg_color = hovered and RESULT.bg_hover or RESULT.bg
   Renderer.TileRenderer.background(dl, rect, bg_color, hovered and 0.3 or 0)
 
   -- Border (same as package tiles)
-  local border_color = hovered and 0xFFCC55FF or RESULT_BORDER_COLOR
+  local border_color = hovered and RESULT.border_hover or RESULT.border
   Draw.Rect(dl, x1, y1, x2, y2, border_color, cfg.tile.rounding, cfg.colors.border.thickness)
 
   -- Content vertical center
@@ -856,7 +914,7 @@ function AssemblerView:draw_result_bar(ctx)
 
   -- "RESULT" title
   local text_x = x1 + PADDING_X
-  Draw.Text(dl, text_x, content_y, RESULT_TEXT_PRIMARY, 'RESULT')
+  Draw.Text(dl, text_x, content_y, RESULT.text_primary, 'RESULT')
 
   -- Stats from ImageMap (live data)
   local providers = stats.active_providers or {}
@@ -864,13 +922,13 @@ function AssemblerView:draw_result_bar(ctx)
   for _ in pairs(providers) do provider_count = provider_count + 1 end
   local stats_text = string.format('%d keys • %d sources', stats.total_keys or 0, provider_count)
   local result_w = ImGui.CalcTextSize(ctx, 'RESULT   ')
-  Draw.Text(dl, text_x + result_w, content_y, RESULT_TEXT_DIM, stats_text)
+  Draw.Text(dl, text_x + result_w, content_y, RESULT.text_dim, stats_text)
 
   -- "[View Details]" button (right side)
   local btn_text = '[View Details]'
   local btn_w = ImGui.CalcTextSize(ctx, btn_text)
   local btn_x = x2 - PADDING_X - btn_w
-  Draw.Text(dl, btn_x, content_y, hovered and 0xFFCC55FF or RESULT_TEXT_SECONDARY, btn_text)
+  Draw.Text(dl, btn_x, content_y, hovered and RESULT.border_hover or RESULT.text_secondary, btn_text)
 
   -- Handle click
   if clicked then

@@ -12,6 +12,9 @@ local M = {}
 local GUI = {}
 GUI.__index = GUI
 
+-- Theme info polling interval (every N frames, ~0.5 sec at 60fps)
+local THEME_INFO_POLL_INTERVAL = 30
+
 function M.create(State, AppConfig, settings)
   local self = setmetatable({
     State = State,
@@ -20,6 +23,7 @@ function M.create(State, AppConfig, settings)
     tab_content = nil,
     current_tab = State.get_active_tab(),
     cached_theme_name = nil,  -- Cache to avoid updating title every frame
+    theme_info_frame_counter = 0,  -- Frame counter for periodic theme info polling
   }, GUI)
 
   -- Initialize packages
@@ -57,15 +61,21 @@ end
 function GUI:draw(ctx, window, shell_state)
   self:update_state(ctx, window)
 
-  -- Update window title only when theme name changes
-  local theme_info = Theme.get_theme_info()
-  local theme_name = theme_info.theme_name or ''
-  if theme_name ~= self.cached_theme_name then
-    self.cached_theme_name = theme_name
-    if theme_name ~= '' then
-      window:set_title('Theme Adjuster [' .. theme_name .. ']')
-    else
-      window:set_title('Theme Adjuster')
+  -- Poll theme info periodically (not every frame)
+  self.theme_info_frame_counter = self.theme_info_frame_counter + 1
+  if self.theme_info_frame_counter >= THEME_INFO_POLL_INTERVAL then
+    self.theme_info_frame_counter = 0
+
+    -- Update window title only when theme name changes
+    local theme_info = Theme.get_theme_info()
+    local theme_name = theme_info.theme_name or ''
+    if theme_name ~= self.cached_theme_name then
+      self.cached_theme_name = theme_name
+      if theme_name ~= '' then
+        window:set_title('Theme Adjuster [' .. theme_name .. ']')
+      else
+        window:set_title('Theme Adjuster')
+      end
     end
   end
 

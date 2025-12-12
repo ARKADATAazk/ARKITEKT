@@ -70,6 +70,17 @@ M.CONFLICT = {
   text = 0xFFA500FF,
 }
 
+M.RESULT_BAR = {
+  -- Golden/amber theme for result summary bar
+  bg = 0x3D3520FF,            -- Dark amber background
+  bg_hover = 0x4A4228FF,      -- Slightly lighter on hover
+  border = 0xD4A84AFF,        -- Golden border
+  border_hover = 0xFFCC55FF,  -- Brighter on hover
+  text_primary = 0xFFFFFFFF,  -- White text
+  text_secondary = 0xD4A84AFF, -- Golden accent text
+  text_dim = 0x999999FF,      -- Dimmed stats text
+}
+
 -- ============================================================================
 -- RUNTIME COLOR RESOLUTION
 -- ============================================================================

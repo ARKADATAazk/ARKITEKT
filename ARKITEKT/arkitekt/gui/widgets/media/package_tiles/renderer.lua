@@ -441,7 +441,12 @@ function M.TileRenderer.checkbox(ctx, pkg, P, cb_rects, tile_x, tile_y, tile_w, 
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, M.CONFIG.checkbox.padding_x, M.CONFIG.checkbox.padding_y)
   local clicked, checked = ImGui.Checkbox(ctx, '##enable', pkg.active[P.id] == true)
   if clicked then
-    pkg.active[P.id] = checked
+    -- Use toggle method if available (allows model to handle state updates)
+    if pkg.toggle then
+      pkg:toggle(P.id)
+    else
+      pkg.active[P.id] = checked
+    end
     if settings then settings:set('pkg_active', pkg.active) end
   end
   ImGui.PopStyleVar(ctx)

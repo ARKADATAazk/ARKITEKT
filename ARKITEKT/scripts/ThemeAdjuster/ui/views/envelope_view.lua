@@ -6,17 +6,15 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local Background = require('arkitekt.gui.draw.patterns')
 local ThemeParams = require('ThemeAdjuster.domain.theme.params')
+local Spinners = require('ThemeAdjuster.config.spinners')
 local PC = Ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
 local EnvelopeView = {}
 EnvelopeView.__index = EnvelopeView
 
--- Spinner value lists (from Default 6.0)
-local SPINNER_VALUES = {
-  envcp_labelSize = {'AUTO', 20, 50, 80, 110, 140, 170},
-  envcp_fader_size = {'KNOB', 40, 70, 100, 130, 160, 190},
-}
+-- Spinner value lists (centralized in config/spinners.lua)
+local SPINNER_VALUES = Spinners.FLAT
 
 function M.new(State, Config, settings)
   local self = setmetatable({

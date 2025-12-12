@@ -7,8 +7,7 @@ local Ark = require('arkitekt')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local ParameterLinkManager = require('ThemeAdjuster.domain.links.manager')
 local Math = require('arkitekt.core.math')
-local Logger = require('arkitekt.debug.logger')
-local log = Logger.new('LibraryTile')
+local Constants = require('ThemeAdjuster.config.constants')
 
 local M = {}
 
@@ -44,7 +43,7 @@ function M.render(ctx, rect, param, state, view)
   M._anim[key] = M._anim[key] or { hover = 0 }
 
   -- CORRECT: Grid passes state.hover and state.selected (not is_hovered/is_selected!)
-  local hover_t = Math.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
+  local hover_t = Math.lerp(M._anim[key].hover, state.hover and 1 or 0, Constants.ANIMATION.hover_lerp_factor)
   M._anim[key].hover = hover_t
 
   -- Color definitions
@@ -89,10 +88,7 @@ function M.render(ctx, rect, param, state, view)
   ImGui.AlignTextToFramePadding(ctx)
 
   -- 1. Parameter name (DRAGGABLE - truncated, with tooltip)
-  local truncated_name = param.name
-  if #param.name > 30 then  -- Increased from 20 to 30 characters
-    truncated_name = param.name:sub(1, 27) .. '...'
-  end
+  local truncated_name = Visuals.truncate(param.name, 30)
 
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xCCCCCCFF)
   ImGui.Text(ctx, truncated_name)

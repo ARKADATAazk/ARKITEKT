@@ -117,6 +117,31 @@ function M.draw_marching_ants_rounded(dl, x1, y1, x2, y2, col, thick, radius)
   end
 end
 
+-- Truncate text to max length with ellipsis suffix
+-- @param text string - Text to truncate
+-- @param max_len number - Maximum total length (including suffix)
+-- @param suffix string - Optional suffix (default '...')
+-- @return string - Truncated text
+function M.truncate(text, max_len, suffix)
+  suffix = suffix or '...'
+  if #text > max_len then
+    return text:sub(1, max_len - #suffix) .. suffix
+  end
+  return text
+end
+
+-- Apply opacity to an RGBA color (replaces alpha channel)
+-- @param color number - RGBA color (0xRRGGBBAA)
+-- @param opacity number - Opacity 0.0-1.0
+-- @return number - Color with new alpha
+function M.dim_color(color, opacity)
+  local r = (color >> 24) & 0xFF
+  local g = (color >> 16) & 0xFF
+  local b = (color >> 8) & 0xFF
+  local a = math.floor(255 * opacity)
+  return (r << 24) | (g << 16) | (b << 8) | a
+end
+
 -- Draw hover shadow effect
 function M.draw_hover_shadow(dl, x1, y1, x2, y2, hover_alpha, rounding)
   if hover_alpha <= 0.01 then return end
