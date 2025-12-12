@@ -55,7 +55,7 @@ local LAYOUT = {
   LEFT_PANEL = { X = 25 },
   TRANSFORM_SEL = { X = 160, Y = 20 },
   PARAMS = { X = 160, Y = 75 },
-  BTN_APPLY = { X = 25, Y = 175, W = 110, H = 25 },
+  BTN_ROW = { X = 25, Y = 175, W = 54, H = 25, GAP = 4 },
 }
 
 -- ============================================================================
@@ -67,9 +67,6 @@ local state = {
 
   -- Transform selection
   transform_idx = 1,
-
-  -- Common params
-  selected_only = true,
 
   -- Negative harmony params
   neg_root = 1,  -- C
@@ -128,24 +125,10 @@ local function draw_left_panel(ctx, base_x, base_y, tab_color)
   local Colors = Ark.Colors
   local lx = base_x + LAYOUT.LEFT_PANEL.X
 
-  -- Source selection
-  ImGui.SetCursorScreenPos(ctx, lx, base_y + 10)
-  ImGui.Text(ctx, 'Source')
-
-  ImGui.SetCursorScreenPos(ctx, lx, base_y + 28)
-  if ImGui.RadioButton(ctx, 'Selected', state.selected_only) then
-    state.selected_only = true
-  end
-
-  ImGui.SetCursorScreenPos(ctx, lx, base_y + 46)
-  if ImGui.RadioButton(ctx, 'All Notes', not state.selected_only) then
-    state.selected_only = false
-  end
-
   -- Scale selection (used by multiple transforms)
-  ImGui.SetCursorScreenPos(ctx, lx, base_y + 75)
+  ImGui.SetCursorScreenPos(ctx, lx, base_y + 10)
   ImGui.Text(ctx, 'Scale')
-  ImGui.SetCursorScreenPos(ctx, lx, base_y + 93)
+  ImGui.SetCursorScreenPos(ctx, lx, base_y + 28)
   ImGui.SetNextItemWidth(ctx, 110)
 
   local scale_names = Scales.get_scale_names()
@@ -159,9 +142,9 @@ local function draw_left_panel(ctx, base_x, base_y, tab_color)
   end
 
   -- Root
-  ImGui.SetCursorScreenPos(ctx, lx, base_y + 118)
+  ImGui.SetCursorScreenPos(ctx, lx, base_y + 55)
   ImGui.Text(ctx, 'Root')
-  ImGui.SetCursorScreenPos(ctx, lx + 35, base_y + 118)
+  ImGui.SetCursorScreenPos(ctx, lx + 35, base_y + 55)
   ImGui.SetNextItemWidth(ctx, 45)
   if ImGui.BeginCombo(ctx, '##root', NOTES[state.scale_root]) then
     for i, note in ipairs(NOTES) do
@@ -172,19 +155,27 @@ local function draw_left_panel(ctx, base_x, base_y, tab_color)
     ImGui.EndCombo(ctx)
   end
 
-  -- Apply button
-  local btn_x = base_x + LAYOUT.BTN_APPLY.X
-  local btn_y = base_y + LAYOUT.BTN_APPLY.Y
+  -- Apply buttons (Sel / All)
+  local row = LAYOUT.BTN_ROW
+  local btn_x = base_x + row.X
+  local btn_y = base_y + row.Y
 
-  ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
   ImGui.PushStyleColor(ctx, ImGui.Col_Button, tab_color)
   ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, Colors.AdjustBrightness(tab_color, 1.15))
   ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, Colors.AdjustBrightness(tab_color, 0.85))
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x202020FF)
 
-  if ImGui.Button(ctx, 'Apply', LAYOUT.BTN_APPLY.W, LAYOUT.BTN_APPLY.H) then
+  ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
+  if ImGui.Button(ctx, 'Apply Sel', row.W, row.H) then
     local transform = TRANSFORMS[state.transform_idx]
-    local success, msg = apply_transform(transform.id)
+    local success, msg = apply_transform(transform.id, true)
+    state.message = msg
+  end
+
+  ImGui.SetCursorScreenPos(ctx, btn_x + row.W + row.GAP, btn_y)
+  if ImGui.Button(ctx, 'Apply All', row.W, row.H) then
+    local transform = TRANSFORMS[state.transform_idx]
+    local success, msg = apply_transform(transform.id, false)
     state.message = msg
   end
 
@@ -489,7 +480,7 @@ end
 -- APPLY TRANSFORM
 -- ============================================================================
 
-apply_transform = function(transform_id)
+apply_transform = function(transform_id, selected_only)
   local scale = Scales.get_scale_by_index(state.scale_idx)
   local root = state.scale_root - 1  -- 0-11
 
@@ -571,7 +562,7 @@ apply_transform = function(transform_id)
   end
 
   if transform_fn then
-    return MidiWriter.apply_transform(transform_fn, state.selected_only, undo_name)
+    return MidiWriter.apply_transform(transform_fn, selected_only, undo_name)
   end
 
   return false, 'Unknown transform'
@@ -612,7 +603,6 @@ end
 function M.get_state()
   return {
     transform_idx = state.transform_idx,
-    selected_only = state.selected_only,
     neg_root = state.neg_root,
     neg_axis_type = state.neg_axis_type,
     interval_factor = state.interval_factor,

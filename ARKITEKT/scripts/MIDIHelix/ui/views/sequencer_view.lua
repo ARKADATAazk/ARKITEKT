@@ -154,7 +154,7 @@ local function draw_left_panel(ctx, base_x, base_y, tab_color)
   if ImGui.Button(ctx, 'Generate', btn_w, btn_h) then
     local item_len = Sequencer.get_item_length_ppq()
     if not item_len then
-      state.message = 'No active MIDI item'
+      state.message = 'Open MIDI Editor or select a MIDI item'
     else
       local root = (state.octave + 1) * 12 + (state.key - 1)
 

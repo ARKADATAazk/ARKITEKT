@@ -30,9 +30,9 @@ local ImGui = nil
 -- ============================================================================
 
 local TABS = {
-  { id = 'randomizer', label = 'Randomizer', color = TabColors.TABS.RANDOMIZER, enabled = true, view = RandomizerView },
-  { id = 'sequencer',  label = 'Sequencer',  color = TabColors.TABS.SEQUENCER,  enabled = true, view = SequencerView },
   { id = 'euclidean',  label = 'Euclidean',  color = TabColors.TABS.EUCLIDEAN,  enabled = true, view = EuclideanView },
+  { id = 'sequencer',  label = 'Sequencer',  color = TabColors.TABS.SEQUENCER,  enabled = true, view = SequencerView },
+  { id = 'randomizer', label = 'Randomizer', color = TabColors.TABS.RANDOMIZER, enabled = true, view = RandomizerView },
   { id = 'melodic',    label = 'Melodic',    color = TabColors.TABS.MELODIC,    enabled = true, view = MelodicView },
   { id = 'rhythm',     label = 'Rhythm',     color = TabColors.TABS.RHYTHM,     enabled = true, view = RhythmView },
   { id = 'generative', label = 'Generative', color = TabColors.TABS.GENERATIVE, enabled = true, view = GenerativeView },
@@ -45,7 +45,7 @@ local TABS = {
 
 local state = {
   initialized = false,
-  current_tab = 3,  -- Start on Euclidean (index 3)
+  current_tab = 1,  -- Start on Euclidean (first tab)
   zoom_level = 100,
 }
 
