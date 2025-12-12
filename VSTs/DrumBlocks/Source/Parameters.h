@@ -82,6 +82,14 @@ enum class LoopMode
     PingPong = 2    // Loop back and forth
 };
 
+// Note-off behavior (per-pad setting)
+enum class NoteOffMode
+{
+    Ignore = 0,     // Note-off does nothing, sample plays to end (default for drums)
+    Release = 1,    // Note-off triggers ADSR release phase
+    Cut = 2         // Note-off immediately stops the sample
+};
+
 // Interpolation quality (global setting, affects all pads)
 // Tradeoff: Higher quality = better sound but more CPU
 enum class InterpolationQuality
@@ -95,6 +103,20 @@ enum class InterpolationQuality
 namespace GlobalParam
 {
     inline juce::String qualityId() { return "global_quality"; }
+}
+
+// Playback progress parameter IDs (read-only, updated by audio thread)
+// These expose playback state to the host for UI feedback
+// Value: -1 = not playing, 0.0-1.0 = playback progress within start/end region
+namespace PlaybackParam
+{
+    inline juce::String progressId(int pad)
+    {
+        return "pad" + juce::String(pad) + "_progress";
+    }
+
+    // Total playback params: 128 (one per pad)
+    constexpr int TOTAL_PLAYBACK_PARAMS = NUM_PADS;
 }
 
 namespace PadParam
@@ -131,7 +153,8 @@ namespace PadParam
         SaturationMix,    // 0-1 (dry/wet blend)
         TransientAttack,  // -1 to +1 (attack boost/cut)
         TransientSustain, // -1 to +1 (sustain boost/cut)
-        COUNT             // = 29
+        NoteOffModeParam, // 0=Ignore, 1=Release, 2=Cut (note-off behavior)
+        COUNT             // = 30
     };
 
     // Total parameters: 24 × 128 = 3072
@@ -144,7 +167,8 @@ namespace PadParam
         "loopmode", "reverse", "normalize", "start", "end", "rrmode",
         "pitchenvamt", "pitchenvattack", "pitchenvdecay", "pitchenvsustain",
         "velcrossfade", "velcurve",
-        "satdrive", "sattype", "satmix", "transattack", "transsustain"
+        "satdrive", "sattype", "satmix", "transattack", "transsustain",
+        "noteoffmode"
     };
     // Compile-time check: names array must match enum COUNT
     static_assert(sizeof(kParamNames) / sizeof(kParamNames[0]) == COUNT,
@@ -364,6 +388,12 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             juce::ParameterID { PadParam::id(pad, PadParam::TransientSustain), 1 },
             prefix + "Trans Sus",
             -1.0f, 1.0f, 0.0f));  // Default 0 = no change
+
+        // Note-Off Mode (0=Ignore, 1=Release, 2=Cut)
+        params.push_back(std::make_unique<juce::AudioParameterInt>(
+            juce::ParameterID { PadParam::id(pad, PadParam::NoteOffModeParam), 1 },
+            prefix + "Note Off",
+            0, 2, 0));  // Default 0 = Ignore (standard drum behavior)
     }
 
     // Global interpolation quality (affects all pads - CPU vs quality tradeoff)
@@ -371,6 +401,27 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
         juce::ParameterID { GlobalParam::qualityId(), 1 },
         "Interpolation Quality",
         0, 2, 1));  // 0=Normal(8-tap), 1=High(16-tap, default), 2=Ultra(32-tap)
+
+    // Playback progress parameters (read-only, for UI feedback)
+    // -1 = not playing, 0.0-1.0 = progress within start/end region
+    // These are non-automatable to avoid cluttering automation lanes
+    // Also marked as meta-parameter so they don't appear in generic plugin UIs
+    for (int pad = 0; pad < NUM_PADS; ++pad)
+    {
+        // Playback progress: 0 = not playing, 0.001-1.0 = progress
+        // Simple 0-1 range avoids confusing normalization math
+        auto attrs = juce::AudioParameterFloatAttributes()
+            .withAutomatable(false)       // Don't show in automation lanes
+            .withMeta(true);              // Mark as meta-parameter (internal use)
+
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID { PlaybackParam::progressId(pad), 1 },
+            "Pad " + juce::String(pad + 1) + " Progress",
+            juce::NormalisableRange<float>(0.0f, 1.0f),
+            0.0f,  // Default: not playing
+            attrs
+        ));
+    }
 
     return { params.begin(), params.end() };
 }

@@ -48,8 +48,9 @@ Shell.run({
   style = style_ok and Style or nil,
   settings = settings,
   initial_pos = { x = 100, y = 100 },
-  initial_size = { w = 800, h = 500 },
-  min_size = { w = 600, h = 400 },
+  initial_size = { w = 620, h = 520 },
+  min_size = { w = 550, h = 450 },
+  titlebar_drag_only = true,  -- Only allow dragging from titlebar
 
   on_close = function()
     State.save()

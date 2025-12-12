@@ -13,25 +13,33 @@ local M = {}
 --   n_items: number of items to lay out
 --   origin_x, origin_y: top-left origin
 --   fixed_tile_h: (optional) if provided, use this height instead of calculating from width
+--   fixed_cols: (optional) if provided, lock to this exact number of columns
 -- Returns:
 --   cols: number of columns
---   rows: number of rows  
+--   rows: number of rows
 --   rects: array of {x1, y1, x2, y2, index} in screen coordinates
-function M.calculate(avail_w, min_col_w, gap, n_items, origin_x, origin_y, fixed_tile_h)
+function M.calculate(avail_w, min_col_w, gap, n_items, origin_x, origin_y, fixed_tile_h, fixed_cols)
   avail_w = math.max(0, avail_w or 0)
   min_col_w = math.max(80, min_col_w or 160)
   gap = math.max(0, gap or 12)
   n_items = math.max(0, n_items or 0)
   origin_x = origin_x or 0
   origin_y = origin_y or 0
-  
+
   if n_items == 0 then
     return 0, 0, {}
   end
-  
-  -- Calculate max columns that fit
-  local cols = math.max(1, (avail_w + gap) // (min_col_w + gap))
-  cols = math.min(cols, n_items)
+
+  -- Calculate columns: fixed or responsive
+  local cols
+  if fixed_cols and fixed_cols > 0 then
+    -- Fixed column count - distribute width evenly
+    cols = math.min(fixed_cols, n_items)
+  else
+    -- Responsive: calculate max columns that fit
+    cols = math.max(1, (avail_w + gap) // (min_col_w + gap))
+    cols = math.min(cols, n_items)
+  end
   
   -- Calculate actual column width with distributed extra space
   local inner_w = math.max(0, avail_w - gap * (cols + 1))

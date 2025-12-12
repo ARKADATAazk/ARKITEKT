@@ -109,6 +109,10 @@ function M.new(opts)
 
     -- Per-app theme overrides
     app_name        = config.app_name,
+
+    -- Titlebar-only dragging
+    drag_only       = config.drag_only or false,
+    _drag_state     = { active = false, start_x = 0, start_y = 0, win_start_x = 0, win_start_y = 0 },
   }
   
   function titlebar:_truncate_text(ctx, text, max_width, font, font_size)
@@ -590,6 +594,34 @@ function M.new(opts)
       end
     end
 
+    -- Custom titlebar-only drag handling
+    local drag_delta_x, drag_delta_y = 0, 0
+    if self.drag_only then
+      local mouse_down = ImGui.IsMouseDown(ctx, ImGui.MouseButton_Left)
+      local mouse_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left)
+      local titlebar_hovered = ImGui.IsWindowHovered(ctx)
+
+      if titlebar_hovered and mouse_clicked and not clicked_close and not clicked_maximize then
+        -- Start drag
+        self._drag_state.active = true
+        self._drag_state.start_x, self._drag_state.start_y = ImGui.GetMousePos(ctx)
+      end
+
+      if self._drag_state.active then
+        if mouse_down then
+          -- Continue drag - calculate delta
+          local mx, my = ImGui.GetMousePos(ctx)
+          drag_delta_x = mx - self._drag_state.start_x
+          drag_delta_y = my - self._drag_state.start_y
+          -- Update start position for next frame
+          self._drag_state.start_x, self._drag_state.start_y = mx, my
+        else
+          -- End drag
+          self._drag_state.active = false
+        end
+      end
+    end
+
     ImGui.EndChild(ctx)
     ImGui.PopStyleColor(ctx)
     ImGui.PopStyleVar(ctx, 2)
@@ -609,13 +641,13 @@ function M.new(opts)
     if clicked_close then
       if self.on_close then
         self.on_close()
-        return true
+        return true, drag_delta_x, drag_delta_y
       else
-        return false
+        return false, drag_delta_x, drag_delta_y
       end
     end
-    
-    return true
+
+    return true, drag_delta_x, drag_delta_y
   end
 
   function titlebar:_draw_button_icon(ctx, min_x, min_y, max_x, max_y, icon_type, color, button_bg_color)

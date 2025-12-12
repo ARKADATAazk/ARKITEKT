@@ -33,8 +33,8 @@ endif()
 
 # Plugin target
 juce_add_plugin(DrumBlocks
-    COMPANY_NAME "ARKITEKT"
-    PLUGIN_MANUFACTURER_CODE Arkt
+    COMPANY_NAME "ARKADATA"
+    PLUGIN_MANUFACTURER_CODE ARKA
     PLUGIN_CODE Dblk
 
     # Formats to build
@@ -42,7 +42,7 @@ juce_add_plugin(DrumBlocks
 
     # Plugin info
     PRODUCT_NAME "DrumBlocks"
-    DESCRIPTION "128-pad drum sampler for ARKITEKT"
+    DESCRIPTION "128-pad drum sampler"
 
     # Multi-out: 1 main stereo + 16 group stereo = 17 stereo buses
     VST3_AUTO_MANIFEST FALSE
@@ -59,7 +59,7 @@ juce_add_plugin(DrumBlocks
 # Add CLAP format via clap-juce-extensions
 clap_juce_extensions_plugin(
     TARGET DrumBlocks
-    CLAP_ID "com.arkitekt.drumblocks"
+    CLAP_ID "com.arkadata.drumblocks"
     CLAP_FEATURES instrument sampler drum
 )
 
@@ -67,6 +67,7 @@ clap_juce_extensions_plugin(
 target_sources(DrumBlocks
     PRIVATE
         Source/PluginProcessor.cpp
+        Source/PluginEditor.cpp
         Source/Pad.cpp
 )
 
@@ -81,6 +82,8 @@ target_link_libraries(DrumBlocks
         juce::juce_audio_utils
         juce::juce_core
         juce::juce_dsp  # For StateVariableTPTFilter
+        juce::juce_gui_basics
+        juce::juce_graphics
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

@@ -255,6 +255,7 @@ local MODULES = {
   Splitter = 'arkitekt.gui.widgets.primitives.splitter',
 
   -- Containers
+  Card = 'arkitekt.gui.widgets.containers.card',
   Grid = 'arkitekt.gui.widgets.containers.grid.core',
   Panel = 'arkitekt.gui.widgets.containers.panel',
   SlidingZone = 'arkitekt.gui.widgets.containers.sliding_zone',

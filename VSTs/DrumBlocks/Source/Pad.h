@@ -30,6 +30,10 @@ struct RoundRobinSample
 // VELOCITY LAYER
 // =============================================================================
 
+// Peak resolution constants for waveform visualization
+constexpr int PEAKS_MINI_RESOLUTION = 64;   // For pad thumbnails
+constexpr int PEAKS_FULL_RESOLUTION = 512;  // For full waveform editor
+
 struct VelocityLayer
 {
     VelocityLayer() { roundRobinSamples.reserve(MAX_ROUND_ROBIN_SAMPLES); }
@@ -40,6 +44,11 @@ struct VelocityLayer
     double sourceSampleRate = DEFAULT_SAMPLE_RATE;
     juce::String filePath;
     float normGain = 1.0f;  // Peak normalization gain (computed on load)
+
+    // Waveform peaks for visualization (computed on load)
+    // Format: [max1..maxN, min1..minN] - same as Lua waveform_cache
+    std::vector<float> peaksMini;  // 128 floats (64 max + 64 min)
+    std::vector<float> peaksFull;  // 1024 floats (512 max + 512 min)
 
     // Round-robin samples (pre-reserved to avoid audio-thread allocation)
     std::vector<RoundRobinSample> roundRobinSamples;
@@ -62,6 +71,9 @@ struct VelocityLayer
     // Get single round-robin path by index (allocation-free - safe for audio thread)
     // Returns empty string if index is out of range
     const juce::String& getRoundRobinPath(int index) const;
+
+    // Waveform peak computation (call after loading sample)
+    void computePeaks();
 
     // Management
     void clear();
@@ -129,6 +141,11 @@ public:
     bool hasSample(int layerIndex) const;
     int getRoundRobinCount(int layerIndex) const;
     double getSampleDuration(int layerIndex) const;  // Duration in seconds
+    float getPlaybackProgress() const;  // Returns 0-1 normalized progress within start/end region
+
+    // Waveform peaks for visualization (computed on sample load)
+    const std::vector<float>& getPeaksMini(int layerIndex) const;
+    const std::vector<float>& getPeaksFull(int layerIndex) const;
 
     // -------------------------------------------------------------------------
     // PUBLIC PARAMETERS (set from PluginProcessor)
@@ -147,6 +164,7 @@ public:
     int killGroup = 0;           // 0 = none, 1-16 = group
     int outputGroup = 0;         // 0 = main, 1-16 = group bus
     LoopMode loopMode = LoopMode::OneShot;  // OneShot, Loop, or PingPong
+    NoteOffMode noteOffMode = NoteOffMode::Ignore;  // Note-off behavior
     bool reverse = false;
     bool normalize = false;      // Apply peak normalization
     float sampleStart = 0.0f;    // 0-1 normalized
