@@ -128,6 +128,86 @@ class NumericTableWidgetItem(QTableWidgetItem):
         return super().__lt__(other)
 
 
+class WorktreeResetWorker(QObject):
+    """Worker for resetting worktrees in background thread."""
+
+    # Signals
+    progress = Signal(int, int, str)  # current, total, message
+    finished = Signal(list)  # results list
+
+    def __init__(self, worktrees_to_reset, source_branch):
+        super().__init__()
+        self.worktrees_to_reset = worktrees_to_reset  # list of (path, branch_name)
+        self.source_branch = source_branch
+        self.cancelled = False
+        self.results = []
+
+    def cancel(self):
+        """Request cancellation."""
+        self.cancelled = True
+
+    def run(self):
+        """Execute worktree resets."""
+        self.results = []
+
+        for i, (path, branch_name) in enumerate(self.worktrees_to_reset):
+            if self.cancelled:
+                self.results.append({
+                    "branch": branch_name,
+                    "success": False,
+                    "message": "Cancelled"
+                })
+                continue
+
+            self.progress.emit(i, len(self.worktrees_to_reset),
+                             f"Resetting {branch_name}...")
+
+            try:
+                # Hard reset to source branch
+                result = subprocess.run(
+                    ["git", "reset", "--hard", self.source_branch],
+                    capture_output=True, text=True, cwd=path
+                )
+
+                if result.returncode != 0:
+                    self.results.append({
+                        "branch": branch_name,
+                        "success": False,
+                        "message": result.stderr.strip()
+                    })
+                    continue
+
+                # Clean untracked files
+                result = subprocess.run(
+                    ["git", "clean", "-fd"],
+                    capture_output=True, text=True, cwd=path
+                )
+
+                if result.returncode != 0:
+                    self.results.append({
+                        "branch": branch_name,
+                        "success": True,
+                        "message": f"Reset OK, but clean failed: {result.stderr.strip()}"
+                    })
+                else:
+                    self.results.append({
+                        "branch": branch_name,
+                        "success": True,
+                        "message": "OK"
+                    })
+
+            except Exception as e:
+                self.results.append({
+                    "branch": branch_name,
+                    "success": False,
+                    "message": str(e)
+                })
+
+        # Emit final progress
+        self.progress.emit(len(self.worktrees_to_reset), len(self.worktrees_to_reset), "Done")
+        self.finished.emit(self.results)
+
+
 class BranchDeleteWorker(QObject):
     """Worker for deleting branches in background thread."""
 
@@ -544,6 +624,11 @@ class WorktreeManager(QMainWindow):
         self.delete_worker = None
         self.delete_progress = None
 
+        # Threading for worktree reset operations
+        self.reset_thread = None
+        self.reset_worker = None
+        self.reset_progress = None
+
         self._setup_ui()
         self._populate_branches()
         self._load_settings()
@@ -857,6 +942,13 @@ class WorktreeManager(QMainWindow):
         self.reset_source_combo.currentTextChanged.connect(self._update_reset_buttons)
         action_layout.addWidget(self.reset_source_combo)
 
+        self.reset_selected_btn = QPushButton("Reset Selected")
+        self.reset_selected_btn.setObjectName("dangerButton")
+        self.reset_selected_btn.setToolTip("Hard reset all selected worktrees to the source branch")
+        self.reset_selected_btn.clicked.connect(self._reset_selected_worktrees)
+        self.reset_selected_btn.setEnabled(False)
+        action_layout.addWidget(self.reset_selected_btn)
+
         layout.addLayout(action_layout)
 
         # Separator
@@ -1039,11 +1131,21 @@ class WorktreeManager(QMainWindow):
         if self.delete_worker:
             self.delete_worker.cancel()
 
-        # Wait for thread to finish (with timeout)
+        # Wait for delete thread to finish (with timeout)
         if self.delete_thread and self.delete_thread.isRunning():
             self.delete_thread.quit()
             if not self.delete_thread.wait(3000):  # 3 second timeout
                 self.delete_thread.terminate()
+
+        # Cancel any running reset
+        if self.reset_worker:
+            self.reset_worker.cancel()
+
+        # Wait for reset thread to finish (with timeout)
+        if self.reset_thread and self.reset_thread.isRunning():
+            self.reset_thread.quit()
+            if not self.reset_thread.wait(3000):  # 3 second timeout
+                self.reset_thread.terminate()
 
         self._save_settings()
         super().closeEvent(event)
@@ -1280,12 +1382,13 @@ class WorktreeManager(QMainWindow):
         """Handle worktree selection."""
         selected_items = self.worktree_list.selectedItems()
 
-        # Check if any non-protected worktrees are selected (for remove button)
+        # Check if any non-protected worktrees are selected (for remove/reset buttons)
         has_removable = False
+        resettable_count = 0
         for sel_item in selected_items:
             path = sel_item.data(Qt.ItemDataRole.UserRole)
             if path and path != str(self.repo_root):
-                # Check if branch is dev or main (protected from removal)
+                # Check if branch is dev or main (protected from removal/reset)
                 try:
                     result = subprocess.run(
                         ["git", "branch", "--show-current"],
@@ -1294,12 +1397,15 @@ class WorktreeManager(QMainWindow):
                     branch = result.stdout.strip() if result.returncode == 0 else ""
                     if branch not in ["dev", "main"]:
                         has_removable = True
-                        break
+                        resettable_count += 1
                 except Exception:
                     pass
 
         self.remove_btn.setEnabled(has_removable)
         self.sync_btn.setEnabled(len(selected_items) > 0)
+        self.reset_selected_btn.setEnabled(resettable_count > 0)
+        if resettable_count > 0:
+            self.reset_selected_btn.setText(f"Reset Selected ({resettable_count})")
 
     def _update_reset_buttons(self):
         """Update all inline reset button labels when source branch changes."""
@@ -1359,6 +1465,128 @@ class WorktreeManager(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to reset: {e}")
 
         self._refresh_worktrees()
+
+    def _reset_selected_worktrees(self):
+        """Reset all selected worktrees to the source branch using background thread."""
+        selected_items = self.worktree_list.selectedItems()
+        source_branch = self.reset_source_combo.currentText()
+
+        # Collect resettable worktrees
+        worktrees_to_reset = []
+        for sel_item in selected_items:
+            path = sel_item.data(Qt.ItemDataRole.UserRole)
+            if path and path != str(self.repo_root):
+                try:
+                    result = subprocess.run(
+                        ["git", "branch", "--show-current"],
+                        capture_output=True, text=True, cwd=path
+                    )
+                    branch = result.stdout.strip() if result.returncode == 0 else ""
+                    if branch and branch not in ["dev", "main"]:
+                        worktrees_to_reset.append((path, branch))
+                except Exception:
+                    pass
+
+        if not worktrees_to_reset:
+            return
+
+        # Confirmation dialog
+        branch_list = "\n".join([f"  • {branch}" for _, branch in worktrees_to_reset])
+        reply = QMessageBox.question(
+            self, "Confirm Batch Reset",
+            f"Hard reset {len(worktrees_to_reset)} worktree(s) to '{source_branch}'?\n\n"
+            f"{branch_list}\n\n"
+            "⚠️ WARNING: This will:\n"
+            "  • Discard ALL uncommitted changes\n"
+            f"  • Reset branches to match {source_branch} exactly\n"
+            "  • Remove untracked files\n\n"
+            "This cannot be undone!",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.No:
+            return
+
+        # Start reset in background thread
+        self._start_batch_reset(worktrees_to_reset, source_branch)
+
+    def _start_batch_reset(self, worktrees_to_reset, source_branch):
+        """Start batch worktree reset in background thread."""
+        # Create progress dialog
+        self.reset_progress = QProgressDialog("Starting reset...", "Cancel", 0, len(worktrees_to_reset), self)
+        self.reset_progress.setWindowTitle("Resetting Worktrees")
+        self.reset_progress.setWindowModality(Qt.WindowModality.WindowModal)
+        self.reset_progress.setMinimumDuration(0)
+        self.reset_progress.setValue(0)
+        self.reset_progress.canceled.connect(self._cancel_batch_reset)
+
+        # Create worker and thread
+        self.reset_thread = QThread()
+        self.reset_worker = WorktreeResetWorker(worktrees_to_reset, source_branch)
+
+        # Move worker to thread
+        self.reset_worker.moveToThread(self.reset_thread)
+
+        # Connect signals
+        self.reset_thread.started.connect(self.reset_worker.run)
+        self.reset_worker.progress.connect(self._update_reset_progress)
+        self.reset_worker.finished.connect(self._batch_reset_finished)
+        self.reset_worker.finished.connect(self.reset_thread.quit)
+        self.reset_worker.finished.connect(self.reset_worker.deleteLater)
+        self.reset_thread.finished.connect(self.reset_thread.deleteLater)
+
+        # Start the thread
+        self.reset_thread.start()
+
+    def _update_reset_progress(self, current: int, total: int, message: str):
+        """Update progress dialog from worker thread."""
+        if self.reset_progress:
+            self.reset_progress.setLabelText(message)
+            self.reset_progress.setValue(current)
+            self.reset_progress.setMaximum(total)
+
+    def _cancel_batch_reset(self):
+        """Cancel the batch reset operation."""
+        if self.reset_worker:
+            self.reset_worker.cancel()
+
+    def _batch_reset_finished(self, results: list):
+        """Handle batch reset completion."""
+        # Close progress dialog
+        if self.reset_progress:
+            self.reset_progress.close()
+            self.reset_progress = None
+
+        # Count successes and failures
+        successes = [r for r in results if r["success"]]
+        failures = [r for r in results if not r["success"]]
+
+        # Show results
+        if failures:
+            failure_list = "\n".join([f"  • {r['branch']}: {r['message']}" for r in failures])
+            if successes:
+                QMessageBox.warning(
+                    self, "Partial Success",
+                    f"Reset {len(successes)} worktree(s) successfully.\n\n"
+                    f"Failed ({len(failures)}):\n{failure_list}"
+                )
+            else:
+                QMessageBox.critical(
+                    self, "Reset Failed",
+                    f"All resets failed:\n\n{failure_list}"
+                )
+        else:
+            QMessageBox.information(
+                self, "Success",
+                f"Successfully reset {len(successes)} worktree(s)!"
+            )
+
+        # Refresh worktree list
+        self._refresh_worktrees()
+
+        # Clean up
+        self.reset_worker = None
+        self.reset_thread = None
 
     def _on_worktree_double_clicked(self, item: QListWidgetItem):
         """Handle double-click on worktree - open in VS Code."""
