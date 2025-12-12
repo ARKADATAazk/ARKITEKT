@@ -281,18 +281,29 @@ function M.draw_columns(ctx, items, opts)
   }
   
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
+  local max_width = opts.max_width or avail_w  -- Allow explicit width override
   local max_height = opts.max_height or avail_h
   local items_per_column = (max_height / (item_height + item_spacing)) // 1
   if items_per_column < 1 then items_per_column = 1 end
 
-  local num_columns = math.ceil(#filtered / items_per_column)
+  -- Calculate max columns that fit in available/specified width
+  local max_columns = math.max(1, math.floor((max_width + column_spacing) / (column_width + column_spacing)))
+  local num_columns = math.min(math.ceil(#filtered / items_per_column), max_columns)
 
-  -- Single column should fill full width (honoring padding)
-  local actual_column_width = column_width
-  if num_columns == 1 then
-    actual_column_width = avail_w
-    draw_opts.explicit_width = actual_column_width
+  -- Recalculate items per column if we're width-constrained
+  if num_columns == max_columns and #filtered > num_columns * items_per_column then
+    items_per_column = math.ceil(#filtered / num_columns)
   end
+
+  -- Calculate actual column width to fill available space
+  local actual_column_width
+  if num_columns == 1 then
+    actual_column_width = max_width
+  else
+    -- Distribute width evenly across columns
+    actual_column_width = (max_width - (num_columns - 1) * column_spacing) / num_columns
+  end
+  draw_opts.explicit_width = actual_column_width
 
   local start_x = ImGui.GetCursorPosX(ctx)
   local start_y = ImGui.GetCursorPosY(ctx)
@@ -300,11 +311,14 @@ function M.draw_columns(ctx, items, opts)
   -- Center items when sparse (fewer items than fill a column) and NOT single column
   if opts.center_when_sparse and #filtered < items_per_column and num_columns > 1 then
     local total_grid_width = num_columns * (actual_column_width + column_spacing) - column_spacing
-    local center_offset = math.floor((avail_w - total_grid_width) / 2)
+    local center_offset = math.floor((max_width - total_grid_width) / 2)
     if center_offset > 0 then
       start_x = start_x + center_offset
     end
   end
+
+  local get_tooltip = opts.get_tooltip  -- function(item) -> string or nil
+  local render_tooltip = opts.render_tooltip  -- function(ctx, item) -> renders custom tooltip content
 
   for col = 0, num_columns - 1 do
     for row = 0, items_per_column - 1 do
@@ -315,8 +329,27 @@ function M.draw_columns(ctx, items, opts)
         start_x + col * (actual_column_width + column_spacing),
         start_y + row * (item_height + item_spacing))
 
-      local clicked = _draw_chip(ctx, filtered[idx], selected_ids[filtered[idx].id], draw_opts)
-      if clicked then clicked_id = filtered[idx].id end
+      local item = filtered[idx]
+      local clicked = _draw_chip(ctx, item, selected_ids[item.id], draw_opts)
+      if clicked then clicked_id = item.id end
+
+      -- Show tooltip on hover (render_tooltip takes precedence)
+      if ImGui.IsItemHovered(ctx) then
+        if render_tooltip then
+          ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 8, 6)
+          ImGui.BeginTooltip(ctx)
+          render_tooltip(ctx, item)
+          ImGui.EndTooltip(ctx)
+          ImGui.PopStyleVar(ctx)
+        elseif get_tooltip then
+          local tooltip_text = get_tooltip(item)
+          if tooltip_text and tooltip_text ~= '' then
+            ImGui.BeginTooltip(ctx)
+            ImGui.Text(ctx, tooltip_text)
+            ImGui.EndTooltip(ctx)
+          end
+        end
+      end
     end
   end
   

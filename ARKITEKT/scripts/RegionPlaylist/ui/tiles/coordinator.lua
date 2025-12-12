@@ -12,7 +12,6 @@ local PoolTile = require('RegionPlaylist.ui.tiles.renderers.pool')
 local ResponsiveGrid = require('arkitekt.gui.layout.responsive')
 local Dnd = require('arkitekt.gui.interaction.drag_visual')
 local DragIndicator = Dnd.DragIndicator
-local BatchRenameModal = require('arkitekt.gui.widgets.overlays.batch_rename_modal')
 local State = require('RegionPlaylist.app.state')
 
 -- Menu components
@@ -223,6 +222,45 @@ function Coordinator:is_modal_blocking(ctx)
   return false
 end
 
+--- Show batch renamer modal with current ctx and window
+--- @param selected_keys table Selected item keys
+--- @param source string 'active' or 'pool'
+--- @param callbacks table {on_rename, on_rename_and_recolor, on_recolor}
+function Coordinator:show_batch_renamer(selected_keys, source, callbacks)
+  local ctx = self._imgui_ctx
+  local window = self._current_window
+
+  if not ctx or not window then
+    return false
+  end
+
+  callbacks = callbacks or {}
+  local item_type = source == 'pool' and 'items' or 'regions'
+
+  Ark.BatchRenamer.show(ctx, window, {
+    item_count = #selected_keys,
+    item_type = item_type,
+    show_color_picker = true,
+    on_confirm = function(result)
+      if result.action == 'rename' then
+        if callbacks.on_rename then
+          callbacks.on_rename(selected_keys, result.pattern)
+        end
+      elseif result.action == 'rename_and_recolor' then
+        if callbacks.on_rename_and_recolor then
+          callbacks.on_rename_and_recolor(selected_keys, result.pattern, result.color)
+        end
+      elseif result.action == 'recolor' then
+        if callbacks.on_recolor then
+          callbacks.on_recolor(selected_keys, result.color)
+        end
+      end
+    end,
+  })
+
+  return true
+end
+
 -- =============================================================================
 -- RENDERING METHODS
 -- =============================================================================
@@ -233,7 +271,9 @@ end
 
 function Coordinator:draw_active(ctx, playlist, height, shell_state)
   self._imgui_ctx = ctx
-  local window = shell_state and shell_state.window
+  self._current_window = shell_state and shell_state.window
+  self._current_shell_state = shell_state
+  local window = self._current_window
 
   -- Inject modal blocking state and icon font into corner buttons
   local is_blocking = self:is_modal_blocking(ctx)
@@ -380,16 +420,7 @@ function Coordinator:draw_active(ctx, playlist, height, shell_state)
   -- Active grid actions menu
   ActiveActionsMenu.render(ctx, self, shell_state)
 
-  -- Draw batch rename modal (if open)
-  if BatchRenameModal.is_open() then
-    local active_playlist = State.get_active_playlist()
-    local selected_count = 0
-    if self.active_grid and self.active_grid.selection then
-      selected_count = self.active_grid.selection:count()
-    end
-    -- Pass window object to enable overlay mode and shell_state for fonts
-    BatchRenameModal.Draw(ctx, selected_count, window, shell_state)
-  end
+  -- Note: BatchRenamer modal is rendered via overlay system (no manual Draw call needed)
 
   if self.bridge:is_drag_active() and self.bridge:get_source_grid() == 'active' and ImGui.IsMouseReleased(ctx, 0) then
     if not self.bridge:is_mouse_over_grid(ctx, 'active') then

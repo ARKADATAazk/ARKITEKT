@@ -10,6 +10,7 @@ local Fonts = require('arkitekt.runtime.chrome.fonts')
 local Window  = require('arkitekt.runtime.chrome.window')
 local Logger = require('arkitekt.debug.logger')
 local Base = require('arkitekt.gui.widgets.base')
+local Context = require('arkitekt.core.context')
 
 local M = {}
 
@@ -363,6 +364,9 @@ local function run_overlay_mode(config)
         style.PushMyStyle(ctx, { window_bg = false, modal_dim_bg = false })
       end
 
+      -- Set fonts in ArkContext (widgets can access via actx:font('icons'))
+      Context.get(ctx):set_fonts(fonts)
+
       -- Push default font
       ImGui.PushFont(ctx, fonts.default, fonts.default_size)
 
@@ -675,6 +679,9 @@ function M.run(opts)
         window:end_timer('style_push')
       end
     end
+
+    -- Set fonts in ArkContext (widgets can access via actx:font('icons'))
+    Context.get(ctx):set_fonts(fonts)
 
     ImGui.PushFont(ctx, fonts.default, fonts.default_size)
 

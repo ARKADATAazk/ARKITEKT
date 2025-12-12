@@ -459,14 +459,14 @@ function M.draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, height
   local double_clicked = ImGui.IsItemClicked(ctx, 0) and ImGui.IsMouseDoubleClicked(ctx, 0)
   local right_clicked = ImGui.IsItemClicked(ctx, 1)
 
-  -- Double-click to start inline editing
-  if double_clicked and Animation and not Animation.is_editing_inline(state) then
+  -- Check for Alt+click to delete (checked early to suppress double-click editing)
+  local alt_held = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+
+  -- Double-click to start inline editing (disabled when Alt held for suppression)
+  if double_clicked and Animation and not Animation.is_editing_inline(state) and not alt_held then
     Animation.start_inline_edit(state, id, label)
     clicked = false
   end
-
-  -- Check for Alt+click to delete
-  local alt_held = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
 
   local DRAG_THRESHOLD = Animation and Animation.DRAG_THRESHOLD or 3.0
 

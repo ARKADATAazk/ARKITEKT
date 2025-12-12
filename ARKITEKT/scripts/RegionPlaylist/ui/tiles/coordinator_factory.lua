@@ -194,20 +194,14 @@ function M.new(Coordinator, opts)
 
   local pool_config = ConfigFactory.get_pool_container_config({
     on_mode_toggle = function()
-      -- Left-click: toggle between regions and playlists
+      -- Left-click: cycle through regions -> playlists -> mixed -> regions
       local new_mode
       if pool_mode_state.current_mode == 'regions' then
         new_mode = 'playlists'
       elseif pool_mode_state.current_mode == 'playlists' then
-        new_mode = 'regions'
+        new_mode = 'mixed'
       else
-        -- If in mixed, go to previous mode
-        new_mode = pool_mode_state.previous_mode
-      end
-
-      -- Update previous mode if we're not in mixed
-      if new_mode ~= 'mixed' then
-        pool_mode_state.previous_mode = new_mode
+        new_mode = 'regions'
       end
 
       pool_mode_state.current_mode = new_mode

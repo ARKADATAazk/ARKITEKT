@@ -8,6 +8,7 @@ local Ark = require('arkitekt')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 local BaseRenderer = require('RegionPlaylist.ui.tiles.renderers.base')
 local State = require('RegionPlaylist.app.state')
+local Layout = require('RegionPlaylist.config.layout')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -31,7 +32,7 @@ local M = {}
 -- ============================================================================
 -- PROFILING (set to true to enable, check REAPER console for output)
 -- ============================================================================
-local PROFILE_ENABLED = true
+local PROFILE_ENABLED = false
 local _profile = {
   animator = 0,
   color = 0,
@@ -74,26 +75,29 @@ local function profile_report()
     _profile.last_report = now
   end
 end
+-- Use layout config for consistent values
+local TA = Layout.TILE_ACTIVE
+
 M.CONFIG = {
   -- Grid layout
   tile_width = 110,
   gap = 12,
   -- Appearance
   bg_base = 0x1A1A1AFF,
-  badge_rounding = 4,
-  badge_padding_x = 6,
-  badge_padding_y = 3,
-  badge_margin = 6,
+  badge_rounding = TA.badge_rounding,
+  badge_padding_x = TA.badge_padding_x,
+  badge_padding_y = TA.badge_padding_y,
+  badge_margin = TA.badge_margin,
   badge_bg = 0x14181CFF,
   badge_border_alpha = 0x33,
   disabled = { desaturate = 0.8, brightness = 0.4, min_alpha = 0x33, fade_speed = 20.0, min_lightness = 0.28 },
-  responsive = { hide_length_below = 50, hide_badge_below = 25, hide_text_below = 15 },
+  responsive = { hide_length_below = TA.hide_length_below, hide_badge_below = TA.hide_badge_below, hide_text_below = TA.hide_text_below },
   playlist_tile = { base_color = 0x3A3A3AFF },
-  text_margin_right = 6,
-  badge_nudge_x = 0,
-  badge_nudge_y = 0,
-  badge_text_nudge_x = -1,
-  badge_text_nudge_y = -1,
+  text_margin_right = TA.text_margin_right,
+  badge_nudge_x = TA.badge_nudge_x,
+  badge_nudge_y = TA.badge_nudge_y,
+  badge_text_nudge_x = TA.badge_text_nudge_x,
+  badge_text_nudge_y = TA.badge_text_nudge_y,
   -- Spawn animation
   spawn = { enabled = true, duration = 0.25, scale_start = 0.8 },
   -- Overlap warning badge (RED - nested regions)
@@ -186,7 +190,7 @@ function M.render_region(opts)
     is_skipped = skipped_keys and skipped_keys[item.key] or false
   end
 
-  animator:track(item.key, 'hover', state.hover and 1.0 or 0.0, hover_config and hover_config.animation_speed_hover or 12.0)
+  animator:track(item.key, 'hover', state.hover and 1.0 or 0.0, hover_config and hover_config.animation_speed_hover or Layout.ANIMATION.hover_speed)
   animator:track(item.key, 'enabled', is_enabled and 1.0 or 0.0, M.CONFIG.disabled.fade_speed)
   animator:track(item.key, 'skipped', is_skipped and 1.0 or 0.0, M.CONFIG.disabled.fade_speed)
   local hover_factor = animator:get(item.key, 'hover')
@@ -226,22 +230,20 @@ function M.render_region(opts)
       -- Time-based fade: fade in when playing, fade out at 100% or when stopped
       local target_fade = (playback_progress > 0 and playback_progress < 1.0) and 1.0 or 0.0
       local current_fade = animator:get(item.key, 'progress_fade') or 0
-      -- Fade speeds (empirically tuned, not linear with actual duration)
-      local fade_in_speed = 8.0    -- Very fast fade in
-      local fade_out_speed = 6.25  -- ~2 second fade out
-      local fade_speed = (target_fade > current_fade) and fade_in_speed or fade_out_speed
+      -- Fade speeds from layout config
+      local fade_speed = (target_fade > current_fade) and Layout.ANIMATION.fade_in_speed or Layout.ANIMATION.fade_out_speed
       animator:track(item.key, 'progress_fade', target_fade, fade_speed)
       playback_fade = animator:get(item.key, 'progress_fade')
     else
       -- Not currently playing this item, fade out at last known progress
       playback_progress = animator:get(item.key, 'last_progress') or 0
-      animator:track(item.key, 'progress_fade', 0.0, 6.25)  -- ~2 second fade out
+      animator:track(item.key, 'progress_fade', 0.0, Layout.ANIMATION.fade_out_speed)
       playback_fade = animator:get(item.key, 'progress_fade')
     end
   else
     -- Playback stopped, fade out at last known progress
     playback_progress = animator:get(item.key, 'last_progress') or 0
-    animator:track(item.key, 'progress_fade', 0.0, 6.25)  -- ~2 second fade out
+    animator:track(item.key, 'progress_fade', 0.0, Layout.ANIMATION.fade_out_speed)
     playback_fade = animator:get(item.key, 'progress_fade')
   end
   
@@ -481,7 +483,7 @@ function M.render_playlist(opts)
   }
 
   local is_enabled = item.enabled ~= false
-  animator:track(item.key, 'hover', state.hover and is_enabled and 1.0 or 0.0, hover_config and hover_config.animation_speed_hover or 12.0)
+  animator:track(item.key, 'hover', state.hover and is_enabled and 1.0 or 0.0, hover_config and hover_config.animation_speed_hover or Layout.ANIMATION.hover_speed)
   animator:track(item.key, 'enabled', is_enabled and 1.0 or 0.0, M.CONFIG.disabled.fade_speed)
   local hover_factor = animator:get(item.key, 'hover')
   local enabled_factor = animator:get(item.key, 'enabled')
@@ -517,22 +519,20 @@ function M.render_playlist(opts)
       -- Time-based fade: fade in when playing, fade out at 100% or when stopped
       local target_fade = (playback_progress > 0 and playback_progress < 1.0) and 1.0 or 0.0
       local current_fade = animator:get(item.key, 'progress_fade') or 0
-      -- Fade speeds (empirically tuned, not linear with actual duration)
-      local fade_in_speed = 8.0    -- Very fast fade in
-      local fade_out_speed = 6.25  -- ~2 second fade out
-      local fade_speed = (target_fade > current_fade) and fade_in_speed or fade_out_speed
+      -- Fade speeds from layout config
+      local fade_speed = (target_fade > current_fade) and Layout.ANIMATION.fade_in_speed or Layout.ANIMATION.fade_out_speed
       animator:track(item.key, 'progress_fade', target_fade, fade_speed)
       playback_fade = animator:get(item.key, 'progress_fade')
     else
       -- Not currently playing this playlist, fade out at last known progress
       playback_progress = animator:get(item.key, 'last_progress') or 0
-      animator:track(item.key, 'progress_fade', 0.0, 6.25)  -- ~2 second fade out
+      animator:track(item.key, 'progress_fade', 0.0, Layout.ANIMATION.fade_out_speed)
       playback_fade = animator:get(item.key, 'progress_fade')
     end
   else
     -- Playback stopped, fade out at last known progress
     playback_progress = animator:get(item.key, 'last_progress') or 0
-    animator:track(item.key, 'progress_fade', 0.0, 6.25)  -- ~2 second fade out
+    animator:track(item.key, 'progress_fade', 0.0, Layout.ANIMATION.fade_out_speed)
     playback_fade = animator:get(item.key, 'progress_fade')
   end
 

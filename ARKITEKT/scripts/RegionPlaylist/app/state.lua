@@ -530,6 +530,19 @@ function M.count_playlist_contents(playlist_id)
   return M.playlist:count_contents(playlist_id)
 end
 
+function M.get_playlist_items(playlist_id)
+  local playlist = M.playlist:get_by_id(playlist_id)
+  if not playlist or not playlist.items then
+    return {}
+  end
+  return playlist.items
+end
+
+function M.get_playlist_name(playlist_id)
+  local playlist = M.playlist:get_by_id(playlist_id)
+  return playlist and playlist.name or nil
+end
+
 function M.refresh_regions()
   local regions = M.bridge:get_regions_for_ui()
   M.region:refresh_from_bridge(regions)

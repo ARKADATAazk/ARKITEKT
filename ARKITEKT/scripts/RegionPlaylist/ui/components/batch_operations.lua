@@ -2,7 +2,7 @@
 -- RegionPlaylist/ui/batch_operations.lua
 -- Helper for batch rename/recolor operations on regions and playlists
 
-local BatchRenameModal = require('arkitekt.gui.widgets.overlays.batch_rename_modal')
+local Ark = require('arkitekt')
 local Regions = require('arkitekt.reaper.regions')
 
 local M = {}
@@ -133,7 +133,7 @@ end
 
 -- Rename items from active grid
 function M.rename_active(item_keys, pattern, get_items_fn, controller)
-  local new_names = BatchRenameModal.apply_pattern_to_items(pattern, #item_keys)
+  local new_names = Ark.BatchRenamer.apply_pattern(pattern, #item_keys)
   local region_items, playlist_items = M.separate_active_items(item_keys, get_items_fn)
   M.batch_rename(region_items, playlist_items, new_names, controller)
   return #playlist_items > 0
@@ -141,7 +141,7 @@ end
 
 -- Rename and recolor items from active grid
 function M.rename_and_recolor_active(item_keys, pattern, color, get_items_fn, controller)
-  local new_names = BatchRenameModal.apply_pattern_to_items(pattern, #item_keys)
+  local new_names = Ark.BatchRenamer.apply_pattern(pattern, #item_keys)
   local region_items, playlist_items = M.separate_active_items(item_keys, get_items_fn)
   M.batch_rename(region_items, playlist_items, new_names, controller)
   M.batch_recolor(region_items, playlist_items, color, controller)
@@ -156,7 +156,7 @@ end
 
 -- Rename items from pool
 function M.rename_pool(item_keys, pattern, controller)
-  local new_names = BatchRenameModal.apply_pattern_to_items(pattern, #item_keys)
+  local new_names = Ark.BatchRenamer.apply_pattern(pattern, #item_keys)
   local region_items, playlist_items = M.separate_pool_items(item_keys)
   M.batch_rename(region_items, playlist_items, new_names, controller)
   return #playlist_items > 0
@@ -164,7 +164,7 @@ end
 
 -- Rename and recolor items from pool
 function M.rename_and_recolor_pool(item_keys, pattern, color, controller)
-  local new_names = BatchRenameModal.apply_pattern_to_items(pattern, #item_keys)
+  local new_names = Ark.BatchRenamer.apply_pattern(pattern, #item_keys)
   local region_items, playlist_items = M.separate_pool_items(item_keys)
   M.batch_rename(region_items, playlist_items, new_names, controller)
   M.batch_recolor(region_items, playlist_items, color, controller)

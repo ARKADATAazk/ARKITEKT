@@ -31,13 +31,20 @@ end
 function M.new(opts)
   opts = opts or {}
   local self = setmetatable({}, Transitions)
-  
+
   self.proj = opts.proj or 0
   self.state = opts.state
   self.transport = opts.transport
   self.on_repeat_cycle = opts.on_repeat_cycle
-  
+
   return self
+end
+
+-- Check if a sequence entry at given index is marked as infinite
+function Transitions:_is_entry_infinite(idx)
+  if idx < 1 or not self.state.sequence then return false end
+  local entry = self.state.sequence[idx]
+  return entry and entry.is_infinite == true
 end
 
 function Transitions:handle_smooth_transitions()
@@ -223,8 +230,30 @@ function Transitions:handle_smooth_transitions()
 end
 
 function Transitions:_queue_next_region_if_near_end(playpos)
+  -- Don't auto-advance if current entry is infinite (loops forever)
+  if self:_is_entry_infinite(self.state.current_idx) then
+    -- For infinite items, keep looping the current region
+    local rid = self.state.playlist_order[self.state.current_idx]
+    local region = self.state:get_region_by_rid(rid)
+    if region then
+      local time_to_end = self.state.current_bounds.end_pos - playpos
+      if time_to_end < 0.5 and time_to_end > 0 then
+        if not self.state.goto_region_queued or self.state.goto_region_target ~= self.state.current_idx then
+          Logger.info('TRANSPORT', 'Queuing INFINITE loop GoToRegion(%d) - %.2fs to end', region.rid, time_to_end)
+          self.transport:_seek_to_region(region.rid)
+          self.state.goto_region_queued = true
+          self.state.goto_region_target = self.state.current_idx
+        end
+      elseif time_to_end > 0.5 then
+        self.state.goto_region_queued = false
+        self.state.goto_region_target = nil
+      end
+    end
+    return
+  end
+
   local time_to_end = self.state.current_bounds.end_pos - playpos
-  
+
   if time_to_end < 0.5 and time_to_end > 0 and self.state.next_idx >= 1 then
     if not self.state.goto_region_queued or self.state.goto_region_target ~= self.state.next_idx then
       local rid = self.state.playlist_order[self.state.next_idx]

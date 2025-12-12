@@ -244,6 +244,7 @@ local MODULES = {
   HueSlider = 'arkitekt.gui.widgets.primitives.hue_slider',  -- DEPRECATED: Use Slider.Hue/Saturation/Brightness
   InputText = 'arkitekt.gui.widgets.primitives.inputtext',
   Knob = 'arkitekt.gui.widgets.primitives.knob',
+  LabelButton = 'arkitekt.gui.widgets.primitives.label_button',
   LoadingSpinner = 'arkitekt.gui.widgets.primitives.loading_spinner',
   MarkdownField = 'arkitekt.gui.widgets.primitives.markdown_field',
   ProgressBar = 'arkitekt.gui.widgets.primitives.progress_bar',
@@ -261,6 +262,9 @@ local MODULES = {
 
   -- Navigation / Tree (Ark.Tree and Ark.Tree.TreeTable)
   Tree = 'arkitekt.gui.widgets.tree',
+
+  -- Overlays / Modals
+  BatchRenamer = 'arkitekt.gui.widgets.overlays.batch_renamer',
 
   -- Core Services (Context loaded eagerly above, not lazy)
   Theme = 'arkitekt.theme',

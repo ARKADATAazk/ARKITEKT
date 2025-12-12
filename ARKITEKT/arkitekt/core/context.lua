@@ -51,6 +51,8 @@ function ArkContext:_refresh()
   self._disabled = false
   self._disabled_stack = {}
 
+  -- Note: _fonts is NOT reset per frame (set once by Shell, persists)
+
   -- Sample time once per frame
   self.time = reaper.time_precise()
 end
@@ -178,6 +180,38 @@ end
 -- @return number Stack depth
 function ArkContext:id_depth()
   return IdStack.depth(self.ctx)
+end
+
+-- =============================================================================
+-- FONTS (set by Shell at startup, accessed by widgets)
+-- =============================================================================
+
+--- Set fonts table (called by Shell once at startup)
+-- @param fonts table Fonts table from shell { icons, icons_size, default, default_size, ... }
+function ArkContext:set_fonts(fonts)
+  self._fonts = fonts
+end
+
+--- Get a specific font by name
+-- @param name string Font name: 'icons', 'default', 'title', 'monospace', etc.
+-- @return userdata|nil Font object, or nil if not set
+function ArkContext:font(name)
+  if not self._fonts then return nil end
+  return self._fonts[name]
+end
+
+--- Get font size by name
+-- @param name string Font name (will look up name_size key)
+-- @return number|nil Font size, or nil if not set
+function ArkContext:font_size(name)
+  if not self._fonts then return nil end
+  return self._fonts[name .. '_size']
+end
+
+--- Get fonts table (for widgets needing multiple fonts)
+-- @return table|nil Full fonts table
+function ArkContext:fonts()
+  return self._fonts
 end
 
 -- =============================================================================
