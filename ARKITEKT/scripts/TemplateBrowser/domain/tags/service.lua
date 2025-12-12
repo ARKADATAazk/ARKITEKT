@@ -7,11 +7,50 @@ local Ark = require('arkitekt')
 
 local M = {}
 
+-- Tag name constraints
+local MAX_TAG_LENGTH = 50
+local MIN_TAG_LENGTH = 1
+
+-- Validate a tag name
+-- Returns: ok (bool), error_message (string or nil)
+local function validate_tag_name(name)
+  if not name or type(name) ~= 'string' then
+    return false, 'Tag name must be a string'
+  end
+
+  -- Trim whitespace
+  local trimmed = name:match('^%s*(.-)%s*$')
+
+  if #trimmed < MIN_TAG_LENGTH then
+    return false, 'Tag name cannot be empty'
+  end
+
+  if #trimmed > MAX_TAG_LENGTH then
+    return false, string.format('Tag name too long (max %d characters)', MAX_TAG_LENGTH)
+  end
+
+  -- Disallow problematic characters (path separators, quotes, control chars)
+  if trimmed:find('[/\\\'\"<>|%c]') then
+    return false, 'Tag name contains invalid characters'
+  end
+
+  return true, nil, trimmed  -- Return trimmed name as 3rd value
+end
+
 -- Create a new tag
+-- Returns: success (bool), error_message (string or nil)
 function M.create_tag(metadata, tag_name, color)
+  -- Validate tag name
+  local ok, err, trimmed_name = validate_tag_name(tag_name)
+  if not ok then
+    Logger.warn('TAGS', 'Invalid tag name: %s', err)
+    return false, err
+  end
+  tag_name = trimmed_name
+
   if metadata.tags[tag_name] then
     Logger.warn('TAGS', 'Tag already exists: %s', tag_name)
-    return false
+    return false, 'Tag already exists'
   end
 
   metadata.tags[tag_name] = {
@@ -25,15 +64,24 @@ function M.create_tag(metadata, tag_name, color)
 end
 
 -- Rename a tag
+-- Returns: success (bool), error_message (string or nil)
 function M.rename_tag(metadata, old_name, new_name)
+  -- Validate new tag name
+  local ok, err, trimmed_name = validate_tag_name(new_name)
+  if not ok then
+    Logger.warn('TAGS', 'Invalid tag name: %s', err)
+    return false, err
+  end
+  new_name = trimmed_name
+
   if not metadata.tags[old_name] then
     Logger.warn('TAGS', 'Tag not found: %s', old_name)
-    return false
+    return false, 'Tag not found'
   end
 
   if metadata.tags[new_name] then
     Logger.warn('TAGS', 'Tag already exists: %s', new_name)
-    return false
+    return false, 'Tag already exists'
   end
 
   -- Copy tag data with new name

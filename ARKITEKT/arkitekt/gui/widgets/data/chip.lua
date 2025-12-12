@@ -372,4 +372,24 @@ function M.Draw(ctx, opts)
   return is_clicked, chip_w, chip_h
 end
 
+--- Draw a simple color block with auto-darkened border (Wwise-style)
+--- @param dl userdata Draw list
+--- @param x number X position (top-left)
+--- @param y number Y position (top-left)
+--- @param size number Size of the square
+--- @param color number Fill color (0xRRGGBBAA)
+--- @param border_brightness number? Border brightness multiplier (default 0.5)
+--- @param rounding number? Corner rounding (default 1)
+function M.DrawColorBlock(dl, x, y, size, color, border_brightness, rounding)
+  border_brightness = border_brightness or 0.5
+  rounding = rounding or 1
+  -- Darker border derived from the color
+  local border_color = Colors.AdjustBrightness(color, border_brightness)
+  border_color = (border_color & 0xFFFFFF00) | 0xFF  -- Ensure full opacity
+  -- Outer rect (border)
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + size, y + size, border_color, rounding)
+  -- Inner rect (fill)
+  ImGui.DrawList_AddRectFilled(dl, x + 1, y + 1, x + size - 1, y + size - 1, color, 0)
+end
+
 return M

@@ -33,6 +33,7 @@ local TemplatePanelView = require('TemplateBrowser.ui.views.template_panel_view'
 local InfoPanelView = require('TemplateBrowser.ui.views.info_panel_view')
 local TemplateModalsView = require('TemplateBrowser.ui.views.template_modals_view')
 local StatusBar = require('TemplateBrowser.ui.status')
+local SearchToolbar = require('TemplateBrowser.ui.views.search_toolbar')
 
 local M = {}
 local GUI = {}
@@ -150,12 +151,51 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       end
     end
 
-    -- Apply search filter (fuzzy match)
-    local search_query = self.state.quick_access_search or ''
+    -- Apply search filter based on search mode - uses unified search_query
+    local search_query = self.state.search_query or ''
+    local search_mode = self.state.search_mode or 'templates'
     if search_query ~= '' then
       local filtered = {}
       for _, tmpl in ipairs(templates) do
-        local score = FuzzySearch.score(search_query, tmpl.name)
+        local score = 0
+
+        if search_mode == 'templates' then
+          score = FuzzySearch.score(search_query, tmpl.name)
+
+        elseif search_mode == 'vsts' then
+          if tmpl.fx then
+            for _, fx_name in ipairs(tmpl.fx) do
+              local fx_score = FuzzySearch.score(search_query, fx_name)
+              if fx_score > score then score = fx_score end
+            end
+          end
+
+        elseif search_mode == 'tags' then
+          local tmpl_metadata = self.state.metadata and self.state.metadata.templates[tmpl.uuid]
+          if tmpl_metadata and tmpl_metadata.tags then
+            for _, tag_name in ipairs(tmpl_metadata.tags) do
+              local tag_score = FuzzySearch.score(search_query, tag_name)
+              if tag_score > score then score = tag_score end
+            end
+          end
+
+        elseif search_mode == 'mixed' then
+          score = FuzzySearch.score(search_query, tmpl.name)
+          if tmpl.fx then
+            for _, fx_name in ipairs(tmpl.fx) do
+              local fx_score = FuzzySearch.score(search_query, fx_name)
+              if fx_score > score then score = fx_score end
+            end
+          end
+          local tmpl_metadata = self.state.metadata and self.state.metadata.templates[tmpl.uuid]
+          if tmpl_metadata and tmpl_metadata.tags then
+            for _, tag_name in ipairs(tmpl_metadata.tags) do
+              local tag_score = FuzzySearch.score(search_query, tag_name)
+              if tag_score > score then score = tag_score end
+            end
+          end
+        end
+
         if score > 0 then
           tmpl._fuzzy_score = score
           filtered[#filtered + 1] = tmpl
@@ -218,14 +258,6 @@ function GUI:initialize_once(ctx, is_overlay_mode)
   local container_config = TemplateContainerConfig.create({
     get_template_count = function()
       return #self.state.filtered_templates
-    end,
-    get_search_query = function()
-      return self.state.search_query
-    end,
-    on_search_changed = function(new_query)
-      self.state.search_query = new_query
-      
-      Scanner.filter_templates(self.state)
     end,
     get_sort_mode = function()
       return self.state.sort_mode
@@ -299,12 +331,6 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end,
     on_quick_access_mode_changed = function(new_mode)
       self.state.quick_access_mode = new_mode
-    end,
-    get_search_query = function()
-      return self.state.quick_access_search or ''
-    end,
-    on_search_changed = function(new_query)
-      self.state.quick_access_search = new_query
     end,
     get_sort_mode = function()
       return self.state.quick_access_sort or 'alphabetical'
@@ -521,17 +547,22 @@ function GUI:draw(ctx, shell_state)
   end
 
   -- Title (moved up for tighter layout)
-  local title_y_offset = -15  -- TODO: Move to Layout.TITLE.Y_OFFSET when added
   ImGui.PushFont(ctx, shell_state.fonts.title, shell_state.fonts.title_size)
   local title = 'Template Browser'
   local title_w = ImGui.CalcTextSize(ctx, title)
-  local title_y = ImGui.GetCursorPosY(ctx) + title_y_offset
+  local title_y = ImGui.GetCursorPosY(ctx) + Layout.TITLE.Y_OFFSET
   ImGui.SetCursorPos(ctx, (SCREEN_W - title_w) * 0.5, title_y)
   ImGui.Text(ctx, title)
   ImGui.PopFont(ctx)
 
   -- Adjust spacing after title
-  ImGui.SetCursorPosY(ctx, title_y + 30)
+  ImGui.SetCursorPosY(ctx, title_y + Layout.TITLE.SPACING_AFTER)
+
+  -- Search toolbar (centered)
+  SearchToolbar.draw(ctx, self.state, SCREEN_W)
+
+  -- Handle search shortcuts (Ctrl+F, Escape)
+  SearchToolbar.handle_shortcuts(ctx, self.state)
 
   -- Padding (from layout constants)
   local padding_left = Layout.PADDING.PANEL
@@ -544,11 +575,7 @@ function GUI:draw(ctx, shell_state)
   local panel_height = SCREEN_H - cursor_y - padding_bottom - status_bar_height
 
   -- Get window's screen position for coordinate conversion
-  -- The cursor is currently at (0, cursor_y) in window coords
-  local cursor_screen_x, cursor_screen_y = ImGui.GetCursorScreenPos(ctx)
-  -- Window's top-left corner in screen coords
-  local window_screen_x = cursor_screen_x
-  local window_screen_y = cursor_screen_y - cursor_y
+  local window_screen_x, window_screen_y = ImGui.GetWindowPos(ctx)
 
   -- Draggable separator configuration (from layout constants)
   local separator_thickness = Layout.SEPARATOR.THICKNESS
@@ -563,7 +590,18 @@ function GUI:draw(ctx, shell_state)
   local sep2_x_screen = window_screen_x + sep2_x_local
   local content_y_screen = window_screen_y + cursor_y
 
-  -- Handle separator 1 dragging
+  -- Calculate panel widths (accounting for separator thickness)
+  local left_column_width = sep1_x_local - padding_left - separator_thickness / 2
+  local template_width = sep2_x_local - sep1_x_local - separator_thickness
+  local info_width = SCREEN_W - padding_right - sep2_x_local - separator_thickness / 2
+
+  -- Draw panels with splitters interleaved (splitter drawn after each panel for proper input)
+
+  -- 1. Left column: Tabbed panel (DIRECTORY / VSTS / TAGS)
+  ImGui.SetCursorPos(ctx, padding_left, cursor_y)
+  LeftPanelView.draw_left_panel(ctx, self, left_column_width, panel_height)
+
+  -- 2. Separator 1 (between left and middle)
   local sep1_result = Ark.Splitter(ctx, {
     id = 'template_sep1',
     x = sep1_x_screen,
@@ -573,22 +611,20 @@ function GUI:draw(ctx, shell_state)
     thickness = separator_thickness,
   })
   if sep1_result.action == 'drag' then
-    -- Convert back to window coordinates
     local sep1_new_x = sep1_result.position - window_screen_x
-    -- Clamp to valid range within content area
     local min_x = padding_left + min_panel_width
     local max_x = SCREEN_W - padding_right - min_panel_width * 2 - separator_thickness * 2
     sep1_new_x = math.max(min_x, math.min(sep1_new_x, max_x))
     self.state.separator1_ratio = (sep1_new_x - padding_left) / content_width
-    sep1_x_local = sep1_new_x
-    sep1_x_screen = window_screen_x + sep1_x_local
   elseif sep1_result.action == 'reset' then
     self.state.separator1_ratio = self.config.FOLDERS_PANEL_WIDTH_RATIO
-    sep1_x_local = padding_left + (content_width * self.state.separator1_ratio)
-    sep1_x_screen = window_screen_x + sep1_x_local
   end
 
-  -- Handle separator 2 dragging
+  -- 3. Middle panel: Templates
+  ImGui.SetCursorPos(ctx, sep1_x_local + separator_thickness / 2, cursor_y)
+  TemplatePanelView.draw_template_panel(ctx, self, template_width, panel_height)
+
+  -- 4. Separator 2 (between middle and right)
   local sep2_result = Ark.Splitter(ctx, {
     id = 'template_sep2',
     x = sep2_x_screen,
@@ -598,36 +634,16 @@ function GUI:draw(ctx, shell_state)
     thickness = separator_thickness,
   })
   if sep2_result.action == 'drag' then
-    -- Convert back to window coordinates
     local sep2_new_x = sep2_result.position - window_screen_x
-    -- Clamp to valid range
     local min_x = sep1_x_local + separator_thickness + min_panel_width
     local max_x = SCREEN_W - padding_right - min_panel_width
     sep2_new_x = math.max(min_x, math.min(sep2_new_x, max_x))
     self.state.separator2_ratio = (sep2_new_x - padding_left) / content_width
-    sep2_x_local = sep2_new_x
-    sep2_x_screen = window_screen_x + sep2_x_local
   elseif sep2_result.action == 'reset' then
     self.state.separator2_ratio = self.state.separator1_ratio + self.config.TEMPLATES_PANEL_WIDTH_RATIO
-    sep2_x_local = padding_left + (content_width * self.state.separator2_ratio)
-    sep2_x_screen = window_screen_x + sep2_x_local
   end
 
-  -- Calculate panel widths (accounting for separator thickness)
-  local left_column_width = sep1_x_local - padding_left - separator_thickness / 2
-  local template_width = sep2_x_local - sep1_x_local - separator_thickness
-  local info_width = SCREEN_W - padding_right - sep2_x_local - separator_thickness / 2
-
-  -- Draw panels with padding using view modules
-  -- Left column: Tabbed panel (DIRECTORY / VSTS / TAGS)
-  ImGui.SetCursorPos(ctx, padding_left, cursor_y)
-  LeftPanelView.draw_left_panel(ctx, self, left_column_width, panel_height)
-
-  -- Middle panel: Templates
-  ImGui.SetCursorPos(ctx, sep1_x_local + separator_thickness / 2, cursor_y)
-  TemplatePanelView.draw_template_panel(ctx, self, template_width, panel_height)
-
-  -- Right panel: Info & Tag Assignment
+  -- 5. Right panel: Info & Tag Assignment
   ImGui.SetCursorPos(ctx, sep2_x_local + separator_thickness / 2, cursor_y)
   InfoPanelView.draw_info_panel(ctx, self, info_width, panel_height)
 

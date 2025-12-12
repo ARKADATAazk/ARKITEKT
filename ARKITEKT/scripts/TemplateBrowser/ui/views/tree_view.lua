@@ -332,7 +332,7 @@ function M.draw_physical_tree(ctx, state, config, height)
         local old_path = node.full_path
         local old_relative_path = node.path
 
-        local success, new_path = FileOps.rename_folder(old_path, new_name)
+        local success, new_path, err = FileOps.rename_folder(old_path, new_name)
         if success then
           local parent_path = old_relative_path:match('^(.+)[/\\][^/\\]+$')
           local new_relative_path = parent_path and (parent_path .. '/' .. new_name) or new_name
@@ -380,6 +380,9 @@ function M.draw_physical_tree(ctx, state, config, height)
           })
 
           Scanner.scan_templates(state)
+          state.set_status('Folder renamed', 'success')
+        else
+          state.set_status(err or 'Failed to rename folder', 'error')
         end
       end
     end,

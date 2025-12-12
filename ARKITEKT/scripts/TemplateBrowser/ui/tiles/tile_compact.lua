@@ -7,6 +7,7 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local TileHelpers = require('TemplateBrowser.ui.tiles.helpers')
+local Chip = require('arkitekt.gui.widgets.data.chip')
 
 local M = {}
 -- Configuration for compact tiles
@@ -50,9 +51,9 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local BRD_HOVER = 0x5588FFFF
   local rounding = 3
 
-  -- Background color with smooth hover transition and subtle color tint
+  -- Background color with smooth hover transition and color tint
   local bg_color = BG_BASE
-  local color_blend = 0.035  -- Very subtle 3.5% color influence
+  local color_blend = 0.05  -- 5% color influence
 
   -- Apply very subtle color tint if template has color
   if chip_color then
@@ -123,8 +124,19 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local cursor_x = x1 + padding
   local cursor_y = y1 + (tile_h / 2) - 9  -- Vertically center text (moved up 3px)
 
+  -- Color square chip (if template has color assigned)
+  local color_chip_width = 0
+  if chip_color then
+    local chip_size = 8
+    local chip_x = cursor_x
+    local chip_y = y1 + (tile_h - chip_size) / 2  -- Vertically centered
+    Chip.DrawColorBlock(dl, chip_x, chip_y, chip_size, chip_color)
+    color_chip_width = chip_size + 4
+    cursor_x = cursor_x + color_chip_width  -- Move cursor past chip
+  end
+
   -- Section 1: Template Name (left-aligned, takes ~35% width)
-  local available_width = tile_w - (padding * 2)
+  local available_width = tile_w - (padding * 2) - color_chip_width
   local name_width = math.floor(available_width * M.CONFIG.name_width_fraction)
   local name_color = 0xCCCCCCFF  -- Match Parameter Library text color
   if state.selected or state.hover then
@@ -135,11 +147,11 @@ function M.render(ctx, rect, template, state, metadata, animator)
   Ark.Draw.Text(dl, cursor_x, cursor_y, name_color, truncated_name)
   cursor_x = cursor_x + name_width
 
-  -- Section 2: Track count badge (if multi-track)
+  -- Section 2: Track count badge (if multi-track) with heat color
   local track_count = template.track_count or 1
   if track_count > 1 then
     local track_text = track_count .. 'T'
-    local track_color = Ark.Colors.WithAlpha(0xA8A8A8FF, 200)
+    local track_color = TileHelpers.get_track_count_color(track_count)
     Ark.Draw.Text(dl, cursor_x, cursor_y, track_color, track_text)
     cursor_x = cursor_x + ImGui.CalcTextSize(ctx, track_text) + 12
   end

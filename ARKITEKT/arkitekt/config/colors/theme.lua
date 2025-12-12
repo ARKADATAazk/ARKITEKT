@@ -209,6 +209,7 @@ M.colors = {
   BG_HEADER       = offset2(-0.024, -0.06),
   BG_PANEL        = offset2(-0.04),
   BG_CHROME       = offset2(-0.08, -0.15),
+  BG_TRANSPARENT  = 0x00000000,  -- Static: fully transparent
 
   -- === BORDERS (from BG_BASE) ===
   -- Increased offsets for more visible contrast (matching older visual style)
@@ -243,9 +244,11 @@ M.colors = {
   TEXT_DARK   = snap2(0x808080FF, 0x808080FF),
   TEXT_BRIGHT = snap2(0xFFFFFFFF, 0x000000FF),
 
-  -- === PATTERNS (from BG_BASE, includes panel offset) ===
-  PATTERN_PRIMARY   = offset2(-0.064, -0.10),
-  PATTERN_SECONDARY = offset2(-0.044, -0.06),
+  -- === PATTERNS (semi-transparent overlays on panel background) ===
+  -- Dark theme: darker lines on dark bg, Light theme: darker lines on light bg
+  -- Alpha: PRIMARY ~38% (0x60), SECONDARY ~13% (0x20)
+  PATTERN_PRIMARY   = snap2(0x10101060, 0xA0A0A060),  -- Dark/light with 38% alpha
+  PATTERN_SECONDARY = snap2(0x10101020, 0xA0A0A020),  -- Dark/light with 13% alpha
 
   -- === TILES ===
   -- BRIGHTNESS/SATURATION use normalized scale: 0=off, 0.5=neutral, 1=max (2x)

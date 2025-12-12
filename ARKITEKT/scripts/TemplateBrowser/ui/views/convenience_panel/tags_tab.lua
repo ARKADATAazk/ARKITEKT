@@ -19,12 +19,13 @@ function M.Draw(ctx, state, config, width, height)
     return
   end
 
-  -- Header with '+' button
+  -- Header with '+' button (right-aligned)
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
 
-  -- Position button at the right
-  local button_x = width - UI.BUTTON.WIDTH_SMALL - 8
-  ImGui.SetCursorPosX(ctx, button_x)
+  -- Push button to far right using Dummy + SameLine
+  local spacer_width = width - UI.BUTTON.WIDTH_SMALL - 8
+  ImGui.Dummy(ctx, spacer_width, 1)
+  ImGui.SameLine(ctx)
 
   if Ark.Button(ctx, {
     id = 'createtag_conv',

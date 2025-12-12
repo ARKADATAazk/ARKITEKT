@@ -60,12 +60,13 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
     return
   end
 
-  -- Header with '+' button
+  -- Header with '+' button (right-aligned)
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
 
-  -- Position button at the right
-  local button_x = width - UI.BUTTON.WIDTH_SMALL - 8
-  ImGui.SetCursorPosX(ctx, button_x)
+  -- Push button to far right using Dummy + SameLine
+  local spacer_width = width - UI.BUTTON.WIDTH_SMALL - 8
+  ImGui.Dummy(ctx, spacer_width, 1)
+  ImGui.SameLine(ctx)
 
   if Ark.Button(ctx, {
     id = 'createtag_dir',
@@ -157,12 +158,14 @@ function M.Draw(ctx, state, config, width, height, gui)
   local folder_section_height = height
 
   -- === FOLDER SECTION ===
-  -- Header with folder creation buttons
+  -- Header with folder creation buttons (right-aligned)
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
 
-  -- Position buttons at the top right
-  local button_x = width - (UI.BUTTON.WIDTH_SMALL * 2 + UI.BUTTON.SPACING) - config.PANEL_PADDING * 2
-  ImGui.SetCursorPosX(ctx, button_x)
+  -- Push buttons to far right using Dummy + SameLine
+  local buttons_width = UI.BUTTON.WIDTH_SMALL * 2 + UI.BUTTON.SPACING
+  local spacer_width = width - buttons_width - UI.PADDING.PANEL_INNER * 2
+  ImGui.Dummy(ctx, spacer_width, 1)
+  ImGui.SameLine(ctx)
 
   -- Physical folder button
   if Ark.Button(ctx, {
@@ -244,7 +247,7 @@ function M.Draw(ctx, state, config, width, height, gui)
       new_folder_name = 'New Folder ' .. folder_num
     end
 
-    local success, new_path = FileOps.create_folder(parent_path, new_folder_name)
+    local success, new_path, err = FileOps.create_folder(parent_path, new_folder_name)
     if success then
       local Scanner = require('TemplateBrowser.domain.template.scanner')
       Scanner.scan_templates(state)
@@ -273,7 +276,7 @@ function M.Draw(ctx, state, config, width, height, gui)
       -- Show status message
       state.set_status('Created folder: ' .. new_folder_name, 'success')
     else
-      state.set_status('Failed to create folder', 'error')
+      state.set_status(err or 'Failed to create folder', 'error')
     end
   end
 

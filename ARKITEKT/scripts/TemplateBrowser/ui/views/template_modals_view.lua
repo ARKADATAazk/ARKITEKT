@@ -194,7 +194,7 @@ function M.draw_template_rename_modal(ctx, state)
     if ok_result.clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
       if state.rename_buffer ~= '' and state.rename_buffer ~= tmpl.name then
         local old_path = tmpl.path
-        local success, new_path = FileOps.rename_template(tmpl.path, state.rename_buffer)
+        local success, new_path, err = FileOps.rename_template(tmpl.path, state.rename_buffer)
         if success then
           -- Create undo operation
           state.undo_manager:push({
@@ -219,6 +219,9 @@ function M.draw_template_rename_modal(ctx, state)
 
           local Scanner = require('TemplateBrowser.domain.template.scanner')
           Scanner.scan_templates(state)
+          state.set_status('Template renamed', 'success')
+        else
+          state.set_status(err or 'Failed to rename template', 'error')
         end
       end
       state.renaming_item = nil

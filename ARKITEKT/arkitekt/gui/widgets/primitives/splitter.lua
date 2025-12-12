@@ -75,7 +75,10 @@ local function render_horizontal(ctx, instance, x, y, width, thickness, disabled
   end
 
   -- Create invisible button for interaction
+  -- SetNextItemAllowOverlap ensures splitter can receive input even when
+  -- adjacent to child windows that might capture input in their area
   ImGui.SetCursorScreenPos(ctx, x, y - thickness/2)
+  ImGui.SetNextItemAllowOverlap(ctx)
   ImGui.InvisibleButton(ctx, '##hsplit_' .. instance.id, width, thickness)
 
   -- Check for reset (double-click)
@@ -111,7 +114,10 @@ local function render_vertical(ctx, instance, x, y, height, thickness, disabled)
   end
 
   -- Create invisible button for interaction
+  -- SetNextItemAllowOverlap ensures splitter can receive input even when
+  -- adjacent to child windows that might capture input in their area
   ImGui.SetCursorScreenPos(ctx, x - thickness/2, y)
+  ImGui.SetNextItemAllowOverlap(ctx)
   ImGui.InvisibleButton(ctx, '##vsplit_' .. instance.id, thickness, height)
 
   -- Check for reset (double-click)

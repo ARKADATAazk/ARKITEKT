@@ -18,6 +18,7 @@ M.selected_folders = {}     -- Selected folders (multi-select mode: path -> true
 M.last_clicked_folder = nil -- Last clicked folder path (for shift-click range selection)
 M.selected_template = nil   -- Currently selected template
 M.search_query = ''         -- Search filter
+M.search_mode = 'templates' -- Search mode: 'templates', 'vsts', 'tags', 'mixed'
 M.filter_tags = {}          -- Active tag filters
 M.filter_fx = {}            -- Active FX filters (table of FX name -> true)
 M.left_panel_tab = 'directory'  -- Current tab: 'directory', 'vsts', 'tags'
@@ -83,6 +84,7 @@ function M.initialize(config)
   M.last_clicked_folder = nil
   M.selected_template = nil
   M.search_query = ''
+  M.search_mode = 'templates'
   M.filter_tags = {}
   M.filter_fx = {}
   M.left_panel_tab = 'directory'
@@ -135,7 +137,7 @@ function M.load_layout()
   local layout = Storage.load_layout()
   if not layout then return end
 
-  -- Apply saved values (only if they exist)
+  -- Panel layout ratios
   if layout.separator1_ratio then
     M.separator1_ratio = layout.separator1_ratio
   end
@@ -148,16 +150,61 @@ function M.load_layout()
   if layout.left_panel_separator_ratio then
     M.left_panel_separator_ratio = layout.left_panel_separator_ratio
   end
+
+  -- View modes
+  if layout.template_view_mode then
+    M.template_view_mode = layout.template_view_mode
+  end
+  if layout.quick_access_view_mode then
+    M.quick_access_view_mode = layout.quick_access_view_mode
+  end
+
+  -- Sorting
+  if layout.sort_mode then
+    M.sort_mode = layout.sort_mode
+  end
+  if layout.quick_access_sort then
+    M.quick_access_sort = layout.quick_access_sort
+  end
+
+  -- Panel modes
+  if layout.quick_access_mode then
+    M.quick_access_mode = layout.quick_access_mode
+  end
+  if layout.left_panel_tab then
+    M.left_panel_tab = layout.left_panel_tab
+  end
+
+  -- Tile widths
+  if layout.grid_tile_width then
+    M.grid_tile_width = layout.grid_tile_width
+  end
+  if layout.list_tile_width then
+    M.list_tile_width = layout.list_tile_width
+  end
 end
 
 -- Save layout to persistent storage
 function M.save_layout()
   local Storage = require('TemplateBrowser.data.storage')
   Storage.save_layout({
+    -- Panel layout ratios
     separator1_ratio = M.separator1_ratio,
     separator2_ratio = M.separator2_ratio,
     quick_access_separator_position = M.quick_access_separator_position,
     left_panel_separator_ratio = M.left_panel_separator_ratio,
+    -- View modes
+    template_view_mode = M.template_view_mode,
+    quick_access_view_mode = M.quick_access_view_mode,
+    -- Sorting
+    sort_mode = M.sort_mode,
+    quick_access_sort = M.quick_access_sort,
+    -- Panel modes
+    quick_access_mode = M.quick_access_mode,
+    left_panel_tab = M.left_panel_tab,
+    -- Tile widths
+    grid_tile_width = M.grid_tile_width,
+    list_tile_width = M.list_tile_width,
   })
 end
 

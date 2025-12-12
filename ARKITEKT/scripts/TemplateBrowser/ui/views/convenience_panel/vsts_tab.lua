@@ -24,7 +24,7 @@ function M.Draw(ctx, state, config, width, height)
   -- Calculate remaining height for VST list
   local vsts_list_height = height - 36  -- Account for header + separator
 
-  if Helpers.begin_child_compat(ctx, 'ConvenienceVSTsList', width - config.PANEL_PADDING * 2, vsts_list_height, false) then
+  if Helpers.begin_child_compat(ctx, 'ConvenienceVSTsList', width - UI.PADDING.PANEL_INNER * 2, vsts_list_height, false) then
     for _, fx_name in ipairs(all_fx) do
       ImGui.PushID(ctx, fx_name)
 

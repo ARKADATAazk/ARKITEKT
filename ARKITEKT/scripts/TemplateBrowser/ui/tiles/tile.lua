@@ -6,6 +6,7 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 local MarchingAnts = require('arkitekt.gui.interaction.marching_ants')
 local TileHelpers = require('TemplateBrowser.ui.tiles.helpers')
+local Chip = require('arkitekt.gui.widgets.data.chip')
 
 local M = {}
 -- Configuration for template tiles
@@ -34,6 +35,7 @@ local truncate_text = TileHelpers.truncate_text
 local is_favorited = TileHelpers.is_favorited
 local strip_parentheses = TileHelpers.strip_parentheses
 local get_display_vst = TileHelpers.get_display_vst
+local get_track_count_color = TileHelpers.get_track_count_color
 
 -- Draw stacked layers behind tile for multi-track templates
 local function draw_stack_layers(ctx, dl, x1, y1, x2, y2, track_count, chip_color)
@@ -120,9 +122,9 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local BRD_HOVER = 0x5588FFFF
   local rounding = 4
 
-  -- Background color with smooth hover transition and subtle color tint
+  -- Background color with smooth hover transition and color tint
   local bg_color = BG_BASE
-  local color_blend = 0.035  -- Very subtle 3.5% color influence
+  local color_blend = 0.05  -- 5% color influence
 
   -- Apply very subtle color tint if template has color
   if chip_color then
@@ -200,7 +202,15 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local content_y = y1 + padding
   local content_w = tile_w - (padding * 2)
 
-  -- Chip indicator removed - color is shown via diagonal stripes only
+  -- Color square chip (if template has color assigned)
+  local color_chip_offset = 0
+  if chip_color then
+    local chip_size = 10
+    local chip_x = content_x
+    local chip_y = content_y + 2  -- Vertically align with text
+    Chip.DrawColorBlock(dl, chip_x, chip_y, chip_size, chip_color)
+    color_chip_offset = chip_size + 6  -- Offset name to the right
+  end
 
   -- Template name
   local name_color = Ark.Colors.WithAlpha(0xCCCCCCFF, text_alpha)  -- Match Parameter Library text color
@@ -208,8 +218,9 @@ function M.render(ctx, rect, template, state, metadata, animator)
     name_color = Ark.Colors.WithAlpha(0xFFFFFFFF, text_alpha)
   end
 
-  local truncated_name = truncate_text(ctx, template.name, content_w)
-  Ark.Draw.Text(dl, content_x, content_y, name_color, truncated_name)
+  local name_x = content_x + color_chip_offset
+  local truncated_name = truncate_text(ctx, template.name, content_w - color_chip_offset)
+  Ark.Draw.Text(dl, name_x, content_y, name_color, truncated_name)
 
   -- Show first VST chip below title (where path used to be)
   local first_vst = get_display_vst(template.fx)
@@ -274,15 +285,15 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local badge_y = y2 - padding - badge_h
 
     -- Badge background (semi-transparent dark)
-    local badge_bg = 0x2A2A2ACC
+    local badge_bg = 0x1A1A1AE0
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, M.CONFIG.badge_rounding)
 
     -- Badge border (subtle)
     local badge_border = 0x40404080
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_border, M.CONFIG.badge_rounding)
 
-    -- Badge text
-    local badge_text_color = 0xA8A8A8FF
+    -- Badge text with heat color based on track count
+    local badge_text_color = get_track_count_color(track_count)
     local badge_text_x = badge_x + badge_padding_x
     local badge_text_y = badge_y + badge_padding_y
     Ark.Draw.Text(dl, badge_text_x, badge_text_y, badge_text_color, badge_text)
