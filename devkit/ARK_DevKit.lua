@@ -501,6 +501,14 @@ local function render_app_tile(ctx, app_data, tile_width, shell_state)
     end
   end
 
+  -- Generic branches that should use warning color
+  local GENERIC_BRANCHES = {
+    main = true,
+    staging = true,
+    widgets = true,
+    optimization = true,
+  }
+
   -- Render one button per worktree
   for i, wt_info in ipairs(available_worktrees) do
     local tooltip = string.format('%s\n\nWorktree: %s\nPath: %s\n\nLeft Click: Launch\nRight Click: Debug',
@@ -510,9 +518,14 @@ local function render_app_tile(ctx, app_data, tile_width, shell_state)
     local text_w, text_h = ImGui.CalcTextSize(ctx, wt_info.wt.key)
     local button_width = text_w + 24  -- Add padding for button chrome
 
-    -- Highlight with 'success' preset if worktree key matches app name (case-insensitive)
-    local is_matching = (wt_info.wt.key:lower() == app_data.name:lower())
-    local button_preset = is_matching and 'success' or nil
+    -- Determine button preset:
+    -- 1. 'success' if worktree key matches app name (case-insensitive)
+    -- 2. 'warning' for generic branches (main, staging, widgets, optimization)
+    -- 3. nil (default) otherwise
+    local wt_key_lower = wt_info.wt.key:lower()
+    local is_matching = (wt_key_lower == app_data.name:lower())
+    local is_generic = GENERIC_BRANCHES[wt_key_lower]
+    local button_preset = is_matching and 'success' or (is_generic and 'warning' or nil)
 
     local result = Ark.Button(ctx, {
       id = app_data.name .. '_' .. wt_info.wt.key,
@@ -539,7 +552,7 @@ local function render_app_tile(ctx, app_data, tile_width, shell_state)
   end
 
   -- Move cursor below tile
-  ImGui.SetCursorScreenPos(ctx, x1, y2 + 3)
+  ImGui.SetCursorScreenPos(ctx, x1, y2 + 1)
   ImGui.Dummy(ctx, 0, 0)
 end
 
@@ -746,7 +759,7 @@ local function draw_main(ctx, shell_state)
       for i, app_data in ipairs(filtered_apps) do
         render_app_tile(ctx, app_data, tile_width, shell_state)
         if i < #filtered_apps then
-          ImGui.Dummy(ctx, 0, 4)
+          ImGui.Dummy(ctx, 0, 1)
         end
       end
     end
