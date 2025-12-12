@@ -169,22 +169,15 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- When expanded, extend trigger zone down to cover RegionFilter + search area
     trigger_extension_expanded = {
       up = (search_base_y - settings_offset) - coord_offset_y,  -- To window top
-      down = search_height + 100,  -- Extend far down to cover region filter area
+      down = 95,  -- Extension below panel when expanded
       left = 0,
       right = 0,
     },
 
-    -- Custom retract: close when hovering below search bar
-    retract_when = function(ctx, mx, my, state)
-      local current_visibility = state.visibility_track:get()
-      local current_settings_height = settings_area_max_height * current_visibility
-      local current_search_y = search_base_y + current_settings_height
-      local close_threshold = current_search_y + search_height +
-                             self.config.UI_PANELS.settings.close_below_search
-      return mouse_in_window and my > close_threshold
-    end,
-
-    retract_delay = 1.5,  -- 1.5s delay before retracting
+    retract_delay = 0.2,
+    directional_delay = true,
+    retract_delay_toward = 1.5,  -- Exiting upward (toward panel edge)
+    retract_delay_away = 0.1,    -- Exiting downward (away from panel)
     window_bounds = {
       x = coord_offset_x,
       y = coord_offset_y,
@@ -260,7 +253,14 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       -- Extend upward to cover entire SettingsPanel area + search bar
       trigger_extension = {
         up = filter_bar_base_y - coord_offset_y,  -- All the way to top of window
-        down = self.config.UI_PANELS.filter.trigger_into_panels,
+        down = self.config.UI_PANELS.filter.trigger_into_panels + 15,
+        left = 0,
+        right = 0,
+      },
+
+      trigger_extension_expanded = {
+        up = filter_bar_base_y - coord_offset_y,
+        down = self.config.UI_PANELS.filter.trigger_into_panels + 25,  -- +10 more when expanded
         left = 0,
         right = 0,
       },

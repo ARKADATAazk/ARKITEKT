@@ -408,9 +408,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
           -- Apply waveform quality multiplier to reduce resolution (better performance with many items)
           -- PERF: Use cached settings instead of per-tile state.settings lookup
           local target_width = (content_w * settings.waveform_quality) // 1
-          local use_filled = settings.waveform_filled
-          if use_filled == nil then use_filled = true end
-          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache, use_filled)
+          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache)
         end
       else
         -- Show placeholder with spinner and queue waveform generation
@@ -693,26 +691,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, scaled_x2, header_height,
         item_data.name, item_data.index, item_data.total, render_color, animated_text_alpha, config,
         item_data.uuid, badge_rects, nil, extra_text_margin, display_text_color, _truncated_text_cache, text_y_offset)
-    end
-  end
-
-  -- PROFILER: After text
-  if M.profile_enabled then t7 = time_precise() end
-
-  -- PERF: Pre-compute cycle badge dimensions once (reused for star and pool positioning)
-  local cycle_badge_w, cycle_text
-  local has_cycle = item_data.total and item_data.total > 1
-  if has_cycle then
-    local idx = item_data.index or 1
-    local cache_key = idx * 10000 + item_data.total
-    local cached = _cached.cycle_badges[cache_key]
-    if cached then
-      cycle_text, cycle_badge_w = cached[1], cached[2] + cfg.badge_cycle_padding_x * 2
-    else
-      cycle_text = format('%d/%d', idx, item_data.total)
-      local w = CalcTextSize(ctx, cycle_text)
-      _cached.cycle_badges[cache_key] = {cycle_text, w}
-      cycle_badge_w = w + cfg.badge_cycle_padding_x * 2
     end
   end
 

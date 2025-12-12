@@ -137,8 +137,9 @@ end
 -- ============================================================================
 
 local function render_text_field(ctx, dl, x, y, width, height, config, state, id, is_disabled, corner_rounding)
-  -- Check hover using IsMouseHoveringRect (ImGui built-in, respects clipping)
-  local is_hovered = not is_disabled and ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
+  -- Use previous frame's hover state for smooth animation
+  -- Hover state is updated AFTER rendering via IsItemHovered() which respects disabled state
+  local is_hovered = state.is_hovered or false
 
   -- Animate hover alpha (like combo/button)
   local dt = ImGui.GetDeltaTime(ctx)
@@ -272,11 +273,13 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   end
 
   state.focused = ImGui.IsItemActive(ctx)
+  -- Update hover state using IsItemHovered (respects ImGui.BeginDisabled)
+  state.is_hovered = ImGui.IsItemHovered(ctx)
 
   ImGui.PopStyleColor(ctx, 6)
   ImGui.PopItemWidth(ctx)
 
-  return changed, is_hovered
+  return changed, state.is_hovered
 end
 
 -- ============================================================================

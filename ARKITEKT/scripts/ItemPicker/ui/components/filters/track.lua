@@ -49,18 +49,29 @@ local function is_effectively_whitelisted(track, whitelist)
   return true
 end
 
+-- Check if track name matches search (case-insensitive)
+local function track_matches_search(track, search_lower)
+  if not search_lower or search_lower == '' then return true end
+  local name_lower = track.name:lower()
+  return name_lower:find(search_lower, 1, true) ~= nil
+end
+
 -- Flatten track tree to get whitelisted tracks in order
 -- Only includes tracks that are effectively whitelisted (parent chain is whitelisted)
-local function get_whitelisted_tracks(tracks, whitelist, result)
+-- Optionally filters by search text
+local function get_whitelisted_tracks(tracks, whitelist, result, search_lower)
   result = result or {}
 
   for _, track in ipairs(tracks) do
     -- Only include if track AND all its ancestors are whitelisted
     if is_effectively_whitelisted(track, whitelist) then
-      result[#result + 1] = track
+      -- Also check search filter if provided
+      if track_matches_search(track, search_lower) then
+        result[#result + 1] = track
+      end
     end
     if track.children and #track.children > 0 then
-      get_whitelisted_tracks(track.children, whitelist, result)
+      get_whitelisted_tracks(track.children, whitelist, result, search_lower)
     end
   end
 
@@ -77,11 +88,47 @@ function M.Draw(ctx, draw_list, x, y, height, state, alpha)
     return 0
   end
 
-  -- Get whitelisted tracks
-  local tracks = get_whitelisted_tracks(state.track_tree, state.track_whitelist)
+  local bar_width = 120  -- Fixed width for the bar
+  local tag_x = x + TAG.PADDING_X
+  local tag_width = bar_width - TAG.PADDING_X * 2
 
+  -- Layout constants for header area
+  local search_height = 24
+  local search_margin = 4
+  local button_area_height = 28
+  local header_height = search_height + search_margin + button_area_height + 4
+
+  -- Draw search input at top (always visible)
+  local search_y = y + 2
+  ImGui.SetCursorScreenPos(ctx, x + TAG.PADDING_X, search_y)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, alpha)
+
+  local search_result = Ark.InputText(ctx, {
+    id = 'track_bar_search',
+    hint = 'Filter...',
+    width = bar_width - TAG.PADDING_X * 2,
+    height = search_height,
+    get_value = function() return state.settings.track_bar_search or '' end,
+    on_change = function(new_text)
+      state.set_setting('track_bar_search', new_text)
+      -- Invalidate filter cache when search changes
+      state.runtime_cache.audio_filter_hash = nil
+      state.runtime_cache.midi_filter_hash = nil
+    end,
+  })
+
+  ImGui.PopStyleVar(ctx)
+
+  -- Get search filter from persisted settings (separate from modal search)
+  local search_text = state.settings.track_bar_search or ''
+  local search_lower = search_text ~= '' and search_text:lower() or nil
+
+  -- Get whitelisted tracks (filtered by search if active)
+  local tracks = get_whitelisted_tracks(state.track_tree, state.track_whitelist, nil, search_lower)
+
+  -- If no tracks match, still show the bar (with search input) but skip track list
   if #tracks == 0 then
-    return 0
+    return bar_width
   end
 
   -- Initialize enabled state if not present (all enabled by default)
@@ -92,15 +139,9 @@ function M.Draw(ctx, draw_list, x, y, height, state, alpha)
     end
   end
 
-  local bar_width = 120  -- Fixed width for the bar
   local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
-  local tag_x = x + TAG.PADDING_X
-  local tag_width = bar_width - TAG.PADDING_X * 2
-
-  -- Reserve space for ALL/NONE buttons at TOP
-  local button_area_height = 32
-  local content_start_y = y + button_area_height
-  local content_height = height - button_area_height
+  local content_start_y = y + header_height
+  local content_height = height - header_height
   local tag_y = content_start_y + TAG.PADDING_Y
 
   -- Calculate if we need scrolling
@@ -130,8 +171,8 @@ function M.Draw(ctx, draw_list, x, y, height, state, alpha)
   ImGui.SetCursorScreenPos(ctx, x, y)
   ImGui.InvisibleButton(ctx, '##track_filter_bar_area', bar_width, height)
 
-  -- Draw ALL/NONE buttons at TOP (before clip rect)
-  local button_y = y + 4
+  -- Draw ALL/NONE buttons below search input (before clip rect)
+  local button_y = y + search_height + search_margin + 2
   local button_height = 24
   local button_gap = 4
   local button_width = (bar_width - TAG.PADDING_X * 2 - button_gap) / 2
@@ -270,7 +311,6 @@ function M.Draw(ctx, draw_list, x, y, height, state, alpha)
         state.track_bar_paint_mode = 'enable'
         state.track_bar_last_painted = track.guid
         state.track_filters_enabled[track.guid] = true
-        -- Invalidate filter cache
         state.runtime_cache.audio_filter_hash = nil
         state.runtime_cache.midi_filter_hash = nil
       end
@@ -281,23 +321,16 @@ function M.Draw(ctx, draw_list, x, y, height, state, alpha)
         state.track_bar_paint_mode = 'disable'
         state.track_bar_last_painted = track.guid
         state.track_filters_enabled[track.guid] = false
-        -- Invalidate filter cache
         state.runtime_cache.audio_filter_hash = nil
         state.runtime_cache.midi_filter_hash = nil
       end
 
       -- Paint currently hovered track while dragging (catches current frame)
-      -- Crossing detection below handles tracks skipped by fast movement
       if state.track_bar_painting and is_hovered and state.track_bar_last_painted ~= track.guid then
         local is_dragging = (state.track_bar_paint_mode == 'enable' and left_down) or
                             (state.track_bar_paint_mode == 'disable' and right_down)
         if is_dragging then
-          local new_value
-          if state.track_bar_paint_mode == 'enable' then
-            new_value = true
-          else
-            new_value = false
-          end
+          local new_value = state.track_bar_paint_mode == 'enable'
           state.track_filters_enabled[track.guid] = new_value
           state.track_bar_last_painted = track.guid
           state.runtime_cache.audio_filter_hash = nil
@@ -327,12 +360,7 @@ function M.Draw(ctx, draw_list, x, y, height, state, alpha)
       for _, idx in ipairs(crossed) do
         local track = tracks[idx]
         if track and state.track_bar_last_painted ~= track.guid then
-          local new_value
-          if state.track_bar_paint_mode == 'enable' then
-            new_value = true
-          else
-            new_value = false
-          end
+          local new_value = state.track_bar_paint_mode == 'enable'
 
           state.track_filters_enabled[track.guid] = new_value
           state.track_bar_last_painted = track.guid

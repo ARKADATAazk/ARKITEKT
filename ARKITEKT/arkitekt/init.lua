@@ -259,6 +259,9 @@ local MODULES = {
   SlidingZone = 'arkitekt.gui.widgets.containers.sliding_zone',
   TileGroup = 'arkitekt.gui.widgets.containers.tile_group',
 
+  -- Overlays / Modals
+  Modal = 'arkitekt.gui.widgets.modal',
+
   -- Navigation / Tree (Ark.Tree and Ark.Tree.TreeTable)
   Tree = 'arkitekt.gui.widgets.tree',
 

@@ -185,9 +185,15 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding, is_disable
   local x1, y1 = x, y
   local x2, y2 = x + width, y + height
 
-  local mx, my = ImGui.GetMousePos(ctx)
-  local is_hovered = not is_disabled and mx >= x1 and mx < x2 and my >= y1 and my < y2
-  
+  -- Create interaction area FIRST to get proper hover state
+  ImGui.SetCursorScreenPos(ctx, x1, y1)
+  ImGui.InvisibleButton(ctx, self.id .. '_btn', width, height)
+
+  -- Get hover state using IsItemHovered (respects ImGui.BeginDisabled)
+  local is_hovered = not is_disabled and ImGui.IsItemHovered(ctx)
+  local clicked = not is_disabled and ImGui.IsItemClicked(ctx, 0)
+  local right_clicked = not is_disabled and ImGui.IsItemClicked(ctx, 1)
+
   -- Animate hover alpha
   local target_alpha = (is_hovered or self.is_open) and 1.0 or 0.0
   local alpha_speed = 12.0
@@ -250,13 +256,8 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding, is_disable
     arrow_x + arrow_half, arrow_y - arrow_half * 0.5,
     arrow_x, arrow_y + arrow_half * 0.7,
     arrow_color)
-  
-  -- Interaction
-  ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.InvisibleButton(ctx, self.id .. '_btn', width, height)
 
-  local clicked = not is_disabled and ImGui.IsItemClicked(ctx, 0)
-  local right_clicked = not is_disabled and ImGui.IsItemClicked(ctx, 1)
+  -- Handle mousewheel (hover state already determined above)
   local wheel_changed = not is_disabled and self:handle_mousewheel(ctx, is_hovered)
 
   -- Right-click to toggle sort direction (only when enabled and not disabled)
@@ -335,7 +336,11 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding, is_disable
       local item_w = popup_width
       local item_h = popup_cfg.item_height
 
-      local item_hovered = ImGui.IsMouseHoveringRect(ctx, item_x, item_y, item_x + item_w, item_y + item_h)
+      -- Create InvisibleButton FIRST to get proper hover state
+      ImGui.InvisibleButton(ctx, self.id .. '_item_' .. i, item_w, item_h)
+      local item_hovered = ImGui.IsItemHovered(ctx)
+      local item_clicked = ImGui.IsItemClicked(ctx, 0)
+
       if item_hovered then
         self.popup_hover_index = i
       end
@@ -421,14 +426,12 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding, is_disable
       -- Show full label tooltip if truncated
       local was_truncated = display_label ~= label
 
-      ImGui.InvisibleButton(ctx, self.id .. '_item_' .. i, item_w, item_h)
-
       -- Tooltip for truncated items
       if was_truncated and item_hovered then
         ImGui.SetTooltip(ctx, label)
       end
 
-      if ImGui.IsItemClicked(ctx, 0) then
+      if item_clicked then
         if is_checkbox then
           -- For checkbox items, toggle the checked state and call on_checkbox_change
           if cfg.on_checkbox_change then

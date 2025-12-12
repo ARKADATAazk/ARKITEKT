@@ -41,6 +41,19 @@ local function draw_track_icon(dl, x, y, w, h, color)
   end
 end
 
+-- Draw help icon (question mark)
+local function draw_help_icon(dl, x, y, w, h, color)
+  local cx = x + w / 2
+  local cy = y + h / 2
+  -- Question mark using simple shapes
+  -- Arc for the top curve
+  local r = 4
+  ImGui.DrawList_AddCircle(dl, cx, cy - 2, r, color, 8, 1.5)
+  -- Cut bottom half by drawing over it (or just draw arc manually)
+  -- Simpler: draw a "?" text
+  ImGui.DrawList_AddText(dl, cx - 3, cy - 6, color, '?')
+end
+
 -- Draw layout icon factory
 local function make_layout_icon_drawer(is_vertical)
   return function(dl, x, y, w, h, color)
@@ -76,16 +89,18 @@ function M.Draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, search_fade)
   ImGui.PushFont(ctx, title_font, 14)
 
-  -- Sort modes
+  -- Sort modes (Track is default - most intuitive for project organization)
   local sort_modes = {
-    {id = 'none', label = 'None'},
+    {id = 'track', label = 'Track'},
+    {id = 'name', label = 'Name'},
+    {id = 'recent', label = 'Recent'},
+    {id = 'position', label = 'Position'},
     {id = 'length', label = 'Length'},
     {id = 'color', label = 'Color'},
-    {id = 'name', label = 'Name'},
     {id = 'pool', label = 'Pool'},
   }
 
-  local current_sort = state.settings.sort_mode or 'none'
+  local current_sort = state.settings.sort_mode or 'track'
 
   -- Pre-calculate button widths
   local sort_button_widths = {}
@@ -332,6 +347,23 @@ function M.Draw(ctx, coord_offset_x, search_y, screen_w, search_height, search_f
       ImGui.SameLine(ctx, 0, button_gap)
     end
   end
+
+  -- Help button (far right)
+  ImGui.SameLine(ctx, 0, button_gap + 8)  -- Extra gap before help
+  local help_button_width = button_height
+  Ark.Button(ctx, {
+    id = 'help_button',
+    width = help_button_width,
+    height = button_height,
+    label = '?',
+    preset_name = 'BUTTON_TOGGLE_WHITE',
+    tooltip = 'Keyboard Shortcuts & Help',
+    ignore_modal = true,
+    advance = 'none',
+    on_click = function()
+      state.open_help_modal = true
+    end,
+  })
 
   ImGui.PopFont(ctx)
   ImGui.PopStyleVar(ctx)

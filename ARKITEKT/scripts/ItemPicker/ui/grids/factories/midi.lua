@@ -69,7 +69,12 @@ function M.create_options(config, state, visualization, animator, disable_animat
       if not shared.passes_mute_filters(state.settings, track_muted, item_muted) then
         goto continue
       end
-      if not shared.passes_search_filter(state.settings, item_name, track_name, entry.regions) then
+
+      -- PERF: Pre-compute lowercase names once (reused in search and sorting)
+      local item_name_lower = entry.name_lower or item_name:lower()
+      local track_name_lower = entry.track_name_lower or (track_name ~= '' and track_name:lower() or nil)
+
+      if not shared.passes_search_filter(state.settings, item_name, track_name, entry.regions, item_name_lower, track_name_lower) then
         goto continue
       end
 
@@ -84,17 +89,16 @@ function M.create_options(config, state, visualization, animator, disable_animat
           passes_filter = false
         elseif filter_mode == 'and' then
           -- AND mode: item must have ALL selected regions
+          -- PERF: Build set of item regions first (O(m)), then check selected (O(n))
+          -- Total: O(n+m) instead of O(n×m)
+          local item_region_set = {}
+          for _, region in ipairs(entry.regions) do
+            local name = type(region) == 'table' and region.name or region
+            item_region_set[name] = true
+          end
           passes_filter = true
-          for region_name, _ in pairs(state.selected_regions) do
-            local found = false
-            for _, region in ipairs(entry.regions) do
-              local name = type(region) == 'table' and region.name or region
-              if name == region_name then
-                found = true
-                break
-              end
-            end
-            if not found then
+          for region_name in pairs(state.selected_regions) do
+            if not item_region_set[region_name] then
               passes_filter = false
               break
             end
@@ -131,6 +135,7 @@ function M.create_options(config, state, visualization, animator, disable_animat
         track_guid = track_guid,
         item = item,
         name = item_name,
+        name_lower = item_name_lower,  -- PERF: Cached for sorting
         index = current_position,  -- Position in filtered list (1, 2, 3...)
         total = filtered_count,  -- Total items in filtered list
         color = color,
@@ -143,13 +148,15 @@ function M.create_options(config, state, visualization, animator, disable_animat
         track_muted = track_muted,  -- Track mute state
         item_muted = item_muted,  -- Item mute state
         duration = duration,  -- Cached duration for renderer
+        track_index = entry.track_index,  -- Track position for sorting
+        item_position = entry.item_position,  -- Timeline position for sorting
       }
 
       ::continue::
     end
 
     -- Apply sorting
-    local sort_mode = state.settings.sort_mode or 'none'
+    local sort_mode = state.settings.sort_mode or 'track'
     local sort_reverse = state.settings.sort_reverse or false
 
     if sort_mode == 'length' then
@@ -175,16 +182,18 @@ function M.create_options(config, state, visualization, animator, disable_animat
         end
       end)
     elseif sort_mode == 'name' then
-      -- Sort alphabetically by name
+      -- Sort alphabetically by name (PERF: uses cached name_lower)
       table.sort(filtered, function(a, b)
+        local a_lower = a.name_lower or a.name:lower()
+        local b_lower = b.name_lower or b.name:lower()
         if sort_reverse then
-          return a.name:lower() > b.name:lower()
+          return a_lower > b_lower
         else
-          return a.name:lower() < b.name:lower()
+          return a_lower < b_lower
         end
       end)
     elseif sort_mode == 'pool' then
-      -- Sort by pool count (descending), then by name
+      -- Sort by pool count (descending), then by name (PERF: uses cached name_lower)
       table.sort(filtered, function(a, b)
         local a_pool = a.pool_count or 1
         local b_pool = b.pool_count or 1
@@ -195,14 +204,87 @@ function M.create_options(config, state, visualization, animator, disable_animat
             return a_pool > b_pool  -- Higher pool counts first
           end
         else
-          return (a.name or '') < (b.name or '')  -- Then alphabetically
+          local a_lower = a.name_lower or a.name:lower()
+          local b_lower = b.name_lower or b.name:lower()
+          return a_lower < b_lower
+        end
+      end)
+    elseif sort_mode == 'recent' then
+      -- Sort by recently used (most recent first by default)
+      local item_usage = state.item_usage or {}
+      table.sort(filtered, function(a, b)
+        local a_time = item_usage[a.uuid] or 0
+        local b_time = item_usage[b.uuid] or 0
+        if a_time ~= b_time then
+          if sort_reverse then
+            return a_time < b_time  -- Oldest first when reversed
+          else
+            return a_time > b_time  -- Most recent first (default)
+          end
+        end
+        -- Tie-breaker: alphabetical by name
+        local a_lower = a.name_lower or a.name:lower()
+        local b_lower = b.name_lower or b.name:lower()
+        return a_lower < b_lower
+      end)
+    elseif sort_mode == 'track' then
+      -- Sort by track index (top-to-bottom in project)
+      table.sort(filtered, function(a, b)
+        local a_track = a.track_index or 9999
+        local b_track = b.track_index or 9999
+        if a_track ~= b_track then
+          if sort_reverse then
+            return a_track > b_track  -- Bottom tracks first when reversed
+          else
+            return a_track < b_track  -- Top tracks first (default)
+          end
+        end
+        -- Tie-breaker: timeline position
+        local a_pos = a.item_position or 0
+        local b_pos = b.item_position or 0
+        return a_pos < b_pos
+      end)
+    elseif sort_mode == 'position' then
+      -- Sort by timeline position (earliest first by default)
+      table.sort(filtered, function(a, b)
+        local a_pos = a.item_position or 0
+        local b_pos = b.item_position or 0
+        if sort_reverse then
+          return a_pos > b_pos  -- Latest first when reversed
+        else
+          return a_pos < b_pos  -- Earliest first (default)
         end
       end)
     end
 
-    -- Cache result for next frame
+    -- Pin favorites to top (stable sort - preserves relative order within each group)
+    if state.settings.pin_favorites_to_top and state.favorites and state.favorites.midi then
+      local favorites_map = state.favorites.midi
+      local pinned = {}
+      local unpinned = {}
+      for _, item in ipairs(filtered) do
+        if favorites_map[item.track_guid] then
+          pinned[#pinned + 1] = item
+        else
+          unpinned[#unpinned + 1] = item
+        end
+      end
+      -- Rebuild filtered: favorites first, then rest
+      filtered = {}
+      for _, item in ipairs(pinned) do
+        filtered[#filtered + 1] = item
+      end
+      for _, item in ipairs(unpinned) do
+        filtered[#filtered + 1] = item
+      end
+    end
+
+    -- Cache result and counts for next frame
+    local total_count = state.midi_indexes and #state.midi_indexes or 0
     state.runtime_cache.midi_filtered = filtered
     state.runtime_cache.midi_filter_hash = filter_hash
+    state.runtime_cache.midi_visible_count = #filtered
+    state.runtime_cache.midi_hidden_count = total_count - #filtered
 
     -- Smart selection cleanup: deselect items that are no longer accessible
     if grid_result_ref.current and grid_result_ref.current.selection then

@@ -162,17 +162,10 @@ end
 -- RENDERING
 -- ============================================================================
 
-local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, total_width)
+local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, is_hovered, is_active)
   local size = config.size
   local actx = Base.get_context(ctx)
   local is_disabled = config.is_disabled or actx:is_disabled()
-  local is_blocking = config.is_blocking or false
-
-  -- Check hover using IsMouseHoveringRect (ImGui built-in, respects clipping)
-  local is_hovered = not is_disabled and not is_blocking and
-                     ImGui.IsMouseHoveringRect(ctx, x, y, x + total_width, y + size)
-  local is_active = not is_disabled and not is_blocking and
-                    is_hovered and ImGui.IsMouseDown(ctx, 0)
 
   -- Update animation
   local dt = ImGui.GetDeltaTime(ctx)
@@ -328,8 +321,17 @@ function M.Draw(ctx, label_or_opts, is_checked)
     total_width = size + config.label_spacing + label_width
   end
 
-  -- Render checkbox box (pass total_width for hover detection)
-  local is_hovered, is_active = render_checkbox(ctx, dl, x, y, config, instance, is_checked, total_width)
+  -- Create interaction area FIRST to get proper hover state
+  ImGui.SetCursorScreenPos(ctx, x, y)
+  ImGui.InvisibleButton(ctx, '##' .. unique_id, total_width, size)
+
+  -- Get hover/active state using IsItemHovered (respects ImGui.BeginDisabled)
+  local is_hovered = not opts.is_disabled and not opts.is_blocking and ImGui.IsItemHovered(ctx)
+  local is_active = is_hovered and ImGui.IsMouseDown(ctx, 0)
+  local clicked = not opts.is_disabled and not opts.is_blocking and ImGui.IsItemClicked(ctx, 0)
+
+  -- Render checkbox box
+  render_checkbox(ctx, dl, x, y, config, instance, is_checked, is_hovered, is_active)
 
   -- Render label
   if label ~= '' then
@@ -352,30 +354,22 @@ function M.Draw(ctx, label_or_opts, is_checked)
     ImGui.DrawList_AddText(dl, label_x, label_y, label_color, label)
   end
 
-  -- Create interaction area
-  ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, '##' .. unique_id, total_width, size)
-
-  local clicked = false
+  -- Handle click (interaction area created above)
   local changed = false
   local new_value = is_checked
 
-  if not opts.is_disabled and not opts.is_blocking then
-    clicked = ImGui.IsItemClicked(ctx, 0)
+  if clicked then
+    new_value = not is_checked
+    changed = true
 
-    if clicked then
-      new_value = not is_checked
-      changed = true
+    -- Update panel state
+    if opts.panel_state then
+      opts.panel_state.checkbox_value = new_value
+    end
 
-      -- Update panel state
-      if opts.panel_state then
-        opts.panel_state.checkbox_value = new_value
-      end
-
-      -- Call change callback
-      if config.on_change then
-        config.on_change(new_value)
-      end
+    -- Call change callback
+    if config.on_change then
+      config.on_change(new_value)
     end
   end
 

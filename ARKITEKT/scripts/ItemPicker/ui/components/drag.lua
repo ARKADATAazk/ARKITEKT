@@ -4,6 +4,7 @@
 
 local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
+local Config = require('ItemPicker.config.constants')
 local M = {}
 
 -- PERF: Localize math functions

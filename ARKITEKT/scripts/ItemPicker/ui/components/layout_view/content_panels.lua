@@ -35,6 +35,39 @@ local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
 end
 
+-- Draw item count info centered in panel (low opacity)
+local function draw_item_counts(ctx, draw_list, panel_x, panel_y, panel_width, panel_height, visible_count, hidden_count, alpha)
+  visible_count = visible_count or 0
+  hidden_count = hidden_count or 0
+
+  -- Build text lines
+  local line1 = string.format('%d item%s visible', visible_count, visible_count == 1 and '' or 's')
+  local line2 = hidden_count > 0 and string.format('%d hidden by filters', hidden_count) or nil
+
+  -- Calculate text dimensions
+  local line1_w = ImGui.CalcTextSize(ctx, line1)
+  local line2_w = line2 and ImGui.CalcTextSize(ctx, line2) or 0
+  local line_h = ImGui.GetTextLineHeight(ctx)
+  local spacing = 4
+  local total_h = line2 and (line_h * 2 + spacing) or line_h
+
+  -- Center position
+  local center_x = panel_x + panel_width / 2
+  local center_y = panel_y + panel_height / 2
+
+  -- Draw with very low opacity
+  local text_alpha = 0.10 * alpha
+  local text_color = Ark.Colors.WithAlpha(0xFFFFFFFF, (text_alpha * 255) // 1)
+
+  -- Line 1: visible count
+  ImGui.DrawList_AddText(draw_list, center_x - line1_w / 2, center_y - total_h / 2, text_color, line1)
+
+  -- Line 2: hidden count (if any)
+  if line2 then
+    ImGui.DrawList_AddText(draw_list, center_x - line2_w / 2, center_y - total_h / 2 + line_h + spacing, text_color, line2)
+  end
+end
+
 -- Draw a centered panel title
 local function draw_panel_title(ctx, draw_list, title_font, title, panel_x, panel_y, panel_width, padding, alpha, font_size, config, scroll_y)
   ImGui.PushFont(ctx, title_font, font_size)
@@ -65,15 +98,22 @@ function M.draw_midi_only(ctx, draw_list, title_font, start_x, start_y, content_
   local panel_y1 = start_y
   local panel_x2 = start_x + content_width - panel_right_padding
   local panel_y2 = start_y + header_height + content_height
+  local panel_width = panel_x2 - panel_x1
+  local panel_height = panel_y2 - panel_y1
 
   draw_panel(draw_list, panel_x1, panel_y1, panel_x2, panel_y2, panel_rounding, section_fade)
   draw_panel_title(ctx, draw_list, title_font, 'MIDI Items', start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, config, 0)
+
+  -- Draw item counts (behind grid content)
+  local visible = state.runtime_cache and state.runtime_cache.midi_visible_count or 0
+  local hidden = state.runtime_cache and state.runtime_cache.midi_hidden_count or 0
+  draw_item_counts(ctx, draw_list, panel_x1, panel_y1, panel_width, panel_height, visible, hidden, section_fade)
 
   local midi_grid_width = content_width - panel_right_padding - panel_padding * 2
   local midi_child_h = content_height - panel_padding
   ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
-  coordinator.midi_grid_opts.block_all_input = state.show_track_filter_modal or false
+  coordinator.midi_grid_opts.block_all_input = state.show_track_filter_modal or state.show_help_modal or false
 
   if ImGui.BeginChild(ctx, 'midi_container', midi_grid_width, midi_child_h, 0, ImGui.WindowFlags_NoScrollbar) then
     coordinator:render_midi_grid(ctx, midi_grid_width, midi_child_h, 0)
@@ -88,15 +128,22 @@ function M.draw_audio_only(ctx, draw_list, title_font, start_x, start_y, content
   local panel_y1 = start_y
   local panel_x2 = start_x + content_width - panel_right_padding
   local panel_y2 = start_y + header_height + content_height
+  local panel_width = panel_x2 - panel_x1
+  local panel_height = panel_y2 - panel_y1
 
   draw_panel(draw_list, panel_x1, panel_y1, panel_x2, panel_y2, panel_rounding, section_fade)
   draw_panel_title(ctx, draw_list, title_font, 'Audio Items', start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, config, 0)
+
+  -- Draw item counts (behind grid content)
+  local visible = state.runtime_cache and state.runtime_cache.audio_visible_count or 0
+  local hidden = state.runtime_cache and state.runtime_cache.audio_hidden_count or 0
+  draw_item_counts(ctx, draw_list, panel_x1, panel_y1, panel_width, panel_height, visible, hidden, section_fade)
 
   local audio_grid_width = content_width - panel_right_padding - panel_padding * 2
   local audio_child_h = content_height - panel_padding
   ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
-  coordinator.audio_grid_opts.block_all_input = state.show_track_filter_modal or false
+  coordinator.audio_grid_opts.block_all_input = state.show_track_filter_modal or state.show_help_modal or false
 
   if ImGui.BeginChild(ctx, 'audio_container', audio_grid_width, audio_child_h, 0, ImGui.WindowFlags_NoScrollbar) then
     coordinator:render_audio_grid(ctx, audio_grid_width, audio_child_h, 0)
@@ -134,9 +181,15 @@ function M.draw_mixed_horizontal(ctx, draw_list, title_font, start_x, start_y, c
   -- MIDI section (left)
   local panel_padding = 4
   local panel_rounding = 6
+  local midi_panel_height = header_height + content_height
 
-  draw_panel(draw_list, start_x, start_y, start_x + midi_width, start_y + header_height + content_height, panel_rounding, section_fade)
+  draw_panel(draw_list, start_x, start_y, start_x + midi_width, start_y + midi_panel_height, panel_rounding, section_fade)
   draw_panel_title(ctx, draw_list, title_font, 'MIDI Items', start_x, start_y, midi_width, panel_padding, section_fade, 14, config, 0)
+
+  -- Draw MIDI item counts
+  local midi_visible = state.runtime_cache and state.runtime_cache.midi_visible_count or 0
+  local midi_hidden = state.runtime_cache and state.runtime_cache.midi_hidden_count or 0
+  draw_item_counts(ctx, draw_list, start_x, start_y, midi_width, midi_panel_height, midi_visible, midi_hidden, section_fade)
 
   local midi_grid_width = midi_width - panel_padding * 2
   local midi_child_h = content_height - panel_padding
@@ -160,7 +213,7 @@ function M.draw_mixed_horizontal(ctx, draw_list, title_font, start_x, start_y, c
     thickness = sep_config.thickness,
   })
 
-  local block_input = sep_result.dragging or state.show_track_filter_modal
+  local block_input = sep_result.dragging or state.show_track_filter_modal or state.show_help_modal
   if coordinator.midi_grid_opts then coordinator.midi_grid_opts.block_all_input = block_input end
   if coordinator.audio_grid_opts then coordinator.audio_grid_opts.block_all_input = block_input end
 
@@ -174,9 +227,15 @@ function M.draw_mixed_horizontal(ctx, draw_list, title_font, start_x, start_y, c
 
   -- Audio section (right)
   local audio_start_x = start_x + midi_width + separator_gap
+  local audio_panel_height = header_height + content_height
 
-  draw_panel(draw_list, audio_start_x, start_y, audio_start_x + audio_width, start_y + header_height + content_height, panel_rounding, section_fade)
+  draw_panel(draw_list, audio_start_x, start_y, audio_start_x + audio_width, start_y + audio_panel_height, panel_rounding, section_fade)
   draw_panel_title(ctx, draw_list, title_font, 'Audio Items', audio_start_x, start_y, audio_width, panel_padding, section_fade, 15, config, 0)
+
+  -- Draw Audio item counts
+  local audio_visible = state.runtime_cache and state.runtime_cache.audio_visible_count or 0
+  local audio_hidden = state.runtime_cache and state.runtime_cache.audio_hidden_count or 0
+  draw_item_counts(ctx, draw_list, audio_start_x, start_y, audio_width, audio_panel_height, audio_visible, audio_hidden, section_fade)
 
   local audio_grid_width = audio_width - panel_padding * 2
   local audio_child_h = content_height - panel_padding
@@ -218,11 +277,18 @@ function M.draw_mixed_vertical(ctx, draw_list, title_font, start_x, start_y, con
   -- MIDI section with panel
   local panel_padding = 4
   local panel_rounding = 6
+  local midi_panel_width = content_width - panel_right_padding
+  local midi_panel_height = header_height + midi_height
 
-  draw_panel(draw_list, start_x, start_y, start_x + content_width - panel_right_padding, start_y + header_height + midi_height, panel_rounding, section_fade)
-  draw_panel_title(ctx, draw_list, title_font, 'MIDI Items', start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, config, 0)
+  draw_panel(draw_list, start_x, start_y, start_x + midi_panel_width, start_y + midi_panel_height, panel_rounding, section_fade)
+  draw_panel_title(ctx, draw_list, title_font, 'MIDI Items', start_x, start_y, midi_panel_width, panel_padding, section_fade, 14, config, 0)
 
-  local midi_grid_width = content_width - panel_right_padding - panel_padding * 2
+  -- Draw MIDI item counts
+  local midi_visible = state.runtime_cache and state.runtime_cache.midi_visible_count or 0
+  local midi_hidden = state.runtime_cache and state.runtime_cache.midi_hidden_count or 0
+  draw_item_counts(ctx, draw_list, start_x, start_y, midi_panel_width, midi_panel_height, midi_visible, midi_hidden, section_fade)
+
+  local midi_grid_width = midi_panel_width - panel_padding * 2
   local midi_child_h = midi_height - panel_padding
   ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
@@ -243,7 +309,7 @@ function M.draw_mixed_vertical(ctx, draw_list, title_font, start_x, start_y, con
     thickness = sep_config.thickness,
   })
 
-  local block_input = sep_result.dragging or state.show_track_filter_modal
+  local block_input = sep_result.dragging or state.show_track_filter_modal or state.show_help_modal
   if coordinator.midi_grid_opts then coordinator.midi_grid_opts.block_all_input = block_input end
   if coordinator.audio_grid_opts then coordinator.audio_grid_opts.block_all_input = block_input end
 
@@ -257,11 +323,18 @@ function M.draw_mixed_vertical(ctx, draw_list, title_font, start_x, start_y, con
 
   -- Audio section with panel
   local audio_start_y = start_y + header_height + midi_height + separator_gap
+  local audio_panel_width = content_width - panel_right_padding
+  local audio_panel_height = header_height + audio_height
 
-  draw_panel(draw_list, start_x, audio_start_y, start_x + content_width - panel_right_padding, audio_start_y + header_height + audio_height, panel_rounding, section_fade)
-  draw_panel_title(ctx, draw_list, title_font, 'Audio Items', start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, config, 0)
+  draw_panel(draw_list, start_x, audio_start_y, start_x + audio_panel_width, audio_start_y + audio_panel_height, panel_rounding, section_fade)
+  draw_panel_title(ctx, draw_list, title_font, 'Audio Items', start_x, audio_start_y, audio_panel_width, panel_padding, section_fade, 15, config, 0)
 
-  local audio_grid_width = content_width - panel_right_padding - panel_padding * 2
+  -- Draw Audio item counts
+  local audio_visible = state.runtime_cache and state.runtime_cache.audio_visible_count or 0
+  local audio_hidden = state.runtime_cache and state.runtime_cache.audio_hidden_count or 0
+  draw_item_counts(ctx, draw_list, start_x, audio_start_y, audio_panel_width, audio_panel_height, audio_visible, audio_hidden, section_fade)
+
+  local audio_grid_width = audio_panel_width - panel_padding * 2
   local audio_child_h = audio_height - panel_padding
   ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, audio_start_y + header_height)
 
@@ -310,12 +383,8 @@ function M.draw_track_filter_bar(ctx, draw_list, coord_offset_x, panels_start_y,
           local bar_x = bounds.x
           local bar_y = bounds.y
           local bar_height = bounds.h
-          local current_width = bounds.w
 
-          local strip_alpha = (0x44 * section_fade) // 1
-          local strip_color = Ark.Colors.WithAlpha(0x3A3A3AFF, strip_alpha)
-          ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + track_bar_collapsed_width, bar_y + bar_height, strip_color, 2)
-
+          -- Only draw when expanded (no collapsed indicator strip)
           if visibility > 0.1 then
             local bar_alpha = visibility * section_fade
             TrackFilterBar.Draw(zone_ctx, dl, bar_x, bar_y, bar_height, state, bar_alpha)

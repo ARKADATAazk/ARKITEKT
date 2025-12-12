@@ -17,6 +17,7 @@ local function get_default_settings()
     show_muted_items = false,
     show_disabled_items = false,
     show_favorites_only = false,
+    pin_favorites_to_top = false,
     show_audio = true,
     show_midi = true,
     focus_keyboard_on_init = true,
@@ -27,11 +28,9 @@ local function get_default_settings()
     group_items_by_name = true,
     separator_position = nil,
     separator_position_horizontal = nil,
-    sort_mode = 'none',
+    sort_mode = 'track',
     sort_reverse = false,
     waveform_quality = 0.2,
-    waveform_filled = true,
-    enable_tile_fx = true,
     layout_mode = 'vertical',
     enable_region_processing = false,  -- Enable region detection and filtering
     show_region_tags = false,  -- Show region tags on item tiles (only if processing enabled)

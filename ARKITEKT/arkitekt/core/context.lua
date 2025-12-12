@@ -123,20 +123,43 @@ end
 -- DISABLED STACK
 -- =============================================================================
 -- Scope-based disabled state - widgets check actx:is_disabled()
+-- Also calls ImGui.BeginDisabled/EndDisabled for visual dimming and native widget blocking
 
 --- Begin a disabled region
 -- All widgets in this region should be non-interactive and visually dimmed
 -- @param condition boolean Whether to disable (allows conditional: begin_disabled(is_loading))
 function ArkContext:begin_disabled(condition)
   self._disabled_stack = self._disabled_stack or {}
+  self._imgui_disabled_stack = self._imgui_disabled_stack or {}
+
+  -- Track previous state
   table.insert(self._disabled_stack, self._disabled)
+
+  -- Track if we're actually enabling disabled state this call (for ImGui pairing)
+  local should_disable = condition and true or false
+  table.insert(self._imgui_disabled_stack, should_disable)
+
   -- Disabled state is sticky - once disabled, stays disabled until end_disabled
-  self._disabled = self._disabled or (condition and true or false)
+  self._disabled = self._disabled or should_disable
+
+  -- Also call ImGui's BeginDisabled for visual dimming + native widget blocking
+  if should_disable then
+    ImGui.BeginDisabled(self.ctx, true)
+  end
 end
 
 --- End a disabled region
 -- Restores previous disabled state
 function ArkContext:end_disabled()
+  -- Pop ImGui disabled state if we pushed it
+  if self._imgui_disabled_stack and #self._imgui_disabled_stack > 0 then
+    local did_disable = table.remove(self._imgui_disabled_stack)
+    if did_disable then
+      ImGui.EndDisabled(self.ctx)
+    end
+  end
+
+  -- Pop Ark disabled state
   if self._disabled_stack and #self._disabled_stack > 0 then
     self._disabled = table.remove(self._disabled_stack)
   else

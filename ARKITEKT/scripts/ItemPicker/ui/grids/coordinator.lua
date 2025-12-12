@@ -249,13 +249,26 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
   end
 end
 
--- Clear internal drag state from both grids (called after external drop completes)
+-- Clear internal drag state and selection from both grids (called after external drop completes)
 function Coordinator:clear_grid_drag_states()
-  if self.audio_grid_result_ref and self.audio_grid_result_ref.current and self.audio_grid_result_ref.current.drag then
-    self.audio_grid_result_ref.current.drag:release()
+  -- Access grid instances via result.grid (not result.drag which doesn't exist)
+  local audio_grid = self.audio_grid_result_ref and self.audio_grid_result_ref.current and self.audio_grid_result_ref.current.grid
+  local midi_grid = self.midi_grid_result_ref and self.midi_grid_result_ref.current and self.midi_grid_result_ref.current.grid
+
+  -- Clear drag states
+  if audio_grid and audio_grid.drag then
+    audio_grid.drag:release()
   end
-  if self.midi_grid_result_ref and self.midi_grid_result_ref.current and self.midi_grid_result_ref.current.drag then
-    self.midi_grid_result_ref.current.drag:release()
+  if midi_grid and midi_grid.drag then
+    midi_grid.drag:release()
+  end
+
+  -- Clear selections so items don't appear selected when overlay reopens
+  if audio_grid and audio_grid.selection then
+    audio_grid.selection.selected = {}
+  end
+  if midi_grid and midi_grid.selection then
+    midi_grid.selection.selected = {}
   end
 end
 

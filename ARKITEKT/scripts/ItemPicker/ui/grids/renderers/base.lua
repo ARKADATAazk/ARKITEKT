@@ -670,8 +670,6 @@ function M.cache_settings(state)
   _settings_cache.show_duration = s.show_duration
   _settings_cache.show_region_tags = s.show_region_tags
   _settings_cache.waveform_quality = s.waveform_quality or 0.2
-  _settings_cache.waveform_filled = s.waveform_filled
-  _settings_cache.show_visualization_in_small_tiles = s.show_visualization_in_small_tiles
 end
 
 M.settings = _settings_cache
