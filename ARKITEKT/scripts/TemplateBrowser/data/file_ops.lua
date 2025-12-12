@@ -150,12 +150,13 @@ function M.archive_file(file_path)
 end
 
 -- Rename a template file
+-- Returns: success (bool), new_path (string or nil), error_message (string or nil)
 function M.rename_template(old_path, new_name)
   -- SECURITY: Validate inputs
   local ok, err = PathValidation.is_safe_path(old_path)
   if not ok then
     Logger.error('FILEOPS', 'Invalid source path: %s', err)
-    return false, nil
+    return false, nil, err
   end
 
   -- SECURITY: Sanitize and validate new filename
@@ -163,7 +164,7 @@ function M.rename_template(old_path, new_name)
   ok, err = PathValidation.is_safe_filename(new_name)
   if not ok then
     Logger.error('FILEOPS', 'Invalid filename: %s', err)
-    return false, nil
+    return false, nil, err
   end
 
   local sep = get_sep()
@@ -171,23 +172,25 @@ function M.rename_template(old_path, new_name)
   local dir = old_path:match('^(.*)[/\\]')
   local new_path = dir .. sep .. new_name .. '.RTrackTemplate'
 
-  local success = os.rename(old_path, new_path)
+  local success, rename_err = os.rename(old_path, new_path)
   if success then
     Logger.info('FILEOPS', 'Renamed template: %s -> %s', old_path, new_path)
-    return true, new_path
+    return true, new_path, nil
   else
-    Logger.error('FILEOPS', 'Failed to rename template: %s', old_path)
-    return false, nil
+    local msg = 'Failed to rename (file may be in use or read-only)'
+    Logger.error('FILEOPS', 'Failed to rename template: %s - %s', old_path, rename_err or 'unknown error')
+    return false, nil, msg
   end
 end
 
 -- Rename a folder (directory)
+-- Returns: success (bool), new_path (string or nil), error_message (string or nil)
 function M.rename_folder(old_path, new_name)
   -- SECURITY: Validate inputs
   local ok, err = PathValidation.is_safe_path(old_path)
   if not ok then
     Logger.error('FILEOPS', 'Invalid source path: %s', err)
-    return false, nil
+    return false, nil, err
   end
 
   -- SECURITY: Sanitize and validate new folder name
@@ -195,7 +198,7 @@ function M.rename_folder(old_path, new_name)
   ok, err = PathValidation.is_safe_filename(new_name)
   if not ok then
     Logger.error('FILEOPS', 'Invalid folder name: %s', err)
-    return false, nil
+    return false, nil, err
   end
 
   local sep = get_sep()
@@ -203,18 +206,19 @@ function M.rename_folder(old_path, new_name)
   local parent = old_path:match('^(.*)[/\\]')
   if not parent then
     Logger.error('FILEOPS', 'Cannot determine parent for folder: %s', old_path)
-    return false, nil
+    return false, nil, 'Cannot determine parent folder'
   end
 
   local new_path = parent .. sep .. new_name
 
-  local success = os.rename(old_path, new_path)
+  local success, rename_err = os.rename(old_path, new_path)
   if success then
     Logger.info('FILEOPS', 'Renamed folder: %s -> %s', old_path, new_path)
-    return true, new_path
+    return true, new_path, nil
   else
-    Logger.error('FILEOPS', 'Failed to rename folder: %s', old_path)
-    return false, nil
+    local msg = 'Failed to rename folder (may be in use or read-only)'
+    Logger.error('FILEOPS', 'Failed to rename folder: %s - %s', old_path, rename_err or 'unknown error')
+    return false, nil, msg
   end
 end
 
@@ -333,12 +337,13 @@ function M.move_folder(folder_path, target_parent_path)
 end
 
 -- Create a new folder
+-- Returns: success (bool), new_path (string or nil), error_message (string or nil)
 function M.create_folder(parent_path, folder_name)
   -- SECURITY: Validate inputs
   local ok, err = PathValidation.is_safe_path(parent_path)
   if not ok then
     Logger.error('FILEOPS', 'Invalid parent path: %s', err)
-    return false, nil
+    return false, nil, err
   end
 
   -- SECURITY: Sanitize and validate new folder name
@@ -346,7 +351,7 @@ function M.create_folder(parent_path, folder_name)
   ok, err = PathValidation.is_safe_filename(folder_name)
   if not ok then
     Logger.error('FILEOPS', 'Invalid folder name: %s', err)
-    return false, nil
+    return false, nil, err
   end
 
   local sep = get_sep()
@@ -358,15 +363,16 @@ function M.create_folder(parent_path, folder_name)
     local success = reaper.RecursiveCreateDirectory(new_path, 0)
     if success then
       Logger.info('FILEOPS', 'Created folder: %s', new_path)
-      return true, new_path
+      return true, new_path, nil
     else
+      local msg = 'Failed to create folder (permission denied or disk full)'
       Logger.error('FILEOPS', 'Failed to create folder: %s', new_path)
-      return false, nil
+      return false, nil, msg
     end
   else
     -- Fallback for older REAPER versions
     Logger.error('FILEOPS', 'RecursiveCreateDirectory not available')
-    return false, nil
+    return false, nil, 'REAPER version too old for folder creation'
   end
 end
 

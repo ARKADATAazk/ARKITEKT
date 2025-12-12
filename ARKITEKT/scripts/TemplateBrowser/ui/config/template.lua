@@ -11,19 +11,20 @@ function M.create(callbacks, is_overlay_mode)
       enabled = true,
       height = 30,
       elements = {
-        -- Search field (left side)
+        -- Grid/List toggle button (left side)
         {
-          id = 'search',
-          type = 'inputtext',
-          width = 200,
+          id = 'view_toggle',
+          type = 'button',
+          width = 60,
           spacing_before = 0,
           config = {
-            placeholder = 'Search templates...',
-            get_value = callbacks.get_search_query,
-            on_change = callbacks.on_search_changed,
+            label = callbacks.get_view_mode_label,
+            on_click = callbacks.on_view_toggle,
+            tooltip = 'Toggle view mode',
+            tooltip_delay = 0.5,
           },
         },
-        -- Spacer
+        -- Spacer (push sort to right)
         {
           id = 'spacer1',
           type = 'separator',
@@ -31,7 +32,7 @@ function M.create(callbacks, is_overlay_mode)
           spacing_before = 0,
           config = { show_line = false },
         },
-        -- Sort dropdown (right side, grouped)
+        -- Sort dropdown (right side)
         {
           id = 'sort',
           type = 'combo',
@@ -50,19 +51,6 @@ function M.create(callbacks, is_overlay_mode)
             },
             enable_mousewheel = true,
             on_change = callbacks.on_sort_changed,
-          },
-        },
-        -- Grid/List toggle button (grouped with sort, no spacing)
-        {
-          id = 'view_toggle',
-          type = 'button',
-          width = 60,
-          spacing_before = 0,
-          config = {
-            label = callbacks.get_view_mode_label,
-            on_click = callbacks.on_view_toggle,
-            tooltip = 'Toggle view mode',
-            tooltip_delay = 0.5,
           },
         },
       },

@@ -11,18 +11,17 @@ local Ark = dofile(debug.getinfo(1,'S').source:sub(2):match('(.-ARKITEKT[/\\])')
 local Shell = require('arkitekt.runtime.shell')
 
 -- Load TemplateBrowser modules (using canonical paths)
-local Config = require('TemplateBrowser.app.config')
+local Constants = require('TemplateBrowser.config.constants')
 local State = require('TemplateBrowser.app.state')
 local GUI = require('TemplateBrowser.ui.init')
 local Scanner = require('TemplateBrowser.domain.template.scanner')
-local Constants = require('TemplateBrowser.config.constants')
 
 -- Initialize state
-State.initialize(Config)
+State.initialize(Constants)
 State.load_layout()
 
 -- Create GUI instance (scanner will run after window opens)
-local gui = GUI.new(Config, State, Scanner)
+local gui = GUI.new(Constants, State, Scanner)
 
 -- Run in overlay mode
 Shell.run({

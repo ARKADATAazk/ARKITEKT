@@ -20,7 +20,7 @@ function M.Draw(ctx, state, config, width, height)
   -- Header with VST count and Force Reparse button
   ImGui.Text(ctx, string.format('%d VST%s found', #all_fx, #all_fx == 1 and '' or 's'))
 
-  ImGui.SameLine(ctx, width - UI.BUTTON.WIDTH_MEDIUM - config.PANEL_PADDING * 2)
+  ImGui.SameLine(ctx, width - UI.BUTTON.WIDTH_MEDIUM - UI.PADDING.PANEL_INNER * 2)
 
   -- Force Reparse button
   if Ark.Button(ctx, { label = 'Force Reparse All', width = UI.BUTTON.WIDTH_MEDIUM, height = UI.BUTTON.HEIGHT_DEFAULT }).clicked then
@@ -47,7 +47,7 @@ function M.Draw(ctx, state, config, width, height)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  if Helpers.begin_child_compat(ctx, 'VSTsList', width - config.PANEL_PADDING * 2, height - 60, false) then
+  if Helpers.begin_child_compat(ctx, 'VSTsList', width - UI.PADDING.PANEL_INNER * 2, height - 60, false) then
     for _, fx_name in ipairs(all_fx) do
       ImGui.PushID(ctx, fx_name)
 

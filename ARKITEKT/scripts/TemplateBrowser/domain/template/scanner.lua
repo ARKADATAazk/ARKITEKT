@@ -465,9 +465,83 @@ function M.filter_templates(state)
       end
     end
 
-    -- Filter by search query (fuzzy match)
+    -- Filter by search query based on search mode
     if matches and state.search_query ~= '' then
-      local score = FuzzySearch.score(state.search_query, tmpl.name)
+      local search_mode = state.search_mode or 'templates'
+      local query = state.search_query
+      local score = 0
+
+      if search_mode == 'templates' then
+        -- Search template names only
+        score = FuzzySearch.score(query, tmpl.name)
+
+      elseif search_mode == 'vsts' then
+        -- Search VST/FX names
+        if tmpl.fx then
+          for _, fx_name in ipairs(tmpl.fx) do
+            local fx_score = FuzzySearch.score(query, fx_name)
+            if fx_score > score then
+              score = fx_score
+            end
+          end
+        end
+
+      elseif search_mode == 'tags' then
+        -- Search tag names
+        local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
+        if tmpl_metadata and tmpl_metadata.tags then
+          for _, tag_name in ipairs(tmpl_metadata.tags) do
+            local tag_score = FuzzySearch.score(query, tag_name)
+            if tag_score > score then
+              score = tag_score
+            end
+          end
+        end
+
+      elseif search_mode == 'notes' then
+        -- Search notes content
+        local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
+        if tmpl_metadata and tmpl_metadata.notes and tmpl_metadata.notes ~= '' then
+          score = FuzzySearch.score(query, tmpl_metadata.notes)
+        end
+
+      elseif search_mode == 'mixed' then
+        -- Search all: template name, VSTs, tags, and notes
+        -- Template name
+        score = FuzzySearch.score(query, tmpl.name)
+
+        -- VSTs
+        if tmpl.fx then
+          for _, fx_name in ipairs(tmpl.fx) do
+            local fx_score = FuzzySearch.score(query, fx_name)
+            if fx_score > score then
+              score = fx_score
+            end
+          end
+        end
+
+        -- Tags and notes
+        local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
+        if tmpl_metadata then
+          -- Tags
+          if tmpl_metadata.tags then
+            for _, tag_name in ipairs(tmpl_metadata.tags) do
+              local tag_score = FuzzySearch.score(query, tag_name)
+              if tag_score > score then
+                score = tag_score
+              end
+            end
+          end
+          -- Notes
+          if tmpl_metadata.notes and tmpl_metadata.notes ~= '' then
+            local notes_score = FuzzySearch.score(query, tmpl_metadata.notes)
+            if notes_score > score then
+              score = notes_score
+            end
+          end
+        end
+      end
+
       if score == 0 then
         matches = false
       else

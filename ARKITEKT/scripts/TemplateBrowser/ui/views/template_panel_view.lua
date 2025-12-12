@@ -107,7 +107,7 @@ local function draw_template_panel(ctx, gui, width, height)
         end
 
         ImGui.SetCursorScreenPos(ctx, chip_x, chip_y)
-        local clicked = Chip(ctx, {
+        local clicked = Chip.Draw(ctx, {
           style = Chip.STYLE.ACTION,
           label = tag_name,
           bg_color = tag_data.color,
@@ -139,7 +139,7 @@ local function draw_template_panel(ctx, gui, width, height)
       end
 
       ImGui.SetCursorScreenPos(ctx, chip_x, chip_y)
-      local clicked = Chip(ctx, {
+      local clicked = Chip.Draw(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
         bg_color = 0x888888FF,

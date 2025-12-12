@@ -13,12 +13,25 @@ function M.create(callbacks, is_overlay_mode)
       enabled = true,
       height = 30,
       elements = {
-        -- Quick access mode dropdown (left side)
+        -- Grid/List toggle button (left side)
+        {
+          id = 'view_toggle',
+          type = 'button',
+          width = 60,
+          spacing_before = 0,
+          config = {
+            label = callbacks.get_view_mode_label,
+            on_click = callbacks.on_view_toggle,
+            tooltip = 'Toggle view mode',
+            tooltip_delay = 0.5,
+          },
+        },
+        -- Quick access mode dropdown
         {
           id = 'quick_access_mode',
           type = 'combo',
           width = 120,
-          spacing_before = 0,
+          spacing_before = 4,
           config = {
             tooltip = 'Quick Access',
             tooltip_delay = 0.5,
@@ -42,19 +55,7 @@ function M.create(callbacks, is_overlay_mode)
           spacing_before = 0,
           config = { show_line = false },
         },
-        -- Search field (right side, grouped with sort and view)
-        {
-          id = 'search',
-          type = 'inputtext',
-          width = 150,
-          spacing_before = 0,
-          config = {
-            placeholder = 'Search...',
-            get_value = callbacks.get_search_query,
-            on_change = callbacks.on_search_changed,
-          },
-        },
-        -- Sort dropdown (grouped with search and view, no spacing)
+        -- Sort dropdown (right side)
         {
           id = 'sort',
           type = 'combo',
@@ -72,19 +73,6 @@ function M.create(callbacks, is_overlay_mode)
             },
             enable_mousewheel = true,
             on_change = callbacks.on_sort_changed,
-          },
-        },
-        -- Grid/List toggle button (grouped with search and sort, no spacing)
-        {
-          id = 'view_toggle',
-          type = 'button',
-          width = 60,
-          spacing_before = 0,
-          config = {
-            label = callbacks.get_view_mode_label,  -- Function-based dynamic label
-            on_click = callbacks.on_view_toggle,
-            tooltip = 'Toggle view mode',
-            tooltip_delay = 0.5,
           },
         },
       },

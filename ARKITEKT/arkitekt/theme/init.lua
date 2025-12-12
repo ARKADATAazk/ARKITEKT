@@ -36,51 +36,10 @@ local M = {}
 -- RUNTIME COLOR STORE
 -- =============================================================================
 -- This is THE single source of truth. All widgets read from here.
--- ThemeManager writes generated colors here.
+-- Populated from DSL at require time, updated by ThemeManager when theme changes.
 
-M.COLORS = {
-  -- Default fallback values (dark theme)
-  -- These are overwritten when a theme is applied
-
-  -- Backgrounds
-  BG_BASE        = 0x242424FF,
-  BG_HOVER       = 0x2A2A2AFF,
-  BG_ACTIVE      = 0x303030FF,
-  BG_HEADER      = 0x1E1E1EFF,
-  BG_PANEL       = 0x1A1A1AFF,
-  BG_CHROME      = 0x0F0F0FFF,
-  BG_TRANSPARENT = 0x00000000,
-
-  -- Borders
-  BORDER_OUTER  = 0x000000DD,
-  BORDER_INNER  = 0x2F2F2FFF,
-  BORDER_HOVER  = 0x505050FF,
-  BORDER_ACTIVE = 0xB0B0B077,
-  BORDER_FOCUS  = 0x7B7B7BFF,
-
-  -- Text
-  TEXT_NORMAL = 0xCCCCCCFF,
-  TEXT_HOVER  = 0xFFFFFFFF,
-  TEXT_ACTIVE = 0xFFFFFFFF,
-  TEXT_DIMMED = 0xAAAAAAFF,
-  TEXT_DARK   = 0x707070FF,
-  TEXT_BRIGHT = 0xEEEEEEFF,
-
-  -- Accents
-  ACCENT_PRIMARY      = 0x4A9EFFFF,
-  ACCENT_TEAL         = 0x295650FF,
-  ACCENT_TEAL_BRIGHT  = 0x41E0A3FF,
-  ACCENT_WHITE        = 0x2F2F2FFF,
-  ACCENT_WHITE_BRIGHT = 0x585858FF,
-  ACCENT_TRANSPARENT  = 0x43434388,
-  ACCENT_SUCCESS      = 0x4CAF50FF,
-  ACCENT_WARNING      = 0xFFA726FF,
-  ACCENT_DANGER       = 0xEF5350FF,
-
-  -- Patterns
-  PATTERN_PRIMARY   = 0x30303060,
-  PATTERN_SECONDARY = 0x30303020,
-}
+-- Placeholder - populated after Engine is loaded (see below)
+M.COLORS = {}
 
 -- =============================================================================
 -- DSL DEFINITIONS (imported from defs/colors)
@@ -111,6 +70,15 @@ local Presets = require('arkitekt.theme.manager.presets')
 local Integration = require('arkitekt.theme.manager.integration')
 local Registry = require('arkitekt.theme.manager.registry')
 local Debug = require('arkitekt.debug.theme_manager')
+
+-- =============================================================================
+-- GENERATE DEFAULT COLORS FROM DSL
+-- =============================================================================
+-- No hardcoded values - generate from DSL using dark theme as default
+local DEFAULT_BASE_BG = 0x242424FF  -- Dark theme base (single source of truth)
+for key, value in pairs(Engine.generate_palette(DEFAULT_BASE_BG)) do
+  M.COLORS[key] = value
+end
 
 -- Current theme mode
 M.current_mode = nil

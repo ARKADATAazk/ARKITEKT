@@ -15,12 +15,13 @@ local M = {}
 
 -- Draw TAGS content (full tag management)
 function M.Draw(ctx, state, config, width, height)
-  -- Header with '+' button
+  -- Header with '+' button (right-aligned)
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
 
-  -- Position button at the right
-  local button_x = width - UI.BUTTON.WIDTH_SMALL - config.PANEL_PADDING * 2
-  ImGui.SetCursorPosX(ctx, button_x)
+  -- Push button to far right using Dummy + SameLine
+  local spacer_width = width - UI.BUTTON.WIDTH_SMALL - UI.PADDING.PANEL_INNER * 2
+  ImGui.Dummy(ctx, spacer_width, 1)
+  ImGui.SameLine(ctx)
 
   if Ark.Button(ctx, {
     id = 'createtag',
@@ -53,7 +54,7 @@ function M.Draw(ctx, state, config, width, height)
   ImGui.Spacing(ctx)
 
   -- List all tags using justified layout
-  if Helpers.begin_child_compat(ctx, 'TagsList', width - config.PANEL_PADDING * 2, height - 30, false) then
+  if Helpers.begin_child_compat(ctx, 'TagsList', width - UI.PADDING.PANEL_INNER * 2, height - 30, false) then
     if state.metadata and state.metadata.tags then
       -- Build sorted list of tags
       local tag_items = {}
