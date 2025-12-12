@@ -6,6 +6,7 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')
+local Layout = require('RegionPlaylist.config.layout')
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
 local min = math.min
@@ -24,7 +25,7 @@ end
 
 function ViewModeButton:draw_icon(ctx, dl, x, y, mode)
   local color = self.config.icon_color or Ark.Style.COLORS.TEXT_DIMMED
-  local icon_size = 16  -- Smaller icon for 30px button (was 20px for 32px button)
+  local icon_size = Layout.TRANSPORT_BUTTONS.icon_size
 
   if mode == 'vertical' then
     -- List mode icon: horizontal bar at top + two vertical columns below
@@ -53,7 +54,7 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
   end
 
   local target = is_hovered and 1.0 or 0.0
-  local speed = cfg.animation_speed or 12.0
+  local speed = cfg.animation_speed or Layout.ANIMATION.hover_speed
   local dt = ImGui.GetDeltaTime(ctx)
 
   -- Reset hover alpha immediately when blocking (don't animate)
@@ -77,7 +78,7 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
   ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + btn_size - 1, y + btn_size - 1, border_inner, inner_rounding, 0, 1)
   ImGui.DrawList_AddRect(dl, x, y, x + btn_size, y + btn_size, border_outer, inner_rounding, 0, 1)
 
-  local icon_size = 16  -- Match icon size from draw_icon
+  local icon_size = Layout.TRANSPORT_BUTTONS.icon_size
   local icon_x = (x + (btn_size - icon_size) / 2 + 0.5)//1
   local icon_y = (y + (btn_size - icon_size) / 2 + 0.5)//1
   self:draw_icon(ctx, dl, icon_x, icon_y, current_mode)
@@ -132,7 +133,7 @@ function SimpleToggleButton:draw(ctx, x, y, state, on_click, color)
 
   local target = is_hovered and 1.0 or 0.0
   local dt = ImGui.GetDeltaTime(ctx)
-  self.hover_alpha = self.hover_alpha + (target - self.hover_alpha) * 12.0 * dt
+  self.hover_alpha = self.hover_alpha + (target - self.hover_alpha) * Layout.ANIMATION.hover_speed * dt
   self.hover_alpha = max(0, min(1, self.hover_alpha))
 
   -- Use dynamic colors from Ark.Style.COLORS

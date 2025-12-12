@@ -9,43 +9,15 @@ local Duration = require('arkitekt.core.duration')
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
 local Chip = require('arkitekt.gui.widgets.data.chip')
+local Layout = require('RegionPlaylist.config.layout')
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
 local min = math.min
 
 local M = {}
 
-local TRANSPORT_LAYOUT_CONFIG = {
-  global_offset_y = -5,
-  padding = 48,
-  padding_top = 8,
-  spacing_horizontal = 12,
-  spacing_progress = 8,
-  progress_height = 3,
-  progress_bottom_offset = 12,
-  progress_padding_left = 56,
-  progress_padding_right = 56,  -- Equal padding now that corner button balances view mode button
-  playlist_chip_size = 8,
-  playlist_chip_offset_x = 4,
-  playlist_chip_offset_y = 2,
-  playlist_name_offset_x = 12,
-  playlist_name_offset_y = 2,
-  time_offset_x = 0,
-  time_offset_y = 0,
-  region_label_spacing = 4,
-  current_region_offset_x = 0,
-  current_region_offset_y = 0,
-  next_region_offset_x = 0,
-  next_region_offset_y = 0,
-  content_vertical_offset = -2,
-
-  -- Responsive breakpoints
-  hide_playlist_width = 500,  -- Hide playlist name below this width
-  truncate_region_width = 450,  -- Start truncating region names below this
-  hide_region_width = 300,  -- Hide region names below this width
-  region_name_max_chars = 15,  -- Max chars before truncation starts
-  region_name_min_chars = 8,  -- Min chars when fully truncated
-}
+-- Use centralized layout config
+local TRANSPORT_LAYOUT_CONFIG = Layout.TRANSPORT_DISPLAY
 
 local TransportDisplay = {}
 TransportDisplay.__index = TransportDisplay

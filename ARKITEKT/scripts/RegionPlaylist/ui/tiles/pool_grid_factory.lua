@@ -206,25 +206,14 @@ local function create_behaviors(rt)
           end
         end
       else
-        -- Multiple selection: open batch rename modal
-        local BatchRenameModal = require('arkitekt.gui.widgets.overlays.batch_rename_modal')
-        BatchRenameModal.open(#selected_keys, function(pattern)
-          if rt.on_pool_batch_rename then
-            rt.on_pool_batch_rename(selected_keys, pattern)
-          end
-        end, {
-          item_type = 'playlists',  -- Label for pool items
-          on_rename_and_recolor = function(pattern, color)
-            if rt.on_pool_batch_rename_and_recolor then
-              rt.on_pool_batch_rename_and_recolor(selected_keys, pattern, color)
-            end
-          end,
-          on_recolor = function(color)
-            if rt.on_pool_batch_recolor then
-              rt.on_pool_batch_recolor(selected_keys, color)
-            end
-          end
-        })
+        -- Multiple selection: open batch rename modal via coordinator
+        if rt.show_batch_renamer then
+          rt:show_batch_renamer(selected_keys, 'pool', {
+            on_rename = rt.on_pool_batch_rename,
+            on_rename_and_recolor = rt.on_pool_batch_rename_and_recolor,
+            on_recolor = rt.on_pool_batch_recolor,
+          })
+        end
       end
     end,
 

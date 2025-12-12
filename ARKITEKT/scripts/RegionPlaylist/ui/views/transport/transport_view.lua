@@ -11,6 +11,7 @@ local ButtonWidgets = require('RegionPlaylist.ui.views.transport.button_widgets'
 local DisplayWidget = require('RegionPlaylist.ui.views.transport.display_widget')
 local CoreConfig = require('RegionPlaylist.app.config')
 local Strings = require('RegionPlaylist.config.strings')
+local Layout = require('RegionPlaylist.config.layout')
 local M = {}
 
 -- ============================================================================
@@ -40,7 +41,7 @@ function M.init(config, state_module)
   view.container = TransportContainer.new({
     id = 'region_playlist_transport',
     height = config.height,
-    button_height = 30,
+    button_height = Layout.TRANSPORT_BUTTONS.default_height,
     header_elements = {},
     config = {
       fx = config.fx,
@@ -301,16 +302,17 @@ local function build_quantize_dropdown(bridge_state)
         ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, C.BG_HOVER)
         ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, C.BORDER_HOVER)
         ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, C.BORDER_FOCUS)
-        ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabMinSize, 14)
-        ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 4, 6)
-        ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabRounding, 0)
+        local QS = Layout.QUANTIZE_SLIDER
+        ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabMinSize, QS.grab_min_size)
+        ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, QS.frame_padding_x, QS.frame_padding_y)
+        ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabRounding, QS.grab_rounding)
 
         local slider_x, slider_y = ImGui.GetCursorScreenPos(ctx)
         ImGui.SetCursorScreenPos(ctx, slider_x + padding, slider_y)
         ImGui.SetNextItemWidth(ctx, width - padding * 2)
 
         local lookahead_ms = view.config.quantize_lookahead * 1000
-        local changed, new_val = ImGui.SliderDouble(ctx, '##transport_quantize_lookahead', lookahead_ms, 200, 1000, '%.0fms')
+        local changed, new_val = ImGui.SliderDouble(ctx, '##transport_quantize_lookahead', lookahead_ms, QS.min_ms, QS.max_ms, '%.0fms')
 
         ImGui.PopStyleVar(ctx, 3)
         ImGui.PopStyleColor(ctx, 5)
@@ -438,7 +440,7 @@ end
 local function build_playback_buttons(bridge_state, shell_state)
   -- Get icon font from shell_state
   local icon_font = shell_state and shell_state.fonts and shell_state.fonts.icons
-  local icon_size = 16
+  local icon_size = Layout.TRANSPORT_BUTTONS.icon_size
 
   return {
     {

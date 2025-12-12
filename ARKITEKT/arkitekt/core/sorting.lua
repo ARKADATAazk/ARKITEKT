@@ -5,7 +5,7 @@
 local Colors = require('arkitekt.core.colors')
 
 -- Performance: Localize math functions
-local abs = abs
+local abs = math.abs
 
 local M = {}
 

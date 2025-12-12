@@ -6,21 +6,26 @@ local ImGui = require('arkitekt.core.imgui')
 local Ark = require('arkitekt')
 
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
+local Layout = require('RegionPlaylist.config.layout')
 
 local M = {}
+
+-- Use layout config for consistent values
+local SEL = Layout.SELECTOR
+
 M.CONFIG = {
-  chip_width = 110,
-  chip_height = 30,
-  gap = 10,
+  chip_width = SEL.chip_width,
+  chip_height = SEL.chip_height,
+  gap = SEL.gap,
   bg_inactive = 0x1A2A3AFF,
   bg_active = 0x2A4A6AFF,
   bg_hover = 0x3A5A7AFF,
   border_inactive = 0x2A3A4AFF,
   border_active = 0x4A90E2FF,
-  border_thickness = 1.5,
-  rounding = 4,
+  border_thickness = SEL.border_thickness,
+  rounding = SEL.rounding,
   text_color = 0xFFFFFFFF,
-  animation_speed = 10.0,
+  animation_speed = Layout.ANIMATION.selector_speed,
 }
 
 local Selector = {}

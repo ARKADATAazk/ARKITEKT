@@ -10,12 +10,17 @@ local Logger = require('arkitekt.debug.logger')
 
 local SequenceExpander = {}
 
+-- Returns: reps (number), is_infinite (boolean)
+-- reps = 0 means infinite loop (displayed as ∞ in UI)
+-- reps < 0 is treated as 1 (invalid)
 local function normalize_loops(value)
   local reps = tonumber(value) or 1
-  if reps < 1 then
-    return 1
+  if reps == 0 then
+    return 0, true  -- Infinite
+  elseif reps < 1 then
+    return 1, false  -- Invalid -> default to 1
   end
-  return reps // 1
+  return reps // 1, false
 end
 
 -- Deep copy ancestry array and optionally append a new entry
@@ -39,7 +44,7 @@ local function expand_items(sequence, playlist, get_playlist_by_id, context, anc
     if item and item.enabled ~= false then
       if item.type == 'playlist' and item.playlist_id then
         local nested_id = item.playlist_id
-        local reps = normalize_loops(item.reps)
+        local reps, is_infinite = normalize_loops(item.reps)
 
         if context.stack[nested_id] then
           context.cycle_detected = true
@@ -48,13 +53,16 @@ local function expand_items(sequence, playlist, get_playlist_by_id, context, anc
           if nested_playlist then
             context.stack[nested_id] = true
 
-            for rep = 1, reps do
+            -- For infinite playlists, expand once with is_infinite flag
+            local loop_count = is_infinite and 1 or reps
+            for rep = 1, loop_count do
               -- Create ancestry entry for this playlist occurrence
               local playlist_ancestry = copy_ancestry(ancestry, {
                 key = item.key,
                 rep = rep,
-                total_reps = reps,
+                total_reps = is_infinite and 0 or reps,  -- 0 indicates infinite
                 playlist_id = nested_id,
+                is_infinite = is_infinite,
               })
 
               -- Recursively expand with updated ancestry
@@ -65,15 +73,18 @@ local function expand_items(sequence, playlist, get_playlist_by_id, context, anc
           end
         end
       elseif item.type == 'region' and item.rid then
-        local reps = normalize_loops(item.reps)
+        local reps, is_infinite = normalize_loops(item.reps)
         local key = item.key
 
-        for loop_index = 1, reps do
+        -- For infinite regions, add single entry with is_infinite flag
+        local loop_count = is_infinite and 1 or reps
+        for loop_index = 1, loop_count do
           sequence[#sequence + 1] = {
             rid = item.rid,
             item_key = key,
             loop = loop_index,
-            total_loops = reps,
+            total_loops = is_infinite and 0 or reps,  -- 0 indicates infinite
+            is_infinite = is_infinite,
             ancestry = ancestry,  -- Reference to current ancestry (immutable at this point)
           }
         end
@@ -141,12 +152,12 @@ function SequenceExpander.debug_print_sequence(sequence, get_region_by_rid)
       ancestry_str = ' via ' .. table.concat(parts, '>')
     end
 
-    Logger.info('SEQUENCER', '[%d] rid=%s %s (loop %d/%d) key=%s%s',
+    local loop_str = entry.is_infinite and '∞' or string.format('%d/%d', entry.loop or 1, entry.total_loops or 1)
+    Logger.info('SEQUENCER', '[%d] rid=%s %s (loop %s) key=%s%s',
       index,
       tostring(entry.rid or 'nil'),
       region_name,
-      entry.loop or 1,
-      entry.total_loops or 1,
+      loop_str,
       tostring(entry.item_key or ''),
       ancestry_str
     )

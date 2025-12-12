@@ -564,14 +564,17 @@ function M.build_action_chip_config(variant)
   if _action_chip_caches[variant] then return _action_chip_caches[variant] end
 
   -- Action chips: colored rectangles with contrasting text
+  -- Use hardcoded black (0x1A1A1AFF) for text - these chips have specific
+  -- colored backgrounds that require dark text for readability
+  local TEXT_ON_COLOR = 0x1A1A1AFF  -- Black text for colored chip backgrounds
   local configs = {
     wildcard = {
       bg_color = M.COLORS.ACCENT_PRIMARY or 0x5B8FB9FF,
-      text_color = M.COLORS.TEXT_DARK or 0x1A1A1AFF,
+      text_color = TEXT_ON_COLOR,
     },
     tag = {
       bg_color = M.COLORS.ACCENT_WARNING or 0x8B7355FF,
-      text_color = M.COLORS.TEXT_DARK or 0x1A1A1AFF,
+      text_color = TEXT_ON_COLOR,
     },
   }
 

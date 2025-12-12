@@ -4,6 +4,8 @@
 -- Performance: Localize math functions
 local abs = math.abs
 
+local Layout = require('RegionPlaylist.config.layout')
+
 local M = {}
 
 function M.format_bar_length(start_time, end_time, proj)
@@ -11,7 +13,7 @@ function M.format_bar_length(start_time, end_time, proj)
 
   -- Rounding tolerance to fix floating-point precision issues
   -- (e.g., 84.0999999 becomes 84.1, displayed as 84.1.00 instead of 84.0.99)
-  local ROUNDING_TOLERANCE = 0.005
+  local ROUNDING_TOLERANCE = Layout.UTILITIES.rounding_tolerance
 
   local duration = end_time - start_time
   if duration <= 0 then

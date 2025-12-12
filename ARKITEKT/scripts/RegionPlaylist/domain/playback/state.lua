@@ -78,6 +78,7 @@ function State:rescan()
         item_key = entry.item_key,
         loop = entry.loop,
         total_loops = entry.total_loops,
+        is_infinite = entry.is_infinite,
         ancestry = entry.ancestry,  -- Preserve ancestry for nested playlist tracking
       }
     end
@@ -153,14 +154,21 @@ function State:set_sequence(sequence)
   for _, entry in ipairs(sequence) do
     local rid = entry.rid
     if rid and self.region_cache[rid] then
+      -- Handle infinite loops: total_loops = 0 means infinite
+      local is_infinite = entry.is_infinite or (entry.total_loops == 0)
+      local total_loops = is_infinite and 0 or max(1, (entry.total_loops or 1) // 1)
+      local loop_val = max(1, (entry.loop or 1) // 1)
+
       local normalized = {
         rid = rid,
         item_key = entry.item_key,
-        loop = max(1, (entry.loop or 1) // 1),
-        total_loops = max(1, (entry.total_loops or 1) // 1),
+        loop = loop_val,
+        total_loops = total_loops,
+        is_infinite = is_infinite,
         ancestry = entry.ancestry,  -- Preserve ancestry for nested playlist tracking
       }
-      if normalized.loop > normalized.total_loops then
+      -- For non-infinite, clamp loop to total_loops
+      if not is_infinite and normalized.loop > normalized.total_loops then
         normalized.loop = normalized.total_loops
       end
 
@@ -445,6 +453,7 @@ function State:on_shuffle_changed(enabled)
         item_key = entry.item_key,
         loop = entry.loop,
         total_loops = entry.total_loops,
+        is_infinite = entry.is_infinite,
         ancestry = entry.ancestry,
       }
     end
@@ -474,6 +483,7 @@ function State:set_shuffle_mode(mode)
         item_key = entry.item_key,
         loop = entry.loop,
         total_loops = entry.total_loops,
+        is_infinite = entry.is_infinite,
         ancestry = entry.ancestry,
       }
     end

@@ -5,7 +5,6 @@
 local ImGui = require('arkitekt.core.imgui')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local ColorPickerMenu = require('arkitekt.gui.widgets.menus.color_picker_menu')
-local BatchRenameModal = require('arkitekt.gui.widgets.overlays.batch_rename_modal')
 local Persistence = require('RegionPlaylist.data.storage')
 
 local M = {}
@@ -118,23 +117,11 @@ function M.render(ctx, coordinator, shell_state)
 
     -- Batch Rename & Recolor
     if ContextMenu.item(ctx, 'Batch Rename & Recolor...') then
-      if #selected_keys > 0 then
-        BatchRenameModal.open(#selected_keys, function(pattern)
-          if coordinator.on_pool_batch_rename then
-            coordinator.on_pool_batch_rename(selected_keys, pattern)
-          end
-        end, {
-          item_type = 'items',
-          on_rename_and_recolor = function(pattern, color)
-            if coordinator.on_pool_batch_rename_and_recolor then
-              coordinator.on_pool_batch_rename_and_recolor(selected_keys, pattern, color)
-            end
-          end,
-          on_recolor = function(color)
-            if coordinator.on_pool_batch_recolor then
-              coordinator.on_pool_batch_recolor(selected_keys, color)
-            end
-          end
+      if #selected_keys > 0 and coordinator.show_batch_renamer then
+        coordinator:show_batch_renamer(selected_keys, 'pool', {
+          on_rename = coordinator.on_pool_batch_rename,
+          on_rename_and_recolor = coordinator.on_pool_batch_rename_and_recolor,
+          on_recolor = coordinator.on_pool_batch_recolor,
         })
       end
       ImGui.CloseCurrentPopup(ctx)
